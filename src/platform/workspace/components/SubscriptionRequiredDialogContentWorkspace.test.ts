@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
 
@@ -14,26 +15,15 @@ const mockHandleBackToPricing = vi.fn()
 const mockHandleAddCreditCard = vi.fn()
 const mockHandleConfirmTransition = vi.fn()
 const mockHandleResubscribe = vi.fn()
-const mockCheckoutStep = ref<'pricing' | 'preview'>('pricing')
+const mockHandleSuccessClose = vi.fn()
+const mockApplyPromotionCode = vi.fn()
+const mockInvalidateQuote = vi.fn()
+const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
+const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: () => ({
-    checkoutStep: mockCheckoutStep,
-    isLoadingPreview: ref(false),
-    loadingTier: ref(null),
-    isSubscribing: ref(false),
-    isResubscribing: ref(false),
-    previewData: mockPreviewData,
-    selectedTierKey: ref('standard'),
-    selectedBillingCycle: ref('yearly'),
-    isPolling: ref(false),
-    handleSubscribeClick: mockHandleSubscribeClick,
-    handleBackToPricing: mockHandleBackToPricing,
-    handleAddCreditCard: mockHandleAddCreditCard,
-    handleConfirmTransition: mockHandleConfirmTransition,
-    handleResubscribe: mockHandleResubscribe
-  })
+  useSubscriptionCheckout: mockUseSubscriptionCheckout
 }))
 
 const i18n = createI18n({
@@ -44,7 +34,8 @@ const i18n = createI18n({
       g: { back: 'Back', close: 'Close' },
       subscription: {
         plansForWorkspace: 'Plans for {workspace}',
-        teamWorkspace: 'Team'
+        teamWorkspace: 'Team Workspace',
+        personalWorkspace: 'Personal Workspace'
       },
       credits: {
         topUp: {
@@ -66,8 +57,12 @@ const PricingTableStub = {
 
 const AddPaymentPreviewStub = {
   name: 'SubscriptionAddPaymentPreviewWorkspace',
+  props: ['quoteIsCurrent'],
   template: `<div data-testid="add-payment-preview">
+    <span data-testid="quote-current">{{ quoteIsCurrent }}</span>
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
+    <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
+    <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
   </div>`
 }
 
@@ -78,13 +73,31 @@ const TransitionPreviewStub = {
   </div>`
 }
 
+const SuccessStub = {
+  name: 'SubscriptionSuccessWorkspace',
+  template: `<div data-testid="success">
+    <button data-testid="success-close-btn" @click="$emit('close')">Done</button>
+  </div>`
+}
+
 function renderComponent(
-  props: { onClose?: () => void; reason?: SubscriptionDialogReason } = {}
+  props: {
+    onClose?: () => void
+    reason?: PaymentIntentSource
+    isPersonal?: boolean
+    initialCheckout?: SubscriptionCheckoutSelection
+  } = {}
 ) {
   return render(SubscriptionRequiredDialogContentWorkspace, {
     props: {
       onClose: props.onClose ?? vi.fn(),
-      ...(props.reason ? { reason: props.reason } : {})
+      ...(props.reason ? { reason: props.reason } : {}),
+      ...(props.isPersonal !== undefined
+        ? { isPersonal: props.isPersonal }
+        : {}),
+      ...(props.initialCheckout
+        ? { initialCheckout: props.initialCheckout }
+        : {})
     },
     global: {
       plugins: [
@@ -94,7 +107,8 @@ function renderComponent(
       stubs: {
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,
-        SubscriptionTransitionPreviewWorkspace: TransitionPreviewStub
+        SubscriptionTransitionPreviewWorkspace: TransitionPreviewStub,
+        SubscriptionSuccessWorkspace: SuccessStub
       }
     }
   })
@@ -102,7 +116,28 @@ function renderComponent(
 
 describe('SubscriptionRequiredDialogContentWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockUseSubscriptionCheckout.mockReturnValue({
+      checkoutStep: mockCheckoutStep,
+      isLoadingPreview: ref(false),
+      loadingTier: ref(null),
+      isSubscribing: ref(false),
+      isResubscribing: ref(false),
+      previewData: mockPreviewData,
+      quoteIsCurrent: ref(true),
+      isApplyingPromotionCode: ref(false),
+      selectedTierKey: ref('standard'),
+      selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
+      isPolling: ref(false),
+      handleSubscribeClick: mockHandleSubscribeClick,
+      handleBackToPricing: mockHandleBackToPricing,
+      handleAddCreditCard: mockHandleAddCreditCard,
+      handleConfirmTransition: mockHandleConfirmTransition,
+      applyPromotionCode: mockApplyPromotionCode,
+      invalidateQuote: mockInvalidateQuote,
+      handleResubscribe: mockHandleResubscribe,
+      handleSuccessClose: mockHandleSuccessClose
+    })
     mockCheckoutStep.value = 'pricing'
     mockPreviewData.value = null
   })
@@ -112,6 +147,50 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.getByTestId('pricing-table')).toBeInTheDocument()
     expect(screen.queryByTestId('add-payment-preview')).not.toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+  })
+
+  it('passes the reason into subscription checkout', () => {
+    renderComponent({ reason: 'out_of_credits' })
+
+    expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.any(Function),
+      'out_of_credits',
+      { tierPlanType: 'team' }
+    )
+  })
+
+  it('marks the legacy Personal table as a personal-plan target', () => {
+    renderComponent({ isPersonal: true })
+
+    expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { tierPlanType: 'personal' }
+    )
+  })
+
+  it('opens a personal deep-linked checkout on mount', () => {
+    const initialCheckout = {
+      planMode: 'personal',
+      tierKey: 'creator',
+      billingCycle: 'monthly'
+    } as const
+
+    renderComponent({ isPersonal: true, initialCheckout })
+
+    expect(mockHandleSubscribeClick).toHaveBeenCalledWith(initialCheckout)
+  })
+
+  it('shows the team workspace header by default', () => {
+    renderComponent()
+    expect(screen.getByText('Team Workspace')).toBeInTheDocument()
+    expect(screen.queryByText('Personal Workspace')).not.toBeInTheDocument()
+  })
+
+  it('shows the personal workspace header for a single-seat context', () => {
+    renderComponent({ isPersonal: true })
+    expect(screen.getByText('Personal Workspace')).toBeInTheDocument()
+    expect(screen.queryByText('Team Workspace')).not.toBeInTheDocument()
   })
 
   it('shows close button and hides back button on pricing step', () => {
@@ -156,6 +235,19 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
   })
 
+  it('keeps the legacy checkout current and wires promotion controls', async () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewData.value = { transition_type: 'new_subscription' }
+    renderComponent()
+
+    expect(screen.getByTestId('quote-current')).toHaveTextContent('true')
+    await userEvent.click(screen.getByTestId('apply-promo-btn'))
+    await userEvent.click(screen.getByTestId('invalidate-quote-btn'))
+
+    expect(mockApplyPromotionCode).toHaveBeenCalledWith('SAVE20')
+    expect(mockInvalidateQuote).toHaveBeenCalledOnce()
+  })
+
   it('shows transition preview when transition_type is upgrade', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewData.value = { transition_type: 'upgrade' }
@@ -194,5 +286,22 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     await user.click(screen.getByLabelText('Back'))
 
     expect(mockHandleBackToPricing).toHaveBeenCalled()
+  })
+
+  it('shows the success screen on the success step', () => {
+    mockCheckoutStep.value = 'success'
+    renderComponent()
+    expect(screen.getByTestId('success')).toBeInTheDocument()
+    expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
+  })
+
+  it('wires the success close event to handleSuccessClose', async () => {
+    const user = userEvent.setup()
+    mockCheckoutStep.value = 'success'
+    renderComponent()
+
+    await user.click(screen.getByTestId('success-close-btn'))
+
+    expect(mockHandleSuccessClose).toHaveBeenCalled()
   })
 })

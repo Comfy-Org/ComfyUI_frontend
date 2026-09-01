@@ -1,8 +1,10 @@
 import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -44,6 +46,56 @@ test.describe('Workflows sidebar', () => {
       .poll(() => tab.getTopLevelSavedWorkflowNames())
       .toEqual(expect.arrayContaining(['workflow1', 'workflow2']))
   })
+
+  test(
+    'Shows loading state while refreshing workflows',
+    { tag: '@smoke' },
+    async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      const workflowsSyncRoute = /\/api\/userdata\?[^#]*\bdir=workflows\b/
+      const emptyWorkflowList: UserDataFullInfo[] = []
+
+      let releaseSync!: () => void
+      const syncBlocked = new Promise<void>((resolve) => {
+        releaseSync = resolve
+      })
+      const syncFulfillments: Promise<void>[] = []
+
+      const holdSyncResponse = async (route: Route) => {
+        if (route.request().method() !== 'GET') {
+          await route.fallback()
+          return
+        }
+
+        const syncFulfilled = syncBlocked.then(() =>
+          route.fulfill({ json: emptyWorkflowList })
+        )
+        syncFulfillments.push(syncFulfilled)
+        await syncFulfilled
+      }
+
+      await comfyPage.page.route(workflowsSyncRoute, holdSyncResponse)
+
+      try {
+        const syncRequest = comfyPage.page.waitForRequest((request) =>
+          workflowsSyncRoute.test(request.url())
+        )
+
+        await tab.refreshButton.click()
+        await syncRequest
+
+        await expect(tab.refreshButton).toBeDisabled()
+        await expect(tab.refreshButton).toHaveAttribute('aria-busy', 'true')
+      } finally {
+        releaseSync()
+        await Promise.all(syncFulfillments)
+        await comfyPage.page.unroute(workflowsSyncRoute, holdSyncResponse)
+      }
+
+      await expect(tab.refreshButton).toBeEnabled()
+      await expect(tab.refreshButton).toHaveAttribute('aria-busy', 'false')
+    }
+  )
 
   test('Can duplicate workflow', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab

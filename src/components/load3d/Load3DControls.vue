@@ -52,6 +52,7 @@
         v-model:background-image="sceneConfig!.backgroundImage"
         v-model:background-render-mode="sceneConfig!.backgroundRenderMode"
         v-model:fov="cameraConfig!.fov"
+        :show-background-image="canUseBackgroundImage"
         :hdri-active="
           !!lightConfig?.hdri?.hdriPath && !!lightConfig?.hdri?.enabled
         "
@@ -71,6 +72,8 @@
         v-if="showCameraControls"
         v-model:camera-type="cameraConfig!.cameraType"
         v-model:fov="cameraConfig!.fov"
+        v-model:use-custom-up="useCustomUp"
+        :has-custom-up="cameraConfig!.hasCustomUp"
       />
 
       <div v-if="showLightControls" class="flex flex-col">
@@ -81,6 +84,7 @@
         />
 
         <HDRIControls
+          v-if="canUseHdri"
           v-model:hdri-config="lightConfig!.hdri"
           :has-background-image="!!sceneConfig?.backgroundImage"
           @update-hdri-file="handleHDRIFileUpdate"
@@ -89,6 +93,7 @@
 
       <ExportControls
         v-if="showExportControls"
+        :source-format="sourceFormat"
         @export-model="handleExportModel"
       />
 
@@ -129,20 +134,37 @@ const {
   canUseGizmo = true,
   canUseLighting = true,
   canExport = true,
+  canUseHdri = true,
+  canUseBackgroundImage = true,
   materialModes = ['original', 'normal', 'wireframe'],
-  hasSkeleton = false
+  hasSkeleton = false,
+  sourceFormat = null
 } = defineProps<{
   canUseGizmo?: boolean
   canUseLighting?: boolean
   canExport?: boolean
+  canUseHdri?: boolean
+  canUseBackgroundImage?: boolean
   materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
+  sourceFormat?: string | null
 }>()
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')
 const modelConfig = defineModel<ModelConfig>('modelConfig')
 const cameraConfig = defineModel<CameraConfig>('cameraConfig')
 const lightConfig = defineModel<LightConfig>('lightConfig')
+
+const useCustomUp = computed({
+  get: () =>
+    cameraConfig.value?.hasCustomUp === true && cameraConfig.value.useCustomUp,
+  set: (value: boolean) => {
+    const config = cameraConfig.value
+    if (config?.hasCustomUp) {
+      cameraConfig.value = { ...config, useCustomUp: value }
+    }
+  }
+})
 
 const isMenuOpen = ref(false)
 const menuPanelRef = ref<HTMLElement | null>(null)

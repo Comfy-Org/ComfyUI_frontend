@@ -6,165 +6,79 @@
   >
     <div v-if="isVisible" class="pointer-events-none flex w-full justify-end">
       <div
-        role="alert"
-        aria-live="assertive"
+        role="status"
         data-testid="error-overlay"
-        class="pointer-events-auto flex w-80 min-w-72 flex-col overflow-hidden rounded-lg border border-destructive-background bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
+        class="pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
       >
-        <!-- Header -->
-        <div class="flex h-12 items-center gap-2 px-4">
-          <span class="flex-1 text-sm font-bold text-destructive-background">
-            {{ errorCountLabel }}
+        <div class="flex w-full items-start gap-2 pr-8">
+          <i
+            class="mt-0.5 icon-[lucide--circle-x] size-4 shrink-0 text-destructive-background"
+          />
+          <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+            {{ overlayTitle }}
           </span>
-          <Button
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.close')"
-            @click="dismiss"
-          >
-            <i class="icon-[lucide--x] block size-5 leading-none" />
-          </Button>
         </div>
 
-        <!-- Body -->
-        <div class="px-4 pb-3" data-testid="error-overlay-messages">
-          <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
-            <li
-              v-for="(message, idx) in overlayMessages"
-              :key="idx"
-              class="flex min-w-0 items-baseline gap-2 text-sm/snug text-muted-foreground"
-            >
-              <span
-                class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
-              />
-              <span class="line-clamp-3 wrap-break-word whitespace-pre-wrap">{{
-                message
-              }}</span>
-            </li>
-          </ul>
+        <div
+          class="flex w-full items-start gap-2 pr-8"
+          data-testid="error-overlay-messages"
+        >
+          <span class="size-4 shrink-0" aria-hidden="true" />
+          <p
+            class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
+          >
+            {{ overlayMessage }}
+          </p>
         </div>
 
-        <!-- Footer -->
-        <div class="flex items-center justify-end gap-4 px-4 py-3">
-          <Button
-            variant="muted-textonly"
-            size="unset"
-            data-testid="error-overlay-dismiss"
-            @click="dismiss"
-          >
-            {{ t('g.dismiss') }}
-          </Button>
+        <div class="flex w-full items-center justify-end pt-2">
           <Button
             variant="secondary"
-            size="lg"
+            size="unset"
+            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
-            @click="seeErrors"
+            @click="viewErrorsInGraph"
           >
-            {{ appMode ? t('linearMode.error.goto') : seeErrorsLabel }}
+            {{
+              appMode
+                ? t('linearMode.error.goto')
+                : t('errorOverlay.viewDetails')
+            }}
           </Button>
         </div>
+
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="absolute top-2 right-2 size-6 rounded-sm"
+          data-testid="error-overlay-dismiss"
+          :aria-label="t('g.close')"
+          @click="dismiss"
+        >
+          <i class="icon-[lucide--x] block size-4 leading-none" />
+        </Button>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 
-defineProps<{ appMode?: boolean }>()
+const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const canvasStore = useCanvasStore()
+const { viewErrorsInGraph } = useViewErrorsInGraph()
 
-const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
-const { allErrorGroups, missingModelGroups } = useErrorGroups(ref(''), t)
-
-const singleErrorType = computed(() => {
-  const types = new Set(allErrorGroups.value.map((g) => g.type))
-  return types.size === 1 ? [...types][0] : null
-})
-
-const friendlyMessageMap: Record<string, () => string> = {
-  missing_node: () => t('errorOverlay.missingNodes'),
-  swap_nodes: () => t('errorOverlay.swapNodes'),
-  missing_media: () => t('errorOverlay.missingMedia'),
-  missing_model: () => {
-    const modelCount = missingModelGroups.value.reduce(
-      (count, g) => count + g.models.length,
-      0
-    )
-    return t('errorOverlay.missingModels', { count: modelCount }, modelCount)
-  }
-}
-
-function toFriendlyMessage(group: (typeof allErrorGroups.value)[number]) {
-  return friendlyMessageMap[group.type]?.() ?? null
-}
-
-const overlayMessages = computed<string[]>(() => {
-  const messages = new Set<string>()
-  for (const group of allErrorGroups.value) {
-    const friendly = toFriendlyMessage(group)
-    if (friendly) {
-      messages.add(friendly)
-    } else if (group.type === 'execution') {
-      for (const card of group.cards) {
-        for (const err of card.errors) {
-          messages.add(err.message)
-        }
-      }
-    }
-  }
-  return Array.from(messages)
-})
-
-const seeErrorsLabel = computed(() => {
-  const labelMap: Record<string, string> = {
-    missing_node: t('errorOverlay.showMissingNodes'),
-    missing_model: t('errorOverlay.showMissingModels'),
-    swap_nodes: t('errorOverlay.showSwapNodes'),
-    missing_media: t('errorOverlay.showMissingMedia')
-  }
-  if (singleErrorType.value) {
-    return labelMap[singleErrorType.value] ?? t('errorOverlay.seeErrors')
-  }
-  return t('errorOverlay.seeErrors')
-})
-
-const errorCountLabel = computed(() =>
-  t(
-    'errorOverlay.errorCount',
-    { count: totalErrorCount.value },
-    totalErrorCount.value
-  )
-)
-
-const isVisible = computed(
-  () => isErrorOverlayOpen.value && totalErrorCount.value > 0
-)
+const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
 
 function dismiss() {
-  executionErrorStore.dismissErrorOverlay()
-}
-
-function seeErrors() {
-  canvasStore.linearMode = false
-  if (canvasStore.canvas) {
-    canvasStore.canvas.deselectAll()
-    canvasStore.updateSelectedItems()
-  }
-
-  rightSidePanelStore.openPanel('errors')
   executionErrorStore.dismissErrorOverlay()
 }
 </script>

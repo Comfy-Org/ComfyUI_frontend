@@ -1,0 +1,360 @@
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import InviteMembersForm from './InviteMembersForm.vue'
+
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+const {
+  mockCreateInvite,
+  mockFetchPendingInvites,
+  mockFetchStatus,
+  mockPendingInvites,
+  mockToastAdd,
+  mockTrackInviteSent,
+  mockTrackInviteFailed
+} = vi.hoisted(() => ({
+  mockCreateInvite: vi.fn(),
+  mockFetchPendingInvites: vi.fn(),
+  mockFetchStatus: vi.fn(),
+  mockPendingInvites: { value: [] as WorkspacePendingInvite[] },
+  mockToastAdd: vi.fn(),
+  mockTrackInviteSent: vi.fn(),
+  mockTrackInviteFailed: vi.fn()
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ fetchStatus: mockFetchStatus })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    createInvite: mockCreateInvite as (
+      email: string
+    ) => Promise<WorkspacePendingInvite>,
+    fetchPendingInvites: mockFetchPendingInvites,
+    get pendingInvites() {
+      return [...mockPendingInvites.value]
+    }
+  })
+}))
+
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({
+    add: mockToastAdd
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackWorkspaceInviteSent: mockTrackInviteSent,
+    trackWorkspaceInviteFailed: mockTrackInviteFailed
+  })
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function pendingInviteFor(email: string): WorkspacePendingInvite {
+  return {
+    id: `inv-${email}`,
+    email,
+    inviteDate: new Date(0),
+    expiryDate: new Date(0)
+  }
+}
+
+function renderForm(props: Record<string, unknown> = {}) {
+  const user = userEvent.setup()
+  const result = render(InviteMembersForm, {
+    props: {
+      submitLabel: 'Send invites',
+      placeholder: 'Enter emails',
+      source: 'post_upgrade_success',
+      ...props
+    },
+    global: { plugins: [i18n] }
+  })
+  return { ...result, user }
+}
+
+function emailInput() {
+  return screen.getByRole('textbox')
+}
+
+function submitButton() {
+  return screen.getByRole('button', { name: 'Send invites' })
+}
+
+describe('InviteMembersForm', () => {
+  beforeEach(() => {
+    mockPendingInvites.value = []
+    mockFetchPendingInvites.mockResolvedValue([...mockPendingInvites.value])
+    mockFetchStatus.mockResolvedValue(undefined)
+    mockCreateInvite.mockImplementation(async (email: string) =>
+      pendingInviteFor(email)
+    )
+  })
+
+  it('turns comma-, whitespace-, and enter-delimited input into chips', async () => {
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com ')
+    await user.type(emailInput(), 'c@d.com,')
+    await user.type(emailInput(), 'e@f.com{Enter}')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(screen.getByText('e@f.com')).toBeInTheDocument()
+  })
+
+  it('disables submit with no chips and flags invalid emails', async () => {
+    const { user } = renderForm()
+
+    expect(submitButton()).toBeDisabled()
+
+    await user.type(emailInput(), 'not-an-email{Enter}')
+
+    expect(screen.getByText('not-an-email')).toBeInTheDocument()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.invalidEmailCount')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+  })
+
+  it('creates an invite per email, tracks telemetry, and emits submitted', async () => {
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'A@B.com C@D.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    expect(mockCreateInvite).toHaveBeenCalledWith('a@b.com')
+    expect(mockCreateInvite).toHaveBeenCalledWith('c@d.com')
+    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+      source: 'post_upgrade_success',
+      count: 2
+    })
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
+  })
+
+  it('completes submission when the billing refresh fails', async () => {
+    const refreshError = new Error('refresh failed')
+    mockFetchStatus.mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
+    expect(submitButton()).toBeEnabled()
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+  })
+
+  it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
+    const refreshError = new Error('pending invites failed')
+    mockPendingInvites.value.push(pendingInviteFor('stale@example.com'))
+    mockFetchPendingInvites.mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'stale@example.com{Enter}')
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+
+    expect(
+      screen.queryByText(
+        'workspacePanel.inviteMemberDialog.pendingInviteSingle'
+      )
+    ).not.toBeInTheDocument()
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(emitted().submitted).toEqual([[['stale@example.com']]])
+    )
+  })
+
+  it('revalidates emails after pending invites finish loading', async () => {
+    let resolvePendingInvites: (
+      invites: WorkspacePendingInvite[]
+    ) => void = () => {}
+    mockFetchPendingInvites.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePendingInvites = resolve
+        })
+    )
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'valid@example.com{Enter}')
+    await user.click(submitButton())
+    await user.type(emailInput(), 'invalid{Enter}')
+    resolvePendingInvites([])
+
+    await waitFor(() =>
+      expect(submitButton()).toHaveAttribute('aria-busy', 'false')
+    )
+    expect(mockCreateInvite).not.toHaveBeenCalled()
+  })
+
+  it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
+    let shouldFail = true
+    mockCreateInvite.mockImplementation(async (email: string) => {
+      if (email === 'fail@x.com' && shouldFail) {
+        shouldFail = false
+        throw new Error('nope')
+      }
+      return pendingInviteFor(email)
+    })
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'ok@x.com fail@x.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    expect(screen.getByText('fail@x.com')).toBeInTheDocument()
+    expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(emitted().submitted).toBeUndefined()
+    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+      source: 'post_upgrade_success',
+      count: 1
+    })
+
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(3))
+    expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
+    expect(mockTrackInviteSent).toHaveBeenCalledTimes(2)
+    expect(mockTrackInviteSent).toHaveBeenLastCalledWith({
+      source: 'post_upgrade_success',
+      count: 1
+    })
+  })
+
+  it('keeps all chips, toasts, and emits nothing when every invite fails', async () => {
+    mockCreateInvite.mockRejectedValue(new Error('nope'))
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(emitted().submitted).toBeUndefined()
+    expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('keeps over-limit chips visible and blocks submission', async () => {
+    const { user } = renderForm({ maxSeats: 2 })
+
+    await user.type(emailInput(), 'a@b.com,b@b.com,c@b.com{Enter}')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('b@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@b.com')).toBeInTheDocument()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+  })
+
+  it('blocks submission while workspace occupancy is unresolved', async () => {
+    const { user } = renderForm({ maxSeats: 1, occupiedSeats: null })
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+
+    expect(submitButton()).toBeDisabled()
+    expect(
+      screen.queryByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).not.toBeInTheDocument()
+  })
+
+  it('disables submit when every email has a pending invite', async () => {
+    const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
+    mockPendingInvites.value.push(pendingInvite)
+    mockFetchPendingInvites.mockResolvedValueOnce([pendingInvite])
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'already@example.com{Enter}')
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteSingle')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+    expect(mockCreateInvite).not.toHaveBeenCalled()
+  })
+
+  it('skips pending invites and sends the rest of the batch', async () => {
+    const pendingInvites = [
+      pendingInviteFor('first@example.com'),
+      pendingInviteFor('second@example.com')
+    ]
+    mockPendingInvites.value.push(...pendingInvites)
+    mockFetchPendingInvites.mockResolvedValueOnce(pendingInvites)
+    const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
+
+    await user.type(
+      emailInput(),
+      'first@example.com,second@example.com,new@example.com{Enter}'
+    )
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteCount')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeEnabled()
+
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledOnce())
+    expect(mockCreateInvite).toHaveBeenCalledWith('new@example.com')
+    expect(emitted().submitted).toEqual([[['new@example.com']]])
+  })
+
+  it('caps unlimited workspaces to one invite batch', async () => {
+    const { user } = renderForm({ maxSeats: Number.POSITIVE_INFINITY })
+    const emails = Array.from(
+      { length: 31 },
+      (_, index) => `member${index + 1}@example.com`
+    )
+
+    await user.click(emailInput())
+    await user.paste(emails.join(','))
+
+    expect(screen.getByText('member30@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('member31@example.com')).not.toBeInTheDocument()
+  })
+
+  it('emits cancel when a cancel label is provided', async () => {
+    const { user, emitted } = renderForm({ cancelLabel: 'Cancel' })
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(emitted().cancel).toBeTruthy()
+    expect(mockCreateInvite).not.toHaveBeenCalled()
+  })
+
+  it('hides the built-in submit row when showSubmit is false', () => {
+    renderForm({ showSubmit: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Send invites' })
+    ).not.toBeInTheDocument()
+  })
+})

@@ -6,7 +6,7 @@
  * input key where the model name is inserted.
  *
  * An empty key ('') means the node auto-loads models without a widget
- * selector (createModelNodeFromAsset skips widget assignment).
+ * selector, so no widget value is assigned when the node is added.
  *
  * Hierarchical fallback is handled by the store: "a/b/c" tries
  * "a/b/c" → "a/b" → "a", so registering a parent directory covers
@@ -17,6 +17,17 @@
 export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   readonly [string, string, string]
 > = [
+  // Intentionally unmapped (widget values are model ids / HF repo ids, not
+  // asset filenames): rmbg, florence2, LLM/Qwen-VL/*, qwen-tts, diffusers
+  // (Kolors), BiRefNet, EVF-SAM, smol. onnx/human-parts has no assets.
+  // Also unmapped: segformer_b2_clothes, segformer_b3_clothes,
+  // segformer_b3_fashion, lama, layer_model, LLM/llava-llama-3-8b-*,
+  // LLM/Llama-3.2-3B-Instruct, LLM/Florence-2-large-PromptGen-v2.0
+  // (id widgets); sam3, sharp, BEN, BiRefNet/pth (node/widget names don't
+  // exist); depthanything, CogVideo/GGUF, checkpoints/dynamicrafter/*,
+  // transparent-background (asset names not accepted by the node's enum);
+  // interpolation, clip, onnx (empty or unreachable dirs).
+
   // ---- ComfyUI core loaders ----
   ['checkpoints', 'CheckpointLoaderSimple', 'ckpt_name'],
   ['checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name'],
@@ -33,7 +44,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['audio_encoders', 'AudioEncoderLoader', 'audio_encoder_name'],
   ['model_patches', 'ModelPatchLoader', 'name'],
   ['latent_upscale_models', 'LatentUpscaleModelLoader', 'model_name'],
-  ['clip', 'CLIPVisionLoader', 'clip_name'],
 
   // ---- AnimateDiff (comfyui-animatediff-evolved) ----
   ['animatediff_models', 'ADE_LoadAnimateDiffModel', 'model_name'],
@@ -49,20 +59,11 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
   ['sams', 'SAMLoader', 'model_name'],
 
-  // ---- SAM3 3D segmentation (comfyui-sam3) ----
-  ['sam3', 'LoadSAM3Model', 'model_path'],
-
-  // ---- DepthAnything (comfyui-depthanythingv2, comfyui-depthanythingv3) ----
-  ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
+  // ---- DepthAnything (comfyui-depthanythingv3) ----
   ['depthanything3', 'DownloadAndLoadDepthAnythingV3Model', 'model'],
 
   // ---- IP-Adapter (comfyui_ipadapter_plus) ----
   ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
-
-  // ---- Segformer (comfyui_layerstyle) ----
-  ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
-  ['segformer_b3_clothes', 'LS_LoadSegformerModel', 'model_name'],
-  ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name'],
 
   // ---- NLF pose estimation (ComfyUI-WanVideoWrapper) ----
   ['nlf', 'LoadNLFModel', 'nlf_model'],
@@ -74,27 +75,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- SEEDVR2 video upscaling (comfyui-seedvr2) ----
   ['SEEDVR2', 'SeedVR2LoadDiTModel', 'model'],
 
-  // ---- Qwen VL vision-language (comfyui-qwen-vl) ----
-  ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-0.6B', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
-  [
-    'LLM/Qwen-VL/Qwen3-4B-Instruct-2507',
-    'AILab_QwenVL_PromptEnhancer',
-    'model_name'
-  ],
+  // ---- ChatGLM3 text encoder ----
   ['LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint'],
-
-  // ---- Qwen3 TTS (ComfyUI-FunBox) ----
-  ['qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice'],
 
   // ---- LivePortrait (comfyui-liveportrait) ----
   ['liveportrait', 'DownloadAndLoadLivePortraitModels', ''],
@@ -106,89 +88,27 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- Face parsing (comfyui_face_parsing) ----
   ['face_parsing', 'FaceParsingModelLoader(FaceParsing)', ''],
 
-  // ---- Kolors (ComfyUI-KolorsWrapper) ----
-  ['diffusers', 'DownloadAndLoadKolorsModel', 'model'],
-
   // ---- RIFE video frame interpolation (ComfyUI-RIFE) ----
   ['rife', 'RIFE VFI', 'ckpt_name'],
 
   // ---- UltraShape 3D model generation ----
   ['UltraShape', 'UltraShapeLoadModel', 'checkpoint'],
 
-  // ---- SHaRP depth estimation ----
-  ['sharp', 'LoadSharpModel', 'checkpoint_path'],
-
-  // ---- ONNX upscale models ----
-  ['onnx', 'UpscaleModelLoader', 'model_name'],
-
   // ---- Detection models (vitpose, yolo) ----
   ['detection', 'OnnxDetectionModelLoader', 'yolo_model'],
 
-  // ---- HunyuanVideo text encoders (ComfyUI-HunyuanVideoWrapper) ----
-  [
-    'LLM/llava-llama-3-8b-text-encoder-tokenizer',
-    'DownloadAndLoadHyVideoTextEncoder',
-    'llm_model'
-  ],
-  [
-    'LLM/llava-llama-3-8b-v1_1-transformers',
-    'DownloadAndLoadHyVideoTextEncoder',
-    'llm_model'
-  ],
-
   // ---- CogVideoX (comfyui-cogvideoxwrapper) ----
   ['CogVideo', 'DownloadAndLoadCogVideoModel', ''],
-  ['CogVideo/GGUF', 'DownloadAndLoadCogVideoGGUFModel', 'model'],
   ['CogVideo/ControlNet', 'DownloadAndLoadCogVideoControlNet', ''],
 
   // ---- DynamiCrafter (ComfyUI-DynamiCrafterWrapper) ----
-  ['checkpoints/dynamicrafter', 'DownloadAndLoadDynamiCrafterModel', 'model'],
-  [
-    'checkpoints/dynamicrafter/controlnet',
-    'DownloadAndLoadDynamiCrafterCNModel',
-    'model'
-  ],
-
-  // ---- LayerStyle (ComfyUI_LayerStyle_Advance) ----
-  ['BEN', 'LS_LoadBenModel', 'model'],
-  ['BiRefNet/pth', 'LS_LoadBiRefNetModel', 'model'],
-  ['onnx/human-parts', 'LS_HumanPartsUltra', ''],
-  ['lama', 'LaMa', 'lama_model'],
+  ['checkpoints', 'DynamiCrafterModelLoader', 'ckpt_name'],
+  ['controlnet', 'DynamiCrafterCNLoader', 'ckpt_name'],
 
   // ---- Inpaint (comfyui-inpaint-nodes) ----
   ['inpaint', 'INPAINT_LoadInpaintModel', 'model_name'],
-
-  // ---- LayerDiffuse (comfyui-layerdiffuse) ----
-  ['layer_model', 'LayeredDiffusionApply', 'config'],
-
-  // ---- LTX Video prompt enhancer (ComfyUI-LTXTricks) ----
-  ['LLM/Llama-3.2-3B-Instruct', 'LTXVPromptEnhancerLoader', 'llm_name'],
-  [
-    'LLM/Florence-2-large-PromptGen-v2.0',
-    'LTXVPromptEnhancerLoader',
-    'image_captioner_name'
-  ],
-
-  // ---- BiRefNet background removal (comfyui_layerstyle) ----
-  ['BiRefNet', 'LayerMask: LoadBiRefNetModelV2', 'version'],
-
-  // ---- EVF-SAM segmentation (comfyui_layerstyle) ----
-  ['EVF-SAM', 'LayerMask: EVFSAMUltra', 'model'],
-
-  // ---- Florence2 vision-language (comfyui-florence2) ----
-  ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
-
-  // ---- GIMM-VFI frame interpolation (ComfyUI-GIMM-VFI) ----
-  ['interpolation', 'DownloadAndLoadGIMMVFIModel', 'model'],
-
-  // ---- RMBG background removal (comfyui-rmbg) ----
-  ['rmbg', 'RMBG', 'model'],
-
-  // ---- SmolLM2/SmolVLM language models (comfyui_layerstyle) ----
-  ['smol', 'LayerUtility: LoadSmolLM2Model', 'model'],
-
-  // ---- Transparent background removal (comfyui_layerstyle) ----
-  ['transparent-background', 'LayerMask: TransparentBackgroundUltra', 'model'],
+  ['inpaint', 'INPAINT_LoadFooocusInpaint', 'head'],
+  ['inpaint', 'INPAINT_LoadFooocusInpaint', 'patch'],
 
   // ---- YOLO object detection (comfyui_layerstyle) ----
   ['yolo', 'LayerMask: ObjectDetectorYOLO8', 'yolo_model'],
@@ -209,6 +129,31 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['film', 'FILM VFI', 'ckpt_name'],
 
   // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
-  ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name']
+  // Intentionally NOT mapped to the asset-picker. The cloud asset-ingestion
+  // metadata for nested model folders (`ultralytics/bbox`, `ultralytics/segm`)
+  // still has the two known half-bugs described in #12075:
+  //   1. Tag lookup mismatch (cloud stores combined tags, picker queries split).
+  //   2. Submitted value mismatch (picker returns basenames, ingest expects
+  //      subdirectory-prefixed `bbox/<file>` / `segm/<file>`).
+  // PR #12151 re-added the bbox/segm entries before either half was fixed,
+  // reintroducing the FaceDetailer breakage. Until BE-689 lands the cloud-side
+  // fixes, leave these disabled so the node falls back to the static combo
+  // populated from `/api/object_info`.
+  // ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+  // ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+
+  // ---- Mel-Band RoFormer audio separation (ComfyUI-MelBandRoFormer) ----
+  ['diffusion_models', 'MelBandRoFormerModelLoader', 'model_name'],
+
+  // ---- ComfyUI core geometry estimation (MoGe) ----
+  ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
+
+  // ---- ComfyUI core optical flow (RAFT) ----
+  ['optical_flow', 'OpticalFlowLoader', 'model_name'],
+
+  // ---- WanVideo (ComfyUI-WanVideoWrapper) ----
+  ['loras', 'WanVideoLoraSelect', 'lora'],
+
+  // ---- LTX-Video IC-LoRA (ComfyUI-LTXVideo) ----
+  ['loras', 'LTXICLoRALoaderModelOnly', 'lora_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

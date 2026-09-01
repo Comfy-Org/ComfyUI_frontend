@@ -152,10 +152,32 @@ async function loadAudioUploadWidget() {
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     capturedDragDrop = undefined
     capturedFileSelect = undefined
     capturedPaste = undefined
+  })
+
+  it('does not preview an empty audio option', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { audioWidget, node } = createAudioNode()
+    audioWidget.value = 'none'
+    audioWidget.options.values = ['none']
+
+    AUDIOUPLOAD(node, 'upload')
+
+    expect(mockApiURL).not.toHaveBeenCalled()
+
+    audioWidget.value = ''
+    audioWidget.options.values = []
+    audioWidget.callback()
+    expect(mockApiURL).not.toHaveBeenCalled()
+
+    audioWidget.value = 'none'
+    audioWidget.options.values = ['none', 'other.mp3']
+    audioWidget.callback()
+    expect(mockApiURL).toHaveBeenCalledWith(
+      '/view?filename=none&subfolder=&type=input'
+    )
   })
 
   it('sets isUploading while upload is in progress and clears it after success', async () => {
@@ -244,5 +266,39 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(result).toEqual([])
     expect(node.isUploading).toBe(false)
     expect(mockFetchApi).not.toHaveBeenCalled()
+  })
+})
+
+type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
+
+async function loadAudioUIWidget() {
+  vi.resetModules()
+  mockRegisterExtension.mockClear()
+  await import('./uploadAudio')
+  const extension = mockRegisterExtension.mock.calls
+    .map(([extension]) => extension as ComfyExtension)
+    .find((extension) => extension.name === 'Comfy.AudioWidget')
+  if (!extension)
+    throw new Error('Comfy.AudioWidget extension was not registered')
+  const widgets = await extension.getCustomWidgets!(fromAny({}))
+  return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
+}
+
+describe('Comfy.AudioWidget AUDIO_UI widget', () => {
+  it('excludes the audio player from workflow and prompt serialization', async () => {
+    const AUDIO_UI = await loadAudioUIWidget()
+    const domWidget = {
+      serialize: true,
+      options: {} as Record<string, unknown>
+    }
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => domWidget),
+      constructor: { nodeData: { output_node: false } }
+    })
+
+    AUDIO_UI(node, 'audioUI')
+
+    expect(domWidget.serialize).toBe(false)
+    expect(domWidget.options.serialize).toBe(false)
   })
 })

@@ -74,7 +74,7 @@ useHeroAnimation({
     </div>
 
     <!-- Video -->
-    <div ref="videoRef" class="px-4 pb-20 lg:px-20 lg:pb-40">
+    <div ref="videoRef" class="max-w-9xl mx-auto px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
         poster="https://media.comfy.org/website/about/co-founders-poster.webp"

@@ -3,7 +3,8 @@
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
-        class="workflow-tab group flex gap-2 p-2"
+        data-testid="workflow-tab"
+        class="workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -16,25 +17,57 @@
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
-          class="workflow-label inline-block max-w-[150px] truncate text-sm"
+          class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
         >
           {{ workflowOption.workflow.filename }}
         </span>
-        <div class="relative">
+        <div class="relative size-4 shrink-0">
+          <i
+            v-if="isAgentEditing"
+            role="img"
+            :aria-label="t('g.agentWorking')"
+            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover:hidden motion-safe:animate-spin"
+          />
           <span
-            v-if="shouldShowStatusIndicator"
+            v-else-if="showUnseenAgentDot"
+            role="img"
+            :aria-label="t('g.agentModified')"
+            data-testid="agent-modified-indicator"
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
+          />
+          <i
+            v-else-if="workflowStatus"
+            role="img"
+            :aria-label="workflowStatusLabel"
+            :class="
+              cn(
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                workflowStatusIconClasses[workflowStatus]
+              )
+            "
+          />
+          <span
+            v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
-            >•</span
-          >
+            :class="
+              cn(
+                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden',
+                isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
+              )
+            "
+          />
           <Button
-            class="close-button invisible w-auto p-0"
+            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
             variant="muted-textonly"
-            size="icon-sm"
+            size="unset"
             :aria-label="t('g.close')"
+            data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
-            <i class="pi pi-times" />
+            <i
+              data-testid="close-workflow-icon"
+              class="icon-[lucide--x] size-4"
+            />
           </Button>
         </div>
       </div>
@@ -85,10 +118,19 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
+import type { WorkflowExecutionStatus } from '@/stores/executionStore'
+import {
+  useExecutionStore,
+  WORKFLOW_STATUS_I18N_KEYS
+} from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
+
+defineOptions({ inheritAttrs: false })
 
 interface WorkflowOption {
   value: string
@@ -113,6 +155,7 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
+const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
 const workflowThumbnail = useWorkflowThumbnail()
@@ -125,7 +168,7 @@ const autoSaveDelay = computed(() =>
   settingStore.get('Comfy.Workflow.AutoSaveDelay')
 )
 
-const shouldShowStatusIndicator = computed(() => {
+const shouldShowUnsavedIndicator = computed(() => {
   if (workspaceStore.shiftDown) {
     // Branch 1: Shift key is held down, do not show the status indicator.
     return false
@@ -157,8 +200,42 @@ const isBuilderState = computed(() => {
 })
 
 const isActiveTab = computed(() => {
-  return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
+  return workflowStore.isActive(props.workflowOption.workflow)
 })
+
+const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
+  running:
+    'text-base-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
+  completed: 'icon-[lucide--circle-check] text-success-background',
+  failed: 'icon-[lucide--octagon-alert] text-destructive-background'
+}
+
+const tabActivity = useWorkflowTabActivityStore()
+
+const isAgentEditing = computed(
+  () => tabActivity.editingTabPath === props.workflowOption.workflow.path
+)
+
+// The active tab doesn't badge its own status - the user is already looking
+// at it. Background tabs surface the recorded execution status.
+const workflowStatus = computed(() =>
+  isActiveTab.value
+    ? undefined
+    : executionStore.getWorkflowStatus(props.workflowOption.workflow)
+)
+
+// A failed run outranks the unseen-changes dot so the failure isn't masked.
+const showUnseenAgentDot = computed(
+  () =>
+    tabActivity.unseenModifiedPaths.has(props.workflowOption.workflow.path) &&
+    workflowStatus.value !== 'failed'
+)
+
+const workflowStatusLabel = computed(() =>
+  workflowStatus.value
+    ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
+    : undefined
+)
 
 const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
@@ -189,7 +266,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
         hint: t('sideToolbar.workflowTab.dirtyCloseHint')
       }))
     ) {
-      // User clicked cancel
+      // User cancelled, or the replacement load failed
       break
     }
   }

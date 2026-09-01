@@ -4,11 +4,23 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
+import { zeroUuid } from '@/utils/uuid'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
-import type { LGraphNode, NodeId } from './LGraphNode'
-import type { Reroute, RerouteId } from './Reroute'
+import type { EndpointPatch } from '@/stores/linkStore'
+import type { LinkId } from '@/types/linkId'
+import type { LinkTopology } from '@/types/linkTopology'
+import type { RerouteId } from '@/types/rerouteId'
+import type { LGraph } from './LGraph'
+import type { LGraphNode } from './LGraphNode'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { Reroute } from './Reroute'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -20,19 +32,42 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
+import { toRaw } from 'vue'
 
-const layoutMutations = useLayoutMutations()
-
-export type LinkId = number
-
+export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [
-  id: LinkId,
-  origin_id: NodeId,
+  id: number,
+  origin_id: SerializedNodeId,
   origin_slot: number,
-  target_id: NodeId,
+  target_id: SerializedNodeId,
   target_slot: number,
   type: ISlotType
 ]
+
+const linkByTopology = new WeakMap<LinkTopology, LLink>()
+
+let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
+
+export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
+  return linkByTopology.get(toRaw(topology))
+}
+
+function defineEnumerableTopologyFacade(link: LLink): void {
+  topologyFacadeDescriptors ??= [
+    'id',
+    'type',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'parentId'
+  ].reduce<PropertyDescriptorMap>((descriptors, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
+    if (descriptor) descriptors[key] = { ...descriptor, enumerable: true }
+    return descriptors
+  }, {})
+  Object.defineProperties(link, topologyFacadeDescriptors)
+}
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
 export type ResolvedConnection = BaseResolvedConnection &
@@ -92,18 +127,96 @@ type BasicReadonlyNetwork = Pick<
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
+  /**
+   * The link's topology state. Once registered with {@link useLinkStore},
+   * this is the store's reactive proxy, so field writes are tracked.
+   */
+  _state: LinkTopology
+
+  /** The graph this link is registered with in {@link useLinkStore}, if any. */
+  _graphScope?: GraphScope
+
   /** Link ID */
-  id: LinkId
-  parentId?: RerouteId
-  type: ISlotType
+  get id() {
+    return this._state.id
+  }
+
+  set id(value: LinkId) {
+    if (this._graphScope) {
+      if (value !== this._state.id) {
+        console.error('LiteGraph: refusing to change a registered link id')
+      }
+      return
+    }
+    Object.assign(this._state, { id: value })
+  }
+
+  get type() {
+    return this._state.type
+  }
+
+  set type(value: ISlotType) {
+    this._state.type = value
+  }
+
   /** Output node ID */
-  origin_id: NodeId
+  get origin_id() {
+    return this._state.originNodeId
+  }
+
+  set origin_id(value: NodeId) {
+    this.updateEndpoints({ originNodeId: value })
+  }
+
   /** Output slot index */
-  origin_slot: number
+  get origin_slot() {
+    return this._state.originSlot
+  }
+
+  set origin_slot(value: number) {
+    this.updateEndpoints({ originSlot: value })
+  }
+
   /** Input node ID */
-  target_id: NodeId
+  get target_id() {
+    return this._state.targetNodeId
+  }
+
+  set target_id(value: NodeId) {
+    this.updateEndpoints({ targetNodeId: value })
+  }
+
   /** Input slot index */
-  target_slot: number
+  get target_slot() {
+    return this._state.targetSlot
+  }
+
+  set target_slot(value: number) {
+    this.updateEndpoints({ targetSlot: value })
+  }
+
+  updateEndpoints(patch: EndpointPatch): void {
+    if (!this._graphScope) {
+      Object.assign(this._state, patch)
+      return
+    }
+
+    const result = useLinkStore().updateEndpoint(
+      this._graphScope,
+      this._state,
+      patch
+    )
+    if (!result.ok)
+      console.error('Failed to update link endpoints', result.error)
+  }
+
+  get parentId() {
+    return this._state.parentId
+  }
+
+  set parentId(value: RerouteId | undefined) {
+    this._state.parentId = value
+  }
 
   data?: number | string | boolean | { toToolTip?(): string }
   _data?: unknown
@@ -130,11 +243,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   public get isFloatingOutput(): boolean {
-    return this.origin_id === -1 && this.origin_slot === -1
+    return this.origin_id === UNASSIGNED_NODE_ID && this.origin_slot === -1
   }
 
   public get isFloatingInput(): boolean {
-    return this.target_id === -1 && this.target_slot === -1
+    return this.target_id === UNASSIGNED_NODE_ID && this.target_slot === -1
   }
 
   public get isFloating(): boolean {
@@ -154,28 +267,37 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   constructor(
     id: LinkId,
     type: ISlotType,
-    origin_id: NodeId,
+    origin_id: SerializedNodeId,
     origin_slot: number,
-    target_id: NodeId,
+    target_id: SerializedNodeId,
     target_slot: number,
     parentId?: RerouteId
   ) {
-    this.id = id
-    this.type = type
-    this.origin_id = origin_id
-    this.origin_slot = origin_slot
-    this.target_id = target_id
-    this.target_slot = target_slot
-    this.parentId = parentId
-
+    this._state = {
+      id,
+      graphId: toOwningGraphId(zeroUuid),
+      type,
+      originNodeId: toNodeId(origin_id),
+      originSlot: origin_slot,
+      targetNodeId: toNodeId(target_id),
+      targetSlot: target_slot,
+      parentId
+    }
     this._data = null
-    // center
     this._pos = [0, 0]
+    defineEnumerableTopologyFacade(this)
   }
 
   /** @deprecated Use {@link LLink.create} */
   static createFromArray(data: SerialisedLLinkArray): LLink {
-    return new LLink(data[0], data[5], data[1], data[2], data[3], data[4])
+    return new LLink(
+      toLinkId(data[0]),
+      data[5],
+      data[1],
+      data[2],
+      data[3],
+      data[4]
+    )
   }
 
   /**
@@ -185,13 +307,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   static create(data: SerialisableLLink): LLink {
     return new LLink(
-      data.id,
+      toLinkId(data.id),
       data.type,
       data.origin_id,
       data.origin_slot,
       data.target_id,
       data.target_slot,
-      data.parentId
+      data.parentId === undefined ? undefined : toRerouteId(data.parentId)
     )
   }
 
@@ -308,7 +430,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   resolve(network: BasicReadonlyNetwork): ResolvedConnection {
     const inputNode =
-      this.target_id === -1
+      this.target_id === UNASSIGNED_NODE_ID
         ? undefined
         : (network.getNodeById(this.target_id) ?? undefined)
     const input = inputNode?.inputs[this.target_slot]
@@ -320,7 +442,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     }
 
     const outputNode =
-      this.origin_id === -1
+      this.origin_id === UNASSIGNED_NODE_ID
         ? undefined
         : (network.getNodeById(this.origin_id) ?? undefined)
     const output = outputNode?.outputs[this.origin_slot]
@@ -350,19 +472,23 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
-      this.id = o[0]
-      this.origin_id = o[1]
-      this.origin_slot = o[2]
-      this.target_id = o[3]
-      this.target_slot = o[4]
+      this.id = toLinkId(o[0])
+      this.updateEndpoints({
+        originNodeId: toNodeId(o[1]),
+        originSlot: o[2],
+        targetNodeId: toNodeId(o[3]),
+        targetSlot: o[4]
+      })
       this.type = o[5]
     } else {
       this.id = o.id
       this.type = o.type
-      this.origin_id = o.origin_id
-      this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
-      this.target_slot = o.target_slot
+      this.updateEndpoints({
+        originNodeId: o.origin_id,
+        originSlot: o.origin_slot,
+        targetNodeId: o.target_id,
+        targetSlot: o.target_slot
+      })
       this.parentId = o.parentId
     }
   }
@@ -373,8 +499,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param outputIndex The array index of the node output
    * @returns `true` if the origin matches, otherwise `false`.
    */
-  hasOrigin(nodeId: NodeId, outputIndex: number): boolean {
-    return this.origin_id === nodeId && this.origin_slot === outputIndex
+  hasOrigin(nodeId: SerializedNodeId, outputIndex: number): boolean {
+    return (
+      this.origin_id === toNodeId(nodeId) && this.origin_slot === outputIndex
+    )
   }
 
   /**
@@ -383,8 +511,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param inputIndex The array index of the node input
    * @returns `true` if the target matches, otherwise `false`.
    */
-  hasTarget(nodeId: NodeId, inputIndex: number): boolean {
-    return this.target_id === nodeId && this.target_slot === inputIndex
+  hasTarget(nodeId: SerializedNodeId, inputIndex: number): boolean {
+    return (
+      this.target_id === toNodeId(nodeId) && this.target_slot === inputIndex
+    )
   }
 
   /**
@@ -395,14 +525,14 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   toFloating(slotType: 'input' | 'output', parentId: RerouteId): LLink {
     const exported = this.asSerialisable()
-    exported.id = -1
+    exported.id = toLinkId(-1)
     exported.parentId = parentId
 
     if (slotType === 'input') {
-      exported.origin_id = -1
+      exported.origin_id = UNASSIGNED_NODE_ID
       exported.origin_slot = -1
     } else {
-      exported.target_id = -1
+      exported.target_id = UNASSIGNED_NODE_ID
       exported.target_slot = -1
     }
 
@@ -423,21 +553,23 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     // When floating from output, 1-to-1 ratio of floating link to final reroute (tree-like)
     const outputFloating =
       keepReroutes === 'output' &&
-      lastReroute?.linkIds.size === 1 &&
+      lastReroute !== undefined &&
+      (lastReroute.linkIds.size === 0 ||
+        (lastReroute.linkIds.size === 1 && lastReroute.linkIds.has(this.id))) &&
       lastReroute.floatingLinkIds.size === 0
 
     // When floating from inputs, the final (input side) reroute may have many floating links
     if (outputFloating || (keepReroutes === 'input' && lastReroute)) {
       const newLink = LLink.create(this)
-      newLink.id = -1
+      newLink.id = toLinkId(-1)
 
       if (keepReroutes === 'input') {
-        newLink.origin_id = -1
+        newLink.origin_id = UNASSIGNED_NODE_ID
         newLink.origin_slot = -1
 
         lastReroute.floating = { slotType: 'input' }
       } else {
-        newLink.target_id = -1
+        newLink.target_id = UNASSIGNED_NODE_ID
         newLink.target_slot = -1
 
         lastReroute.floating = { slotType: 'output' }
@@ -446,19 +578,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       network.addFloatingLink(newLink)
     }
 
+    if (network.links.get(this.id) === this) network.links.delete(this.id)
+    unregisterLinkTopology(this)
+    layoutStore.deleteLinkLayout(this.id)
+
     for (const reroute of reroutes) {
-      reroute.linkIds.delete(this.id)
       if (!keepReroutes && !reroute.totalLinks) {
-        network.reroutes.delete(reroute.id)
-        // Delete reroute from Layout Store
-        layoutMutations.setSource(LayoutSource.Canvas)
-        layoutMutations.deleteReroute(reroute.id)
+        network._removeReroute(reroute.id)
       }
     }
-    network.links.delete(this.id)
-    // Delete link from Layout Store
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteLink(this.id)
   }
 
   /**
@@ -468,9 +596,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   serialize(): SerialisedLLinkArray {
     return [
       this.id,
-      this.origin_id,
+      serializeNodeId(this.origin_id),
       this.origin_slot,
-      this.target_id,
+      serializeNodeId(this.target_id),
       this.target_slot,
       this.type
     ]
@@ -479,13 +607,124 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   asSerialisable(): SerialisableLLink {
     const copy: SerialisableLLink = {
       id: this.id,
-      origin_id: this.origin_id,
+      origin_id: serializeNodeId(this.origin_id),
       origin_slot: this.origin_slot,
-      target_id: this.target_id,
+      target_id: serializeNodeId(this.target_id),
       target_slot: this.target_slot,
       type: this.type
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
     return copy
+  }
+}
+
+/**
+ * Finds the floating links attached to a slot. A floating link has exactly
+ * one assigned endpoint, so its attachment is fully encoded in its own
+ * origin/target fields; nothing is stored on the slot.
+ * @param network The network whose floating links to search
+ * @param side Which side of the slot's node the links attach to
+ * @param nodeId The node (or subgraph IO node id) owning the slot
+ * @param slot The slot index
+ */
+export function slotFloatingLinks(
+  network: Pick<ReadonlyLinkNetwork, 'floatingLinks'>,
+  side: 'input' | 'output',
+  nodeId: NodeId,
+  slot: number
+): LLink[] {
+  const result: LLink[] = []
+  for (const link of network.floatingLinks.values()) {
+    const attached =
+      side === 'input'
+        ? link.target_id === nodeId && link.target_slot === slot
+        : link.origin_id === nodeId && link.origin_slot === slot
+    if (attached) result.push(link)
+  }
+  return result
+}
+
+/**
+ * Registers a link's topology into {@link useLinkStore} and adopts the
+ * store's reactive proxy as {@link LLink._state}, so the store and the link
+ * always agree and field writes are tracked.  Call this at every site that
+ * adds a link to a graph's link map (or floating link map).
+ *
+ * {@link LLink._graphScope} is only set when the store keeps this link's state:
+ * a link that loses a first-wins id collision stays detached, so its writes
+ * and removal cannot corrupt the winner's registration.
+ * @param graph The graph (or subgraph) the link belongs to
+ * @param link The link to register
+ */
+export function registerLinkTopology(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  link: LLink
+): boolean {
+  if (link.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().registerLink(scope, link._state)
+  if (!registered) return false
+  adoptLinkTopology(link, scope, registered)
+  return true
+}
+
+export function replaceLinkTopology(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  incumbent: LLink | undefined,
+  replacement: LLink
+): boolean {
+  if (replacement.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().replaceLink(
+    scope,
+    incumbent?._state,
+    replacement._state
+  )
+  if (!registered) return false
+  if (incumbent) {
+    linkByTopology.delete(toRaw(incumbent._state))
+    incumbent._graphScope = undefined
+  }
+  adoptLinkTopology(replacement, scope, registered)
+  return true
+}
+
+function adoptLinkTopology(
+  link: LLink,
+  scope: GraphScope,
+  registered: LinkTopology
+): void {
+  link._state = registered
+  link._graphScope = scope
+  linkByTopology.set(toRaw(registered), link)
+}
+
+/**
+ * Removes a link's topology from {@link useLinkStore} and detaches the link.
+ * No-op for links that never won registration ({@link LLink._graphScope} unset),
+ * so a first-wins collision loser cannot remove the winner's entry.
+ * @param link The link to unregister
+ */
+export function unregisterLinkTopology(link: LLink): void {
+  if (!link._graphScope) return
+  useLinkStore().deleteLink(link._graphScope, link._state)
+  linkByTopology.delete(toRaw(link._state))
+  link._graphScope = undefined
+}
+
+/**
+ * Unregisters every link and floating link a graph owns. Used when a graph's
+ * links leave the store without a whole-bucket wipe: subgraph-definition
+ * removal, and clearing a graph that shares its bucket with other graphs.
+ * @param graph The graph whose links should be unregistered
+ */
+export function unregisterAllLinkTopologies(
+  graph: Pick<LGraph, 'links' | 'floatingLinks'>
+): void {
+  for (const link of [
+    ...graph.links.values(),
+    ...graph.floatingLinks.values()
+  ]) {
+    unregisterLinkTopology(link)
   }
 }

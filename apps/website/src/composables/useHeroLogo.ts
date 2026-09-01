@@ -22,6 +22,12 @@ interface HeroLogoConfig {
   cursorTiltStrength: number
   bgScale: number
   slideDuration: number
+  svgMarkup: string
+  fitAxis: 'width' | 'height'
+  targetSize: number
+  respectReducedMotion: boolean
+  baseUrl: string
+  fadeInDurationMs: number
 }
 
 const DEFAULTS: HeroLogoConfig = {
@@ -34,19 +40,25 @@ const DEFAULTS: HeroLogoConfig = {
   extrudeDepth: 200,
   cursorTiltStrength: 0.5,
   bgScale: 0.8,
-  slideDuration: 0.4
+  slideDuration: 0.4,
+  svgMarkup: SVG_MARKUP,
+  fitAxis: 'height',
+  targetSize: 3,
+  respectReducedMotion: true,
+  baseUrl: BASE_URL,
+  fadeInDurationMs: 0
 }
 
-function buildImageUrls(): string[] {
+function buildImageUrls(baseUrl: string): string[] {
   return Array.from({ length: IMAGE_COUNT }, (_, i) => {
     const index = String(i).padStart(5, '0')
-    return `${BASE_URL}/image_sequence_${index}.webp`
+    return `${baseUrl}/image_sequence_${index}.webp`
   })
 }
 
-function parseShapes(): THREE.Shape[] {
+function parseShapes(markup: string): THREE.Shape[] {
   const loader = new SVGLoader()
-  const svgData = loader.parse(SVG_MARKUP)
+  const svgData = loader.parse(markup)
   const shapes: THREE.Shape[] = []
   svgData.paths.forEach((path) => {
     shapes.push(...SVGLoader.createShapes(path))
@@ -85,7 +97,8 @@ export function useHeroLogo(
   onMounted(async () => {
     try {
       const container = containerRef.value
-      if (!container || prefersReducedMotion()) return
+      if (!container || (cfg.respectReducedMotion && prefersReducedMotion()))
+        return
 
       const { width, height } = container.getBoundingClientRect()
 
@@ -102,6 +115,9 @@ export function useHeroLogo(
       renderer.domElement.style.width = '100%'
       renderer.domElement.style.height = '100%'
       renderer.domElement.style.opacity = '0'
+      if (cfg.fadeInDurationMs > 0) {
+        renderer.domElement.style.transition = `opacity ${cfg.fadeInDurationMs}ms ease`
+      }
       renderer.domElement.setAttribute('aria-hidden', 'true')
       container.appendChild(renderer.domElement)
 
@@ -126,24 +142,36 @@ export function useHeroLogo(
       camera.position.z = cfg.zoom
 
       // SVG shape
-      const shapes = parseShapes()
+      const shapes = parseShapes(cfg.svgMarkup)
       const tempGeo = new THREE.ShapeGeometry(shapes)
       tempGeo.computeBoundingBox()
-      const bb = tempGeo.boundingBox!
+      const bb = tempGeo.boundingBox
+      if (!bb) {
+        tempGeo.dispose()
+        cleanup?.()
+        return
+      }
       const cx = (bb.max.x + bb.min.x) / 2
       const cy = (bb.max.y + bb.min.y) / 2
-      const scaleFactor = 3 / (bb.max.y - bb.min.y)
+      const fitExtent =
+        cfg.fitAxis === 'width' ? bb.max.x - bb.min.x : bb.max.y - bb.min.y
+      if (fitExtent <= 0) {
+        tempGeo.dispose()
+        cleanup?.()
+        return
+      }
+      const scaleFactor = cfg.targetSize / fitExtent
       tempGeo.dispose()
 
       // Image sequence textures — load first frame eagerly, rest lazily
-      const urls = buildImageUrls()
+      const urls = buildImageUrls(cfg.baseUrl)
       const textures = await loadTextures(urls.slice(0, 1))
       if (disposed) return
 
       renderer.domElement.style.opacity = '1'
       loaded.value = true
 
-      loadTextures(urls.slice(1)).then((rest) => {
+      void loadTextures(urls.slice(1)).then((rest) => {
         if (!disposed) textures.push(...rest)
       })
 

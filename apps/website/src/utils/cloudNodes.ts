@@ -6,19 +6,22 @@ import {
   validateComfyNodeDef
 } from '@comfyorg/object-info-parser'
 
-import type { RegistryPack } from './cloudNodes.registry'
+import type {
+  RegistryComfyNode,
+  RegistryPackWithNodes
+} from './cloudNodes.registry'
 import type { NodesSnapshot, Pack, PackNode } from '../data/cloudNodes'
 
 import bundledSnapshot from '../data/cloud-nodes.snapshot.json' with { type: 'json' }
 import { isNodesSnapshot } from '../data/cloudNodes'
-import { fetchRegistryPacks } from './cloudNodes.registry'
+import { fetchRegistryPacksWithNodes } from './cloudNodes.registry'
 import { CloudNodesEnvelopeSchema } from './cloudNodes.schema'
 
 const DEFAULT_BASE_URL = 'https://cloud.comfy.org'
 const DEFAULT_TIMEOUT_MS = 10_000
 const RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
-export interface DroppedNode {
+interface DroppedNode {
   name: string
   reason: string
 }
@@ -235,26 +238,28 @@ async function parseCloudNodes(
   const sanitizedDefs = sanitizeUserContent(
     validDefs as Record<string, NonNullable<(typeof validDefs)[string]>>
   )
-  const grouped = groupNodesByPack(sanitizedDefs)
 
-  let registryMap = new Map<string, RegistryPack | null>()
+  // Use object_info to determine which packs are cloud-supported
+  const grouped = groupNodesByPack(sanitizedDefs)
+  const packIds = grouped.map((pack) => pack.id)
+
+  // Fetch full pack metadata and node list from registry
+  let registryMap = new Map<string, RegistryPackWithNodes | null>()
   try {
-    registryMap = await fetchRegistryPacks(
-      grouped.map((pack) => pack.id),
-      { fetchImpl: options.fetchImpl }
-    )
+    registryMap = await fetchRegistryPacksWithNodes(packIds, {
+      fetchImpl: options.fetchImpl
+    })
   } catch {
     registryMap = new Map()
   }
 
-  const packs = grouped.map((pack) =>
-    toDomainPack(
-      pack.id,
-      pack.displayName,
-      pack.nodes,
-      registryMap.get(pack.id)
-    )
-  )
+  const packs = grouped
+    .map((pack) => {
+      const registryData = registryMap.get(pack.id)
+      // Use registry nodes if available, otherwise fall back to object_info nodes
+      return toDomainPack(pack.id, pack.displayName, pack.nodes, registryData)
+    })
+    .filter((pack) => pack.nodes.length > 0)
 
   return { kind: 'ok', packs, droppedNodes }
 }
@@ -274,7 +279,7 @@ function safeExternalUrl(value: string | undefined): string | undefined {
 function toDomainPack(
   packId: string,
   fallbackDisplayName: string,
-  nodes: Array<{
+  objectInfoNodes: Array<{
     className: string
     def: {
       display_name: string
@@ -284,8 +289,18 @@ function toDomainPack(
       experimental?: boolean
     }
   }>,
-  registryPack: RegistryPack | null | undefined
+  registryData: RegistryPackWithNodes | null | undefined
 ): Pack {
+  const registryPack = registryData?.pack
+
+  // Prefer registry nodes if available, fall back to object_info nodes
+  const nodes =
+    registryData?.nodes && registryData.nodes.length > 0
+      ? registryData.nodes
+          .map((node) => toDomainNodeFromRegistry(node))
+          .filter((n): n is PackNode => n !== null)
+      : objectInfoNodes.map((node) => toDomainNode(node.className, node.def))
+
   return {
     id: packId,
     registryId: registryPack?.id,
@@ -308,9 +323,20 @@ function toDomainPack(
       registryPack?.latest_version?.createdAt ?? registryPack?.created_at,
     supportedOs: registryPack?.supported_os,
     supportedAccelerators: registryPack?.supported_accelerators,
-    nodes: nodes
-      .map((node) => toDomainNode(node.className, node.def))
-      .sort((a, b) => a.displayName.localeCompare(b.displayName))
+    nodes: nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
+  }
+}
+
+function toDomainNodeFromRegistry(node: RegistryComfyNode): PackNode | null {
+  if (!node.comfy_node_name) return null
+
+  return {
+    name: node.comfy_node_name,
+    displayName: node.comfy_node_name,
+    category: node.category || '',
+    description: node.description || undefined,
+    deprecated: node.deprecated,
+    experimental: node.experimental
   }
 }
 

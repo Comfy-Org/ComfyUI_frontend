@@ -189,18 +189,13 @@ describe('NodeFooter', () => {
     it('CARD shape emits rounded-br variant on the single-tab footer', () => {
       renderFooter({ isSubgraph: true, shape: RenderShape.CARD })
       const classes = allButtonClasses()
-      expect(classes).toMatch(/rounded-br-\[17px\]/)
-      expect(classes).not.toMatch(/rounded-b-\[/)
+      expect(classes).toMatch(/rounded-br-xl/)
+      expect(classes).not.toMatch(/\srounded-b-\w/)
     })
 
     it('default shape emits rounded-b variant on the single-tab footer', () => {
       renderFooter({ isSubgraph: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-\[17px\]/)
-    })
-
-    it('upgrades to 20px radius when the error tab is present', () => {
-      renderFooter({ hasAnyError: true, showErrorsTabEnabled: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-\[20px\]/)
+      expect(allButtonClasses()).toMatch(/rounded-b-xl/)
     })
 
     it('enter tab uses right-only rounding in dual-tab mode (Case 1)', () => {
@@ -210,7 +205,7 @@ describe('NodeFooter', () => {
         showErrorsTabEnabled: true
       })
       const enterBtn = screen.getByTestId('subgraph-enter-button')
-      expect(enterBtn.className).toMatch(/rounded-br-\[20px\]/)
+      expect(enterBtn.className).toMatch(/rounded-br-xl/)
     })
   })
 

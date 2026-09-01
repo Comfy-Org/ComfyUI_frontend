@@ -2,8 +2,13 @@ issue_enrichment:
   auto_enrich:
     enabled: true
 reviews:
+  profile: assertive
   high_level_summary: false
   request_changes_workflow: true
+  # Without this, a review that never happened (rate limit, internal error)
+  # still reports green, so an unreviewed PR is indistinguishable from a
+  # cleanly reviewed one.
+  fail_commit_status: true
   auto_review:
     drafts: true
     ignore_title_keywords:
@@ -15,6 +20,11 @@ reviews:
       - github-actions[bot]
   pre_merge_checks:
     override_requested_reviewers_only: true
+    # Explicitly disable the built-in docstring coverage check, which is
+    # enabled via organization-level settings. This repo opts out at the
+    # repo level without affecting other org repos.
+    docstrings:
+      mode: 'off'
     custom_checks:
       - name: End-to-end regression coverage for fixes
         mode: error
@@ -33,11 +43,39 @@ reviews:
           2. The PR changes files under `src/` or `packages/` related to the main frontend application but the PR does not change at least one file under `browser_tests/`.
           3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
 
-          Do not fail if the changes are exclusively in `apps/website`, just documentation changes, or changes related to CI processes.
+          Do not fail if the changes are exclusively in `apps/website` (that package has its own check, "Website end-to-end regression coverage", because its Playwright specs live in `apps/website/e2e/` rather than `browser_tests/`), just documentation changes, or changes related to CI processes.
           The goal is to make sure that fixes include End-to-End regression tests. Do not insist on tests when the PR is not fixing a bug.
 
           Pass otherwise.
           When failing, mention which bug-fix signal you found and ask the author to either add or update a Playwright regression test under `browser_tests/` or add a concrete explanation in the PR description of why an end-to-end regression test is not practical.
+
+      - name: Website end-to-end regression coverage
+        mode: error
+        instructions: |
+          Use only PR metadata already available in the review context:
+            - the PR title
+            - commit subjects in this PR
+            - the files changed in this PR relative to the PR base (equivalent to `base...head`)
+            - the PR description
+            - the diff content.
+          Do not rely on shell commands.
+          Do not inspect reverse diffs, files changed only on the base branch, or files outside this PR.
+          If the changed-file list or commit subjects are unavailable, mark the check inconclusive instead of guessing.
+
+          This check applies ONLY when the PR changes website runtime files under `apps/website/src/` or `apps/website/public/`. If no such files changed, pass immediately — that includes PRs touching only `apps/website/e2e/`, tooling, config, or CI.
+
+          Changes confined to `packages/` are deliberately out of scope here, even though the website consumes those packages: the generic "End-to-end regression coverage for fixes" check already requires a `browser_tests/` regression test for them. Do not demand a second website-specific test for a shared-package change.
+
+          Fail if all of the following are true:
+          1. The diff itself changes observable website runtime behavior — fixes a user-visible bug, adds a page or route, or changes an interactive flow, form, or navigation. A `fix`/`bugfix`/`hotfix` style title or commit subject is only a hint: confirm it against the diff, and never treat the wording alone as qualifying.
+          2. The PR does not add or update a Playwright assertion under `apps/website/e2e/**/*.spec.ts` that actually exercises the route, flow, or behavior this PR changed. An unrelated assertion elsewhere in the suite does not satisfy this.
+          3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
+
+          Do not fail for text/copy-only edits, translation-only changes, static asset swaps, styling-only changes, generated files, dependency metadata, refactors that preserve behavior, or changes confined to tests, tooling, or CI.
+          A reformatted or whitespace-only edit to an existing spec does not count as adding coverage.
+
+          Pass otherwise.
+          When failing, name the behavior-changing signal you found and ask the author to either add or update a Playwright regression test under `apps/website/e2e/` or record in the PR description why an end-to-end test is not practical.
 
       - name: ADR compliance for entity/litegraph changes
         mode: warning
@@ -57,3 +95,75 @@ reviews:
           Pass if none of these patterns are found in the diff.
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+
+  path_instructions:
+    - path: '**/*.ts'
+      instructions: |
+        Treat `docs/guidance/typescript.md` as required review context.
+    - path: '**/*.vue'
+      instructions: |
+        Treat `docs/guidance/typescript.md` and
+        `docs/guidance/vue-components.md` as required review context. For
+        changed components or views under `src/components/` or `src/views/`,
+        also apply `docs/guidance/design-standards.md` and assess accessibility.
+    - path: '**/*.stories.ts'
+      instructions: |
+        Treat `docs/guidance/storybook.md` as required review context.
+    - path: 'src/lib/litegraph/**'
+      instructions: |
+        Treat `docs/adr/README.md` as required review context. For widget
+        serialization changes, also read
+        `docs/WIDGET_SERIALIZATION.md`.
+    - path: 'src/workbench/extensions/agent/**'
+      instructions: |
+        Treat `.agents/checks/follower-boundary.md` and
+        `docs/adr/0016-in-app-agent-crdt-follower-and-distribution.md` as
+        required review context. Flag: the follower writing the shared doc,
+        client-sent raw Yjs `update_b64`, layout/presence fields in the shared
+        semantic doc, an optimistic overlay merged back as a Yjs update,
+        `op_id` regeneration on retry, a second applier reimplemented instead
+        of importing `@comfyorg/comfy-multi-player`, `DISTRIBUTION`/`isCloud`/
+        `isDesktop` checks scattered outside the agent connection boundary, and
+        auth reduced to `isCloud` instead of `authStore.getAuthHeader()`.
+    - path: '**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
+        `docs/guidance/vitest.md`, and `docs/testing/vitest-patterns.md` as
+        required review context for every changed Vitest test file.
+    - path: 'src/lib/litegraph/**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
+        `docs/guidance/vitest.md`, `docs/testing/vitest-patterns.md`, and
+        `docs/testing/litegraph-testing.md` as required review context for
+        every changed LiteGraph Vitest test file.
+    - path: 'apps/website/src/**/*.{ts,vue}'
+      instructions: |
+        Changed lines here are measured by the `website-unit` Codecov patch
+        status, so new behavior needs a colocated Vitest test. Treat
+        `docs/guidance/vitest.md` as required review context. Flag new
+        exported logic that no test exercises.
+        This glob is wider than the gate: `coverage.exclude` in
+        `apps/website/vitest.config.ts` is the source of truth, and anything
+        it lists is unmeasured. At time of writing that is `*.test.ts`,
+        `*.spec.ts`, `*.stories.ts`, `*.d.ts`, `src/test/**`,
+        `src/content/**`, `src/i18n/**` and `src/content.config.ts`. Do not
+        cite the `website-unit` gate for changes confined to those.
+    - path: 'apps/website/src/**/*.astro'
+      instructions: |
+        `.astro` files are excluded from coverage because V8 cannot
+        instrument them. Non-trivial frontmatter logic (data shaping,
+        branching, formatting) is therefore untestable where it sits — ask
+        for it to be extracted into a `.ts` module beside the component so it
+        is covered by the `website-unit` gate. Markup and static content are
+        fine to leave inline.
+        Extraction only helps where the destination is instrumented:
+        `src/content/**` and `src/i18n/**` are excluded from coverage, so do
+        not ask for logic to be moved into them.
+    - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
+        and `docs/guidance/playwright.md` as required review context for every
+        changed Playwright test file. For
+        `browser_tests/`, also read `browser_tests/README.md` and
+        `browser_tests/AGENTS.md`, and apply
+        `.agents/checks/playwright-e2e.md`.

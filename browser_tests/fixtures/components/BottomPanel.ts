@@ -18,7 +18,7 @@ class ShortcutsTab {
   }
 }
 
-export class LogsTab {
+class LogsTab {
   readonly tab: Locator
   readonly terminalRoot: Locator
   readonly terminalHost: Locator

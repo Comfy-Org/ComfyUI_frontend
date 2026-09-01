@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -8,6 +8,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -66,7 +67,7 @@ function slotLocator(
   slotIndex: number,
   isInput: boolean
 ) {
-  const key = getSlotKey(String(nodeId), slotIndex, isInput)
+  const key = getSlotKey(nodeId, slotIndex, isInput)
   return page.locator(`[data-slot-key="${key}"]`)
 }
 
@@ -1082,17 +1083,10 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
-
       // Setup workflow with a KSampler node
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.nodeOps.waitForGraphNodes(0)
-      await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
-      await comfyPage.nextFrame()
-      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+      await comfyPage.searchBoxV2.addNode('KSampler')
       await comfyPage.nodeOps.waitForGraphNodes(1)
 
       // Convert the KSampler node to a subgraph
@@ -1237,4 +1231,142 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
       ).toBeLessThan(rowGap / 4)
     }).toPass({ timeout: 5000 })
   })
+})
+
+test(
+  'Fast disconnection support',
+  { tag: '@vue-nodes' },
+  async ({ comfyMouse, comfyPage }) => {
+    async function performDisconnect(slot: Locator, isFast: boolean) {
+      await comfyMouse.dragElementBy(slot, { x: isFast ? -30 : -80 })
+
+      if (!isFast) {
+        await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
+        await comfyMouse.click(100, 100)
+      }
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(slot)
+      await expect.poll(isConnected).toBe(false)
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+    }
+
+    const ksamplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const ksampler = new VueNodeFixture(ksamplerLocator)
+    await comfyMouse.dragElementBy(ksampler.title, { x: 100 })
+
+    await test.step('Disconnection with normal links', async () => {
+      await performDisconnect(ksampler.getSlot('model'), true)
+      await performDisconnect(ksampler.getSlot('positive'), false)
+    })
+
+    await test.step('Create subgraph', async () => {
+      await ksampler.title.click()
+      await comfyPage.page.keyboard.press('Control+Shift+e')
+      await comfyPage.vueNodes.enterSubgraph()
+    })
+
+    await test.step('Disconnection with subgraph IO', async () => {
+      await performDisconnect(ksampler.getSlot('negative'), true)
+      await performDisconnect(ksampler.getSlot('latent_image'), false)
+    })
+  }
+)
+
+test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+    await fitToViewInstant(comfyPage)
+  })
+
+  test('spacebar pans during link drag', async ({ comfyPage }) => {
+    const initialOffset = await comfyPage.canvasOps.getOffset()
+
+    await test.step('Setup link drag', async () => {
+      await comfyPage.searchBoxV2.addNode('Load Diffusion')
+      const loadNode = await comfyPage.vueNodes.getFixtureByTitle('Load Diff')
+      const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+      await loadNode.getSlot('MODEL').hover()
+      await comfyPage.page.mouse.down()
+      await ksampler.getSlot('model').hover()
+      expect(
+        await comfyPage.canvasOps.getOffset(),
+        'starting the link drag should not pan the canvas'
+      ).toEqual(initialOffset)
+    })
+
+    await test.step('Holding space initiates a pan', async () => {
+      await comfyPage.page.keyboard.down(' ')
+      await comfyPage.page.mouse.move(100, 100)
+      await comfyPage.page.keyboard.up(' ')
+      await expect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(initialOffset)
+    })
+
+    await test.step('Mouse remains over model after pan', async () => {
+      await comfyPage.page.mouse.up()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => graph?.nodes?.at(-1)?.getOutputNodes(0)?.length === 1
+          )
+        )
+        .toBe(true)
+    })
+  })
+})
+
+test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+  await comfyPage.nodeOps.clearGraph()
+  const previewNodePos = { position: { x: 800, y: 200 } }
+  await comfyPage.searchBoxV2.addNode('Preview Image', previewNodePos)
+  const previewNode =
+    await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+  await test.step('Create floating reroute', async () => {
+    const reroutePos = { targetPosition: { x: 700, y: 400 } }
+    await previewNode
+      .getSlot('images')
+      .first()
+      .dragTo(comfyPage.canvas, reroutePos)
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+    await comfyPage.searchBoxV2.addNode('Load Image')
+  })
+
+  await test.step('Connect node on top of floating link', async () => {
+    const loadNode = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await loadNode
+      .getSlot('IMAGE')
+      .first()
+      .dragTo(previewNode.getSlot('images').first())
+  })
+
+  await test.step('Create node from floating reroute', async () => {
+    await comfyPage.canvas.dragTo(comfyPage.canvas, {
+      sourcePosition: { x: 680, y: 400 },
+      targetPosition: { x: 500, y: 500 }
+    })
+    await comfyPage.contextMenu.clickLitegraphMenuItem('LoadImage')
+  })
+
+  await expect
+    .poll(
+      () =>
+        comfyPage.page.evaluate(() => {
+          if (!graph || graph.links.size !== 1) return 'invalid link count'
+          if (graph.reroutes.size !== 1) return 'invalid reroutes count'
+
+          const linkId = graph.nodes.find((n) => n.title === 'Preview Image')
+            ?.inputs[0].link
+          if (!linkId) return 'failed to resolve link id'
+
+          const rerouteId = graph.getLink(linkId)?.parentId
+          if (!rerouteId) return 'failed to resolve reroute id'
+
+          return !graph.reroutes.has(rerouteId) && 'reroute does not exist'
+        }),
+      'old link is disconnected, reroute is part of new connection'
+    )
+    .toBe(false)
 })

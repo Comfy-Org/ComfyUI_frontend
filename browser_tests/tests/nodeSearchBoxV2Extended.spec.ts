@@ -57,11 +57,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       const samplingResults = await searchBoxV2.results.allTextContents()
 
-      await searchBoxV2.categoryButton('loaders').click()
+      await searchBoxV2.categoryButton('model/loaders').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       await expect
         .poll(() => searchBoxV2.results.allTextContents())
@@ -205,8 +206,8 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(searchBoxV2.results.first()).toBeVisible()
       const comfyCount = await searchBoxV2.results.count()
 
-      // Under root filter, categories are prefixed (e.g. comfy/sampling).
-      await searchBoxV2.categoryButton('comfy/sampling').click()
+      // Under root filter, categories are prefixed (e.g. comfy/model).
+      await searchBoxV2.categoryButton('comfy/model').click()
       await expect
         .poll(() => searchBoxV2.results.count())
         .toBeLessThan(comfyCount)
@@ -219,8 +220,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      const samplingBtn = searchBoxV2.categoryButton('sampling')
-      const subcategory = searchBoxV2.categoryButton('sampling/custom_sampling')
+      await searchBoxV2.categoryButton('model').click()
+      const samplingBtn = searchBoxV2.categoryButton('model/sampling')
+      const subcategory = searchBoxV2.categoryButton('model/sampling/custom')
 
       await test.step('Expanding sampling reveals its subcategories', async () => {
         await samplingBtn.click()
@@ -238,11 +240,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       const parentCount = await searchBoxV2.results.count()
 
-      const subcategory = searchBoxV2.categoryButton('sampling/custom_sampling')
+      const subcategory = searchBoxV2.categoryButton('model/sampling/custom')
       await expect(subcategory).toBeVisible()
       await subcategory.click()
 
@@ -258,7 +261,8 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(searchBoxV2.results.first()).toBeVisible()
       const defaultCount = await searchBoxV2.results.count()
 
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
       await expect
         .poll(() => searchBoxV2.results.count())
         .not.toBe(defaultCount)
@@ -316,11 +320,13 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.input.fill('S')
+      // The result list caps at 64, so a one- or two-letter query saturates it
+      // and narrowing is invisible. Start below the cap.
+      await searchBoxV2.input.fill('Sam')
       await expect(searchBoxV2.results.first()).toBeVisible()
       const count1 = await getCount()
 
-      await searchBoxV2.input.fill('Sa')
+      await searchBoxV2.input.fill('Sampl')
       await expect.poll(getCount).toBeLessThan(count1)
       const count2 = await getCount()
 

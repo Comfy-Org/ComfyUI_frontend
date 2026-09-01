@@ -1,13 +1,10 @@
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDialogService } from '@/services/dialogService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export type WidgetValue = boolean | number | string | object | undefined
 
@@ -35,55 +32,37 @@ export function getWidgetDefaultValue(
 }
 
 /**
- * Renames a widget and its corresponding input.
- * Handles both regular widgets and promoted widget views in subgraphs.
+ * Renames a widget: a label-only write across the widget, its store state, and
+ * its backing input slot (matched by widgetId). Never touches the widget/input
+ * name or widgetId — those are the stable identity a promoted input derives from.
  *
  * @param widget The widget to rename
  * @param node The node containing the widget
  * @param newLabel The new label for the widget (empty string or undefined to clear)
- * @param parents Optional array of parent SubgraphNodes (for promoted widgets)
  * @returns true if the rename was successful, false otherwise
  */
 export function renameWidget(
   widget: IBaseWidget,
   node: LGraphNode,
-  newLabel: string,
-  parents?: SubgraphNode[]
+  newLabel: string
 ): boolean {
-  if (
-    isPromotedWidgetView(widget) &&
-    (parents?.length || node.isSubgraphNode())
-  ) {
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) {
-      console.error('Could not resolve source widget for promoted widget')
-      return false
-    }
+  const label = newLabel || undefined
+  // TODO(ecs-widget-label-identity): the `input.label` write below is the interim
+  // on-ramp. End-state is an ECS WidgetIdentity.label serialized field (name =
+  // identity, label = display per ADR-0009) written via WidgetHandle.setLabel — the
+  // widget entity owns its label, so the socketless/DOM-widget case (no input slot
+  // to carry input.label, e.g. CLIPTextEncode `text`) is fixed by construction.
+  const input =
+    (widget.widgetId &&
+      node.inputs?.find((inp) => inp.widgetId === widget.widgetId)) ||
+    node.inputs?.find((inp) => inp.widget?.name === widget.name)
+  const widgetState = widget.widgetId
+    ? useWidgetValueStore().getWidget(widget.widgetId)
+    : undefined
 
-    const originalWidget = sourceWidget.widget
-    const interiorNode = sourceWidget.node
-
-    originalWidget.label = newLabel || undefined
-
-    const interiorInput = interiorNode.inputs?.find(
-      (inp) => inp.widget?.name === originalWidget.name
-    )
-    if (interiorInput) {
-      interiorInput.label = newLabel || undefined
-    }
-  }
-
-  const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
-
-  widget.label = newLabel || undefined
-  if (input) {
-    input.label = newLabel || undefined
-
-    const subgraphSlot = (input as Partial<ISubgraphInput>)._subgraphSlot
-    if (subgraphSlot) {
-      subgraphSlot.label = newLabel || undefined
-    }
-  }
+  widget.label = label
+  if (widgetState) widgetState.label = label
+  if (input) input.label = label
 
   // Fires for all node types; listeners guard against non-subgraph nodes.
   node.graph?.trigger('node:slot-label:changed', {
@@ -109,8 +88,7 @@ export async function promptWidgetLabel(
 export async function promptRenameWidget(
   widget: IBaseWidget,
   node: LGraphNode,
-  t: (key: string) => string,
-  parents?: SubgraphNode[]
+  t: (key: string) => string
 ): Promise<string | null> {
   const rawLabel = await promptWidgetLabel(widget, t)
   if (rawLabel === null) return null
@@ -118,7 +96,7 @@ export async function promptRenameWidget(
   const normalizedLabel = rawLabel.trim()
   if (!normalizedLabel) return null
 
-  if (!renameWidget(widget, node, normalizedLabel, parents)) return null
+  if (!renameWidget(widget, node, normalizedLabel)) return null
 
   widget.callback?.(widget.value)
   useCanvasStore().canvas?.setDirty(true)

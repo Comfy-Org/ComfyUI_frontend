@@ -43,13 +43,18 @@ export function useKeyboard() {
   }
 
   const addListeners = (): void => {
-    document.addEventListener('keydown', handleKeyDown)
+    // Capture phase: the Mask Editor content root carries `@keydown.stop`
+    // (MaskEditorContent.vue), so a bubble-phase listener never sees keydowns
+    // that originate inside it. Under the Reka dialog the focus trap keeps
+    // focus on an in-editor input, so Ctrl+Z/Y (undo/redo) and the space-pan
+    // blur were swallowed. Capturing runs this before that stopPropagation.
+    document.addEventListener('keydown', handleKeyDown, true)
     document.addEventListener('keyup', handleKeyUp)
     window.addEventListener('blur', clearKeys)
   }
 
   const removeListeners = (): void => {
-    document.removeEventListener('keydown', handleKeyDown)
+    document.removeEventListener('keydown', handleKeyDown, true)
     document.removeEventListener('keyup', handleKeyUp)
     window.removeEventListener('blur', clearKeys)
   }

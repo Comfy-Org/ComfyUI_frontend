@@ -58,14 +58,16 @@ vi.mock('@/renderer/extensions/vueNodes/composables/useShiftKeySync', () => ({
   })
 }))
 
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ rootGraphId: 'root-graph' })
+}))
+
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     isResizingVueNodes: { value: false },
-    getNodeLayoutRef: vi.fn(() => ({
-      value: {
-        position: { x: 100, y: 200 },
-        size: { width: 300, height: 400 }
-      }
+    getNodeLayout: vi.fn(() => ({
+      position: { x: 100, y: 200 },
+      size: { width: 300, height: 400 }
     }))
   }
 }))
@@ -79,7 +81,6 @@ function createMockNodeElement(
   element.setAttribute('data-node-id', 'test-node')
   element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
-    // When --node-height is '0px', return the content-driven minimum height
     const nodeHeight = element.style.getPropertyValue('--node-height')
     const h = nodeHeight === '0px' ? minContentHeight : height
     return {
@@ -156,7 +157,6 @@ describe('useNodeResize', () => {
   let handle: HTMLElement
 
   beforeEach(async () => {
-    vi.clearAllMocks()
     eventHandlers.pointermove = null
     eventHandlers.pointerup = null
     snapState.shouldSnap = false

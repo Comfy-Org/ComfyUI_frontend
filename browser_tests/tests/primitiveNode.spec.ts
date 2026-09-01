@@ -40,6 +40,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const clipEncoderNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, clipEncoderNode, 0)
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'primitive_node_connected_dom_widget.png'
     )
@@ -57,6 +58,50 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'static_primitive_connected.png'
     )
+  })
+
+  test('Preserves combo options after refreshing node definitions', async ({
+    comfyPage
+  }) => {
+    async function getPrimitiveComboState() {
+      return comfyPage.page.evaluate(() => {
+        const primitive = window.app!.graph!.nodes.find(
+          (node) => node.type === 'PrimitiveNode'
+        )
+        const widget = primitive?.widgets?.[0]
+        const values = widget?.options?.values
+        return {
+          isArray: Array.isArray(values),
+          length: Array.isArray(values) ? values.length : 0,
+          includesEuler: Array.isArray(values)
+            ? values.includes('euler')
+            : false,
+          value: widget?.value
+        }
+      })
+    }
+
+    await comfyPage.workflow.loadWorkflow(
+      'primitive/primitive_combo_sampler_name'
+    )
+
+    await expect.poll(getPrimitiveComboState).toMatchObject({
+      isArray: true,
+      includesEuler: true,
+      value: 'euler'
+    })
+    const before = await getPrimitiveComboState()
+    expect(before.length).toBeGreaterThan(0)
+
+    await comfyPage.page.evaluate(() => window.app!.refreshComboInNodes())
+
+    const after = await getPrimitiveComboState()
+    expect(after).toMatchObject({
+      isArray: true,
+      includesEuler: true,
+      value: 'euler'
+    })
+    expect(after.length).toBeGreaterThan(0)
   })
 
   test('Report missing nodes when connect to missing node', async ({

@@ -1,37 +1,38 @@
+import { toGroupId } from '@/types/groupId'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@/utils/uuid'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
   LayoutOperation,
-  NodeLayout,
-  SlotLayout
+  NodeLayout
 } from '@/renderer/core/layout/types'
 
-function getOperationsAddedBy(action: () => void): LayoutOperation[] {
-  const operationCount = layoutStore.getOperationsSince(0).length
-  action()
-  return layoutStore.getOperationsSince(0).slice(operationCount)
-}
+const GRAPH = createUuidv4()
 
-function expectSingleOperation(
-  operations: LayoutOperation[],
-  expectedOperation: Record<string, unknown>
-): void {
-  expect(operations).toHaveLength(1)
-  expect(operations[0]).toEqual(expect.objectContaining(expectedOperation))
-}
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
     // Clear the store before each test
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
   // Helper to create test node data
-  const createTestNode = (id: string): NodeLayout => ({
+  const createTestNode = (id: NodeId): NodeLayout => ({
     id,
     position: { x: 100, y: 100 },
     size: { width: 200, height: 100 },
@@ -41,38 +42,44 @@ describe('layoutStore CRDT operations', () => {
   })
 
   it('should create and retrieve nodes', () => {
-    const nodeId = 'test-node-1'
+    const nodeId = toNodeId('test-node-1')
     const layout = createTestNode(nodeId)
 
     // Create node
-    layoutStore.setSource(LayoutSource.External)
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     // Retrieve node
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value).toEqual(layout)
   })
 
+  it('does not create a node when reading a missing layout', () => {
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, toNodeId('missing'))
+
+    expect(nodeRef.value).toBeNull()
+    expect(layoutStore.nodeCount).toBe(0)
+  })
+
   it('should move nodes', () => {
-    const nodeId = 'test-node-2'
+    const nodeId = toNodeId('test-node-2')
     const layout = createTestNode(nodeId)
 
     // Create node first
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -80,32 +87,31 @@ describe('layoutStore CRDT operations', () => {
     const newPosition = { x: 200, y: 300 }
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: newPosition,
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
     })
 
     // Verify position updated
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.position).toEqual(newPosition)
   })
 
   it('should resize nodes', () => {
-    const nodeId = 'test-node-3'
+    const nodeId = toNodeId('test-node-3')
     const layout = createTestNode(nodeId)
 
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -113,125 +119,119 @@ describe('layoutStore CRDT operations', () => {
     const newSize = { width: 300, height: 150 }
     layoutStore.applyOperation({
       type: 'resizeNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       size: newSize,
-      previousSize: layout.size,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     // Verify size updated
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size).toEqual(newSize)
   })
 
   it('should delete nodes', () => {
-    const nodeId = 'test-node-4'
+    const nodeId = toNodeId('test-node-4')
     const layout = createTestNode(nodeId)
 
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     // Delete node
     layoutStore.applyOperation({
       type: 'deleteNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
-      previousLayout: layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     // Verify node deleted
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value).toBeNull()
   })
 
-  it('should handle source and actor tracking', async () => {
-    const nodeId = 'test-node-5'
-    const layout = createTestNode(nodeId)
-
-    // Set source and actor
-    layoutStore.setSource(LayoutSource.Vue)
-    layoutStore.setActor('user-123')
-
-    // Track change notifications AFTER setting source/actor
+  it('carries the operation source and stamps one session actor', async () => {
     const changes: LayoutChange[] = []
     const unsubscribe = layoutStore.onChange((change) => {
       changes.push(change)
     })
 
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
+    for (const nodeId of [toNodeId('test-node-5a'), toNodeId('test-node-5b')]) {
+      layoutStore.applyOperation({
+        type: 'createNode',
+        graphId: GRAPH,
+        nodeId,
+        layout: createTestNode(nodeId),
+        timestamp: Date.now(),
+        source: LayoutSource.Vue
+      })
+    }
 
     // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
-      expect(changes.length).toBeGreaterThanOrEqual(1)
+      expect(changes.length).toBe(2)
     })
 
-    const lastChange = changes[changes.length - 1]
-    expect(lastChange.source).toBe('vue')
-    expect(lastChange.operation.actor).toBe('user-123')
+    const [first, second] = changes
+    expect(first.source).toBe(LayoutSource.Vue)
+    expect(first.operation.actor).toEqual(expect.any(String))
+    expect(second.operation.actor).toBe(first.operation.actor)
 
     unsubscribe()
   })
 
   it('should only notify node-scoped listeners for their node', async () => {
-    const nodeA = 'scoped-node-a'
-    const nodeB = 'scoped-node-b'
+    const nodeA = toNodeId('scoped-node-a')
+    const nodeB = toNodeId('scoped-node-b')
     const layoutA = createTestNode(nodeA)
     const layoutB = createTestNode(nodeB)
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeA,
       layout: layoutA,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeB,
       layout: layoutB,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     const scopedChanges: LayoutChange[] = []
-    const unsubscribeScoped = layoutStore.onNodeChange(nodeA, (change) => {
-      scopedChanges.push(change)
-    })
+    const unsubscribeScoped = layoutStore.onNodeChange(
+      GRAPH,
+      nodeA,
+      (change) => {
+        scopedChanges.push(change)
+      }
+    )
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeB,
       position: { x: 400, y: 400 },
-      previousPosition: layoutB.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -243,10 +243,9 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeA,
       position: { x: 200, y: 250 },
-      previousPosition: layoutA.position,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -260,22 +259,22 @@ describe('layoutStore CRDT operations', () => {
     unsubscribeScoped()
   })
 
-  it('keeps node-scoped listeners synchronous while deferring global listeners', async () => {
-    const nodeId = 'dispatch-order-node'
+  it('defers node-scoped and global listeners', async () => {
+    const nodeId = toNodeId('dispatch-order-node')
     const layout = createTestNode(nodeId)
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     const callOrder: string[] = []
-    const unsubscribeNode = layoutStore.onNodeChange(nodeId, () => {
+    const unsubscribeNode = layoutStore.onNodeChange(GRAPH, nodeId, () => {
       callOrder.push('node')
     })
     const unsubscribeGlobal = layoutStore.onChange(() => {
@@ -284,16 +283,15 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 320, y: 180 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
     })
 
-    expect(callOrder).toEqual(['node'])
+    expect(callOrder).toEqual([])
 
     await Promise.resolve()
 
@@ -303,26 +301,27 @@ describe('layoutStore CRDT operations', () => {
     unsubscribeGlobal()
   })
 
-  it('clears node-scoped listeners when reinitializing from LiteGraph', () => {
-    const nodeId = 'reinit-node'
+  it('clears node-scoped listeners when the viewed graph changes', () => {
+    const nodeId = toNodeId('reinit-node')
     const staleListener = vi.fn()
 
-    layoutStore.onNodeChange(nodeId, staleListener)
+    layoutStore.onNodeChange(GRAPH, nodeId, staleListener)
 
-    layoutStore.initializeFromLiteGraph([
-      {
-        id: nodeId,
-        pos: [0, 0],
-        size: [200, 100]
-      }
-    ])
+    layoutStore.clearViewGeometry()
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 10, y: 20 },
-      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -332,16 +331,16 @@ describe('layoutStore CRDT operations', () => {
   })
 
   it('defers global listener fan-out until the microtask boundary', async () => {
-    const nodeId = 'global-fanout-node'
+    const nodeId = toNodeId('global-fanout-node')
     const layout = createTestNode(nodeId)
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -352,22 +351,20 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 120, y: 110 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 150, y: 140 },
-      previousPosition: { x: 120, y: 110 },
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -385,16 +382,16 @@ describe('layoutStore CRDT operations', () => {
   })
 
   it('should emit change when batch updating node bounds', async () => {
-    const nodeId = 'test-node-6'
+    const nodeId = toNodeId('test-node-6')
     const layout = createTestNode(nodeId)
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -404,7 +401,9 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const newBounds = { x: 40, y: 60, width: 220, height: 120 }
-    layoutStore.batchUpdateNodeBounds([{ nodeId, bounds: newBounds }])
+    layoutStore.batchUpdateNodeBounds(GRAPH, [{ nodeId, bounds: newBounds }], {
+      source: LayoutSource.Vue
+    })
 
     // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
@@ -416,178 +415,98 @@ describe('layoutStore CRDT operations', () => {
     const lastChange = changes[changes.length - 1]
     if (lastChange.operation.type === 'batchUpdateBounds') {
       expect(lastChange.nodeIds).toContain(nodeId)
-      expect(lastChange.operation.bounds[nodeId]?.bounds).toEqual(newBounds)
+      expect(lastChange.operation.bounds[nodeId]).toEqual(newBounds)
     }
 
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.position).toEqual({ x: 40, y: 60 })
     expect(nodeRef.value?.size).toEqual({ width: 220, height: 120 })
 
     unsubscribe()
   })
 
-  it('should query nodes by spatial bounds', () => {
-    const nodes = [
-      { id: 'node-a', position: { x: 0, y: 0 } },
-      { id: 'node-b', position: { x: 100, y: 100 } },
-      { id: 'node-c', position: { x: 250, y: 250 } }
-    ]
-
-    // Create nodes with proper bounds
-    nodes.forEach(({ id, position }) => {
-      const layout: NodeLayout = {
-        ...createTestNode(id),
-        position,
-        bounds: {
-          x: position.x,
-          y: position.y,
-          width: 200,
-          height: 100
-        }
-      }
-      layoutStore.applyOperation({
-        type: 'createNode',
-        entity: 'node',
-        nodeId: id,
-        layout,
-        timestamp: Date.now(),
-        source: LayoutSource.External,
-        actor: 'test'
-      })
-    })
-
-    // Query nodes in bounds
-    const nodesInBounds = layoutStore.queryNodesInBounds({
-      x: 50,
-      y: 50,
-      width: 200,
-      height: 200
-    })
-
-    // node-a: (0,0) to (200,100) - overlaps with query bounds (50,50) to (250,250)
-    // node-b: (100,100) to (300,200) - overlaps with query bounds
-    // node-c: (250,250) to (450,350) - touches corner of query bounds
-    expect(nodesInBounds).toContain('node-a')
-    expect(nodesInBounds).toContain('node-b')
-    expect(nodesInBounds).toContain('node-c')
-  })
-
-  it('should maintain operation history', () => {
-    const nodeId = 'test-node-history'
-    const layout = createTestNode(nodeId)
-    const startTime = Date.now()
-
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout,
-      timestamp: startTime,
-      source: LayoutSource.External,
-      actor: 'test-actor'
-    })
-
-    // Move node
-    layoutStore.applyOperation({
-      type: 'moveNode',
-      entity: 'node',
-      nodeId,
-      position: { x: 150, y: 150 },
-      previousPosition: { x: 100, y: 100 },
-      timestamp: startTime + 100,
-      source: LayoutSource.Vue,
-      actor: 'test-actor'
-    })
-
-    // Get operations by actor
-    const operations = layoutStore.getOperationsByActor('test-actor')
-    expect(operations.length).toBeGreaterThanOrEqual(2)
-    expect(operations[0].type).toBe('createNode')
-    expect(operations[1].type).toBe('moveNode')
-
-    // Get operations since timestamp
-    const recentOps = layoutStore.getOperationsSince(startTime + 50)
-    expect(recentOps.length).toBeGreaterThanOrEqual(1)
-    expect(recentOps[0].type).toBe('moveNode')
-  })
-
   it('normalizes DOM-sourced heights before storing', () => {
-    const nodeId = 'dom-node'
+    const nodeId = toNodeId('dom-node')
     const layout = createTestNode(nodeId)
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds([
-      {
-        nodeId,
-        bounds: {
-          x: layout.bounds.x,
-          y: layout.bounds.y,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+    layoutStore.batchUpdateNodeBounds(
+      GRAPH,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+    )
 
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBe(layout.size.height)
     expect(nodeRef.value?.size.width).toBe(layout.size.width)
     expect(nodeRef.value?.position).toEqual(layout.position)
   })
 
   it('normalizes very small DOM-sourced heights safely', () => {
-    const nodeId = 'small-dom-node'
+    const nodeId = toNodeId('small-dom-node')
     const layout = createTestNode(nodeId)
     layout.size.height = 10
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds([
-      {
-        nodeId,
-        bounds: {
-          x: layout.bounds.x,
-          y: layout.bounds.y,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+    layoutStore.batchUpdateNodeBounds(
+      GRAPH,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+    )
 
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBeGreaterThanOrEqual(0)
   })
 
   it('handles undefined NODE_TITLE_HEIGHT without NaN results', () => {
-    const nodeId = 'undefined-title-height'
+    const nodeId = toNodeId('undefined-title-height')
     const layout = createTestNode(nodeId)
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -602,20 +521,23 @@ describe('layoutStore CRDT operations', () => {
     })
 
     try {
-      layoutStore.setSource(LayoutSource.DOM)
-      layoutStore.batchUpdateNodeBounds([
-        {
-          nodeId,
-          bounds: {
-            x: layout.bounds.x,
-            y: layout.bounds.y,
-            width: layout.size.width,
-            height: layout.size.height
+      layoutStore.batchUpdateNodeBounds(
+        GRAPH,
+        [
+          {
+            nodeId,
+            bounds: {
+              x: layout.bounds.x,
+              y: layout.bounds.y,
+              width: layout.size.width,
+              height: layout.size.height
+            }
           }
-        }
-      ])
+        ],
+        { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+      )
 
-      const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+      const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
       expect(nodeRef.value?.size.height).toBe(layout.size.height)
     } finally {
       if (originalTitleHeightDescriptor) {
@@ -627,274 +549,394 @@ describe('layoutStore CRDT operations', () => {
       }
     }
   })
-
-  it.for([
-    { type: 'input' as const, isInput: true },
-    { type: 'output' as const, isInput: false }
-  ])(
-    'should preserve $type slot layouts when deleting a node',
-    ({ type, isInput }) => {
-      const nodeId = 'slot-persist-node'
-      const layout = createTestNode(nodeId)
-
-      layoutStore.applyOperation({
-        type: 'createNode',
-        entity: 'node',
-        nodeId,
-        layout,
-        timestamp: Date.now(),
-        source: LayoutSource.External,
-        actor: 'test'
-      })
-
-      const slotKey = getSlotKey(nodeId, 0, isInput)
-      const slotLayout: SlotLayout = {
-        nodeId,
-        index: 0,
-        type,
-        position: { x: 110, y: 120 },
-        bounds: { x: 105, y: 115, width: 10, height: 10 }
-      }
-      layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: slotLayout }])
-      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
-
-      layoutStore.applyOperation({
-        type: 'deleteNode',
-        entity: 'node',
-        nodeId,
-        previousLayout: layout,
-        timestamp: Date.now(),
-        source: LayoutSource.External,
-        actor: 'test'
-      })
-
-      // Slot layout must survive so Vue-patched components can still drag links
-      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
-    }
-  )
 })
 
-describe('layoutStore getNodeLayoutRef setter', () => {
-  beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
-  })
+describe('reroute layouts outlive an active-graph reseed', () => {
+  const GRAPH_ID = createUuidv4()
+  const REROUTE = toRerouteId(4242)
+  const POSITION = { x: 372, y: 415 }
 
-  function baseLayout(): NodeLayout {
-    return {
-      id: 'ref-node',
-      position: { x: 10, y: 20 },
-      size: { width: 100, height: 50 },
-      zIndex: 0,
-      visible: true,
-      bounds: { x: 10, y: 20, width: 100, height: 50 }
-    }
-  }
-
-  it('creates a node when setter receives a layout for an unknown id', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
-    const layout = baseLayout()
-    expect(ref.value).toBeNull()
-
-    const operations = getOperationsAddedBy(() => {
-      ref.value = layout
-    })
-
-    expectSingleOperation(operations, {
-      type: 'createNode',
-      nodeId: 'ref-node',
-      layout
-    })
-    expect(ref.value).toEqual(layout)
-  })
-
-  it.for<{
-    name: string
-    nextLayout: NodeLayout
-    expectedOperation: Record<string, unknown>
-  }>([
-    {
-      name: 'moveNode',
-      nextLayout: {
-        ...baseLayout(),
-        position: { x: 99, y: 88 },
-        bounds: { x: 99, y: 88, width: 100, height: 50 }
-      },
-      expectedOperation: {
-        type: 'moveNode',
-        nodeId: 'ref-node',
-        position: { x: 99, y: 88 },
-        previousPosition: baseLayout().position
-      }
-    },
-    {
-      name: 'resizeNode',
-      nextLayout: {
-        ...baseLayout(),
-        size: { width: 200, height: 80 },
-        bounds: { x: 10, y: 20, width: 200, height: 80 }
-      },
-      expectedOperation: {
-        type: 'resizeNode',
-        nodeId: 'ref-node',
-        size: { width: 200, height: 80 },
-        previousSize: baseLayout().size
-      }
-    },
-    {
-      name: 'setNodeZIndex',
-      nextLayout: { ...baseLayout(), zIndex: 5 },
-      expectedOperation: {
-        type: 'setNodeZIndex',
-        nodeId: 'ref-node',
-        zIndex: 5,
-        previousZIndex: 0
-      }
-    }
-  ])(
-    'emits a $name operation for layout-only updates',
-    ({ nextLayout, expectedOperation }) => {
-      const ref = layoutStore.getNodeLayoutRef('ref-node')
-      ref.value = baseLayout()
-
-      const operations = getOperationsAddedBy(() => {
-        ref.value = nextLayout
-      })
-
-      expectSingleOperation(operations, expectedOperation)
-      expect(ref.value).toEqual(nextLayout)
-    }
-  )
-
-  it('emits a deleteNode operation when setter receives null', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
-    const layout = baseLayout()
-    ref.value = layout
-
-    const operations = getOperationsAddedBy(() => {
-      ref.value = null
-    })
-
-    expectSingleOperation(operations, {
-      type: 'deleteNode',
-      nodeId: 'ref-node',
-      previousLayout: layout
-    })
-    expect(ref.value).toBeNull()
-  })
-})
-
-describe('layoutStore queries', () => {
-  beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
-  })
-
-  const seedNode = (id: string, x: number, y: number, z = 0) => {
-    const layout: NodeLayout = {
-      id,
-      position: { x, y },
-      size: { width: 100, height: 50 },
-      zIndex: z,
-      visible: true,
-      bounds: { x, y, width: 100, height: 50 }
-    }
+  function createReroute() {
     layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId: id,
-      layout,
+      type: 'createReroute',
+      graphId: GRAPH_ID,
+      rerouteId: REROUTE,
+      position: POSITION,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
   }
 
-  it('getNodesInBounds returns reactive node IDs that intersect bounds', () => {
-    seedNode('inside', 0, 0)
-    seedNode('outside', 1000, 1000)
+  it('survives the view change that follows subgraph navigation', () => {
+    createReroute()
 
-    const inBounds = layoutStore.getNodesInBounds({
-      x: 0,
-      y: 0,
-      width: 200,
-      height: 200
+    layoutStore.clearViewGeometry()
+
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)?.position).toEqual(
+      POSITION
+    )
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)?.id).toBe(
+      REROUTE
+    )
+  })
+
+  it('drops layout and spatial index together on delete', () => {
+    createReroute()
+
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      graphId: GRAPH_ID,
+      rerouteId: REROUTE,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
     })
 
-    expect(inBounds.value).toContain('inside')
-    expect(inBounds.value).not.toContain('outside')
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)).toBeNull()
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)).toBeNull()
+  })
+})
+
+describe('root-scoped group and reroute layouts', () => {
+  const FIRST_GRAPH = createUuidv4()
+  const SECOND_GRAPH = createUuidv4()
+  const GROUP_ID = toGroupId(77)
+  const REROUTE_ID = toRerouteId(88)
+
+  function apply(operation: LayoutOperation): void {
+    layoutStore.applyOperation(operation)
+  }
+
+  function metadata() {
+    return {
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    } as const
+  }
+
+  it('isolates colliding local IDs across reads, moves, queries, deletes, and clears', () => {
+    for (const [graphId, offset] of [
+      [FIRST_GRAPH, 10],
+      [SECOND_GRAPH, 100]
+    ] as const) {
+      apply({
+        ...metadata(),
+        type: 'createGroup',
+        graphId,
+        groupId: GROUP_ID,
+        layout: {
+          id: GROUP_ID,
+          position: { x: offset, y: offset },
+          size: { width: 40, height: 40 }
+        }
+      })
+      apply({
+        ...metadata(),
+        type: 'createReroute',
+        graphId,
+        rerouteId: REROUTE_ID,
+        position: { x: offset + 5, y: offset + 5 }
+      })
+    }
+
+    apply({
+      ...metadata(),
+      type: 'setGroupBounds',
+      graphId: FIRST_GRAPH,
+      groupId: GROUP_ID,
+      position: { x: 20, y: 30 },
+      size: { width: 50, height: 60 }
+    })
+    apply({
+      ...metadata(),
+      type: 'moveReroute',
+      graphId: FIRST_GRAPH,
+      rerouteId: REROUTE_ID,
+      position: { x: 25, y: 35 }
+    })
+
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)?.position).toEqual(
+      { x: 20, y: 30 }
+    )
+    expect(
+      layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)?.position
+    ).toEqual({ x: 100, y: 100 })
+    expect(layoutStore.getAllGroups(FIRST_GRAPH).value.size).toBe(1)
+    expect(layoutStore.getAllGroups(SECOND_GRAPH).value.size).toBe(1)
+    expect(
+      layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)?.position
+    ).toEqual({ x: 25, y: 35 })
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)?.position
+    ).toEqual({ x: 105, y: 105 })
+    expect(
+      layoutStore.queryRerouteAtPoint(FIRST_GRAPH, { x: 25, y: 35 })?.id
+    ).toBe(REROUTE_ID)
+    expect(
+      layoutStore.queryRerouteAtPoint(SECOND_GRAPH, { x: 25, y: 35 })
+    ).toBeNull()
+
+    apply({
+      ...metadata(),
+      type: 'deleteGroup',
+      graphId: FIRST_GRAPH,
+      groupId: GROUP_ID
+    })
+    apply({
+      ...metadata(),
+      type: 'deleteReroute',
+      graphId: FIRST_GRAPH,
+      rerouteId: REROUTE_ID
+    })
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
+    expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
+    expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
+    ).not.toBeNull()
+  })
+})
+describe('root-scoped node layouts', () => {
+  const FIRST_GRAPH = createUuidv4()
+  const SECOND_GRAPH = createUuidv4()
+  const GROUP_ID = toGroupId(3)
+  const REROUTE_ID = toRerouteId(4)
+
+  beforeEach(() => {
+    layoutStore.resetForTests()
   })
 
-  it('queryNodeAtPoint returns the top-zIndex node containing the point', () => {
-    seedNode('low', 0, 0, 0)
-    seedNode('high', 0, 0, 10)
+  function seedNode(graphId: UUID, nodeId: NodeId, x: number): void {
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId,
+      nodeId,
+      layout: {
+        id: nodeId,
+        position: { x, y: 0 },
+        size: { width: 10, height: 10 },
+        zIndex: 0,
+        visible: true,
+        bounds: { x, y: 0, width: 10, height: 10 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+  }
 
-    const hit = layoutStore.queryNodeAtPoint({ x: 25, y: 25 })
+  it('isolates colliding node IDs across root graphs', () => {
+    const nodeId = toNodeId('1')
+    seedNode(FIRST_GRAPH, nodeId, 10)
+    seedNode(SECOND_GRAPH, nodeId, 100)
+    layoutStore.reportContentSize(FIRST_GRAPH, nodeId, {
+      width: 20,
+      height: 20
+    })
+    layoutStore.reportContentSize(SECOND_GRAPH, nodeId, {
+      width: 30,
+      height: 30
+    })
 
-    expect(hit).toBe('high')
+    layoutStore.applyOperation({
+      type: 'deleteNode',
+      graphId: FIRST_GRAPH,
+      nodeId,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
+    expect(layoutStore.contentSizeOf(FIRST_GRAPH, nodeId)).toBeUndefined()
+    expect(
+      layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value?.position
+    ).toEqual({ x: 100, y: 0 })
+    expect(layoutStore.contentSizeOf(SECOND_GRAPH, nodeId)?.width).toBe(30)
   })
 
-  it('queryNodeAtPoint returns null when no node contains the point', () => {
-    seedNode('only', 0, 0)
+  it('keys nodes whose IDs contain the scope separator', () => {
+    const nodeId = toNodeId('sub:7')
+    seedNode(FIRST_GRAPH, nodeId, 42)
 
-    const hit = layoutStore.queryNodeAtPoint({ x: 999, y: 999 })
+    expect(
+      layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value?.position
+    ).toEqual({ x: 42, y: 0 })
+    expect(layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value).toBeNull()
+  })
 
-    expect(hit).toBeNull()
+  it('clearGraph drops one root graph and leaves the other intact', () => {
+    const nodeId = toNodeId('1')
+    seedNode(FIRST_GRAPH, nodeId, 10)
+    seedNode(SECOND_GRAPH, nodeId, 100)
+    layoutStore.reportContentSize(FIRST_GRAPH, nodeId, {
+      width: 20,
+      height: 20
+    })
+    layoutStore.reportContentSize(SECOND_GRAPH, nodeId, {
+      width: 30,
+      height: 30
+    })
+    for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
+      layoutStore.updateNodeSlotOffsets(
+        graphId,
+        nodeId,
+        [{ index: 0, type: 'input', position: { x: 0, y: 10 } }],
+        'expanded'
+      )
+    }
+
+    for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
+      layoutStore.applyOperation({
+        type: 'createGroup',
+        graphId,
+        groupId: GROUP_ID,
+        layout: {
+          id: GROUP_ID,
+          position: { x: 0, y: 0 },
+          size: { width: 5, height: 5 }
+        },
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+      layoutStore.applyOperation({
+        type: 'createReroute',
+        graphId,
+        rerouteId: REROUTE_ID,
+        position: { x: 0, y: 0 },
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+    }
+
+    layoutStore.clearGraph(FIRST_GRAPH)
+
+    expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
+    expect(layoutStore.contentSizeOf(FIRST_GRAPH, nodeId)).toBeUndefined()
+    expect(
+      layoutStore.getSlotOffset(FIRST_GRAPH, nodeId, 0, 'input', 'expanded')
+    ).toBeNull()
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
+    expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
+
+    expect(
+      layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value
+    ).not.toBeNull()
+    expect(layoutStore.contentSizeOf(SECOND_GRAPH, nodeId)?.width).toBe(30)
+    expect(
+      layoutStore.getSlotOffset(SECOND_GRAPH, nodeId, 0, 'input', 'expanded')
+    ).toEqual({
+      x: 0,
+      y: 10
+    })
+    expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
+    ).not.toBeNull()
   })
 })
 
 describe('layoutStore link layout updates', () => {
   beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
 
-  const stubPath = () => ({}) as unknown as Path2D
+  const stubPath = () => fromPartial<Path2D>({})
   const baseLink = (path = stubPath()) => ({
-    id: 1 as const,
+    id: toLinkId(1),
     path,
     bounds: { x: 0, y: 0, width: 50, height: 50 },
     centerPos: { x: 25, y: 25 },
-    sourceNodeId: 'a',
-    targetNodeId: 'b',
+    sourceNodeId: toNodeId('a'),
+    targetNodeId: toNodeId('b'),
     sourceSlot: 0,
     targetSlot: 0
   })
 
   it('updateLinkLayout short-circuits when bounds and centerPos are unchanged', () => {
-    layoutStore.updateLinkLayout(1, baseLink())
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
     const newPath = stubPath()
 
-    layoutStore.updateLinkLayout(1, baseLink(newPath))
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink(newPath))
 
-    expect(layoutStore.getLinkLayout(1)?.path).toBe(newPath)
+    expect(layoutStore.getLinkLayout(toLinkId(1))?.path).toBe(newPath)
   })
 
   it('updateLinkLayout replaces stored layout when bounds change', () => {
-    layoutStore.updateLinkLayout(1, baseLink())
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
     const moved = {
       ...baseLink(),
       bounds: { x: 10, y: 10, width: 50, height: 50 }
     }
 
-    layoutStore.updateLinkLayout(1, moved)
+    layoutStore.updateLinkLayout(toLinkId(1), moved)
 
-    expect(layoutStore.getLinkLayout(1)?.bounds.x).toBe(10)
+    expect(layoutStore.getLinkLayout(toLinkId(1))?.bounds.x).toBe(10)
   })
 
   it('deleteLinkLayout removes the link and its segment layouts', () => {
-    layoutStore.updateLinkLayout(1, baseLink())
-    layoutStore.updateLinkSegmentLayout(1, null, {
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
       path: stubPath(),
       bounds: { x: 0, y: 0, width: 5, height: 5 },
       centerPos: { x: 1, y: 1 }
     })
 
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toEqual({
-      linkId: 1,
+      linkId: toLinkId(1),
       rerouteId: null
     })
 
-    layoutStore.deleteLinkLayout(1)
+    layoutStore.deleteLinkLayout(toLinkId(1))
 
-    expect(layoutStore.getLinkLayout(1)).toBeNull()
+    expect(layoutStore.getLinkLayout(toLinkId(1))).toBeNull()
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
   })
+})
+
+describe('layoutStore content-size performance contract', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  it.for([1, 100, 500])(
+    'keeps unchanged and changed reports geometry-neutral at %i nodes',
+    (count) => {
+      const geometryChanged = vi.fn()
+      const stop = layoutStore.onGeometryChange(geometryChanged)
+      const geometryVersion = layoutStore.geometryVersion
+      const nodeGeometryVersion = layoutStore.nodeGeometryVersion
+
+      for (let index = 0; index < count; index++) {
+        const nodeId = toNodeId(`content-size-${count}-${index}`)
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 240,
+          height: 150
+        })
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 240,
+          height: 150
+        })
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 241,
+          height: 151
+        })
+      }
+
+      expect(layoutStore.geometryVersion).toBe(geometryVersion)
+      expect(layoutStore.nodeGeometryVersion).toBe(nodeGeometryVersion)
+      expect(geometryChanged).not.toHaveBeenCalled()
+      expect(
+        layoutStore.contentSizeOf(
+          GRAPH,
+          toNodeId(`content-size-${count}-${count - 1}`)
+        )
+      ).toEqual({ width: 241, height: 151 })
+      stop()
+    }
+  )
 })
