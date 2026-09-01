@@ -15,12 +15,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import {
-  getNodeWidgetValue,
-  setNodeWidgetValue
-} from '@/core/graph/widgets/nodeWidgetValues'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -84,22 +82,31 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     return app.canvas.graph.getNodeById(nodeId)
   })
 
+  const widgetValueStore = useWidgetValueStore()
+
+  function storedWidgetValue(name: string): unknown {
+    const node = litegraphNode.value
+    if (!node) return undefined
+    const graphId = node.graph?.rootGraph?.id
+    return graphId
+      ? widgetValueStore.getWidget(widgetId(graphId, node.id, name))?.value
+      : undefined
+  }
+
+  function writeWidgetValue(name: string, value: number | string): void {
+    const widget = litegraphNode.value?.widgets?.find((w) => w.name === name)
+    if (!widget || widget.value === value) return
+    widget.value = value
+    widget.callback?.(value)
+  }
+
   function numberWidgetProjection(name: string, fallback: number) {
-    const fallbackValue = ref(fallback)
     return computed<number>({
       get: () => {
-        const node = litegraphNode.value
-        if (!node) return fallbackValue.value
-        const value = getNodeWidgetValue(node, name)
-        return typeof value === 'number' && value > 0
-          ? value
-          : fallbackValue.value
+        const v = storedWidgetValue(name)
+        return typeof v === 'number' && v > 0 ? v : fallback
       },
-      set: (value) => {
-        fallbackValue.value = value
-        const node = litegraphNode.value
-        if (node) setNodeWidgetValue(node, name, value)
-      }
+      set: (v) => writeWidgetValue(name, v)
     })
   }
 
@@ -107,15 +114,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const canvasHeight = numberWidgetProjection('height', 512)
   const backgroundColor = computed<string>({
     get: () => {
-      const node = litegraphNode.value
-      if (!node) return '#000000'
-      const v = getNodeWidgetValue(node, 'bg_color')
+      const v = storedWidgetValue('bg_color')
       return typeof v === 'string' ? v : '#000000'
     },
-    set: (v) => {
-      const node = litegraphNode.value
-      if (node) setNodeWidgetValue(node, 'bg_color', v)
-    }
+    set: (v) => writeWidgetValue('bg_color', v)
   })
 
   const tool = ref<PainterTool>(PAINTER_TOOLS.BRUSH)

@@ -4,14 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { usePainter } from './usePainter'
 
@@ -54,53 +52,57 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const GRAPH_ID = 'painter-test'
+const fixture = vi.hoisted(() => ({ node: null as unknown }))
 
-const mockWidgets: IBaseWidget[] = []
-const mockProperties: Record<string, unknown> = {}
+vi.mock('@/scripts/app', () => ({
+  app: { canvas: { graph: { getNodeById: () => fixture.node } } }
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 const mockIsInputConnected = vi.fn(() => false)
 const mockGetInputNode = vi.fn(() => null)
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      graph: {
-        getNodeById: vi.fn((id: NodeId) =>
-          createMockLGraphNode({
-            id,
-            graph: { rootGraph: { id: GRAPH_ID } },
-            widgets: mockWidgets,
-            properties: mockProperties,
-            isInputConnected: mockIsInputConnected,
-            getInputNode: mockGetInputNode
-          })
-        )
-      }
-    }
+interface PaintWidgetSpec {
+  name: string
+  type: 'number' | 'string' | 'color'
+  value: string | number
+}
+
+function makePaintNode(widgets: PaintWidgetSpec[] = []) {
+  const graph = new LGraph()
+  const node = new LGraphNode('PainterTestNode')
+  graph.add(node)
+  const callbacks: Record<string, ReturnType<typeof vi.fn>> = {}
+  for (const { name, type, value } of widgets) {
+    const callback = vi.fn()
+    callbacks[name] = callback
+    node.addWidget(type, name, value, callback)
   }
-}))
+  node.isInputConnected = mockIsInputConnected
+  node.getInputNode = mockGetInputNode
+  fixture.node = node
+  return { node, callbacks }
+}
+
+function widgetOf(name: string): IBaseWidget {
+  const widget = (fixture.node as LGraphNode).widgets?.find(
+    (w) => w.name === name
+  )
+  if (!widget) throw new Error(`Expected a '${name}' widget on the paint node`)
+  return widget
+}
+
+function storedValue(name: string): unknown {
+  const id = widgetOf(name).widgetId
+  return id ? useWidgetValueStore().getWidget(id)?.value : undefined
+}
 
 type PainterResult = ReturnType<typeof usePainter>
-
-function makeWidget(name: string, value: unknown = null): IBaseWidget {
-  return {
-    name,
-    value,
-    serializeValue: undefined
-  } as unknown as IBaseWidget
-}
-
-function painterWidgetId(name: string, nodeId: NodeId = toNodeId('test-node')) {
-  return widgetId(GRAPH_ID, nodeId, name)
-}
-
-function registerWidgetState(name: string, type: string, value: WidgetValue) {
-  useWidgetValueStore().registerWidget(painterWidgetId(name), {
-    type,
-    value,
-    options: {}
-  })
-}
 
 /**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.
@@ -128,25 +130,23 @@ function mountPainter(
     }
   })
 
-  const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
   render(Wrapper, { global: { plugins: [i18n] } })
   return { painter, canvasEl, cursorEl, modelValue }
 }
 
 describe('usePainter', () => {
   beforeEach(() => {
-    mockWidgets.length = 0
-    for (const key of Object.keys(mockProperties)) {
-      delete mockProperties[key]
-    }
+    makePaintNode()
     mockIsInputConnected.mockReturnValue(false)
     mockGetInputNode.mockReturnValue(null)
   })
 
-  describe('syncCanvasSizeFromWidgets', () => {
+  describe('canvas size projections', () => {
     it('reads width/height from widget values on initialization', () => {
-      registerWidgetState('width', 'number', 1024)
-      registerWidgetState('height', 'number', 768)
+      makePaintNode([
+        { name: 'width', type: 'number', value: 1024 },
+        { name: 'height', type: 'number', value: 768 }
+      ])
 
       const { painter } = mountPainter()
 
@@ -162,7 +162,7 @@ describe('usePainter', () => {
     })
 
     it('resizes the canvas and preserves its content on external store writes', async () => {
-      registerWidgetState('width', 'number', 512)
+      makePaintNode([{ name: 'width', type: 'number', value: 512 }])
       const mainCtx = fromPartial<CanvasRenderingContext2D>({
         drawImage: vi.fn()
       })
@@ -188,7 +188,7 @@ describe('usePainter', () => {
         .spyOn(document, 'createElement')
         .mockReturnValue(tmpCanvas)
 
-      useWidgetValueStore().setValue(painterWidgetId('width'), 2048)
+      useWidgetValueStore().setValue(widgetOf('width').widgetId!, 2048)
       await nextTick()
       createElement.mockRestore()
 
@@ -198,15 +198,46 @@ describe('usePainter', () => {
       expect(tmpCtx.drawImage).toHaveBeenCalledWith(fakeCanvas, 0, 0)
       expect(mainCtx.drawImage).toHaveBeenCalledWith(tmpCanvas, 0, 0)
     })
+
+    it('writes size edits through the widget and notifies its callback', async () => {
+      const { callbacks } = makePaintNode([
+        { name: 'width', type: 'number', value: 512 },
+        { name: 'height', type: 'number', value: 512 }
+      ])
+
+      const { painter } = mountPainter()
+
+      painter.canvasWidth.value = 800
+      painter.canvasHeight.value = 600
+      await nextTick()
+
+      expect(storedValue('width')).toBe(800)
+      expect(storedValue('height')).toBe(600)
+      expect(callbacks['width']).toHaveBeenCalledWith(800)
+      expect(callbacks['height']).toHaveBeenCalledWith(600)
+    })
+
+    it('skips the widget callback when the value is unchanged', () => {
+      const { callbacks } = makePaintNode([
+        { name: 'width', type: 'number', value: 512 }
+      ])
+
+      const { painter } = mountPainter()
+
+      painter.canvasWidth.value = 512
+
+      expect(callbacks['width']).not.toHaveBeenCalled()
+    })
   })
 
   describe('restoreSettingsFromProperties', () => {
     it('restores tool and brush settings from node properties on init', () => {
-      mockProperties.painterTool = 'eraser'
-      mockProperties.painterBrushSize = 42
-      mockProperties.painterBrushColor = '#ff0000'
-      mockProperties.painterBrushOpacity = 0.5
-      mockProperties.painterBrushHardness = 0.8
+      const { node } = makePaintNode()
+      node.properties.painterTool = 'eraser'
+      node.properties.painterBrushSize = 42
+      node.properties.painterBrushColor = '#ff0000'
+      node.properties.painterBrushOpacity = 0.5
+      node.properties.painterBrushHardness = 0.8
 
       const { painter } = mountPainter()
 
@@ -217,8 +248,8 @@ describe('usePainter', () => {
       expect(painter.brushHardness.value).toBe(0.8)
     })
 
-    it('restores backgroundColor from bg_color widget', () => {
-      registerWidgetState('bg_color', 'color', '#123456')
+    it('restores backgroundColor from the bg_color widget', () => {
+      makePaintNode([{ name: 'bg_color', type: 'color', value: '#123456' }])
 
       const { painter } = mountPainter()
 
@@ -238,6 +269,7 @@ describe('usePainter', () => {
 
   describe('saveSettingsToProperties', () => {
     it('persists tool settings to node properties when they change', async () => {
+      const { node } = makePaintNode()
       const { painter } = mountPainter()
 
       painter.tool.value = 'eraser'
@@ -248,52 +280,34 @@ describe('usePainter', () => {
 
       await nextTick()
 
-      expect(mockProperties.painterTool).toBe('eraser')
-      expect(mockProperties.painterBrushSize).toBe(50)
-      expect(mockProperties.painterBrushColor).toBe('#00ff00')
-      expect(mockProperties.painterBrushOpacity).toBe(0.7)
-      expect(mockProperties.painterBrushHardness).toBe(0.3)
+      expect(node.properties.painterTool).toBe('eraser')
+      expect(node.properties.painterBrushSize).toBe(50)
+      expect(node.properties.painterBrushColor).toBe('#00ff00')
+      expect(node.properties.painterBrushOpacity).toBe(0.7)
+      expect(node.properties.painterBrushHardness).toBe(0.3)
     })
   })
 
-  describe('syncCanvasSizeToWidgets', () => {
-    it('syncs canvas dimensions to widget store when size changes', async () => {
-      const store = useWidgetValueStore()
-      registerWidgetState('width', 'number', 512)
-      registerWidgetState('height', 'number', 512)
-
-      const { painter } = mountPainter()
-
-      painter.canvasWidth.value = 800
-      painter.canvasHeight.value = 600
-      await nextTick()
-
-      expect(store.getWidget(painterWidgetId('width'))?.value).toBe(800)
-      expect(store.getWidget(painterWidgetId('height'))?.value).toBe(600)
-    })
-  })
-
-  describe('syncBackgroundColorToWidget', () => {
-    it('syncs background color to widget store when color changes', async () => {
-      const store = useWidgetValueStore()
-      registerWidgetState('bg_color', 'color', '#000000')
+  describe('background color projection', () => {
+    it('writes color edits through the widget and notifies its callback', async () => {
+      const { callbacks } = makePaintNode([
+        { name: 'bg_color', type: 'color', value: '#000000' }
+      ])
 
       const { painter } = mountPainter()
 
       painter.backgroundColor.value = '#ff00ff'
       await nextTick()
 
-      expect(store.getWidget(painterWidgetId('bg_color'))?.value).toBe(
-        '#ff00ff'
-      )
+      expect(storedValue('bg_color')).toBe('#ff00ff')
+      expect(callbacks['bg_color']).toHaveBeenCalledWith('#ff00ff')
     })
 
     it('projects external background color store writes', async () => {
-      const store = useWidgetValueStore()
-      registerWidgetState('bg_color', 'color', '#000000')
+      makePaintNode([{ name: 'bg_color', type: 'color', value: '#000000' }])
       const { painter } = mountPainter()
 
-      store.setValue(painterWidgetId('bg_color'), '#123456')
+      useWidgetValueStore().setValue(widgetOf('bg_color').widgetId!, '#123456')
       await nextTick()
 
       expect(painter.backgroundColor.value).toBe('#123456')
@@ -318,10 +332,11 @@ describe('usePainter', () => {
   })
 
   describe('handleInputImageLoad', () => {
-    it('updates canvas size and widgets from loaded image dimensions', () => {
-      const store = useWidgetValueStore()
-      registerWidgetState('width', 'number', 512)
-      registerWidgetState('height', 'number', 512)
+    it('updates canvas size widgets from loaded image dimensions', () => {
+      const { callbacks } = makePaintNode([
+        { name: 'width', type: 'number', value: 512 },
+        { name: 'height', type: 'number', value: 512 }
+      ])
 
       const { painter } = mountPainter()
 
@@ -336,8 +351,10 @@ describe('usePainter', () => {
 
       expect(painter.canvasWidth.value).toBe(1920)
       expect(painter.canvasHeight.value).toBe(1080)
-      expect(store.getWidget(painterWidgetId('width'))?.value).toBe(1920)
-      expect(store.getWidget(painterWidgetId('height'))?.value).toBe(1080)
+      expect(storedValue('width')).toBe(1920)
+      expect(storedValue('height')).toBe(1080)
+      expect(callbacks['width']).toHaveBeenCalledWith(1920)
+      expect(callbacks['height']).toHaveBeenCalledWith(1080)
     })
   })
 
@@ -401,29 +418,26 @@ describe('usePainter', () => {
 
   describe('registerWidgetSerialization', () => {
     it('attaches serializeValue to the mask widget on init', () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       mountPainter()
 
-      expect(maskWidget.serializeValue).toBeTypeOf('function')
+      expect(widgetOf('mask').serializeValue).toBeTypeOf('function')
     })
   })
 
   describe('serializeValue', () => {
     it('returns existing modelValue when not dirty (preserves workflow-restored mask reference across WidgetPainter remount)', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
-      const result = await maskWidget.serializeValue!({}, 0)
+      const result = await widgetOf('mask').serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/existing.png [temp]')
     })
 
     it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       const fetchApiMock = vi.mocked(api.fetchApi)
       fetchApiMock.mockResolvedValueOnce({
@@ -431,17 +445,17 @@ describe('usePainter', () => {
         json: async () => ({ name: 'uploaded.png' })
       } as Response)
 
-      const fakeCanvas = {
+      const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
         height: 4,
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
+      })
 
       const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      const result = await maskWidget.serializeValue!({}, 0)
+      const result = await widgetOf('mask').serializeValue!({} as LGraphNode, 0)
       expect(fetchApiMock).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
@@ -456,32 +470,30 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response is missing a name', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => ({})
       } as Response)
 
-      const fakeCanvas = {
+      const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
         height: 4,
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
+      })
 
       const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      await expect(maskWidget.serializeValue!({}, 0)).rejects.toThrow(
-        /missing 'name'/
-      )
+      await expect(
+        widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/missing 'name'/)
     })
 
     it('throws when the upload response body is not valid JSON', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
@@ -490,42 +502,40 @@ describe('usePainter', () => {
         }
       } as unknown as Response)
 
-      const fakeCanvas = {
+      const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
         height: 4,
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
+      })
 
       const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      await expect(maskWidget.serializeValue!({}, 0)).rejects.toThrow(
-        /painter\.uploadError/
-      )
+      await expect(
+        widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/painter\.uploadError/)
     })
 
     it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
-      const result = await maskWidget.serializeValue!({}, 0)
+      const result = await widgetOf('mask').serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/cached.png [temp]')
     })
 
     it('clears the cached upload reference when the user clears the canvas', () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      const fakeCanvas = {
+      const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
         height: 4,
-        getContext: vi.fn(() => ({
-          clearRect: vi.fn()
-        }))
-      } as unknown as HTMLCanvasElement
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() =>
+          fromPartial<CanvasRenderingContext2D>({ clearRect: vi.fn() })
+        )
+      })
 
       const { painter, canvasEl, modelValue } = mountPainter(
         toNodeId('test-node'),
