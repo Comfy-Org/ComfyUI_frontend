@@ -276,6 +276,7 @@ describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
+    agentPanelHolder.store.flagDelivered.value = true
     agentPanelHolder.store.isOpen.value = false
     agentPanelHolder.store.toggle.mockClear()
   })
@@ -288,6 +289,15 @@ describe('WorkflowTabs agent entry button', () => {
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
     tabBarLayout.value = 'Legacy'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
+  })
+
+  it('does not render the entry button before server flags settle', () => {
+    agentPanelHolder.store.flagDelivered.value = false
     renderComponent()
 
     expect(
