@@ -186,6 +186,12 @@ describe('agentApiSchema contract subtleties', () => {
     expect(
       zAgentWsEvent.safeParse({
         type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', thread_id: 'th-1' }
+      }).success
+    ).toBe(true)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
         data: { thread_id: 'th-1' }
       }).success
     ).toBe(false)
