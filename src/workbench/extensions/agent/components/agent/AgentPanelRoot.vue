@@ -1,5 +1,6 @@
 <template>
   <div
+    id="agent-panel-root"
     data-testid="agent-panel-root"
     class="flex size-full flex-col bg-base-background text-sm text-base-foreground"
   >
