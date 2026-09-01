@@ -78,7 +78,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     // carried a data-testid instead).
     await expect(page.locator('#agent-panel-root')).toBeVisible()
 
-    await panel.getByRole('button', { name: enMessages.g.close }).click()
+    await panel.getByRole('button', { name: enMessages.agent.close }).click()
     await expect(panel).toHaveCount(0)
   })
 
