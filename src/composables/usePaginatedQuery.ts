@@ -8,6 +8,13 @@ export interface PageResult<T> {
   total: number
 }
 
+export class PageRequestError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'PageRequestError'
+  }
+}
+
 interface UsePaginatedQueryOptions<T, K> {
   /**
    * Reactive identity of the query. Changing it resets to page 1 and
@@ -17,8 +24,8 @@ interface UsePaginatedQueryOptions<T, K> {
   key: MaybeRefOrGetter<K>
   initialLimit?: number
   /**
-   * Fetches one page. Reject/throw with a message meant for display; the
-   * query surfaces it verbatim as `error`.
+   * Fetches one page. Throw `PageRequestError` with a message meant for
+   * display; the query surfaces it verbatim as `error`.
    */
   fetchPage: (params: {
     key: K

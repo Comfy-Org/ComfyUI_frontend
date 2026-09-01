@@ -102,7 +102,10 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { usePaginatedQuery } from '@/composables/usePaginatedQuery'
+import {
+  usePaginatedQuery,
+  PageRequestError
+} from '@/composables/usePaginatedQuery'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -139,7 +142,9 @@ const {
         : await customerEventService.getMyEvents(params)
     } catch (err) {
       console.error('Error loading events:', err)
-      throw new Error(t('credits.loadEventsUnknownError'), { cause: err })
+      throw new PageRequestError(t('credits.loadEventsUnknownError'), {
+        cause: err
+      })
     }
 
     // Completion telemetry must run even when a mid-checkout route flip
@@ -154,7 +159,7 @@ const {
       const legacyError = shouldUseWorkspaceBilling.value
         ? null
         : customerEventService.error.value
-      throw new Error(legacyError || t('credits.loadEventsError'))
+      throw new PageRequestError(legacyError || t('credits.loadEventsError'))
     }
 
     return {
