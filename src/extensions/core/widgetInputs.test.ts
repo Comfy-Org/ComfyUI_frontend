@@ -103,7 +103,9 @@ describe('PrimitiveNode', () => {
     graph.add(primitive)
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
-    primitive.configure(fromPartial({ widgets_values: [222] }))
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
     appState.configuringGraph = false
 
     primitive.onAfterGraphConfigured()
@@ -133,7 +135,9 @@ describe('PrimitiveNode', () => {
     graph.add(primitive)
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
-    primitive.configure(fromPartial({ widgets_values: [null] }))
+    primitive.configure(
+      fromPartial({ widgets_values: [null], outputs: [{ type: 'STRING' }] })
+    )
     appState.configuringGraph = false
 
     primitive.onAfterGraphConfigured()
@@ -141,7 +145,60 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBeNull()
   })
 
-  it('restores its serialized control_after_generate value', () => {
+  it('restores its serialized control value when the target declares control_after_generate', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222, 'fixed'],
+        outputs: [{ type: 'INT' }]
+      })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[1].value).toBe('fixed')
+  })
+
+  it('does not apply a serialized value left over from an unresolved output type', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Loader')
+    target.comfyClass = 'CheckpointLoaderSimple'
+    graph.add(target)
+    target.addInput('ckpt_name', 'COMBO')
+    target.inputs[0].widget = {
+      name: 'ckpt_name',
+      [GET_CONFIG]: () => [['a.safetensors', 'b.safetensors'], {}]
+    }
+    target.addWidget('combo', 'ckpt_name', 'a.safetensors', () => {}, {
+      values: ['a.safetensors', 'b.safetensors']
+    })
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: '*' }] })
+    )
+
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe('a.safetensors')
+  })
+
+  it('restores its serialized control value via the value-control fallback', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -156,7 +213,12 @@ describe('PrimitiveNode', () => {
     graph.add(primitive)
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
-    primitive.configure(fromPartial({ widgets_values: [222, 'randomize'] }))
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222, 'randomize'],
+        outputs: [{ type: 'INT' }]
+      })
+    )
     appState.configuringGraph = false
 
     primitive.onAfterGraphConfigured()
@@ -177,7 +239,9 @@ describe('PrimitiveNode', () => {
 
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
-    primitive.configure(fromPartial({ widgets_values: [222] }))
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
     primitive.connect(0, target, 0)
 
     expect(primitive.widgets?.[0].value).toBe(222)
@@ -210,7 +274,10 @@ describe('PrimitiveNode', () => {
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
-      fromPartial({ widgets_values: ['serialized.safetensors'] })
+      fromPartial({
+        widgets_values: ['serialized.safetensors'],
+        outputs: [{ type: 'COMBO' }]
+      })
     )
     appState.configuringGraph = false
 
@@ -264,7 +331,9 @@ describe('PrimitiveNode', () => {
       targetSlot: 0,
       type: '*'
     })
-    primitive.configure(fromPartial({ widgets_values: [222] }))
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
 
     primitive.onAfterGraphConfigured()
 

@@ -38,7 +38,10 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
-  private configuredWidgetValues?: ISerialisedNode['widgets_values']
+  private configuredWidgetValues?: {
+    type: string
+    values: NonNullable<ISerialisedNode['widgets_values']>
+  }
   static override category: string
   constructor(title: string) {
     super(title)
@@ -126,7 +129,10 @@ export class PrimitiveNode extends LGraphNode {
 
   override onConfigure(serialisedNode: ISerialisedNode) {
     super.onConfigure?.(serialisedNode)
-    this.configuredWidgetValues = serialisedNode.widgets_values
+    const values = serialisedNode.widgets_values
+    const type = serialisedNode.outputs?.[0]?.type
+    this.configuredWidgetValues =
+      values && typeof type === 'string' ? { type, values } : undefined
   }
 
   override onAfterGraphConfigured() {
@@ -256,9 +262,10 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
-    const configuredWidgetValues = recreating
-      ? undefined
-      : this.configuredWidgetValues
+    const configuredWidgetValues =
+      !recreating && this.configuredWidgetValues?.type === type
+        ? this.configuredWidgetValues.values
+        : undefined
     const hasConfiguredWidgetValue =
       configuredWidgetValues !== undefined && 0 in configuredWidgetValues
     const configuredWidgetValue = configuredWidgetValues?.[0]
@@ -271,7 +278,7 @@ export class PrimitiveNode extends LGraphNode {
       const theirWidget = node.widgets?.find((w) => w.name === widgetName)
       if (theirWidget) widget.value = theirWidget.value
       if (hasConfiguredWidgetValue) widget.value = configuredWidgetValue
-      if (!recreating) this.configuredWidgetValues = undefined
+      if (configuredWidgetValues) this.configuredWidgetValues = undefined
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
       return
     }
@@ -295,19 +302,16 @@ export class PrimitiveNode extends LGraphNode {
       !inputData?.[1]?.control_after_generate &&
       (widget.type === 'number' || widget.type === 'combo')
     ) {
-      const configuredControlValue = configuredWidgetValues?.[1]
-      const control_value =
-        typeof configuredControlValue === 'string'
-          ? configuredControlValue
-          : 'fixed'
-      addValueControlWidgets(this, widget, control_value, undefined, inputData)
+      addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
       if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
-
-      const filter = configuredWidgetValues?.[2]
-      if (filter !== undefined && this.widgets?.length === 3) {
-        this.widgets[2].value = filter
-      }
     }
+
+    configuredWidgetValues?.slice(1).forEach((value, index) => {
+      const controlWidget = this.widgets?.[index + 1]
+      if (controlWidget && typeof value === 'string') {
+        controlWidget.value = value
+      }
+    })
 
     // Restore any saved control values
     const controlValues = this.controlValues
@@ -321,7 +325,7 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
-    if (!recreating) this.configuredWidgetValues = undefined
+    if (configuredWidgetValues) this.configuredWidgetValues = undefined
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
   }
 
