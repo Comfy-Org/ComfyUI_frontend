@@ -28,7 +28,8 @@ export function storageStateKey(distribution?: Distribution): string {
     return distribution.id
   }
   try {
-    return `custom-${new URL(distribution.backendUrl).hostname}`
+    const { hostname, port } = new URL(distribution.backendUrl)
+    return `custom-${hostname}${port ? `-${port}` : ''}`
   } catch {
     return 'custom'
   }
