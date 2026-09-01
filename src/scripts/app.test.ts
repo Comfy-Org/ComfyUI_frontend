@@ -2380,7 +2380,6 @@ describe('ComfyApp', () => {
       document.dispatchEvent(event)
       await Promise.resolve()
 
-      // The guard returns after preventDefault: nothing reads the payload.
       expect(event.defaultPrevented).toBe(true)
       expect(adjustMouseEvent).not.toHaveBeenCalled()
       expect(vi.mocked(extractFilesFromDragEvent)).not.toHaveBeenCalled()

@@ -107,7 +107,6 @@ describe('useSelectionToolboxPosition', () => {
     node.pos = [100, 200]
     node.size = [160, 80]
 
-    // Mirrors app.ts: canvas state is reactive, so the mode watcher fires.
     const state = reactive({
       draggingItems: false,
       selectionChanged: true,
@@ -146,7 +145,6 @@ describe('useSelectionToolboxPosition', () => {
 
     expect(visible.value).toBe(false)
 
-    // Move the node while hidden: the restore must RE-EVALUATE, not replay.
     node.pos = [100, 300]
     state.selectOnly = false
     await nextTick()

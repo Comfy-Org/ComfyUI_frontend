@@ -332,7 +332,6 @@ export function useMediaAssetActions() {
    * Uses shared utility to detect appropriate node type based on file extension
    */
   const addWorkflow = async (asset?: AssetItem) => {
-    // A picking refusal is silent-nothing, not a failure.
     if (isSelectOnly(app.canvas)) return
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
@@ -468,7 +467,6 @@ export function useMediaAssetActions() {
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
-    // A picking refusal is silent-nothing: no failed count, no summary toast.
     if (isSelectOnly(app.canvas)) return
 
     const NODE_OFFSET = 50

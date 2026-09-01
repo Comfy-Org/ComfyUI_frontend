@@ -260,8 +260,6 @@ describe('useLitegraphService().addNodeOnGraph', () => {
       pos: [0, 0]
     })
 
-    // The choke point every creation surface traverses (search popover,
-    // libraries, bookmarks, ghost-drops, job menu) refuses while picking.
     expect(node).toBeNull()
     expect(createSpy).not.toHaveBeenCalled()
   })
