@@ -12,7 +12,8 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -54,17 +55,32 @@ function pick(session: ChatSession): void {
   emit('select', session.id)
 }
 
+const MAX_TITLE_LENGTH = 200
+
 const renamingId = ref<string | null>(null)
 const renameDraft = ref('')
-const renameInputs = useTemplateRef<HTMLInputElement[]>('renameInput')
+const selectOnFocus = ref(false)
 
-async function startRename(session: ChatSession): Promise<void> {
+function startRename(session: ChatSession): void {
   renamingId.value = session.id
   renameDraft.value = session.title
-  await nextTick()
-  const input = renameInputs.value?.[0]
-  input?.focus()
-  input?.select()
+  selectOnFocus.value = true
+}
+
+// Runs on every mount of the editor, so a row that regroups mid-rename gets
+// focus back; selecting is confined to the fresh open so a remount cannot
+// wipe what the user has already typed.
+function focusInput(el: Element | ComponentPublicInstance | null): void {
+  if (!(el instanceof HTMLInputElement)) return
+  const shouldSelect = selectOnFocus.value
+  selectOnFocus.value = false
+  // Deferred because the ref fires before the element is in the document and
+  // before v-model has written the draft, so focusing here directly would
+  // leave the caret at the end instead of selecting the existing title.
+  void nextTick(() => {
+    el.focus()
+    if (shouldSelect) el.select()
+  })
 }
 
 function cancelRename(): void {
@@ -74,7 +90,8 @@ function cancelRename(): void {
 function commitRename(session: ChatSession): void {
   renamingId.value = null
   const title = renameDraft.value.trim()
-  if (title !== '' && title !== session.title) emit('rename', session.id, title)
+  if (title !== '' && title !== session.title.trim())
+    emit('rename', session.id, title)
 }
 
 function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
@@ -146,13 +163,14 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
               class="text-agent-fg-muted icon-[lucide--circle-check] size-4 shrink-0"
             />
             <input
-              ref="renameInput"
+              :ref="focusInput"
               v-model="renameDraft"
               type="text"
               :aria-label="t('g.rename')"
+              :maxlength="MAX_TITLE_LENGTH"
               class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
               @keydown="onRenameKeydown(session, $event)"
-              @blur="cancelRename"
+              @blur="commitRename(session)"
             />
           </div>
           <template v-else>
@@ -163,7 +181,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
             >
               <span class="icon-[lucide--circle-check] size-4 shrink-0" />
               <span class="truncate">{{
-                session.title || t('agent.untitledChat')
+                session.title.trim() || t('agent.untitledChat')
               }}</span>
             </button>
             <AgentTooltip :label="t('agent.copyMarkdown')">
@@ -188,7 +206,8 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                   side="bottom"
                   align="end"
                   :side-offset="4"
-                  class="agent-scope bg-agent-surface-raised z-1100 flex h-16 w-32 flex-col gap-1 overflow-clip rounded-[10px] p-1 shadow-md ring-1 ring-black/10 ring-inset"
+                  class="agent-scope bg-agent-surface-raised z-1100 flex w-32 flex-col gap-1 overflow-clip rounded-[10px] p-1 shadow-md ring-1 ring-black/10 ring-inset"
+                  @close-auto-focus.prevent
                 >
                   <DropdownMenuItem
                     class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
