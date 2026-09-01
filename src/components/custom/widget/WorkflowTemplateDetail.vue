@@ -96,20 +96,25 @@ function getProgressAriaLabel(
     state.activity === 'paused'
       ? 'templateWorkflows.detail.downloadPausedModel'
       : 'templateWorkflows.detail.downloadingModel',
-    { model: row.name }
+    { model: row.name },
+    { escapeParameter: false }
   )
 }
 
 function getDownloadAriaLabel(row: TemplateDetailRow): string {
-  return t('templateWorkflows.detail.downloadModelNamed', {
-    model: row.name
-  })
+  return t(
+    'templateWorkflows.detail.downloadModelNamed',
+    { model: row.name },
+    { escapeParameter: false }
+  )
 }
 
 function getRetryAriaLabel(row: TemplateDetailRow): string {
-  return t('templateWorkflows.detail.retryDownloadNamed', {
-    model: row.name
-  })
+  return t(
+    'templateWorkflows.detail.retryDownloadNamed',
+    { model: row.name },
+    { escapeParameter: false }
+  )
 }
 
 function getFailedDownloadLabel(
@@ -371,13 +376,18 @@ function getFailedDownloadLabel(
                 </Button>
               </span>
 
-              <i
+              <span
                 v-else-if="row.status?.kind === 'installed'"
                 role="img"
                 :aria-label="row.status.label"
                 :title="row.status.label"
-                class="icon-[lucide--circle-check] size-4 shrink-0 text-success-background"
-              />
+                class="flex size-6 shrink-0 items-center justify-center"
+              >
+                <i
+                  aria-hidden="true"
+                  class="icon-[lucide--circle-check] size-4 text-success-background"
+                />
+              </span>
 
               <span
                 v-else-if="row.status"
