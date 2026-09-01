@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DocumentViewBinding } from '@/core/graph/document/activationCoordinator'
+import type {
+  ActivationOutcome,
+  DocumentViewBinding
+} from '@/core/graph/document/activationCoordinator'
 import { createActivationCoordinator } from '@/core/graph/document/activationCoordinator'
 import type { DocumentId } from '@/types/documentId'
 import { toDocumentId } from '@/types/documentId'
@@ -191,7 +194,84 @@ describe('createActivationCoordinator', () => {
       reason: 'handoff-failed'
     })
     expect(coordinator.activeDocumentId()).toBeNull()
-    // The previous document was detached exactly once before the failure.
+    // The previous document was detached exactly once before the failure,
+    // and the failed binding received a best-effort undo-detach.
+    expect(log).toEqual([
+      `attach:a:${docA}`,
+      `detach:a:${docA}`,
+      `detach:b:${docB}`
+    ])
+  })
+
+  it('a reentrant deactivate from within attach supersedes the activation', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const log: string[] = []
+    const docB = toDocumentId('doc-b')
+    const reentrantBinding: DocumentViewBinding = {
+      attach: (id) => {
+        log.push(`attach:b:${id}`)
+        coordinator.deactivate(docB)
+      },
+      detach: (id) => log.push(`detach:b:${id}`)
+    }
+
+    const outcome = await coordinator.activate(docB, reentrantBinding)
+
+    expect(outcome).toEqual({ status: 'superseded', documentId: docB })
+    expect(coordinator.activeDocumentId()).toBeNull()
+    // The attach was undone instead of publishing over the deactivate.
+    expect(log).toEqual([`attach:b:${docB}`, `detach:b:${docB}`])
+  })
+
+  it('a reentrant activate from within detach wins over the in-progress handoff', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const log: string[] = []
+    const docA = toDocumentId('doc-a')
+    const docB = toDocumentId('doc-b')
+    const docC = toDocumentId('doc-c')
+    let reentrant: Promise<ActivationOutcome> | undefined
+    const bindingA: DocumentViewBinding = {
+      attach: (id) => log.push(`attach:a:${id}`),
+      detach: (id) => {
+        log.push(`detach:a:${id}`)
+        reentrant = coordinator.activate(docC, recordingBinding(log, 'c'))
+      }
+    }
+    await coordinator.activate(docA, bindingA)
+
+    const outcome = await coordinator.activate(docB, recordingBinding(log, 'b'))
+
+    expect(outcome).toEqual({ status: 'superseded', documentId: docB })
+    expect(await reentrant).toEqual({ status: 'activated', documentId: docC })
+    expect(coordinator.activeDocumentId()).toBe(docC)
+    // B never attached; C attached exactly once after A's detach.
+    expect(log).toEqual([
+      `attach:a:${docA}`,
+      `detach:a:${docA}`,
+      `attach:c:${docC}`
+    ])
+  })
+
+  it('deactivate of a superseded in-flight document is a no-op', async () => {
+    const slowHydration = deferred()
+    const docA = toDocumentId('doc-a')
+    const docB = toDocumentId('doc-b')
+    const coordinator = createActivationCoordinator({
+      isLoaded: () => true,
+      hydrate: (id) => (id === docB ? slowHydration.promise : Promise.resolve())
+    })
+    const log: string[] = []
+    await coordinator.activate(docA, recordingBinding(log, 'a'))
+
+    const inFlight = coordinator.activate(docB, recordingBinding(log, 'b'))
+    expect(coordinator.deactivate(docA)).toBe(true)
+    slowHydration.resolve()
+    expect(await inFlight).toEqual({ status: 'superseded', documentId: docB })
+
+    // The superseded request cleared its own pending record, so deactivating
+    // the never-activated document reports that nothing was cancelled.
+    expect(coordinator.deactivate(docB)).toBe(false)
+    expect(coordinator.activeDocumentId()).toBeNull()
     expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
   })
 
