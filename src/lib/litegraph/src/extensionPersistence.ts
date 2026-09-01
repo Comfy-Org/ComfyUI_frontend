@@ -1,5 +1,3 @@
-import cloneDeep from 'es-toolkit/compat/cloneDeep'
-
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -211,29 +209,12 @@ export const runExtensionSerializeHook = <T extends object>(
   return canonical
 }
 
-const serialiseConfigureSlot = (slot: unknown): unknown => {
-  if (slot === null || typeof slot !== 'object') return slot
-  const toJSON = Reflect.get(slot, 'toJSON')
-  return typeof toJSON === 'function' ? Reflect.apply(toJSON, slot, []) : slot
-}
-
-const cloneConfigureData = <T extends object>(canonical: T): T => {
-  const normalised = { ...canonical }
-  for (const key of ['inputs', 'outputs']) {
-    const slots = Reflect.get(normalised, key)
-    if (Array.isArray(slots)) {
-      Reflect.set(normalised, key, slots.map(serialiseConfigureSlot))
-    }
-  }
-  return cloneDeep(normalised)
-}
-
 export const extensionConfigureView = <T extends object>(
   owner: object,
   canonical: T
 ): T =>
   Object.assign(
-    cloneConfigureData(canonical),
+    canonical,
     structuredClone(payloads.get(owner)?.namespaced),
     structuredClone(payloads.get(owner)?.legacy)
   )

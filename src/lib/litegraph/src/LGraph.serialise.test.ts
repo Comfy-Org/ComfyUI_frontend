@@ -8,10 +8,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ISerialisedGraph,
-  ISerialisedNode
-} from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
@@ -155,77 +152,22 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
-  test('passes an isolated serialized object to configure hooks', ({
-    expect
-  }) => {
-    const node = new LGraphNode('Extended')
-    node.addInput('input', 'number')
-    const saved: ISerialisedNode = Object.assign(node.serialize(), {
-      inputs: node.inputs,
-      legacyData: { retained: true }
-    })
-    let configuredData: ISerialisedNode | undefined
-    node.onConfigure = (data) => {
-      configuredData = data
-    }
-
-    node.configure(saved)
-
-    expect(configuredData).not.toBe(saved)
-    expect(configuredData?.inputs?.[0]).toMatchObject({
-      name: 'input',
-      type: 'number'
-    })
-    expect(configuredData?.inputs?.[0]).not.toBe(saved.inputs?.[0])
-    expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
-  })
-
-  test('preserves non-JSON numeric and undefined values in configure hooks', ({
-    expect
-  }) => {
-    const node = new LGraphNode('Extended')
-    const saved = node.serialize()
-    saved.properties = {
-      absent: undefined,
-      infinity: Number.POSITIVE_INFINITY,
-      notANumber: Number.NaN
-    }
-    let configuredData: ISerialisedNode | undefined
-    node.onConfigure = (data) => {
-      configuredData = data
-    }
-
-    node.configure(saved)
-
-    expect(configuredData?.properties).toHaveProperty('absent', undefined)
-    expect(configuredData?.properties?.infinity).toBe(Number.POSITIVE_INFINITY)
-    expect(configuredData?.properties?.notANumber).toBeNaN()
-  })
-
-  test('isolates configure-hook mutations from serialized extension data', ({
+  test('passes the original serialized object to configure hooks', ({
     expect
   }) => {
     const node = new LGraphNode('Extended')
     const saved = Object.assign(node.serialize(), {
-      extensions: { 'example.node': { enabled: true } }
+      legacyData: { retained: true }
     })
+    let configuredData: object | undefined
     node.onConfigure = (data) => {
-      const extension = data.extensions?.['example.node'] as {
-        enabled: boolean
-      }
-      extension.enabled = false
-      Object.assign(data, { 'example.node': { promoted: true } })
+      configuredData = data
     }
 
     node.configure(saved)
 
-    expect(saved.extensions).toEqual({
-      'example.node': { enabled: true }
-    })
-    expect(node.serialize().extensions).toEqual({
-      'example.node': { enabled: true }
-    })
-    expect(node.serialize()).not.toHaveProperty('example.node')
+    expect(configuredData).toBe(saved)
+    expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
   test('does not apply unsafe extension keys to the configure view', ({
