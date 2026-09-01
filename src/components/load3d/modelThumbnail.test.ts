@@ -6,11 +6,16 @@ const createLoad3d = vi.hoisted(() => vi.fn())
 vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
-const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
+const persistThumbnail = vi.hoisted(() =>
+  vi.fn(async (_assetName: string, _blob: Blob) => {})
+)
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   isAssetPreviewSupported,
   persistThumbnail
 }))
+
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 function mockInstance(overrides: Record<string, unknown> = {}) {
   return {
@@ -26,6 +31,7 @@ describe('generateModelThumbnail', () => {
     createLoad3d.mockReset()
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     persistThumbnail.mockReset()
+    reportError.mockReset()
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {
@@ -75,7 +81,7 @@ describe('generateModelThumbnail', () => {
     expect(createLoad3d).toHaveBeenCalledTimes(2)
   })
 
-  it('[11-T5 regression] times out a stuck load, disposes it, and advances the queue', async () => {
+  it('[11-T5 regression] cancels a stuck load, disposes it, and advances the queue', async () => {
     vi.useFakeTimers()
     try {
       const first = mockInstance({
@@ -92,6 +98,35 @@ describe('generateModelThumbnail', () => {
       await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
       expect(first.remove).toHaveBeenCalledOnce()
       expect(second.remove).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Model thumbnail generation timed out'
+        }),
+        { errorType: 'agent_model_thumbnail_generation_failure' }
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('bounds thumbnail capture and clears the timeout after success', async () => {
+    vi.useFakeTimers()
+    try {
+      const first = mockInstance({
+        captureThumbnail: vi.fn(() => new Promise(() => {}))
+      })
+      const second = mockInstance()
+      createLoad3d.mockReturnValueOnce(first).mockReturnValueOnce(second)
+
+      const firstRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+      const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(firstRun).resolves.toBeNull()
+      await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
+      expect(first.remove).toHaveBeenCalledOnce()
+      expect(second.remove).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
     } finally {
       vi.useRealTimers()
     }
