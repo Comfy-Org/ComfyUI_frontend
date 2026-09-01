@@ -9,6 +9,7 @@ import {
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useAuthStore } from '@/stores/authStore'
 
 import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
@@ -41,10 +42,10 @@ function reportGateBlocked(
 export function partnerRunGateBlocksAutoQueue(): boolean {
   if (isCloud) return false
   if (!useFeatureFlags().flags.partnerRunGateEnabled) return false
-  const { isLoggedIn, isAuthResolved } = useCurrentUser()
   // A signed-in user reads as logged-out until Firebase resolves; never gate
   // on that transient state.
-  if (!isAuthResolved.value) return false
+  if (!useAuthStore().isInitialized) return false
+  const { isLoggedIn } = useCurrentUser()
   if (isLoggedIn.value) return false
   const partnerNodes = scanPartnerNodesInGraph()
   if (partnerNodes.length === 0) return false
@@ -66,12 +67,13 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
   }
 
   const { partnerNodes, hasPartnerNodes } = usePartnerNodesInGraph()
-  const { isLoggedIn, isAuthResolved } = useCurrentUser()
+  const { isLoggedIn } = useCurrentUser()
   const { flags } = useFeatureFlags()
+  const authStore = useAuthStore()
 
   const gate = computed<PartnerRunGate>(() =>
     flags.partnerRunGateEnabled &&
-    isAuthResolved.value &&
+    authStore.isInitialized &&
     hasPartnerNodes.value &&
     !isLoggedIn.value
       ? 'sign-in'

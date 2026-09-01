@@ -4,6 +4,7 @@ import type { EffectScope, Ref } from 'vue'
 
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
 import * as featureFlagsModule from '@/composables/useFeatureFlags'
+import * as authStoreModule from '@/stores/authStore'
 
 import {
   partnerRunGateBlocksAutoQueue,
@@ -32,17 +33,27 @@ vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
 vi.mock('@/composables/auth/useCurrentUser', async () => {
   const { computed, ref } = await import('vue')
   const loggedIn = ref(false)
-  const authResolved = ref(true)
   return {
     useCurrentUser: () => ({
-      isLoggedIn: computed(() => loggedIn.value),
-      isAuthResolved: computed(() => authResolved.value)
+      isLoggedIn: computed(() => loggedIn.value)
     }),
     __setLoggedIn: (value: boolean) => {
       loggedIn.value = value
-    },
+    }
+  }
+})
+
+vi.mock('@/stores/authStore', async () => {
+  const { ref } = await import('vue')
+  const initialized = ref(true)
+  return {
+    useAuthStore: () => ({
+      get isInitialized() {
+        return initialized.value
+      }
+    }),
     __setAuthResolved: (value: boolean) => {
-      authResolved.value = value
+      initialized.value = value
     }
   }
 })
@@ -63,11 +74,12 @@ vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: mockReportError
 }))
 
-const { __setLoggedIn, __setAuthResolved } =
-  currentUserModule as typeof currentUserModule & {
-    __setLoggedIn: (value: boolean) => void
-    __setAuthResolved: (value: boolean) => void
-  }
+const { __setLoggedIn } = currentUserModule as typeof currentUserModule & {
+  __setLoggedIn: (value: boolean) => void
+}
+const { __setAuthResolved } = authStoreModule as typeof authStoreModule & {
+  __setAuthResolved: (value: boolean) => void
+}
 const { __setPartnerRunGateEnabled } =
   featureFlagsModule as typeof featureFlagsModule & {
     __setPartnerRunGateEnabled: (value: boolean) => void
