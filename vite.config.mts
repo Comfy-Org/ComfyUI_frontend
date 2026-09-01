@@ -642,6 +642,7 @@ export default defineConfig({
   },
 
   test: {
+    clearMocks: true,
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./vitest.setup.ts'],

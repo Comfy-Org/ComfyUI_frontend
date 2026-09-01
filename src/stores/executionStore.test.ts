@@ -104,7 +104,6 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset mock implementations
     mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
@@ -188,7 +187,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
@@ -349,7 +347,6 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -408,7 +405,6 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -450,7 +446,6 @@ describe('useExecutionStore - focusedJobId management', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -543,7 +538,6 @@ describe('useExecutionStore - isConcurrentExecutionActive', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -596,7 +590,6 @@ describe('useExecutionStore - isIdle with multi-job', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockConcurrentExecutionEnabled.value = true
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -641,7 +634,6 @@ describe('useExecutionStore - resetExecutionState auto-advance', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -715,7 +707,6 @@ describe('useExecutionStore - executionProgress from focusedJob', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockConcurrentExecutionEnabled.value = true
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -744,7 +735,6 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionErrorStore()
   })
@@ -912,7 +902,6 @@ describe('useExecutionErrorStore - setMissingNodeTypes', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionErrorStore()
   })
