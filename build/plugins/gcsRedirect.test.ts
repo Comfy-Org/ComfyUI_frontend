@@ -32,9 +32,9 @@ function createReq(headers: Record<string, string> = {}): IncomingMessage {
   return { headers } as unknown as IncomingMessage
 }
 
-function gcsResponse(headers: Record<string, string>) {
+function gcsResponse(headers: Record<string, string>, status = 200) {
   return {
-    status: 200,
+    status,
     headers: new Headers(headers),
     body: new ReadableStream({
       start(controller) {
@@ -188,12 +188,14 @@ describe('handleGcsRedirect', () => {
   })
 
   it('relays a partial-content status with its content-range', async () => {
-    const partial = gcsResponse({
-      'content-type': 'video/mp4',
-      'content-range': 'bytes 0-1/2',
-      'content-length': '2'
-    })
-    partial.status = 206
+    const partial = gcsResponse(
+      {
+        'content-type': 'video/mp4',
+        'content-range': 'bytes 0-1/2',
+        'content-length': '2'
+      },
+      206
+    )
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(partial))
     const res = createRes()
 
