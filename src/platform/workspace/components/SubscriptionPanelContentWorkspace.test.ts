@@ -520,6 +520,22 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('marks an ended Personal plan inactive when it cannot self-serve', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockBillingStatus.value = 'inactive'
+      mockCanSubscribeSelfServe.value = false
+      renderComponent()
+
+      expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
+        'Inactive'
+      )
+      expect(
+        screen.queryByTestId('subscription-state-card')
+      ).not.toBeInTheDocument()
+    })
+
     it('keeps the cancelled badge while an Enterprise plan still runs', () => {
       useEnterprisePlan()
       mockSubscriptionStatus.value = 'canceled'

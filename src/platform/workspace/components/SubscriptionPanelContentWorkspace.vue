@@ -633,7 +633,7 @@ const subscriptionStateCardDescription = computed(() =>
 )
 
 const planStatusBadge = computed(() => {
-  if (isSubscriptionEnded.value && !isInPersonalWorkspace.value)
+  if (isSubscriptionEnded.value)
     return {
       label: t('subscription.inactive.badge'),
       severity: 'secondary' as const
