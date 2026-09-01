@@ -409,20 +409,27 @@ function parseImageViewUrl(url: string): {
 async function handleSaveToOutput() {
   if (isSavingToOutput.value) return
 
-  const source = parseImageViewUrl(currentImageUrl.value)
-  if (!source) {
+  function showSaveError() {
     toastStore.add({
       severity: 'error',
       summary: t('g.error'),
       detail: t('g.failedToSaveImageToOutput')
     })
+  }
+
+  const source = parseImageViewUrl(currentImageUrl.value)
+  if (!source) {
+    showSaveError()
     return
   }
 
   isSavingToOutput.value = true
   try {
     const response = await api.fetchApi(source.route)
-    if (!response.ok) throw new Error(String(response.status))
+    if (!response.ok) {
+      showSaveError()
+      return
+    }
 
     const blob = await response.blob()
     const body = new FormData()
@@ -438,10 +445,16 @@ async function handleSaveToOutput() {
       method: 'POST',
       body
     })
-    if (upload.status !== 200) throw new Error(String(upload.status))
+    if (upload.status !== 200) {
+      showSaveError()
+      return
+    }
 
     const saved = (await upload.json()) as { name?: string }
-    if (!saved.name) throw new Error('Upload response did not include a name')
+    if (!saved.name) {
+      showSaveError()
+      return
+    }
 
     toastStore.add({
       severity: 'success',
@@ -449,11 +462,7 @@ async function handleSaveToOutput() {
       detail: saved.name
     })
   } catch {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToSaveImageToOutput')
-    })
+    showSaveError()
   } finally {
     isSavingToOutput.value = false
   }
