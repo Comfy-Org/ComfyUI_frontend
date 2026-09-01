@@ -3,7 +3,7 @@ import type { Pinia } from 'pinia'
 import type { AssertReporter } from '@/base/assert'
 import { t } from '@/i18n'
 import { isNightly } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 /**
@@ -12,11 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
  */
 export function createAssertReporter(pinia: Pinia): AssertReporter {
   return (failure, context) => {
-    reportError(failure, {
-      errorType: 'assertion_failure',
-      level: 'warning',
-      context
-    })
+    reportAssertFailure(failure, context)
 
     if (isNightly) {
       useToastStore(pinia).add({

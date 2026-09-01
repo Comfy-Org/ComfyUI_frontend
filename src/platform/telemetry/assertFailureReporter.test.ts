@@ -15,25 +15,25 @@ describe('reportAssertFailure', () => {
     mockReportError.mockClear()
   })
 
-  it('reports an assertion failure as an invariant error', async () => {
+  it('reports an assertion failure with its stack and context', async () => {
     const reportAssertFailure = await loadReporter()
+    const failure = new Error('[Assertion failed]: graph must exist')
 
-    reportAssertFailure('[Assertion failed]: graph must exist')
+    reportAssertFailure(failure, { workflowPath: 'a/b.json' })
 
-    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        message: '[Assertion failed]: graph must exist'
-      }),
-      { errorType: 'invariant_assert' }
-    )
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      errorType: 'assertion_failure',
+      level: 'warning',
+      context: { workflowPath: 'a/b.json' }
+    })
   })
 
   it('deduplicates repeats so a render-loop invariant reports once', async () => {
     const reportAssertFailure = await loadReporter()
 
-    reportAssertFailure('same message')
-    reportAssertFailure('same message')
-    reportAssertFailure('same message')
+    reportAssertFailure(new Error('same message'))
+    reportAssertFailure(new Error('same message'))
+    reportAssertFailure(new Error('same message'))
 
     expect(mockReportError).toHaveBeenCalledOnce()
   })
@@ -41,7 +41,9 @@ describe('reportAssertFailure', () => {
   it('caps distinct reports per session', async () => {
     const reportAssertFailure = await loadReporter()
 
-    for (let i = 0; i < 25; i++) reportAssertFailure(`message ${i}`)
+    for (let i = 0; i < 25; i++) {
+      reportAssertFailure(new Error(`message ${i}`))
+    }
 
     expect(mockReportError).toHaveBeenCalledTimes(20)
   })

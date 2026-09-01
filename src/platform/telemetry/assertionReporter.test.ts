@@ -43,11 +43,11 @@ describe('createAssertReporter', () => {
     vi.stubEnv('DEV', false)
     setAssertReporter(createAssertReporter(createPinia()))
 
-    assert(false, 'graph is corrupt', { workflowPath: 'a/b.json' })
+    assert(false, 'graph reaches Sentry', { workflowPath: 'a/b.json' })
 
     expect(captureException).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: '[Assertion failed]: graph is corrupt'
+        message: '[Assertion failed]: graph reaches Sentry'
       }),
       expect.objectContaining({
         level: 'warning',
@@ -62,11 +62,11 @@ describe('createAssertReporter', () => {
     vi.stubEnv('DEV', false)
     setAssertReporter(createAssertReporter(createPinia()))
 
-    assert(false, 'graph is corrupt', { workflowPath: 'a/b.json' })
+    assert(false, 'graph reaches Datadog', { workflowPath: 'a/b.json' })
 
     expect(addError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: '[Assertion failed]: graph is corrupt'
+        message: '[Assertion failed]: graph reaches Datadog'
       }),
       expect.objectContaining({
         error_type: 'assertion_failure',

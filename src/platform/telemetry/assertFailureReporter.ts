@@ -10,12 +10,18 @@ const reportedMessages = new Set<string>()
  * Invariants can fire from render loops, so reports are deduplicated by exact
  * message and capped per session.
  */
-export function reportAssertFailure(message: string): void {
+export function reportAssertFailure(
+  failure: Error,
+  context?: Record<string, unknown>
+): void {
+  const { message } = failure
   if (reportedMessages.has(message)) return
   if (reportedMessages.size >= MAX_REPORTS_PER_SESSION) return
   reportedMessages.add(message)
 
-  reportError(new Error(message), {
-    errorType: 'invariant_assert'
+  reportError(failure, {
+    errorType: 'assertion_failure',
+    level: 'warning',
+    context
   })
 }
