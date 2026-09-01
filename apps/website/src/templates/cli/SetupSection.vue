@@ -186,7 +186,7 @@ const copiedLabel = t('ui.copied', locale)
         >
           {{ t('cli.setup.requirementPrefix', locale)
           }}<a
-            :href="getRoutes(locale).cloudPricing"
+            :href="getRoutes(locale).pricing"
             class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
             >{{ t('cli.setup.requirementLinkLabel', locale) }}</a
           >{{ t('cli.setup.requirementSuffix', locale)

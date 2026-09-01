@@ -117,9 +117,9 @@ describe('AgentMessage thinking narration', () => {
     transport.ingest({
       type: 'agent_tool_call',
       data: {
+        tool_call_id: 'call-set-widget',
         tool_name: 'set_widget',
-        status: 'ok',
-        args: [],
+        status: 'success',
         message_id: 'msg-0',
         thread_id: 'thread-0'
       }
