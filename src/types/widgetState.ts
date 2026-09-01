@@ -23,7 +23,11 @@ export interface WidgetState<
   nodeId: NodeId
 }
 
-export type WidgetStateInit<TValue = WidgetValue> = Omit<
-  WidgetState<TValue>,
-  'nodeId' | 'name' | 'y'
-> & { y?: number }
+export type WidgetStateInit<
+  TValue = WidgetValue,
+  TType extends string = string,
+  TOptions extends IWidgetOptions = IWidgetOptions
+> = Omit<WidgetState<TValue, TType, TOptions>, 'nodeId' | 'name' | 'y'> & {
+  name?: string
+  y?: number
+}

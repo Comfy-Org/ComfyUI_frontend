@@ -18,12 +18,22 @@ vi.mock('@stripe/stripe-js/pure', () => ({
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
+const mockRefreshCapabilities = vi.fn()
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
     reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    refresh: mockRefreshCapabilities
   })
 }))
 
@@ -43,12 +53,28 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: {
-    getBillingOpStatus: vi.fn(),
-    cancelBillingOp: vi.fn()
+vi.mock('@/platform/workspace/api/workspaceApi', () => {
+  // Importing the real module drags in axios and Firebase auth. The store
+  // checks `instanceof` against whatever this factory exports, and so does the
+  // test, so a local class exercises the same branch.
+  class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      readonly status?: number,
+      readonly code?: string
+    ) {
+      super(message)
+      this.name = 'WorkspaceApiError'
+    }
   }
-}))
+  return {
+    WorkspaceApiError,
+    workspaceApi: {
+      getBillingOpStatus: vi.fn(),
+      cancelBillingOp: vi.fn()
+    }
+  }
+})
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => key
@@ -94,12 +120,16 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
     mockFeatureFlags.embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
@@ -348,7 +378,6 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString()
       })
-
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
@@ -357,6 +386,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
+      expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
 
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(mockFetchStatus).not.toHaveBeenCalled()
@@ -402,6 +432,22 @@ describe('billingOperationStore', () => {
 
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+    })
+
+    it('opens Credits settings after a polled local topup succeeds', async () => {
+      mockDistributionTypes.isCloud = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -1595,6 +1641,26 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
+      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-reconcile-legacy',
+        status: 'reconciliation_needed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation(
+        'op-reconcile-legacy',
+        'subscription'
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('reconciliation_needed')
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+    })
+
     it('handles a redacted retryable status without a capability', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-redacted',
@@ -2490,9 +2556,34 @@ describe('billingOperationStore', () => {
       expect(store.subscriptionActionOperation).toBeUndefined()
     })
 
+    it('settles anything awaiting the operation so the flow is not left hanging', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+      const store = useBillingOperationStore()
+
+      let settled = false
+      const awaiting = store
+        .startOperation('op-1', 'subscription')
+        .then(() => {
+          settled = true
+        })
+        .catch(() => {
+          settled = true
+        })
+
+      await store.cancelOperation('op-1')
+      await awaiting
+
+      expect(settled).toBe(true)
+    })
+
     it('reports unavailable and keeps the operation when the backend refuses', async () => {
       vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
-        new Error('already processing')
+        new WorkspaceApiError('already processing', 409)
       )
       const store = useBillingOperationStore()
       startPendingOperation(store)
@@ -2501,6 +2592,29 @@ describe('billingOperationStore', () => {
 
       expect(result).toBe('unavailable')
       expect(store.getOperation('op-1')?.status).toBe('pending')
+    })
+
+    it('keeps the charge cancellable when the request reaches no verdict', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
+        new Error('Network Error')
+      )
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('unreachable')
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+    })
+
+    it('reports a server error as unreachable rather than a refusal', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
+        new WorkspaceApiError('upstream unavailable', 503)
+      )
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      expect(await store.cancelOperation('op-1')).toBe('unreachable')
     })
 
     it('reports unavailable for an unknown or already-settled operation', async () => {

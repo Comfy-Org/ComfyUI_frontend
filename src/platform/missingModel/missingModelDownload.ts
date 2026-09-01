@@ -125,7 +125,9 @@ export function downloadModel(
   if (!isModelDownloadable(model)) return
 
   const desktop2Bridge = window.__comfyDesktop2
-  if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
+  const isRemote =
+    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  if (desktop2Bridge?.downloadModel && !isRemote) {
     void startDesktop2ModelDownload(desktop2Bridge, model)
     return
   }

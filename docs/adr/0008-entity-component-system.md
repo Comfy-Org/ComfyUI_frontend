@@ -58,6 +58,13 @@ system's pricing dependencies. Badge rows remain transient: they are
 not serialized, transmitted through CRDT, or included in undo history. See
 [Node Badge Store](../architecture/node-badge-store.md) for the design history.
 
+### Amendment (2026-08-23): registration and collision contract
+
+Entity registration collision and recovery policy is defined by
+[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+Node ID reminting policy is defined by
+[ADR 0018](0018-node-id-reminting-at-the-merge-boundary.md).
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.
@@ -172,6 +179,21 @@ state; two widgets on one node cannot share a name; and because the key is
 derived, re-registering an existing `WidgetId` with a different `type` is a
 legitimate re-mint rather than an identity collision — which is why
 `widgetValueStore.registerWidget` overwrites where the minted-id stores reject.
+
+#### Future work
+
+The current slot/widget identity split remains the contract. A future proposal
+to unify those identities must demonstrate all four of the following before it
+can supersede this decision:
+
+1. Slot and widget lifecycle equivalence, including promotion and demotion.
+2. A migration story for persisted workflows.
+3. Compatibility with the collision contracts above: minted identity keys
+   reject collisions, while structural keys resolve them.
+4. A net reduction in implementation and maintenance complexity.
+
+This bar records the outcome of the
+[#15762 review discussion](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15762#discussion_r3848938262).
 
 ### Component Decomposition
 

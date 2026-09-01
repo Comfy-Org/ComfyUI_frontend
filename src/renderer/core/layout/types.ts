@@ -8,13 +8,14 @@ import type { GroupId } from '@/types/groupId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
-import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
+import type { SlotDirection, SlotIndex } from '@/types/slotId'
 import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue'
+  Vue = 'vue',
+  AgentRemote = 'agent-remote'
 }
 
 // Basic geometric types
@@ -43,7 +44,6 @@ export interface NodeBoundsUpdate {
 export type { LinkId }
 export type { NodeId }
 export type { RerouteId }
-export type { SlotId }
 
 // Layout data structures
 export interface NodeLayout {
@@ -63,6 +63,14 @@ export interface SlotLayout {
   position: Point
   bounds: Bounds
 }
+
+export interface SlotOffset {
+  index: SlotIndex
+  type: SlotDirection
+  position: Point
+}
+
+export type SlotOffsetMode = 'expanded' | 'collapsed'
 
 export interface LinkLayout {
   id: LinkId
@@ -110,6 +118,8 @@ interface OperationMeta {
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
   actor?: string
+  /** Originating semantic op identity when applied by a remote follower. */
+  opId?: string
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID

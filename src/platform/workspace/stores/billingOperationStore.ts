@@ -10,7 +10,9 @@ import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   BillingFailure,
   PaymentIntentSource,
@@ -18,11 +20,15 @@ import type {
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
   BillingDeclineReason
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -93,6 +99,19 @@ interface BillingOperation {
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
+
+/**
+ * A 4xx is the service answering: it considered the cancel and refused it.
+ * Anything else — no response, a timeout, a 5xx — never reached a verdict.
+ */
+function isCancelRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status !== undefined &&
+    error.status >= 400 &&
+    error.status < 500
+  )
+}
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
@@ -304,8 +323,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (
-        flags.embeddedCheckoutEnabled &&
-        (response.status === 'reconciliation_needed' ||
+        response.status === 'reconciliation_needed' ||
+        (flags.embeddedCheckoutEnabled &&
           response.authentication_state === 'reconciliation_needed')
       ) {
         handleReconciliationNeeded(opId)
@@ -689,12 +708,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const billingContext = useBillingContext()
+    const capabilities = useBillingCapabilities()
     if (operation.type === 'subscription') {
-      await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
+      await Promise.allSettled([
+        billingContext.reconcileSubscriptionSuccess(),
+        capabilities.refresh()
+      ])
     } else {
       await Promise.allSettled([
         billingContext.fetchStatus(),
-        billingContext.fetchBalance()
+        billingContext.fetchBalance(),
+        capabilities.refresh()
       ])
     }
 
@@ -708,7 +732,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // so leave it open. Top-ups have no such step: close and surface settings.
     if (operation.type === 'topup') {
       useDialogStore().closeDialog({ key: 'top-up-credits' })
-      useSettingsDialog().show('workspace')
+      useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
     }
 
     const toastStore = useToastStore()
@@ -1085,6 +1109,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function clearOperation(opId: string) {
     cleanup(opId)
+    // Settle before dropping: anything awaiting this operation's terminal
+    // promise would otherwise hang forever, leaving the checkout mutation
+    // locked after a successful cancel.
+    resolveTerminal(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
@@ -1096,18 +1124,23 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
    * Void a pending charge before it settles. Canceled is not failed: the
    * operation is removed outright — no toast, no failure state — so every
    * surface watching it (dialog steps, the verify banner) clears at once.
-   * 'unavailable' means the charge is already processing and the backend
-   * refused the cancel; callers surface that in place and keep polling.
+   * 'unavailable' means the service answered and refused: the charge is past
+   * the point of cancelling, so callers say so and keep polling.
+   * 'unreachable' means the request reached no verdict at all. The charge may
+   * still be cancellable, so callers must leave the cancel affordance live
+   * rather than tell the customer their payment is already processing.
    */
   async function cancelOperation(
     opId: string
-  ): Promise<'canceled' | 'unavailable'> {
+  ): Promise<'canceled' | 'unavailable' | 'unreachable'> {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return 'unavailable'
     try {
       await workspaceApi.cancelBillingOp(opId)
-    } catch {
-      return 'unavailable'
+    } catch (error) {
+      if (isCancelRefusal(error)) return 'unavailable'
+      reportError(error, { errorType: 'billing_op_cancel_request_failure' })
+      return 'unreachable'
     }
     clearOperation(opId)
     return 'canceled'

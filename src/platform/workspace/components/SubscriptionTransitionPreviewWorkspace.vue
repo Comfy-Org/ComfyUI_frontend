@@ -322,16 +322,23 @@
       >
         {{ $t('subscription.preview.cancelUnavailable') }}
       </p>
-      <Button
-        v-else-if="actionUrl"
-        variant="muted-textonly"
-        size="lg"
-        class="w-full"
-        :loading="isCanceling"
-        @click="$emit('cancelPayment')"
-      >
-        {{ $t('subscription.preview.cancelPayment') }}
-      </Button>
+      <template v-else-if="actionUrl">
+        <p
+          v-if="cancelUnreachable"
+          class="m-0 pt-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('subscription.preview.cancelUnreachable') }}
+        </p>
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          class="w-full"
+          :loading="isCanceling"
+          @click="$emit('cancelPayment')"
+        >
+          {{ $t('subscription.preview.cancelPayment') }}
+        </Button>
+      </template>
 
       <SubscriptionTermsNote class="mt-2" />
     </div>
@@ -347,7 +354,11 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  getTierCredits,
+  toTierKey
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type {
@@ -356,8 +367,6 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
-
-type PersonalTierKey = 'standard' | 'creator' | 'pro'
 
 const {
   previewData,
@@ -374,6 +383,7 @@ const {
   isApplyingPromotionCode = false,
   embeddedCheckoutEnabled = false,
   cancelUnavailable = false,
+  cancelUnreachable = false,
   isCanceling = false,
   showCanceledNotice = false
 } = defineProps<{
@@ -395,6 +405,7 @@ const {
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
   cancelUnavailable?: boolean
+  cancelUnreachable?: boolean
   isCanceling?: boolean
   showCanceledNotice?: boolean
 }>()
@@ -410,7 +421,7 @@ const emit = defineEmits<{
   cancelPayment: []
 }>()
 
-const { locale, n, t } = useI18n()
+const { locale, n, t, te } = useI18n()
 const verificationRecoveryActive = computed(
   () =>
     embeddedCheckoutEnabled &&
@@ -445,7 +456,14 @@ function openVerification() {
 }
 
 function formatTierName(tier: string): string {
-  return t(`subscription.tiers.${tier.toLowerCase()}.name`)
+  const nameKey = `subscription.tiers.${tier.toLowerCase()}.name`
+  if (te(nameKey)) return t(nameKey)
+  return tier
+    .toLowerCase()
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function isTeamTier(tier: string): boolean {
@@ -465,8 +483,11 @@ function moneyShort(usd: number): string {
   return `$${n(usd)}`
 }
 
+// Lowercasing the tier is not a catalog lookup: FOUNDERS_EDITION keys as
+// 'founder', and TEAM/ENTERPRISE/unrecognized tiers key as nothing at all.
 function tierMonthlyCredits(tier: string): number {
-  return getTierCredits(tier.toLowerCase() as PersonalTierKey) ?? 0
+  const tierKey = toTierKey(tier as IngestSubscriptionTier)
+  return tierKey ? (getTierCredits(tierKey) ?? 0) : 0
 }
 
 const isImmediate = computed(() => previewData.is_immediate)

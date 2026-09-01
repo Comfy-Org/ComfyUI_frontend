@@ -11,6 +11,7 @@ import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPla
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   PaymentIntentSource,
@@ -27,11 +28,13 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearPendingSubscriptionCheckout,
+  clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
@@ -135,7 +138,9 @@ export function useSubscriptionCheckout(
     subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { permissions } = useWorkspaceUI()
+  const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
+    useBillingCapabilities()
+  const { permissions, canReactivatePlan } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -143,12 +148,20 @@ export function useSubscriptionCheckout(
   // Re-entry: a pending 3DS charge owns the dialog. Opening with one lands
   // on the verifying step — the plan steps stay unreachable until the
   // operation resolves, is canceled, or its 24h link expires.
+  // Only a still-pending charge owns the dialog. `reconciliation_needed` also
+  // matches subscriptionActionOperation, but it cannot be verified or canceled
+  // — landing it here would strand the customer on a step whose only two
+  // controls both refuse. It keeps the pricing entry and its existing
+  // reconciliation banner.
   const checkoutStep = ref<CheckoutStep>(
-    billingOperationStore.subscriptionActionOperation ? 'verifying' : 'pricing'
+    billingOperationStore.subscriptionActionOperation?.status === 'pending'
+      ? 'verifying'
+      : 'pricing'
   )
   const checkoutDeclineReason = ref<string | null>(null)
   const isCancelingPayment = ref(false)
   const cancelUnavailable = ref(false)
+  const cancelUnreachable = ref(false)
   const canceledNoticeVisible = ref(false)
   let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
   const isLoadingPreview = ref(false)
@@ -190,6 +203,16 @@ export function useSubscriptionCheckout(
       ? operation
       : undefined
   })
+  // Re-entry adopts the recovered charge by id. The store's selector matches
+  // only pending and reconciliation_needed, so reading a succeeded or failed
+  // charge through it yields "no operation" — which the verifying watcher
+  // reads as an abandoned charge and answers by returning the customer to
+  // pricing, skipping the success and declined steps entirely.
+  if (billingOperationStore.subscriptionActionOperation?.status === 'pending') {
+    activeCheckoutOperationId.value =
+      billingOperationStore.subscriptionActionOperation.opId
+  }
+
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )
@@ -595,8 +618,17 @@ export function useSubscriptionCheckout(
     return (
       tierPlanType === 'team' ||
       !isTeamPlan.value ||
-      permissions.value.canDowngradeToPersonal
+      (isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
     )
+  }
+
+  function canPerformCheckout(checkoutType: SubscriptionCheckoutType): boolean {
+    if (!isCloud) return permissions.value.canManageSubscription
+    return checkoutType === 'change'
+      ? canChangeSeats.value
+      : canSubscribeSelfServe.value
   }
 
   async function showTeamToPersonalDowngrade(
@@ -661,8 +693,12 @@ export function useSubscriptionCheckout(
   }) {
     if (
       isSubscribing.value ||
-      !permissions.value.canManageSubscription ||
-      !canSelectTierPlan()
+      !canSelectTierPlan() ||
+      (isTeamPlan.value && tierPlanType !== 'team'
+        ? !(isCloud
+            ? canDowngradeToPersonal.value
+            : permissions.value.canDowngradeToPersonal)
+        : isCloud && !canSubscribeSelfServe.value && !canChangeSeats.value)
     ) {
       return
     }
@@ -708,6 +744,9 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      const checkoutType =
+        response.transition_type === 'new_subscription' ? 'new' : 'change'
+      if (!canPerformCheckout(checkoutType)) return
 
       installPreview(response)
       checkoutStep.value = 'preview'
@@ -740,14 +779,15 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
-    if (isSubscribing.value || !permissions.value.canManageSubscription) return
+    const checkoutType = payload.isChange ? 'change' : 'new'
+    if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
     const previewRequestId = ++teamPreviewRequestId
     promotionPreviewRequestId += 1
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
-      checkoutType: payload.isChange ? 'change' : 'new'
+      checkoutType
     }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
@@ -904,7 +944,7 @@ export function useSubscriptionCheckout(
     confirmationToken?: string,
     promotionCode?: string
   ) {
-    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+    if (!canSelectTierPlan()) return
     if (!beginCheckoutMutation()) return
 
     const tierKey = selectedTierKey.value
@@ -924,6 +964,10 @@ export function useSubscriptionCheckout(
       previewData.value.transition_type !== 'new_subscription'
         ? 'change'
         : 'new'
+    if (!canPerformCheckout(checkoutType)) {
+      finishCheckoutMutation()
+      return
+    }
 
     isSubscribing.value = true
     try {
@@ -1299,37 +1343,34 @@ export function useSubscriptionCheckout(
     initialActionUrl?: string
   ) {
     activeCheckoutOperationId.value = opId
-    try {
-      const metadata = {
-        tier: context.tier,
-        cycle: context.cycle,
-        checkoutType: context.checkoutType,
-        paymentIntentSource,
-        attemptStartedAt: context.attemptStartedAt,
-        ...(embeddedCheckoutEnabled && {
-          suppressProcessingToast: true,
-          autoHandleRequiresAction: true
-        })
-      }
-      const terminalOperation = initialActionUrl
-        ? billingOperationStore.startOperation(
-            opId,
-            'subscription',
-            metadata,
-            initialActionUrl
-          )
-        : billingOperationStore.startOperation(opId, 'subscription', metadata)
-      if (embeddedCheckoutEnabled) isSubscribing.value = false
-      const operation = await terminalOperation
-      if (
-        operation.status === 'succeeded' &&
-        activeCheckoutOperationId.value === opId &&
-        operation.workspaceId === workspaceStore.activeWorkspaceId
-      ) {
-        checkoutStep.value = 'success'
-      }
-    } finally {
-      clearPendingSubscriptionCheckout(opId)
+    const metadata = {
+      tier: context.tier,
+      cycle: context.cycle,
+      checkoutType: context.checkoutType,
+      paymentIntentSource,
+      attemptStartedAt: context.attemptStartedAt,
+      ...(embeddedCheckoutEnabled && {
+        suppressProcessingToast: true,
+        autoHandleRequiresAction: true
+      })
+    }
+    const terminalOperation = initialActionUrl
+      ? billingOperationStore.startOperation(
+          opId,
+          'subscription',
+          metadata,
+          initialActionUrl
+        )
+      : billingOperationStore.startOperation(opId, 'subscription', metadata)
+    if (embeddedCheckoutEnabled) isSubscribing.value = false
+    const operation = await terminalOperation
+    clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
+    ) {
+      checkoutStep.value = 'success'
     }
   }
 
@@ -1356,6 +1397,8 @@ export function useSubscriptionCheckout(
   // notice, while a re-entry cancel returns to plan selection (there is no
   // preserved intent to land on). 'unavailable' is the cancel-raced-the-bank
   // case — the cancel slot becomes a notice and polling finishes the story.
+  // 'unreachable' reached no verdict, so the charge is left exactly as it was
+  // and the cancel affordance stays live for another try.
   async function handleCancelPendingPayment() {
     const operation = activeCheckoutOperation.value
     if (!operation || isCancelingPayment.value) return
@@ -1363,11 +1406,21 @@ export function useSubscriptionCheckout(
     const result = await billingOperationStore.cancelOperation(operation.opId)
     isCancelingPayment.value = false
     if (result === 'unavailable') {
+      cancelUnreachable.value = false
       cancelUnavailable.value = true
       return
     }
+    if (result === 'unreachable') {
+      cancelUnreachable.value = true
+      return
+    }
+    // A canceled operation never reaches a terminal status — it is removed
+    // outright — so the pending-checkout pointer must be cleared here or the
+    // next dialog open resumes the checkout the customer just canceled.
+    clearPendingSubscriptionCheckout(operation.opId)
     activeCheckoutOperationId.value = null
     cancelUnavailable.value = false
+    cancelUnreachable.value = false
     if (checkoutStep.value === 'verifying') {
       checkoutStep.value = 'pricing'
       return
@@ -1412,7 +1465,8 @@ export function useSubscriptionCheckout(
     if (
       isLoadingPreview.value ||
       isSubscribing.value ||
-      !permissions.value.canManageSubscription
+      !selectedTeamCheckout.value ||
+      !canPerformCheckout(selectedTeamCheckout.value.checkoutType)
     ) {
       return
     }
@@ -1520,7 +1574,7 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
-    if (!permissions.value.canManageSubscriptionLifecycle) return
+    if (!canReactivatePlan.value) return
 
     const source = 'pricing_dialog' as const
 
@@ -1625,6 +1679,7 @@ export function useSubscriptionCheckout(
     previewVariant,
     isCancelingPayment,
     cancelUnavailable,
+    cancelUnreachable,
     canceledNoticeVisible,
     handleCancelPendingPayment,
     handleSubscribeClick,

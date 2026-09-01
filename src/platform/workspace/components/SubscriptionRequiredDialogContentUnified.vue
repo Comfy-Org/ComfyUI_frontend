@@ -119,6 +119,7 @@
         :is-applying-promotion-code
         :embedded-checkout-enabled
         :cancel-unavailable="cancelUnavailable"
+        :cancel-unreachable="cancelUnreachable"
         :is-canceling="isCancelingPayment"
         :show-canceled-notice="canceledNoticeVisible"
         @confirm="handleTeamSubscribe"
@@ -148,6 +149,7 @@
         :is-applying-promotion-code
         :embedded-checkout-enabled
         :cancel-unavailable="cancelUnavailable"
+        :cancel-unreachable="cancelUnreachable"
         :is-canceling="isCancelingPayment"
         :show-canceled-notice="canceledNoticeVisible"
         @update:selected-saved-method-id="selectSavedPaymentMethod"
@@ -180,6 +182,7 @@
         :is-applying-promotion-code
         :embedded-checkout-enabled
         :cancel-unavailable="cancelUnavailable"
+        :cancel-unreachable="cancelUnreachable"
         :is-canceling="isCancelingPayment"
         :show-canceled-notice="canceledNoticeVisible"
         @update:selected-saved-method-id="selectSavedPaymentMethod"
@@ -208,6 +211,7 @@
         :is-applying-promotion-code
         :embedded-checkout-enabled
         :cancel-unavailable="cancelUnavailable"
+        :cancel-unreachable="cancelUnreachable"
         :is-canceling="isCancelingPayment"
         :show-canceled-notice="canceledNoticeVisible"
         @confirm="handleConfirmTransition"
@@ -223,6 +227,7 @@
       v-if="checkoutStep === 'verifying'"
       :action-url="activeCheckoutActionUrl"
       :cancel-unavailable="cancelUnavailable"
+      :cancel-unreachable="cancelUnreachable"
       :is-canceling="isCancelingPayment"
       @cancel-payment="handleCancelPendingPayment"
     />
@@ -298,6 +303,7 @@ const {
   handleUpdatePayment,
   isCancelingPayment,
   cancelUnavailable,
+  cancelUnreachable,
   canceledNoticeVisible,
   handleCancelPendingPayment,
   isLoadingPreview,

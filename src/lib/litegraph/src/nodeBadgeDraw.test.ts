@@ -1,19 +1,80 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { badgeDrawObjects } from './nodeBadgeDraw'
+import {
+  badgeDrawObjects,
+  badgeRows,
+  registerBadgeRowsProvider
+} from './nodeBadgeDraw'
 
 function coreRow(part: CoreBadgeData['part'], text: string): BadgeData {
   return { kind: 'core', part, text, fgColor: '#fff', bgColor: '#000' }
 }
 
+const registrations: (() => void)[] = []
+
+function register(
+  provider: Parameters<typeof registerBadgeRowsProvider>[0]
+): () => void {
+  const dispose = registerBadgeRowsProvider(provider)
+  registrations.push(dispose)
+  return dispose
+}
+
+afterEach(() => {
+  for (const dispose of registrations.splice(0).reverse()) dispose()
+})
+
+describe('registerBadgeRowsProvider', () => {
+  const node = new LGraphNode('n')
+  const firstRows = [coreRow('id', '#1')]
+  const secondRows = [coreRow('id', '#2')]
+  const firstProvider = () => firstRows
+  const secondProvider = () => secondRows
+
+  it('registers and disposes a provider', () => {
+    const dispose = register(firstProvider)
+    expect(badgeRows(node)).toBe(firstRows)
+
+    dispose()
+    expect(badgeRows(node)).toEqual([])
+  })
+
+  it('keeps the installed provider when a conflicting registration fails', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    register(firstProvider)
+    const disposeConflict = register(secondProvider)
+    disposeConflict()
+
+    expect(badgeRows(node)).toBe(firstRows)
+    expect(error).toHaveBeenCalledWith(
+      'A badge rows provider is already registered'
+    )
+  })
+
+  it('does not let a stale disposer clear a newer registration', () => {
+    const disposeFirst = register(firstProvider)
+    register(firstProvider)
+
+    disposeFirst()
+    expect(badgeRows(node)).toBe(firstRows)
+  })
+
+  it('allows re-registration after disposal', () => {
+    register(firstProvider)()
+    register(secondProvider)
+
+    expect(badgeRows(node)).toBe(secondRows)
+  })
+})
+
 describe('badgeDrawObjects', () => {
-  it('joins core parts into one badge in id, lifecycle, source order', () => {
+  it('joins core parts in their projected order', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
-      coreRow('lifecycle', '[BETA]'),
       coreRow('id', '#5'),
+      coreRow('lifecycle', '[BETA]'),
       coreRow('source', 'my-pack')
     ])
 
@@ -25,8 +86,8 @@ describe('badgeDrawObjects', () => {
 
   it('truncates the joined core text', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
-      coreRow('source', 'a'.repeat(40)),
-      coreRow('id', '#5')
+      coreRow('id', '#5'),
+      coreRow('source', 'a'.repeat(40))
     ])
 
     expect(badges[0].text).toHaveLength(31)
