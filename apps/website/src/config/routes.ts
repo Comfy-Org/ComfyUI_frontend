@@ -6,6 +6,8 @@ const baseRoutes = {
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
   cloudEnterprise: '/cloud/enterprise',
+  enterprise: '/enterprise',
+  managedBuilds: '/enterprise/managed-builds',
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
@@ -62,6 +64,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
+  'enterprise',
+  'managedBuilds',
   'models'
 ])
 
