@@ -31,7 +31,7 @@ describe('GlobalToast', () => {
     cleanup()
   })
 
-  it('T-31 / PM-659 / FE-1287 forwards graph error toasts for viewport-safe placement', async () => {
+  it('forwards queued additions and clears the queue', async () => {
     renderToast()
     const toastStore = useToastStore()
     const message = { severity: 'error' as const, summary: 'Failed' }
