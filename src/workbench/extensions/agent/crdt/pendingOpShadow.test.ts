@@ -77,6 +77,16 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(surface.pendingTargets()).toEqual([node('n1'), link('l1')])
   })
 
+  it('keeps widget targets distinct when ids contain separators', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [widget('a:b', 'c')])
+    surface.show('op-2', [widget('a', 'b:c')])
+
+    surface.clear('op-1')
+    expect(surface.isPending(widget('a:b', 'c'))).toBe(false)
+    expect(surface.isPending(widget('a', 'b:c'))).toBe(true)
+  })
+
   it('clearAll drops every shadow in insertion order (FEB-5)', () => {
     const surface = createPendingOpShadowSurface()
     surface.show('op-1', [node('n1')])
