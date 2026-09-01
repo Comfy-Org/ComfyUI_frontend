@@ -10,6 +10,7 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   getResourceURL,
@@ -96,6 +97,7 @@ async function uploadFile(
         error instanceof Error ? error.message : String(error)
       )
     }
+    reportError(error, { errorType: 'audio_upload_failure' })
     return false
   }
 }
