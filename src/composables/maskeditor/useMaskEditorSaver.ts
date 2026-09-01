@@ -1,5 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
+import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -11,7 +13,8 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 
 // Private layer filename functions
 interface ImageLayerFilenames {
@@ -38,7 +41,7 @@ export function useMaskEditorSaver() {
   const nodeOutputStore = useNodeOutputStore()
 
   const save = async (): Promise<void> => {
-    const sourceNode = dataStore.sourceNode as LGraphNode
+    const sourceNode = dataStore.sourceNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
@@ -93,6 +96,39 @@ export function useMaskEditorSaver() {
     }
   }
 
+  /**
+   * Writes the inverted mask into the alpha channel and returns the pixel
+   * buffer whose RGB was captured while the canvas was still fully opaque.
+   * Encode that buffer (not the canvas): once transparent pixels are written
+   * to the premultiplied canvas bitmap their RGB is lost, so blobs derived
+   * from the canvas serialize black under the mask.
+   */
+  function applyMaskAsAlpha(
+    ctx: CanvasRenderingContext2D,
+    maskCanvas: HTMLCanvasElement
+  ): ImageData {
+    const maskCtx = maskCanvas.getContext('2d')!
+    const maskData = maskCtx.getImageData(
+      0,
+      0,
+      maskCanvas.width,
+      maskCanvas.height
+    )
+
+    const imageData = ctx.getImageData(
+      0,
+      0,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      imageData.data[i + 3] = 255 - maskData.data[i + 3]
+    }
+    ctx.putImageData(imageData, 0, 0)
+
+    return imageData
+  }
+
   async function createMaskedImage(
     imgCanvas: HTMLCanvasElement,
     maskCanvas: HTMLCanvasElement,
@@ -105,29 +141,9 @@ export function useMaskEditorSaver() {
 
     ctx.drawImage(imgCanvas, 0, 0)
 
-    const maskCtx = maskCanvas.getContext('2d')!
-    const maskData = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
+    const imageData = applyMaskAsAlpha(ctx, maskCanvas)
 
-    const refinedMaskData = new Uint8ClampedArray(maskData.data.length)
-    for (let i = 0; i < maskData.data.length; i += 4) {
-      refinedMaskData[i] = 0
-      refinedMaskData[i + 1] = 0
-      refinedMaskData[i + 2] = 0
-      refinedMaskData[i + 3] = 255 - maskData.data[i + 3]
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
-    ctx.putImageData(imageData, 0, 0)
-
-    const blob = await canvasToBlob(canvas)
+    const blob = await encodeRgbaAsPng(imageData)
     const ref = createFileRef(filename)
 
     return { canvas, blob, ref }
@@ -181,29 +197,9 @@ export function useMaskEditorSaver() {
     ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(paintCanvas, 0, 0)
 
-    const maskCtx = maskCanvas.getContext('2d')!
-    const maskData = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
+    const imageData = applyMaskAsAlpha(ctx, maskCanvas)
 
-    const refinedMaskData = new Uint8ClampedArray(maskData.data.length)
-    for (let i = 0; i < maskData.data.length; i += 4) {
-      refinedMaskData[i] = 0
-      refinedMaskData[i + 1] = 0
-      refinedMaskData[i + 2] = 0
-      refinedMaskData[i + 3] = 255 - maskData.data[i + 3]
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
-    ctx.putImageData(imageData, 0, 0)
-
-    const blob = await canvasToBlob(canvas)
+    const blob = await encodeRgbaAsPng(imageData)
     const ref = createFileRef(filename)
 
     return { canvas, blob, ref }
@@ -284,31 +280,15 @@ export function useMaskEditorSaver() {
   ): void {
     const mainRef = outputData.paintedMaskedImage.ref
 
-    node.images = [mainRef]
-
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      const widgetValue =
-        mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-
-      imageWidget.value = widgetValue
-
-      if (node.properties) {
-        node.properties['image'] = widgetValue
-      }
-
-      if (node.widgets_values && node.widgets) {
-        const widgetIndex = node.widgets.indexOf(imageWidget)
-        if (widgetIndex >= 0) {
-          node.widgets_values[widgetIndex] = widgetValue
-        }
-      }
-    }
+    writeImageWidgetValue(
+      node,
+      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+    )
 
     node.imgs = undefined
     const annotatedPath = createAnnotatedPath(mainRef.filename, {
       subfolder: mainRef.subfolder,
-      rootFolder: mainRef.type
+      rootFolder: isResultItemType(mainRef.type) ? mainRef.type : undefined
     })
     nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
     node.graph?.setDirtyCanvas(true)

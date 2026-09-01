@@ -5,17 +5,10 @@ const mockGetAuthHeader = vi.fn()
 const mockAuthState = vi.hoisted(() => ({
   currentUser: { uid: 'user-a' } as { uid: string } | null
 }))
-const mockFlags = vi.hoisted(() => ({ teamWorkspacesEnabled: true }))
 const originalFetch = globalThis.fetch
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
-  })
 }))
 
 vi.mock('@/stores/authStore', () => ({
@@ -34,14 +27,15 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+const mockReportError = vi.fn()
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.restoreAllMocks()
-    mockGetIdToken.mockReset()
-    mockGetAuthHeader.mockReset()
     mockAuthState.currentUser = { uid: 'user-a' }
-    mockFlags.teamWorkspacesEnabled = true
     globalThis.fetch = vi.fn()
   })
 
@@ -133,6 +127,24 @@ describe('useSessionCookie', () => {
     )
   })
 
+  it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
+    mockGetIdToken.mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'session denied' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    await useSessionCookie().createSession()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'session_cookie_creation_failure'
+    })
+  })
+
   it('serializes strict session creation after the previous user response', async () => {
     mockGetIdToken.mockImplementation(() =>
       Promise.resolve(`firebase-${mockAuthState.currentUser?.uid}`)
@@ -208,8 +220,7 @@ describe('useSessionCookie', () => {
     expect(finalHeaders.get('Authorization')).toBe('Bearer firebase-user-a')
   })
 
-  it('does not let strict Firebase creation join a weaker request', async () => {
-    mockFlags.teamWorkspacesEnabled = false
+  it('lets strict creation join an in-flight Firebase request on Cloud', async () => {
     mockGetAuthHeader.mockResolvedValue(null)
     mockGetIdToken.mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(
@@ -227,6 +238,7 @@ describe('useSessionCookie', () => {
       vi.mocked(globalThis.fetch).mock.calls[0][1]?.headers
     )
     expect(headers.get('Authorization')).toBe('Bearer firebase-id-token')
+    expect(mockGetAuthHeader).not.toHaveBeenCalled()
   })
 
   it('serializes session deletion after an in-flight creation', async () => {

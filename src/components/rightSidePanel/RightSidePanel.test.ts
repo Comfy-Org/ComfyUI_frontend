@@ -1,371 +1,196 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { toNodeId } from '@/types/nodeId'
 
-import RightSidePanel from './RightSidePanel.vue'
-
-const mockActiveWorkflow = ref<{ path: string } | null>({ path: 'wf-1' })
-const mockSidebarLocation = ref<'left' | 'right'>('right')
-
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useCanvasStore: defineStore('canvasStoreMock', () => {
-      const selectedItems = ref<unknown[]>([])
-      const currentGraph = ref(undefined)
-      const canvas = { setDirty: vi.fn() }
-      return { canvas, currentGraph, selectedItems }
-    })
-  }
-})
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    }
-  })
+const mockApp = vi.hoisted(() => ({
+  isGraphReady: true,
+  rootGraph: null as LGraph | null
 }))
 
-vi.mock('@/stores/workspace/rightSidePanelStore', async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  type ActiveTab =
-    | 'errors'
-    | 'parameters'
-    | 'nodes'
-    | 'info'
-    | 'settings'
-    | 'subgraph'
-  return {
-    useRightSidePanelStore: defineStore('rightSidePanelStoreMock', () => {
-      const isOpen = ref(true)
-      const activeTab = ref<ActiveTab>('parameters')
-      const isEditingSubgraph = ref(false)
-      const closePanel = vi.fn()
-      const openPanel = vi.fn()
-      return { isOpen, activeTab, isEditingSubgraph, closePanel, openPanel }
-    })
-  }
-})
+vi.mock('@/scripts/app', () => ({ app: mockApp }))
+
+vi.mock('@/composables/graph/useGraphHierarchy', () => ({
+  useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
+}))
+
+vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.Sidebar.Location') return mockSidebarLocation.value
-      if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return false
+    get: (key: string) => {
+      if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+      if (key === 'Comfy.Sidebar.Location') return 'left'
+      if (key === 'Comfy.UseNewMenu') return 'Top'
+      if (key === 'Comfy.RightSidePanel.IsOpen') return true
       return undefined
-    })
-  })
-}))
-
-vi.mock('@/stores/executionErrorStore', async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useExecutionErrorStore: defineStore('executionErrorStoreMock', () => {
-      const hasAnyError = ref(false)
-      const allErrorExecutionIds = ref<string[]>([])
-      const activeGraphErrorNodeIds = ref(new Set<string>())
-      return {
-        hasAnyError,
-        allErrorExecutionIds,
-        activeGraphErrorNodeIds,
-        isContainerWithInternalError: vi.fn(() => false)
-      }
-    })
-  }
-})
-
-vi.mock('@/platform/missingModel/missingModelStore', async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useMissingModelStore: defineStore('missingModelStoreMock', () => {
-      const activeMissingModelGraphIds = ref(new Set<string>())
-      return { activeMissingModelGraphIds }
-    })
-  }
-})
-
-vi.mock('@/platform/missingMedia/missingMediaStore', async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useMissingMediaStore: defineStore('missingMediaStoreMock', () => {
-      const activeMissingMediaGraphIds = ref(new Set<string>())
-      return { activeMissingMediaGraphIds }
-    })
-  }
-})
-
-vi.mock('@/platform/nodeReplacement/missingNodesErrorStore', () => ({
-  useMissingNodesErrorStore: () => ({
-    missingAncestorExecutionIds: []
-  })
-}))
-
-vi.mock('@/composables/graph/useGraphHierarchy', () => ({
-  useGraphHierarchy: () => ({
-    findParentGroup: vi.fn(() => null)
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    isGraphReady: false,
-    rootGraph: { nodes: [] }
-  }
-}))
-
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getActiveGraphNodeIds: vi.fn(() => new Set<string>())
-}))
-
-vi.mock('@/utils/nodeTitleUtil', () => ({
-  resolveNodeDisplayName: vi.fn(() => 'Mock Node')
-}))
-
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphGroup: vi.fn(() => false),
-  isLGraphNode: vi.fn(
-    (item: unknown) =>
-      typeof item === 'object' && item !== null && 'isSubgraphNode' in item
-  )
-}))
-
-vi.mock('@/i18n', () => ({
-  st: vi.fn((key: string) => key)
-}))
-
-vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
-  const actual = await importOriginal()
-  class SubgraphNode {}
-  return {
-    ...actual,
-    SubgraphNode: SubgraphNode as unknown as typeof actual.SubgraphNode
-  }
-})
-
-const mountCounters = {
-  tabNodes: 0,
-  tabNormalInputs: 0,
-  tabSubgraphInputs: 0,
-  subgraphEditor: 0
-}
-
-function makeMountTracker(key: keyof typeof mountCounters, testid: string) {
-  return defineComponent({
-    setup() {
-      mountCounters[key]++
-      const id = mountCounters[key]
-      return { id }
     },
-    template: `<div data-testid="${testid}" :data-mount-id="id" />`
+    set: vi.fn()
   })
-}
+}))
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: { settings: 'Settings' },
-      rightSidePanel: {
-        errors: 'Errors',
-        nodes: 'Nodes',
-        parameters: 'Parameters',
-        info: 'Info',
-        workflowOverview: 'Workflow',
-        title: 'Selection ({count})',
-        fallbackNodeTitle: 'Untitled',
-        fallbackGroupTitle: 'Untitled Group',
-        editTitle: 'Edit',
-        editSubgraph: 'Edit subgraph',
-        togglePanel: 'Toggle panel',
-        globalSettings: { title: 'Global Settings' }
+function renderPanel(
+  activeTab: 'errors' | 'parameters' = 'errors',
+  graphContext?: {
+    rootGraph: LGraph
+    currentGraph: LGraph
+    node: LGraphNode
+  },
+  pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+) {
+  setActivePinia(pinia)
+
+  const rootGraph = graphContext?.rootGraph ?? new LGraph()
+  const currentGraph = graphContext?.currentGraph ?? rootGraph
+  const node = graphContext?.node ?? new LGraphNode('CheckpointLoaderSimple')
+  if (!graphContext) {
+    node.id = toNodeId(1)
+    rootGraph.add(node)
+  }
+  mockApp.rootGraph = rootGraph
+
+  const canvasStore = useCanvasStore()
+  canvasStore.currentGraph = currentGraph
+  canvasStore.selectedItems = [markRaw(node)]
+
+  const rightSidePanelStore = useRightSidePanelStore()
+  rightSidePanelStore.activeTab = activeTab
+  const executionErrorStore = useExecutionErrorStore()
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) throw new Error('Expected selected node execution ID')
+  const finishScan = executionErrorStore.beginAddedNodeErrorScan(
+    rootGraph,
+    executionId
+  )
+  const openPanel = vi.spyOn(rightSidePanelStore, 'openPanel')
+
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+
+  const rendered = render(RightSidePanel, {
+    global: {
+      plugins: [pinia, i18n],
+      stubs: {
+        Button: { template: '<button><slot /></button>' },
+        EditableText: true,
+        Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
+        TabErrors: true,
+        TabInfo: true,
+        TabList: { template: '<div><slot /></div>' },
+        TabNormalInputs: true,
+        TabSettings: true
       }
     }
-  }
-})
+  })
 
-const renderOptions = {
-  global: {
-    plugins: [i18n],
-    stubs: {
-      EditableText: { template: '<span><slot /></span>' },
-      Tab: { template: '<div><slot /></div>' },
-      TabList: {
-        template: '<div><slot /></div>',
-        emits: ['update:modelValue']
-      },
-      Button: { template: '<button><slot /></button>' },
-      TabErrors: { template: '<div data-testid="tab-errors" />' },
-      TabGlobalParameters: {
-        template: '<div data-testid="tab-global-parameters" />'
-      },
-      TabNodes: makeMountTracker('tabNodes', 'tab-nodes'),
-      TabGlobalSettings: {
-        template: '<div data-testid="tab-global-settings" />'
-      },
-      TabSubgraphInputs: makeMountTracker(
-        'tabSubgraphInputs',
-        'tab-subgraph-inputs'
-      ),
-      TabNormalInputs: makeMountTracker('tabNormalInputs', 'tab-normal-inputs'),
-      TabInfo: { template: '<div data-testid="tab-info" />' },
-      TabSettings: { template: '<div data-testid="tab-settings" />' },
-      SubgraphEditor: makeMountTracker('subgraphEditor', 'subgraph-editor')
-    }
+  return {
+    ...rendered,
+    executionId,
+    executionErrorStore,
+    finishScan,
+    graph: rootGraph,
+    node,
+    openPanel,
+    rightSidePanelStore
   }
 }
 
-describe('RightSidePanel', () => {
-  let canvasStore: ReturnType<typeof useCanvasStore>
-  let rightSidePanelStore: ReturnType<typeof useRightSidePanelStore>
-
+describe('RightSidePanel active tab fallback', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-    canvasStore = useCanvasStore()
-    rightSidePanelStore = useRightSidePanelStore()
-    canvasStore.selectedItems = []
-    mockActiveWorkflow.value = { path: 'wf-1' }
-    rightSidePanelStore.activeTab = 'parameters'
-    mountCounters.tabNodes = 0
-    mountCounters.tabNormalInputs = 0
-    mountCounters.tabSubgraphInputs = 0
-    mountCounters.subgraphEditor = 0
+    mockApp.rootGraph = null
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it('keeps the active errors tab until the selected node scan settles', async () => {
+    const { finishScan, openPanel, rightSidePanelStore } = renderPanel()
+
+    expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
+    expect(rightSidePanelStore.activeTab).toBe('errors')
+    expect(openPanel).not.toHaveBeenCalled()
+
+    vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(() => undefined)
+    finishScan()
+    await nextTick()
+
+    expect(rightSidePanelStore.activeTab).toBe('parameters')
+    expect(openPanel).toHaveBeenCalledWith('parameters')
   })
 
-  it('remounts TabNodes when the active workflow path changes', async () => {
-    rightSidePanelStore.activeTab = 'nodes'
+  it('keeps errors active when the scan surfaces an error before settling', async () => {
+    const { executionId, finishScan, openPanel, rightSidePanelStore } =
+      renderPanel()
 
-    render(RightSidePanel, renderOptions)
+    useMissingModelStore().addMissingModels([
+      {
+        nodeId: executionId,
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true
+      }
+    ])
+    finishScan()
     await nextTick()
 
-    const initial = screen
-      .getByTestId('tab-nodes')
-      .getAttribute('data-mount-id')
-    expect(initial).toBeTruthy()
-
-    mockActiveWorkflow.value = { path: 'wf-2' }
-    await nextTick()
-    await nextTick()
-
-    const remounted = screen
-      .getByTestId('tab-nodes')
-      .getAttribute('data-mount-id')
-    expect(remounted).not.toBe(initial)
+    expect(rightSidePanelStore.activeTab).toBe('errors')
+    expect(openPanel).not.toHaveBeenCalled()
   })
 
-  it('does not remount TabNodes when the workflow path stays the same', async () => {
-    rightSidePanelStore.activeTab = 'nodes'
+  it('does not show errors solely because a scan is pending', () => {
+    const { openPanel } = renderPanel('parameters')
 
-    render(RightSidePanel, renderOptions)
-    await nextTick()
-
-    const initial = screen
-      .getByTestId('tab-nodes')
-      .getAttribute('data-mount-id')
-
-    mockActiveWorkflow.value = { path: 'wf-1' }
-    await nextTick()
-
-    expect(screen.getByTestId('tab-nodes').getAttribute('data-mount-id')).toBe(
-      initial
-    )
+    expect(screen.queryByTestId('panel-tab-errors')).not.toBeInTheDocument()
+    expect(openPanel).not.toHaveBeenCalled()
   })
 
-  it('uses an empty workflow key when no workflow is active', async () => {
-    rightSidePanelStore.activeTab = 'nodes'
-    mockActiveWorkflow.value = null
-
-    render(RightSidePanel, renderOptions)
+  it('does not update the panel when a pending scan finishes after unmount', async () => {
+    const { finishScan, openPanel, unmount } = renderPanel()
+    unmount()
+    finishScan()
     await nextTick()
 
-    expect(screen.getByTestId('tab-nodes')).toBeInTheDocument()
+    expect(openPanel).not.toHaveBeenCalled()
   })
 
-  it('remounts TabNormalInputs when selection identity changes', async () => {
-    const node1 = fromAny<LGraphNode, unknown>({
-      id: 11,
-      title: 'Node 1',
-      isSubgraphNode: () => false,
-      widgets: []
-    })
-    const node2 = fromAny<LGraphNode, unknown>({
-      id: 22,
-      title: 'Node 2',
-      isSubgraphNode: () => false,
-      widgets: []
-    })
+  it('keeps errors active for a pending subgraph interior node scan', () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    setActivePinia(pinia)
+    const subgraph = createTestSubgraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(7)
+    subgraph.add(node)
+    const host = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = host.graph as LGraph
+    rootGraph.add(host)
 
-    canvasStore.selectedItems = [node1]
-    rightSidePanelStore.activeTab = 'parameters'
+    const { executionErrorStore, executionId, openPanel, rightSidePanelStore } =
+      renderPanel('errors', { rootGraph, currentGraph: subgraph, node }, pinia)
 
-    render(RightSidePanel, renderOptions)
-    await nextTick()
-    await nextTick()
-
-    const initial = screen
-      .getByTestId('tab-normal-inputs')
-      .getAttribute('data-mount-id')
-    expect(initial).toBeTruthy()
-
-    canvasStore.selectedItems = [node2]
-    await nextTick()
-    await nextTick()
-
-    const remounted = screen
-      .getByTestId('tab-normal-inputs')
-      .getAttribute('data-mount-id')
-    expect(remounted).not.toBe(initial)
-  })
-
-  it('remounts TabNormalInputs when the workflow path changes (selectedNodesKey embeds workflowKey)', async () => {
-    const node = fromAny<LGraphNode, unknown>({
-      id: 11,
-      title: 'Node 1',
-      isSubgraphNode: () => false,
-      widgets: []
-    })
-
-    canvasStore.selectedItems = [node]
-    rightSidePanelStore.activeTab = 'parameters'
-
-    render(RightSidePanel, renderOptions)
-    await nextTick()
-    await nextTick()
-
-    const initial = screen
-      .getByTestId('tab-normal-inputs')
-      .getAttribute('data-mount-id')
-
-    mockActiveWorkflow.value = { path: 'wf-2' }
-    await nextTick()
-    await nextTick()
-
-    const remounted = screen
-      .getByTestId('tab-normal-inputs')
-      .getAttribute('data-mount-id')
-    expect(remounted).not.toBe(initial)
+    expect(
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
+    ).toBe(true)
+    expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
+    expect(rightSidePanelStore.activeTab).toBe('errors')
+    expect(openPanel).not.toHaveBeenCalled()
   })
 })

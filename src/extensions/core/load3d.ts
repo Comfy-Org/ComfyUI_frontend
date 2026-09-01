@@ -232,7 +232,7 @@ useExtensionService().registerExtension({
       tooltip:
         'Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer.',
       type: 'boolean',
-      defaultValue: false,
+      defaultValue: true,
       experimental: true
     },
     {
@@ -277,7 +277,7 @@ useExtensionService().registerExtension({
             renderer: 'reka',
             size: 'full',
             contentClass:
-              'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+              'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
             maximizable: true,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
@@ -641,9 +641,10 @@ useExtensionService().registerExtension({
           const extrinsics = result?.[3]
           const intrinsics = result?.[4]
 
-          modelWidget.value = filePath?.replaceAll('\\', '/')
+          const modelFilePath = filePath?.replaceAll('\\', '/')
+          modelWidget.value = modelFilePath
 
-          node.properties['Last Time Model File'] = modelWidget.value
+          node.properties['Last Time Model File'] = modelFilePath
 
           const settings = {
             loadFolder: 'output',

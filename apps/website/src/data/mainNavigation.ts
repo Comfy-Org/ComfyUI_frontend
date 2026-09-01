@@ -48,13 +48,13 @@ export function getMainNavigation(locale: Locale): NavItem[] {
       label: t('nav.products', locale),
       badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/mcp-card.webp',
+        imageSrc: 'https://media.comfy.org/website/nav/ltx-card.webp',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
-          label: t('cta.getStarted', locale),
+          label: t('nav.featuredProductsCta', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.mcp
+          href: routes.ltx
         }
       },
       columns: [
@@ -70,7 +70,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              href: routes.enterprise
             }
           ]
         },
@@ -80,6 +80,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.mcpServer', locale),
               href: routes.mcp,
+              badge: 'new'
+            },
+            {
+              label: t('nav.comfyCli', locale),
+              href: routes.cli,
               badge: 'new'
             },
             // TODO: no page yet — re-enable when landing pages ship
@@ -119,7 +124,17 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.colPrograms', locale),
           items: [
             { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
+            {
+              label: t('nav.fdct', locale),
+              href: routes.fdct,
+              badge: 'new'
+            },
             { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.events', locale),
+              href: routes.events,
+              badge: 'new'
+            },
             {
               label: t('nav.affiliates', locale),
               href: routes.affiliates,

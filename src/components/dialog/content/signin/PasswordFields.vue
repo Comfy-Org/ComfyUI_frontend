@@ -1,6 +1,11 @@
 <template>
   <!-- Password Field -->
-  <FormField v-slot="$field" name="password" class="flex flex-col gap-2">
+  <FormField
+    ref="passwordField"
+    v-slot="$field"
+    name="password"
+    class="flex flex-col gap-2"
+  >
     <div class="mb-2 flex items-center justify-between">
       <label
         class="text-base font-medium opacity-80"
@@ -17,12 +22,12 @@
       :feedback="false"
       toggle-mask
       :placeholder="t('auth.signup.passwordPlaceholder')"
+      :pt:pc-input-text:root:class="fieldClass"
       :class="{ 'p-invalid': $field.invalid }"
       fluid
-      class="h-10"
     />
-    <div class="flex flex-col gap-1">
-      <small v-if="$field.dirty || $field.invalid" class="text-sm">
+    <div v-if="$field.dirty && isPasswordFocused" class="flex flex-col gap-1">
+      <small class="text-sm">
         {{ t('validation.password.requirements') }}:
         <ul class="mt-1 space-y-1">
           <li
@@ -80,9 +85,9 @@
       :feedback="false"
       toggle-mask
       :placeholder="t('auth.login.confirmPasswordPlaceholder')"
+      :pt:pc-input-text:root:class="fieldClass"
       :class="{ 'p-invalid': $field.invalid }"
       fluid
-      class="h-10"
     />
     <small v-if="$field.error" class="text-red-500">{{
       $field.error.message
@@ -92,12 +97,20 @@
 
 <script setup lang="ts">
 import { FormField } from '@primevue/forms'
+import { useFocusWithin } from '@vueuse/core'
 import Password from 'primevue/password'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
+import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+const { fieldClass = 'h-10' } = defineProps<{
+  fieldClass?: HTMLAttributes['class']
+}>()
 
 const { t } = useI18n()
 const password = ref('')
+const passwordField = useTemplateRef<ComponentPublicInstance>('passwordField')
+const { focused: isPasswordFocused } = useFocusWithin(passwordField)
 
 // TODO: Use dynamic form to better organize the password checks.
 // Ref: https://primevue.org/forms/#dynamic

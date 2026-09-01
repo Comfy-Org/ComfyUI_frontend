@@ -32,47 +32,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   })
 
-  // Flaky: /templates is proxied to an external server, so thumbnail
-  // availability varies across CI runs.
-  // FIX: Make hermetic — fixture index.json and thumbnail responses via
-  // page.route(), and change checkTemplateFileExists to use browser-context
-  // fetch (page.request.head bypasses Playwright routing).
-  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
-  // oxlint-disable-next-line playwright/no-skipped-test -- https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
-  test.skip('should have all required thumbnail media for each template', async ({
-    comfyPage
-  }) => {
-    test.slow()
-    const templates = await comfyPage.templates.getAllTemplates()
-    for (const template of templates) {
-      const { name, mediaSubtype, thumbnailVariant } = template
-      const baseMedia = `${name}-1.${mediaSubtype}`
-
-      // Check base thumbnail
-      const baseExists = await checkTemplateFileExists(
-        comfyPage.page,
-        baseMedia
-      )
-      expect(baseExists, `Missing base thumbnail: ${baseMedia}`).toBe(true)
-
-      // Check second thumbnail for variants that need it
-      if (
-        thumbnailVariant === 'compareSlider' ||
-        thumbnailVariant === 'hoverDissolve'
-      ) {
-        const secondMedia = `${name}-2.${mediaSubtype}`
-        const secondExists = await checkTemplateFileExists(
-          comfyPage.page,
-          secondMedia
-        )
-        expect(
-          secondExists,
-          `Missing second thumbnail: ${secondMedia} required for ${thumbnailVariant}`
-        ).toBe(true)
-      }
-    }
-  })
-
   test('Can load template workflows', async ({ comfyPage }) => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
@@ -83,10 +42,10 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    await comfyPage.page
-      .getByRole('button', { name: 'Getting Started' })
-      .click()
-    await comfyPage.templates.loadTemplate('default')
+    await comfyPage.page.getByRole('button', { name: 'Popular' }).click()
+    const firstPopularTemplate = comfyPage.templates.allTemplateCards.first()
+    await expect(firstPopularTemplate).toBeVisible()
+    await firstPopularTemplate.click()
     await expect(comfyPage.templates.content).toBeHidden()
 
     // Ensure we now have some nodes
@@ -95,7 +54,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       .toBeGreaterThan(0)
   })
 
-  test('dialog should be automatically shown to first-time users', async ({
+  test('dialog should open Popular for first-time users', async ({
     comfyPage
   }) => {
     // Set the tutorial as not completed to mark the user as a first-time user
@@ -104,8 +63,40 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Load the page
     await comfyPage.setup({ clearStorage: true })
 
-    // Expect the templates dialog to be shown
     await expect(comfyPage.templates.content).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Popular', exact: true })
+    ).toBeVisible()
+    await comfyPage.page.getByRole('button', { name: 'Filters' }).click()
+    await expect(
+      comfyPage.page
+        .getByRole('combobox', { name: 'Sort by' })
+        .filter({ visible: true })
+    ).toHaveText('Popular')
+  })
+
+  test("dialog should preserve a returning user's Popular sort", async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', true)
+    await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'popular')
+
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+
+    await expect(comfyPage.templates.content).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', {
+        name: 'All Templates',
+        exact: true
+      })
+    ).toBeVisible()
+    await comfyPage.templatesDialog.openFilters()
+    await expect(
+      comfyPage.templatesDialog.getCombobox('Sort by').filter({ visible: true })
+    ).toHaveText('Popular')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.Templates.SortBy'))
+      .toBe('popular')
   })
 
   test('dialog should not be shown when first-time user opens a shared workflow link', async ({
