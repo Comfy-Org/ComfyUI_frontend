@@ -14,6 +14,7 @@ const fixture: WorkshopModel[] = [
     name: 'Kling AI',
     workflowCount: 3,
     href: '/a',
+    routerId: 'kling/a',
     provider: 'Kling',
     modality: 'video'
   },
@@ -22,10 +23,17 @@ const fixture: WorkshopModel[] = [
     name: 'Flux',
     workflowCount: 2,
     href: '/b',
+    routerId: 'bfl/b',
     provider: 'Black Forest Labs',
     modality: 'image'
   },
-  { slug: 'c', name: 'Mystery', workflowCount: 1, href: '/c' }
+  {
+    slug: 'c',
+    name: 'Mystery',
+    workflowCount: 1,
+    href: '/c',
+    routerId: 'comfy/c'
+  }
 ]
 
 describe('filterWorkshopModels', () => {

@@ -1,0 +1,133 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ModelDetail from '../../../components/workshop/ModelDetail.vue'
+import { getRoutes } from '../../../config/routes'
+import { getWorkshopModel, workshopModels } from '../../../config/workshop'
+import { t } from '../../../i18n/translations'
+
+export const getStaticPaths: GetStaticPaths = () =>
+  workshopModels.map((model) => ({ params: { slug: model.slug } }))
+
+const { slug } = Astro.params
+const model = getWorkshopModel(slug as string)!
+const successor = model.successorSlug
+  ? getWorkshopModel(model.successorSlug)
+  : undefined
+const routes = getRoutes()
+
+const modalityLabel = {
+  image: t('workshop.filter.image'),
+  video: t('workshop.filter.video'),
+  audio: t('workshop.filter.audio'),
+  '3d': t('workshop.filter.3d'),
+  text: t('workshop.filter.text')
+} as const
+---
+
+<BaseLayout
+  title={`${model.name} · ${t('workshop.title')} - Comfy`}
+  description={t('workshop.model.meta.description').replace('{name}', model.name)}
+  noindex
+>
+  <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
+    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray">
+      <ol class="flex flex-wrap items-center gap-2">
+        <li>
+          <a href={routes.workshop} class="hover:text-primary-warm-white">
+            {t('workshop.title')}
+          </a>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li>
+          <a href={routes.workshop} class="hover:text-primary-warm-white">
+            {t('workshop.tabs.models')}
+          </a>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
+      </ol>
+    </nav>
+
+    <header class="mb-10 flex flex-col gap-4">
+      <div class="flex flex-wrap items-center gap-2">
+        {
+          model.modality && (
+            <span class="rounded-full bg-transparency-white-t8 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-warm-white uppercase">
+              {modalityLabel[model.modality]}
+            </span>
+          )
+        }
+        <span class="rounded-full bg-transparency-white-t4 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-warm-gray uppercase">
+          {t('workshop.card.partnerNode')}
+        </span>
+        {
+          model.status === 'deprecated' && (
+            <span
+              class="rounded-full border border-primary-comfy-orange/50 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-comfy-orange uppercase"
+              data-testid="model-status"
+            >
+              {t('workshop.model.deprecated')}
+            </span>
+          )
+        }
+        {
+          model.status === 'degraded' && (
+            <span
+              class="rounded-full border border-primary-comfy-orange/50 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-comfy-orange uppercase"
+              data-testid="model-status"
+            >
+              {t('workshop.model.degraded')}
+            </span>
+          )
+        }
+      </div>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-5xl">
+            {model.name}
+          </h1>
+          <p class="mt-2 text-base text-primary-warm-gray">
+            {model.provider ?? t('workshop.card.partnerNode')}
+          </p>
+        </div>
+        <p class="text-sm text-primary-comfy-canvas/70" data-testid="model-price">
+          {
+            model.creditsPerRun !== undefined ? (
+              <>
+                <span class="text-2xl font-bold text-primary-comfy-yellow">
+                  {model.creditsPerRun}
+                </span>{' '}
+                {t('workshop.card.creditsPerRun')}
+              </>
+            ) : (
+              t('workshop.card.priceOnPage')
+            )
+          }
+        </p>
+      </div>
+
+      {
+        model.status === 'deprecated' && (
+          <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
+            {t('workshop.model.deprecatedBody')}
+            {successor && (
+              <a href={successor.href} class="ml-2 font-bold text-primary-comfy-yellow hover:underline">
+                {t('workshop.model.deprecatedSuccessor').replace('{successor}', successor.name)} →
+              </a>
+            )}
+          </p>
+        )
+      }
+      {
+        model.status === 'degraded' && (
+          <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
+            {t('workshop.model.degradedBody')}
+          </p>
+        )
+      }
+    </header>
+
+    <ModelDetail model={model} client:load />
+  </div>
+</BaseLayout>

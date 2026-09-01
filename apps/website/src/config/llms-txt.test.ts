@@ -37,7 +37,9 @@ const EXCLUDED_PAGES = new Set([
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
-  '/platform/serverless-animation' // noindex temporary motion study, not a real page
+  '/platform/serverless-animation', // noindex temporary motion study, not a real page
+  '/workshop', // noindex Workshop prototype, mock data
+  '/workshop/workflows' // noindex Workshop prototype, mock data
 ])
 
 /**

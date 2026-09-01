@@ -8296,6 +8296,250 @@ Enterprise`
   'workshop.workflows.categories.specialized': {
     en: 'Specialized outcomes',
     'zh-CN': '专项成果'
+  },
+
+  // Workshop – sign-in dialog
+  'workshop.signIn.title': { en: 'Sign in to run', 'zh-CN': '登录以运行' },
+  'workshop.signIn.description': {
+    en: 'Use your Comfy Cloud account. Your settings stay on this page.',
+    'zh-CN': '使用你的 Comfy Cloud 账户。你的设置会保留在本页。'
+  },
+  'workshop.signIn.google': {
+    en: 'Continue with Google',
+    'zh-CN': '使用 Google 继续'
+  },
+  'workshop.signIn.github': {
+    en: 'Continue with GitHub',
+    'zh-CN': '使用 GitHub 继续'
+  },
+  'workshop.signIn.or': { en: 'or', 'zh-CN': '或' },
+  'workshop.signIn.email': { en: 'Email', 'zh-CN': '邮箱' },
+  'workshop.signIn.continue': {
+    en: 'Continue with email',
+    'zh-CN': '使用邮箱继续'
+  },
+  'workshop.signIn.footnote': {
+    en: 'Prototype: every option signs you in with a mock account.',
+    'zh-CN': '原型：任意选项都会以模拟账户登录。'
+  },
+
+  // Workshop – model detail
+  'workshop.model.meta.description': {
+    en: 'Run {name} in your browser, then call it from your code.',
+    'zh-CN': '在浏览器中运行 {name}，然后从代码中调用它。'
+  },
+  'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
+  'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
+  'workshop.model.tabs.examples': { en: 'Examples', 'zh-CN': '示例' },
+  'workshop.model.deprecated': { en: 'Deprecated', 'zh-CN': '已弃用' },
+  'workshop.model.deprecatedBody': {
+    en: 'This model is being retired.',
+    'zh-CN': '该模型即将下线。'
+  },
+  'workshop.model.deprecatedSuccessor': {
+    en: 'Try {successor} instead',
+    'zh-CN': '建议改用 {successor}'
+  },
+  'workshop.model.degraded': { en: 'Degraded', 'zh-CN': '性能下降' },
+  'workshop.model.degradedBody': {
+    en: 'The provider is reporting slow or failing runs right now.',
+    'zh-CN': '提供方当前报告运行缓慢或失败。'
+  },
+
+  // Workshop – playground fields
+  'workshop.field.prompt': { en: 'Prompt', 'zh-CN': '提示词' },
+  'workshop.field.promptPlaceholder': {
+    en: 'Describe what you want to make',
+    'zh-CN': '描述你想生成的内容'
+  },
+  'workshop.field.seed': { en: 'Seed', 'zh-CN': '随机种子' },
+  'workshop.field.image': { en: 'Reference image', 'zh-CN': '参考图' },
+  'workshop.field.aspectRatio': { en: 'Aspect ratio', 'zh-CN': '宽高比' },
+  'workshop.field.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
+  'workshop.field.duration': { en: 'Duration (s)', 'zh-CN': '时长（秒）' },
+  'workshop.field.voice': { en: 'Voice', 'zh-CN': '声音' },
+  'workshop.field.format': { en: 'Format', 'zh-CN': '格式' },
+  'workshop.field.maxTokens': { en: 'Max tokens', 'zh-CN': '最大 token 数' },
+  'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
+  'workshop.field.uploadHint': {
+    en: 'PNG, JPG or WEBP up to 25 MB',
+    'zh-CN': 'PNG、JPG 或 WEBP，最大 25 MB'
+  },
+  'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
+  'workshop.form.required': {
+    en: 'This field is required',
+    'zh-CN': '此字段为必填项'
+  },
+  'workshop.form.tooLarge': {
+    en: 'File is over 25 MB',
+    'zh-CN': '文件超过 25 MB'
+  },
+  'workshop.form.badType': {
+    en: 'File type not supported',
+    'zh-CN': '不支持的文件类型'
+  },
+  'workshop.form.rejected': {
+    en: 'The provider rejected this value',
+    'zh-CN': '提供方拒绝了该值'
+  },
+
+  // Workshop – run
+  'workshop.run.signIn': { en: 'Sign in to run', 'zh-CN': '登录以运行' },
+  'workshop.run.buyCredits': {
+    en: 'Buy credits to run',
+    'zh-CN': '购买积分以运行'
+  },
+  'workshop.run.run': { en: 'Run', 'zh-CN': '运行' },
+  'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
+  'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
+  'workshop.run.policy': {
+    en: 'Disabled by your workspace policy',
+    'zh-CN': '已被工作区策略禁用'
+  },
+  'workshop.run.unavailable': {
+    en: 'Model temporarily unavailable',
+    'zh-CN': '模型暂时不可用'
+  },
+  'workshop.run.signedInNotice': {
+    en: "You're signed in. Hit Run when ready.",
+    'zh-CN': '你已登录。准备好后点击运行。'
+  },
+  'workshop.run.videoHint': {
+    en: 'Video runs can take up to 10 minutes and run without a queue.',
+    'zh-CN': '视频生成最长可能需要 10 分钟，且不排队。'
+  },
+
+  // Workshop – output
+  'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.placeholder': {
+    en: 'Your output will appear here.',
+    'zh-CN': '你的输出会显示在这里。'
+  },
+  'workshop.output.example': { en: 'Example output', 'zh-CN': '示例输出' },
+  'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
+  'workshop.output.useInCode': {
+    en: 'Use these settings in code',
+    'zh-CN': '在代码中使用这些设置'
+  },
+  'workshop.output.expires': {
+    en: 'Output links expire 24 hours after the run. Download to keep it.',
+    'zh-CN': '输出链接在运行后 24 小时失效。请下载保存。'
+  },
+  'workshop.output.nsfw': {
+    en: 'This output may be sensitive.',
+    'zh-CN': '此输出可能包含敏感内容。'
+  },
+  'workshop.output.reveal': { en: 'Click to reveal', 'zh-CN': '点击查看' },
+  'workshop.output.cancelled': {
+    en: 'Run cancelled. No credits were charged.',
+    'zh-CN': '运行已取消。未扣除积分。'
+  },
+  'workshop.output.runAgain': { en: 'Run again', 'zh-CN': '再次运行' },
+  'workshop.error.provider': {
+    en: 'The provider returned an error. You were not charged.',
+    'zh-CN': '提供方返回了错误。未扣费。'
+  },
+  'workshop.error.rateLimit': {
+    en: 'Too many runs right now. Wait a moment and try again.',
+    'zh-CN': '当前运行过多。请稍后重试。'
+  },
+  'workshop.error.policy': {
+    en: 'Your workspace policy blocks this provider.',
+    'zh-CN': '你的工作区策略禁止了该提供方。'
+  },
+  'workshop.error.noCredits': {
+    en: 'Not enough credits for this run.',
+    'zh-CN': '积分不足，无法运行。'
+  },
+  'workshop.error.unavailable': {
+    en: 'This model is temporarily unavailable.',
+    'zh-CN': '该模型暂时不可用。'
+  },
+  'workshop.error.validation': {
+    en: 'Check the highlighted fields.',
+    'zh-CN': '请检查高亮的字段。'
+  },
+  'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
+
+  // Workshop – API tab
+  'workshop.api.heading': {
+    en: 'Call this model from your code',
+    'zh-CN': '从代码中调用该模型'
+  },
+  'workshop.api.body': {
+    en: 'The snippet mirrors the values in the Playground form.',
+    'zh-CN': '代码片段与 Playground 表单中的值保持一致。'
+  },
+  'workshop.api.copy': { en: 'Copy snippet', 'zh-CN': '复制代码' },
+  'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
+  'workshop.api.illustrative': {
+    en: 'Illustrative shape. Final calls follow the Router SDK docs.',
+    'zh-CN': '仅为示意。最终调用以 Router SDK 文档为准。'
+  },
+
+  // Workshop – examples
+  'workshop.examples.heading': { en: 'Example outputs', 'zh-CN': '示例输出' },
+  'workshop.examples.open': {
+    en: 'Open in Playground',
+    'zh-CN': '在 Playground 中打开'
+  },
+  'workshop.examples.empty': {
+    en: 'No examples yet for this model.',
+    'zh-CN': '该模型暂无示例。'
+  },
+  'workshop.examples.product': { en: 'Product shot', 'zh-CN': '产品图' },
+  'workshop.examples.portrait': {
+    en: 'Editorial portrait',
+    'zh-CN': '杂志风人像'
+  },
+  'workshop.examples.videoExtend': {
+    en: 'Cinematic dolly-in',
+    'zh-CN': '电影感推镜'
+  },
+  'workshop.examples.cameraMotion': {
+    en: 'Orbit shot',
+    'zh-CN': '环绕镜头'
+  },
+  'workshop.examples.narration': { en: 'Narration', 'zh-CN': '旁白' },
+  'workshop.examples.asset': { en: 'Game asset', 'zh-CN': '游戏资产' },
+  'workshop.examples.brief': { en: 'Taglines', 'zh-CN': '标语' },
+
+  // Workshop – prototype controls
+  'workshop.proto.outcome': {
+    en: 'Simulate run outcome',
+    'zh-CN': '模拟运行结果'
+  },
+  'workshop.proto.outcome.success': { en: 'Success', 'zh-CN': '成功' },
+  'workshop.proto.outcome.nsfw': {
+    en: 'Success, sensitive output',
+    'zh-CN': '成功，敏感输出'
+  },
+  'workshop.proto.outcome.validation': {
+    en: 'Validation error (422)',
+    'zh-CN': '校验错误 (422)'
+  },
+  'workshop.proto.outcome.provider': {
+    en: 'Provider error',
+    'zh-CN': '提供方错误'
+  },
+  'workshop.proto.outcome.rateLimit': {
+    en: 'Rate limit (429)',
+    'zh-CN': '限流 (429)'
+  },
+  'workshop.proto.gate': {
+    en: 'Simulate model state',
+    'zh-CN': '模拟模型状态'
+  },
+  'workshop.proto.gate.none': { en: 'Normal', 'zh-CN': '正常' },
+  'workshop.proto.gate.policy': {
+    en: 'Workspace policy blocks provider (403)',
+    'zh-CN': '工作区策略禁止提供方 (403)'
+  },
+  'workshop.proto.gate.unavailable': {
+    en: 'Model unavailable',
+    'zh-CN': '模型不可用'
   }
 } as const satisfies Record<
   string,

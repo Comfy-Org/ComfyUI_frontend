@@ -15,13 +15,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../../composables/useMockSession'
+import { useSignInDialog } from '../../../composables/useSignInDialog'
 import { externalLinks } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const { session, signIn, signOut, setCredits } = useMockSession()
+const { session, signOut, setCredits } = useMockSession()
+const { open: openSignIn } = useSignInDialog()
 
 const account = computed(() =>
   session.value.status === 'signedIn' ? session.value.account : undefined
@@ -48,7 +50,7 @@ const itemClass =
     v-if="!account"
     variant="outline"
     data-testid="header-sign-in"
-    @click="signIn"
+    @click="openSignIn"
   >
     {{ t('nav.signIn', locale) }}
   </Button>

@@ -70,7 +70,13 @@
     "modality": "image",
     "creditsPerRun": 7
   },
-  "veo-2": { "provider": "Google", "modality": "video", "creditsPerRun": 35 },
+  "veo-2": {
+    "provider": "Google",
+    "modality": "video",
+    "creditsPerRun": 35,
+    "status": "deprecated",
+    "successorSlug": "veo-3"
+  },
   "veo-3": { "provider": "Google", "modality": "video", "creditsPerRun": 40 },
   "recraft": { "provider": "Recraft", "modality": "image", "creditsPerRun": 5 },
   "ideogram": {
@@ -114,7 +120,12 @@
     "creditsPerRun": 12
   },
   "heygen": { "provider": "HeyGen", "modality": "video", "creditsPerRun": 30 },
-  "runway": { "provider": "Runway", "modality": "video", "creditsPerRun": 25 },
+  "runway": {
+    "provider": "Runway",
+    "modality": "video",
+    "creditsPerRun": 25,
+    "status": "degraded"
+  },
   "wan-api": {
     "provider": "Alibaba",
     "modality": "video",

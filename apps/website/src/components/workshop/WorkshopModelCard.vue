@@ -71,6 +71,16 @@ const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
       </h3>
       <p class="text-sm text-primary-warm-gray">
         {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+        <span
+          v-if="model.status"
+          class="border-primary-comfy-orange/50 text-primary-comfy-orange ml-1 rounded-full border px-1.5 py-px text-[9px] font-bold tracking-widest uppercase"
+        >
+          {{
+            model.status === 'deprecated'
+              ? t('workshop.model.deprecated', locale)
+              : t('workshop.model.degraded', locale)
+          }}
+        </span>
       </p>
 
       <div

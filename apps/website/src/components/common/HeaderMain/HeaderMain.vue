@@ -6,6 +6,7 @@ import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderAccount from './HeaderAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
+import SignInDialog from '../SignInDialog.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const { locale = 'en', githubStars = '' } = defineProps<{
@@ -87,5 +88,6 @@ const ctaButtons = [
         </span>
       </Button>
     </div>
+    <SignInDialog :locale />
   </nav>
 </template>
