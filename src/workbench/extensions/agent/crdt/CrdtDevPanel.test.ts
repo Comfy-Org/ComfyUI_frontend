@@ -189,17 +189,21 @@ describe('CrdtDevPanel', () => {
   it('clears the poll interval and tolerates the copy-label timer after unmount', async () => {
     createClipboardSpy()
     openPanel()
+    const setIntervalSpy = vi.spyOn(window, 'setInterval')
     const clearIntervalSpy = vi.spyOn(window, 'clearInterval')
     recordDevEvent('doc_update', { update_b64: 'abc' })
     const { unmount } = mount()
+    const pollHandle = setIntervalSpy.mock.results[0].value
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
     await user.click(screen.getByRole('button', { name: 'Copy JSON' }))
     unmount()
 
-    expect(clearIntervalSpy).toHaveBeenCalled()
+    expect(pollHandle).toBeDefined()
+    expect(clearIntervalSpy).toHaveBeenCalledWith(pollHandle)
     expect(() => vi.runOnlyPendingTimers()).not.toThrow()
 
     clearIntervalSpy.mockRestore()
+    setIntervalSpy.mockRestore()
   })
 })
