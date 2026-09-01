@@ -123,16 +123,27 @@ export function createTargetFrameApplyPort(
       const linkIds = [...linksMap(stagedDoc).keys()].sort(
         (left, right) => Number(left) - Number(right)
       )
+
+      // Read and validate the whole snapshot before touching the stores: a
+      // malformed entry rejects the frame outright instead of applying a
+      // partial graph (the session's all-or-nothing commit contract).
+      const nodes: SemanticNodePayload[] = []
+      for (const id of nodeIds) {
+        const payload = readSemanticNode(stagedDoc, id)
+        if (!payload) return false
+        nodes.push(payload)
+      }
+      const links: SemanticLinkPayload[] = []
+      for (const id of linkIds) {
+        const link = readSemanticLink(stagedDoc, id)
+        if (!link) return false
+        links.push(link)
+      }
+
       return mutations.batch(frameContext(frame), (batch) => {
         batch.clearSemanticGraph()
-        for (const id of nodeIds) {
-          const payload = readSemanticNode(stagedDoc, id)
-          if (payload) batch.reconcileNode(payload)
-        }
-        for (const id of linkIds) {
-          const link = readSemanticLink(stagedDoc, id)
-          if (link) batch.connect(link)
-        }
+        for (const node of nodes) batch.reconcileNode(node)
+        for (const link of links) batch.connect(link)
       })
     }
   }
