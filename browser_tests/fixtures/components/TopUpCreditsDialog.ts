@@ -66,9 +66,10 @@ export class TopUpCreditsDialog extends BaseDialog {
       name: 'View pricing details'
     })
 
-    const steppers = this.root.locator('label')
-    const payStepper = steppers.first()
-    const creditsStepper = steppers.nth(1)
+    const payStepper = this.root.getByText('You Pay', { exact: true }).locator('..')
+    const creditsStepper = this.root
+      .getByText('You Get', { exact: true })
+      .locator('..')
 
     this.payInput = payStepper.locator('input[inputmode="numeric"]')
     this.creditsInput = creditsStepper.locator('input[inputmode="numeric"]')
