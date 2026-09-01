@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ServerlessImageHeatmapAnimation from '../../templates/platform/ServerlessImageHeatmapAnimation.vue'
+import ServerlessIsometricStudy from '../../templates/platform/ServerlessIsometricStudy.vue'
+import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorkerAnimation.vue'
+---
+
+<BaseLayout
+  title="Serverless animation comparison · Comfy"
+  description="Temporary side-by-side serverless animation study."
+  noindex
+>
+  <section class="mx-auto w-full max-w-[1600px] px-6 py-16 sm:px-10 lg:px-12">
+    <header class="mb-10 max-w-3xl">
+      <p class="text-primary-comfy-yellow mb-3 font-mono text-xs tracking-widest uppercase">
+        Temporary motion study
+      </p>
+      <h1 class="font-blackcode mb-4 text-4xl uppercase sm:text-5xl">
+        Serverless animation comparison
+      </h1>
+      <p class="text-primary-comfy-white/70 max-w-2xl text-lg">
+        Each study uses the same production container, visual assets, and
+        dimensions so the concepts can be compared directly.
+      </p>
+    </header>
+
+    <div class="grid items-start gap-8 lg:grid-cols-2">
+      <article>
+        <div class="mb-3 flex items-center justify-between gap-4 px-1">
+          <h2 class="text-lg font-medium">Animation A · Worker batches</h2>
+          <span class="text-primary-comfy-yellow/70 font-mono text-xs uppercase">
+            New study
+          </span>
+        </div>
+        <ServerlessWorkerAnimation locale="en" client:load />
+      </article>
+
+      <article>
+        <div class="mb-3 flex items-center justify-between gap-4 px-1">
+          <h2 class="text-lg font-medium">Animation B · Isometric heatmap</h2>
+          <span class="text-primary-comfy-yellow/70 font-mono text-xs uppercase">
+            3s hold
+          </span>
+        </div>
+        <ServerlessIsometricStudy locale="en" client:load />
+      </article>
+
+      <article>
+        <div class="mb-3 flex items-center justify-between gap-4 px-1">
+          <h2 class="text-lg font-medium">Animation C · Image heatmap</h2>
+          <span class="text-primary-comfy-yellow/70 font-mono text-xs uppercase">
+            4 scenes
+          </span>
+        </div>
+        <ServerlessImageHeatmapAnimation locale="en" client:load />
+      </article>
+    </div>
+  </section>
+</BaseLayout>

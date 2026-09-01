@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -157,7 +157,6 @@ describe('widget connection suppression', () => {
       }
     }
     LiteGraph.registerNodeType(nodeType, ConfigureNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     const node = LiteGraph.createNode(nodeType)

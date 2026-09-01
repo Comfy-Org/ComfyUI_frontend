@@ -77,7 +77,7 @@ test.describe('Cloud page @smoke', () => {
 
     const cta = page.getByRole('link', { name: /SEE PRICING PLANS/i })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/cloud/pricing')
+    await expect(cta).toHaveAttribute('href', '/pricing')
   })
 
   test('ProductCardsSection has 3 product cards', async ({ page }) => {

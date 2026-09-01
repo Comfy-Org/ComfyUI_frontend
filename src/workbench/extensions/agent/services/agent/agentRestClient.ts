@@ -143,15 +143,20 @@ export function createAgentRestClient() {
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore = false
+    let cursor: string | undefined
     for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const result = await request(
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${page * CLOUD_WORKFLOW_PAGE_SIZE}`,
+        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
         { method: 'GET' },
         zCloudWorkflowIndex
       )
       entries.push(...result.data)
       hasMore = result.pagination.has_more
       if (!hasMore) break
+      const nextCursor = result.pagination.next_cursor
+      if (!nextCursor || nextCursor === cursor) break
+      cursor = nextCursor
     }
     if (hasMore)
       console.warn(

@@ -129,8 +129,9 @@ function mergeDescriptor(
       return concrete.get?.call(this)
     },
     set(value: unknown) {
-      concrete.set?.call(this, value)
       foreign.set?.call(this, value)
+      const normalised = foreign.get?.call(this)
+      concrete.set?.call(this, normalised === undefined ? value : normalised)
     }
   }
 }

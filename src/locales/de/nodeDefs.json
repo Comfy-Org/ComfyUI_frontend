@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Hängt 1–10 Referenzbilder an das Conditioning an: ein Bild für Bearbeitungsanweisungen oder mehrere für motivbasierte Personalisierung.",
+    "description": "Geordnete Referenzbilder an die positive und negative Konditionierung anhängen.",
     "display_name": "HiDream-O1 Referenzbilder",
     "inputs": {
       "images": {
         "name": "images",
-        "tooltip": "Referenzbilder. 1 Bild = Bearbeitung per Anweisung; 2–10 Bilder = mehrere Referenzen."
+        "tooltip": "Referenzbilder werden in numerischer Socket-Reihenfolge verwendet."
       },
       "negative": {
         "name": "negative"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Wendet ein MiniMax H3 Fun ControlNet als Modell-Patch auf ein Text-zu-Video-Modell an.",
+    "display_name": "MiniMax H3 Fun ControlNet anwenden",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 markiert die Bereiche, die neu generiert werden."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Video hinter der Maske; wird nur gelesen, wenn eine Maske angegeben ist."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21113,6 +21153,23 @@
       },
       "scale": {
         "name": "Skalierung"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "Legt den SenseNova-Flow-Shift fest.",
+    "display_name": "SenseNova-Sampling-Optionen",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

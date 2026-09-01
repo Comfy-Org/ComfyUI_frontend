@@ -32,6 +32,23 @@ class AccessorHeightWidget implements IBaseWidget {
   }
 }
 
+class NormalisingValueWidget implements IBaseWidget {
+  [symbol: symbol]: boolean
+  #value: { entries: number[] } = { entries: [] }
+  name = 'custom'
+  type = 'legacy_test'
+  options = {}
+  y = 0
+
+  get value(): { entries: number[] } {
+    return this.#value
+  }
+
+  set value(value: { entries: number[] } | number[]) {
+    this.#value.entries = Array.isArray(value) ? value : value.entries
+  }
+}
+
 class SetterOnlyHeightWidget extends AccessorHeightWidget {
   override set height(_value: number) {
     this.heightWrites++
@@ -258,5 +275,14 @@ describe('toConcreteWidget', () => {
     delete result.options.hidden
     expect(result.hidden).toBe(false)
     expect(store.getWidgetVisibility(id)?.suppression.byExtension).toBe(false)
+  })
+
+  it('stores the value a foreign setter normalised', () => {
+    const node = new LGraphNode('test')
+    const widget = toConcreteWidget(new NormalisingValueWidget(), node)
+
+    widget.value = [1, 2]
+
+    expect(widget.value).toEqual({ entries: [1, 2] })
   })
 })

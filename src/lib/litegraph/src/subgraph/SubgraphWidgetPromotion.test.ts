@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISlotType,
@@ -214,7 +214,6 @@ describe('SubgraphWidgetPromotion', () => {
         }
       }
       LiteGraph.registerNodeType(sourceType, SourceNode)
-      onTestFinished(() => LiteGraph.unregisterNodeType(sourceType))
       registerTestSubgraphNodeTypes(rootGraph)
 
       const source = LiteGraph.createNode(sourceType)

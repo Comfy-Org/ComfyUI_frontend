@@ -29,8 +29,6 @@ class ClipTextEncodeLikeNode extends LGraphNode {
   }
 }
 
-LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
-
 /**
  * Regression #13861: a renamed widget label reverted to its default on
  * save/reload, delete/undo, and copy/paste for normal (input-backed) nodes.
@@ -52,6 +50,10 @@ LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
  */
 describe('renameWidget label persistence via input lookup (regression #13861)', () => {
   beforeEach(() => {
+    LiteGraph.registerNodeType(
+      'test/CLIPTextEncodeLike',
+      ClipTextEncodeLikeNode
+    )
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
       NODE_SLOT_HEIGHT: 15,
