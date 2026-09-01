@@ -172,6 +172,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
     for (let step = 1; step < totalSteps; step++) {
       await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
+      await expect(card).toHaveAttribute('aria-busy', 'false')
       await expect
         .poll(
           async () => {

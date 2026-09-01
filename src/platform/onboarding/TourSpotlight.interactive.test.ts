@@ -44,7 +44,8 @@ const baseProps = {
   backLabel: 'Back',
   countedStepIdx: 0,
   countedStepsTotal: 1,
-  waitingForTarget: false
+  waitingForTarget: false,
+  stepSettled: true
 }
 
 function renderSpotlight(
