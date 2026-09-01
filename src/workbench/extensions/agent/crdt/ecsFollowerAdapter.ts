@@ -207,9 +207,15 @@ export class EcsFollowerAdapter {
    * An unprojectable link is skipped rather than batched, since `prepare`
    * rejects a whole batch on its first invalid entry.
    *
-   * Additive: ECS entities the doc does not mention are left alone, so this
-   * converges the graph on the doc rather than replacing it. A caller wanting a
-   * true replace must clear first, accepting that the two batches are separate.
+   * Additive for nodes: ECS nodes the doc does not mention are left alone, so
+   * this converges the graph on the doc rather than replacing it. A caller
+   * wanting a true replace must clear first, accepting two separate batches.
+   *
+   * Not additive for the slots of a node it reconciles: `reconcileNode` splices
+   * the doc's slot records over the store's, so a store link in a slot the doc
+   * omits is left registered with no slot referencing it. `applyQueuedFrame`
+   * has the same hole on its own reconcile path; both need `linkStore` access
+   * to close, so a caller must not restore onto a populated graph until it is.
    *
    * Returns false when nothing is bound, when the doc fails the KA-11 read gate
    * with a {@link FollowerSchemaError}, or when the batch was rejected.
@@ -238,11 +244,17 @@ export class EcsFollowerAdapter {
       return link && isConnectable(link, projectedIds) ? [link] : []
     })
 
-    const skipped =
-      session.nodes.size - nodes.length + (session.links.size - links.length)
-    if (skipped > 0) {
+    const skippedNodes = [...session.nodes.keys()].filter(
+      (id) => !projectedIds.has(id)
+    )
+    const connectedIds = new Set(links.map(({ id }) => String(id)))
+    const skippedLinks = [...session.links.keys()].filter(
+      (id) => !connectedIds.has(id)
+    )
+    if (skippedNodes.length > 0 || skippedLinks.length > 0) {
       console.warn(
-        `[agent-crdt] baseline for ${workflowId} skipped ${skipped} unprojectable entries`
+        `[agent-crdt] baseline for ${workflowId} skipped unprojectable nodes ` +
+          `[${skippedNodes.join(', ')}] and links [${skippedLinks.join(', ')}]`
       )
     }
 
@@ -252,14 +264,14 @@ export class EcsFollowerAdapter {
     })
     if (!projected) return false
 
-    // Drop only what this batch committed, so a restore after bind does not
-    // re-reconcile next frame. A staged deletion is absent from the doc and so
-    // never listed here: it must survive, the baseline cannot rediscover it.
-    for (const id of projectedIds) {
+    // Everything the doc holds, skipped included: a skipped entry left staged
+    // is retried next frame, whose whole batch `prepare` then rejects. A staged
+    // deletion is not in the doc, so it survives — nothing else can find it.
+    for (const id of session.nodes.keys()) {
       session.nodeActions.delete(id)
       session.changedWidgets.delete(id)
     }
-    for (const link of links) session.changedLinks.delete(String(link.id))
+    for (const id of session.links.keys()) session.changedLinks.delete(id)
     return true
   }
 

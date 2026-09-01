@@ -544,6 +544,83 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('does not let a skipped link poison the next frame', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [0, 0],
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+
+    adapter.bind('wf', follower)
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    linksMap(follower.doc).set('99', [99, '1', 0, '404', 0, 'IMAGE'])
+    expect(
+      adapter.projectBaseline('wf', {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'baseline'
+      })
+    ).toBe(true)
+
+    // The live path has no endpoint filter, so a skipped link left staged
+    // would fail this frame's whole batch and take the new node with it.
+    nodesMap(follower.doc).set('2', nodesMap(host).get('1')!.clone())
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: new Uint8Array(),
+        actor: 'agent:test',
+        opIds: ['later']
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2)])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('returns false when no session is bound to the target', () => {
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+
+    expect(
+      adapter.projectBaseline('never-bound', {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'baseline'
+      })
+    ).toBe(false)
+
+    adapter.destroy()
+  })
+
   it('refuses to project a doc this build cannot read', () => {
     const host = mint(
       { nodes: [{ id: 1, type: 'Source', pos: [0, 0] }], links: [] },
