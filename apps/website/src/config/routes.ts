@@ -5,7 +5,6 @@ const baseRoutes = {
   download: '/download',
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
-  cloudEnterprise: '/cloud/enterprise',
   enterprise: '/enterprise',
   managedBuilds: '/enterprise/managed-builds',
   api: '/api',
@@ -137,6 +136,7 @@ export const externalLinks = {
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
   workflows: 'https://comfy.org/workflows',
+  workflowUseCases: 'https://comfy.org/workflows/use-cases/',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
