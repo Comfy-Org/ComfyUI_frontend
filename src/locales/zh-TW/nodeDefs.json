@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "「speed」速度較快；「precision」可產生更高品質的唇形同步，但價格為兩倍。"
+        "tooltip": "'speed' 較快；'precision' 可產生品質更高的唇形同步，但費用較高。"
       },
       "output_language": {
         "name": "目標語言",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "裁切影片",
+    "inputs": {
+      "crop": {
+        "name": "裁切",
+        "tooltip": "以像素指定裁切區域。寬度／高度為零時保留完整影格。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "使用多種策略，從影片中取樣固定數量的影格。",
     "display_name": "取樣影片影格",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪影片（進階）",
+    "inputs": {
+      "strict_duration": {
+        "name": "嚴格持續時間",
+        "tooltip": "若為 True，當無法使用指定的持續時間時，將引發錯誤。"
+      },
+      "trim": {
+        "name": "修剪",
+        "tooltip": "使用起始／結束影格修剪範圍。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
