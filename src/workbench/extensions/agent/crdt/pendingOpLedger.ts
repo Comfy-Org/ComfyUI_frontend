@@ -143,8 +143,13 @@ export function createPendingOpLedger<
 
   const snapshot = (e: MutableEntry<TShadow>): PendingOpEntry<TShadow> =>
     e.failure === undefined
-      ? { opId: e.opId, state: e.state, shadow: e.shadow }
-      : { opId: e.opId, state: e.state, shadow: e.shadow, failure: e.failure }
+      ? { opId: e.opId, state: e.state, shadow: structuredClone(e.shadow) }
+      : {
+          opId: e.opId,
+          state: e.state,
+          shadow: structuredClone(e.shadow),
+          failure: structuredClone(e.failure)
+        }
 
   return {
     enqueue(opId, shadow) {
