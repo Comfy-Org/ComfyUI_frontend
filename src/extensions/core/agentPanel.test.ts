@@ -165,6 +165,18 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.agentStore.isOpen).toBe(true)
   })
 
+  it('finishes a pending selection restore when the flag is disabled', async () => {
+    await loadEntryAndSetup()
+    mocks.flagEnabled = true
+    mocks.flagListener!()
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+
+    mocks.flagEnabled = false
+    mocks.flagListener!()
+
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
   it('restores each workflow reference after the shared graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()
@@ -174,6 +186,7 @@ describe('AgentPanel extension flag gate', () => {
     const secondNode = { id: 12 }
     const rootGraph = {}
     const selectItems = vi.fn()
+    mocks.agentStore.enabled = true
 
     extension!.beforeLoadGraph!({} as never)
 
@@ -222,6 +235,7 @@ describe('AgentPanel extension flag gate', () => {
     const rootGraph = {}
     const selectItems = vi.fn()
 
+    mocks.agentStore.enabled = true
     mocks.nodeSelectionStore.isLoadingWorkflow = true
     mocks.nodeSelectionStore.nodeIds.mockReturnValue([locator])
     mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
@@ -249,5 +263,17 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
     expect(mocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
+  })
+
+  it('does not start selection restoration while the flag is disabled', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+
+    extension!.beforeLoadGraph!({} as never)
+
+    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 })

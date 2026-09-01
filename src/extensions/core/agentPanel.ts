@@ -25,7 +25,7 @@ export function registerAgentPanelExtension(): void {
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isOpen) return
+      if (!agentPanelStore.enabled || !agentPanelStore.isOpen) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -34,7 +34,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isOpen) {
+      if (!agentPanelStore.enabled || !agentPanelStore.isOpen) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
@@ -80,6 +80,11 @@ async function setupFlagGate(): Promise<void> {
     const sync = (): void => {
       const forceInDev = import.meta.env.MODE === 'development'
       agentPanelStore.enabled = forceInDev || source.isEnabled()
+      if (!agentPanelStore.enabled) {
+        const nodeSelectionStore = useAgentNodeSelectionStore()
+        if (nodeSelectionStore.isLoadingWorkflow)
+          nodeSelectionStore.finishWorkflowLoad()
+      }
     }
     source.onChange?.(() => {
       sync()
