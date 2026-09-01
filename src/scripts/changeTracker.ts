@@ -488,11 +488,13 @@ export class ChangeTracker {
   }
 
   async undo() {
+    // Undo/redo mutates the graph; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(app.canvas)) return
     await this.updateState(this.undoQueue, this.redoQueue)
   }
 
   async redo() {
+    // Undo/redo mutates the graph; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(app.canvas)) return
     await this.updateState(this.redoQueue, this.undoQueue)
   }

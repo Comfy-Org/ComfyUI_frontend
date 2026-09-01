@@ -688,6 +688,7 @@ export class ComfyUI {
           id: 'comfy-clear-button',
           textContent: 'Clear',
           onclick: () => {
+            // Loading a file edits the graph; the canvas is a picking surface while agent node-selection mode is on.
             if (isSelectOnly(app.canvas)) return
             if (
               !useSettingStore().get('Comfy.ConfirmClear') ||

@@ -193,6 +193,7 @@ export const usePaste = () => {
 
     const { canvas } = canvasStore
     if (!canvas) return
+    // Pasting inserts nodes; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(canvas)) return
 
     let data: DataTransfer | string | null = e.clipboardData

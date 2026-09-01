@@ -923,10 +923,7 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
-    // The choke point every DEFINITION-based creation surface traverses
-    // (search popover, node/model libraries, bookmarks, asset ghost-drops,
-    // job menu); non-definition paths (file drop, sidebar drop, workflow
-    // insertion) carry their own surface guards.
+    // Definition-based node creation is an edit; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(app.canvas)) return null
     options.pos ??= getCanvasCenter()
 

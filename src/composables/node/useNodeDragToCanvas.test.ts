@@ -209,8 +209,6 @@ describe('useNodeDragToCanvas', () => {
         })
       )
 
-      // A picking refusal is silent-nothing: the drop is consumed with no
-      // node, no toast, and the drag state cleared.
       expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
