@@ -24,10 +24,12 @@ function frontMatterValue(front: string, key: string): string {
   const raw = match[1].trim()
   if (!raw.startsWith('"')) return raw
   try {
-    return JSON.parse(raw) as string
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed === 'string') return parsed
   } catch {
-    return raw.replace(/^"|"$/g, '')
+    // Fall through to the strip-quotes fallback below.
   }
+  return raw.replace(/^"|"$/g, '')
 }
 
 /** A twin with no usable front matter still gets a stable title: its page path. */

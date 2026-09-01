@@ -39,8 +39,15 @@ const EXCLUDED_PAGES = new Set([
   '/demos' // index is a "Coming Soon" placeholder; the demo pages are listed
 ])
 
-/** Files the build emits outside src/pages (the sitemap integration writes this one). */
-const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml'])
+/**
+ * Files the build emits outside src/pages: the sitemap integration writes
+ * sitemap-index.xml, and the markdown-twins integration writes llms-full.txt
+ * plus one llms.txt per section (see SECTIONS in
+ * src/integrations/markdown-twins.ts). The section indexes live under a real
+ * page's directory (e.g. /learning/llms.txt) so the dynamic-route matcher
+ * below already accepts them; only the two root-level files need listing.
+ */
+const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml', '/llms-full.txt'])
 
 /**
  * Route shapes of the Comfy Workflows app, which lives in another repo and is
