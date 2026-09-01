@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "إرفاق ١-١٠ صور مرجعية للتهيئة، صورة واحدة لتعليمات التحرير أو عدة صور لتخصيص قائم على الموضوع.",
+    "description": "أرفق صورًا مرجعية مرتبة بالتكييف الإيجابي والسلبي.",
     "display_name": "صور مرجعية HiDream-O1",
     "inputs": {
       "images": {
         "name": "الصور",
-        "tooltip": "صور مرجعية. صورة واحدة = تحرير بالتعليمات؛ ٢-١٠ صور = مرجع متعدد."
+        "tooltip": "تُستخدم الصور المرجعية وفق الترتيب الرقمي للمقابس."
       },
       "negative": {
         "name": "سلبي"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "إيجابي",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "تطبيق MiniMax H3 Fun ControlNet على نموذج تحويل النص إلى فيديو كرقعة للنموذج.",
+    "display_name": "تطبيق MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "يشير 1 إلى المناطق المطلوب إعادة توليدها."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "الفيديو خلف القناع؛ لا يُقرأ إلا عند توفير قناع."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21113,6 +21153,23 @@
       },
       "scale": {
         "name": "المقياس"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "تعيين إزاحة تدفق SenseNova.",
+    "display_name": "خيارات أخذ العينات لـ SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

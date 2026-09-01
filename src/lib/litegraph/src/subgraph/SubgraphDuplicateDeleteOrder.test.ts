@@ -1,12 +1,4 @@
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ExportedSubgraphInstance,
@@ -115,14 +107,6 @@ function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
       }
     }
     LiteGraph.registerNodeType(CONVERTIBLE_NODE_TYPE, ConvertibleNode)
-    onTestFinished(() => {
-      if (
-        LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE] ===
-        ConvertibleNode
-      ) {
-        LiteGraph.unregisterNodeType(CONVERTIBLE_NODE_TYPE)
-      }
-    })
   }
 
   const node = LiteGraph.createNode(CONVERTIBLE_NODE_TYPE)
