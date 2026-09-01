@@ -454,7 +454,7 @@ const applyColorAdjustments = (
     hsla.l = Math.max(0, Math.min(100, hsla.l + options.lightness * 100.0))
   }
 
-  if (options.opacity !== undefined) {
+  if (options.opacity !== undefined && Number.isFinite(options.opacity)) {
     hsla.a = Math.max(0, Math.min(1, options.opacity))
   }
 

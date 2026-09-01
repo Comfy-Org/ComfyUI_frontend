@@ -456,6 +456,12 @@ describe('colorUtil - adjustColor', () => {
       )
     })
 
+    it('preserves the parsed opacity for non-finite overrides', () => {
+      expect(adjustColor('rgba(255, 0, 0, 0.5)', { opacity: Number.NaN })).toBe(
+        'hsla(0, 100%, 50%, 0.5)'
+      )
+    })
+
     it('clamps RGB channels before applying adjustments', () => {
       expect(adjustColor('rgb(510, 0, 0)', { opacity: 0.5 })).toBe(
         'hsla(0, 100%, 50%, 0.5)'

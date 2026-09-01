@@ -6,8 +6,10 @@ interface WorkflowView {
 export function parseWorkflowView(value: unknown): WorkflowView | undefined {
   if (typeof value !== 'object' || value === null) return
 
-  const scale = Reflect.get(value, 'scale')
-  const offset = Reflect.get(value, 'offset')
+  const { scale, offset } = value as {
+    scale?: unknown
+    offset?: unknown
+  }
   if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) return
   if (
     !Array.isArray(offset) ||
