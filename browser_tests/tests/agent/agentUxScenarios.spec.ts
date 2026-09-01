@@ -20,9 +20,10 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       const handleBox = await resizeHandle.boundingBox()
       if (!handleBox)
         throw new Error('Agent panel resize handle is not visible')
-      await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + 20)
+      const handleCenterX = handleBox.x + handleBox.width / 2
+      await page.mouse.move(handleCenterX, handleBox.y + 20)
       await page.mouse.down()
-      await page.mouse.move(handleBox.x - (width - 420), handleBox.y + 20)
+      await page.mouse.move(handleCenterX - (width - 420), handleBox.y + 20)
       await page.mouse.up()
       await expect(dock).toHaveCSS('width', `${width}px`)
 
