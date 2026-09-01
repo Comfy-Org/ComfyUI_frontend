@@ -292,7 +292,6 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [Comfy API](https://comfy.org/zh-CN/api/): 把任意 ComfyUI 工作流部署为生产级接口，在运行时注入动态输入。
 - [Comfy MCP](https://comfy.org/zh-CN/mcp/): 通过模型上下文协议，让 Claude Code、Claude Desktop 等 AI 智能体驱动完整的 ComfyUI 引擎。
 - [Comfy CLI](https://comfy.org/zh-CN/cli/): 在终端和 Claude Code、Codex、Cursor 等编程智能体中驱动 ComfyUI 的命令行。
-- [Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise/): 面向团队的 ComfyUI：专属 GPU 算力、SSO 与权限管理、自带 API 密钥、定制 SLA。
 - [前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/): Comfy 专家驻场加入你的团队，构建并交付 ComfyUI 工作流。
 - [MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/): 通过 Comfy 获取 MiniMax H3 及音频与音乐模型的商业使用许可。
 - [模型](https://comfy.org/zh-CN/models/): 在 ComfyUI 中运行的主流 AI 模型及其发布页面。
