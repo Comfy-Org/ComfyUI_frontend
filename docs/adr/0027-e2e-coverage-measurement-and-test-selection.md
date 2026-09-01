@@ -47,13 +47,14 @@ The supporting analysis, per-area tables, and reproduction steps are in
 
 ### Measurement
 
-1. Every Playwright project collects coverage, not only `chromium`. The
-   cloud bundle is built with `COLLECT_COVERAGE` so it retains source-map
-   comments, and each project uploads an `e2e-coverage-shard-*` artifact that
-   the existing package step merges.
-2. Source files that never load in any project are reported at 0%, not
-   omitted. The headline number is expected to fall when this lands; the
-   lower number is the true one.
+1. Every Playwright project collects coverage, including `cloud`, the mobile
+   projects, and the scale projects. The cloud bundle is built with
+   `COLLECT_COVERAGE` so it retains source-map comments, and each project
+   uploads an `e2e-coverage-shard-*` artifact that the existing package step
+   merges.
+2. Source files that never load in any project are reported at 0% instead of
+   being left out of the report. The headline number will fall when this
+   lands, and the lower number is the accurate one.
 3. Coverage is reported per feature area through Codecov components, with
    `unit`, `e2e`, and combined values in the PR comment. Component statuses
    are informational. No global project threshold is introduced; thresholds
@@ -76,16 +77,17 @@ The supporting analysis, per-area tables, and reproduction steps are in
 7. E2E tests exist for user journeys and for execution gaps the coverage
    report shows. Logic that has a unit test does not get an E2E copy, and
    unit-shaped gaps are closed in Vitest.
-8. Orthogonal dimensions are tested once. Widget behavior is proven on the
-   Vue-nodes renderer, renderer parity is proven by the toggle specs, and
-   node states are proven once; no second-renderer copy of an existing widget
-   spec is added. The same applies to feature × view mode.
+8. Where two dimensions are orthogonal, each is tested once rather than as a
+   cross product. Widget behavior is proven on the Vue-nodes renderer,
+   renderer parity is proven by the toggle specs, and node states are proven
+   once; no second-renderer copy of an existing widget spec is added. The
+   same applies to feature × view mode.
 9. Screenshot assertions are used only when appearance is the behavior under
    test. Link, position, and selection state are asserted through `nodeOps`.
 10. A new feature directory under `src/renderer/extensions`, `src/platform`,
     or `src/workbench` is expected to ship with a matching
-    `browser_tests/tests/<feature>/` folder. The check is advisory in the PR
-    report, not a required status.
+    `browser_tests/tests/<feature>/` folder. The PR report comment flags a
+    missing folder as advice and never blocks a merge.
 11. `legacyDoNotReplicate` grows only when a custom-node breakage proves a
     compatibility contract matters.
 
@@ -94,7 +96,7 @@ The supporting analysis, per-area tables, and reproduction steps are in
 Positive:
 
 - The coverage pipeline already paid for becomes a gap finder instead of a
-  trend line. Decisions about where to add tests are made from per-area data.
+  trend line. Per-area data decides where tests get added.
 - Cloud-only surfaces (workspace, billing, subscription, agent) are measured
   before anyone decides how many tests they need.
 - The journey inventory makes behavior coverage reviewable and gives CI a
