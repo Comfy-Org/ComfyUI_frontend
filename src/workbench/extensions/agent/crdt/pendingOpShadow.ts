@@ -110,7 +110,14 @@ export function createPendingOpShadowSurface(): PendingOpShadowSurface {
   const listeners = new Set<(change: ShadowChange) => void>()
 
   const notify = (change: ShadowChange) => {
-    for (const listener of listeners) listener(change)
+    for (const listener of [...listeners]) {
+      try {
+        listener(change)
+      } catch {
+        // Presentation observers are isolated: committed shadow state and
+        // later subscribers must not depend on an earlier listener.
+      }
+    }
   }
 
   const retain = (target: ShadowTarget) => {
