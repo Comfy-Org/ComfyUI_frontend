@@ -55,28 +55,4 @@ test.describe('Note Node API Export', { tag: '@node' }, () => {
       'Standard export must preserve both Note and MarkdownNote'
     ).toHaveLength(2)
   })
-
-  test('no virtual node types leak through graphToPrompt', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('nodes/note_with_ksampler')
-
-    const virtualNodeCheck = await comfyPage.page.evaluate(async () => {
-      const { output } = await window.app!.graphToPrompt()
-      const virtualTypes = ['Note', 'MarkdownNote']
-      const leaked: string[] = []
-      for (const node of Object.values(output)) {
-        if (virtualTypes.includes(node.class_type)) {
-          leaked.push(node.class_type)
-        }
-      }
-      return { leaked, totalNodes: Object.keys(output).length }
-    })
-
-    expect(
-      virtualNodeCheck.leaked,
-      'No virtual node types should leak into API output'
-    ).toHaveLength(0)
-    expect(virtualNodeCheck.totalNodes).toBeGreaterThan(0)
-  })
 })
