@@ -171,6 +171,25 @@ describe('createDetachedTargetSession', () => {
     expect(session.snapshot().committedSeq).toBeNull()
   })
 
+  it('a frame with malformed update bytes reports failed instead of throwing', () => {
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.enqueue({
+      workflowId: WORKFLOW_ID,
+      seq: 1,
+      update: new Uint8Array([0xff, 0x00, 0x13, 0x37])
+    })
+
+    const result = session.commitNext(acceptAll)
+
+    expect(result.status).toBe('failed')
+    if (result.status === 'failed') {
+      expect(result.seq).toBe(1)
+      expect(result.error).toBeDefined()
+    }
+    expect(session.snapshot().queuedFrames).toBe(1)
+    expect(session.snapshot().committedSeq).toBeNull()
+  })
+
   it('skips duplicate frames at or below the last accepted sequence', () => {
     const source = createFrameSource()
     const session = createDetachedTargetSession(WORKFLOW_ID)
