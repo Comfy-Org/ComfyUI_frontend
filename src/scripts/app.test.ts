@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { onGraphLoadLifecycle } from '@/base/graphLoadLifecycle'
 import type { CurveData } from '@/components/curve/types'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -363,19 +364,56 @@ describe('ComfyApp', () => {
         throw new Error('bad workflow json')
       })
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      const lifecycleEvents: string[] = []
+      const stopLifecycleCapture = onGraphLoadLifecycle(({ type }) =>
+        lifecycleEvents.push(type)
+      )
 
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
-          workflowNavigationId: 7
-        })
-      ).resolves.toBe(false)
+      try {
+        await expect(
+          app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+            workflowNavigationId: 7
+          })
+        ).resolves.toBe(false)
+      } finally {
+        stopLifecycleCapture()
+      }
 
       expect(showDialog).toHaveBeenCalledOnce()
+      expect(lifecycleEvents).toEqual(['started', 'settled'])
       // The finally still repairs the URL even on the handled-failure path.
       expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
         'workflow-load',
         7
       )
+    })
+
+    it('settles the load lifecycle when a before-load extension fails', async () => {
+      const failure = new Error('before load failed')
+      mockExtensionService.invokeExtensionsAsync.mockRejectedValueOnce(failure)
+      const lifecycleEvents: string[] = []
+      const stopLifecycleCapture = onGraphLoadLifecycle(({ type }) =>
+        lifecycleEvents.push(type)
+      )
+
+      try {
+        await expect(app.loadGraphData(createWorkflowGraphData())).rejects.toBe(
+          failure
+        )
+      } finally {
+        stopLifecycleCapture()
+      }
+
+      expect(lifecycleEvents).toEqual(['started', 'settled'])
+    })
+
+    it('never suppresses the workflow reset for an API JSON import', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadApiJson({}, 'empty.json').catch(() => undefined)
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
     })
 
     it('notifies extensions once on each side of a graph load, in order', async () => {

@@ -208,10 +208,11 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', () => {
-    beginGraphLoad()
+  it('suppresses mints during each balanced graph-load lifecycle', () => {
+    const failedLoad = beginGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     expect(minted).toEqual([])
+    settleGraphLoad(failedLoad)
 
     const succeedingLoad = beginGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(42))

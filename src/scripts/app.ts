@@ -1271,6 +1271,14 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph(clean !== false)
     const graphLoadToken = beginGraphLoad()
+    let graphLoadSettled = false
+    using graphLoadSettlement = {
+      [Symbol.dispose]() {
+        if (graphLoadSettled) return
+        graphLoadSettled = true
+        settleGraphLoad(graphLoadToken)
+      }
+    }
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     if (skipAssetScans) {
@@ -1536,7 +1544,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
-      settleGraphLoad(graphLoadToken)
+      graphLoadSettlement[Symbol.dispose]()
 
       const effectiveShareId =
         shareId ??
