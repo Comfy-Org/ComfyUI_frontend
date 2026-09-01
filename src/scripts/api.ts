@@ -5,8 +5,6 @@ import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
-const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
-
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
   fetchWithUnifiedRemint,
@@ -78,6 +76,8 @@ import {
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
+
+const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -739,6 +739,18 @@ export class ComfyApi extends EventTarget {
     this.socket = socket
     socket.binaryType = 'arraybuffer'
 
+    // Arm the fallback settle timer for this connect attempt as soon as the
+    // socket is created, not just from the `open` handler. This also covers
+    // a socket that errors/closes before ever opening (falls back to
+    // _pollQueue), which otherwise left serverFeatureFlagsReceived false
+    // indefinitely. Guarded by `this.socket === socket` like the other
+    // callbacks, and cleared on close so a live timer is never left behind.
+    const settleTimer = setTimeout(() => {
+      if (this.socket === socket && !this.serverFeatureFlagsReceived.value) {
+        this.serverFeatureFlagsReceived.value = true
+      }
+    }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
+
     socket.addEventListener('open', () => {
       opened = true
 
@@ -749,13 +761,6 @@ export class ComfyApi extends EventTarget {
           data: this.getClientFeatureFlags()
         })
       )
-
-      setTimeout(() => {
-        if (this.socket === socket && !this.serverFeatureFlagsReceived.value) {
-          this.serverFeatureFlags.value = {}
-          this.serverFeatureFlagsReceived.value = true
-        }
-      }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
@@ -777,6 +782,7 @@ export class ComfyApi extends EventTarget {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
+      clearTimeout(settleTimer)
       setTimeout(async () => {
         if (this.socket !== socket) return
         this.socket = null
@@ -964,7 +970,12 @@ export class ComfyApi extends EventTarget {
    */
   async resetSocket(): Promise<void> {
     const previous = this.socket
-    this.serverFeatureFlags.value = {}
+    // Do not clear serverFeatureFlags here: every consumer of
+    // getServerFeature()/serverSupportsFeature() would observe an empty map
+    // (server supports nothing) until the new socket delivers -- up to the
+    // 5s settle fallback, or indefinitely if it never opens. Marking only the
+    // received latch as stale is enough; the next `feature_flags` message
+    // replaces the map wholesale.
     this.serverFeatureFlagsReceived.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
