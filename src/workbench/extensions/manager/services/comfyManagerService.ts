@@ -2,7 +2,9 @@ import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 
+import type { ExecuteRequestOptions } from '@/composables/useApiRequest'
 import { useApiRequest } from '@/composables/useApiRequest'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -95,9 +97,7 @@ export const useComfyManagerService = () => {
 
   const executeRequest = <T>(
     apiCall: (client: AxiosInstance) => Promise<AxiosResponse<T>>,
-    options: {
-      errorContext: string
-      routeSpecificErrors?: Record<number, string>
+    options: Omit<ExecuteRequestOptions, 'onSuccess'> & {
       isQueueOperation?: boolean
     }
   ): Promise<T | null> => {
@@ -113,9 +113,11 @@ export const useComfyManagerService = () => {
       onSuccess: isQueueOperation
         ? async () => {
             await startQueue()
-            if (error.value) {
-              throw new Error(error.value)
-            }
+            if (!error.value) return
+            reportError(new Error(error.value), {
+              errorType: 'manager_queue_start_failed'
+            })
+            return false
           }
         : undefined
     })

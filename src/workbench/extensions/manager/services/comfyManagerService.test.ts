@@ -33,11 +33,16 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
 
 vi.mock('uuid', () => ({ v4: () => 'generated-uuid' }))
 
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+
 describe('useComfyManagerService', () => {
   let service: ReturnType<typeof useComfyManagerService>
 
   beforeEach(() => {
     managerState.isNewManagerUI = true
+    reportError.mockClear()
     mockAxiosInstance.get.mockResolvedValue({ data: {} })
     mockAxiosInstance.post.mockResolvedValue({ data: null })
     service = useComfyManagerService()
@@ -182,6 +187,60 @@ describe('useComfyManagerService', () => {
       )
     })
 
+    it.for([
+      {
+        name: 'updateAllPacks',
+        call: () => service.updateAllPacks({ mode: 'remote' })
+      },
+      {
+        name: 'updateComfyUI',
+        call: () => service.updateComfyUI({ is_stable: true })
+      }
+    ])('$name starts the queue after posting', async ({ call }) => {
+      await call()
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'manager/queue/start',
+        null,
+        expect.any(Object)
+      )
+    })
+
+    it.for([
+      {
+        name: 'disablePack',
+        kind: 'disable',
+        call: () =>
+          service.disablePack({ node_name: 'pack', is_unknown: false })
+      },
+      {
+        name: 'enablePack',
+        kind: 'enable',
+        call: () => service.enablePack({ cnr_id: 'pack' })
+      },
+      {
+        name: 'updatePack',
+        kind: 'update',
+        call: () => service.updatePack({ node_name: 'pack' })
+      }
+    ])(
+      '$name queues a $kind task then starts the queue',
+      async ({ call, kind }) => {
+        await call()
+
+        expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+          'manager/queue/task',
+          expect.objectContaining({ kind }),
+          expect.any(Object)
+        )
+        expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+          'manager/queue/start',
+          null,
+          expect.any(Object)
+        )
+      }
+    )
+
     it('rebootComfyUI posts to the reboot endpoint', async () => {
       await service.rebootComfyUI()
 
@@ -196,6 +255,28 @@ describe('useComfyManagerService', () => {
       await service.startQueue()
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'manager/queue/start',
+        null,
+        expect.any(Object)
+      )
+    })
+
+    it('does not start the queue when the task POST fails', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
+        response: { status: 500, data: {} }
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const result = await service.installPack({
+        id: 'pack',
+        version: '1.0.0',
+        selected_version: '1.0.0',
+        mode: 'remote',
+        channel: 'default'
+      })
+
+      expect(result).toBeNull()
+      expect(mockAxiosInstance.post).not.toHaveBeenCalledWith(
         'manager/queue/start',
         null,
         expect.any(Object)
@@ -219,9 +300,12 @@ describe('useComfyManagerService', () => {
       })
 
       expect(result).toBeNull()
-      expect(service.error.value).toContain(
+      expect(service.error.value).toBe(
         'Starting ComfyUI-Manager job queue failed with status 500'
       )
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'manager_queue_start_failed'
+      })
     })
   })
 

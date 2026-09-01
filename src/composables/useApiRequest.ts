@@ -17,8 +17,12 @@ export type ApiErrorMapper = (
 export interface ExecuteRequestOptions {
   errorContext: string
   routeSpecificErrors?: Record<number, string>
-  /** Side effect run after a successful response, before the data is returned. */
-  onSuccess?: () => unknown
+  /**
+   * Side effect run after a successful response, before the data is returned.
+   * Returning `false` marks the overall request as failed: `executeRequest`
+   * resolves to `null` and leaves `error` as the side effect set it.
+   */
+  onSuccess?: () => boolean | void | Promise<boolean | void>
 }
 
 /**
@@ -48,7 +52,7 @@ export function useApiRequest({
 
     try {
       const response = await apiCall(client)
-      await onSuccess?.()
+      if ((await onSuccess?.()) === false) return null
       return response.data
     } catch (err) {
       if (isAbortError(err)) return null

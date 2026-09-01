@@ -124,4 +124,37 @@ describe('useApiRequest', () => {
     )
     expect(onSuccess).not.toHaveBeenCalled()
   })
+
+  it('does not run onSuccess when the request is aborted', async () => {
+    mockIsAbortError.mockReturnValue(true)
+    const onSuccess = vi.fn()
+    const { executeRequest } = useApiRequest({ client, mapError: vi.fn() })
+
+    const result = await executeRequest(
+      () => {
+        throw new Error('aborted')
+      },
+      { errorContext: 'ctx', onSuccess }
+    )
+
+    expect(result).toBeNull()
+    expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  it('resolves to null and preserves error when onSuccess returns false', async () => {
+    const mapError = vi.fn()
+    const { executeRequest, error } = useApiRequest({ client, mapError })
+
+    const result = await executeRequest(async () => response('ok'), {
+      errorContext: 'ctx',
+      onSuccess: () => {
+        error.value = 'side effect failed'
+        return false
+      }
+    })
+
+    expect(result).toBeNull()
+    expect(error.value).toBe('side effect failed')
+    expect(mapError).not.toHaveBeenCalled()
+  })
 })
