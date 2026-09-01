@@ -65,6 +65,11 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [Comfy API OpenAPI document](https://api.comfy.org/openapi): OpenAPI specification for api.comfy.org.
 - [Comfy agent skills](https://github.com/Comfy-Org/comfy-skills): Skills for image, video, audio, and pipeline work with the Comfy CLI and MCP.
 - [Site map](https://comfy.org/sitemap-index.xml): Every page on comfy.org, including the workflows app and the zh-CN twins.
+- [comfy.org full text for agents](https://comfy.org/llms-full.txt): Every English page on comfy.org as one markdown file.
+- [Learning section for agents](https://comfy.org/learning/llms.txt): Machine-readable index of every Learning tutorial page.
+- [Customers section for agents](https://comfy.org/customers/llms.txt): Machine-readable index of every customer story.
+- [Events section for agents](https://comfy.org/events/llms.txt): Machine-readable index of every event page.
+- [Supported nodes section for agents](https://comfy.org/cloud/supported-nodes/llms.txt): Machine-readable index of every Comfy Cloud node-pack page.
 
 ## Product
 
