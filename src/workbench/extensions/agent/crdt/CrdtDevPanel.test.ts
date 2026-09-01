@@ -88,6 +88,21 @@ describe('CrdtDevPanel', () => {
     expect(screen.queryByTestId('crdt-dev-panel-chip')).toBeNull()
   })
 
+  it('renders disconnected status fallbacks', () => {
+    openPanel()
+
+    mount({
+      ...baseStatus(),
+      connected: false,
+      workflowId: null,
+      lastFrameType: null
+    })
+
+    expect(screen.getByRole('row', { name: 'doc id —' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'connected no' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'last frame —' })).toBeVisible()
+  })
+
   it('renders follower status, polled globals, and derived event counters', async () => {
     openPanel()
     ;(window as unknown as { __agentCrdtPoc?: unknown }).__agentCrdtPoc = {
