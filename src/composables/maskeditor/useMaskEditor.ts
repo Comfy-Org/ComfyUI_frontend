@@ -92,7 +92,10 @@ export function useMaskEditor() {
     try {
       await loader.loadFromNode(node)
 
-      if (!dataStore.inputData) throw new Error('Failed to load image data')
+      if (!dataStore.inputData) {
+        console.error('[MaskEditor] Failed to load image data')
+        return
+      }
 
       if (!editorStore.maskCanvas) {
         const { image } = dataStore.inputData.baseLayer
@@ -104,7 +107,8 @@ export function useMaskEditor() {
         imgCanvas.height = height
         const imgCtx = imgCanvas.getContext('2d')
         if (!imgCtx) {
-          throw new Error('Failed to get image canvas context')
+          console.error('[MaskEditor] Failed to get image canvas context')
+          return
         }
         imgCtx.drawImage(image, 0, 0)
 
@@ -126,7 +130,8 @@ export function useMaskEditor() {
           willReadFrequently: true
         })
         if (!maskCtx || !rgbCtx) {
-          throw new Error('Failed to get mask or RGB canvas context')
+          console.error('[MaskEditor] Failed to get mask or RGB canvas context')
+          return
         }
         editorStore.maskCtx = maskCtx
         editorStore.rgbCtx = rgbCtx
