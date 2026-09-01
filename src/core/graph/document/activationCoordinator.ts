@@ -42,6 +42,7 @@ export interface ActivationCoordinatorDeps {
  */
 export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
   let generation = 0
+  let pendingDocumentId: DocumentId | null = null
   let active: { documentId: DocumentId; binding: DocumentViewBinding } | null =
     null
 
@@ -50,17 +51,24 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     binding: DocumentViewBinding
   ): Promise<ActivationOutcome> {
     const requestGeneration = ++generation
+    pendingDocumentId = documentId
     const stale = (): boolean => requestGeneration !== generation
+    const finish = (outcome: ActivationOutcome): ActivationOutcome => {
+      if (!stale()) pendingDocumentId = null
+      return outcome
+    }
     try {
       await deps.hydrate?.(documentId)
     } catch {
-      return stale()
-        ? { status: 'superseded', documentId }
-        : { status: 'rejected', documentId, reason: 'hydration-failed' }
+      return finish(
+        stale()
+          ? { status: 'superseded', documentId }
+          : { status: 'rejected', documentId, reason: 'hydration-failed' }
+      )
     }
-    if (stale()) return { status: 'superseded', documentId }
+    if (stale()) return finish({ status: 'superseded', documentId })
     if (!deps.isLoaded(documentId))
-      return { status: 'rejected', documentId, reason: 'not-loaded' }
+      return finish({ status: 'rejected', documentId, reason: 'not-loaded' })
 
     const previous = active
     active = null
@@ -70,10 +78,14 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     } catch {
       // A throwing detach/attach must not leave a stale published binding: a
       // later activate/deactivate would detach the old document twice.
-      return { status: 'rejected', documentId, reason: 'handoff-failed' }
+      return finish({
+        status: 'rejected',
+        documentId,
+        reason: 'handoff-failed'
+      })
     }
     active = { documentId, binding }
-    return { status: 'activated', documentId }
+    return finish({ status: 'activated', documentId })
   }
 
   /**
@@ -82,7 +94,14 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
    * tracking, and persistence continue to operate.
    */
   function deactivate(documentId: DocumentId): boolean {
-    if (active?.documentId !== documentId) return false
+    // Cancel an in-flight activate for this document even when it has not
+    // been published yet; otherwise the activation would still complete.
+    const cancelledInFlight = pendingDocumentId === documentId
+    if (cancelledInFlight) {
+      generation++
+      pendingDocumentId = null
+    }
+    if (active?.documentId !== documentId) return cancelledInFlight
     generation++
     const previous = active
     active = null

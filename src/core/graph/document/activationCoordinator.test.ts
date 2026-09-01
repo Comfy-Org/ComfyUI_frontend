@@ -152,6 +152,24 @@ describe('createActivationCoordinator', () => {
     expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
   })
 
+  it('deactivate cancels an in-flight activate for the same document', async () => {
+    const slowHydration = deferred()
+    const docB = toDocumentId('doc-b')
+    const coordinator = createActivationCoordinator({
+      isLoaded: () => true,
+      hydrate: () => slowHydration.promise
+    })
+    const log: string[] = []
+
+    const inFlight = coordinator.activate(docB, recordingBinding(log, 'b'))
+    expect(coordinator.deactivate(docB)).toBe(true)
+    slowHydration.resolve()
+
+    expect(await inFlight).toEqual({ status: 'superseded', documentId: docB })
+    expect(coordinator.activeDocumentId()).toBeNull()
+    expect(log).toEqual([])
+  })
+
   it('rejects with handoff-failed and clears active when attach throws', async () => {
     const coordinator = createActivationCoordinator({ isLoaded: () => true })
     const log: string[] = []
