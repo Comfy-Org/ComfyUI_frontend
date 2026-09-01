@@ -96,9 +96,11 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
     const widget = promotedInputWidget(input)
-    if (!widget || !input.widgetId) return []
-    const visibility = useWidgetValueStore().getWidgetVisibility(input.widgetId)
-    return visibility &&
+    if (!widget) return []
+    const visibility = input.widgetId
+      ? useWidgetValueStore().getWidgetVisibility(input.widgetId)
+      : undefined
+    return !visibility ||
       isWidgetVisibleOnSurface(visibility, 'panel', { showAdvanced: true })
       ? [widget]
       : []
