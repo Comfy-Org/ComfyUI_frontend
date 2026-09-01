@@ -21,7 +21,14 @@ function canonicalFor(pathname: string): string | undefined {
   } catch {
     return undefined
   }
-  return CANONICAL_LINK.exec(html)?.[1]
+
+  const canonical = CANONICAL_LINK.exec(html)?.[1]
+  if (canonical === undefined) {
+    throw new Error(
+      `Built page ${distFileFor(pathname)} has no canonical link.`
+    )
+  }
+  return canonical
 }
 
 function main(): void {
