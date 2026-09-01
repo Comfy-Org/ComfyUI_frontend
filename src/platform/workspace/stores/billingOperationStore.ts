@@ -530,12 +530,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return false
       }
       // With no action left to resume the call succeeds and changes nothing, so
-      // an intent still sitting on its pre-challenge status has not paid. A
-      // missing intent is the same non-advancement, not a success.
-      if (
-        !paymentIntent ||
-        !RESUMED_INTENT_STATUSES.has(paymentIntent.status)
-      ) {
+      // an intent still sitting on its pre-challenge status has not paid.
+      if (paymentIntent && !RESUMED_INTENT_STATUSES.has(paymentIntent.status)) {
         setAuthenticationFailed(
           opId,
           t('billingOperation.authenticationFailedDetail')
