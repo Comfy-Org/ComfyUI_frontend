@@ -327,9 +327,13 @@ describe('ReplyAssetGroup', () => {
       filename: `mesh-${n}.glb`
     }))
     renderGroup(models)
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalled())
+    await waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalledTimes(12))
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(12)
+    )
     expect(generateModelThumbnail).not.toHaveBeenCalledWith(
-      'https://x/mesh-12.glb'
+      'https://x/mesh-12.glb',
+      'mesh-12.glb'
     )
 
     await userEvent.click(toggle()!)
