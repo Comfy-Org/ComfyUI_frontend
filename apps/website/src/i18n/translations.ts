@@ -7497,8 +7497,8 @@ Enterprise`
     'zh-CN': '决定项目周期内使用哪些构建——无论在本地运行，还是部署到'
   },
   'enterprise.managedBuilds.6.linkLabel': {
-    en: 'Serverless API',
-    'zh-CN': 'Serverless API'
+    en: 'Comfy API',
+    'zh-CN': 'Comfy API'
   },
   'enterprise.managedBuilds.6.linkSuffix': {
     en: '.',
@@ -7587,13 +7587,13 @@ Enterprise`
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.shipSubtitle': {
-    en: 'Easily package up your existing ComfyUI environment or a single workflow,\nthen deploy it to Serverless.',
-    'zh-CN': '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Serverless。'
+    en: 'Easily package up your existing ComfyUI environment or a single workflow,\nthen deploy it to Comfy API.',
+    'zh-CN': '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Comfy API。'
   },
   'platform.serverlessDeploy.subtitle': {
-    en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Serverless and scale it on demand.',
+    en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Comfy API and scale it on demand.',
     'zh-CN':
-      'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Serverless，并按需扩展。'
+      'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
   'platform.serverlessDeploy.1.title': {
     en: 'Ship in minutes',
@@ -7622,8 +7622,8 @@ Enterprise`
       '正确安装自定义节点、正确打包模型，并在经过测试的环境中运行工作流。'
   },
   'platform.serverlessDeploy.tabInstall': {
-    en: 'Start with your installation',
-    'zh-CN': '从你的安装开始'
+    en: 'Start with your environment',
+    'zh-CN': '从你的环境开始'
   },
   'platform.serverlessDeploy.tabWorkflow': {
     en: 'Start with your workflow',
@@ -7663,13 +7663,13 @@ Enterprise`
     'zh-CN': '支持 ComfyUI 生态中数以千计的开源模型、自定义节点和合作伙伴模型。'
   },
   'platform.products.serverless.title': {
-    en: 'Serverless',
-    'zh-CN': 'Serverless'
+    en: 'Comfy API',
+    'zh-CN': 'Comfy API'
   },
   'platform.products.serverless.description': {
     en: 'Deploy and scale your Comfy workflows with serverless. Bring custom nodes and custom environments, then scale from zero to millions of generations.',
     'zh-CN':
-      '使用 Serverless 部署并扩展你的 Comfy 工作流。带上自定义节点和自定义环境，从零扩展到数百万次生成。'
+      '使用 Comfy API 部署并扩展你的 Comfy 工作流。带上自定义节点和自定义环境，从零扩展到数百万次生成。'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram of a request lighting up RTX 6000 PRO, H100, and B200 GPU workers, with COMFYUI scrolling across the grid.',
@@ -7687,7 +7687,7 @@ Enterprise`
   'platform.products.builder.description': {
     en: 'Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.',
     'zh-CN':
-      '将自定义节点、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Serverless。'
+      '将自定义节点、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Comfy API。'
   },
   'platform.products.builder.enterpriseCta': {
     en: 'Enterprise: Managed Builds',
@@ -7894,8 +7894,8 @@ Enterprise`
     'zh-CN': '自托管文档'
   },
   'pricing.resourceCosts.note': {
-    en: 'Applies to the Serverless API on the Developer Platform.',
-    'zh-CN': '仅适用于开发者平台上的 Serverless API。'
+    en: 'Applies to the Comfy API on the Developer Platform.',
+    'zh-CN': '仅适用于开发者平台上的 Comfy API。'
   },
   'pricing.resourceCosts.heading': {
     en: 'Resource costs',
@@ -8141,12 +8141,12 @@ Enterprise`
     'zh-CN': '在 Desktop 上本地运行构建，随时轻松重装同一个可用构建。'
   },
   'platform.builderPillars.3.title': {
-    en: 'Scale on Serverless',
-    'zh-CN': '在 Serverless 上扩展'
+    en: 'Scale on Comfy API',
+    'zh-CN': '在 Comfy API 上扩展'
   },
   'platform.builderPillars.3.description': {
-    en: 'Builds can be deployed to Serverless and run programmatically.',
-    'zh-CN': '构建可以部署到 Serverless，并以编程方式运行。'
+    en: 'Builds can be deployed to Comfy API and run programmatically.',
+    'zh-CN': '构建可以部署到 Comfy API，并以编程方式运行。'
   },
   'platform.builderPillars.4.title': {
     en: 'Migrate in minutes',
@@ -8207,8 +8207,8 @@ Enterprise`
     'zh-CN': '将规模与控制力最大化'
   },
   'platform.closing.headingAfterBadge': {
-    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Serverless.',
-    'zh-CN': '通过 Serverless 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
+    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   }
 } as const satisfies Record<
   string,

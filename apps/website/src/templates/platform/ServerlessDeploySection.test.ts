@@ -18,7 +18,7 @@ describe('ServerlessDeploySection', () => {
     ).toBeTruthy()
     expect(
       screen.getByText(
-        /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Serverless\./
+        /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Comfy API\./
       )
     ).toBeTruthy()
     expect(screen.getByText(/comfy build init --from-snapshot/)).toBeTruthy()

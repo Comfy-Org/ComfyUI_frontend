@@ -20,13 +20,13 @@ const modelsTabs = modelsApiCodeTabs
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
-    <!-- Serverless API: the headline product, full width -->
+    <!-- Comfy API: the headline product, full width -->
     <article
       id="serverless"
       class="group bg-transparency-white-t4 relative grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl p-6 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
     >
       <a
-        :href="routes.platformServerless"
+        :href="routes.platformComfyApi"
         :aria-label="t('platform.products.serverless.title', locale)"
         class="absolute inset-0 rounded-4xl"
       ></a>
@@ -43,7 +43,7 @@ const modelsTabs = modelsApiCodeTabs
           {{ t('platform.products.serverless.description', locale) }}
         </p>
         <div class="relative z-10 mt-8 w-fit">
-          <Button as="a" :href="routes.platformServerless" variant="outline">
+          <Button as="a" :href="routes.platformComfyApi" variant="outline">
             {{ ctas.getStarted.label }}
           </Button>
         </div>

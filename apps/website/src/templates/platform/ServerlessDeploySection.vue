@@ -36,9 +36,7 @@ $ comfy deploy up
 $ comfy build push
 ✔ Build released
 $ comfy deploy up
-✔ Endpoint live → https://your-build.run.comfy.app
-$ comfy deploy run --workflow workflow_api.json
-✔ Job complete — outputs downloaded to ./outputs`)
+✔ Endpoint live → https://your-build.run.comfy.app`)
   }
 }
 </script>

@@ -10,7 +10,7 @@ describe('ProductsSection', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
     const cardLinks = [
-      ['platform.products.serverless.title', '/platform/serverless'],
+      ['platform.products.serverless.title', '/platform/comfy-api'],
       ['platform.products.models.title', '/platform/models'],
       ['platform.products.builder.title', '/platform/builder']
     ] as const

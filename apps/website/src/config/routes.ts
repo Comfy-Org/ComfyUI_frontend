@@ -25,7 +25,7 @@ const baseRoutes = {
   modelsShowcase: '/models',
   mcp: '/mcp',
   platform: '/platform',
-  platformServerless: '/platform/serverless',
+  platformComfyApi: '/platform/comfy-api',
   platformModels: '/platform/models',
   platformBuilder: '/platform/builder',
   cli: '/cli',
