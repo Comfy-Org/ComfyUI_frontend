@@ -50,6 +50,7 @@ const trustedHeaders = {
 describe('handleGcsRedirect', () => {
   it.for([
     'https://storage.googleapis.com.attacker.example/obj',
+    'https://storage.googleapis.com:444/bucket/object.mp4',
     'http://127.0.0.1/?next=storage.googleapis.com',
     'http://storage.googleapis.com/bucket/object.mp4'
   ])('does not server-fetch an untrusted redirect URL: %s', (location) => {

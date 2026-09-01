@@ -7,9 +7,7 @@ function isTrustedGcsUrl(location: string | undefined): location is string {
   if (!location) return false
   try {
     const url = new URL(location)
-    return (
-      url.protocol === 'https:' && url.hostname === 'storage.googleapis.com'
-    )
+    return url.origin === 'https://storage.googleapis.com'
   } catch {
     return false
   }
