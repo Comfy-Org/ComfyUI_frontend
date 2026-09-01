@@ -15,11 +15,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 import type { CrdtLogLevel } from './crdtDebugGate'
-import {
-  CRDT_LOG_LEVELS,
-  crdtLogLevel,
-  setCrdtLogLevel
-} from './crdtDebugGate'
+import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type { ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
@@ -181,7 +177,9 @@ function readHidden(): boolean {
 function setHidden(hidden: boolean): void {
   try {
     localStorage.setItem(HIDDEN_KEY, String(hidden))
-  } catch {}
+  } catch {
+    return
+  }
 }
 
 function setOpen(value: boolean) {
