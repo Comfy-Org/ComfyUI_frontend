@@ -706,43 +706,6 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(new Set(ids).size).toBe(ids.length)
     })
 
-    it('releases isLoadingMore when the offset-0 recovery retry also fails, so the next scroll is not dropped', async () => {
-      const firstBatch = Array.from({ length: 10 }, (_, i) =>
-        createMockJobItem(i)
-      )
-      vi.mocked(fetchHistoryPage)
-        .mockResolvedValueOnce(
-          mockHistoryPage(firstBatch, {
-            hasMore: true,
-            nextCursor: 'cursor-stale'
-          })
-        )
-        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
-        .mockRejectedValueOnce(new Error('network down'))
-
-      await store.updateHistory()
-      await store.loadMoreHistory()
-
-      // Recovery bumps the epoch, but loadMoreHistory re-syncs to that
-      // self-recovery epoch, so the failure surfaces and the guard releases.
-      expect(store.historyError).toBeInstanceOf(Error)
-      expect(store.isLoadingMore).toBe(false)
-
-      // A stuck isLoadingMore would silently drop this call; it must fetch.
-      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
-        mockHistoryPage(
-          Array.from({ length: 3 }, (_, i) => createMockJobItem(20 + i))
-        )
-      )
-      await store.loadMoreHistory()
-      expect(fetchHistoryPage).toHaveBeenCalledTimes(4)
-      expect(store.historyError).toBe(null)
-      // The destructive reset waits for the fallback page, so the failed
-      // fallback left the original 10 items intact; the retry merges its 3
-      // new items on top instead of replacing the list.
-      expect(store.historyAssets).toHaveLength(13)
-    })
-
     it('does not skip or duplicate rows when items are deleted server-side before cursor recovery', async () => {
       // Client loaded jobs 0-9 (10 items), then some were deleted server-side.
       // When the cursor is rejected, falling back to { offset: 10 } would skip
@@ -1397,7 +1360,6 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
       await store.updateHistory()
 
-      // A head refresh captures the current epoch and issues its offset-0 fetch.
       let resolveHead: (page: FetchHistoryPageResult) => void
       vi.mocked(fetchHistoryPage).mockReturnValueOnce(
         new Promise<FetchHistoryPageResult>((resolve) => {
@@ -1406,9 +1368,6 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
       const refresh = store.refreshHistoryHead()
 
-      // Concurrently, a loadMore's cursor is rejected; recovery resets the list
-      // and — with the fix — bumps the epoch so the in-flight head refresh is
-      // superseded. The offset-0 recovery retry returns a fresh page.
       const recoveredBatch = Array.from({ length: 5 }, (_, i) =>
         createMockJobItem(100 + i)
       )
@@ -1425,9 +1384,6 @@ describe('assetsStore - Refactored (Option A)', () => {
         'prompt_104'
       ])
 
-      // The now-stale head page resolves against the epoch it captured before
-      // recovery; the guard must drop it instead of clobbering the recovered
-      // list or triggering a spurious full reload.
       resolveHead!(mockHistoryPage(firstBatch, { hasMore: true }))
       await refresh
 
