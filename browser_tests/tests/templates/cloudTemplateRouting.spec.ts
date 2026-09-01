@@ -35,7 +35,7 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
-      await comfyPage.templates.loadTemplate('cloud-direct')
+      await comfyPage.templates.selectTemplate('cloud-direct')
 
       await expect(comfyPage.templates.content).toBeHidden()
       await expect
