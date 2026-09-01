@@ -5157,7 +5157,8 @@
     "nodeSelection": {
       "bannerTitle": "Add nodes from graph",
       "bannerSubtitle": "Select one or many nodes to add as reference",
-      "exit": "Exit mode"
+      "exit": "Exit mode",
+      "selectNode": "Select node"
     },
     "addFromAssets": "Add from assets panel",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",

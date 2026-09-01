@@ -1,13 +1,15 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { readFileSync } from 'fs'
 import { setActivePinia } from 'pinia'
-import { resolve } from 'path'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
+import { GRAPH_CANVAS_ANCHOR } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -118,5 +120,21 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     await nextTick()
 
     expect(screen.getByTestId('topmenu')).toBeInTheDocument()
+  })
+})
+
+describe('LiteGraphCanvasSplitterOverlay source contracts', () => {
+  it('declares the anchor name the global toast consumes', () => {
+    const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
+    const source = readFileSync(filePath, 'utf-8')
+
+    // Without this declaration the toast's anchor() calls silently resolve
+    // their fallbacks and never track the canvas panel.
+    // GRAPH_CANVAS_ANCHOR contains no regex metacharacters.
+    expect(source).toMatch(
+      new RegExp(
+        `class="[^"]*graph-canvas-panel[^"]*\\[anchor-name:${GRAPH_CANVAS_ANCHOR}\\]`
+      )
+    )
   })
 })
