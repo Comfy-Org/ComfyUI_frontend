@@ -9,12 +9,12 @@ import {
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
@@ -53,9 +53,7 @@ export function useNodePointerInteractions(
       return
     }
 
-    if (isPinned()) return
-
-    if (agentNodeSelectionStore.isActive) return
+    if (isPinned() || agentNodeSelectionStore.isActive) return
 
     const nodeId = toValue(nodeStateRef).id
 
@@ -67,17 +65,14 @@ export function useNodePointerInteractions(
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
 
-    if (agentNodeSelectionStore.isActive) return
-
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
 
-    if (isPinned()) return
+    if (isPinned() || agentNodeSelectionStore.isActive) return
 
     const nodeId = toValue(nodeStateRef).id
 
-    const multiSelect =
-      agentNodeSelectionStore.isActive || isMultiSelectKey(event)
+    const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
     if (
@@ -152,7 +147,7 @@ export function useNodePointerInteractions(
     if (event.button === 2) return
 
     const multiSelect =
-      agentNodeSelectionStore.isActive || isMultiSelectKey(event)
+      isMultiSelectKey(event) || agentNodeSelectionStore.isActive
 
     toggleNodeSelectionAfterPointerUp(toValue(nodeStateRef).id, multiSelect)
   }

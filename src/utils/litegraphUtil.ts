@@ -49,6 +49,9 @@ export async function createNode(
   if (!name) {
     return null
   }
+  if (isSelectOnly(canvas)) {
+    return null
+  }
 
   const {
     graph,

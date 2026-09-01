@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
+export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
 export const zAgentTurnAccepted = z
   .object({
@@ -12,6 +13,32 @@ export const zAgentTurnAccepted = z
   })
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
+
+const zAgentRunModeValue = z.enum(['ask_approval', 'auto', 'auto_limited'])
+
+export const zAgentRunMode = z
+  .object({
+    mode: zAgentRunModeValue,
+    credit_limit: z.number().int().positive().nullable()
+  })
+  .superRefine(({ mode, credit_limit }, ctx) => {
+    if (mode === 'auto_limited' && credit_limit === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['credit_limit'],
+        message: 'auto_limited requires a positive credit limit'
+      })
+    }
+    if (mode !== 'auto_limited' && credit_limit !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['credit_limit'],
+        message: 'credit limit is only valid for auto_limited'
+      })
+    }
+  })
+export type AgentRunModePreference = z.infer<typeof zAgentRunMode>
+export type AgentRunMode = AgentRunModePreference['mode']
 
 export const zAgentMessage = z
   .object({
@@ -60,6 +87,12 @@ export const zAgentCancelAccepted = z.object({
 })
 export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
 
+export const zAgentDraftSnapshot = z.object({
+  content: z.record(z.string(), z.unknown()),
+  version: z.number().int()
+})
+export type AgentDraftSnapshot = z.infer<typeof zAgentDraftSnapshot>
+
 export const zAgentError = z.object({
   error: z.string()
 })
@@ -81,14 +114,26 @@ const zAgentThinkingData = z
 
 const zAgentToolCallData = z
   .object({
+    tool_call_id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
-    args: z.array(z.string()),
+    status: z.enum(['running', 'success', 'error']),
     duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()
   })
   .passthrough()
+
+const zDraftPatchData = z
+  .object({
+    base_version: z.number().int(),
+    version: z.number().int(),
+    content: z.record(z.string(), z.unknown()),
+    message_id: z.string().optional(),
+    thread_id: z.string().optional(),
+    workflow_id: z.string()
+  })
+  .passthrough()
+export type DraftPatchData = z.infer<typeof zDraftPatchData>
 
 const zAgentMessageDeltaData = z
   .object({
@@ -116,6 +161,14 @@ const zAgentMessageDoneData = z
   })
   .passthrough()
 
+const zDraftVersionData = z
+  .object({
+    version: z.number().int(),
+    workflow_id: z.string()
+  })
+  .passthrough()
+export type DraftVersionData = z.infer<typeof zDraftVersionData>
+
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
@@ -136,6 +189,11 @@ const zAgentToolCallEvent = z.object({
   data: zAgentToolCallData
 })
 
+const zDraftPatchEvent = z.object({
+  type: z.literal('draft_patch'),
+  data: zDraftPatchData
+})
+
 const zAgentMessageDeltaEvent = z.object({
   type: z.literal('agent_message_delta'),
   data: zAgentMessageDeltaData
@@ -146,6 +204,11 @@ const zAgentMessageDoneEvent = z.object({
   data: zAgentMessageDoneData
 })
 
+const zDraftVersionEvent = z.object({
+  type: z.literal('draft_version'),
+  data: zDraftVersionData
+})
+
 const zAgentActiveTabEvent = z.object({
   type: z.literal('agent_active_tab'),
   data: zAgentActiveTabData
@@ -154,8 +217,10 @@ const zAgentActiveTabEvent = z.object({
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
+  zDraftPatchEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDoneEvent,
+  zDraftVersionEvent,
   zAgentActiveTabEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>

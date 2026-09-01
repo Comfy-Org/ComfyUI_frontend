@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_VIDEO_ATTACHMENT_BYTES,
+  useAttachment
+} from './useAttachment'
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -57,6 +63,41 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledOnce()
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
+  })
+
+  it('uses the server-declared limit for video up to 200MB', async () => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(
+      MAX_VIDEO_ATTACHMENT_BYTES
+    )
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+    const movie = fileOfSize(
+      'movie.mp4',
+      MAX_VIDEO_ATTACHMENT_BYTES,
+      'video/mp4'
+    )
+
+    await addFiles([movie])
+
+    expect(api.getServerFeature).toHaveBeenCalledWith(
+      'max_upload_size',
+      MAX_VIDEO_ATTACHMENT_BYTES
+    )
+    expect(upload).toHaveBeenCalledWith(movie)
+  })
+
+  it('rejects video above the server-declared limit', async () => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(125 * 1024 * 1024)
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([fileOfSize('huge.mp4', 125 * 1024 * 1024 + 1, 'video/mp4')])
+
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 125MB')
   })
 
   it('uses the resolved limit for each file', async () => {
@@ -160,6 +201,53 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('[12-T2 regression] catches a rejected deferred resolver and removes its chip', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    await expect(
+      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
+    ).resolves.toBeUndefined()
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledOnce()
+  })
+
+  it('[12-T4 regression] stages a whole batch before concurrent uploads settle', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+    const pending = addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+    registry.remove(registry.chips[1].id)
+    resolvers[2]({ ref: 'c.png' })
+    resolvers[0]({ ref: 'a.png' })
+    resolvers[1]({ ref: 'b.png' })
+    await pending
+    expect(registry.chips.map(({ ref }) => ref)).toEqual(['a.png', 'c.png'])
   })
 
   it('removes an oversized deferred chip and reports the resolved limit', async () => {

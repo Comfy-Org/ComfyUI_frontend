@@ -229,6 +229,11 @@ function renderComponent() {
   return { user, ...result }
 }
 
+// The component's OSS-gate literal reads the runtime global in tests.
+beforeEach(() => {
+  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+})
+
 describe('WorkflowTabs feedback button', () => {
   beforeEach(() => {
     distribution.isCloud = false

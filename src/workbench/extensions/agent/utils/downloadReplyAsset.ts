@@ -19,11 +19,16 @@ async function displayFilename(asset: ReplyAsset): Promise<string> {
 }
 
 export async function downloadReplyAsset(asset: ReplyAsset): Promise<void> {
-  const apiBase = api.apiURL('/')
-  const route = asset.url.includes(apiBase)
-    ? asset.url.slice(asset.url.indexOf(apiBase) + api.apiURL('').length)
-    : asset.url
-  const response = await api.fetchApi(route)
+  const candidate = new URL(asset.url, window.location.origin)
+  const apiBase = new URL(api.apiURL(''), window.location.origin)
+  const viewPath = `${apiBase.pathname.replace(/\/$/, '')}/view`
+  const trusted =
+    candidate.origin === apiBase.origin && candidate.pathname === viewPath
+  const response = trusted
+    ? await api.fetchApi(
+        `${candidate.pathname.slice(apiBase.pathname.length)}${candidate.search}`
+      )
+    : await fetch(asset.url)
   if (!response.ok) return
   downloadBlob(await displayFilename(asset), await response.blob())
 }

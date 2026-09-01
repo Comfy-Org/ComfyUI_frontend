@@ -1,11 +1,14 @@
 import type { z } from 'zod'
 
+import { errorResponseFromBody } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 
 import {
   zAgentCancelAccepted,
+  zAgentDraftSnapshot,
   zAgentError,
   zAgentMessages,
+  zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
@@ -13,7 +16,9 @@ import {
 } from '../../schemas/agentApiSchema'
 import type {
   AgentCancelAccepted,
+  AgentDraftSnapshot,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry,
@@ -35,6 +40,11 @@ export class AgentApiError extends Error {
   }
 }
 
+export interface DraftUpload {
+  content: unknown
+  version: number | null
+}
+
 interface OpenTabEntry {
   workflow_id: string
   name: string
@@ -50,6 +60,7 @@ export interface PostMessageInput {
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
+  draft?: DraftUpload
   tabs?: OpenTabsSnapshot
 }
 
@@ -81,7 +92,10 @@ export function createAgentRestClient() {
       ? plain.data.error
       : isIngestErrorBody(body)
         ? body.error.message
-        : response.statusText
+        : errorResponseFromBody(
+            body === undefined ? text : body,
+            response.statusText || `HTTP ${response.status}`
+          ).message
     return new AgentApiError(message, response.status, body)
   }
 
@@ -116,8 +130,9 @@ export function createAgentRestClient() {
     }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
+    if (req.draft !== undefined) body.draft = req.draft
     return request(
-      `/agent/threads/${threadId}/messages`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
       zAgentTurnAccepted
     )
@@ -125,7 +140,7 @@ export function createAgentRestClient() {
 
   async function getMessages(threadId: string): Promise<AgentMessages> {
     return request(
-      `/agent/threads/${threadId}/messages`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       { method: 'GET' },
       zAgentMessages
     )
@@ -140,18 +155,34 @@ export function createAgentRestClient() {
     return page.threads
   }
 
+  async function getRunMode(): Promise<AgentRunModePreference> {
+    return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
+  }
+
+  async function putRunMode(
+    preference: AgentRunModePreference
+  ): Promise<AgentRunModePreference> {
+    return request(
+      '/agent/run-mode',
+      jsonInit('PUT', preference),
+      zAgentRunMode
+    )
+  }
+
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore = false
+    let offset = 0
     for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
       const result = await request(
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${page * CLOUD_WORKFLOW_PAGE_SIZE}`,
+        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${offset}`,
         { method: 'GET' },
         zCloudWorkflowIndex
       )
       entries.push(...result.data)
       hasMore = result.pagination.has_more
       if (!hasMore) break
+      offset = result.pagination.offset + result.data.length
     }
     if (hasMore)
       console.warn(
@@ -165,9 +196,18 @@ export function createAgentRestClient() {
     messageId: string
   ): Promise<AgentCancelAccepted> {
     return request(
-      `/agent/threads/${threadId}/messages/${messageId}/cancel`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}/cancel`,
       jsonInit('POST', {}),
       zAgentCancelAccepted
+    )
+  }
+
+  async function getDraft(workflowId: string): Promise<AgentDraftSnapshot> {
+    const query = encodeURIComponent(workflowId)
+    return request(
+      `/agent/draft?workflow_id=${query}`,
+      { method: 'GET' },
+      zAgentDraftSnapshot
     )
   }
 
@@ -188,10 +228,16 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getRunMode,
+    putRunMode,
     listCloudWorkflows,
     cancelMessage,
+    getDraft,
     uploadImage
   }
 }
 
-export type AgentRestClient = ReturnType<typeof createAgentRestClient>
+export type AgentRestClient = Omit<
+  ReturnType<typeof createAgentRestClient>,
+  'getRunMode' | 'putRunMode'
+>

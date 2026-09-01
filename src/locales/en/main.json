@@ -4767,6 +4767,10 @@
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
       },
+      "agent_api_failed": {
+        "title": "Comfy Agent error",
+        "desc": "Comfy Agent hit a server error. Try again."
+      },
       "op_rejected": {
         "title": "Agent edit rejected",
         "desc": "The workflow document refused an agent edit. The canvas and the shared document may briefly differ until the next update."
@@ -4783,9 +4787,9 @@
         "title": "Agent edit failed",
         "desc": "An agent edit could not be applied to the workflow document."
       },
-      "agent_api_failed": {
-        "title": "Comfy Agent error",
-        "desc": "Comfy Agent hit a server error."
+      "agent_draft_apply_failed": {
+        "title": "Couldn't apply agent changes",
+        "desc": "Couldn't apply the agent's draft to the canvas."
       }
     }
   },
@@ -5125,7 +5129,7 @@
     "maximize": "Maximize panel",
     "minimize": "Minimize panel",
     "close": "Close",
-    "history": "Chat history",
+    "history": "Chat History",
     "showChatHistory": "Show chat history",
     "backToPreviousChat": "Back to previous chat",
     "historyCurrent": "Current",
@@ -5168,7 +5172,7 @@
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
-    "dontWorkInWorkflow": "Don't work in a workflow",
+    "dontWorkInWorkflow": "Don’t work in a workflow",
     "searchWorkflows": "Search workflows",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
     "switchWorkflow": "Switch workflow",
@@ -5220,6 +5224,8 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "confirmDeleteChat": "Delete this chat? This cannot be undone.",
+    "confirmDeleteChatTitle": "Delete chat"
   }
 }

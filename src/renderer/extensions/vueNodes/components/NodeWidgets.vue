@@ -9,7 +9,7 @@
     :can-select-inputs
     :node-id="nodeData?.id"
     :class="
-      shouldHandleNodePointerEvents
+      shouldHandleNodePointerEvents && !agentNodeSelectionStore.isActive
         ? 'pointer-events-auto'
         : 'pointer-events-none'
     "
@@ -31,6 +31,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 interface NodeWidgetsProps {
   nodeData?: NodeState
@@ -42,6 +43,7 @@ const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return

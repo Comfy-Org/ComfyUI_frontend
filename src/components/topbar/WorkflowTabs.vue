@@ -85,11 +85,11 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
-      :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
+      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore.enabled"
+        v-if="agentPanelStore?.enabled"
         variant="link"
         size="sm"
         :aria-pressed="agentPanelStore.isOpen"
@@ -168,10 +168,13 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
-const agentPanelStore = useAgentPanelStore()
+// The literal keeps the agent store out of OSS builds entirely.
+const agentPanelStore =
+  __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
 const tabActivity = useWorkflowTabActivityStore()
 
 function onAgentEntryClick(): void {
+  if (!agentPanelStore) return
   useTelemetry()?.trackAgentEntryButtonClicked({
     resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
   })

@@ -77,6 +77,7 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
   isImageNode,
+  isSelectOnly,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -922,6 +923,8 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
+    // Definition-based node creation is an edit; the canvas is a picking surface while agent node-selection mode is on.
+    if (isSelectOnly(app.canvas)) return null
     options.pos ??= getCanvasCenter()
 
     if (isBlueprintType(nodeDef.name)) {

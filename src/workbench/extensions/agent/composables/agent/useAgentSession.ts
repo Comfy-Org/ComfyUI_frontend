@@ -3,17 +3,19 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftUpload,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-
-export interface AgentEventSource {
-  subscribe(listener: (raw: unknown) => void): () => void
-  onStatus?(listener: (live: boolean) => void): () => void
-}
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
+import {
+  THREAD_STORAGE_KEY,
+  forgetAgentSessionMemory
+} from './agentSessionMemory'
 
 export interface SessionNotice {
   level: 'error'
@@ -46,41 +48,40 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   workflow?: {
     current(): WorkflowTurnContext | undefined
-    adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    adopted(
+      workflowId: string,
+      sent: WorkflowTurnContext | undefined,
+      uploaded: boolean
+    ): void
     prepare?(): Promise<void>
+    snapshot?(): DraftUpload | undefined
+    uploadSkipped?(): void
     tabs?(): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
 
 /**
- * Page-lifetime binding memory: the workflow a resumed turn belongs to must
- * survive a panel remount. Module-level like `sessionGeneration`;
- * newChat/loadThread clear it.
+ * App-lifetime error-id mint: the ids land in an app-scoped store, so an
+ * instance-scoped counter would re-mint duplicates across a remount.
  */
-let rememberedWorkflowId: string | null = null
+let localErrorCount = 0
 
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
-  /**
-   * The workflow the session is bound to (set on turn ack or an active-tab
-   * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
-   * target.
-   */
-  const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
+  const draftStore = useAgentDraftStore()
 
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
+  let resyncing = false
   const sending = ref(false)
 
-  let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
     return `local-error-${++localErrorCount}` as TurnId
   }
@@ -93,17 +94,43 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  function storageGet(): string | null {
+    try {
+      return localStorage.getItem(THREAD_STORAGE_KEY)
+    } catch {
+      return null
+    }
+  }
+  function storageSet(value: string): void {
+    try {
+      localStorage.setItem(THREAD_STORAGE_KEY, value)
+    } catch (error) {
+      console.warn('[agent] failed to persist the thread id', error)
+    }
+  }
+  async function resyncDraft(): Promise<void> {
+    const id = draftStore.workflowId
+    if (id === null || resyncing) return
+    resyncing = true
+    try {
+      const snapshot = await rest.getDraft(id)
+      if (draftStore.workflowId === id) draftStore.adoptSnapshot(snapshot)
+    } catch (error) {
+      if (error instanceof AgentApiError) {
+        if (error.status === 404) return
+        pushError(error.message)
+        return
+      }
+      pushError(error instanceof Error ? error.message : String(error))
+    } finally {
+      resyncing = false
+    }
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
-    // The binding only outlives a remount together with its thread: a page
-    // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
-    ) {
-      rememberedWorkflowId = null
-      boundWorkflowId.value = null
-    }
+    unsubscribe?.()
+    unsubscribeStatus?.()
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     const surviving = conversationStore.threadId
@@ -119,7 +146,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
+      const stored = storageGet()
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
@@ -135,22 +162,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function hydrateFromServer(
     threadId: string,
-    isCurrent: () => boolean = () => true
+    isCurrent: () => boolean = () => true,
+    resetOnFailure = false
   ): Promise<boolean> {
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
+      conversationStore.stashActiveTurn()
       conversationStore.hydrate(history)
       return true
     } catch (error) {
       if (!isCurrent()) return false
+      // Entry-path hydrates committed the identity before fetching; leaving
+      // it standing over the previous transcript renders thread A's rows
+      // under thread B's id. Rehost keeps its transcript (b7) instead. A
+      // turn accepted while the fetch was in flight is stashed first, so
+      // it survives the reset and resumes on a later load of its thread.
+      const resetOwned =
+        resetOnFailure && conversationStore.threadId === threadId
       if (error instanceof AgentApiError && error.status === 404) {
-        if (conversationStore.threadId === threadId)
+        if (resetOwned) {
+          conversationStore.stashActiveTurn()
+          conversationStore.reset()
+        } else if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        forgetAgentSessionMemory()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
+      if (resetOwned) {
+        conversationStore.stashActiveTurn()
+        conversationStore.reset()
+        forgetAgentSessionMemory()
+      }
       return false
     }
   }
@@ -173,7 +217,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[]
   ): Promise<boolean> {
-    if (sending.value) {
+    if (sending.value || conversationStore.activeTurnId !== null) {
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
@@ -184,66 +228,135 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending = false
-    if (workflow?.prepare)
-      await Promise.race([
-        workflow.prepare().catch(() => undefined),
-        new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
-      ])
-    const wfContext = workflow?.current()
-    const tabs = workflow?.tabs?.()
-    async function postTurn(threadId: string) {
-      const input = {
+    let wfContext: WorkflowTurnContext | undefined
+    let upload: DraftUpload | undefined
+    let tabs: OpenTabsSnapshot | undefined
+    let uploaded: boolean
+    const destinationThread = conversationStore.threadId ?? 'new'
+    const initiatingGeneration = loadGeneration
+    const initiatingOwner = ownedGeneration
+    function buildInput(draft: DraftUpload | undefined) {
+      return {
         content: text,
         tabs,
         selection:
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
             : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref)
+        attachments: attachments?.map((attachment) => attachment.ref),
+        draft
       }
+    }
+    async function post(threadId: string, draft: DraftUpload | undefined) {
+      const input = buildInput(draft)
       return rest.postMessage(
         threadId,
         wfContext ? { ...input, workflowId: wfContext.id } : input
       )
     }
-    try {
-      const ack = await postTurn(conversationStore.threadId ?? 'new')
-      conversationStore.setThreadId(ack.thread_id)
-      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
-      if (ack.workflow_id !== undefined) {
-        bindWorkflow(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+    async function postTurn(threadId: string) {
+      try {
+        return await post(threadId, upload)
+      } catch (error) {
+        if (!(error instanceof AgentApiError)) throw error
+        const serverVersion = (error.body as { version?: unknown } | null)
+          ?.version
+        if (
+          error.status === 409 &&
+          upload !== undefined &&
+          typeof serverVersion === 'number'
+        ) {
+          return await post(threadId, { ...upload, version: serverVersion })
+        }
+        if (upload !== undefined && error.status >= 500) {
+          console.warn(
+            '[agent] draft upload rejected by the server, sending without it',
+            error.message
+          )
+          const ack = await post(threadId, undefined)
+          uploaded = false
+          workflow?.uploadSkipped?.()
+          return ack
+        }
+        throw error
       }
+    }
+    try {
+      let ack
+      try {
+        if (workflow?.prepare)
+          await Promise.race([
+            workflow.prepare().catch(() => undefined),
+            new Promise<void>((resolve) =>
+              setTimeout(resolve, PREPARE_TIMEOUT_MS)
+            )
+          ])
+        wfContext = workflow?.current()
+        upload = workflow?.snapshot?.()
+        tabs = workflow?.tabs?.()
+        uploaded = upload !== undefined
+        if (
+          initiatingOwner !== sessionGeneration ||
+          initiatingGeneration !== loadGeneration ||
+          (conversationStore.threadId ?? 'new') !== destinationThread
+        )
+          return false
+        ack = await postTurn(destinationThread)
+      } catch (error) {
+        const message =
+          error instanceof AgentApiError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : String(error)
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          `${i18n.global.t('agent.sendFailed')}: ${message}`
+        )
+        return false
+      }
+      // The server accepted the turn: the store transitions are owed
+      // unconditionally, before any fallible local side effect, or the
+      // reply's events arrive with no open turn to land in.
       const turnId = ack.message_id as TurnId
-      conversationStore.recordUser(
-        turnId,
-        text,
-        attachments?.map(({ name, previewUrl, ref }) => ({
-          name,
-          previewUrl,
-          ref
-        })),
-        tags?.map((tag) => `${tag.title} #${tag.id}`)
-      )
+      const sentAttachments = attachments?.map(({ name, previewUrl, ref }) => ({
+        name,
+        previewUrl,
+        ref
+      }))
+      const sentTags = tags?.map((tag) => `${tag.title} #${tag.id}`)
+      const stillDisplayed =
+        initiatingOwner === sessionGeneration &&
+        initiatingGeneration === loadGeneration &&
+        (conversationStore.threadId ?? 'new') === destinationThread
+      if (!stillDisplayed) {
+        conversationStore.startBackgroundTurn(
+          ack.thread_id,
+          turnId,
+          text,
+          sentAttachments,
+          sentTags
+        )
+        return true
+      }
+      conversationStore.setThreadId(ack.thread_id)
+      conversationStore.recordUser(turnId, text, sentAttachments, sentTags)
       conversationStore.startTurn(turnId)
+      if (ack.workflow_id !== undefined) draftStore.bind(ack.workflow_id)
+      storageSet(ack.thread_id)
+      try {
+        if (ack.workflow_id !== undefined)
+          workflow?.adopted(ack.workflow_id, wfContext, uploaded)
+      } catch (error) {
+        // Consumer bookkeeping cannot retract an accepted turn.
+        console.warn('[agent] workflow.adopted consumer threw', error)
+      }
       if (stopRequestedWhileSending) {
         stopRequestedWhileSending = false
         void stopTurn()
       }
       return true
-    } catch (error) {
-      const message =
-        error instanceof AgentApiError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : String(error)
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        `${i18n.global.t('agent.sendFailed')}: ${message}`
-      )
-      return false
     } finally {
       sending.value = false
     }
@@ -281,9 +394,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    draftStore.reset()
+    forgetAgentSessionMemory()
   }
 
   function listThreads() {
@@ -296,15 +408,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     conversationStore.stashActiveTurn()
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    draftStore.reset()
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-    const hydrated = await hydrateFromServer(threadId, isCurrent)
+    storageSet(threadId)
+    const hydrated = await hydrateFromServer(threadId, isCurrent, true)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
   function onRaw(raw: unknown): void {
+    if (ownedGeneration !== sessionGeneration) return
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
     if (typeof type !== 'string' || !isAgentEvent(type)) return
@@ -312,15 +424,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!parsed.success) {
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
+      const rawThreadId = (raw as { data?: { thread_id?: unknown } }).data
+        ?.thread_id
       if (type === 'agent_message_done') {
         if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
+          (rawThreadId === undefined ||
+            rawThreadId === conversationStore.threadId) &&
+          (typeof messageId !== 'string' ||
+            messageId === conversationStore.activeTurnId)
         ) {
           conversationStore.abortActiveTurn()
           pushError(i18n.global.t('agent.malformedEvent'))
-        } else {
-          conversationStore.settleBackgroundTurn(messageId)
+        } else if (
+          typeof rawThreadId === 'string' &&
+          typeof messageId === 'string'
+        ) {
+          conversationStore.settleBackgroundTurn(rawThreadId, messageId)
         }
       }
       console.warn('[agent] dropping malformed agent event', parsed.error)
@@ -328,6 +447,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     const event = parsed.data
     switch (event.type) {
+      case 'draft_patch':
+        if (
+          event.data.thread_id === undefined ||
+          event.data.thread_id === conversationStore.threadId
+        )
+          draftStore.applyPatch(event.data)
+        return
+      case 'draft_version':
+        if (draftStore.checkHeartbeat(event.data) === 'behind')
+          void resyncDraft()
+        return
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
         // on screen is allowed to move the user's tabs.
@@ -355,7 +485,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    if (live) return
+    if (ownedGeneration !== sessionGeneration) return
+    if (live) {
+      void resyncDraft()
+      return
+    }
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
   }
@@ -367,14 +501,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       : null
   )
 
-  function bindWorkflow(workflowId: string): void {
-    boundWorkflowId.value = workflowId
-    rememberedWorkflowId = workflowId
-  }
-
   return {
-    boundWorkflowId: computed(() => boundWorkflowId.value),
-    bindWorkflow,
     isSending,
     editableTurnId,
     start,

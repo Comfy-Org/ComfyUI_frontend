@@ -1,8 +1,10 @@
 import { i18n } from '@/i18n'
-import { hasImageType } from '@/utils/eventUtils'
+import { api } from '@/scripts/api'
+import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+export const MAX_VIDEO_ATTACHMENT_BYTES = 200 * 1024 * 1024
 
 interface UploadResult {
   ref: string
@@ -28,7 +30,16 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function isTooLarge(file: File): boolean {
-    const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
+    const serverLimit = api.getServerFeature<number>(
+      'max_upload_size',
+      MAX_VIDEO_ATTACHMENT_BYTES
+    )
+    const maxBytes =
+      options.maxBytes?.(file) ??
+      Math.min(
+        serverLimit,
+        hasVideoType(file) ? MAX_VIDEO_ATTACHMENT_BYTES : MAX_ATTACHMENT_BYTES
+      )
     if (file.size <= maxBytes) return false
 
     options.onError?.(
@@ -63,7 +74,14 @@ export function useAttachment(options: UseAttachmentOptions) {
     resolve: () => Promise<File | undefined>
   ): Promise<File | undefined> {
     const id = stage(name)
-    const file = await resolve()
+    let file: File | undefined
+    try {
+      file = await resolve()
+    } catch {
+      options.remove(id)
+      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      return undefined
+    }
     if (!file) {
       options.remove(id)
       return undefined
@@ -77,10 +95,10 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
-    for (const file of files) {
-      if (isTooLarge(file)) continue
-      await uploadStagedFile(stage(file.name), file)
-    }
+    const staged = [...files]
+      .filter((file) => !isTooLarge(file))
+      .map((file) => ({ file, id: stage(file.name) }))
+    await Promise.all(staged.map(({ id, file }) => uploadStagedFile(id, file)))
   }
 
   return { addDeferredFile, addFiles }

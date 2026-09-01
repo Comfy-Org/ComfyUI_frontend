@@ -41,6 +41,10 @@ interface RestLine {
 
 describe('agentApiSchema fixture gate', () => {
   describe('ws frames: every line is a valid agent event or a recognized-foreign frame', () => {
+    it('the ws fixture glob finds at least one capture', () => {
+      expect(wsPaths.length).toBeGreaterThan(0)
+    })
+
     it.for(wsPaths)('%s', (path) => {
       const lines = jsonlLines(path) as WsLine[]
       lines.forEach((line, index) => {
@@ -139,9 +143,9 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('keeps the retired draft frames foreign to the union', () => {
-    expect(isAgentEvent('draft_patch')).toBe(false)
-    expect(isAgentEvent('draft_version')).toBe(false)
+  it('admits draft frames into the union', () => {
+    expect(isAgentEvent('draft_patch')).toBe(true)
+    expect(isAgentEvent('draft_version')).toBe(true)
   })
 
   it('rejects an unknown event type in the union while isAgentEvent stays false', () => {
@@ -159,14 +163,46 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.success).toBe(true)
   })
 
-  it('exposes exactly the five agent event types', () => {
+  it('accepts the canonical tool lifecycle and rejects the legacy shape', () => {
+    const data = {
+      tool_call_id: 'call-1',
+      tool_name: 'add_node',
+      message_id: 'm1',
+      thread_id: 't1'
+    }
+
+    for (const status of ['running', 'success', 'error']) {
+      expect(
+        zAgentWsEvent.safeParse({
+          type: 'agent_tool_call',
+          data: { ...data, status }
+        }).success
+      ).toBe(true)
+    }
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_tool_call',
+        data: { ...data, tool_call_id: undefined, status: 'success' }
+      }).success
+    ).toBe(false)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_tool_call',
+        data: { ...data, status: 'ok', args: [] }
+      }).success
+    ).toBe(false)
+  })
+
+  it('exposes exactly the seven agent event types', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
         'agent_active_tab',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
-        'agent_tool_call'
+        'agent_tool_call',
+        'draft_patch',
+        'draft_version'
       ].sort()
     )
   })

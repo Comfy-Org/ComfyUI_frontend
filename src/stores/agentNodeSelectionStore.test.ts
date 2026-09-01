@@ -12,6 +12,12 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
+// The era's viewport derives from live DOM rects; pin it so the framing
+// assertions stay about the selection behavior, not the rect plumbing.
+vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
+  visibleCanvasViewport: () => [0, 0, 1600, 900]
+}))
+
 const settings = vi.hoisted(() => {
   const values = new Map<string, unknown>()
   return {
@@ -45,18 +51,15 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
-  // A real element, not a `{ width, height }` literal: canvasStore attaches its
-  // litegraph event listeners to `canvas.canvas` on assignment, and a plain
-  // object rejects that registration on a post-flush tick nothing can await.
-  const element = document.createElement('canvas')
-  element.width = 1600
-  element.height = 900
+  const surface = document.createElement('canvas')
+  surface.width = 1600
+  surface.height = 900
   useCanvasStore().canvas = {
-    graph: { nodes },
+    graph: { nodes, events: new EventTarget() },
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: element
+    canvas: surface
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }

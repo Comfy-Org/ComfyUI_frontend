@@ -8,11 +8,6 @@ const registered = vi.hoisted(() => ({
 }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
-const agentStore = vi.hoisted(() => ({
-  enabled: false,
-  gateSettled: false,
-  isOpen: false
-}))
 
 vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: reportErrorMock
@@ -24,37 +19,12 @@ vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
   throw new Error('flag source chunk failed to load')
 })
 
-vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
-  useAgentPanelStore: () => agentStore
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: null })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ updateSelectedItems: vi.fn() })
-}))
-
-vi.mock('@/stores/agentNodeSelectionStore', () => ({
-  useAgentNodeSelectionStore: () => ({
-    isLoadingWorkflow: false,
-    beginWorkflowLoad: vi.fn(),
-    finishWorkflowLoad: vi.fn()
-  })
-}))
-
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: vi.fn()
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphNode: () => false
-}))
-
+// The lifetime adapter registers alongside the gate in setup(); stub it so
+// this suite stays a flag-gate probe instead of booting the workflow store
+// universe.
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
-  () => ({ registerWorkflowTabActivityTracker: vi.fn() })
+  '@/workbench/extensions/agent/composables/agent/useAgentLifetime',
+  () => ({ registerAgentLifetimes: vi.fn() })
 )
 
 vi.mock('@/services/extensionService', () => ({
@@ -69,8 +39,6 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     reportErrorMock.mockClear()
-    agentStore.enabled = false
-    agentStore.gateSettled = false
   })
 
   it('settles fail-closed, reports, and resolves the setup promise', async () => {
@@ -90,5 +58,42 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_flag_gate_load_failure'
     })
+  })
+
+  it('reports the lifetime chunk failing without taking the gate down', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    vi.resetModules()
+    // doMock, not the hoisted mock above: a hoisted factory is evaluated once
+    // for the file, so the two chunks' failure modes can only be varied
+    // per-test by re-registering after the module registry is reset.
+    vi.doMock('@/workbench/extensions/agent/utils/postHogFlagSource', () => ({
+      AGENT_PANEL_FLAG: 'agent-panel',
+      FLAG_SETTLE_TIMEOUT_MS: 0,
+      createPostHogFlagSource: () => ({
+        isEnabled: () => false,
+        onChange: (callback: () => void) => callback()
+      })
+    }))
+    vi.doMock(
+      '@/workbench/extensions/agent/composables/agent/useAgentLifetime',
+      () => {
+        throw new Error('lifetime chunk failed to load')
+      }
+    )
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+
+    await registered.setup?.()
+
+    // The slot carries the cross-account purge, so a silent load failure
+    // would be a working panel with no purge and no signal at all.
+    expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_lifetime_load_failure'
+    })
+    expect(useAgentPanelStore().gateSettled).toBe(true)
+    vi.doUnmock('@/workbench/extensions/agent/utils/postHogFlagSource')
+    vi.doUnmock(
+      '@/workbench/extensions/agent/composables/agent/useAgentLifetime'
+    )
   })
 })

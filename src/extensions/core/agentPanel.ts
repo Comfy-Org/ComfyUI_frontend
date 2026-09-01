@@ -1,42 +1,55 @@
-import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { reportError } from '@/platform/telemetry/reportError'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
-let registered = false
+// The initTelemetry.ts idiom: the guard lives INSIDE the unconditionally
+// retained function, and every agent-chunk module is imported dynamically
+// past it. OSS builds fold the guard, drop the dead remainder with its
+// import() edges, and emit no agent code; cloud builds keep the shell inline
+// in the core graph so a flag-off session fetches no separate gate chunk.
+const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
 export function registerAgentPanelExtension(): void {
-  if (registered) return
-  registered = true
-
+  if (!IS_CLOUD_BUILD) return
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
-    beforeLoadGraph() {
+    // Selection persistence across workflow loads. The panel store lives past
+    // the cloud-guard chunk boundary, so it loads dynamically like every other
+    // agent module here; both hooks are awaited by invokeExtensionsAsync.
+    async beforeLoadGraph() {
+      const { notifyMintPortsBeforeGraphLoad } =
+        await import('@/workbench/extensions/agent/crdt/mintPortWiring')
       notifyMintPortsBeforeGraphLoad()
-      const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isOpen) return
+      const [{ useAgentPanelStore }, { useAgentNodeSelectionStore }] =
+        await Promise.all([
+          import('@/workbench/extensions/agent/stores/agent/agentPanelStore'),
+          import('@/stores/agentNodeSelectionStore')
+        ])
+      if (!useAgentPanelStore().isOpen) return
 
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      nodeSelectionStore.beginWorkflowLoad()
+      useAgentNodeSelectionStore().beginWorkflowLoad()
     },
-    afterLoadGraph(app) {
-      const agentPanelStore = useAgentPanelStore()
+    async afterLoadGraph(app) {
+      const { useAgentNodeSelectionStore } =
+        await import('@/stores/agentNodeSelectionStore')
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isOpen) {
+      const { useAgentPanelStore } =
+        await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
+      if (!useAgentPanelStore().isOpen) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
 
+      const [
+        { useWorkflowStore },
+        { useCanvasStore },
+        { getNodeByLocatorId },
+        { isLGraphNode }
+      ] = await Promise.all([
+        import('@/platform/workflow/management/stores/workflowStore'),
+        import('@/renderer/core/canvas/canvasStore'),
+        import('@/utils/graphTraversalUtil'),
+        import('@/utils/litegraphUtil')
+      ])
       const canvas = app.canvas
       const workflowStore = useWorkflowStore()
       const workflowPath = workflowStore.activeWorkflow?.path
@@ -50,44 +63,93 @@ export function registerAgentPanelExtension(): void {
       canvas?.selectItems(nodes)
       useCanvasStore().updateSelectedItems()
     },
-    afterConfigureGraph() {
+    async afterConfigureGraph() {
+      const { notifyMintPortsAfterGraphConfigure } =
+        await import('@/workbench/extensions/agent/crdt/mintPortWiring')
       notifyMintPortsAfterGraphConfigure()
     },
-    setup() {
-      registerWorkflowTabActivityTracker()
-      return setupFlagGate()
+    async setup() {
+      // The service's per-extension catch owns a rejection here, so a
+      // failed gate or lifetime load can never surface as an unhandled
+      // rejection.
+      await Promise.all([registerLifetimes(), setupFlagGate()])
     }
   })
 }
 
+async function registerLifetimes(): Promise<void> {
+  // This slot now carries the cross-account purge, so a silent failure here
+  // is a fully working panel with no purge and no signal at all.
+  try {
+    const { registerAgentLifetimes } =
+      await import('@/workbench/extensions/agent/composables/agent/useAgentLifetime')
+    registerAgentLifetimes()
+  } catch (error) {
+    console.error('[Comfy.AgentPanel] agent lifetimes failed to load', error)
+    try {
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(error, { errorType: 'agent_lifetime_load_failure' })
+    } catch {
+      // Telemetry chunk unavailable; the console line above already records it.
+    }
+  }
+}
+
 async function setupFlagGate(): Promise<void> {
+  const { useAgentPanelStore } =
+    await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
   const agentPanelStore = useAgentPanelStore()
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
+
+  // Every remaining chunk loads inside the guard (ad blockers eat these):
+  // any failure settles fail-closed instead of leaving the gate hanging.
   try {
     const [
-      { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
-      { default: posthog }
+      { AGENT_PANEL_FLAG, FLAG_SETTLE_TIMEOUT_MS, createPostHogFlagSource },
+      { getDevOverride }
     ] = await Promise.all([
       import('@/workbench/extensions/agent/utils/postHogFlagSource'),
-      import('posthog-js')
+      import('@/utils/devFeatureFlagOverride')
     ])
+
+    // Force-enable BEFORE any posthog work (a blocked SDK load must not
+    // take local dev down); the ff: override wins in both directions.
+    if (import.meta.env.MODE === 'development') {
+      agentPanelStore.enabled =
+        getDevOverride<boolean>(AGENT_PANEL_FLAG) ?? true
+    }
+
+    const posthog = (await import('posthog-js')).default
     const source = createPostHogFlagSource(posthog)
     const sync = (): void => {
+      const devOverride =
+        import.meta.env.MODE === 'development'
+          ? getDevOverride<boolean>(AGENT_PANEL_FLAG)
+          : undefined
       const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+      agentPanelStore.enabled =
+        devOverride ?? (forceInDev || source.isEnabled())
     }
+    // Production waits for the first non-error delivery (the source drops
+    // errorsLoading callbacks): posthog persists flags in localStorage, so
+    // reading before delivery would let a stale true mount the panel and
+    // fetch agent chunks across a flag-off boundary. Dev stays immediate.
     source.onChange?.(() => {
       sync()
       settle()
     })
-    sync()
-    if (import.meta.env.MODE === 'development') settle()
-    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
+    if (import.meta.env.MODE === 'development') sync()
+    setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     console.error('[Comfy.AgentPanel] feature-flag gate failed to load', error)
     settle()
-    reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    try {
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    } catch {
+      // Telemetry chunk unavailable; the console line above already records it.
+    }
   }
 }

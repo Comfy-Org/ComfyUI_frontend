@@ -34,10 +34,11 @@ export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
   async function focusNodeInstance(node: LGraphNode) {
-    const canvas = canvasStore.canvas
-    if (!canvas || !node.graph) return
+    if (!node.graph) return
 
     await navigateToGraph(node.graph as LGraph)
+    const canvas = canvasStore.canvas
+    if (!canvas || canvas.graph !== node.graph) return
     canvas.animateToBounds(node.boundingRect, {
       viewport: visibleCanvasViewport(canvas)
     })
