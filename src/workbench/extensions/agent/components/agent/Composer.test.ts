@@ -232,7 +232,7 @@ describe('Composer', () => {
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
-        detail: 'Could not save run permissions. Please try again.'
+        detail: i18n.global.t('agent.runModeSaveFailed')
       })
     })
 
