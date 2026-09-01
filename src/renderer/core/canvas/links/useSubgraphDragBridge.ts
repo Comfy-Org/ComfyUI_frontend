@@ -58,6 +58,7 @@ export function useSubgraphDragBridge() {
   function setupBridge(lgCanvas: LGraphCanvas): () => void {
     const linkConnector: LinkConnector = lgCanvas.linkConnector
     let teardownDrag: (() => void) | undefined
+    let flushPointerTracking: (() => void) | undefined
     let isBridgeDrag = false
 
     const onConnecting = (
@@ -110,11 +111,15 @@ export function useSubgraphDragBridge() {
         setCompatibleForKey(key, ok)
       }
 
-      teardownDrag = startPointerTracking(lgCanvas, linkConnector)
+      const pointerTracking = startPointerTracking(lgCanvas, linkConnector)
+      teardownDrag = pointerTracking.teardown
+      flushPointerTracking = pointerTracking.flush
     }
 
     const onBeforeDropOnCanvas = (event: CustomEvent) => {
       if (!isBridgeDrag) return
+
+      flushPointerTracking?.()
 
       const candidate = dragState.candidate
       if (!candidate?.compatible) return
@@ -135,6 +140,7 @@ export function useSubgraphDragBridge() {
       if (!isBridgeDrag) return
       teardownDrag?.()
       teardownDrag = undefined
+      flushPointerTracking = undefined
       isBridgeDrag = false
       endDrag()
     }
@@ -155,6 +161,7 @@ export function useSubgraphDragBridge() {
       linkConnector.events.removeEventListener('reset', onReset)
       teardownDrag?.()
       teardownDrag = undefined
+      flushPointerTracking = undefined
       if (isBridgeDrag) {
         isBridgeDrag = false
         endDrag()
@@ -170,7 +177,7 @@ export function useSubgraphDragBridge() {
   function startPointerTracking(
     lgCanvas: LGraphCanvas,
     linkConnector: LinkConnector
-  ): () => void {
+  ): { teardown: () => void; flush: () => void } {
     const ownerDoc = lgCanvas.getCanvasWindow().document
     const session = createSlotLinkDragContext()
     const slotRegistry = useNodeSlotRegistryStore()
@@ -307,7 +314,7 @@ export function useSubgraphDragBridge() {
 
     ownerDoc.addEventListener('pointermove', onPointerMove, { capture: true })
 
-    return () => {
+    const teardown = () => {
       ownerDoc.removeEventListener('pointermove', onPointerMove, {
         capture: true
       })
@@ -317,6 +324,13 @@ export function useSubgraphDragBridge() {
         highlightedSlotEl = null
       }
       session.dispose()
+    }
+
+    return {
+      teardown,
+      flush: () => {
+        raf.flush()
+      }
     }
   }
 }
