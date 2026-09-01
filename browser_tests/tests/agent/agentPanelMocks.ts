@@ -1,5 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -40,9 +42,10 @@ export const THINKING_EVENT: AgentWsEvent = {
 export const TOOL_CALL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
-    tool_call_id: 'call-set-widget',
     tool_name: 'set_widget',
     status: 'success',
+    tool_call_id: 'tool-call-1',
+    args: ['workflow', 'set-widget', 'workflow.json'],
     duration_ms: 1300,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -70,9 +73,10 @@ export const RESUMED_THINKING_EVENT: AgentWsEvent = {
 export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
-    tool_call_id: 'call-new-tab',
     tool_name: 'new_tab',
     status: 'success',
+    tool_call_id: 'tool-call-2',
+    args: [],
     duration_ms: 500,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -82,9 +86,10 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
-    tool_call_id: 'call-resize-image-node',
     tool_name: 'resize_image_node',
     status: 'success',
+    tool_call_id: 'tool-call-3',
+    args: [],
     duration_ms: 200,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -130,6 +135,15 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
   }
 }
 
+/**
+ * Requires a cloud-distribution build: `registerAgentPanelExtension` returns
+ * early on non-cloud builds, so against a default build every flag-on test
+ * fails and the flag-off test passes vacuously.
+ *
+ * The `/api/users` and `/api/settings` routes serve only the page's own
+ * fetches: `ComfyPage.setupUser` goes through the APIRequestContext, which
+ * `page.route` does not intercept.
+ */
 async function mockAgentBoot(
   page: Page,
   {
@@ -142,8 +156,17 @@ async function mockAgentBoot(
   })
 
   await mockBilling(page)
-  await page.route('**/api/assets**', (r) =>
-    r.fulfill(jsonRoute({ assets: [] }))
+  const emptyAssets: ListAssetsResponse = {
+    assets: [],
+    total: 0,
+    has_more: false
+  }
+  await page.route('**/api/assets**', (r) => r.fulfill(jsonRoute(emptyAssets)))
+  // The bootstrapped project token makes PostHogTelemetryProvider run a real
+  // posthog.init(); route its ingest host so CI never emits live third-party
+  // traffic under the fabricated token.
+  await page.route('**://t.comfy.org/**', (r) =>
+    r.fulfill(jsonRoute({ status: 1 }))
   )
 
   await page.route('**/api/features', (r) =>
