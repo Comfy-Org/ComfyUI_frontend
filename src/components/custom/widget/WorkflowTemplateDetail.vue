@@ -23,7 +23,7 @@ const {
   modelSetupEnabled = false,
   setupPending = false,
   requirementsMet = false,
-  starterPackAvailable = false
+  modelDownloadsAvailable = false
 } = defineProps<{
   title: string
   description: string
@@ -34,12 +34,12 @@ const {
   modelSetupEnabled?: boolean
   setupPending?: boolean
   requirementsMet?: boolean
-  starterPackAvailable?: boolean
+  modelDownloadsAvailable?: boolean
 }>()
 
 const emit = defineEmits<{
   'open-template': []
-  'download-starter-pack': []
+  'download-models-and-open': []
   'download-model': [rowId: string]
 }>()
 
@@ -52,7 +52,7 @@ const offerDownloadAndOpen = computed(
   () =>
     modelSetupEnabled &&
     !requirementsMet &&
-    (setupPending || starterPackAvailable)
+    (setupPending || modelDownloadsAvailable)
 )
 
 defineExpose({
@@ -440,14 +440,14 @@ function getFailedDownloadLabel(
         :disabled="offerDownloadAndOpen && setupPending"
         @click="
           offerDownloadAndOpen
-            ? emit('download-starter-pack')
+            ? emit('download-models-and-open')
             : emit('open-template')
         "
       >
         {{
           t(
             offerDownloadAndOpen
-              ? 'templateWorkflows.detail.downloadStarterPack'
+              ? 'templateWorkflows.detail.downloadModelsAndOpen'
               : 'templateWorkflows.detail.openNow'
           )
         }}
