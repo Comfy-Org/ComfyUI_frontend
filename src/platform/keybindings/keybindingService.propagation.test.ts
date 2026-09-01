@@ -46,7 +46,6 @@ describe('keybindingService - event propagation', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     const commandStore = useCommandStore()
