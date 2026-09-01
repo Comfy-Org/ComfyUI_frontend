@@ -159,7 +159,7 @@ describe('graphToPrompt', () => {
     const { workflow, output } = await graphToPrompt(graph)
 
     expect(
-      workflow.nodes.some((n) => n.id === note.id),
+      workflow.nodes.some((node) => String(node.id) === String(note.id)),
       'Workflow JSON should preserve virtual nodes by ID'
     ).toBe(true)
     expect(output[String(note.id)]).toBeUndefined()
