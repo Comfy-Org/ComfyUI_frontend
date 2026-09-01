@@ -26,7 +26,6 @@
 <script setup lang="ts">
 import { useImage } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 interface LivePreviewProps {
   imageUrl: string
@@ -34,14 +33,12 @@ interface LivePreviewProps {
 
 const props = defineProps<LivePreviewProps>()
 
-const { t } = useI18n()
-
 const {
   state: imageState,
   isReady,
   error
 } = useImage(
-  computed(() => ({ src: props.imageUrl, alt: t('g.liveSamplingPreview') }))
+  computed(() => ({ src: props.imageUrl }))
 )
 
 // Cache last successfully loaded dimensions so the placeholder text does not
