@@ -83,6 +83,46 @@ describe('resolveTemplateModelMetadata', () => {
     expect(result.entries[2]?.model).toBe(shared)
   })
 
+  it('starts at most six unique metadata requests at once', async () => {
+    const models = Array.from({ length: 7 }, (_, index) =>
+      model(`model-${index}.safetensors`)
+    )
+    const pendingByUrl = new Map<
+      string,
+      ReturnType<typeof deferred<ModelMetadataFetchOutcome>>
+    >()
+    mocks.fetchModelMetadataWithStatus.mockImplementation((url: string) => {
+      const pending = deferred<ModelMetadataFetchOutcome>()
+      pendingByUrl.set(url, pending)
+      return pending.promise
+    })
+
+    const result = resolveTemplateModelMetadata(models)
+    await Promise.resolve()
+
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(6)
+    expect(
+      mocks.fetchModelMetadataWithStatus.mock.calls.some(
+        ([url]) => url === models[6].url
+      )
+    ).toBe(false)
+
+    pendingByUrl.get(models[0].url)?.resolve(metadataOutcome(100))
+    await vi.waitFor(() => {
+      expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(7)
+    })
+
+    for (const pending of pendingByUrl.values()) {
+      pending.resolve(metadataOutcome(100))
+    }
+    await expect(result).resolves.toMatchObject({
+      status: 'completed',
+      entries: expect.arrayContaining([
+        expect.objectContaining({ model: models[6] })
+      ])
+    })
+  })
+
   it('preserves a failed URL outcome while resolving the remaining models', async () => {
     const first = model('first.safetensors')
     const failed = model('failed.safetensors')
@@ -129,10 +169,11 @@ describe('resolveTemplateModelMetadata', () => {
     expect(mocks.fetchModelMetadataWithStatus).not.toHaveBeenCalled()
   })
 
-  it('discards a completed batch when it is aborted while metadata is pending', async () => {
+  it('settles promptly when aborted even if metadata never settles', async () => {
     const controller = new AbortController()
-    const pending = deferred<ModelMetadataFetchOutcome>()
-    mocks.fetchModelMetadataWithStatus.mockReturnValueOnce(pending.promise)
+    mocks.fetchModelMetadataWithStatus.mockReturnValueOnce(
+      new Promise<ModelMetadataFetchOutcome>(() => {})
+    )
     const result = resolveTemplateModelMetadata(
       [model('pending.safetensors')],
       {
@@ -141,9 +182,46 @@ describe('resolveTemplateModelMetadata', () => {
     )
 
     expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledOnce()
+    let outcome: Awaited<typeof result> | undefined
+    void result.then((value) => {
+      outcome = value
+    })
     controller.abort()
-    pending.resolve(metadataOutcome(2048))
 
-    await expect(result).resolves.toEqual({ status: 'aborted' })
+    await vi.waitFor(
+      () => {
+        expect(outcome).toEqual({ status: 'aborted' })
+      },
+      { interval: 5, timeout: 100 }
+    )
+  })
+
+  it('aborts a metadata request after ten seconds and records failure', async () => {
+    vi.useFakeTimers()
+    try {
+      let requestSignal: AbortSignal | undefined
+      mocks.fetchModelMetadataWithStatus.mockImplementation(
+        (_url: string, options?: { signal?: AbortSignal }) => {
+          requestSignal = options?.signal
+          return new Promise<ModelMetadataFetchOutcome>(() => {})
+        }
+      )
+      const timedOut = model('timed-out.safetensors')
+      const result = resolveTemplateModelMetadata([timedOut])
+      await Promise.resolve()
+
+      expect(requestSignal).toBeDefined()
+      expect(requestSignal?.aborted).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(requestSignal?.aborted).toBe(true)
+      await expect(result).resolves.toEqual({
+        status: 'completed',
+        entries: [metadataEntry(timedOut, null, null, 'failed')]
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
