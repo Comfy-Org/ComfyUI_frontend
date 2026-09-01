@@ -62,7 +62,6 @@ export interface WorkflowChangeTracker {
   ): Promise<void>
   undo(): Promise<void>
   redo(): Promise<void>
-  undoRedo(e: KeyboardEvent, selectOnly?: boolean): Promise<true | undefined>
   beforeChange(): void
   afterChange(): void
 }
