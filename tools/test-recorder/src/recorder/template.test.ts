@@ -15,6 +15,7 @@ import {
   generateRecordingTemplate,
   recordedCodePath,
   recordingTarget,
+  removeLegacyCustomStorageState,
   storageStateKey
 } from './template'
 
@@ -348,6 +349,17 @@ describe('recording template', () => {
           backendUrl: 'http://localhost:8200/'
         })
       ).toBe('custom-localhost-8200')
+    })
+
+    it('removes the legacy shared custom-backend storage state', () => {
+      const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
+      writeFileSync(legacyStateFile, '{"cookies":[]}')
+
+      removeLegacyCustomStorageState(
+        join(browserTestsDir, 'storage-state.custom-localhost-8100.json')
+      )
+
+      expect(existsSync(legacyStateFile)).toBe(false)
     })
 
     it('falls back to a shared bucket if the custom backend URL cannot be parsed', () => {

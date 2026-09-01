@@ -1,4 +1,10 @@
-import { existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
+import {
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+  rmSync
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { formatInitialFeatureFlags } from '../featureFlags'
@@ -37,6 +43,16 @@ export function storageStateKey(distribution?: Distribution): string {
 
 export function storageStatePath(distributionId: string): string {
   return join(homedir(), '.comfy-test', `storage-state.${distributionId}.json`)
+}
+
+export function removeLegacyCustomStorageState(storageStateFile: string): void {
+  const legacyStorageStateFile = join(
+    dirname(storageStateFile),
+    'storage-state.custom.json'
+  )
+  if (storageStateFile !== legacyStorageStateFile) {
+    rmSync(legacyStorageStateFile, { force: true })
+  }
 }
 
 export function ensureStorageStateDir(storageStateFile: string): void {
