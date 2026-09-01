@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入",
     "WEBCAM": "摄像头"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "关闭"
-      },
-      "message": "提供的对话框 ID 无效。",
-      "title": "无效对话框"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "了解更多",
-        "Reinstall": "重新安装"
-      },
-      "message": "抱歉，由于某些已安装的软件包不兼容，我们无法启动 ComfyUI。\n\n点击“重新安装”以恢复 ComfyUI 并重新正常运行。\n\n请注意：如果您添加了自定义节点，需要在此过程完成后重新安装它们。",
-      "title": "重新安装 ComfyUI（全新开始）？"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
     "confirmSummary": "批准桌面端登录？",
