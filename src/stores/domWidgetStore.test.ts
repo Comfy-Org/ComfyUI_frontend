@@ -112,6 +112,26 @@ describe('domWidgetStore', () => {
         store.activateWidget('non-existent')
       }).not.toThrow()
     })
+
+    it('clears every position override in one operation', () => {
+      const widget1 = createMockDOMWidget('widget-1')
+      const widget2 = createMockDOMWidget('widget-2')
+      store.registerWidget(widget1)
+      store.registerWidget(widget2)
+      store.setPositionOverride('widget-1', {
+        node: widget1.node,
+        widget: widget1
+      })
+      store.setPositionOverride('widget-2', {
+        node: widget2.node,
+        widget: widget2
+      })
+
+      store.clearAllPositionOverrides()
+
+      expect(store.widgetStates.get('widget-1')?.positionOverride).toBeUndefined()
+      expect(store.widgetStates.get('widget-2')?.positionOverride).toBeUndefined()
+    })
   })
 
   describe('computed states', () => {
