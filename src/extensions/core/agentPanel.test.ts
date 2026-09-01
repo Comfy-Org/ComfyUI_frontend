@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -47,8 +48,12 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
   notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
 
-vi.mock('@/scripts/api', async () => {
-  return { api: {} }
+vi.mock('@/scripts/api', () => {
+  // Stub the refs this module's import graph actually reads
+  // (agentPanelStore.flagDelivered derives from this). An untyped {}
+  // fails as a runtime TypeError instead of at type-check when anything
+  // in that graph later reads api.<x>.value.
+  return { api: { serverFeatureFlagsReceived: ref(false) } }
 })
 
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
