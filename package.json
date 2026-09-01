@@ -180,6 +180,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "@webgpu/types": "catalog:",
+    "ajv": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",

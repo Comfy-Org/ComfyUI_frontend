@@ -73,6 +73,7 @@ catalog:
   '@webgpu/types': ^0.1.66
   ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
+  ajv: ^8.18.0
   astro: ^7.2.1
   axios: ^1.15.2
   class-variance-authority: ^0.7.1
