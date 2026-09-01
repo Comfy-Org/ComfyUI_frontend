@@ -7319,9 +7319,9 @@ const translations = {
   { en: string; 'zh-CN': string } & Partial<Record<Locale, string>>
 >
 
-type TranslationKey = keyof typeof translations
+export type TranslationKey = keyof typeof translations
 
-type LocalizedText = { en: string; 'zh-CN': string } & Partial<
+export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
@@ -7336,4 +7336,4 @@ export function hasKey(key: string): boolean {
   return key in translations
 }
 
-export type { Locale, LocalizedText, TranslationKey }
+export type { Locale }
