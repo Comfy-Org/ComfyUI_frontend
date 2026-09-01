@@ -7667,9 +7667,9 @@ Enterprise`
     'zh-CN': 'Comfy API'
   },
   'platform.products.serverless.description': {
-    en: 'Deploy and scale your Comfy workflows with serverless. Bring custom nodes and custom environments, then scale from zero to millions of generations.',
+    en: 'Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project’s needs.',
     'zh-CN':
-      '使用 Comfy API 部署并扩展你的 Comfy 工作流。带上自定义节点和自定义环境，从零扩展到数百万次生成。'
+      '将你的 ComfyUI 工作流部署为生产级 API，随团队或项目的需求轻松扩展。'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram of a request lighting up RTX 6000 PRO, H100, and B200 GPU workers, with COMFYUI scrolling across the grid.',
