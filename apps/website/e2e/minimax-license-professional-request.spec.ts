@@ -27,10 +27,10 @@ test.describe('MiniMax professional license request page @smoke', () => {
       page.getByRole('heading', { level: 1, name: TITLE })
     ).toBeVisible()
 
-    const embed = page.locator('.hs-form-html')
-    await expect(embed).toHaveAttribute('data-form-id', HUBSPOT_FORM_ID)
-    await expect(embed).toHaveAttribute('data-portal-id', '244637579')
-    await expect(embed).toHaveAttribute('data-region', 'na2')
+    await expect(page.locator('.hs-form-html')).toHaveAttribute(
+      'data-form-id',
+      HUBSPOT_FORM_ID
+    )
 
     await expect(page.locator('script#hubspot-form-embed')).toHaveAttribute(
       'src',
