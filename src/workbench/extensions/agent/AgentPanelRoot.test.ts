@@ -249,8 +249,18 @@ vi.mock('@/stores/executionErrorStore', () => ({
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    userDisplayName: { value: 'Jo Rivera' },
+    resolvedUserInfo: { value: { id: 'user-1' } }
+  })
 }))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { ref } = await import('vue')
+  return {
+    useTeamWorkspaceStore: () => ({ activeWorkspaceId: ref('workspace-1') })
+  }
+})
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
