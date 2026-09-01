@@ -20,6 +20,23 @@ export function settleGraphLoad(token: GraphLoadToken): void {
   for (const listener of listeners) listener({ type: 'settled', token })
 }
 
+/**
+ * Begins a graph load and returns a disposable that settles it exactly once.
+ * Bind with `using` so throws and early returns settle the load; call
+ * `[Symbol.dispose]()` explicitly at the point the graph is fully configured.
+ */
+export function beginGraphLoadScope(): Disposable {
+  const token = beginGraphLoad()
+  let settled = false
+  return {
+    [Symbol.dispose]() {
+      if (settled) return
+      settled = true
+      settleGraphLoad(token)
+    }
+  }
+}
+
 export function onGraphLoadLifecycle(
   listener: (event: GraphLoadLifecycleEvent) => void
 ): () => void {

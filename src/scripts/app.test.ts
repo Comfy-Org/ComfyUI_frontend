@@ -456,6 +456,55 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
+
+    it('brackets an API JSON import with the graph-load lifecycle', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const timeline: string[] = []
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          timeline.push(hook)
+        }
+      )
+      const stopLifecycleCapture = onGraphLoadLifecycle(({ type }) =>
+        timeline.push(`lifecycle:${type}`)
+      )
+
+      try {
+        await app.loadApiJson({}, 'empty.json')
+      } finally {
+        stopLifecycleCapture()
+      }
+
+      expect(timeline).toEqual([
+        'lifecycle:started',
+        'beforeLoadGraph',
+        'afterConfigureGraph',
+        'lifecycle:settled',
+        'afterLoadGraph'
+      ])
+    })
+
+    it('settles the API JSON load lifecycle when a before-load extension fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const failure = new Error('before load failed')
+      mockExtensionService.invokeExtensionsAsync.mockRejectedValueOnce(failure)
+      const lifecycleEvents: string[] = []
+      const stopLifecycleCapture = onGraphLoadLifecycle(({ type }) =>
+        lifecycleEvents.push(type)
+      )
+
+      try {
+        await expect(app.loadApiJson({}, 'empty.json')).rejects.toBe(failure)
+      } finally {
+        stopLifecycleCapture()
+      }
+
+      expect(lifecycleEvents).toEqual(['started', 'settled'])
+    })
   })
 
   describe('nodeOutputs', () => {
@@ -1812,6 +1861,74 @@ describe('ComfyApp', () => {
         expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
           'OutgoingMissingNode'
         ])
+      }
+    )
+
+    it('brackets the import with the graph-load lifecycle', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      const timeline: string[] = []
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          timeline.push(hook)
+        }
+      )
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          timeline.push('a1111:build')
+          return 'imported'
+        }
+      )
+      const stopLifecycleCapture = onGraphLoadLifecycle(({ type }) =>
+        timeline.push(`lifecycle:${type}`)
+      )
+
+      try {
+        await app.handleFile(createTestFile('a1111.png', 'image/png'))
+      } finally {
+        stopLifecycleCapture()
+      }
+
+      expect(timeline).toEqual([
+        'lifecycle:started',
+        'beforeLoadGraph',
+        'a1111:build',
+        'afterConfigureGraph',
+        'lifecycle:settled',
+        'afterLoadGraph'
+      ])
+    })
+
+    it.for(['not-a1111', 'core-nodes-unavailable'] as const)(
+      'settles the graph-load lifecycle when the import fails with %s',
+      async (outcome) => {
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        })
+        mockImportA1111.mockImplementation(
+          async (_graph, _parameters, beforeGraphClear) => {
+            await beforeGraphClear?.()
+            return outcome
+          }
+        )
+        const lifecycleEvents: string[] = []
+        const stopLifecycleCapture = onGraphLoadLifecycle(({ type }) =>
+          lifecycleEvents.push(type)
+        )
+
+        try {
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        } finally {
+          stopLifecycleCapture()
+        }
+
+        expect(lifecycleEvents).toEqual(['started', 'settled'])
       }
     )
   })
