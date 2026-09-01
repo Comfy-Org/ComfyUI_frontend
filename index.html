@@ -32,12 +32,17 @@
         overscroll-behavior: none;
       }
       body {
-        display: grid;
+        display: flex;
+        flex-direction: column;
         background-color: var(--bg-color);
         background-image: var(--bg-img);
         background-position: center;
         background-size: cover;
         background-repeat: no-repeat;
+      }
+      #vue-app {
+        min-height: 0;
+        flex: 1;
       }
       .visually-hidden {
         position: absolute;
@@ -111,7 +116,7 @@
     <link rel="manifest" href="manifest.json" />
   </head>
 
-  <body class="litegraph grid">
+  <body class="litegraph">
     <div id="splash-loader" role="status" aria-label="Loading ComfyUI">
       <svg viewBox="0 0 879 284" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
