@@ -1,6 +1,6 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -148,6 +148,7 @@ function mountFollower(initial: string): {
     }
   })
   const { unmount } = render(host)
+  onTestFinished(unmount)
   return { unmount, workflowId, enqueue, status: exposedStatus }
 }
 
@@ -181,7 +182,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
   it('does not retarget a transport retry after workflow A switches to workflow B', async () => {
     vi.useFakeTimers()
     clientState.transportUp = false
-    const { unmount, workflowId, enqueue } = mountFollower('wf-a')
+    const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-queued')])
     expect(clientState.sent).toHaveLength(0)
@@ -203,12 +204,10 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       op: 'delete_node',
       node_id: 'a-queued'
     })
-
-    unmount()
   })
 
   it('still accepts a late workflow A result by op_id while workflow B is active', async () => {
-    const { unmount, workflowId, enqueue, status } = mountFollower('wf-a')
+    const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
     const operationAId = clientState.sent[0].ops[0].op_id
@@ -256,7 +255,5 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       )
     ).toHaveLength(1)
     expect(operationBId).not.toBe(operationAId)
-
-    unmount()
   })
 })
