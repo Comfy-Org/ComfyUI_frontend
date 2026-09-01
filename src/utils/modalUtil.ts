@@ -1,4 +1,4 @@
-const ARIA_MODAL_SELECTOR = '[role="dialog"][aria-modal="true"]'
+const ARIA_MODAL_SELECTOR = '[role="dialog"][aria-modal="true"]:not([hidden])'
 const REKA_OPEN_DIALOG_SELECTOR = '[role="dialog"][data-state="open"]'
 
 /**
