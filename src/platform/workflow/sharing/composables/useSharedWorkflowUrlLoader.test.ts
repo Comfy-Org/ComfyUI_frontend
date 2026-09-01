@@ -194,7 +194,6 @@ function createDeferred() {
 
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     mockRouterReplace.mockResolvedValue(undefined)
     mockQueryParams = {}
     mockIsLoggedIn.value = false
