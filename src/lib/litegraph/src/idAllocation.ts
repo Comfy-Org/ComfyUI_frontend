@@ -15,13 +15,21 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
-export function createLGraphState(): LGraphState {
-  return {
+/**
+ * `previous` carries the coordination-free arming across a state swap. Clearing
+ * a graph replaces this object, and losing the arming there would silently drop
+ * a bound replica back to sequential ids until the next doc frame re-armed it.
+ */
+export function createLGraphState(previous?: LGraphState): LGraphState {
+  const state: LGraphState = {
     lastGroupId: 0,
     lastNodeId: 0,
     lastLinkId: toLinkId(0),
     lastRerouteId: toRerouteId(0)
   }
+  if (previous !== undefined && coordinationFreeStates.has(previous))
+    coordinationFreeStates.add(state)
+  return state
 }
 
 /**

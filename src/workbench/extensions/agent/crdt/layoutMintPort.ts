@@ -192,8 +192,11 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       }
       case 'clearGraph': {
         const captured = intentionalClear
+        if (captured === null) return
+        // Only the matching target consumes the capture; a clear delivered for
+        // another document must not destroy the one this capture was taken for.
+        if (!sameTarget(captured.target, target)) return
         intentionalClear = null
-        if (captured === null || !sameTarget(captured.target, target)) return
         if (!gate(change, inTeardown)) return
         enqueue('clear', target.rootGraphId, {
           target,

@@ -67,6 +67,9 @@ function readProducerVersion(workflowId: string): number | null {
   try {
     const stored = safeSessionStorage()?.getItem(producerClockKey(workflowId))
     if (stored === null || stored === undefined) return 0
+    // Number('') is 0, which would silently reset the floor rather than
+    // reporting the stored value as unreadable.
+    if (stored.trim() === '') return null
     const parsed = Number(stored)
     return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
   } catch {

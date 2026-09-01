@@ -154,3 +154,20 @@ describe('idAllocation', () => {
     expect(() => mintLinkId(state)).toThrow(RangeError)
   })
 })
+
+describe('coordination-free arming across a state swap', () => {
+  it('carries arming to the state that replaces it', () => {
+    const previous = createLGraphState()
+    setCoordinationFreeIds(previous, true)
+
+    const replacement = createLGraphState(previous)
+
+    expect(Number(mintNodeId(replacement))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+  })
+
+  it('does not arm a replacement for an unarmed state', () => {
+    const replacement = createLGraphState(createLGraphState())
+
+    expect(mintNodeId(replacement)).toBe('1')
+  })
+})

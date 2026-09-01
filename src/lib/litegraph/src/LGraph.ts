@@ -755,7 +755,7 @@ export class LGraph
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
-    this.state = createLGraphState()
+    this.state = createLGraphState(this.isRootGraph ? this.state : undefined)
 
     // used to detect changes
     this._version = -1
