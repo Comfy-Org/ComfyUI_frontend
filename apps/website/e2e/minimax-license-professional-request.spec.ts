@@ -6,6 +6,8 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH = '/minimax/license/professional-request'
 const TITLE = 'Request MiniMax Professional License'
 const HUBSPOT_FORM_ID = '40ef858c-374a-4958-8180-bfa54f0a67fb'
+const HUBSPOT_SCRIPT_SRC =
+  'https://js-na2.hsforms.net/forms/embed/developer/244637579.js'
 const HUBSPOT_SCRIPT_PATTERN = '**/js-na2.hsforms.net/**'
 
 test.describe('MiniMax professional license request page @smoke', () => {
@@ -29,6 +31,11 @@ test.describe('MiniMax professional license request page @smoke', () => {
     await expect(embed).toHaveAttribute('data-form-id', HUBSPOT_FORM_ID)
     await expect(embed).toHaveAttribute('data-portal-id', '244637579')
     await expect(embed).toHaveAttribute('data-region', 'na2')
+
+    await expect(page.locator('script#hubspot-form-embed')).toHaveAttribute(
+      'src',
+      HUBSPOT_SCRIPT_SRC
+    )
   })
 
   test('links back to the license page for the terms', async ({ page }) => {

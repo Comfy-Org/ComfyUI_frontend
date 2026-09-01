@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -16,8 +16,6 @@ const contactFormIds: Record<Locale, string> = {
   en: '94e05eab-1373-47f7-ab5e-d84f9e6aa262',
   'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
 }
-
-const contactFormId = computed(() => contactFormIds[locale])
 
 function tk(suffix: string): TranslationKey {
   return `contact.form.${suffix}` as TranslationKey
@@ -88,7 +86,7 @@ useHeroAnimation({
 
     <!-- Right column: form -->
     <div ref="formRef" class="mt-12 lg:mt-0 lg:w-1/2">
-      <HubspotFormEmbed :form-id="contactFormId" :locale />
+      <HubspotFormEmbed :form-id="contactFormIds[locale]" :locale />
     </div>
   </section>
 </template>
