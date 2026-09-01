@@ -152,6 +152,59 @@ describe('createActivationCoordinator', () => {
     expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
   })
 
+  it('rejects with handoff-failed and clears active when attach throws', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const log: string[] = []
+    const docA = toDocumentId('doc-a')
+    const docB = toDocumentId('doc-b')
+    await coordinator.activate(docA, recordingBinding(log, 'a'))
+
+    const throwingBinding: DocumentViewBinding = {
+      attach: () => {
+        throw new Error('attach boom')
+      },
+      detach: (id) => log.push(`detach:b:${id}`)
+    }
+    const outcome = await coordinator.activate(docB, throwingBinding)
+
+    expect(outcome).toEqual({
+      status: 'rejected',
+      documentId: docB,
+      reason: 'handoff-failed'
+    })
+    expect(coordinator.activeDocumentId()).toBeNull()
+    // The previous document was detached exactly once before the failure.
+    expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
+  })
+
+  it('does not detach the previous document twice after a throwing detach', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const log: string[] = []
+    const docA = toDocumentId('doc-a')
+    const docB = toDocumentId('doc-b')
+    const throwingDetach: DocumentViewBinding = {
+      attach: (id) => log.push(`attach:a:${id}`),
+      detach: () => {
+        throw new Error('detach boom')
+      }
+    }
+    await coordinator.activate(docA, throwingDetach)
+
+    const outcome = await coordinator.activate(docB, recordingBinding(log, 'b'))
+
+    expect(outcome).toEqual({
+      status: 'rejected',
+      documentId: docB,
+      reason: 'handoff-failed'
+    })
+    expect(coordinator.activeDocumentId()).toBeNull()
+
+    // A follow-up activate succeeds without re-detaching the failed binding.
+    const retry = await coordinator.activate(docB, recordingBinding(log, 'b'))
+    expect(retry).toEqual({ status: 'activated', documentId: docB })
+    expect(log).toEqual([`attach:a:${docA}`, `attach:b:${docB}`])
+  })
+
   it('deactivate of a non-active document is a no-op', async () => {
     const coordinator = createActivationCoordinator({ isLoaded: () => true })
     const log: string[] = []
