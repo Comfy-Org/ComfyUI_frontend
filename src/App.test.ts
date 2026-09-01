@@ -47,7 +47,6 @@ describe('App vite:preloadError handling', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -55,7 +54,6 @@ describe('App vite:preloadError handling', () => {
   afterEach(() => {
     warnSpy.mockRestore()
     errorSpy.mockRestore()
-    vi.unstubAllGlobals()
   })
 
   it('logs extension-origin failures as warnings and skips Sentry', () => {

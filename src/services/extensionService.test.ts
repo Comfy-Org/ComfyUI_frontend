@@ -79,7 +79,6 @@ vi.mock('@/stores/workspace/bottomPanelStore', () => {
 describe('useExtensionService', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
   })
 
   describe('registerExtension', () => {
