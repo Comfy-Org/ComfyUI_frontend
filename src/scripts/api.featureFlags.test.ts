@@ -35,7 +35,11 @@ describe('API Feature Flags', () => {
       Object.assign(this, mockWebSocket)
     })
 
-    // Reset API state
+    // Reset API state. socket must be cleared too: createSocket() early-
+    // returns when a socket already exists, which otherwise silently skips
+    // arming a fresh settle timer for a test that expects one (the previous
+    // test's socket is never closed here since WebSocket is fully mocked).
+    api.socket = null
     api.serverFeatureFlags.value = {}
     api.serverFeatureFlagsReceived.value = false
 
@@ -47,15 +51,31 @@ describe('API Feature Flags', () => {
     })
   })
 
+  afterEach(() => {
+    // Restore in afterEach (not inline after assertions) so a failed
+    // assertion in a fake-timer test can't leak fake timers into later
+    // tests. Safe to call unconditionally even when a test never enabled
+    // fake timers.
+    vi.useRealTimers()
+  })
+
   describe('Feature flags negotiation', () => {
-    it('clears feature flags when resetting the socket identity', async () => {
+    it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
+      // Clearing the map here (rather than just the received latch) would
+      // open a capability-downgrade window: every consumer of
+      // getServerFeature()/serverSupportsFeature() would see "server
+      // supports nothing" until the new socket delivers -- up to the 5s
+      // settle fallback, or indefinitely if it never opens. See:
+      // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16301#discussion_r3909242419
       const resettingApi = new ComfyApi()
       resettingApi.serverFeatureFlags.value = { account_a_feature: true }
       resettingApi.serverFeatureFlagsReceived.value = true
 
       const resetPromise = resettingApi.resetSocket()
 
-      expect(resettingApi.serverFeatureFlags.value).toEqual({})
+      expect(resettingApi.serverFeatureFlags.value).toEqual({
+        account_a_feature: true
+      })
       expect(resettingApi.serverFeatureFlagsReceived.value).toBe(false)
       await resetPromise
     })
@@ -156,7 +176,6 @@ describe('API Feature Flags', () => {
       // Server features should remain empty
       expect(api.serverFeatureFlags.value).toEqual({})
       expect(api.serverFeatureFlagsReceived.value).toBe(true)
-      vi.useRealTimers()
     })
   })
 
