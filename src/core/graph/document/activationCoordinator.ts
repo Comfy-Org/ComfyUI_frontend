@@ -18,7 +18,7 @@ export type ActivationOutcome =
   | {
       status: 'rejected'
       documentId: DocumentId
-      reason: 'not-loaded' | 'hydration-failed'
+      reason: 'not-loaded' | 'hydration-failed' | 'handoff-failed'
     }
 
 export interface ActivationCoordinatorDeps {
@@ -62,8 +62,16 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     if (!deps.isLoaded(documentId))
       return { status: 'rejected', documentId, reason: 'not-loaded' }
 
-    if (active) active.binding.detach(active.documentId)
-    binding.attach(documentId)
+    const previous = active
+    active = null
+    try {
+      if (previous) previous.binding.detach(previous.documentId)
+      binding.attach(documentId)
+    } catch {
+      // A throwing detach/attach must not leave a stale published binding: a
+      // later activate/deactivate would detach the old document twice.
+      return { status: 'rejected', documentId, reason: 'handoff-failed' }
+    }
     active = { documentId, binding }
     return { status: 'activated', documentId }
   }
@@ -76,8 +84,9 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
   function deactivate(documentId: DocumentId): boolean {
     if (active?.documentId !== documentId) return false
     generation++
-    active.binding.detach(documentId)
+    const previous = active
     active = null
+    previous.binding.detach(documentId)
     return true
   }
 
