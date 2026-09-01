@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "حالت",
-        "tooltip": "حالت 'speed' سریع‌تر است؛ 'precision' هماهنگی لب با کیفیت بالاتر و هزینه دو برابر را ارائه می‌دهد."
+        "tooltip": "«speed» سریع‌تر است؛ «precision» همگام‌سازی لب با کیفیت بالاتری تولید می‌کند، اما هزینه بیشتری دارد."
       },
       "output_language": {
         "name": "زبان خروجی",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "description": "تصاویر مرجع مرتب‌شده را به conditioning مثبت و منفی متصل کنید.",
     "display_name": "تصاویر مرجع HiDream-O1",
     "inputs": {
       "images": {
         "name": "تصاویر",
-        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+        "tooltip": "تصاویر مرجع بر اساس ترتیب عددی سوکت‌ها استفاده می‌شوند."
       },
       "negative": {
         "name": "منفی"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "مثبت",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "یک MiniMax H3 Fun ControlNet را به‌عنوان وصلهٔ مدل روی مدل متن‌به‌ویدئو اعمال کنید.",
+    "display_name": "اعمال MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "۱ ناحیه‌هایی را که باید بازتولید شوند مشخص می‌کند."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "ویدئوی پشت mask؛ فقط هنگام ارائهٔ mask خوانده می‌شود."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "شیفت flow مربوط به SenseNova را تنظیم کنید.",
+    "display_name": "گزینه‌های نمونه‌گیری SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "تنظیم Hookهای CLIP",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "برش ویدئو",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ناحیهٔ برش بر حسب پیکسل. عرض/ارتفاع صفر، کل فریم را حفظ می‌کند."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "تعداد ثابتی از فریم‌های یک ویدیو را با استفاده از استراتژی‌های مختلف نمونه‌گیری کنید.",
     "display_name": "نمونه‌گیری فریم ویدیو",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "کوتاه‌سازی ویدئو (پیشرفته)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "اگر True باشد، هنگامی که مدت‌زمان مشخص‌شده ممکن نباشد، خطا ایجاد می‌شود."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "بازهٔ برش را با استفاده از فریم‌های شروع/پایان تعیین کنید."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

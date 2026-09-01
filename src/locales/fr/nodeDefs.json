@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' est plus rapide ; 'precision' produit une synchronisation labiale de meilleure qualité à un coût doublé."
+        "tooltip": "'vitesse' est plus rapide ; 'précision' produit une synchronisation labiale de meilleure qualité à un coût plus élevé."
       },
       "output_language": {
         "name": "langue de sortie",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Ajoutez 1 à 10 images de référence au conditionnement, une pour une instruction d’édition ou plusieurs pour une personnalisation orientée sujet.",
+    "description": "Joignez des images de référence ordonnées au conditionnement positif et négatif.",
     "display_name": "Images de référence HiDream-O1",
     "inputs": {
       "images": {
         "name": "images",
-        "tooltip": "Images de référence. 1 image = édition par instruction ; 2-10 images = multi-référence."
+        "tooltip": "Les images de référence sont utilisées selon l’ordre numérique des connecteurs."
       },
       "negative": {
         "name": "négatif"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Applique un ControlNet MiniMax H3 Fun à un modèle de texte en vidéo sous forme de correctif de modèle.",
+    "display_name": "Appliquer le ControlNet MiniMax H3 Fun",
+    "inputs": {
+      "control_video": {
+        "name": "vidéo_de_contrôle"
+      },
+      "end_percent": {
+        "name": "pourcentage_de_fin"
+      },
+      "mask": {
+        "name": "masque",
+        "tooltip": "1 indique les régions à régénérer."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_patch": {
+        "name": "correctif_de_modèle"
+      },
+      "source_video": {
+        "name": "vidéo_source",
+        "tooltip": "Vidéo derrière le masque ; lue uniquement lorsqu’un masque est fourni."
+      },
+      "start_percent": {
+        "name": "pourcentage_de_début"
+      },
+      "strength": {
+        "name": "intensité"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Définissez le décalage de flux SenseNova.",
+    "display_name": "Options d’échantillonnage SenseNova",
+    "inputs": {
+      "model": {
+        "name": "modèle"
+      },
+      "shift": {
+        "name": "décalage"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Définir les Crochets CLIP",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recadrer la vidéo",
+    "inputs": {
+      "crop": {
+        "name": "recadrage",
+        "tooltip": "Zone de recadrage en pixels. Une largeur ou hauteur nulle conserve l’image entière."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Échantillonnez un nombre fixe d’images d’une vidéo en utilisant différentes stratégies.",
     "display_name": "Échantillonner une image vidéo",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Découper la vidéo (avancé)",
+    "inputs": {
+      "strict_duration": {
+        "name": "durée_stricte",
+        "tooltip": "Si cette option est activée et que la durée spécifiée n’est pas possible, une erreur sera générée."
+      },
+      "trim": {
+        "name": "découpage",
+        "tooltip": "Fenêtre de découpage utilisant les images de début et de fin."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
