@@ -104,8 +104,8 @@ export interface PendingOpLedger<TShadow = unknown> {
   reconcileOpsResult(outcome: OpsResultOutcome): ReconcileSummary
   /**
    * Authoritative effect arrived for these op ids: remove and return the
-   * matching entries regardless of state (the effect supersedes any ack
-   * bookkeeping). This is the KA-9 clear-on-effect path.
+   * matching sent entries. Queued entries are retained because they cannot
+   * have produced an authoritative effect yet.
    */
   clearOnEffect(opIds: readonly string[]): PendingOpEntry<TShadow>[]
   /**
@@ -219,7 +219,7 @@ export function createPendingOpLedger<
       const removed: PendingOpEntry<TShadow>[] = []
       for (const opId of opIds) {
         const entry = ledger.get(opId)
-        if (!entry) continue
+        if (!entry || entry.state === 'queued') continue
         ledger.delete(opId)
         removed.push(snapshot(entry))
       }
