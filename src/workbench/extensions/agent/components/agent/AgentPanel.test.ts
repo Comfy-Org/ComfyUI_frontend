@@ -31,13 +31,13 @@ function mount(isMaximized = false) {
 }
 
 const chatHistoryStub = defineComponent({
-  emits: ['back', 'select', 'delete', 'copy-markdown', 'rename'],
+  emits: ['back', 'select', 'delete', 'copyMarkdown', 'rename'],
   template: `
     <div data-testid="chat-history">
       <button type="button" @click="$emit('back')">Back to chat</button>
       <button type="button" @click="$emit('select', 'history-1')">Open saved chat</button>
       <button type="button" @click="$emit('delete', 'history-1')">Delete saved chat</button>
-      <button type="button" @click="$emit('copy-markdown', 'history-1')">Copy saved chat</button>
+      <button type="button" @click="$emit('copyMarkdown', 'history-1')">Copy saved chat</button>
       <button type="button" @click="$emit('rename', 'history-1', 'Renamed saved chat')">Rename saved chat</button>
     </div>
   `
