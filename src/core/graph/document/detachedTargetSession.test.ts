@@ -322,6 +322,30 @@ describe('createDetachedTargetSession', () => {
     freshHost.destroy()
   })
 
+  it('rejects inherited sequences in isCommitted after a lineage reset', () => {
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+
+    session.resetLineage(10)
+    const { lineage } = session.snapshot()
+
+    // Seqs at or below the reset floor were never committed in this lineage.
+    expect(session.isCommitted(`${lineage}:10`)).toBe(false)
+    expect(session.isCommitted(`${lineage}:5`)).toBe(false)
+
+    const freshHost = new Y.Doc()
+    setNode(freshHost, '7', { type: 'Fresh' })
+    session.enqueue({
+      workflowId: WORKFLOW_ID,
+      seq: 11,
+      update: Y.encodeStateAsUpdate(freshHost)
+    })
+    expect(session.commitNext(acceptAll).status).toBe('committed')
+
+    expect(session.isCommitted(`${lineage}:11`)).toBe(true)
+    expect(session.isCommitted(`${lineage}:10`)).toBe(false)
+    freshHost.destroy()
+  })
+
   it('rejects frames addressed to another target loudly', () => {
     const session = createDetachedTargetSession(WORKFLOW_ID)
     const stranger = createFrameSource('wf-other')
