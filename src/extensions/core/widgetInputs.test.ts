@@ -9,6 +9,7 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
@@ -108,6 +109,45 @@ describe('PrimitiveNode', () => {
     primitive.onAfterGraphConfigured()
 
     expect(primitive.widgets?.[0].value).toBe(222)
+
+    primitive.widgets![0].value = 333
+    primitive.applyToGraph()
+    primitive.disconnectOutput(0)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(333)
+  })
+
+  it('keeps its serialized value for an asset browser widget', () => {
+    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    target.comfyClass = 'CheckpointLoaderSimple'
+    graph.add(target)
+    target.addInput('ckpt_name', 'COMBO')
+    target.inputs[0].widget = {
+      name: 'ckpt_name',
+      [GET_CONFIG]: () => [['target.safetensors', 'serialized.safetensors'], {}]
+    }
+    target.addWidget('combo', 'ckpt_name', 'target.safetensors', () => {}, {
+      values: ['target.safetensors', 'serialized.safetensors']
+    })
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: ['serialized.safetensors'] })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0]).toMatchObject({
+      type: 'asset',
+      value: 'serialized.safetensors'
+    })
   })
 
   it('resets itself when the store reports a link the graph cannot resolve', () => {
