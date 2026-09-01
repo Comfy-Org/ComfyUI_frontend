@@ -37,7 +37,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  async function uploadFiles(files: File[]): Promise<string[]> {
+  async function uploadFiles(files: File[]): Promise<string[] | null> {
     const folder = toValue(options.uploadFolder) ?? 'input'
     const subfolder = toValue(options.uploadSubfolder) ?? undefined
 
@@ -49,7 +49,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const skipped = results.some((r) => r.error === UPLOAD_SKIPPED_ERROR)
     if (skipped) {
       toastStore.addAlert(t('g.uploadAlreadyInProgress'))
-      return []
+      return null
     }
 
     const uploadedPaths: string[] = []
@@ -73,6 +73,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       if (!files || files.length === 0) return
 
       const uploadedPaths = await uploadFiles(files)
+
+      if (uploadedPaths === null) return
 
       if (uploadedPaths.length === 0) {
         toastStore.addAlert(t('toastMessages.fileUploadFailed'))
