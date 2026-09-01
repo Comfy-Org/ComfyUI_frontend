@@ -32,7 +32,7 @@ function topology(id: number): LinkTopology {
   }
 }
 
-describe('R-94 overlapping graph-load mint suppression', () => {
+describe('overlapping graph-load mint suppression', () => {
   let wiring: MintPortWiring | undefined
 
   afterEach(() => wiring?.detach())
