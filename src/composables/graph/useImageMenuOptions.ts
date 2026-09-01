@@ -47,10 +47,11 @@ function getNodeImageUrl(node: LGraphNode): string | null {
  * async clipboard only reliably accepts `image/png`. The bitmap is decoded from
  * a same-origin blob, so this canvas is never tainted.
  */
-async function fetchImageAsPngBlob(url: string): Promise<Blob> {
+async function fetchImageAsPngBlob(url: string): Promise<Blob | null> {
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.status}`)
+    console.error(`Failed to fetch image: ${response.status}`)
+    return null
   }
 
   const blob = await response.blob()
@@ -62,13 +63,19 @@ async function fetchImageAsPngBlob(url: string): Promise<Blob> {
     canvas.width = bitmap.width
     canvas.height = bitmap.height
     const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Failed to get 2D canvas context')
+    if (!ctx) {
+      console.error('Failed to get 2D canvas context')
+      return null
+    }
     ctx.drawImage(bitmap, 0, 0)
 
     const pngBlob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, 'image/png')
     })
-    if (!pngBlob) throw new Error('Failed to encode image as PNG')
+    if (!pngBlob) {
+      console.error('Failed to encode image as PNG')
+      return null
+    }
     return pngBlob
   } finally {
     bitmap.close()
@@ -121,15 +128,21 @@ export function useImageMenuOptions() {
     const url = getNodeImageUrl(node)
     if (!url) return
 
+    if (!navigator.clipboard?.write) {
+      console.warn('Clipboard API not available')
+      return
+    }
+
     try {
-      if (!navigator.clipboard?.write) {
-        throw new Error('Clipboard API not available')
-      }
       // Pass a Promise to ClipboardItem so the write is registered
       // synchronously within the click's user-gesture, keeping activation
       // alive across the fetch (required by Safari, tolerated by Chrome).
+      const blobPromise = fetchImageAsPngBlob(url).then((blob): Blob => {
+        if (!blob) throw new TypeError('Failed to prepare image for clipboard')
+        return blob
+      })
       await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': fetchImageAsPngBlob(url) })
+        new ClipboardItem({ 'image/png': blobPromise })
       ])
     } catch (error) {
       console.error('Failed to copy image to clipboard:', error)
