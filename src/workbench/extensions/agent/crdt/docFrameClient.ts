@@ -1,6 +1,7 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 const DOC_PROTOCOL_VERSION = 1
+const MAX_AWARENESS_STATE_BYTES = 8 * 1024
 
 export interface DocOp {
   op_id: string
@@ -117,9 +118,35 @@ function parseWireData(value: unknown): WireData | null {
 }
 
 function parseRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? Object.fromEntries(Object.entries(value))
     : null
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= 0
+  )
+}
+
+function parseAwarenessState(
+  value: unknown
+): Record<string, unknown> | undefined | null {
+  if (value === undefined) return undefined
+  const state = parseRecord(value)
+  if (state === null) return null
+
+  try {
+    return new TextEncoder().encode(JSON.stringify(state)).byteLength <=
+      MAX_AWARENESS_STATE_BYTES
+      ? state
+      : null
+  } catch {
+    return null
+  }
 }
 
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
@@ -204,14 +231,20 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
-    const state = parseRecord(data.state)
+    const state = parseAwarenessState(data.state)
+    if (
+      state === null ||
+      (data.expires_at !== undefined && !isNonNegativeInteger(data.expires_at))
+    )
+      return null
+
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         actor: data.actor,
-        ...(state !== null && { state }),
-        ...(typeof data.expires_at === 'number' && {
+        ...(state !== undefined && { state }),
+        ...(data.expires_at !== undefined && {
           expiresAt: data.expires_at
         })
       }
