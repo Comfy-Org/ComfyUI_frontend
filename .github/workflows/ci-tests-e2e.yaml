@@ -277,12 +277,12 @@ jobs:
           # onto. pull_request.base.sha is recorded when the PR opens and does not follow the
           # base branch, so diffing against it attributes every spec the base gained since
           # then to this PR.
-          if git rev-parse --verify --quiet HEAD^2 >/dev/null; then
-            BASE_SHA=$(git rev-parse HEAD^1)
+          if [[ "$(git rev-parse --verify --quiet HEAD^2)" == "${{ github.event.pull_request.head.sha }}" ]]; then
+            DIFF_RANGE="$(git rev-parse HEAD^1)..HEAD"
           else
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            DIFF_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
           fi
-          NEW_FILES=$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD -- browser_tests/tests | grep '\.spec\.ts$' || true)
+          NEW_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests | grep '\.spec\.ts$' || true)
 
           if [ -z "$NEW_FILES" ]; then
             echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
