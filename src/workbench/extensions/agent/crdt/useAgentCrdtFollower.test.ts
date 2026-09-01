@@ -195,7 +195,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
-    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
     unmount()
   })
 
@@ -214,25 +214,37 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('reports retry exhaustion exactly once with normalized metadata', () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
     vi.setSystemTime(1_000)
     const { unmount } = mountFollower('wf-1')
-    apiState.target.dispatchEvent(new Event('reconnected'))
 
     for (let attempt = 0; attempt < 6; attempt++) {
       dispatchFrame('doc_subscribed', { ok: false })
       vi.advanceTimersByTime(500 * 2 ** attempt)
     }
-    dispatchFrame('doc_subscribed', { ok: false })
-    dispatchFrame('doc_subscribed', { ok: false })
 
     expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
     expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith({
       attempt: 6,
       error_class: 'subscription_refused',
-      retryable: false,
+      retryable: true,
       reconnect_duration_ms: 31_500
     })
+    unmount()
+  })
+
+  it('preserves the bounded subscribe retry budget across reconnects', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: false })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    vi.advanceTimersByTime(1_000)
+
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     unmount()
   })
 
