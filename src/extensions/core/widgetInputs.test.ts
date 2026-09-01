@@ -118,7 +118,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it('restores an explicitly undefined serialized value', () => {
+  it('restores a serialized null value over the target widget value', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -133,12 +133,61 @@ describe('PrimitiveNode', () => {
     graph.add(primitive)
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
-    primitive.configure(fromPartial({ widgets_values: [undefined] }))
+    primitive.configure(fromPartial({ widgets_values: [null] }))
     appState.configuringGraph = false
 
     primitive.onAfterGraphConfigured()
 
-    expect(primitive.widgets?.[0].value).toBeUndefined()
+    expect(primitive.widgets?.[0].value).toBeNull()
+  })
+
+  it('restores its serialized control_after_generate value', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', {}]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(fromPartial({ widgets_values: [222, 'randomize'] }))
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[1].value).toBe('randomize')
+  })
+
+  it('stops re-applying its serialized value once a widget has been created', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.configure(fromPartial({ widgets_values: [222] }))
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+
+    primitive.widgets![0].value = 333
+    primitive.applyToGraph()
+    primitive.disconnectOutput(0)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(333)
   })
 
   it('keeps its serialized value for an asset browser widget', () => {

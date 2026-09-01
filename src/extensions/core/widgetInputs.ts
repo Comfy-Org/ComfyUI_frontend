@@ -21,9 +21,7 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { zeroUuid } from '@/utils/uuid'
 import {
   ComfyWidgets,
   addValueControlWidgets,
@@ -40,8 +38,7 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
-  private hasConfiguredWidgetValue = false
-  private configuredWidgetValue?: WidgetValue
+  private configuredWidgetValues?: ISerialisedNode['widgets_values']
   static override category: string
   constructor(title: string) {
     super(title)
@@ -128,10 +125,8 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override onConfigure(serialisedNode: ISerialisedNode) {
-    this.hasConfiguredWidgetValue =
-      serialisedNode.widgets_values !== undefined &&
-      0 in serialisedNode.widgets_values
-    this.configuredWidgetValue = serialisedNode.widgets_values?.[0]
+    super.onConfigure?.(serialisedNode)
+    this.configuredWidgetValues = serialisedNode.widgets_values
   }
 
   override onAfterGraphConfigured() {
@@ -145,8 +140,7 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
-    this.hasConfiguredWidgetValue = false
-    this.configuredWidgetValue = undefined
+    this.configuredWidgetValues = undefined
   }
 
   override onConnectionsChange(
@@ -263,9 +257,13 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+    const configuredWidgetValues = recreating
+      ? undefined
+      : this.configuredWidgetValues
+    if (!recreating) this.configuredWidgetValues = undefined
     const hasConfiguredWidgetValue =
-      !recreating && this.hasConfiguredWidgetValue
-    const configuredWidgetValue = this.configuredWidgetValue
+      configuredWidgetValues !== undefined && 0 in configuredWidgetValues
+    const configuredWidgetValue = configuredWidgetValues?.[0]
 
     if (
       type === 'COMBO' &&
@@ -298,31 +296,16 @@ export class PrimitiveNode extends LGraphNode {
       !inputData?.[1]?.control_after_generate &&
       (widget.type === 'number' || widget.type === 'combo')
     ) {
-      const graphId = this.graph?.rootGraph.id ?? zeroUuid
-      let control_value =
-        useWidgetValueStore().getPositionalRestoredWidgetValue(
-          graphId,
-          this.id,
-          1
-        )
-      if (!control_value) {
-        control_value = 'fixed'
-      }
-      addValueControlWidgets(
-        this,
-        widget,
-        control_value as string,
-        undefined,
-        inputData
-      )
+      const configuredControlValue = configuredWidgetValues?.[1]
+      const control_value =
+        typeof configuredControlValue === 'string'
+          ? configuredControlValue
+          : 'fixed'
+      addValueControlWidgets(this, widget, control_value, undefined, inputData)
       if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
 
-      const filter = useWidgetValueStore().getPositionalRestoredWidgetValue(
-        graphId,
-        this.id,
-        2
-      )
-      if (filter && this.widgets && this.widgets.length === 3) {
+      const filter = configuredWidgetValues?.[2]
+      if (filter !== undefined && this.widgets?.length === 3) {
         this.widgets[2].value = filter
       }
     }

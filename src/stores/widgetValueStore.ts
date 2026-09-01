@@ -124,16 +124,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
   }
 
-  function getPositionalRestoredWidgetValue(
-    graphId: UUID,
-    nodeId: NodeId,
-    positionalIndex: number
-  ): WidgetValue | undefined {
-    return graphWidgetRestorations.get(graphId)?.get(nodeId)?.positional[
-      positionalIndex
-    ]
-  }
-
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
     if (widgetStates) return widgetStates
@@ -497,7 +487,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
-    getPositionalRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
     onValueChange,
