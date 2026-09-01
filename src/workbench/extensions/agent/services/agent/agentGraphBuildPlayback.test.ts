@@ -231,7 +231,7 @@ describe('agent graph build playback', () => {
   it('skip lands an in-flight real node at its exact final position', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
-    let resolveFrame: ((time: number) => void) | undefined
+    const nextFrame = vi.fn(() => new Promise<number>(() => {}))
     const move = vi.fn()
     const restoreConnections = vi.fn()
     const target = { x: 700, y: 140 }
@@ -247,15 +247,11 @@ describe('agent graph build playback', () => {
       durationMs: 1_000,
       gapMs: 0,
       now: () => 0,
-      nextFrame: () =>
-        new Promise<number>((resolve) => {
-          resolveFrame = resolve
-        })
+      nextFrame
     })
-    await vi.waitFor(() => expect(resolveFrame).toBeTypeOf('function'))
+    await vi.waitFor(() => expect(nextFrame).toHaveBeenCalledOnce())
 
     skipAgentGraphBuild()
-    resolveFrame?.(16)
 
     await vi.waitFor(() =>
       expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
@@ -263,6 +259,79 @@ describe('agent graph build playback', () => {
     expect(move).toHaveBeenCalledWith(target)
     expect(move).toHaveBeenLastCalledWith(null)
     expect(restoreConnections).toHaveBeenCalledOnce()
+    vi.runAllTimers()
+  })
+
+  it('cancels an in-flight node without waiting for its next frame', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const nextFrame = vi.fn(() => new Promise<number>(() => {}))
+    const present = vi.fn()
+    const restoreConnections = vi.fn()
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow:cancel-in-flight',
+      label: 'Cancelled node',
+      source: { x: 20, y: 500 },
+      target: { x: 700, y: 140 },
+      present,
+      toClient: (position) => position,
+      suspendConnections: () => restoreConnections,
+      durationMs: 1_000,
+      gapMs: 0,
+      now: () => 0,
+      nextFrame
+    })
+    await vi.waitFor(() => expect(nextFrame).toHaveBeenCalledOnce())
+
+    cancelAgentGraphNodeBuild('workflow:cancel-in-flight')
+
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(present).toHaveBeenLastCalledWith(null)
+    expect(restoreConnections).toHaveBeenCalledOnce()
+    vi.runAllTimers()
+  })
+
+  it('skip interrupts the gap before the next node', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const wait = vi.fn(() => new Promise<void>(() => {}))
+    const firstPresent = vi.fn()
+    const secondPresent = vi.fn()
+    const secondTarget = { x: 500, y: 100 }
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow:gap-first',
+      label: 'First node',
+      source: { x: 0, y: 500 },
+      target: { x: 100, y: 100 },
+      present: firstPresent,
+      toClient: (position) => position,
+      durationMs: 0,
+      gapMs: 1_000,
+      wait
+    })
+    stageAgentGraphNodeBuild({
+      key: 'workflow:gap-second',
+      label: 'Second node',
+      source: { x: 0, y: 500 },
+      target: secondTarget,
+      present: secondPresent,
+      toClient: (position) => position,
+      durationMs: 0,
+      gapMs: 0
+    })
+    await vi.waitFor(() => expect(wait).toHaveBeenCalledOnce())
+
+    skipAgentGraphBuild()
+
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(secondPresent).toHaveBeenCalledWith(secondTarget)
+    expect(secondPresent).toHaveBeenLastCalledWith(null)
     vi.runAllTimers()
   })
 

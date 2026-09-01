@@ -42,8 +42,11 @@ let draining = false
 let drainScheduled = false
 let skipRequested = false
 let resume: (() => void) | null = null
+let interruptWait: (() => void) | null = null
 let completionTimer: ReturnType<typeof setTimeout> | undefined
 let restoreConnections: (() => void) | undefined
+
+const interrupted = Symbol('agent-graph-build-interrupted')
 
 const defaultNextFrame = () =>
   new Promise<number>((resolve) => requestAnimationFrame(resolve))
@@ -90,6 +93,25 @@ function wake(): void {
   resume = null
 }
 
+async function waitForInterrupt<T>(pending: Promise<T>) {
+  let resolveInterrupt: (() => void) | undefined
+  const interrupt = new Promise<typeof interrupted>((resolve) => {
+    resolveInterrupt = () => resolve(interrupted)
+    interruptWait = resolveInterrupt
+  })
+
+  try {
+    return await Promise.race([pending, interrupt])
+  } finally {
+    if (interruptWait === resolveInterrupt) interruptWait = null
+  }
+}
+
+function interruptActiveWait(): void {
+  interruptWait?.()
+  interruptWait = null
+}
+
 async function animate(item: QueuedBuild): Promise<void> {
   const durationMs = Math.max(0, item.durationMs ?? 460)
   const now = item.now ?? (() => performance.now())
@@ -113,7 +135,8 @@ async function animate(item: QueuedBuild): Promise<void> {
       previousFrameTime = now()
     }
     if (skipRequested || item.cancelled) break
-    const frameTime = await nextFrame()
+    const frameTime = await waitForInterrupt(nextFrame())
+    if (frameTime === interrupted) break
     // Pause can arrive while a requested frame is in flight. Do not advance
     // the node until playback resumes, and exclude that wall time below.
     if (state.value.phase === 'paused') continue
@@ -157,11 +180,12 @@ async function drainQueue(): Promise<void> {
       } finally {
         present(item, item.target)
         item.present(null)
-        active = null
       }
       const gapMs = Math.max(0, item.gapMs ?? 80)
-      if (gapMs > 0 && queue.length > 0 && !skipRequested)
-        await (item.wait ?? defaultWait)(gapMs)
+      if (gapMs > 0 && queue.length > 0 && !skipRequested) {
+        await waitForInterrupt((item.wait ?? defaultWait)(gapMs))
+      }
+      active = null
     }
   } finally {
     if (skipRequested) {
@@ -220,6 +244,7 @@ export function stageAgentGraphNodeBuild(
 export function cancelAgentGraphNodeBuild(key: string): void {
   if (active?.key === key) {
     active.cancelled = true
+    interruptActiveWait()
     wake()
   }
   for (const item of queue) {
@@ -245,5 +270,6 @@ export function skipAgentGraphBuild(): void {
   if (!draining && queue.length === 0) return
   skipRequested = true
   dispatch({ type: 'resumed' })
+  interruptActiveWait()
   wake()
 }

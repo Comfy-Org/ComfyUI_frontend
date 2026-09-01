@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -155,6 +155,18 @@ vi.mock(
   '@/platform/workflow/persistence/composables/useWorkflowAutoSave',
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
+vi.mock(
+  '@/workbench/extensions/agent/composables/useAgentDockMount',
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useAgentDockMount: () => ({
+        mounted: computed(() => true),
+        DockedAgentPanel: 'aside'
+      })
+    }
+  }
+)
 
 async function mountGraphCanvas() {
   // Handed to the component rather than left to the active-Pinia fallback, so
@@ -176,7 +188,12 @@ async function mountGraphCanvas() {
       plugins: [
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
-      ]
+      ],
+      stubs: {
+        LiteGraphCanvasSplitterOverlay: {
+          template: '<div><slot name="agent-panel" /></div>'
+        }
+      }
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -223,6 +240,17 @@ describe('GraphCanvas first-run tour wiring', () => {
       'image_to_image',
       undefined
     )
+  })
+
+  it('renders the Agent dock in graph mode and hides it in linear mode', async () => {
+    await mountGraphCanvas()
+
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
+
+    useCanvasStore().linearMode = true
+    await nextTick()
+
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
   })
 })
 
