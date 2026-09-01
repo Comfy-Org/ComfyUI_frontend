@@ -85,6 +85,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // resend cycle, while a mis-attributed settle poisons everything
   // downstream of this seam.
   let staleAnonymousBudget = 0
+  const lastMintedVersion = new Map<string, number>()
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -168,15 +169,23 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
-      const minted = mintWireOps(operations, {
-        actor: deps.actor(),
-        baseVersion: deps.baseVersion()
-      })
       const workflowId = deps.workflowId()
       if (workflowId === null) {
-        deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+        deps.onBatchSettled({ state: 'undeliverable', ops: [] })
         return
       }
+      const actor = deps.actor()
+      const clockKey = `${workflowId}\u0000${actor}`
+      const observedVersion = deps.baseVersion()
+      const baseVersion = Math.max(
+        observedVersion,
+        lastMintedVersion.get(clockKey) ?? observedVersion
+      )
+      lastMintedVersion.set(clockKey, baseVersion)
+      const minted = mintWireOps(operations, {
+        actor,
+        baseVersion
+      })
       queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
       pump()
     },

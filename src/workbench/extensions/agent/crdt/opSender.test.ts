@@ -25,6 +25,7 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
   function ackInFlight(): void {
@@ -43,6 +44,7 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -58,7 +60,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      baseVersion: () => baseVersion,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -97,6 +99,18 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sender.pending()).toBe(0)
     expect(settled).toHaveLength(2)
+  })
+
+  it('never regresses an actor clock when a reconnect reports an older version', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
+    expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
