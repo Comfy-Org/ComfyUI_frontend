@@ -152,6 +152,7 @@ test.describe(
     }) => {
       const widget = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
       const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      await expect(widget).toBeVisible()
 
       await comfyPage.page.evaluate(() => {
         const node = window.app!.graph.nodes.find(

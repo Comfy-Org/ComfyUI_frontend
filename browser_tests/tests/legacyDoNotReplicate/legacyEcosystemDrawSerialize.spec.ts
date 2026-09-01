@@ -7,10 +7,6 @@ test.describe(
   'Legacy ecosystem widget draw and serialization mutations',
   { tag: ['@vue-nodes', '@widget'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    })
-
     test('a no-op custom draw hides only its widget and preserves its value', async ({
       comfyPage
     }) => {
@@ -61,7 +57,6 @@ test.describe(
         window.app!.graph.add(node)
 
         widget.draw = function (ctx, _owner, width, y, height) {
-          document.body.dataset.legacyEcosystemDrawInvoked = 'true'
           ctx.fillRect(0, y, width, height)
         }
         const source = window.LiteGraph!.createNode('Note')!
@@ -72,6 +67,9 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('Connected custom draw')
+      ).toBeVisible()
       const steps = comfyPage.vueNodes.getWidgetByName(
         'Connected custom draw',
         'steps'
