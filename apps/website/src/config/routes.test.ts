@@ -62,6 +62,20 @@ describe('getRoutes ltx', () => {
   })
 })
 
+describe('getRoutes minimaxLicenseProfessionalRequest', () => {
+  it('serves the license request page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+
+  it('never prefixes the English-only license request page for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+})
+
 describe('getRoutes geminiOmni', () => {
   it('serves the gemini omni page at its canonical path for en', () => {
     expect(getRoutes('en').geminiOmni).toBe('/gemini-omni')
