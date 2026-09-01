@@ -43,14 +43,14 @@ export type TemplateModelSetupRow =
       status: Exclude<TemplateModelSetupStatus, 'manual'>
     })
 
-type TemplateModelSetupTotal = {
+type TemplateModelDeclarationTotal = {
   bytes: number
   isComplete: boolean
 }
 
 export type TemplateModelSetupResult = {
   rows: readonly TemplateModelSetupRow[]
-  rowTotal: TemplateModelSetupTotal
+  declarationTotal: TemplateModelDeclarationTotal
 }
 
 type TemplateModelSetupOptions = {
@@ -86,6 +86,14 @@ function deriveModelType(directory: string): TemplateModelType {
   return { kind: 'directory', raw: normalized }
 }
 
+function normalizeFileSize(fileSize: number | null | undefined): number | null {
+  return typeof fileSize === 'number' &&
+    Number.isFinite(fileSize) &&
+    fileSize >= 0
+    ? fileSize
+    : null
+}
+
 function deriveRow(
   { model, usedBy }: TemplateModelRequirementDetail,
   availability: ResolvedTemplateModelAvailability | undefined,
@@ -96,7 +104,7 @@ function deriveRow(
   const row = {
     model,
     usedBy,
-    fileSize: metadata?.fileSize ?? null,
+    fileSize: normalizeFileSize(metadata?.fileSize),
     modelType
   }
 
@@ -109,8 +117,9 @@ function deriveRow(
   if (!metadata) {
     return { ...row, status: 'unknown' }
   }
-  if (metadata.gatedRepoUrl?.trim()) {
-    return { ...row, status: 'manual', href: metadata.gatedRepoUrl }
+  const gatedRepoUrl = metadata.gatedRepoUrl?.trim()
+  if (gatedRepoUrl) {
+    return { ...row, status: 'manual', href: gatedRepoUrl }
   }
   return {
     ...row,
@@ -118,17 +127,16 @@ function deriveRow(
   }
 }
 
-function totalRows(
-  rows: readonly TemplateModelSetupRow[],
-  include: (row: TemplateModelSetupRow) => boolean
-): TemplateModelSetupTotal {
+function totalDeclarations(
+  rows: readonly TemplateModelSetupRow[]
+): TemplateModelDeclarationTotal {
   const seen = new Set<string>()
   let bytes = 0
   let isComplete = true
 
   for (const row of rows) {
     const identity = getModelFileKey(row.model)
-    if (seen.has(identity) || !include(row)) continue
+    if (seen.has(identity)) continue
 
     seen.add(identity)
     if (row.fileSize === null) {
@@ -163,6 +171,6 @@ export function deriveTemplateModelSetup(
 
   return {
     rows,
-    rowTotal: totalRows(rows, () => true)
+    declarationTotal: totalDeclarations(rows)
   }
 }
