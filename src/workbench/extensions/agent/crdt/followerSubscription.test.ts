@@ -715,7 +715,8 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: false,
-      code: 'not_found'
+      code: 'not_found',
+      message: 'workflow not found'
     })
 
     expect(bridge.subscribedWorkflowId).toBeNull()
