@@ -430,6 +430,13 @@ describe('AgentPanel', () => {
     await nextTick()
 
     expect(emittedEmpty().renameChat).toBeUndefined()
+
+    await user.click(screen.getByRole('button', { name: 'Kept title' }))
+    await nextTick()
+    await user.keyboard('{Enter}')
+    await nextTick()
+
+    expect(emittedEmpty().renameChat).toBeUndefined()
   })
 
   it('deletes only a current chat with a session id', async () => {
