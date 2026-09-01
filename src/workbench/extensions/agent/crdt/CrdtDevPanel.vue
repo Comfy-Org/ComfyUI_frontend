@@ -109,6 +109,7 @@ const polled = ref<{ tabId: string | null; lastSeq: number | null }>({
 })
 
 let pollHandle: ReturnType<typeof setInterval> | undefined
+let copyLabelTimer: ReturnType<typeof setTimeout> | undefined
 
 function poll() {
   const poc = (window as unknown as Record<string, unknown>).__agentCrdtPoc as
@@ -127,6 +128,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (pollHandle !== undefined) clearInterval(pollHandle)
+  if (copyLabelTimer !== undefined) clearTimeout(copyLabelTimer)
 })
 
 // ── derived counters from the event buffer ────────────────────────────────
@@ -167,7 +169,7 @@ async function copyEvents() {
   try {
     await navigator.clipboard.writeText(stringifyDevEvents(events))
     copyLabel.value = S.copied
-    setTimeout(() => (copyLabel.value = S.copyJson), 1200)
+    copyLabelTimer = setTimeout(() => (copyLabel.value = S.copyJson), 1200)
   } catch {
     /* clipboard unavailable (non-secure context) — silently ignore */
   }
