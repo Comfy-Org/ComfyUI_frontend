@@ -11,7 +11,9 @@
   animation: agent-shimmer 1.8s linear infinite;
 }
 
-.disable-animations #agent-panel-root .agent-shimmer-text {
+.disable-animations
+  :where(#agent-panel-root, .agent-scope)
+  .agent-shimmer-text {
   animation: none;
   color: var(--color-muted-foreground);
   -webkit-text-fill-color: currentcolor;
