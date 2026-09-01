@@ -79,8 +79,11 @@ describe('resolveRenewalDate', () => {
 
   it('falls back to the target plan period end', () => {
     const preview = legacyPreview()
-    preview.new_plan.period_end = '2026-08-19T00:00:00Z'
-    expect(resolveRenewalDate(preview)).toBe('2026-08-19T00:00:00Z')
+    const withPeriodEnd = {
+      ...preview,
+      new_plan: { ...preview.new_plan, period_end: '2026-08-19T00:00:00Z' }
+    }
+    expect(resolveRenewalDate(withPeriodEnd)).toBe('2026-08-19T00:00:00Z')
   })
 
   it('reports no date when the server supplied none', () => {

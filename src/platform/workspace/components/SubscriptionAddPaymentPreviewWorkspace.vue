@@ -574,7 +574,7 @@ const renewalTerms = computed(() => {
   if (!amount) return ''
   const renewsAt = resolveRenewalDate(previewData)
   if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
-  const date = new Date(renewsAt).toLocaleDateString(undefined, {
+  const date = new Date(renewsAt).toLocaleDateString(locale.value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
