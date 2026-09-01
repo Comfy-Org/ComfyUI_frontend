@@ -11,6 +11,28 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
+test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
+  test('Can drag adjust value', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/seed_widget')
+
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const widget = await node.getWidget(0)
+    await comfyPage.page.evaluate(() => {
+      window.widgetValue = undefined
+      const widget = window.app!.graph!.nodes[0].widgets![0]
+      widget.callback = (value: number) => {
+        window.widgetValue = value
+      }
+    })
+    await widget.dragHorizontal(50)
+    await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
+
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
+      .toBeDefined()
+  })
+})
+
 test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
     await comfyPage.nodeOps.resizeNode(

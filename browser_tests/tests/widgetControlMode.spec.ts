@@ -1,28 +1,22 @@
 import { expect } from '@playwright/test'
 
+import type { IWidget } from '@/lib/litegraph/src/litegraph'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
-  test('Can drag adjust value', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('widgets/seed_widget')
+type DirtyWindow = Window & { __canvasDirtied?: boolean }
 
-    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
-    const widget = await node.getWidget(0)
-    await comfyPage.page.evaluate(() => {
-      window.widgetValue = undefined
-      const widget = window.app!.graph!.nodes[0].widgets![0]
-      widget.callback = (value: number) => {
-        window.widgetValue = value
-      }
-    })
-    await widget.dragHorizontal(50)
-    await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
-
-    await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
-      .toBeDefined()
-  })
-})
+const getControlLabels = (comfyPage: ComfyPage, nodeId?: string | number) =>
+  comfyPage.page.evaluate((id) => {
+    const node =
+      id === undefined
+        ? window.app!.graph!.nodes[0]
+        : window.app!.graph!.getNodeById(id)
+    return (node?.widgets ?? [])
+      .filter((widget) => (widget.label ?? '').includes('control'))
+      .map((widget) => widget.label!)
+  }, nodeId)
 
 test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -32,32 +26,17 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
   test('Changing mode to "before" updates control widget labels', async ({
     comfyPage
   }) => {
-    await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'after')
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const ksampler = (await comfyPage.nodeOps.getNodeRefsByType('KSampler'))[0]
 
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph!.getNodeById(id)
-          return node?.widgets
-            ?.filter((w) => (w.label ?? '').includes('control'))
-            .map((w) => w.label)
-        }, ksampler.id)
-      )
+      .poll(() => getControlLabels(comfyPage, ksampler.id))
       .toEqual(expect.arrayContaining([expect.stringContaining('after')]))
 
     await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'before')
 
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph!.getNodeById(id)
-          return node?.widgets
-            ?.filter((w) => (w.label ?? '').includes('control'))
-            .map((w) => w.label)
-        }, ksampler.id)
-      )
+      .poll(() => getControlLabels(comfyPage, ksampler.id))
       .toEqual(expect.arrayContaining([expect.stringContaining('before')]))
   })
 
@@ -71,14 +50,7 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
     await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'after')
 
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph!.getNodeById(id)
-          return node?.widgets
-            ?.filter((w) => (w.label ?? '').includes('control'))
-            .map((w) => w.label)
-        }, ksampler.id)
-      )
+      .poll(() => getControlLabels(comfyPage, ksampler.id))
       .toEqual(expect.arrayContaining([expect.stringContaining('after')]))
   })
 
@@ -119,7 +91,7 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
       .toBe(true)
   })
 
-  test('Nodes without widgets are skipped without error', async ({
+  test('Mode change still updates KSampler with a widget-less node', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
@@ -137,14 +109,7 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
 
     const ksampler = (await comfyPage.nodeOps.getNodeRefsByType('KSampler'))[0]
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph!.getNodeById(id)
-          return node?.widgets
-            ?.filter((w) => (w.label ?? '').includes('control'))
-            .map((w) => w.label)
-        }, ksampler.id)
-      )
+      .poll(() => getControlLabels(comfyPage, ksampler.id))
       .toEqual(expect.arrayContaining([expect.stringContaining('before')]))
   })
 
@@ -152,7 +117,7 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
 
     await comfyPage.page.evaluate(() => {
-      const w = window as Window & { __canvasDirtied?: boolean }
+      const w = window as DirtyWindow
       w.__canvasDirtied = false
       const origSetDirty = window.app!.canvas.setDirty.bind(window.app!.canvas)
       window.app!.canvas.setDirty = (
@@ -167,10 +132,7 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
 
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(
-          () =>
-            (window as Window & { __canvasDirtied?: boolean }).__canvasDirtied
-        )
+        comfyPage.page.evaluate(() => (window as DirtyWindow).__canvasDirtied)
       )
       .toBe(true)
   })
@@ -178,31 +140,16 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
   test('Mode change updates combo control widget labels', async ({
     comfyPage
   }) => {
-    await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'after')
     await comfyPage.workflow.loadWorkflow('widgets/combo_control_widget')
 
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const node = window.app!.graph!.nodes[0]
-          return (node?.widgets ?? [])
-            .filter((w) => (w.label ?? '').includes('control'))
-            .map((w) => w.label!)
-        })
-      )
+      .poll(() => getControlLabels(comfyPage))
       .toEqual(expect.arrayContaining([expect.stringContaining('after')]))
 
     await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'before')
 
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const node = window.app!.graph!.nodes[0]
-          return (node?.widgets ?? [])
-            .filter((w) => (w.label ?? '').includes('control'))
-            .map((w) => w.label!)
-        })
-      )
+      .poll(() => getControlLabels(comfyPage))
       .toEqual(expect.arrayContaining([expect.stringContaining('before')]))
   })
 
@@ -210,7 +157,8 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
     comfyPage
   }) => {
     // linkedWidgets is only set on main widgets, never on control widgets
-    // themselves. This covers the defensive code path (GraphCanvas.vue:360-362).
+    // themselves. This covers the `linkedWidgets` defensive branch in
+    // `updateControlWidgetLabels`.
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
 
     await comfyPage.page.evaluate(() => {
@@ -220,12 +168,14 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
         (w.label ?? '').includes('control')
       )
       if (!controlWidget) return
-      const mockLinked = Object.create(null)
-      mockLinked.name = 'mock_filter'
-      mockLinked.label = 'control after generate'
-      mockLinked.type = 'string'
-      mockLinked.value = ''
-      controlWidget.linkedWidgets = [mockLinked]
+      controlWidget.linkedWidgets = [
+        {
+          name: 'mock_filter',
+          label: 'control after generate',
+          type: 'string',
+          value: ''
+        } as IWidget
+      ]
     })
 
     await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'before')
