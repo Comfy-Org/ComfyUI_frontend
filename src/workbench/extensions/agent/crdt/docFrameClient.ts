@@ -1,7 +1,10 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 const DOC_PROTOCOL_VERSION = 1
-const MAX_AWARENESS_STATE_BYTES = 8 * 1024
+const MAX_DOC_FRAME_B64_LENGTH = 8 << 20
+const MAX_WORKFLOW_ID_LENGTH = 128
+const MAX_ACTOR_LENGTH = 256
+const MAX_AWARENESS_STATE_BYTES = 8 << 10
 
 export interface DocOp {
   op_id: string
@@ -26,6 +29,13 @@ export interface DocSubscribed {
   message?: string
 }
 
+interface DocOpFailure {
+  index: number
+  op_id: string
+  code: string
+  message: string
+}
+
 interface DocOpsResult {
   workflowId: string
   ok: boolean
@@ -38,7 +48,7 @@ interface DocOpsResult {
    * PoC diagnostics: the batch's failure, forwarded verbatim. The wire type is
    * a single object (`DocOpFailure {op_id, code, message}`), not an array.
    */
-  failed?: unknown
+  failed?: DocOpFailure
 }
 
 interface DocAwareness {
@@ -100,11 +110,26 @@ interface WireData {
   failed?: unknown
   state?: unknown
   expires_at?: unknown
+  index?: unknown
+  op_id?: unknown
 }
 
-function decodeBase64(value: string): Uint8Array {
-  const binary = atob(value)
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0))
+function decodeBase64(value: string): Uint8Array | null {
+  if (value === '' || value.length > MAX_DOC_FRAME_B64_LENGTH) return null
+  // `atob` is permissive about missing padding, so require canonical standard
+  // base64 before decoding the untrusted wire value.
+  if (
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+      value
+    )
+  )
+    return null
+  try {
+    const binary = atob(value)
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0))
+  } catch {
+    return null
+  }
 }
 
 export function encodeBase64(value: Uint8Array): string {
@@ -123,33 +148,48 @@ function parseRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
-/** Unix seconds on the wire: a non-negative integer inside the safe range. */
-function isNonNegativeInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+function isValidWorkflowId(value: string): boolean {
+  return (
+    value.length > 0 &&
+    new TextEncoder().encode(value).length <= MAX_WORKFLOW_ID_LENGTH &&
+    !/[\0\n\r\t :*?[\]]/.test(value)
+  )
 }
 
-function parseAwarenessState(
-  value: unknown
-): Record<string, unknown> | undefined | null {
-  // The Go server's `State map[string]any` has `omitempty`, so it never
-  // emits `state: null` on the wire; nil/empty maps are omitted entirely,
-  // same as an absent field. Treat null the same as absent (no state) rather
-  // than rejecting the whole frame, so a value the server cannot actually
-  // send does not discard `actor`/`expires_at` too. A non-null, non-record
-  // shape (array, string, number) is still a malformed frame and rejected.
-  // discussion_r3911665011.
-  if (value === undefined || value === null) return undefined
-  const state = parseRecord(value)
-  if (state === null) return null
+function isValidActor(value: string): boolean {
+  if (
+    value.length === 0 ||
+    new TextEncoder().encode(value).length > MAX_ACTOR_LENGTH ||
+    /[\0\n\r\t ]/.test(value)
+  )
+    return false
+  if (value === 'system:mint') return true
+  const match = /^(?:agent|human):([^:]+):([^:]+)$/.exec(value)
+  return match !== null
+}
 
-  // Defence in depth behind the server's identical cap. The counts are not
-  // byte-identical: Go's json.Marshal HTML-escapes `<`, `>` and `&`, so the
-  // server always counts >= this and is the stricter of the two.
+function isSequence(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+function parseDocOpFailure(value: unknown): DocOpFailure | null {
+  const failure = parseWireData(value)
+  return failure !== null &&
+    isSequence(failure.index) &&
+    typeof failure.op_id === 'string' &&
+    typeof failure.code === 'string' &&
+    typeof failure.message === 'string'
+    ? (failure as DocOpFailure)
+    : null
+}
+
+function encodedJsonSize(value: Record<string, unknown>): number | null {
   try {
-    return new TextEncoder().encode(JSON.stringify(state)).byteLength <=
-      MAX_AWARENESS_STATE_BYTES
-      ? state
-      : null
+    return new TextEncoder().encode(JSON.stringify(value)).length
   } catch {
     return null
   }
@@ -162,38 +202,51 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (
     data === null ||
     data.v !== DOC_PROTOCOL_VERSION ||
-    typeof data.workflow_id !== 'string'
+    typeof data.workflow_id !== 'string' ||
+    !isValidWorkflowId(data.workflow_id)
   )
     return null
 
   if (
     frame.type === 'doc_update' &&
-    typeof data.seq === 'number' &&
+    isSequence(data.seq) &&
     typeof data.update_b64 === 'string'
   ) {
+    const update = decodeBase64(data.update_b64)
+    if (update === null) return null
+    if (
+      data.actor !== undefined &&
+      (typeof data.actor !== 'string' || !isValidActor(data.actor))
+    )
+      return null
+    if (data.op_ids !== undefined && !isStringArray(data.op_ids)) return null
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
-        update: decodeBase64(data.update_b64),
+        update,
         ...(typeof data.actor === 'string' && { actor: data.actor }),
         ...(Array.isArray(data.op_ids) && {
-          opIds: data.op_ids.filter(
-            (item): item is string => typeof item === 'string'
-          )
+          opIds: data.op_ids
         })
       }
     }
   }
 
   if (frame.type === 'doc_subscribed' && typeof data.ok === 'boolean') {
+    if (
+      data.ok
+        ? !isSequence(data.seq)
+        : typeof data.code !== 'string' || typeof data.message !== 'string'
+    )
+      return null
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         ok: data.ok,
-        ...(typeof data.seq === 'number' && { seq: data.seq }),
+        ...(isSequence(data.seq) && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message })
       }
@@ -201,31 +254,42 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'doc_ops_result' && typeof data.ok === 'boolean') {
+    if (!isStringArray(data.applied) || !isStringArray(data.skipped))
+      return null
+    if (
+      data.ok
+        ? !isSequence(data.seq)
+        : typeof data.code !== 'string' || typeof data.message !== 'string'
+    )
+      return null
+    let failed: DocOpFailure | undefined
+    if (data.failed !== undefined) {
+      const parsedFailure = parseDocOpFailure(data.failed)
+      if (parsedFailure === null) return null
+      failed = parsedFailure
+    }
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         ok: data.ok,
-        applied: Array.isArray(data.applied)
-          ? data.applied.filter(
-              (item): item is string => typeof item === 'string'
-            )
-          : [],
-        skipped: Array.isArray(data.skipped)
-          ? data.skipped.filter(
-              (item): item is string => typeof item === 'string'
-            )
-          : [],
-        ...(typeof data.seq === 'number' && { seq: data.seq }),
+        applied: data.applied,
+        skipped: data.skipped,
+        ...(isSequence(data.seq) && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message }),
         // PoC diagnostics: surface the failure verbatim (object, not array).
-        ...(data.failed != null && { failed: data.failed })
+        ...(failed !== undefined && { failed })
       }
     }
   }
 
-  if (frame.type === 'doc_reset' && typeof data.seq === 'number') {
+  if (frame.type === 'doc_reset' && isSequence(data.seq)) {
+    if (
+      data.actor !== undefined &&
+      (typeof data.actor !== 'string' || !isValidActor(data.actor))
+    )
+      return null
     return {
       type: frame.type,
       data: {
@@ -237,20 +301,23 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
-    const state = parseAwarenessState(data.state)
-    if (
-      state === null ||
-      (data.expires_at !== undefined && !isNonNegativeInteger(data.expires_at))
-    )
+    if (!isValidActor(data.actor)) return null
+    const state = data.state == null ? undefined : parseRecord(data.state)
+    if (state === null) return null
+    if (state !== undefined) {
+      const stateSize = encodedJsonSize(state)
+      if (stateSize === null || stateSize > MAX_AWARENESS_STATE_BYTES)
+        return null
+    }
+    if (data.expires_at !== undefined && !isSequence(data.expires_at))
       return null
-
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         actor: data.actor,
         ...(state !== undefined && { state }),
-        ...(data.expires_at !== undefined && {
+        ...(isSequence(data.expires_at) && {
           expiresAt: data.expires_at
         })
       }

@@ -42,13 +42,13 @@ describe('doc frame client', () => {
         workflow_id: 'wf-1',
         seq: 1,
         update_b64: encodeBase64(encoded),
-        actor: 'agent:turn-1',
-        op_ids: ['op-1', 42, 'op-2']
+        actor: 'agent:thread-1:turn-1',
+        op_ids: ['op-1', 'op-2']
       }
     })
     expect(frame?.type).toBe('doc_update')
     if (frame?.type !== 'doc_update') throw new Error('Expected doc_update')
-    expect(frame.data.actor).toBe('agent:turn-1')
+    expect(frame.data.actor).toBe('agent:thread-1:turn-1')
     expect(frame.data.opIds).toEqual(['op-1', 'op-2'])
 
     const follower = new FollowerDoc()
@@ -222,5 +222,107 @@ describe('doc frame client', () => {
         expiresAt: 123
       }
     })
+  })
+
+  it.for([
+    ['invalid base64 characters', { seq: 1, update_b64: '!!!=' }],
+    ['partial base64', { seq: 1, update_b64: 'AQ' }],
+    ['empty base64', { seq: 1, update_b64: '' }],
+    ['negative sequence', { seq: -1, update_b64: 'AQ==' }],
+    ['fractional sequence', { seq: 1.5, update_b64: 'AQ==' }],
+    ['mixed op ids', { seq: 1, update_b64: 'AQ==', op_ids: ['ok', 1] }],
+    ['invalid actor', { seq: 1, update_b64: 'AQ==', actor: 'unknown:value' }]
+  ])('rejects %s in doc_update without throwing', (_name, fields) => {
+    expect(() =>
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: { v: 1, workflow_id: 'wf-1', ...fields }
+      })
+    ).not.toThrow()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: { v: 1, workflow_id: 'wf-1', ...fields }
+      })
+    ).toBeNull()
+  })
+
+  it('rejects an oversized encoded update before decoding', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 1,
+          update_b64: 'A'.repeat((8 << 20) + 4)
+        }
+      })
+    ).toBeNull()
+  })
+
+  it.for(['', 'wf bad', 'wf:bad', 'x'.repeat(129)])(
+    'rejects invalid workflow id %j',
+    (workflowId) => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_subscribed',
+          data: { v: 1, workflow_id: workflowId, ok: true, seq: 1 }
+        })
+      ).toBeNull()
+    }
+  )
+
+  it('rejects malformed result arrays, failures, and acknowledgements', () => {
+    const result = (data: Record<string, unknown>) =>
+      parseServerDocFrame({
+        type: 'doc_ops_result',
+        data: { v: 1, workflow_id: 'wf-1', applied: [], skipped: [], ...data }
+      })
+
+    expect(result({ ok: true, applied: ['op-1', 2], seq: 1 })).toBeNull()
+    expect(
+      result({
+        ok: true,
+        seq: 1,
+        failed: { op_id: 'op-1', code: 'x', message: 'x' }
+      })
+    ).toBeNull()
+    expect(result({ ok: false, code: 'x' })).toBeNull()
+    expect(
+      result({
+        ok: false,
+        code: 'rejected',
+        message: 'bad op',
+        failed: { index: 0, op_id: 'op-1', code: 'bad', message: 'bad op' }
+      })
+    ).toMatchObject({ type: 'doc_ops_result' })
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true }
+      })
+    ).toBeNull()
+  })
+
+  it('rejects malformed or oversized awareness state', () => {
+    const awareness = (state: unknown, expiresAt: unknown = 1) =>
+      parseServerDocFrame({
+        type: 'awareness',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          actor: 'human:user:tab',
+          state,
+          expires_at: expiresAt
+        }
+      })
+
+    expect(awareness([])).toBeNull()
+    expect(awareness({ value: 'x'.repeat((8 << 10) + 1) })).toBeNull()
+    expect(awareness({}, -1)).toBeNull()
+    expect(awareness({}, Number.POSITIVE_INFINITY)).toBeNull()
+    expect(awareness({ value: 1n })).toBeNull()
+    expect(awareness({ cursor: [1, 2] })).toMatchObject({ type: 'awareness' })
   })
 })
