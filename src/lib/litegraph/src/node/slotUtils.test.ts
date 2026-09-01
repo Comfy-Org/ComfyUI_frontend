@@ -99,6 +99,23 @@ describe('outputAsSerialisable', () => {
     expect(serialised.links).toEqual([])
   })
 
+  it('preserves link presence when a targeted disconnect matches no link', () => {
+    const { source, targets } = createConnectedGraph([1])
+    const unrelated = new LGraphNode('Unrelated')
+    unrelated.addInput('in', 'number')
+    source.graph!.add(unrelated)
+
+    expect(source.disconnectOutput(0, unrelated)).toBe(false)
+
+    const serialised = outputAsSerialisable(
+      source.outputs[0] as OutputSlotParam,
+      source,
+      0
+    )
+    expect(serialised.links).toEqual([1])
+    expect(targets[0].inputs[0].link).toBe(toLinkId(1))
+  })
+
   it('serialises null for a node with no graph', () => {
     const node = new LGraphNode('Detached')
     node.addOutput('out', 'number')
@@ -109,5 +126,17 @@ describe('outputAsSerialisable', () => {
       0
     )
     expect(serialised.links).toBeNull()
+  })
+
+  it('ignores stale ids on a detached plain-object slot', () => {
+    const node = new LGraphNode('Detached')
+    const output = {
+      name: 'out',
+      type: 'number',
+      links: [toLinkId(404)]
+    } as OutputSlotParam
+    node.outputs = [output]
+
+    expect(outputAsSerialisable(output, node, 0).links).toBeNull()
   })
 })
