@@ -165,7 +165,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -219,6 +219,14 @@ const selectedWorkspaceIsValid = computed(() =>
       (workspace) => workspace.id === selectedWorkspaceId.value
     )
   )
+)
+
+watch(
+  () => initialChallenge,
+  (next) => {
+    challenge.value = next ?? null
+    selectedWorkspaceId.value = getDefaultWorkspaceId(next)
+  }
 )
 
 function scopeLabel(scope: string): string {

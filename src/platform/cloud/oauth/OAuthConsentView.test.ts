@@ -151,6 +151,21 @@ describe('OAuthConsentView', () => {
     })
   })
 
+  it('updates the challenge when the prop changes', async () => {
+    const view = renderConsent()
+
+    await view.rerender({
+      initialChallenge: {
+        ...challenge,
+        client_display_name: 'Another client',
+        workspaces: [challenge.workspaces[1]]
+      }
+    })
+
+    expect(screen.getByText('Another client wants access')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
+  })
+
   it('keeps Allow disabled when multiple workspaces are available and none is chosen', () => {
     renderConsent()
     const allow = screen.getByRole('button', { name: 'Continue' })
