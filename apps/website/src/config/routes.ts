@@ -5,7 +5,6 @@ const baseRoutes = {
   download: '/download',
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
-  cloudEnterprise: '/cloud/enterprise',
   enterprise: '/enterprise',
   managedBuilds: '/enterprise/managed-builds',
   api: '/api',
@@ -83,6 +82,13 @@ const LOCALE_INVARIANT_PATHS = new Set<string>(
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
  * URLs and locale-invariant routes pass through unchanged.
  */
+/** True for a locale-invariant route or anything nested under one. */
+export function isLocaleInvariantPath(pathname: string): boolean {
+  return [...LOCALE_INVARIANT_PATHS].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  )
+}
+
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
@@ -142,7 +148,8 @@ export const externalLinks = {
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
-  workflows: 'https://comfy.org/workflows',
+  workflows: 'https://comfy.org/workflows/',
+  workflowUseCases: 'https://comfy.org/workflows/use-cases/',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
