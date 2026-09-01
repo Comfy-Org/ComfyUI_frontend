@@ -215,7 +215,6 @@ export function useAgentCrdtFollower(
   const reportSubscribeRetryExhausted = (): void => {
     if (
       subscribeRetryFailureReported ||
-      subscribeRetryStartedAt === null ||
       subscribeRetryAttempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS
     )
       return
@@ -226,7 +225,7 @@ export function useAgentCrdtFollower(
       retryable: false,
       reconnect_duration_ms: Math.max(
         0,
-        Math.round(performance.now() - subscribeRetryStartedAt)
+        Math.round(performance.now() - (subscribeRetryStartedAt ?? performance.now()))
       )
     })
   }
@@ -239,6 +238,7 @@ export function useAgentCrdtFollower(
     }
     const target = subscribedWorkflowId.value
     if (target === null) return
+    subscribeRetryStartedAt ??= performance.now()
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
     subscribeRetryAttempt += 1
     subscribeRetryTimer = setTimeout(() => {
