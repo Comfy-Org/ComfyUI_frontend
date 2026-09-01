@@ -71,4 +71,22 @@ describe('replayAgentFixture', () => {
       })
     ).toThrow('malformed draft_patch frame')
   })
+
+  it('rejects a frame with an unknown type', () => {
+    expect(() =>
+      parseAgentResponseFixture({
+        scenario: 'malformed',
+        frames: [
+          {
+            type: 'unknown_frame_type',
+            data: {
+              message_id: 'msg-1',
+              thread_id: 'thread-1',
+              content: { nodes: [] }
+            }
+          }
+        ]
+      })
+    ).toThrow('malformed draft_patch frame')
+  })
 })
