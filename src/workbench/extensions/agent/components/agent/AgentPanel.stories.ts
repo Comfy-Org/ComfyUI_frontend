@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import '../../agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -26,7 +27,7 @@ const meta: Meta<typeof AgentPanel> = {
   decorators: [
     () => ({
       template:
-        '<div class="bg-agent-surface-raised h-screen w-100"><story /></div>'
+        '<div class="agent-scope bg-agent-surface-raised h-screen w-100"><story /></div>'
     })
   ]
 }
