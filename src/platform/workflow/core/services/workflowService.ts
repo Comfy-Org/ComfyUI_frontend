@@ -741,14 +741,16 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { position?: Point } = {}
   ) => {
+    const canvas = app.canvas
     const loadedWorkflow = await workflow.load()
+    if (app.canvas !== canvas) return
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
     const items = workflowToClipboardItems(
       workflowJSON as unknown as SerialisableGraph
     )
-    app.canvas._deserializeItems(items, options)
+    canvas._deserializeItems(items, options)
   }
 
   const loadNextOpenedWorkflow = async () => {

@@ -1639,6 +1639,38 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('insertWorkflow', () => {
+    it('does not insert after the canvas changes while loading', async () => {
+      const originalCanvas = app.canvas
+      const originalDeserialize = vi.fn()
+      const replacementDeserialize = vi.fn()
+      Reflect.set(originalCanvas, '_deserializeItems', originalDeserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      try {
+        const pending = useWorkflowService().insertWorkflow(workflow)
+        Reflect.set(app, 'canvas', {
+          _deserializeItems: replacementDeserialize
+        })
+        finishLoad({ initialState: { nodes: [], links: [] } })
+        await pending
+
+        expect(originalDeserialize).not.toHaveBeenCalled()
+        expect(replacementDeserialize).not.toHaveBeenCalled()
+      } finally {
+        Reflect.set(app, 'canvas', originalCanvas)
+      }
+    })
+  })
+
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
 
