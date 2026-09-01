@@ -435,7 +435,6 @@ const {
   }
 })
 
-onBeforeUnmount(exitNodeSelectionMode)
 const { docWorkflowId } = useAgentLifetime({ session: { start, stop } })
 
 const isBoundWorkflowActive = computed(() => {
@@ -870,14 +869,19 @@ watch(
 void refreshCloudWorkflowIds()
 
 onBeforeUnmount(() => {
-  // Slice 15 moved stop/exit/activity teardown into useAgentLifetime and
-  // the exitNodeSelectionMode hook above. The active-tab generation bump
-  // (slice 14's post-close guard) has no owner there, so it stays: an
-  // in-flight active-tab link sees a stale generation and stops, so no tab
-  // is created and no file written after the close.
+  // Slice 15 moved stop/activity teardown into useAgentLifetime. The
+  // active-tab generation bump (slice 14's post-close guard) has no owner
+  // there, so it stays: an in-flight active-tab link sees a stale
+  // generation and stops, so no tab is created and no file written after
+  // the close.
   activeTabGeneration++
   mintPortWiring.detach()
 })
+
+// Registered last: hooks fire in registration order, so the throw-capable
+// exit runs after useAgentLifetime's stop and flag clears and after the
+// generation bump, and a raise here cannot skip any of them.
+onBeforeUnmount(exitNodeSelectionMode)
 
 const history = useAgentChatHistoryStore()
 
