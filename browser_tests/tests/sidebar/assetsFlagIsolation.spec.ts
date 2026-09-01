@@ -1,7 +1,14 @@
 import { expect } from '@playwright/test'
 
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+
+const emptyAssetsResponse: ListAssetsResponse = {
+  assets: [],
+  total: 0,
+  has_more: false
+}
 
 test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
   test('uses history without requesting the Asset API', async ({
@@ -12,7 +19,7 @@ test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
     await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
       assetListRequests.push(route.request().url())
       await route.fulfill({
-        json: { assets: [], total: 0, has_more: false }
+        json: emptyAssetsResponse
       })
     })
     await comfyPage.assets.mockOutputHistory([
@@ -53,7 +60,7 @@ test.describe(
       await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
         assetListRequests.push(route.request().url())
         await route.fulfill({
-          json: { assets: [], total: 0, has_more: false }
+          json: emptyAssetsResponse
         })
       })
       await comfyPage.assets.mockOutputHistory([
