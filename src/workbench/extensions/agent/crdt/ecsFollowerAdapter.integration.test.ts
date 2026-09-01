@@ -527,6 +527,8 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ).toBe(true)
     expect(graphSnapshot()).toEqual(projectedBeforeReload)
+    expect(Y.encodeStateAsUpdate(reloadedFollower.doc)).toEqual(savedSnapshot)
+    expect(Y.encodeStateVector(reloadedFollower.doc)).toEqual(savedVector)
 
     reloadedAdapter.destroy()
     reloadedFollower.destroy()
