@@ -68,6 +68,10 @@ const { mockReportError } = vi.hoisted(() => ({
   mockReportError: vi.fn()
 }))
 
+const { mockToastAdd } = vi.hoisted(() => ({
+  mockToastAdd: vi.fn()
+}))
+
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
@@ -85,6 +89,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionIsCloud.value
   }
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
 }))
 
 // Mock fetch
