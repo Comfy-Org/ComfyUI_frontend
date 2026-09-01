@@ -134,6 +134,23 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
   })
 
+  it('claims Ctrl+Enter so the queue shortcut does not also fire', async () => {
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'one')
+    let prevented: boolean | undefined
+    const listener = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') prevented = event.defaultPrevented
+    }
+    window.addEventListener('keydown', listener)
+
+    await userEvent.keyboard('{Control>}{Enter}{/Control}')
+    window.removeEventListener('keydown', listener)
+
+    expect(emitted().send).toHaveLength(1)
+    expect(prevented).toBe(true)
+  })
+
   it('shows Stop while streaming and emits stop instead of send', async () => {
     const { emitted } = mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })

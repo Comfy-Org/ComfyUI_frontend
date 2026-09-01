@@ -95,4 +95,43 @@ describe('BatchCountEdit', () => {
     expect(queueSettingsStore.batchCount).toBe(1)
     expect(input).toHaveValue('1')
   })
+
+  function recordNextEnter(): { prevented: boolean | undefined } {
+    const record: { prevented: boolean | undefined } = { prevented: undefined }
+    const listener = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') return
+      record.prevented = event.defaultPrevented
+      window.removeEventListener('keydown', listener)
+    }
+    window.addEventListener('keydown', listener)
+    return record
+  }
+
+  it('commits the typed value on Ctrl+Enter without claiming the keydown', async () => {
+    const { user, queueSettingsStore } = renderComponent(3)
+    const input = screen.getByRole('textbox', { name: 'Batch Count' })
+    await user.clear(input)
+    await user.type(input, '8')
+    const enter = recordNextEnter()
+
+    await user.keyboard('{Control>}{Enter}{/Control}')
+
+    expect(queueSettingsStore.batchCount).toBe(8)
+    expect(enter.prevented).toBe(false)
+    expect(input).not.toHaveFocus()
+  })
+
+  it('claims a plain Enter and commits the typed value', async () => {
+    const { user, queueSettingsStore } = renderComponent(3)
+    const input = screen.getByRole('textbox', { name: 'Batch Count' })
+    await user.clear(input)
+    await user.type(input, '8')
+    const enter = recordNextEnter()
+
+    await user.keyboard('{Enter}')
+
+    expect(queueSettingsStore.batchCount).toBe(8)
+    expect(enter.prevented).toBe(true)
+    expect(input).not.toHaveFocus()
+  })
 })

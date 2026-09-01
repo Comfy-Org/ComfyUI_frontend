@@ -58,6 +58,7 @@ describe('keybindingService - Canvas Keybindings', () => {
   beforeEach(() => {
     const commandStore = useCommandStore()
     commandStore.execute = vi.fn()
+    commandStore.isRegistered = () => true
 
     vi.mocked(useDialogStore).mockReturnValue({
       dialogStack: []
