@@ -101,7 +101,9 @@ function targetKey(target: ShadowTarget): string {
       return `widget:${encodeURIComponent(target.nodeId)}:${encodeURIComponent(target.widgetName)}`
     default: {
       const unsupported: never = target
-      throw new Error(`Unsupported shadow target: ${JSON.stringify(unsupported)}`)
+      throw new Error(
+        `Unsupported shadow target: ${JSON.stringify(unsupported)}`
+      )
     }
   }
 }
