@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -44,7 +43,6 @@ function createMockAssets(count: number): AssetItem[] {
 
 describe('useAssetSelection', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShiftKey.value = false
     mockCtrlKey.value = false
     mockMetaKey.value = false

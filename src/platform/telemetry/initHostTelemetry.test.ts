@@ -15,7 +15,6 @@ describe('initHostTelemetry', () => {
   afterEach(() => {
     remoteConfig.value = {}
     setTelemetryRegistry(null)
-    localStorage.clear()
     delete window.__comfyDesktop2
   })
 

@@ -1,10 +1,12 @@
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
 
+const require = createRequire(import.meta.url)
 const mainPackage = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
 const desktopBridgeTypesPackage = JSON.parse(
   fs.readFileSync(
-    './packages/comfyui-desktop-bridge-types/package.json',
+    require.resolve('@comfyorg/comfyui-desktop-bridge-types/package.json'),
     'utf8'
   )
 )

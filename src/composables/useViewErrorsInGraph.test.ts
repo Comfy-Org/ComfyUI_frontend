@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -59,7 +58,6 @@ function createSelectedCanvas() {
 
 describe('useViewErrorsInGraph', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     apiMock.getSettings.mockResolvedValue({})
     apiMock.storeSetting.mockResolvedValue(undefined)
     apiMock.storeSettings.mockResolvedValue(undefined)

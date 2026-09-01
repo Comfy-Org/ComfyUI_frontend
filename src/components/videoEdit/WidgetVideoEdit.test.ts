@@ -146,8 +146,6 @@ describe('WidgetVideoEdit', () => {
     recorded.props = undefined
     mocks.resolvedSource = undefined
     mocks.filmstripError.value = null
-    mocks.filmstripRetry.mockClear()
-    mocks.getNodeByLocatorId.mockReset()
   })
 
   it('resolves the source from the host node when no locator is present', () => {

@@ -1,5 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
@@ -129,7 +128,6 @@ function wrapNode(
 
 describe('useGLSLPreview', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()

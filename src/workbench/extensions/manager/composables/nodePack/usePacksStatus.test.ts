@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
@@ -48,7 +46,6 @@ describe('usePacksStatus', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     conflictDetectionStore = useConflictDetectionStore()
   })
 

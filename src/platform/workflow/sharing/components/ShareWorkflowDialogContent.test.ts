@@ -151,8 +151,6 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    mockPublishWorkflow.mockReset()
-    mockGetShareableAssets.mockReset()
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
       directory: 'workflows',

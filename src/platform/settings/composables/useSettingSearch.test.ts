@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -35,8 +34,6 @@ describe('useSettingSearch', () => {
   let mockSettings: Record<string, MockSettingParams>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-
     // Mock settings data
     mockSettings = {
       'Category.Setting1': {

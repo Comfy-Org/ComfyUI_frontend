@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -20,7 +19,6 @@ describe('useMediaAssetGalleryStore', () => {
         url: ''
       })
     })
-    setActivePinia(createPinia())
   })
 
   describe('openSingle', () => {

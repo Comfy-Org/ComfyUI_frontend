@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
 describe('storageKeys', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     vi.resetModules()
-    sessionStorage.clear()
   })
 
   describe('getWorkspaceId', () => {
@@ -28,6 +32,17 @@ describe('storageKeys', () => {
       )
       const { getWorkspaceId } = await import('./storageKeys')
       expect(getWorkspaceId()).toBe('ws-abc-123')
+    })
+
+    it('keeps local workflow storage in the personal namespace', async () => {
+      mockDistributionTypes.isCloud = false
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'team', id: 'ws-abc-123' })
+      )
+      const { getWorkspaceId } = await import('./storageKeys')
+
+      expect(getWorkspaceId()).toBe('personal')
     })
 
     it('returns personal when JSON parsing fails', async () => {

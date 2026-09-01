@@ -41,7 +41,6 @@ describe('useQueuePolling', () => {
   beforeEach(() => {
     store.activeJobsCount = 0
     store.isLoading = false
-    store.update.mockReset()
   })
 
   it('does not call update on creation', () => {

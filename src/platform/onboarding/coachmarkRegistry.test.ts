@@ -35,7 +35,6 @@ describe('coachmarkRegistry', () => {
 describe('targetMounted', () => {
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   it('is true once a laid-out element is registered', () => {
@@ -64,7 +63,6 @@ describe('targetMounted', () => {
 describe('waitForTarget', () => {
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   /** Lets the poll sample once, and the resulting promise settle. */

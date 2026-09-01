@@ -115,7 +115,6 @@ describe('useRangeEditor', () => {
 
   afterEach(() => {
     harness?.unmount()
-    document.body.innerHTML = ''
   })
 
   it('does nothing when trackRef is null', () => {

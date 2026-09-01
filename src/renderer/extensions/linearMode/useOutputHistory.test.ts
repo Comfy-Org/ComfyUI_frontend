@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -152,7 +151,6 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mediaRef.value = []
     pendingResolveRef.value = new Set()
     inProgressItemsRef.value = []
@@ -165,8 +163,6 @@ describe(useOutputHistory, () => {
     pendingTasksRef.value = []
     resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
-    selectAsLatestFn.mockReset()
-    resolveIfReadyFn.mockReset()
   })
 
   describe('sessionMedia filtering', () => {

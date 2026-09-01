@@ -21,7 +21,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
       type: drop.media.type,
       src: drop.media.src,
       alt: drop.media.alt[locale],
-      poster: drop.media.poster
+      poster: drop.media.type === 'video' ? drop.media.poster : undefined
     },
     cta: {
       label: drop.cta.label[locale],

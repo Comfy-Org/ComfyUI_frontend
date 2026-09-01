@@ -47,7 +47,6 @@ const node = { id: toNodeId(5) } as unknown as LGraphNode
 
 describe('useCompositorPsdDownload', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     loadCompositorSession.mockResolvedValue(0)
     buildSessionPsdBlob.mockResolvedValue(new Blob(['psd']))
   })

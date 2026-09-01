@@ -66,7 +66,6 @@ describe(useWorkflowShareService, () => {
 
   beforeEach(() => {
     mockApp.rootGraph = {}
-    window.history.replaceState({}, '', '/')
   })
 
   it('returns unpublished status for unknown workflow', async () => {
@@ -182,6 +181,7 @@ describe(useWorkflowShareService, () => {
           name: 'Published title',
           status: 'approved',
           description: 'A cool workflow',
+          is_app: false,
           tags: [
             { name: 'art', display_name: 'Art' },
             { name: 'upscale', display_name: 'Upscale' }

@@ -1,13 +1,9 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import { minimaxPage } from '../../data/minimax'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
-
-afterEach(() => {
-  cleanup()
-})
 
 // The live /minimax config, so a refactor of the shared banner cannot quietly
 // change what that page ships. `pricing` is optional on a launch page, so fail

@@ -20,7 +20,7 @@ const {
 <template>
   <div v-if="items.length" :class="cn(className)">
     <h2
-      class="text-primary-warm-white text-sm font-extrabold tracking-wider uppercase"
+      class="text-sm font-extrabold tracking-wider text-primary-warm-white uppercase"
     >
       {{ heading }}
     </h2>

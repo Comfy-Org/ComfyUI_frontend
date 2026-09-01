@@ -30,16 +30,10 @@ describe('api.getServerFeature session override outside component setup', () => 
     mockDistribution.isCloud = true
     mockCurrentUser.value = { email: 'dev@comfy.org', emailVerified: true }
     api.serverFeatureFlags.value = {}
-    sessionStorage.clear()
-    localStorage.clear()
   })
 
   afterEach(() => {
-    window.history.replaceState({}, '', '/')
     api.serverFeatureFlags.value = {}
-    sessionStorage.clear()
-    localStorage.clear()
-    vi.restoreAllMocks()
   })
 
   it('applies a numeric override to a flag that never routes through resolveFlag', () => {

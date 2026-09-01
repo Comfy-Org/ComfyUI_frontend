@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
@@ -109,8 +107,6 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null
     mockStore.rgbCanvas = null
@@ -197,11 +193,14 @@ describe('usePanAndZoom', () => {
       expect(mockStore.setPanOffset).toHaveBeenCalled()
     })
 
-    it('throws if move called without start', async () => {
+    it('ignores move called without start', async () => {
       const pz = usePanAndZoom()
-      await expect(
-        pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
-      ).rejects.toThrow('mouseDownPoint is null')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
+
+      expect(consoleSpy).toHaveBeenCalledWith('mouseDownPoint is null')
+      expect(mockStore.setPanOffset).not.toHaveBeenCalled()
     })
   })
 

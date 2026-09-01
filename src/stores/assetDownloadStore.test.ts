@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
@@ -55,7 +53,6 @@ function dispatch(msg: AssetDownloadWsMessage) {
 
 describe('useAssetDownloadStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers({ shouldAdvanceTime: false })
     eventHandler.current = null
   })

@@ -1,5 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, shallowRef } from 'vue'
 
@@ -101,7 +100,6 @@ function createGLSLNode(nodeId: number): LGraphNode {
 
 describe('GLSL live preview reads the shader written by the customtext widget', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
   })
 

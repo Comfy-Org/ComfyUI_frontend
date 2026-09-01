@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
@@ -120,13 +120,11 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
-    commandStoreExecute.mockReset()
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 
   afterEach(() => {
     openSpy.mockRestore()
-    cleanup()
   })
 
   it('opens the Typeform survey tagged with help-center source on Cloud', async () => {
@@ -179,7 +177,6 @@ describe('HelpCenterMenuContent system status item', () => {
 
   afterEach(() => {
     openSpy.mockRestore()
-    cleanup()
   })
 
   it('opens the status page on Cloud', async () => {

@@ -1,13 +1,9 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import PricingFreeBanner from './PricingFreeBanner.vue'
-
-afterEach(() => {
-  cleanup()
-})
 
 type BannerProps = ComponentProps<typeof PricingFreeBanner>
 

@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate YAML syntax and style
         run: ./scripts/cicd/check-yaml.sh
+
+      - name: Check ComfyUI container versions
+        run: ./scripts/cicd/check-comfyui-container-version.sh

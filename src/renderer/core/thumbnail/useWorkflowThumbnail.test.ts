@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -26,7 +25,6 @@ describe('useWorkflowThumbnail', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     workflowStore = useWorkflowStore()
 
     // Clear any existing thumbnails from previous tests BEFORE mocking

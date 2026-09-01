@@ -138,6 +138,7 @@ const { stop } = useIntersectionObserver(
 
         <div
           v-if="card.prompt"
+          data-testid="gallery-card-prompt"
           class="mt-4 flex items-end gap-2 rounded-2xl border border-transparency-white-t8 p-6"
         >
           <p

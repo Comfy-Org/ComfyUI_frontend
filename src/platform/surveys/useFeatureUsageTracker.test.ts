@@ -1,18 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 describe('useFeatureUsageTracker', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-  })
-
   it('initializes with zero count for new feature', () => {
     const { useCount } = useFeatureUsageTracker('test-feature-1')
 
@@ -32,14 +24,13 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('sets firstUsed only on first use', () => {
-    const firstTs = 1000000
-    vi.setSystemTime(firstTs)
+    const firstTs = Date.now()
     const { usage, trackUsage } = useFeatureUsageTracker('test-feature-3')
 
     trackUsage()
     expect(usage.value?.firstUsed).toBe(firstTs)
 
-    vi.setSystemTime(firstTs + 5000)
+    vi.advanceTimersByTime(5_000)
     trackUsage()
     expect(usage.value?.firstUsed).toBe(firstTs)
   })

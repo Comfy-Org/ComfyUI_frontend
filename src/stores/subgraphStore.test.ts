@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -51,6 +49,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: () => comfyApp.canvas
   }))
 }))
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    beginWorkflowNavigation: () => 1
+  })
+}))
 
 // Mock comfyApp globally for the store setup
 vi.mock('@/scripts/app', () => ({
@@ -95,7 +98,6 @@ describe('useSubgraphStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
   })
 

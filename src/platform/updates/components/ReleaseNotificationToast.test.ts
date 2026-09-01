@@ -1,10 +1,23 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
@@ -129,6 +142,17 @@ describe('ReleaseNotificationToast', () => {
 
     renderComponent()
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
+  })
+
+  it('stays hidden while node selection mode is active', () => {
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release\n\nSome content'
+    } as ReleaseNote
+    useAgentNodeSelectionStore().isActive = true
+
+    renderComponent()
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
   })
 
   it('displays rocket icon', () => {

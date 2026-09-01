@@ -555,7 +555,6 @@ describe('useJobList', () => {
   })
 
   it('groups terminal jobs without an execution end timestamp by create time', async () => {
-    vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'failed-before-execution',
@@ -583,7 +582,6 @@ describe('useJobList', () => {
   })
 
   it('groups job items by date label and sorts by total generation time when requested', async () => {
-    vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'today-small',

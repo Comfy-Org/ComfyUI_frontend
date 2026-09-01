@@ -14,6 +14,37 @@ import type {
 
 import { compressWidgetInputSlots } from './litegraphUtil'
 
+type ExportedWidgetValueWrapper = {
+  __type__?: unknown
+  __value__: unknown
+}
+
+function isExportedWidgetValueWrapper(
+  value: unknown
+): value is ExportedWidgetValueWrapper {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    '__value__' in value
+  )
+}
+
+/**
+ * Inverse of the wrapping applied during Export (API). Curve values carry a
+ * type marker and may be objects; untyped wrappers are reserved for arrays so
+ * ordinary objects containing a `__value__` property pass through unchanged.
+ */
+export function unwrapExportedWidgetValue(value: unknown): unknown {
+  if (
+    isExportedWidgetValueWrapper(value) &&
+    (value.__type__ === 'CURVE' || Array.isArray(value.__value__))
+  ) {
+    return value.__value__
+  }
+  return value
+}
+
 /**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
@@ -108,11 +139,12 @@ export const graphToPrompt = async (
         // of the array as a node connection.
         // The backend automatically unwraps the object to an array during
         // execution.
-        inputs[widget.name] = Array.isArray(widgetValue)
-          ? widget.type === 'curve'
+        inputs[widget.name] =
+          widget.type === 'curve' && widgetValue != null
             ? { __type__: 'CURVE', __value__: widgetValue }
-            : { __value__: widgetValue }
-          : widgetValue
+            : Array.isArray(widgetValue)
+              ? { __value__: widgetValue }
+              : widgetValue
       }
     }
 

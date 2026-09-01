@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
@@ -114,10 +114,6 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockPendingInvites.length = 0
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 1
-  })
-
-  afterEach(() => {
-    cleanup()
   })
 
   it('renders the all-set heading and plan price', () => {

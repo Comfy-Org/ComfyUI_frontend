@@ -61,8 +61,6 @@ const loginButtonText = enMessages.auth.login.loginButton
 
 describe('SignInForm', () => {
   beforeEach(() => {
-    mockSendPasswordReset.mockReset()
-    mockToastAdd.mockReset()
     mockLoadingRef.value = false
   })
 

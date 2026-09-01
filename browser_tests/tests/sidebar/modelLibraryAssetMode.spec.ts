@@ -1,10 +1,15 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
-import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
+import {
+  assetApiFixture,
+  assetRequestIncludesTag
+} from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   MODEL_TYPE_CHECKPOINT_GGUF,
+  MODEL_TYPE_CHECKPOINT_LEGACY_TAG,
+  MODEL_TYPE_CHECKPOINT_MID_RETAG,
   MODEL_TYPE_CHECKPOINT_NESTED,
   MODEL_TYPE_CHECKPOINT_ORPHAN,
   MODEL_TYPE_CHECKPOINT_PRE_CUTOVER,
@@ -52,8 +57,8 @@ test.use({
 test.describe('Model library sidebar - asset mode', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [withModels(WALK_ASSETS)],
-      folders: REGISTERED_FOLDERS
+      folders: REGISTERED_FOLDERS,
+      operators: [withModels(WALK_ASSETS)]
     }
   })
 
@@ -61,7 +66,16 @@ test.describe('Model library sidebar - asset mode', () => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true
     })
+    const modelWalkResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' &&
+        assetRequestIncludesTag(response.url(), 'models')
+    )
     await comfyPage.menu.modelLibraryTab.open()
+    await modelWalkResponse
+    await expect(
+      comfyPage.menu.modelLibraryTab.modelTree.locator('.pi-spinner')
+    ).toHaveCount(0)
   })
 
   test('Lists folders in backend registration order', async ({ comfyPage }) => {
@@ -296,8 +310,8 @@ test.describe('Model library sidebar - asset mode when the walk fails', () => {
 test.describe('Model library sidebar - asset mode before the loader_path cutover', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [withModels([MODEL_TYPE_CHECKPOINT_PRE_CUTOVER])],
-      folders: REGISTERED_FOLDERS
+      folders: REGISTERED_FOLDERS,
+      operators: [withModels([MODEL_TYPE_CHECKPOINT_PRE_CUTOVER])]
     }
   })
 
@@ -342,17 +356,117 @@ test.describe('Model library sidebar - asset mode before the loader_path cutover
   })
 })
 
-test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
+test.describe('Model library sidebar - asset mode with a legacy bare tag', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [withModels([STABLE_CHECKPOINT])],
       folders: [
         {
           name: 'checkpoints',
           folders: ['/models/checkpoints'],
           extensions: ['.safetensors']
         }
+      ],
+      operators: [
+        withModels([
+          MODEL_TYPE_CHECKPOINT_ROOT,
+          MODEL_TYPE_CHECKPOINT_LEGACY_TAG
+        ])
       ]
+    }
+  })
+
+  test.beforeEach(async ({ assetApi: _, comfyPage }) => {
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      supports_model_type_tags: true
+    })
+  })
+
+  test('Falls back to legacy bare-tag grouping instead of dropping the asset', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.modelLibraryTab.open()
+    const tab = comfyPage.menu.modelLibraryTab
+
+    await tab.getFolderRowByLabel('checkpoints').click()
+    await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
+    await expect(tab.getLeafByLabel('legacy_tagged_checkpoint')).toBeVisible()
+  })
+})
+
+test.describe('Model library sidebar - asset mode with a mid-retag twin tag', () => {
+  test.use({
+    modelLibraryOptions: {
+      folders: [
+        {
+          name: 'checkpoints',
+          folders: ['/models/checkpoints'],
+          extensions: ['.safetensors']
+        },
+        {
+          name: 'loras',
+          folders: ['/models/loras'],
+          extensions: ['.safetensors']
+        }
+      ],
+      operators: [
+        withModels([
+          MODEL_TYPE_CHECKPOINT_ROOT,
+          MODEL_TYPE_CHECKPOINT_MID_RETAG,
+          MODEL_TYPE_LORA
+        ])
+      ]
+    }
+  })
+
+  test.beforeEach(async ({ assetApi: _, comfyPage }) => {
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      supports_model_type_tags: true
+    })
+    await comfyPage.menu.modelLibraryTab.open()
+  })
+
+  test('Groups a model_type-covered asset once and ignores its bare-tag twins', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.modelLibraryTab
+
+    await tab.getFolderRowByLabel('checkpoints').click()
+    await expect(
+      tab.modelTree
+        .locator('.p-tree-node-leaf')
+        .filter({ hasText: 'mid_retag_checkpoint' })
+    ).toHaveCount(1)
+
+    // loras carries a real model_type:loras asset so the folder itself
+    // renders (asset mode hides folders that load with zero models) —
+    // otherwise an absent 'loras' row would be ambiguous between "correctly
+    // empty" and "never loaded".
+    await tab.getFolderRowByLabel('loras').click()
+    await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
+
+    // Scoped to the loras subtree, not tab.modelTree: checkpoints is still
+    // expanded from the assertion above, and its (correct) copy of the leaf
+    // would otherwise satisfy a tree-wide query on its own.
+    await expect(
+      tab
+        .getFolderByLabel('loras')
+        .locator('.p-tree-node-leaf')
+        .filter({ hasText: 'mid_retag_checkpoint' })
+    ).toHaveCount(0)
+  })
+})
+
+test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
+  test.use({
+    modelLibraryOptions: {
+      folders: [
+        {
+          name: 'checkpoints',
+          folders: ['/models/checkpoints'],
+          extensions: ['.safetensors']
+        }
+      ],
+      operators: [withModels([STABLE_CHECKPOINT])]
     }
   })
 
