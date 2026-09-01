@@ -153,17 +153,18 @@ export function createPendingOpLedger<
     },
 
     markInFlight(opIds) {
-      const rejected: string[] = []
-      for (const opId of opIds) {
+      const rejected = opIds.filter((opId) => {
         const entry = ledger.get(opId)
-        if (!entry || !RETRYABLE.has(entry.state)) {
-          rejected.push(opId)
-          continue
-        }
+        return !entry || !RETRYABLE.has(entry.state)
+      })
+      if (rejected.length > 0) return rejected
+
+      for (const opId of opIds) {
+        const entry = ledger.get(opId)!
         entry.state = 'inflight'
         delete entry.failure
       }
-      return rejected
+      return []
     },
 
     reconcileOpsResult(outcome) {

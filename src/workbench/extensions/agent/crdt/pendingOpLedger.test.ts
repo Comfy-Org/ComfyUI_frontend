@@ -62,7 +62,14 @@ describe('markInFlight', () => {
     const ledger = createPendingOpLedger<string>()
     ledger.enqueue('op-1', 's1')
     expect(ledger.markInFlight(['op-1', 'op-ghost'])).toEqual(['op-ghost'])
-    expect(ledger.get('op-1')?.state).toBe('inflight')
+    expect(ledger.get('op-1')?.state).toBe('queued')
+  })
+
+  it('rejects a mixed batch without partially transitioning valid ids', () => {
+    const ledger = createPendingOpLedger<string>()
+    ledger.enqueue('op-1', 's1')
+    expect(ledger.markInFlight(['op-1', 'op-ghost'])).toEqual(['op-ghost'])
+    expect(ledger.get('op-1')?.state).toBe('queued')
   })
 
   it('allows a retry with the SAME id from failed and unprocessed states', () => {
