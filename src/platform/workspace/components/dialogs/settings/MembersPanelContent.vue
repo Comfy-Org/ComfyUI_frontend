@@ -3,8 +3,13 @@
     <!-- Controls row: tabs, search, invite (outside the table frame). Once the
          panel scrolls it moves into the dialog header, left of the close
          button, so the workspace name can scroll away. -->
-    <Teleport to="#settings-header-controls" :disabled="!isHeaderCollapsed">
+    <Teleport
+      defer
+      to="#settings-header-controls"
+      :disabled="!isHeaderCollapsed"
+    >
       <div
+        ref="controlsRef"
         :class="
           cn(
             'flex w-full items-center gap-4',
@@ -222,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
@@ -271,6 +276,21 @@ const {
 } = useMembersPanel()
 
 const { isHeaderCollapsed, handlePanelScroll } = useSettingsHeaderCollapse()
+
+const controlsRef = useTemplateRef<HTMLElement>('controlsRef')
+
+// Teleporting re-parents these controls, which blurs whatever is focused and
+// aborts an in-progress IME composition. Restore focus after the move so a
+// half-typed filter survives the header collapsing.
+watch(isHeaderCollapsed, async () => {
+  const active = document.activeElement
+  const wasInside =
+    active instanceof HTMLElement && !!controlsRef.value?.contains(active)
+  if (!wasInside) return
+  const selector = active.tagName.toLowerCase()
+  await nextTick()
+  controlsRef.value?.querySelector<HTMLElement>(selector)?.focus()
+})
 
 const { t } = useI18n()
 

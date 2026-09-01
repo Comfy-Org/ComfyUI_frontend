@@ -8,13 +8,26 @@ import { readonly, ref } from 'vue'
  */
 const isHeaderCollapsed = ref(false)
 
-const COLLAPSE_AFTER_PX = 8
+/**
+ * Separate thresholds because collapsing feeds back into its own input:
+ * lifting the controls row out of the panel body grows the scroller's viewport
+ * and shrinks its overflow, which can clamp scrollTop back down. With a single
+ * threshold that clamp re-expands the header, which restores the overflow, and
+ * a marginally-scrollable panel flip-flops.
+ */
+const COLLAPSE_ABOVE_PX = 24
+const EXPAND_BELOW_PX = 4
 
 export function useSettingsHeaderCollapse() {
   function handlePanelScroll(event: Event) {
     const scroller = event.target
-    if (scroller instanceof HTMLElement) {
-      isHeaderCollapsed.value = scroller.scrollTop > COLLAPSE_AFTER_PX
+    if (!(scroller instanceof HTMLElement)) return
+
+    const { scrollTop } = scroller
+    if (!isHeaderCollapsed.value && scrollTop > COLLAPSE_ABOVE_PX) {
+      isHeaderCollapsed.value = true
+    } else if (isHeaderCollapsed.value && scrollTop < EXPAND_BELOW_PX) {
+      isHeaderCollapsed.value = false
     }
   }
 

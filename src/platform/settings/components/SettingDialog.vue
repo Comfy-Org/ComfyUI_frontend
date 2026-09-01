@@ -57,10 +57,10 @@
         class="flex-1"
       />
       <div
-        v-else-if="isWorkspaceCategoryActive && workspaceName"
+        v-else-if="isWorkspaceCategoryActive"
         class="flex min-w-0 flex-1 items-center gap-3"
       >
-        <template v-if="!isHeaderCollapsed">
+        <template v-if="!isHeaderCollapsed && workspaceName">
           <WorkspaceProfilePic
             class="size-11 text-2xl"
             :workspace-name="workspaceName"
@@ -187,6 +187,10 @@ const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
 // state outlives the dialog, so a reopen would otherwise start collapsed.
 watch(activeCategoryKey, resetHeaderCollapse)
 onBeforeUnmount(resetHeaderCollapse)
+
+// Written from outside this dialog too (SubscriptionPanelContentWorkspace also
+// renders in WorkspacePanelContent), so never trust the inherited value.
+resetHeaderCollapse()
 
 const navItems = computed(() => navGroups.value.flatMap((group) => group.items))
 const searchableNavItems = computed(() =>

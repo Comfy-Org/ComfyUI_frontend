@@ -427,6 +427,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 export const Default: Story = {
   render: (args: StoryArgs) => createStoryTemplate(args),
   args: {
+    headerPadding: 'default',
     contentTitle: 'Content Title',
     hasLeftPanel: true,
     hasRightPanel: true,

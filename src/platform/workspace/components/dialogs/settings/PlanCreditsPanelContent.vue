@@ -1,11 +1,17 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <Teleport to="#settings-header-controls" :disabled="!isHeaderCollapsed">
+    <Teleport
+      defer
+      to="#settings-header-controls"
+      :disabled="!isHeaderCollapsed"
+    >
       <div
         :class="
           cn(
-            'flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9',
-            isHeaderCollapsed ? 'min-w-0 flex-1' : 'mb-4'
+            'flex w-full gap-3',
+            isHeaderCollapsed
+              ? 'min-w-0 flex-1 flex-row items-center gap-9'
+              : 'mb-4 flex-col @2xl:flex-row @2xl:items-center @2xl:gap-9'
           )
         "
       >
@@ -57,7 +63,8 @@ import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/S
 
 type View = 'overview' | 'activity'
 
-const { isHeaderCollapsed, handlePanelScroll } = useSettingsHeaderCollapse()
+const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
+  useSettingsHeaderCollapse()
 
 const { t } = useI18n()
 
@@ -67,6 +74,10 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 ])
 
 const activeView = ref<View>('overview')
+
+// Each view owns a different scroller, so a collapsed header would otherwise
+// survive the switch and sit above content at scrollTop 0.
+watch(activeView, resetHeaderCollapse)
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
 watch(usageLogsTable, (table) => {
