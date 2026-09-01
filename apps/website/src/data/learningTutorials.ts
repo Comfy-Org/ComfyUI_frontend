@@ -819,8 +819,9 @@ export const tutorialDescription = (
   tutorial: LearningTutorial,
   locale: Locale
 ): string => {
-  if (tutorial.description) return tutorial.description[locale]
-  const title = tutorial.title[locale]
+  if (tutorial.description)
+    return tutorial.description[locale] || tutorial.description.en
+  const title = tutorial.title[locale] || tutorial.title.en
   const label = t(categoryLabelKeys[tutorial.category], locale)
   return locale === 'zh-CN'
     ? `观看《${title}》教程：一个可亲自体验的 ComfyUI ${label} 实战工作流。`

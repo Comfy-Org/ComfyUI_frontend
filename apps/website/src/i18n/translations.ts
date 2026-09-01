@@ -7341,14 +7341,20 @@ const translations = {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
   }
-} as const satisfies Record<string, Record<Locale, string>>
+} as const satisfies Record<
+  string,
+  { en: string; 'zh-CN': string } & Partial<Record<Locale, string>>
+>
 
-type TranslationKey = keyof typeof translations
+export type TranslationKey = keyof typeof translations
 
-type LocalizedText = Record<Locale, string>
+export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
+  Record<Locale, string>
+>
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return translations[key][locale] ?? translations[key].en
+  const entry = translations[key] as LocalizedText
+  return entry[locale] ?? entry.en
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
@@ -7357,4 +7363,4 @@ export function hasKey(key: string): boolean {
   return key in translations
 }
 
-export type { Locale, LocalizedText, TranslationKey }
+export type { Locale }
