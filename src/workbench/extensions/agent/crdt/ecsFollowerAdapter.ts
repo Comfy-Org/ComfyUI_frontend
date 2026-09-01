@@ -15,6 +15,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
+import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
 export type MutationsForTarget =
@@ -91,6 +92,29 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
   ) as SemanticLinkPayload[TKey extends 'inputs'
     ? 'targetInputs'
     : 'originOutputs']
+}
+
+/** Slots `prepare` will keep: it drops every non-record entry before indexing. */
+function connectableSlots(slots: readonly unknown[] | undefined): number {
+  return (slots ?? []).filter(
+    (slot) => typeof slot === 'object' && slot !== null && !Array.isArray(slot)
+  ).length
+}
+
+/** Every way `prepare` rejects a `connect`, mirrored: it fails the whole batch. */
+function isConnectable(
+  link: SemanticLinkPayload,
+  projectedIds: ReadonlySet<string>
+): boolean {
+  return (
+    link.id >= 0 &&
+    link.originSlot >= 0 &&
+    link.targetSlot >= 0 &&
+    projectedIds.has(String(link.originNodeId)) &&
+    projectedIds.has(String(link.targetNodeId)) &&
+    link.originSlot < connectableSlots(link.originOutputs) &&
+    link.targetSlot < connectableSlots(link.targetInputs)
+  )
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
@@ -176,12 +200,22 @@ export class EcsFollowerAdapter {
    * previous workflow's graph into this one, and re-reconcile every node on an
    * ordinary unbind/rebind of an unchanged doc.
    *
-   * A link whose endpoints are missing is skipped rather than batched, since
-   * `prepare` rejects a whole batch on its first invalid entry.
+   * An unprojectable link is skipped rather than batched, since `prepare`
+   * rejects a whole batch on its first invalid entry.
+   *
+   * Returns false when nothing is bound, when the doc fails the KA-11 read
+   * gate, or when the batch was rejected. Restores arrive out of band, so this
+   * is the only place that gate can run for them.
    */
   projectBaseline(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
     if (!session) return false
+    try {
+      assertReadableSchema(session.follower.doc)
+    } catch (error) {
+      if (!(error instanceof FollowerSchemaError)) throw error
+      return false
+    }
 
     const nodes = [...session.nodes.keys()].flatMap((id) => {
       const payload = readSemanticNode(session.follower.doc, id)
@@ -190,17 +224,20 @@ export class EcsFollowerAdapter {
     const projectedIds = new Set(nodes.map(({ id }) => String(id)))
     const links = [...session.links.keys()].flatMap((id) => {
       const link = readSemanticLink(session.follower.doc, id)
-      if (!link) return []
-      const connectable =
-        projectedIds.has(String(link.originNodeId)) &&
-        projectedIds.has(String(link.targetNodeId))
-      return connectable ? [link] : []
+      return link && isConnectable(link, projectedIds) ? [link] : []
     })
 
-    return session.mutations.batch(context, (batch) => {
+    const projected = session.mutations.batch(context, (batch) => {
       for (const node of nodes) batch.reconcileNode(node)
       for (const link of links) batch.connect(link)
     })
+    if (!projected) return false
+
+    // The baseline is the whole doc, so whatever the observers staged is
+    // already in it; leaving it queued re-reconciles every node next frame.
+    this.discardSessionPending(session)
+    session.reconcileNextFrame = false
+    return true
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */

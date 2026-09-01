@@ -1,4 +1,9 @@
-import { applyOps, linksMap, mint } from '@comfyorg/comfy-multi-player'
+import {
+  SCHEMA_VERSION,
+  applyOps,
+  linksMap,
+  mint
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -326,7 +331,8 @@ describe('EcsFollowerAdapter integration', () => {
     ).toBe(true)
     expect(graphSnapshot()).toEqual(projectedBeforeReload)
 
-    // A redelivered snapshot carries no Yjs delta: it must change nothing.
+    // A redelivered snapshot integrates no new struct: it must change nothing.
+    reloadedFollower.applyRemoteUpdate(savedSnapshot)
     expect(
       reloadedAdapter.applyFrame({
         workflowId: 'wf',
@@ -345,7 +351,7 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('skips baseline links whose endpoints are missing from the doc', () => {
+  it('skips baseline links the graph would reject, keeping the rest', () => {
     const host = mint(
       {
         nodes: [
@@ -362,7 +368,8 @@ describe('EcsFollowerAdapter integration', () => {
             pos: [300, 20],
             inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
             outputs: []
-          }
+          },
+          { id: 3, type: 'Sink', pos: [500, 20] }
         ],
         links: [[9, 1, 0, 2, 0, 'IMAGE']]
       },
@@ -370,7 +377,12 @@ describe('EcsFollowerAdapter integration', () => {
     )
     const follower = new FollowerDoc()
     follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
-    linksMap(follower.doc).set('10', [10, '404', 0, '2', 0, 'IMAGE'])
+    const links = linksMap(follower.doc)
+    links.set('10', [10, '404', 0, '2', 0, 'IMAGE'])
+    links.set('11', [11, '1', 7, '2', 0, 'IMAGE'])
+    links.set('12', [12, '1', 0, '2', 7, 'IMAGE'])
+    links.set('13', [13, '1', 0, '3', 0, 'IMAGE'])
+    links.set('14', [14, '1', -1, '2', 0, 'IMAGE'])
 
     const adapter = new EcsFollowerAdapter(
       createGraphMutations({
@@ -391,13 +403,106 @@ describe('EcsFollowerAdapter integration', () => {
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
         .map(({ id }) => id)
-    ).toEqual([toNodeId(1), toNodeId(2)])
+    ).toEqual([toNodeId(1), toNodeId(2), toNodeId(3)])
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toBeDefined()
+    for (const rejected of [10, 11, 12, 13, 14]) {
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(rejected))
+      ).toBeUndefined()
+    }
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('does not replay the baseline again on the next frame', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            size: [180, 90],
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const createLayout = vi.fn()
+    const deleteLayouts = vi.fn()
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      })
+    )
+
+    // Restoring after bind stages every node the snapshot carries.
+    adapter.bind('wf', follower)
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
     expect(
-      useLinkStore().getTopology(scope.rootGraphId, toLinkId(10))
-    ).toBeUndefined()
+      adapter.projectBaseline('wf', {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'baseline'
+      })
+    ).toBe(true)
+    const projected = graphSnapshot()
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: new Uint8Array(),
+        actor: 'agent:test',
+        opIds: ['unrelated']
+      })
+    ).toBe(true)
+
+    expect(createLayout).not.toHaveBeenCalled()
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(graphSnapshot()).toEqual(projected)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('refuses to project a doc this build cannot read', () => {
+    const host = mint(
+      { nodes: [{ id: 1, type: 'Source', pos: [0, 0] }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    follower.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+    adapter.bind('wf', follower)
+
+    expect(
+      adapter.projectBaseline('wf', {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'baseline'
+      })
+    ).toBe(false)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
 
     adapter.destroy()
     follower.destroy()
