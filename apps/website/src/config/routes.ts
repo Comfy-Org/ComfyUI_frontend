@@ -5,7 +5,8 @@ const baseRoutes = {
   download: '/download',
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
-  cloudEnterprise: '/cloud/enterprise',
+  enterprise: '/enterprise',
+  managedBuilds: '/enterprise/managed-builds',
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
@@ -28,6 +29,7 @@ const baseRoutes = {
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
   minimaxLicense: '/minimax/license',
+  minimaxLicenseProfessionalRequest: '/minimax/license/professional-request',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
@@ -57,12 +59,19 @@ type Routes = typeof baseRoutes
 //
 // models: the supported-models catalog only exists at /p/supported-models;
 // there is no /<locale>/p/supported-models page, so a prefixed link 404s.
+//
+// minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
+// form, so no localized variant exists. See the comment header in
+// src/pages/minimax/license/professional-request.astro.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'models'
+  'enterprise',
+  'managedBuilds',
+  'models',
+  'minimaxLicenseProfessionalRequest'
 ])
 
 const LOCALE_INVARIANT_PATHS = new Set<string>(
@@ -73,6 +82,13 @@ const LOCALE_INVARIANT_PATHS = new Set<string>(
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
  * URLs and locale-invariant routes pass through unchanged.
  */
+/** True for a locale-invariant route or anything nested under one. */
+export function isLocaleInvariantPath(pathname: string): boolean {
+  return [...LOCALE_INVARIANT_PATHS].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  )
+}
+
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
@@ -132,7 +148,8 @@ export const externalLinks = {
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
-  workflows: 'https://comfy.org/workflows',
+  workflows: 'https://comfy.org/workflows/',
+  workflowUseCases: 'https://comfy.org/workflows/use-cases/',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const

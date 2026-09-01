@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
+import { getRoutes } from '../src/config/routes'
 import { wan3Page } from '../src/data/wan3'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -75,7 +75,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     const secondary = hero.getByRole('link', { name: HERO_SECONDARY_CTA })
     await expect(secondary).toHaveAttribute(
       'href',
-      `${externalLinks.workflows}/model/wan`
+      'https://comfy.org/workflows/model/wan/'
     )
   })
 

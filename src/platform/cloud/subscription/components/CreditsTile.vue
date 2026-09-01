@@ -97,7 +97,7 @@
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyBonusCredits,
+                  remaining: monthlyRemainingDisplay,
                   total: creditPoolTotalDisplay
                 })
               }}
@@ -260,7 +260,6 @@ const {
 } = useBillingContext()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const {
-  monthlyBonusCredits,
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
@@ -338,12 +337,15 @@ const creditPoolTotalDisplay = computed(() => {
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
+const monthlyRemainingDisplay = computed(() =>
+  formatCreditCount(usage.value.remaining)
+)
 
 const compactNumber = computed(
   () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
 )
 const monthlyRemainingCompact = computed(() =>
-  compactNumber.value.format(monthlyBonusCreditsValue.value)
+  compactNumber.value.format(usage.value.remaining)
 )
 const creditPoolTotalCompact = computed(() => {
   const total = creditPoolTotalCredits.value
