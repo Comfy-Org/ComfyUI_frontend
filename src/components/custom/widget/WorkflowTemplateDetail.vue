@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -19,7 +19,11 @@ const {
   groups,
   cloudUrl,
   isPartnerNode = false,
-  openPending = false
+  openPending = false,
+  modelSetupEnabled = false,
+  setupPending = false,
+  requirementsMet = false,
+  starterPackAvailable = false
 } = defineProps<{
   title: string
   description: string
@@ -27,10 +31,15 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  modelSetupEnabled?: boolean
+  setupPending?: boolean
+  requirementsMet?: boolean
+  starterPackAvailable?: boolean
 }>()
 
 const emit = defineEmits<{
   'open-template': []
+  'download-starter-pack': []
   'download-model': [rowId: string]
 }>()
 
@@ -39,6 +48,12 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
+const offerDownloadAndOpen = computed(
+  () =>
+    modelSetupEnabled &&
+    !requirementsMet &&
+    (setupPending || starterPackAvailable)
+)
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -407,15 +422,35 @@ function getFailedDownloadLabel(
     </div>
 
     <footer
-      class="flex min-h-15 shrink-0 items-center justify-end border-t border-border-subtle px-6 py-4"
+      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
     >
+      <Button
+        v-if="offerDownloadAndOpen"
+        variant="outline"
+        size="sm"
+        :disabled="openPending"
+        @click="emit('open-template')"
+      >
+        {{ t('templateWorkflows.detail.openNow') }}
+      </Button>
       <Button
         variant="inverted"
         size="sm"
         :loading="openPending"
-        @click="emit('open-template')"
+        :disabled="offerDownloadAndOpen && setupPending"
+        @click="
+          offerDownloadAndOpen
+            ? emit('download-starter-pack')
+            : emit('open-template')
+        "
       >
-        {{ t('templateWorkflows.detail.openTemplate') }}
+        {{
+          t(
+            offerDownloadAndOpen
+              ? 'templateWorkflows.detail.downloadStarterPack'
+              : 'templateWorkflows.detail.openNow'
+          )
+        }}
       </Button>
     </footer>
   </article>
