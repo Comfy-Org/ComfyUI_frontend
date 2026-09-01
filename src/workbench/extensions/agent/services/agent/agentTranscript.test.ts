@@ -55,4 +55,25 @@ describe('normalizeAgentTranscript', () => {
     expect(refreshed.messages[0].id).toBe('turn-a')
     expect(refreshed.assistantTurnIds).toEqual(new Set(['turn-a']))
   })
+
+  it('keeps user-only turns while ignoring non-text transcript content', () => {
+    const userOnly = row(1, 'user', 'turn-a', 'Prompt', 'row-1')
+    const toolRow = row(2, 'tool', 'turn-a', '', 'row-2')
+    toolRow.content = { result: { nodeCount: 2 } }
+
+    const transcript = normalizeAgentTranscript([toolRow, userOnly])
+
+    expect(transcript.messages).toEqual([
+      {
+        id: 'turn-a',
+        role: 'assistant',
+        parts: [],
+        thinking: false,
+        streaming: false
+      }
+    ])
+    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('Prompt')
+    expect(transcript.assistantTurnIds).toEqual(new Set())
+    expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
+  })
 })
