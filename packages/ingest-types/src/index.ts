@@ -208,7 +208,6 @@ export type {
   CreateWorkspaceInviteResponses,
   CreateWorkspaceRequest,
   CreateWorkspaceResponse,
-  CurrentWorkspaceResponse,
   CreateWorkspaceResponses,
   CredentialOption,
   CurrentWorkspaceResponse,
