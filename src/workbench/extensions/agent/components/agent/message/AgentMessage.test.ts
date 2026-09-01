@@ -239,3 +239,66 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('Checking the result')).toBeInTheDocument()
   })
 })
+
+describe('AgentMessage fallback content', () => {
+  it('groups adjacent workflow links and renders notice severities', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        { type: 'tabLink', workflowId: 'workflow-1', name: 'First workflow' },
+        { type: 'tabLink', workflowId: 'workflow-2', name: 'Second workflow' },
+        { type: 'notice', level: 'info', text: 'Saved locally' },
+        { type: 'notice', level: 'error', text: 'Could not publish' }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          TabLinkCard: {
+            props: ['workflowId', 'name'],
+            template:
+              '<span data-testid="tab-link">{{ workflowId }}:{{ name }}</span>'
+          }
+        }
+      }
+    })
+
+    expect(screen.getAllByTestId('tab-link')).toHaveLength(2)
+    expect(screen.getByText('workflow-1:First workflow')).toBeInTheDocument()
+    expect(screen.getByText('workflow-2:Second workflow')).toBeInTheDocument()
+    expect(screen.getByText('Saved locally')).toBeInTheDocument()
+    expect(screen.getByText('Could not publish')).toBeInTheDocument()
+  })
+
+  it('forwards feedback from a completed text response', async () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [{ type: 'text', text: 'Finished', state: 'done' }]
+    }
+
+    const { emitted } = render(AgentMessage, {
+      props: { message },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          MessageFeedback: {
+            emits: ['feedback'],
+            template:
+              '<button type="button" @click="$emit(\'feedback\', \'up\')">Vote up</button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vote up' }))
+
+    expect(emitted().feedback).toEqual([['up']])
+  })
+})
