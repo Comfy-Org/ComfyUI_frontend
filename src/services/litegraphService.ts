@@ -189,6 +189,7 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
+  const canvasViewportInsets = useCanvasViewportInsets()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
   const subgraphPseudoWidgetCache = new WeakMap<
     SubgraphNode,
@@ -1012,7 +1013,9 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds, { insets: useCanvasViewportInsets().value })
+    canvas.ds.fitToBounds(bounds, {
+      insets: () => canvasViewportInsets.value
+    })
     canvas.setDirty(true, true)
   }
 
