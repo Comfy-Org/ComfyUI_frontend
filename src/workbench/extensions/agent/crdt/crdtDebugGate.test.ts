@@ -79,4 +79,11 @@ describe('crdtDebugGate', () => {
     const empty = await loadGate('?crdtDebug=')
     expect(empty.isCrdtDebugEnabled()).toBe(false)
   })
+
+  it('requires the agent product gate as well as debug opt-in', async () => {
+    const gate = await loadGate('?crdtDebug=1')
+
+    expect(gate.resolveDebugPanelEnabled(true)).toBe(true)
+    expect(gate.resolveDebugPanelEnabled(false)).toBe(false)
+  })
 })

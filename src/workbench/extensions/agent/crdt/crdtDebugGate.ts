@@ -27,6 +27,13 @@ export type CrdtLogLevel = (typeof CRDT_LOG_LEVELS)[number]
 
 const DEFAULT_LEVEL: CrdtLogLevel = 'info'
 
+export function resolveDebugPanelEnabled(
+  productGateEnabled: boolean,
+  debugOverrideEnabled = isCrdtDebugEnabled()
+): boolean {
+  return productGateEnabled && debugOverrideEnabled
+}
+
 /**
  * Cached because {@link isLevelEnabled} runs on the CRDT hot path — once per
  * outbound frame, per applied frame and per minted op — and an uncached read
