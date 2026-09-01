@@ -109,6 +109,9 @@ describe('collectCrdtDebugReport', () => {
     expect(report.indexOf('What the tester expected')).toBeLessThan(
       report.indexOf('## System')
     )
+    expect(report).toContain(
+      'System details can identify your hardware, software versions and launch configuration.'
+    )
   })
 
   it('still produces a report when the backend is the thing that is broken', async () => {

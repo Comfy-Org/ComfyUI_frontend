@@ -324,6 +324,7 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## System',
+    `${SHARING_WARNING} System details can identify your hardware, software versions and launch configuration.`,
     stats.ok
       ? systemSection(stats.value)
       : `_${stats.label} unavailable: ${stats.error}_`
