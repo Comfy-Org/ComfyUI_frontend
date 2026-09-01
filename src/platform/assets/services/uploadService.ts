@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { ImageRef } from '@/stores/maskEditorDataStore'
@@ -15,11 +17,13 @@ interface UploadConfig {
   maxSizeMB?: number
 }
 
-interface UploadApiResponse {
-  name: string
-  subfolder?: string
-  type?: string
-}
+const uploadApiResponseSchema = z.object({
+  name: z.string(),
+  subfolder: z.string().optional(),
+  type: z.string().optional()
+})
+
+type UploadApiResponse = z.infer<typeof uploadApiResponseSchema>
 
 interface UploadResult {
   success: boolean
@@ -51,6 +55,8 @@ async function convertToFile(
 
   // dataURL string
   if (!isDataURL(source)) {
+    // uploadMedia converts this internal failure into an UploadResult.
+    // eslint-disable-next-line comfy/no-new-error-throw
     throw new Error('Invalid data URL')
   }
 
@@ -59,8 +65,11 @@ async function convertToFile(
     const name = filename || `upload-${Date.now()}.png`
     return new File([blob], name, { type: mimeType })
   } catch (error) {
+    // uploadMedia converts this internal failure into an UploadResult.
+    // eslint-disable-next-line comfy/no-new-error-throw
     throw new Error(
-      `Failed to convert data URL to file: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to convert data URL to file: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
@@ -125,7 +134,19 @@ export async function uploadMedia(
       }
     }
 
-    const data: UploadApiResponse = await resp.json()
+    const parsedResponse = uploadApiResponseSchema.safeParse(await resp.json())
+    if (!parsedResponse.success) {
+      return {
+        success: false,
+        path: '',
+        name: '',
+        subfolder: '',
+        error: 'Invalid upload response',
+        response: null
+      }
+    }
+
+    const data = parsedResponse.data
     const path = data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 
     return {

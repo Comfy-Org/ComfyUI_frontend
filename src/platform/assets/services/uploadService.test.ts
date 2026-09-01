@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -22,10 +22,6 @@ function createMockResponse(
 }
 
 describe('uploadService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('uploadMedia', () => {
     it('uploads File successfully', async () => {
       const mockFile = new File(['content'], 'test.png', { type: 'image/png' })
@@ -125,6 +121,22 @@ describe('uploadService', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('500 - Internal Server Error')
+    })
+
+    it('rejects invalid upload responses', async () => {
+      const mockFile = new File(['content'], 'test.png')
+      vi.mocked(api.fetchApi).mockResolvedValue(createMockResponse(200))
+
+      const result = await uploadMedia({ source: mockFile })
+
+      expect(result).toEqual({
+        success: false,
+        path: '',
+        name: '',
+        subfolder: '',
+        error: 'Invalid upload response',
+        response: null
+      })
     })
 
     it('handles exceptions', async () => {
