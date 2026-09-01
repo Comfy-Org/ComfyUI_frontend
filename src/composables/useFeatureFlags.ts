@@ -1,4 +1,4 @@
-import { computed, reactive, readonly } from 'vue'
+import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
@@ -9,6 +9,7 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -44,6 +45,11 @@ export enum ServerFeatureFlag {
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+}
+
+function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
+  useTelemetry()?.trackFeatureFlagEvaluation(flagKey, value)
+  return value
 }
 
 /**
@@ -289,4 +295,54 @@ export function useFeatureFlags() {
     flags: readonly(flags),
     featureFlag
   }
+}
+
+export function startFeatureFlagTelemetry() {
+  const { flags } = useFeatureFlags()
+
+  return watchEffect(() => {
+    const evaluations = {
+      [ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA]:
+        flags.supportsPreviewMetadata,
+      [ServerFeatureFlag.MAX_UPLOAD_SIZE]: flags.maxUploadSize,
+      [ServerFeatureFlag.MANAGER_SUPPORTS_V4]: flags.supportsManagerV4,
+      [ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED]:
+        flags.modelUploadButtonEnabled,
+      [ServerFeatureFlag.ASSET_DELETION_ENABLED]: flags.assetDeletionEnabled,
+      [ServerFeatureFlag.ASSET_RENAME_ENABLED]: flags.assetRenameEnabled,
+      [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
+      [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
+        flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.LINEAR_TOGGLE_ENABLED]: flags.linearToggleEnabled,
+      [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
+        flags.partnerNodeGovernanceEnabled,
+      [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
+      [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
+      [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
+        flags.nodeLibraryEssentialsEnabled,
+      [ServerFeatureFlag.WORKFLOW_SHARING_ENABLED]:
+        flags.workflowSharingEnabled,
+      [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
+      [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
+        flags.comfyHubProfileGateEnabled,
+      [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
+      [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
+      [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
+      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
+        flags.legacyBillingMigrationEnabled,
+      [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
+        flags.embeddedCheckoutEnabled,
+      [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
+      [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
+        flags.freeTierJobAllowanceEnabled,
+      [ServerFeatureFlag.CHURNKEY_APP_ID]: flags.churnkeyAppId,
+      [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
+      [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
+      [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      assets: flags.assetsEnabled
+    }
+
+    for (const [key, value] of Object.entries(evaluations))
+      reportFeatureFlagEvaluation(key, value)
+  })
 }

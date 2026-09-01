@@ -52,6 +52,10 @@ await refreshRemoteConfig({ useAuth: false })
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+  const { startFeatureFlagTelemetry } =
+    await import('@/composables/useFeatureFlags')
+  const stopFeatureFlagTelemetry = startFeatureFlagTelemetry()
+  import.meta.hot?.dispose(stopFeatureFlagTelemetry)
 }
 
 if (hasHostTelemetryBridge) {
