@@ -917,6 +917,52 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('attributes a queued job to the mode used when submission started', async () => {
+      prepareEmptyPromptQueue()
+      const workflow = mockWorkspaceWorkflow.activeWorkflow
+      if (!workflow) throw new Error('Expected an active workflow')
+      workflow.activeMode = 'graph'
+
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackExecutionOutcome: vi.fn() })
+      setTelemetryRegistry(registry)
+
+      let finishPromptBuild: () => void = () => {}
+      vi.spyOn(app, 'graphToPrompt').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishPromptBuild = () =>
+              resolve({
+                output: {},
+                workflow: createWorkflowGraphData()
+              })
+          })
+      )
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      try {
+        const submission = app.queuePrompt(0)
+        await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
+
+        workflow.activeMode = 'app'
+        finishPromptBuild()
+        await expect(submission).resolves.toBe(true)
+
+        expect(useExecutionStore().queuedJobs['job-1']).toMatchObject({
+          viewMode: 'graph',
+          isAppMode: false,
+          workflowContext: {
+            view_mode: 'graph'
+          }
+        })
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
     it('tracks a resolved prompt rejection at the submission stage', async () => {
       prepareEmptyPromptQueue()
       const trackExecutionOutcome = vi.fn()

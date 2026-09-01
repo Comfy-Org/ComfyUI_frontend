@@ -146,6 +146,32 @@ describe('keybindingService - dialog gate', () => {
     }
   })
 
+  it.for([
+    { attribute: 'aria-hidden', value: 'true' },
+    { attribute: 'hidden', value: '' }
+  ])(
+    'executes Ctrl+S while an ARIA modal is inside a $attribute ancestor',
+    async ({ attribute, value }) => {
+      const wrapper = document.createElement('div')
+      wrapper.setAttribute(attribute, value)
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('aria-modal', 'true')
+      wrapper.appendChild(dialog)
+      document.body.appendChild(wrapper)
+
+      try {
+        const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
+        await keybindingService.keybindHandler(event)
+
+        expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.SaveWorkflow')
+        expect(event.defaultPrevented).toBe(true)
+      } finally {
+        document.body.removeChild(wrapper)
+      }
+    }
+  )
+
   it('does NOT execute a global keybinding while a reka dialog is open', async () => {
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')

@@ -35,7 +35,8 @@ An Architecture Decision Record captures an important technical decision made al
 | [0023](0023-widget-entities-and-legacy-behavior-boundary.md)                | Widget Entities and Legacy Behavior Boundary                    | Proposed | 2026-08-26 |
 | [0024](0024-in-app-agent-offscreen-graphs.md)                               | Graph Activation and Document Objects for In-App Agent Targets  | Proposed | 2026-08-28 |
 | [0025](0025-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
-| [0026](0026-api-v2-runtime-profiles.md)                                     | API V2 Runtime Profiles                                         | Proposed | 2026-08-31 |
+| [0026](0026-frontend-document-model.md)                                     | Frontend Document Model                                         | Proposed | 2026-08-31 |
+| [0027](0027-api-v2-runtime-profiles.md)                                     | API V2 Runtime Profiles                                         | Proposed | 2026-08-31 |
 
 ## Creating a New ADR
 

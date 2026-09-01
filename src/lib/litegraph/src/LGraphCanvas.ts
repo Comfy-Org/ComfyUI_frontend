@@ -5789,8 +5789,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.beginPath()
       if (shape == RenderShape.BOX) {
         ctx.rect(0, 0, size[0], size[1])
-      } else if (shape == RenderShape.ROUND) {
-        ctx.roundRect(0, 0, size[0], size[1], [10])
+      } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
+        ctx.roundRect(
+          0,
+          0,
+          size[0],
+          size[1],
+          shape == RenderShape.CARD
+            ? [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
+            : [LiteGraph.ROUND_RADIUS]
+        )
       } else if (shape == RenderShape.CIRCLE) {
         ctx.arc(size[0] * 0.5, size[1] * 0.5, size[0] * 0.5, 0, Math.PI * 2)
       }
