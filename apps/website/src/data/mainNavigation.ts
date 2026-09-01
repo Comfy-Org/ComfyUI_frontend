@@ -70,7 +70,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              href: routes.enterprise
             }
           ]
         },

@@ -4,36 +4,12 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
-import { readdirSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
-import {
-  clusterAlternates,
-  mirroredRoutes,
-  unprefixed
-} from './src/utils/hreflangRoutes'
+import { sitemapAlternates } from './src/lib/hreflang'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
-
-/** Page files as `/src/pages/...` paths, the shape `mirroredRoutes` expects. */
-function pageFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) return pageFiles(full)
-    if (!entry.name.endsWith('.astro')) return []
-    const rel = relative(process.cwd(), full).split(sep).join('/')
-    return [`/${rel}`]
-  })
-}
-
-// The sitemap advertises the same cluster the pages do, from the same rule, so
-// the two cannot disagree about which pages have a twin. Alternates on a URL
-// whose twin does not exist would be the markup bug all over again, in a file
-// search engines read first.
-const MIRRORED_ROUTES = mirroredRoutes(
-  pageFiles(join(process.cwd(), 'src', 'pages'))
-)
 
 export default defineConfig({
   site: 'https://comfy.org',
@@ -45,25 +21,7 @@ export default defineConfig({
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.
   markdown: { smartypants: false },
-  redirects: {
-    '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
-      '/customers/moment-factory/',
-    '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
-      '/customers/series-entertainment/',
-    // Trailing slashes are load-bearing here: Astro renders a stub page per
-    // redirect whose canonical is the destination string verbatim, and every real
-    // page self-canonicalizes with a slash via absoluteUrl(). A slash-less
-    // destination canonicalizes one hop short of the page it redirects to, which
-    // is what #14390 fixed for the line below.
-    '/zh-CN/terms-of-service': '/terms-of-service/',
-    // Affiliates exists in English only. Without these a reader who swaps the
-    // locale prefix by hand gets a 404 instead of the page they asked for, which
-    // is the same reason the line above exists.
-    '/zh-CN/affiliates': '/affiliates/',
-    '/zh-CN/affiliates/terms': '/affiliates/terms/',
-    '/minimax': { status: 307, destination: '/minimax-h3/' },
-    '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
-  },
+  redirects,
   build: {
     assets: '_website'
   },
@@ -73,19 +31,7 @@ export default defineConfig({
     mdx(),
     sitemap({
       filter: (page) => !isExcludedFromSitemap(page),
-      serialize(item) {
-        const { origin, pathname } = new URL(item.url)
-        const path = unprefixed(pathname)
-        if (!MIRRORED_ROUTES.has(path)) return item
-
-        // Rendered from the same builder the page tags use, so the sitemap
-        // cannot describe a different cluster than the markup.
-        const links = clusterAlternates(path, origin).map((alternate) => ({
-          lang: alternate.hreflang,
-          url: alternate.href
-        }))
-        return { ...item, links }
-      }
+      serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
     }),
     markdownTwins()
   ],

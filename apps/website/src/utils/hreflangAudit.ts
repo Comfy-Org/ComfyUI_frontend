@@ -5,7 +5,7 @@
  * a full build. A guard nobody has watched fail is not a guard, and two of these
  * rules exist because the first version of the crawler passed a broken cluster.
  */
-import type { Alternate } from './hreflang'
+import type { Alternate } from './hreflangRoutes'
 
 import { unprefixed, ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
 
@@ -17,7 +17,7 @@ export interface BuiltSite {
    * the sitemap is absent.
    *
    * Deliberately the full pairs rather than a set of language names: comparing
-   * names alone accepts a sitemap whose `zh-Hans` link points at the English URL,
+   * names alone accepts a sitemap whose `zh-CN` link points at the English URL,
    * which is the same lie the page-side rules already refuse.
    */
   sitemap: Map<string, Alternate[]> | null
@@ -50,7 +50,7 @@ function expectedAlternates(
  *
  * Applied to the page tags AND to the sitemap entries, because a cluster is
  * only as good as its weaker declaration: a sitemap naming the right languages
- * while pointing `zh-Hans` at the English URL misdescribes the site exactly as
+ * while pointing `zh-CN` at the English URL misdescribes the site exactly as
  * a page doing the same would.
  */
 function clusterErrors(

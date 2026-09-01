@@ -106,13 +106,13 @@ function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
         this.addWidget('number', PROMOTED_INPUT, 0, () => {})
       }
     }
-    LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE] = ConvertibleNode
+    LiteGraph.registerNodeType(CONVERTIBLE_NODE_TYPE, ConvertibleNode)
     onTestFinished(() => {
       if (
         LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE] ===
         ConvertibleNode
       ) {
-        delete LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE]
+        LiteGraph.unregisterNodeType(CONVERTIBLE_NODE_TYPE)
       }
     })
   }

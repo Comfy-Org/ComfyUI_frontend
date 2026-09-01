@@ -19,6 +19,10 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
+    expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
+      '/enterprise/managed-builds'
+    )
   })
 })
 
@@ -55,6 +59,20 @@ describe('getRoutes ltx', () => {
 
   it('serves a localized ltx path for zh-CN', () => {
     expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
+describe('getRoutes minimaxLicenseProfessionalRequest', () => {
+  it('serves the license request page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+
+  it('never prefixes the English-only license request page for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
   })
 })
 

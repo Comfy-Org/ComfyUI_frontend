@@ -48,7 +48,7 @@ jobs:
         run: pnpm --filter @comfyorg/website validate:jsonld
 
       # Same shape as validate:jsonld: reads the built dist/ and exits non-zero.
-      # The pages and the sitemap each render their own cluster, and this is the
-      # only thing that can catch them disagreeing, so it has to run on its own.
+      # Which routes are locale-invariant is hand-maintained, so this is what
+      # catches a cluster that points at a page the build never produced.
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang

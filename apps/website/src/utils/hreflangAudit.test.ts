@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Alternate } from './hreflang'
+import type { Alternate } from './hreflangRoutes'
 
 import { auditBuiltSite, sitemapChunkNames } from './hreflangAudit'
 
@@ -10,7 +10,7 @@ const ORIGIN = 'https://comfy.org'
 function cluster(path: string): Alternate[] {
   return [
     { hreflang: 'en', href: `${ORIGIN}${path}` },
-    { hreflang: 'zh-Hans', href: `${ORIGIN}/zh-CN${path}` },
+    { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${path}` },
     { hreflang: 'x-default', href: `${ORIGIN}${path}` }
   ]
 }
@@ -44,13 +44,13 @@ describe('auditBuiltSite', () => {
     const site = healthySite()
     site.pages.set('/about/', [
       { hreflang: 'en', href: `${ORIGIN}/zh-CN/about/` },
-      { hreflang: 'zh-Hans', href: `${ORIGIN}/about/` },
+      { hreflang: 'zh-CN', href: `${ORIGIN}/about/` },
       { hreflang: 'x-default', href: `${ORIGIN}/about/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
       '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
-      '/about/: page expects zh-Hans -> https://comfy.org/zh-CN/about/, but does not declare it'
+      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it'
     ])
   })
 
@@ -70,7 +70,7 @@ describe('auditBuiltSite', () => {
     site.sitemap?.delete('/zh-CN/about/')
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: alternate zh-Hans -> /zh-CN/about/ was not built (404)'
+      '/about/: alternate zh-CN -> /zh-CN/about/ was not built (404)'
     ])
   })
 
@@ -100,13 +100,13 @@ describe('auditBuiltSite', () => {
     const site = healthySite()
     site.pages.set('/about/', [
       { hreflang: 'en', href: `${ORIGIN}/about/` },
-      { hreflang: 'zh-Hans', href: 'https://www.comfy.org/zh-CN/about/' },
+      { hreflang: 'zh-CN', href: 'https://www.comfy.org/zh-CN/about/' },
       { hreflang: 'x-default', href: `${ORIGIN}/about/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page alternate zh-Hans points off-origin (https://www.comfy.org/zh-CN/about/)',
-      '/about/: page expects zh-Hans -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/about/: page alternate zh-CN points off-origin (https://www.comfy.org/zh-CN/about/)',
+      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
       // The twin still points here, so losing the link back breaks reciprocity
       // too. Asserting the exact list is what makes that visible.
       '/zh-CN/about/: lists /about/, which does not list it back'
@@ -126,22 +126,22 @@ describe('auditBuiltSite', () => {
     site.sitemap?.set('/affiliates/', cluster('/affiliates/'))
 
     expect(auditBuiltSite(site)).toEqual([
-      '/affiliates/: sitemap advertises en, zh-Hans, x-default that the page does not'
+      '/affiliates/: sitemap advertises en, zh-CN, x-default that the page does not'
     ])
   })
 
-  it('rejects a sitemap entry whose zh-Hans link points at the English URL', () => {
+  it('rejects a sitemap entry whose zh-CN link points at the English URL', () => {
     // The language SET still matches the page exactly, so comparing names alone
     // accepts this. It tells Google the English URL is the Chinese one.
     const site = healthySite()
     site.sitemap?.set('/about/', [
       { hreflang: 'en', href: `${ORIGIN}/about/` },
-      { hreflang: 'zh-Hans', href: `${ORIGIN}/about/` },
+      { hreflang: 'zh-CN', href: `${ORIGIN}/about/` },
       { hreflang: 'x-default', href: `${ORIGIN}/about/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: sitemap expects zh-Hans -> https://comfy.org/zh-CN/about/, but does not declare it'
+      '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it'
     ])
   })
 
@@ -167,8 +167,8 @@ describe('auditBuiltSite', () => {
     site.sitemap?.set('/about/', [...cluster('/about/'), ja])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page declares hreflang="ja", which is not one of en, zh-Hans, x-default',
-      '/about/: sitemap declares hreflang="ja", which is not one of en, zh-Hans, x-default'
+      '/about/: page declares hreflang="ja", which is not one of en, zh-CN, x-default',
+      '/about/: sitemap declares hreflang="ja", which is not one of en, zh-CN, x-default'
     ])
   })
 

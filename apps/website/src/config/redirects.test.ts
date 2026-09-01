@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { redirects as astroRedirects } from './redirects'
 import { getRoutes } from './routes'
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -75,27 +76,42 @@ describe('legacy MiniMax H3 redirects', () => {
  * test now rather than a convention.
  */
 describe('astro redirect destinations', () => {
-  const source = readFileSync(join(appDir, 'astro.config.ts'), 'utf-8')
-  const block = /redirects:\s*\{([\s\S]*?)\n {2}\},/.exec(source)?.[1]
-
-  const destinations = [
-    // `'/from': { status: 307, destination: '/to/' }`
-    ...[...(block ?? '').matchAll(/destination:\s*'([^']+)'/g)],
-    // `'/from': '/to/'`, value sometimes wrapped onto the next line
-    ...[...(block ?? '').matchAll(/^\s*'[^']+':\s*\n?\s*'([^']+)',?\s*$/gm)]
-  ].map((match) => match[1])
-
-  it('finds the redirect map', () => {
-    // A regex that silently matches nothing would make every assertion vacuous.
-    expect(block).toBeDefined()
-    expect(destinations.length).toBeGreaterThanOrEqual(7)
-  })
+  const destinations = Object.values(astroRedirects).map((entry) =>
+    typeof entry === 'string' ? entry : entry.destination
+  )
 
   it('every destination ends with a trailing slash', () => {
-    const slashless = destinations.filter((d) => !d.endsWith('/'))
+    const slashless = destinations.filter(
+      (destination) => !destination.endsWith('/')
+    )
     expect(
       slashless,
       'these canonicalize one hop short of their target'
     ).toEqual([])
+  })
+})
+
+describe('legacy Enterprise redirects', () => {
+  it.for([
+    '/cloud/enterprise',
+    '/cloud/enterprise/',
+    '/zh-CN/cloud/enterprise',
+    '/zh-CN/cloud/enterprise/'
+  ])('sends %s to the canonical Enterprise route permanently', (source) => {
+    const redirect = findRedirect(source)
+
+    if (!redirect) {
+      throw new Error(`${source} is missing from vercel.json`)
+    }
+
+    expect(redirect.destination).toBe('/enterprise/')
+    expect(redirect.permanent).toBe(true)
+  })
+
+  it('leaves the canonical Enterprise routes unredirected', () => {
+    expect(findRedirect('/enterprise')).toBeUndefined()
+    expect(findRedirect('/enterprise/')).toBeUndefined()
+    expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
+    expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
   })
 })

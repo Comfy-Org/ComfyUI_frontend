@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' ist schneller; 'precision' erzeugt Lippensynchronisierung höherer Qualität zum doppelten Preis."
+        "tooltip": "'speed' ist schneller; 'precision' erzeugt eine Lippensynchronisation höherer Qualität zu einem höheren Preis."
       },
       "output_language": {
         "name": "output_language",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Video zuschneiden",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Zuschneidebereich in Pixeln. Breite/Höhe null behält das vollständige Bild bei."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Eine feste Anzahl von Frames mit verschiedenen Strategien aus einem Video samplen.",
     "display_name": "Videoframe samplen",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "Modell"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Video trimmen (Erweitert)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Wenn True und die angegebene Dauer nicht möglich ist, wird ein Fehler ausgelöst."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Trim-Fenster mit Start-/End-Frames."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

@@ -8,7 +8,7 @@
  * This file only gathers what was built; `hreflangAudit.ts` holds the rules, so
  * they can be tested against fixtures rather than a full build.
  */
-import type { Alternate } from '../src/utils/hreflang'
+import type { Alternate } from '../src/utils/hreflangRoutes'
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -45,10 +45,17 @@ function alternatesIn(html: string): Alternate[] {
 function sitemapFiles(): string[] {
   const indexPath = join(DIST, 'sitemap-index.xml')
   if (existsSync(indexPath)) {
-    const named = sitemapChunkNames(readFileSync(indexPath, 'utf-8'))
-      .map((name) => join(DIST, name))
-      .filter((path) => existsSync(path))
-    if (named.length) return named
+    const names = sitemapChunkNames(readFileSync(indexPath, 'utf-8'))
+    // Dropping a named-but-absent chunk would let the gate quietly audit less
+    // than it was asked to and still exit 0, and dropping all of them would fall
+    // through to the single-file path below and audit one chunk of many.
+    const missing = names.filter((name) => !existsSync(join(DIST, name)))
+    if (missing.length > 0) {
+      throw new Error(
+        `[hreflang] sitemap index names chunk(s) that were not built: ${missing.join(', ')}`
+      )
+    }
+    if (names.length) return names.map((name) => join(DIST, name))
   }
   const single = join(DIST, 'sitemap-0.xml')
   return existsSync(single) ? [single] : []

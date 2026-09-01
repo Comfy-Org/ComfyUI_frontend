@@ -1,45 +1,24 @@
 /**
- * Which routes exist in both locales, and how a page file maps to a route.
+ * The route model `hreflangAudit.ts` checks the built site against, and the
+ * page-tree oracle `hreflang.test.ts` checks the emitter's route list against.
  *
- * Kept free of `import.meta.glob` so `astro.config.ts` can apply the same rule to
- * sitemap alternates that the pages apply to their link tags. One definition of
- * "this page has a twin", two consumers, so the sitemap and the markup cannot
- * disagree about which pages are in the cluster.
+ * Deliberately NOT the production builder. `src/lib/hreflang.ts` decides what a
+ * page emits; this restates the rule from the file tree independently, so a
+ * defect in the emitter is caught rather than mirrored by its own checker.
+ * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
-import { isNoindexPathname } from '../config/indexing'
 
-/** The value both properties use for Simplified Chinese. The hub emits it for
- *  its /zh/ URLs, so the two clusters describe one language, not two. URLs are
- *  untouched: this is a label, not a path. */
-export const ZH_HREFLANG = 'zh-Hans'
+/** The value the marketing site publishes for Simplified Chinese. */
+export const ZH_HREFLANG = 'zh-CN'
 export const ZH_PREFIX = '/zh-CN'
-
-/**
- * Routes kept out of the cluster on top of whatever `isNoindexPathname` covers.
- *
- * Telling a search engine that two pages are translations of each other, while
- * telling it elsewhere not to index either, is a contradiction. The noindex half
- * of that is asked of `config/indexing.ts` rather than restated here: it is what
- * `BaseLayout` renders the robots tag from, so a page added to that list leaves
- * the cluster automatically instead of waiting for someone to notice a second
- * list. Restating it had already drifted, missing `/terms-of-service/`.
- *
- * Only 404 is genuinely hreflang-specific: it is not noindexed, it is simply not
- * a page anyone should be sent to in either language.
- */
-const NEVER_CLUSTERED_ROUTES: ReadonlySet<string> = new Set(['/404/'])
-
-function isClusterable(route: string): boolean {
-  return !NEVER_CLUSTERED_ROUTES.has(route) && !isNoindexPathname(route)
-}
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
  *
- * Exported so anything asking "is this file's route clustered?" derives it the
- * same way `mirroredRoutes` does. A near-enough second copy asked about
- * `/legal/index/`, a route the cluster can never contain, so every
- * `index.astro` passed the membership test vacuously.
+ * Exported so a caller asking "which route is this file?" derives it here rather
+ * than inlining the mapping. A near-enough second copy asked about
+ * `/legal/index/`, a route no cluster can contain, so every `index.astro`
+ * passed its membership check vacuously.
  */
 export function routeOf(file: string): string {
   const withoutRoot = file.replace(/^\/src\/pages/, '').replace(/\.astro$/, '')
@@ -47,59 +26,9 @@ export function routeOf(file: string): string {
   return withoutIndex === '' ? '/' : `${withoutIndex}/`
 }
 
-/**
- * Un-prefixed routes that exist in BOTH locales.
- *
- * Dynamic routes are excluded even when the file exists in both trees: the two
- * `getStaticPaths` read their own locale's content, so a slug present in English
- * is not guaranteed to build in Chinese, and the file tree cannot see that.
- */
-export function mirroredRoutes(files: string[]): Set<string> {
-  const english = new Set<string>()
-  const chinese = new Set<string>()
-
-  for (const file of files) {
-    if (file.includes('[')) continue
-    const route = routeOf(file)
-    if (route.startsWith(`${ZH_PREFIX}/`) || route === `${ZH_PREFIX}/`) {
-      chinese.add(route.slice(ZH_PREFIX.length) || '/')
-    } else {
-      english.add(route)
-    }
-  }
-
-  return new Set(
-    [...english].filter((route) => chinese.has(route) && isClusterable(route))
-  )
-}
-
 export interface Alternate {
   hreflang: string
   href: string
-}
-
-/**
- * The alternates a clustered route advertises, in the order they are emitted.
- *
- * The ONE definition of what a cluster looks like in production. The page tags
- * and the sitemap both render this, so they cannot disagree about the shape the
- * way they could while each assembled the triple itself. The audit deliberately
- * keeps its own expectation (`hreflangAudit.ts`), so a defect here is still
- * caught rather than mirrored by its own checker.
- *
- * @param path An un-prefixed route, i.e. the output of `unprefixed`.
- */
-export function clusterAlternates(path: string, origin: string): Alternate[] {
-  const english = `${origin}${path}`
-  const chinese = `${origin}${ZH_PREFIX}${path}`
-
-  return [
-    { hreflang: 'en', href: english },
-    { hreflang: ZH_HREFLANG, href: chinese },
-    // x-default points at English: it is what a reader with no matching
-    // language preference should get.
-    { hreflang: 'x-default', href: english }
-  ]
 }
 
 /**

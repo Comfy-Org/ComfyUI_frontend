@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "モード",
-        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+        "tooltip": "'speed' は高速です。'precision' はより高品質なリップシンクを実現しますが、料金が高くなります。"
       },
       "output_language": {
         "name": "出力言語",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "動画をクロップ",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ピクセル単位のクロップ領域。幅または高さがゼロの場合はフルフレームを維持します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "さまざまな戦略を使って、ビデオから固定数のフレームをサンプリングします。",
     "display_name": "ビデオフレームのサンプリング",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "動画をトリミング（詳細）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True の場合、指定した長さを実現できないときにエラーが発生します。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "開始/終了フレームを使用してトリミング範囲を指定します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
