@@ -10,10 +10,18 @@
   >
     <div class="flex items-center gap-3">
       <UserAvatar
+        v-if="isCurrentUser && photoUrl"
         class="size-8"
-        :photo-url="isCurrentUser ? photoUrl : undefined"
-        :pt:icon:class="{ 'text-xl!': !isCurrentUser || !photoUrl }"
+        :photo-url="photoUrl"
       />
+      <div
+        v-else
+        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+      >
+        <span class="text-sm text-muted-foreground">
+          {{ memberInitial }}
+        </span>
+      </div>
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <span class="text-sm text-base-foreground">
           {{ member.name }}
@@ -136,5 +144,9 @@ const creditUsageValueText = computed(() =>
     used: n(member.creditsUsedThisMonth ?? 0),
     total: n(member.monthlyCreditLimit ?? 0)
   })
+)
+
+const memberInitial = computed(() =>
+  (member.name?.trim() || member.email).charAt(0).toUpperCase()
 )
 </script>
