@@ -33,16 +33,21 @@ async function renderThumbnail(
       height: 256,
       isViewerMode: true
     })
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined
     try {
-      await Promise.race([
-        load3d.loadModel(modelUrl),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error('Model thumbnail load timed out')),
-            MODEL_LOAD_TIMEOUT_MS
-          )
-        )
-      ])
+      try {
+        await Promise.race([
+          load3d.loadModel(modelUrl),
+          new Promise<never>((_, reject) => {
+            timeoutHandle = setTimeout(
+              () => reject(new Error('Model thumbnail load timed out')),
+              MODEL_LOAD_TIMEOUT_MS
+            )
+          })
+        ])
+      } finally {
+        clearTimeout(timeoutHandle)
+      }
       const dataUrl = await load3d.captureThumbnail(256, 256)
       if (isAssetPreviewSupported()) {
         void fetch(dataUrl)
