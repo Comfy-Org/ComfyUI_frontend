@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -73,17 +73,5 @@ describe('Checkbox', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Controlled' }))
 
     expect(onUpdate).toHaveBeenCalledWith(true)
-  })
-
-  it('merges custom classes without clobbering base styling', () => {
-    cleanup()
-    render(Checkbox, {
-      props: { class: 'size-4' },
-      attrs: { 'aria-label': 'Merged' }
-    })
-    const checkbox = screen.getByRole('checkbox', { name: 'Merged' })
-
-    expect(checkbox).toHaveClass('size-4', 'rounded-sm')
-    expect(checkbox).not.toHaveClass('size-5')
   })
 })

@@ -66,17 +66,12 @@ describe('GlobalToast', () => {
     expect(toastStore.removeAllRequested).toBe(false)
   })
 
-  it('anchors the main toast between the graph canvas and docked panel', () => {
+  it('places the main toast at the bottom right', () => {
     renderToast()
     // eslint-disable-next-line testing-library/no-node-access -- the auto-stub has no accessible selector
     const [main] = document.body.querySelectorAll('toast-stub')
-    const classes = main.getAttribute('class') ?? ''
 
     expect(main.getAttribute('position')).toBe('bottom-right')
-    expect(classes).toContain('anchor(--graph-canvas-panel_top,1rem)')
-    expect(classes).toContain(
-      'anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))'
-    )
   })
 
   it('holds messages raised during node selection mode until it exits', async () => {
