@@ -1640,7 +1640,7 @@ describe('useWorkflowService', () => {
   })
 
   describe('insertWorkflow', () => {
-    it('inserts into the canvas when nothing changes while loading', async () => {
+    it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
       const canvas = app.canvas
       const originalGraph = {}
       const deserialize = vi.fn()
@@ -1651,9 +1651,14 @@ describe('useWorkflowService', () => {
       } as unknown as ComfyWorkflow
 
       try {
-        await useWorkflowService().insertWorkflow(workflow)
+        const options = { position: [120, 240] as [number, number] }
+        await useWorkflowService().insertWorkflow(workflow, options)
 
-        expect(deserialize).toHaveBeenCalledTimes(1)
+        expect(deserialize).toHaveBeenCalledOnce()
+        expect(deserialize).toHaveBeenCalledWith(
+          expect.objectContaining({ nodes: [], links: [] }),
+          options
+        )
       } finally {
         Reflect.set(canvas, 'graph', originalGraph)
       }
