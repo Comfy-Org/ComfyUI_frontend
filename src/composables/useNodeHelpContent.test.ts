@@ -217,7 +217,8 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
-  it('should expose infrastructure failures', async () => {
+  it('should log and recover from infrastructure failures', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -228,7 +229,10 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Internal Server Error')
+    expect(warn).toHaveBeenCalledWith(
+      'nodeHelpService: failed to fetch markdown (500 Internal Server Error) at /docs/TestNode/en.md'
+    )
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 

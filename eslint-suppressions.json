@@ -389,11 +389,6 @@
       "count": 3
     }
   },
-  "src/services/nodeHelpService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/services/nodeOrganizationService.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
