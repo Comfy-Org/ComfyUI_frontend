@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -19,12 +20,16 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers()
   })
 
   afterEach(() => {
     useAgentPanelStore().$dispose()
+    // agentPanelStore reads this shared API ref directly; teardown above
+    // only disposes the store, so leaving it true here would leak into
+    // later tests in this file.
+    api.serverFeatureFlagsReceived.value = false
   })
 
   it('derives flag delivery directly from the API state', async () => {
@@ -134,7 +139,7 @@ describe('agentPanelStore engagement telemetry', () => {
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   afterEach(() => {
