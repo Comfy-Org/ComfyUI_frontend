@@ -208,6 +208,13 @@ describe('clearOnEffect (KA-9)', () => {
     expect(ledger.clearOnEffect(['op-remote'])).toEqual([])
     expect(ledger.size()).toBe(1)
   })
+
+  it('does not clear a queued op that has never been sent', () => {
+    const ledger = createPendingOpLedger<string>()
+    ledger.enqueue('op-1', 'shadow-op-1')
+    expect(ledger.clearOnEffect(['op-1'])).toEqual([])
+    expect(ledger.get('op-1')?.state).toBe('queued')
+  })
 })
 
 describe('take (explicit reconciliation)', () => {
