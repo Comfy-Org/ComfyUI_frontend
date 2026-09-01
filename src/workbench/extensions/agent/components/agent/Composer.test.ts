@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import * as tooltipConfig from '@/composables/useTooltipConfig'
@@ -11,12 +12,22 @@ import { i18n } from '@/i18n'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
+const tooltipBindings = new WeakMap<Element, DirectiveBinding['value']>()
+const tooltipDirectiveStub = {
+  mounted(element: Element, binding: DirectiveBinding) {
+    tooltipBindings.set(element, binding.value)
+  },
+  updated(element: Element, binding: DirectiveBinding) {
+    tooltipBindings.set(element, binding.value)
+  }
+}
+
 function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} }
+      directives: { tooltip: tooltipDirectiveStub }
     }
   })
 }
@@ -547,6 +558,17 @@ describe('Composer', () => {
 
     expect(screen.getByText('KSampler')).toBeInTheDocument()
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
+  })
+
+  it('passes the full tooltip config to selection chip directives', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    const button = screen.getByRole('button', {
+      name: 'Show KSampler #5 on canvas'
+    })
+    expect(tooltipBindings.get(button)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
+    )
   })
 
   it('emits removeTag when a selection chip is removed', async () => {
