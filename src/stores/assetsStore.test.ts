@@ -2358,4 +2358,204 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
   })
+
+  describe('in-flight tracking: refresh vs loadMore', () => {
+    const deferredPage = () => {
+      let resolve!: (page: AssetResponse) => void
+      let reject!: (err: unknown) => void
+      const promise = new Promise<AssetResponse>((res, rej) => {
+        resolve = res
+        reject = rej
+      })
+      return { promise, resolve, reject }
+    }
+
+    /**
+     * Loads a full first page so `hasMore` is true and a loadMore is legal,
+     * then clears the mock so each test's assertions see only its own calls.
+     */
+    const setupStoreWithFirstPage = async () => {
+      const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`a${i}`, `f${i}.png`)
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage(firstPage, { hasMore: true })
+      )
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+      vi.mocked(assetService.getAssetsPageByTag).mockClear()
+      return { store, firstPageIds: firstPage.map((a) => a.id) }
+    }
+
+    it('refresh during an in-flight loadMore runs its reset path and is not dropped', async () => {
+      const { store } = await setupStoreWithFirstPage()
+      const loadMorePage = deferredPage()
+      const refreshPage = deferredPage()
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePage.promise)
+        .mockReturnValueOnce(refreshPage.promise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        2
+      )
+
+      refreshPage.resolve(makePage([makeAsset('fresh-1', 'fresh.png')]))
+      loadMorePage.resolve(makePage([makeAsset('extra-1', 'extra.png')]))
+      await Promise.all([loadMoreResult, refreshResult])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh-1'])
+    })
+
+    it('does not double-advance the offset with a discarded loadMore page', async () => {
+      const { store } = await setupStoreWithFirstPage()
+      const loadMorePage = deferredPage()
+      const refreshPage = deferredPage()
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePage.promise)
+        .mockReturnValueOnce(refreshPage.promise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      refreshPage.resolve(
+        makePage([makeAsset('fresh-1', 'fresh.png')], { hasMore: true })
+      )
+      loadMorePage.resolve(makePage([makeAsset('extra-1', 'extra.png')]))
+      await Promise.all([loadMoreResult, refreshResult])
+
+      // The refreshed list holds one asset, so the next page starts at 1. A
+      // discarded page that still advanced the offset would skip a row here.
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage([makeAsset('extra-1', 'extra.png')])
+      )
+      await store.loadMoreFlatOutputs()
+
+      expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+        'output',
+        true,
+        { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 1 }
+      )
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual([
+        'fresh-1',
+        'extra-1'
+      ])
+    })
+
+    it('discards a stale loadMore even when the refresh reports no further pages', async () => {
+      const { store } = await setupStoreWithFirstPage()
+      const loadMorePage = deferredPage()
+      const refreshPage = deferredPage()
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePage.promise)
+        .mockReturnValueOnce(refreshPage.promise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      refreshPage.resolve(
+        makePage([makeAsset('fresh-1', 'fresh.png')], { hasMore: false })
+      )
+      loadMorePage.resolve(
+        makePage([makeAsset('extra-1', 'extra.png')], { hasMore: true })
+      )
+      await Promise.all([loadMoreResult, refreshResult])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh-1'])
+      expect(store.flatOutputHasMore).toBe(false)
+    })
+
+    it('keeps the list and the loaded-id check in step when a refresh fails mid-loadMore', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        const { store, firstPageIds } = await setupStoreWithFirstPage()
+        const loadMorePage = deferredPage()
+        const refreshPage = deferredPage()
+
+        vi.mocked(assetService.getAssetsPageByTag)
+          .mockReturnValueOnce(loadMorePage.promise)
+          .mockReturnValueOnce(refreshPage.promise)
+
+        const loadMoreResult = store.loadMoreFlatOutputs()
+        const refreshResult = store.updateFlatOutputs()
+
+        const err = new Error('network down')
+        refreshPage.reject(err)
+        loadMorePage.resolve(makePage([makeAsset('extra-1', 'extra.png')]))
+        await Promise.all([loadMoreResult, refreshResult])
+
+        expect(store.flatOutputError).toBe(err)
+        expect(store.flatOutputLoading).toBe(false)
+        expect(store.flatOutputIsLoadingMore).toBe(false)
+        // The failed refresh dropped nothing; the stale loadMore was discarded.
+        expect(store.flatOutputAssets.map((a) => a.id)).toEqual(firstPageIds)
+
+        // A retry restarts from the head. The re-served first page is already
+        // in seenIds, so it must not be appended a second time.
+        vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+          makePage(
+            firstPageIds.map((id, i) => makeAsset(id, `f${i}.png`)),
+            { hasMore: true }
+          )
+        )
+        await store.loadMoreFlatOutputs()
+
+        expect(store.flatOutputAssets.map((a) => a.id)).toEqual(firstPageIds)
+      } finally {
+        consoleSpy.mockRestore()
+      }
+    })
+
+    it('defers a loadMore started during a refresh instead of stranding hasMore', async () => {
+      const { store } = await setupStoreWithFirstPage()
+      const refreshPage = deferredPage()
+
+      vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+        refreshPage.promise
+      )
+
+      const refreshResult = store.updateFlatOutputs()
+      const loadMoreResult = store.loadMoreFlatOutputs()
+
+      // The refresh already rewound the offset to the head, so the loadMore has
+      // no next page to ask for and must not issue a second request.
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        1
+      )
+
+      const head = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`b${i}`, `g${i}.png`)
+      )
+      refreshPage.resolve(makePage(head, { hasMore: true }))
+      await Promise.all([refreshResult, loadMoreResult])
+
+      expect(store.flatOutputHasMore).toBe(true)
+      expect(store.flatOutputAssets).toHaveLength(FLAT_OUTPUT_PAGE_SIZE)
+    })
+
+    it('concurrent refreshes deduplicate the network call and produce consistent state', async () => {
+      const page = deferredPage()
+      vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+        page.promise
+      )
+
+      const store = useAssetsStore()
+      const r1 = store.updateFlatOutputs()
+      const r2 = store.updateFlatOutputs()
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        1
+      )
+
+      page.resolve(makePage([makeAsset('only-1', 'only.png')]))
+      await Promise.all([r1, r2])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['only-1'])
+    })
+  })
 })

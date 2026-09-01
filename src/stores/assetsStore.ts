@@ -1,7 +1,7 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import { computed, reactive, ref, shallowReactive, shallowRef } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -265,32 +265,85 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   const flatOutputAssets = ref<AssetItem[]>([])
-  const flatOutputLoading = ref(false)
   const flatOutputError = ref<unknown>(null)
   const flatOutputOffset = ref(0)
   const flatOutputHasMore = ref(true)
-  const flatOutputIsLoadingMore = ref(false)
   const flatOutputSeenIds = new Set<string>()
   let flatOutputNextCursor: string | undefined
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
+  const flatOutputRefreshInFlight = shallowRef<Promise<AssetItem[]> | null>(
+    null
+  )
+  const flatOutputLoadMoreInFlight = shallowRef<Promise<void> | null>(null)
+  const flatOutputLoading = computed(
+    () => flatOutputRefreshInFlight.value !== null
+  )
+  const flatOutputIsLoadingMore = computed(
+    () => flatOutputLoadMoreInFlight.value !== null
+  )
+  // Incremented on each refresh; loadMore results captured from a prior epoch
+  // are discarded so a stale page can't append onto a freshly-refreshed list.
+  let flatOutputRefreshEpoch = 0
 
-  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
+  async function updateFlatOutputs(): Promise<AssetItem[]> {
+    if (flatOutputRefreshInFlight.value) return flatOutputRefreshInFlight.value
 
-    if (loadMore) {
-      if (!flatOutputHasMore.value) return flatOutputAssets.value
-      flatOutputIsLoadingMore.value = true
-    } else {
-      flatOutputLoading.value = true
-      flatOutputOffset.value = 0
-      flatOutputNextCursor = undefined
-      flatOutputHasMore.value = true
-      flatOutputSeenIds.clear()
-    }
+    flatOutputRefreshEpoch++
+    flatOutputOffset.value = 0
+    flatOutputNextCursor = undefined
+    flatOutputHasMore.value = true
     flatOutputError.value = null
 
-    flatOutputInFlight = (async () => {
-      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
+    const inFlight = (async () => {
+      try {
+        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
+          limit: FLAT_OUTPUT_PAGE_SIZE,
+          offset: 0
+        })
+        // Swapped only on success, so a failed refresh leaves the loaded-id
+        // check consistent with the list still on screen.
+        flatOutputSeenIds.clear()
+        for (const asset of page.assets) flatOutputSeenIds.add(asset.id)
+        flatOutputAssets.value = page.assets
+        flatOutputOffset.value = page.assets.length
+        flatOutputNextCursor = page.next_cursor
+        flatOutputHasMore.value = page.assets.length > 0 && page.has_more
+        return flatOutputAssets.value
+      } catch (err) {
+        flatOutputError.value = err
+        console.error('Failed to fetch output assets:', err)
+        return []
+      } finally {
+        flatOutputRefreshInFlight.value = null
+      }
+    })()
+
+    // Assigned after the IIFE starts but before it can settle, so the `finally`
+    // above never clears a slot that has not been filled yet.
+    flatOutputRefreshInFlight.value = inFlight
+    return inFlight
+  }
+
+  async function loadMoreFlatOutputs(): Promise<void> {
+    if (!flatOutputHasMore.value) return
+    if (flatOutputLoadMoreInFlight.value) {
+      await flatOutputLoadMoreInFlight.value
+      return
+    }
+    // A refresh has already reset the offset and cursor to the head, so there
+    // is no next page to ask for yet; the refresh itself delivers that page.
+    // Issuing one anyway re-fetches the head, which dedupes to nothing and
+    // would strand `flatOutputHasMore` at false.
+    if (flatOutputRefreshInFlight.value) {
+      await flatOutputRefreshInFlight.value
+      return
+    }
+
+    flatOutputError.value = null
+
+    const capturedRefreshEpoch = flatOutputRefreshEpoch
+    const requestedAfter = flatOutputNextCursor
+
+    const inFlight = (async () => {
       try {
         const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
           limit: FLAT_OUTPUT_PAGE_SIZE,
@@ -298,14 +351,12 @@ export const useAssetsStore = defineStore('assets', () => {
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
+        if (capturedRefreshEpoch !== flatOutputRefreshEpoch) return
+
         const batch = page.assets
-        const fresh = loadMore
-          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
-          : batch
+        const fresh = batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
         for (const asset of fresh) flatOutputSeenIds.add(asset.id)
-        flatOutputAssets.value = loadMore
-          ? [...flatOutputAssets.value, ...fresh]
-          : batch
+        flatOutputAssets.value = [...flatOutputAssets.value, ...fresh]
         flatOutputOffset.value += batch.length
         const nextCursor = page.next_cursor
         const cursorStuck =
@@ -313,25 +364,16 @@ export const useAssetsStore = defineStore('assets', () => {
         flatOutputNextCursor = cursorStuck ? undefined : nextCursor
         flatOutputHasMore.value =
           fresh.length > 0 && page.has_more && !cursorStuck
-        return flatOutputAssets.value
       } catch (err) {
         flatOutputError.value = err
         console.error('Failed to fetch output assets:', err)
-        return loadMore ? flatOutputAssets.value : []
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
+        flatOutputLoadMoreInFlight.value = null
       }
     })()
 
-    return flatOutputInFlight
-  }
-
-  const updateFlatOutputs = () => fetchFlatOutputs(false)
-  const loadMoreFlatOutputs = async () => {
-    if (flatOutputIsLoadingMore.value) return
-    await fetchFlatOutputs(true)
+    flatOutputLoadMoreInFlight.value = inFlight
+    await inFlight
   }
 
   /**
