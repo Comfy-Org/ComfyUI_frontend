@@ -134,7 +134,9 @@ watch(failed, (failedNow, failedBefore) => {
         class="icon-[lucide--brain] size-4 shrink-0"
       />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
-      <span class="text-left">{{ statusLabel }}</span>
+      <span class="text-left" :class="{ 'agent-shimmer-text': isActive }">
+        {{ statusLabel }}
+      </span>
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />
