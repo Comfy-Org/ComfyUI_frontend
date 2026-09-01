@@ -93,7 +93,7 @@ export class LoaderManager implements LoaderManagerInterface {
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    if (this.disposed) throw this.createAbortError()
+    if (this.disposed) return
     const loadId = ++this.currentLoadId
 
     try {
@@ -128,7 +128,6 @@ export class LoaderManager implements LoaderManagerInterface {
 
       if (loadId !== this.currentLoadId) {
         if (result) this.disposeLoadResult(result)
-        if (this.disposed) throw this.createAbortError()
         // A newer loadModel has superseded us — do not publish our adapter
         // and do not setup the model. Whichever load is current owns the
         // shared state.
@@ -146,7 +145,7 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
     } catch (error) {
-      if (this.disposed) throw this.createAbortError()
+      if (this.disposed) return
       if (loadId === this.currentLoadId) {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
@@ -155,12 +154,6 @@ export class LoaderManager implements LoaderManagerInterface {
         }
       }
     }
-  }
-
-  private createAbortError(): Error {
-    const error = new Error('Model load aborted')
-    error.name = 'AbortError'
-    return error
   }
 
   private disposeLoadResult(

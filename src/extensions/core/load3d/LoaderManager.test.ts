@@ -622,7 +622,7 @@ describe('LoaderManager', () => {
       expect(endEmits).toHaveLength(1)
     })
 
-    it('cancels an in-flight load when disposed', async () => {
+    it('drops and disposes an in-flight load when disposed', async () => {
       const { lm, modelManager } = makeLoaderManager()
       let resolveLoad!: (value: ReturnType<typeof loadResult>) => void
       const pendingLoad = new Promise<ReturnType<typeof loadResult>>(
@@ -641,10 +641,41 @@ describe('LoaderManager', () => {
       lm.dispose()
       resolveLoad(loadResult(model))
 
-      await expect(load).rejects.toMatchObject({ name: 'AbortError' })
+      await expect(load).resolves.toBeUndefined()
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(disposeGeometry).toHaveBeenCalledOnce()
       expect(disposeMaterial).toHaveBeenCalledOnce()
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('drops a load that fails after disposal without alerting', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      let rejectLoad!: (reason: Error) => void
+      meshLoad.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectLoad = reject
+        })
+      )
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      lm.dispose()
+      rejectLoad(new Error('connection reset'))
+
+      await expect(load).resolves.toBeUndefined()
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('drops a load started after disposal without alerting', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      lm.dispose()
+
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb')
+      ).resolves.toBeUndefined()
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(meshLoad).not.toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalled()
     })
 
     it('logs and drops the load when the URL is missing a filename param', async () => {
