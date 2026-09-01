@@ -149,7 +149,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
             const key = linkKey(entry)
-            if (!entry.mintable) continue
+            if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
             if (entry.rootScoped) {

@@ -163,13 +163,7 @@ describe('attachMintPortWiring', () => {
     await afterSweep()
 
     expect(minted).toEqual([
-      { op: 'delete_node', node_id: '2', removed_links: [toLinkId(41)] },
-      {
-        op: 'disconnect',
-        link_id: toLinkId(41),
-        to_node: toNodeId(2),
-        to_slot: 3
-      }
+      { op: 'delete_node', node_id: '2', removed_links: [toLinkId(41)] }
     ])
   })
 

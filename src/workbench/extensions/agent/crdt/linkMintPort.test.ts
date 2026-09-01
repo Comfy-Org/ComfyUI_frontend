@@ -157,7 +157,7 @@ describe('attachLinkMintPort', () => {
     consoleError.mockRestore()
   })
 
-  it('mints a disconnect for a consumed severance (the delete also carries it as removed_links)', async () => {
+  it('stays silent for a consumed severance (the delete carried it)', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
@@ -165,9 +165,7 @@ describe('attachLinkMintPort', () => {
     port.severances.take(ROOT_SCOPE.owningGraphId, '1')
     await afterSweep()
 
-    expect(minted).toEqual([
-      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
-    ])
+    expect(minted).toEqual([])
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
@@ -210,9 +208,7 @@ describe('attachLinkMintPort', () => {
     expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([41])
     await afterSweep()
 
-    expect(minted).toEqual([
-      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
-    ])
+    expect(minted).toEqual([])
     expect(consoleError).toHaveBeenCalledOnce()
     consoleError.mockRestore()
   })
