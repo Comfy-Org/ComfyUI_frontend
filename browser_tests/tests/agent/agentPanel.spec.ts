@@ -174,7 +174,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('composer sizing', () => {
     test.use({ viewport: { width: 1920, height: 1080 } })
 
-    test('reclaims the CRDT banner height when it is removed', async ({
+    test('gives the content the full height below the CRDT banner', async ({
       comfyPage
     }) => {
       const page = comfyPage.page
@@ -187,28 +187,22 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect(panel).toBeVisible()
       await expect(banner).toBeVisible()
 
-      const [rootWithBanner, bannerBox, contentWithBanner] = await Promise.all([
-        panel.boundingBox(),
-        banner.boundingBox(),
-        content.boundingBox()
-      ])
-      expect(rootWithBanner).not.toBeNull()
-      expect(bannerBox).not.toBeNull()
-      expect(contentWithBanner).toEqual({
-        ...rootWithBanner!,
-        y: bannerBox!.y + bannerBox!.height,
-        height: rootWithBanner!.height - bannerBox!.height
-      })
-      await expect(send).toBeInViewport()
-
-      await banner.evaluate((element) => element.remove())
-
       await expect
-        .poll(async () => ({
-          root: await panel.boundingBox(),
-          content: await content.boundingBox()
-        }))
-        .toEqual({ root: rootWithBanner, content: rootWithBanner })
+        .poll(async () => {
+          const [root, bannerBox, contentBox] = await Promise.all([
+            panel.boundingBox(),
+            banner.boundingBox(),
+            content.boundingBox()
+          ])
+          if (!root || !bannerBox || !contentBox) return null
+          return {
+            left: contentBox.x - root.x,
+            width: contentBox.width - root.width,
+            top: contentBox.y - (bannerBox.y + bannerBox.height),
+            bottom: root.y + root.height - (contentBox.y + contentBox.height)
+          }
+        })
+        .toEqual({ left: 0, width: 0, top: 0, bottom: 0 })
       await expect(send).toBeInViewport()
     })
 
