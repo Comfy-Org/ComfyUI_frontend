@@ -91,6 +91,9 @@ watch(
               if (mounted) modelThumbnails.value[url] = preview
               return
             }
+            // Skip fallback generation after unmount: it funnels through a
+            // shared serial queue and would delay thumbnails for live panels.
+            if (!mounted) return
             const { generateModelThumbnail } =
               await import('@/components/load3d/modelThumbnail')
             const generated = await generateModelThumbnail(url, filename)
