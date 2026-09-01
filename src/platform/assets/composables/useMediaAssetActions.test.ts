@@ -11,6 +11,8 @@ import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
+import type * as clearDeletedAssetWidgetValuesModule from '../utils/clearDeletedAssetWidgetValues'
+import type * as clearNodePreviewCacheForValuesModule from '../utils/clearNodePreviewCacheForValues'
 import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
@@ -181,7 +183,9 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockAppGraph = vi.hoisted(() => ({
+  value: { _nodes: [] as unknown[], nodes: [] as unknown[] }
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
@@ -211,16 +215,47 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
-vi.mock('../utils/clearNodePreviewCacheForValues', () => ({
-  clearNodePreviewCacheForValues: mockClearNodePreviewCache,
-  findNodesReferencingValues: vi.fn(() => [])
+const mockClearNodePreviewCacheState = vi.hoisted(() => ({
+  implementation: undefined as
+    | typeof clearNodePreviewCacheForValuesModule.clearNodePreviewCacheForValues
+    | undefined
 }))
+const mockClearNodePreviewCache = vi.hoisted(() =>
+  vi.fn<
+    typeof clearNodePreviewCacheForValuesModule.clearNodePreviewCacheForValues
+  >()
+)
+vi.mock('../utils/clearNodePreviewCacheForValues', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof clearNodePreviewCacheForValuesModule>()
+  mockClearNodePreviewCacheState.implementation =
+    actual.clearNodePreviewCacheForValues
+  return {
+    ...actual,
+    clearNodePreviewCacheForValues: mockClearNodePreviewCache
+  }
+})
 
-const mockClearWidgetValues = vi.hoisted(() => vi.fn())
-vi.mock('../utils/clearDeletedAssetWidgetValues', () => ({
-  clearDeletedAssetWidgetValues: mockClearWidgetValues
+const mockClearWidgetValuesState = vi.hoisted(() => ({
+  implementation: undefined as
+    | typeof clearDeletedAssetWidgetValuesModule.clearDeletedAssetWidgetValues
+    | undefined
 }))
+const mockClearWidgetValues = vi.hoisted(() =>
+  vi.fn<
+    typeof clearDeletedAssetWidgetValuesModule.clearDeletedAssetWidgetValues
+  >()
+)
+vi.mock('../utils/clearDeletedAssetWidgetValues', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof clearDeletedAssetWidgetValuesModule>()
+  mockClearWidgetValuesState.implementation =
+    actual.clearDeletedAssetWidgetValues
+  return {
+    ...actual,
+    clearDeletedAssetWidgetValues: mockClearWidgetValues
+  }
+})
 
 const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
 vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
@@ -1346,10 +1381,22 @@ describe('useMediaAssetActions', () => {
           void opts.props.onConfirm()
         }
       )
-      mockAppGraph.value = { _nodes: [] }
+      mockAppGraph.value = { _nodes: [], nodes: [] }
     })
 
     it('cleans every shared reference only for successful assets after a partial deletion', async () => {
+      if (
+        !mockClearNodePreviewCacheState.implementation ||
+        !mockClearWidgetValuesState.implementation
+      ) {
+        throw new Error('Asset graph cleanup utilities were not loaded')
+      }
+      mockClearNodePreviewCache.mockImplementationOnce(
+        mockClearNodePreviewCacheState.implementation
+      )
+      mockClearWidgetValues.mockImplementationOnce(
+        mockClearWidgetValuesState.implementation
+      )
       vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockDeleteAsset.mockImplementation(async (id: string) => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
@@ -1427,7 +1474,7 @@ describe('useMediaAssetActions', () => {
       )
       expect(typeof removeArg).toBe('function')
 
-      const sampleNode = { id: 42 }
+      const sampleNode = fromAny<LGraphNode, unknown>({ id: 42 })
       removeArg(sampleNode)
       expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(sampleNode)
       // Locator is resolved from the node's own graph, not from the raw id —
