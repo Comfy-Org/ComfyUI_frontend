@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad al doble de precio."
+        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad a un precio más alto."
       },
       "output_language": {
         "name": "output_language",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recortar vídeo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Región de recorte en píxeles. Una anchura/altura cero mantiene el fotograma completo."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Muestrea un número fijo de fotogramas de un video utilizando varias estrategias.",
     "display_name": "Muestrear fotograma de video",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "modelo"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Recortar vídeo (avanzado)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Si es verdadero, se producirá un error cuando no sea posible la duración especificada."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Ventana de recorte mediante fotogramas de inicio/final."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

@@ -470,29 +470,29 @@ const translations = {
 
   // Enterprise – TeamSection
   'enterprise.team.heading': {
-    en: 'Team workspaces\nand shared assets.',
-    'zh-CN': '团队工作区\n与共享资产。'
+    en: 'A team plan built\naround shared usage.',
+    'zh-CN': '围绕共享用量打造的\n团队方案。'
   },
   'enterprise.team.subtitle': {
-    en: 'Organize workflows, models, and outputs in shared workspaces. Control who builds, who runs, and who deploys.',
+    en: 'Pool credits across the team, centralize billing, and give people the right way to use Comfy for their role.',
     'zh-CN':
-      '在共享工作区中组织工作流、模型和输出。控制谁构建、谁运行、谁部署。'
+      '为团队共享点数池，统一结算，并根据每个人的角色提供合适的 Comfy 使用方式。'
   },
   'enterprise.team.feature1.title': {
-    en: 'Role-based access',
-    'zh-CN': '基于角色的访问控制'
+    en: 'Shared credit pool',
+    'zh-CN': '共享点数池'
   },
   'enterprise.team.feature1.description': {
-    en: 'Control who builds, who runs, and who deploys.',
-    'zh-CN': '控制谁构建、谁运行、谁部署。'
+    en: 'Give the team one shared balance for Cloud GPU time and partner model usage.',
+    'zh-CN': '为团队提供一个共享余额，用于 Cloud GPU 时长和合作伙伴模型用量。'
   },
   'enterprise.team.feature2.title': {
     en: 'Single Sign-On',
     'zh-CN': '单点登录'
   },
   'enterprise.team.feature2.description': {
-    en: 'Enable secure, centralized user authentication across your organization with SSO and SCIM provisioning.',
-    'zh-CN': '为您的组织启用集中式安全用户认证，支持 SSO 和 SCIM 配置。'
+    en: 'Enable secure, centralized user authentication across your organization with SSO.',
+    'zh-CN': '通过 SSO 为组织启用安全、集中的用户身份验证。'
   },
   'enterprise.team.feature2.cta': {
     en: 'SEE CLOUD FEATURES',
@@ -503,8 +503,8 @@ const translations = {
     'zh-CN': 'App 模式'
   },
   'enterprise.team.feature3.description': {
-    en: 'Non-technical team members run workflows without touching the node graph.',
-    'zh-CN': '非技术团队成员无需接触节点图即可运行工作流。'
+    en: 'Let non-technical teammates run approved experiences without touching the node graph.',
+    'zh-CN': '让非技术团队成员无需接触节点图即可运行获批的体验。'
   },
 
   // Enterprise – ReasonSection
@@ -561,17 +561,17 @@ const translations = {
 
   // Enterprise – HeroSection
   'enterprise.hero.heading': {
-    en: 'Your team already runs ComfyUI. Scale it with confidence.',
-    'zh-CN': '你的团队已经在使用 ComfyUI。放心地扩展它。'
+    en: 'Govern ComfyUI across every team and runtime.',
+    'zh-CN': '在每个团队和运行环境中治理 ComfyUI。'
   },
   'enterprise.hero.subtitle': {
-    en: 'Comfy Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.',
+    en: 'Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, team plans, commercial licensing, and hands-on implementation support.',
     'zh-CN':
-      'Comfy 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
+      '通过 ComfyUI Managed Builds、团队方案、商业许可和实施支持，统一团队构建、运行和部署视觉 AI 的方式。'
   },
   'enterprise.hero.contactSales': {
-    en: 'CONTACT SALES',
-    'zh-CN': '联系销售'
+    en: 'REQUEST DEMO',
+    'zh-CN': '申请演示'
   },
 
   // Enterprise – DataOwnershipSection
@@ -588,36 +588,36 @@ const translations = {
     'zh-CN': '你的条款。'
   },
   'enterprise.ownership.subtitle': {
-    en: 'Your workflows, models, and generated outputs stay within your organization\u2019s environment. Role-based access controls and data isolation built for organizations with the strictest requirements.',
+    en: 'Keep Comfy Workflows on your machines with Managed Builds, use your own provider contracts and keys, and choose the runtime that fits each workload.',
     'zh-CN':
-      '你的工作流、模型和生成输出始终保留在你的组织环境中。基于角色的访问控制和数据隔离，为最严格要求的组织而构建。'
+      '通过 Managed Builds 将 Comfy Workflows 保留在你的机器上，使用自有的服务商合约和密钥，并为每项工作负载选择合适的运行环境。'
   },
 
   // Enterprise – BYOKeySection
   'enterprise.byoKey.heading': {
-    en: 'Bring your own API key',
-    'zh-CN': '自带 API 密钥'
+    en: 'Bring your own keys. Govern the models.',
+    'zh-CN': '自带密钥。治理模型。'
   },
   'enterprise.byoKey.subtitle': {
-    en: 'Use your own contracts with third-party model providers. Comfy orchestrates the pipeline. You choose which models to run and whose API keys to use.',
+    en: 'Use your existing provider contracts and decide which partner and private models are available to each team.',
     'zh-CN':
-      '使用你与第三方模型提供商的合约。Comfy 编排管线。你决定运行哪些模型、使用谁的 API 密钥。'
+      '使用现有的服务商合约，并决定每个团队可以使用哪些合作伙伴模型和私有模型。'
   },
   'enterprise.byoKey.card1.title': {
     en: 'API key management',
     'zh-CN': 'API 密钥管理'
   },
   'enterprise.byoKey.card1.description': {
-    en: 'Bring your own API keys from any model provider. Use your existing contracts and pricing.',
-    'zh-CN': '从任何模型提供商导入你自己的 API 密钥。使用你现有的合约和定价。'
+    en: 'Use supported provider keys with the contracts and pricing your organization already has.',
+    'zh-CN': '使用受支持的服务商密钥，以及你的组织已有的合约和定价。'
   },
   'enterprise.byoKey.card2.title': {
-    en: 'Real-time progress',
-    'zh-CN': '实时进度'
+    en: 'Model governance',
+    'zh-CN': '模型治理'
   },
   'enterprise.byoKey.card2.description': {
-    en: 'Step-by-step execution updates via WebSocket.',
-    'zh-CN': '通过 WebSocket 逐步更新执行状态。'
+    en: 'Choose which partner models, open models, and private assets are approved for each environment.',
+    'zh-CN': '选择每个环境获准使用的合作伙伴模型、开放模型和私有资产。'
   },
 
   // Enterprise – OrchestrationSection
@@ -651,9 +651,9 @@ const translations = {
     'zh-CN': 'MiniMax 商业许可'
   },
   'enterprise.minimaxBand.text': {
-    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
+    en: 'Comfy is an official reseller of MiniMax commercial-use licenses. Add local commercial rights, with LoRA training included, to your Enterprise plan.',
     'zh-CN':
-      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
+      'Comfy 是 MiniMax 商业使用许可的官方经销商。可将本地商业使用权添加到企业方案中，其中包括 LoRA 训练。'
   },
   'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
 
@@ -924,6 +924,14 @@ const translations = {
     en: 'No feature gates, no trial periods, no "pro" tier for core functionality. No vendor can lock you in or force you off the platform. Build your own nodes and modify ComfyUI as your own.',
     'zh-CN':
       '没有功能限制、没有试用期、核心功能没有"专业"层级。没有供应商可以锁定你或强迫你离开平台。构建自己的节点，随心修改 ComfyUI。'
+  },
+
+  // Download – meta (decoupled from the hero subtitle so SERP copy can carry
+  // the download queries without changing the visible hero)
+  'download.meta.description': {
+    en: 'Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware.',
+    'zh-CN':
+      '下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。'
   },
 
   // Download – HeroSection
@@ -1766,6 +1774,15 @@ const translations = {
 
   // LearningDirectorySection
   'learning.title': { en: 'Learning', 'zh-CN': '学习' },
+  'learning.metaTitle': {
+    en: 'ComfyUI Tutorials: Free Video Series from Basics to VFX',
+    'zh-CN': 'ComfyUI 教程：免费视频系列，从基础到 VFX'
+  },
+  'learning.metaDescription': {
+    en: 'Learn ComfyUI with free video tutorials and the workflows behind them. Start with the node graph basics, then move into VFX, animation, and ad creative.',
+    'zh-CN':
+      '通过免费视频教程和配套工作流学习 ComfyUI。从节点图基础开始，再进入 VFX、动画与广告创意。'
+  },
   'learning.tagline': {
     en: 'Hands-on ComfyUI tutorials and workflows, by discipline.',
     'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
@@ -1803,37 +1820,73 @@ const translations = {
     en: 'ComfyUI Basics',
     'zh-CN': 'ComfyUI 基础教程'
   },
+  'learning.categories.basics.metaTitle': {
+    en: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet',
+    'zh-CN': 'ComfyUI 基础教程：节点图、LoRA 与 ControlNet 新手入门'
+  },
   'learning.categories.basics.description': {
-    en: 'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    en: 'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
     'zh-CN':
-      '面向初学者的 ComfyUI 教程——从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
+      '面向初学者的 ComfyUI 教程：从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
+  },
+  'learning.categories.basics.metaDescription': {
+    en: 'Free ComfyUI tutorials for beginners. Learn the node graph first, then add LoRAs, style transfer, and ControlNets, with a workflow to open at every step.',
+    'zh-CN':
+      '面向初学者的免费 ComfyUI 教程。先学节点图，再加入 LoRA、风格迁移与 ControlNet，每一步都有可打开的工作流。'
   },
   'learning.categories.vfx.heading': {
     en: 'VFX Tutorials',
     'zh-CN': 'VFX 教程'
   },
+  'learning.categories.vfx.metaTitle': {
+    en: 'ComfyUI VFX Tutorials: Cleanplates, Sky Replacement, Deaging',
+    'zh-CN': 'ComfyUI VFX 教程：净板、天空替换与减龄'
+  },
   'learning.categories.vfx.description': {
-    en: 'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    en: 'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
     'zh-CN':
-      '实战 ComfyUI VFX 教程——净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
+      '实战 ComfyUI VFX 教程：净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
+  },
+  'learning.categories.vfx.metaDescription': {
+    en: 'Free ComfyUI VFX tutorials with the workflows behind them: cleanplates, sky replacement, deaging, mattes, and frame adjustments for your own shots.',
+    'zh-CN':
+      '免费 ComfyUI VFX 教程与配套工作流：净板、天空替换、减龄、遮罩与帧调整，可用于你自己的镜头。'
   },
   'learning.categories.animations.heading': {
     en: 'Animation Tutorials',
     'zh-CN': '动画教程'
   },
+  'learning.categories.animations.metaTitle': {
+    en: 'ComfyUI Animation Tutorials: Character Sheets and Keyframes',
+    'zh-CN': 'ComfyUI 动画教程：角色设定表与关键帧'
+  },
   'learning.categories.animations.description': {
-    en: 'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    en: 'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
     'zh-CN':
-      '实战 ComfyUI 动画教程——角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
+      '实战 ComfyUI 动画教程：角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
+  },
+  'learning.categories.animations.metaDescription': {
+    en: 'Free ComfyUI animation tutorials with workflows: character sheets, keyframes, in-betweening, backgrounds, and compositing, from concept art to final shot.',
+    'zh-CN':
+      '免费 ComfyUI 动画教程与工作流：角色设定表、关键帧、中间帧、背景与合成，从概念美术到完成镜头。'
   },
   'learning.categories.ads.heading': {
     en: 'Ad Creative Tutorials',
     'zh-CN': '广告创意教程'
   },
+  'learning.categories.ads.metaTitle': {
+    en: 'ComfyUI Ad Creative Tutorials: Moodboards to Product Shots',
+    'zh-CN': 'ComfyUI 广告创意教程：从情绪板到产品摄影'
+  },
   'learning.categories.ads.description': {
-    en: 'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    en: 'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
     'zh-CN':
-      '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
+      '实战 ComfyUI 广告创意教程：情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
+  },
+  'learning.categories.ads.metaDescription': {
+    en: 'Free ComfyUI tutorials for ad creative, each with its workflow: moodboards, storyboards, product photography, talent casting, B-roll, and OOH mockups.',
+    'zh-CN':
+      '面向广告创意的免费 ComfyUI 教程，每个都配有工作流：情绪板、故事板、产品摄影、演员预演、B-Roll 与户外广告样机。'
   },
   // LearningWatchPage
   'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
@@ -3423,8 +3476,8 @@ const translations = {
 
   // SiteFooter
   'footer.tagline': {
-    en: 'The most powerful workflow engine for visual AI.',
-    'zh-CN': '最强大的视觉 AI 工作流引擎。'
+    en: 'The open standard for visual AI.',
+    'zh-CN': '视觉 AI 的开放标准。'
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
@@ -6030,8 +6083,8 @@ const translations = {
   // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
   // copy carries placeholder intent from Figma and may change (June, CRE-145).
   'seedance.meta.title': {
-    en: 'Seedance 2.5 on Comfy — Cinematic AI Video Model',
-    'zh-CN': 'Comfy 上的 Seedance 2.5 — 电影级 AI 视频模型'
+    en: 'Seedance 2.5 on Comfy: Cinematic AI Video Model',
+    'zh-CN': 'Comfy 上的 Seedance 2.5：电影级 AI 视频模型'
   },
   'seedance.meta.description': {
     en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video with native audio, from text or image. Draft free on Wan 2.2 and spend credits only on the final render.',
@@ -6357,8 +6410,8 @@ const translations = {
   'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   // Flux 3 model page (/flux-3)
   'flux3.meta.title': {
-    en: 'Flux 3 on Comfy — Video With Native Audio',
-    'zh-CN': 'Comfy 上的 Flux 3 — 带原生音频的视频模型'
+    en: 'Flux 3 on Comfy: Video With Native Audio',
+    'zh-CN': 'Comfy 上的 Flux 3：带原生音频的视频模型'
   },
   'flux3.meta.description': {
     en: "Run Flux 3 on Comfy: Black Forest Labs' multimodal model generates video with native audio, up to 20 seconds in one generation, from text, image, video or keyframes.",
@@ -6457,8 +6510,8 @@ const translations = {
   'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
-    en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
-    'zh-CN': 'Comfy 上的 Wan Animate 2 — 开源角色动画模型'
+    en: 'Wan Animate 2 on Comfy: Open-Source Character Animation',
+    'zh-CN': 'Comfy 上的 Wan Animate 2：开源角色动画模型'
   },
   'wanAnimate2.meta.description': {
     en: 'Run Wan Animate 2 on Comfy: upload a reference image of your character plus a driving video, and it transfers that motion onto your character. Open source, on Comfy Cloud or your own hardware.',
@@ -6550,8 +6603,8 @@ const translations = {
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   // Wan 3.0 model page (/wan-3.0)
   'wan3.meta.title': {
-    en: 'Wan 3.0 on Comfy — Text, Image and Reference to Video',
-    'zh-CN': 'Comfy 上的 Wan 3.0 — 文生、图生与参考生视频'
+    en: 'Wan 3.0 on Comfy: Text, Image and Reference to Video',
+    'zh-CN': 'Comfy 上的 Wan 3.0：文生、图生与参考生视频'
   },
   'wan3.meta.description': {
     en: 'Run Wan 3.0 on Comfy Cloud. Generate up to 30 seconds of video from a text prompt, an image, or video, image and audio references, with sound produced alongside the picture.',
@@ -6615,8 +6668,8 @@ const translations = {
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
   'minimax.meta.title': {
-    en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
-    'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
+    en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
+    'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
   },
   'minimax.meta.description': {
     en: 'Run MiniMax H3 on Comfy: Open Weights or Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5-15s per generation. Free to start.',
@@ -6626,8 +6679,8 @@ const translations = {
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   // MiniMax Music 3 SEO page (/minimax-music-3). zh-CN hand-translated.
   'minimaxMusic3.meta.title': {
-    en: 'MiniMax Music 3 on Comfy — Open-Weights Music Model',
-    'zh-CN': 'Comfy 上的 MiniMax Music 3 — 开源权重音乐模型'
+    en: 'MiniMax Music 3 on Comfy: Open-Weights Music Model',
+    'zh-CN': 'Comfy 上的 MiniMax Music 3：开源权重音乐模型'
   },
   'minimaxMusic3.meta.description': {
     en: 'Run MiniMax Music 3 on Comfy. Open weights for text to music, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
