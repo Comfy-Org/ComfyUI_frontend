@@ -62,6 +62,8 @@ export interface LinkMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** A whole-graph clear is carrying its own semantic `clear` operation. */
+  isIntentionalClear(): boolean
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
 }
@@ -181,7 +183,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
-    const mintable = gateOpen()
+    const mintable = gateOpen() && !deps.isIntentionalClear()
     const rootScoped = isRootScope(scope)
     const entry: SeveranceEntry = {
       linkId: topology.id,

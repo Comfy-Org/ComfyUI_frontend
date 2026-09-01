@@ -167,6 +167,25 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
+  it('mints one clear without standalone disconnects for cleared links', async () => {
+    const linkStore = useLinkStore()
+    const severed = topology(41)
+    graphNodes.set('1', { id: toNodeId(1) })
+    graphNodes.set('2', { id: toNodeId(2) })
+    linkStore.registerLink(ROOT_SCOPE, severed)
+    minted.length = 0
+
+    wiring.runIntentionalClear(() => {
+      linkStore.deleteLink(ROOT_SCOPE, severed)
+      deliverLayoutChange({
+        operation: { type: 'clearGraph', actor: 'user-abc' }
+      })
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([{ op: 'clear', removed_nodes: ['1', '2'] }])
+  })
+
   it('mints a name-keyed set_widget with the pre-write value from the real store', () => {
     const widgetStore = useWidgetValueStore()
     const id = widgetId(ROOT_ID, toNodeId(7), 'seed')

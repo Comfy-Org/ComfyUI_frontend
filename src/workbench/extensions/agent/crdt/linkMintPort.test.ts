@@ -41,6 +41,7 @@ describe('attachLinkMintPort', () => {
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
+  let intentionalClear: boolean
   let session: MintSession
   let placedListeners: Set<
     (scope: LinkScopeView, topology: LinkTopologyView) => void
@@ -61,6 +62,7 @@ describe('attachLinkMintPort', () => {
     minted = []
     enabled = true
     bound = true
+    intentionalClear = false
     session = createMintSession()
     placedListeners = new Set()
     deletedListeners = new Set()
@@ -78,6 +80,7 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      isIntentionalClear: () => intentionalClear,
       enqueue: (operations) => minted.push(...operations)
     })
   })
@@ -221,6 +224,15 @@ describe('attachLinkMintPort', () => {
 
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
+  })
+
+  it('suppresses standalone disconnects during an intentional clear', async () => {
+    intentionalClear = true
+    remove(ROOT_SCOPE, topology(41))
+    intentionalClear = false
+    await afterSweep()
+
+    expect(minted).toEqual([])
   })
 
   it('sweeps the capture window: a later take finds nothing', async () => {
