@@ -15,9 +15,8 @@ const bridgeState = vi.hoisted(() => {
       this.subscribedWorkflowId = workflowId
     })
 
-    unsubscribe = vi.fn((workflowId?: string) => {
-      if (workflowId === undefined || this.subscribedWorkflowId === workflowId)
-        this.subscribedWorkflowId = null
+    unsubscribe = vi.fn(() => {
+      this.subscribedWorkflowId = null
     })
 
     resubscribe = vi.fn()
