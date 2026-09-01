@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 import {
-  getOutputKey,
   getTotalAssetOutputCount,
   resolveOutputAssetItems
 } from './outputAssetUtil'
@@ -114,12 +114,17 @@ describe('getTotalAssetOutputCount', () => {
     const parent = createAsset({
       id: 'job-1-parent',
       name: 'parent.png',
-      user_metadata: { jobId: 'job-1', nodeId: '1', outputCount: 4 }
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4
+      }
     })
     const child = createAsset({
       id: 'job-1-child',
       name: 'child.png',
-      user_metadata: { jobId: 'job-1', nodeId: '2' }
+      user_metadata: { jobId: 'job-1', nodeId: '2', subfolder: 'outputs' }
     })
 
     expect(getTotalAssetOutputCount([parent, child])).toBe(4)

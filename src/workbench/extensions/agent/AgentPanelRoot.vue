@@ -778,7 +778,7 @@ const attachment = useAttachment({
     const uploaded = await rest.uploadImage(file, file.name)
     // The library caches input assets; without this refresh a just-uploaded
     // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.updateInputs()
+    void assetsStore.inputAssets.loadNew()
     return { ref: uploaded.name }
   },
   maxBytes: (file) => {
