@@ -242,17 +242,26 @@ describe('take (explicit reconciliation)', () => {
 
 describe('entries', () => {
   it('returns immutable-by-copy snapshots in insertion order, filterable by state', () => {
-    const ledger = createPendingOpLedger<string>()
-    ledger.enqueue('op-1', 's1')
-    ledger.enqueue('op-2', 's2')
+    const ledger = createPendingOpLedger<{ label: string }>()
+    ledger.enqueue('op-1', { label: 's1' })
+    ledger.enqueue('op-2', { label: 's2' })
     ledger.markInFlight(['op-2'])
+    ledger.reconcileOpsResult({
+      batch: ['op-2'],
+      applied: [],
+      skipped: [],
+      failedOpId: 'op-2',
+      failure: { message: 'rejected' }
+    })
     expect(ledger.entries().map((e) => e.opId)).toEqual(['op-1', 'op-2'])
     expect(ledger.entries('queued').map((e) => e.opId)).toEqual(['op-1'])
-    expect(ledger.entries('inflight').map((e) => e.opId)).toEqual(['op-2'])
+    expect(ledger.entries('failed').map((e) => e.opId)).toEqual(['op-2'])
 
-    // Mutating a snapshot does not write through to the ledger.
-    const snapshot = ledger.entries()[0]! as { state: string }
-    snapshot.state = 'applied'
-    expect(ledger.get('op-1')?.state).toBe('queued')
+    const snapshots = ledger.entries()
+    snapshots[0]!.shadow.label = 'mutated'
+    const failure = snapshots[1]!.failure as { message: string }
+    failure.message = 'mutated'
+    expect(ledger.get('op-1')?.shadow).toEqual({ label: 's1' })
+    expect(ledger.get('op-2')?.failure).toEqual({ message: 'rejected' })
   })
 })
