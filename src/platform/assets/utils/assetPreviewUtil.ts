@@ -97,19 +97,3 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob)
   })
 }
-
-/**
- * Persist a captured thumbnail from its data URL. Best-effort: a failed
- * conversion or upload never surfaces - the captured preview still renders.
- */
-export async function persistThumbnailFromDataUrl(
-  name: string,
-  dataUrl: string
-): Promise<void> {
-  try {
-    const blob = await (await fetch(dataUrl)).blob()
-    await persistThumbnail(name, blob)
-  } catch {
-    return
-  }
-}

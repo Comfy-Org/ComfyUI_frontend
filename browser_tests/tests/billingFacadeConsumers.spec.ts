@@ -18,12 +18,9 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { FreeTierQuota } from '@e2e/fixtures/components/FreeTierQuota'
 
 /**
- * Billing facade consumers — FE-933 (B3) regression, plus the free-tier
- * quota display (FE-1774: the quota chip renders inside the action bars).
+ * Billing facade consumers — FE-933 (B3) regression.
  *
  * The repointed surfaces (avatar popover balance, free-tier dialog renewal
  * date) must keep rendering from `useBillingContext`. Cloud
@@ -176,7 +173,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       'legacy_stripe'
     )
     await bootApp(page)
-    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
+    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(1)
 
     await page.getByRole('button', { name: 'Current user' }).click()
     const popover = page.locator('.current-user-popover')
@@ -204,6 +201,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect(popover.getByText('12,660')).toBeVisible()
     await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
     await expect(popover.getByTestId('add-credits-button')).toBeVisible()
+    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
     expect(billingRequests.legacyStatus).toBe(0)
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
@@ -230,46 +228,41 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
       .toBeGreaterThan(0)
     expect(billingRequests.legacyStatus).toBe(0)
+    expect(billingRequests.legacyBalance).toBe(0)
   })
 
-  const FREE_INACTIVE_SUBSCRIPTION = {
-    is_active: false,
-    subscription_tier: 'FREE',
-    subscription_duration: 'MONTHLY',
-    // 10:00Z keeps the en-US calendar date stable across CI timezones.
-    renewal_date: '2099-02-20T10:00:00Z',
-    has_funds: false
-  } as const
-
-  const FREE_TIER_REMOTE_CONFIG = {
-    subscription_required: true,
-    free_tier_job_allowance_enabled: true,
-    free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
-  } satisfies RemoteConfig & {
-    free_tier_job_allowance_enabled: boolean
-  }
-
-  test('renders the 3-of-5 free-tier quota inside the action bars', async ({
-    comfyPage,
+  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
     page
   }) => {
     test.setTimeout(60_000)
 
+    // The facade routes a personal workspace through the workspace
+    // `/api/billing/*` endpoints. With
+    // subscription gating on, an inactive FREE user gets the "Subscribe to run"
+    // button, which opens the pricing table on click. (refreshRemoteConfig
+    // overwrites window.__CONFIG__ from /api/features, so the flags must come
+    // from the features mock, not an init script.)
     await mockCloudBoot(
       page,
-      FREE_INACTIVE_SUBSCRIPTION,
-      FREE_TIER_REMOTE_CONFIG,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        // 10:00Z keeps the en-US calendar date stable across CI timezones.
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      {
+        subscription_required: true
+      },
       'stripe'
     )
     await bootApp(page)
 
-    const actionBars = page.getByTestId(TestIds.topbar.actionBars)
-    await expect(
-      actionBars.getByTestId(TestIds.topbar.freeTierQuota)
-    ).toHaveCount(1)
+    await page.getByTestId('subscribe-to-run-button').click()
 
-    const quota = new FreeTierQuota(comfyPage)
-    await expect.poll(() => quota.getAvailable()).toBe('3')
-    await expect.poll(() => quota.getMax()).toBe('5')
+    await expect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeVisible()
   })
 })

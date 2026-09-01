@@ -2,8 +2,6 @@ import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
-  MINT_ID_CEILING,
-  MINT_ID_MIN,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -168,7 +166,7 @@ function firstById<T, Id>(
  * Dedupes node IDs across serialized subgraph definitions to prevent widget
  * store key collisions, and patches any root-level legacy proxyWidgets that
  * reference the remapped inner IDs. Returns deep clones; inputs are not
- * mutated. New IDs come from `mintNodeId(state)`.
+ * mutated. `state.lastNodeId` is advanced.
  *
  * `GraphCanvas.vue` also keys Vue node instances by bare `NodeId`, so
  * collisions could reuse a component across graph changes instead of
@@ -236,8 +234,8 @@ function deduplicateClonedSubgraphNodeIds(
 }
 
 /**
- * Remaps duplicate node IDs to unique values, updating `usedNodeIds` as
- * new IDs are allocated via `mintNodeId(state)`.
+ * Remaps duplicate node IDs to unique values, updating `usedNodeIds`
+ * and `state.lastNodeId` as new IDs are allocated.
  *
  * @returns A map of old ID → new ID for nodes that were remapped.
  */
@@ -296,9 +294,7 @@ function findNextAvailableId(
 ): number {
   while (true) {
     const nextId = advance()
-    const inCounterRange = nextId <= MAX_ID
-    const inMintRange = nextId >= MINT_ID_MIN && nextId < MINT_ID_CEILING
-    if (!inCounterRange && !inMintRange) {
+    if (nextId > MAX_ID) {
       throw new Error('Node ID space exhausted')
     }
     if (!usedIds.has(nextId)) return nextId
