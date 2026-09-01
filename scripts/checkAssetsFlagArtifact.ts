@@ -1,0 +1,108 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { extname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+const TEST_FIXTURE_MARKERS = [
+  'browser_tests/fixtures/',
+  '/__fixtures__/',
+  'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
+] as const
+
+function artifactFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) return artifactFiles(path)
+    return [path]
+  })
+}
+
+function assetApiGates(chunks: ReadonlyArray<string>): string {
+  const gates = chunks.flatMap(
+    (chunk) =>
+      chunk.match(/function isAssetAPIEnabled\(\)\s*\{[\s\S]*?\n\s*\}/g) ?? []
+  )
+
+  if (gates.length !== 1) {
+    throw new Error(
+      `Expected one Asset API gate in the build, found ${gates.length}`
+    )
+  }
+
+  return gates[0]
+}
+
+export function assertAssetApiGate(
+  chunks: ReadonlyArray<string>,
+  distribution: string
+): void {
+  const gate = assetApiGates(chunks)
+  const expected =
+    distribution === 'cloud'
+      ? /return !!useSettingStore\(\)\.get\(["']Comfy\.Assets\.UseAssetAPI["']\)/
+      : /return false/
+
+  if (!expected.test(gate)) {
+    throw new Error(
+      `Built Asset API gate is invalid for ${distribution}:\n${gate.trim()}`
+    )
+  }
+}
+
+export function assertBuildProvenance(
+  manifest: string,
+  expectedCommit: string,
+  expectedDistribution: string
+): void {
+  const parsed: unknown = JSON.parse(manifest)
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error('Build manifest must be a JSON object')
+  }
+  const build = parsed as Record<string, unknown>
+  if (build.commit !== expectedCommit) {
+    throw new Error(
+      `Build does not contain expected frontend commit ${expectedCommit}`
+    )
+  }
+  if (build.distribution !== expectedDistribution) {
+    throw new Error(
+      `Build distribution is ${String(build.distribution)}, expected ${expectedDistribution}`
+    )
+  }
+}
+
+export function assertNoTestFixtures(chunks: ReadonlyArray<string>): void {
+  for (const marker of TEST_FIXTURE_MARKERS) {
+    if (chunks.some((chunk) => chunk.includes(marker))) {
+      throw new Error(`Build contains test fixture marker: ${marker}`)
+    }
+  }
+}
+
+export function checkAssetsFlagArtifact(directory = 'dist'): void {
+  const files = artifactFiles(directory)
+  const chunks = files
+    .filter((path) => extname(path) === '.js')
+    .map((path) => readFileSync(path, 'utf8'))
+  const expectedCommit = process.env.EXPECTED_FRONTEND_COMMIT
+  const expectedDistribution = process.env.EXPECTED_DISTRIBUTION
+
+  if (expectedCommit && expectedDistribution) {
+    assertBuildProvenance(
+      readFileSync(join(directory, 'build-manifest.json'), 'utf8'),
+      expectedCommit,
+      expectedDistribution
+    )
+  }
+  assertNoTestFixtures(chunks)
+  if (!expectedDistribution) {
+    throw new Error('EXPECTED_DISTRIBUTION is required')
+  }
+  assertAssetApiGate(chunks, expectedDistribution)
+}
+
+if (
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  checkAssetsFlagArtifact()
+}

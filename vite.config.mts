@@ -376,6 +376,19 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    {
+      name: 'emit-build-manifest',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'build-manifest.json',
+          source: JSON.stringify({
+            commit: GIT_COMMIT,
+            distribution: DISTRIBUTION
+          })
+        })
+      }
+    },
     // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
