@@ -130,10 +130,10 @@ export class LayoutFollowerBridge extends EventTarget {
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
       this.dropDocForNewLineage()
-      this.reconcile()
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
       )
+      this.reconcile()
       return
     }
     this.reconcile()

@@ -520,8 +520,22 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
   it('replaces the doc and subscribes from an EMPTY state vector on switch', () => {
     const { transport, bridge } = wire()
     const replaced: unknown[] = []
+    const switchEvents: string[] = []
+    const send = transport.send.bind(transport)
+    vi.spyOn(transport, 'send').mockImplementation((frame) => {
+      const { type, data } = JSON.parse(frame) as {
+        type: string
+        data?: { workflow_id?: string }
+      }
+      if (type === 'doc_subscribe' && data?.workflow_id === 'wf-2')
+        switchEvents.push('subscribe')
+      return send(frame)
+    })
     bridge.addEventListener('follower_replaced', (event) => {
-      if (event instanceof CustomEvent) replaced.push(event.detail)
+      if (event instanceof CustomEvent) {
+        replaced.push(event.detail)
+        switchEvents.push('replaced')
+      }
     })
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -537,6 +551,7 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
     expect(replaced).toEqual([{ workflowId: 'wf-2' }])
+    expect(switchEvents).toEqual(['replaced', 'subscribe'])
 
     // The old subscription is released, and the new subscribe carries the
     // FRESH doc's state vector — the empty one — never wf-1's, which the host
