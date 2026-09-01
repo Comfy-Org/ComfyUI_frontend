@@ -75,10 +75,11 @@ left open:
    asset-record ID. It does not delete files off disk. This was confirmed as
    working as intended, with the stated goal of minimal behavior change
    relative to the pre-assets hide behavior.
-7. **Batch deletion resolves targets before execution and unwinds on partial
-   failure.** All files are resolved and reported before execution. If some
-   record deletions in a chunk fail, the owning job's history entry is not
-   deleted. History deletion per job is gated on record-deletion success.
+7. **Batch deletion resolves targets before execution and is non-atomic.** All
+   files are resolved and reported before execution. Successful record
+   deletions are not rolled back if another deletion in the batch fails. If any
+   deletion fails, the owning job's history entry remains; history deletion per
+   job is gated on every record deletion succeeding.
 8. **Success copy must not claim disk deletion.** A toast that says assets
    were deleted when nothing was removed from disk is a bug. The server
    currently provides no discriminated return for cases where nothing was
@@ -121,9 +122,9 @@ left open:
 
 ## References
 
-- [Asset record/content intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/synap5e/docs/asset-record-content-split/asset-record-content-split/desired-behaviour.md)
-- [Asset record/content logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/synap5e/docs/asset-record-content-split/asset-record-content-split/architecture/logical.md)
-- [Asset record deletion scenario](https://github.com/Comfy-Org/ideation-sharing/blob/synap5e/docs/asset-record-content-split/asset-record-content-split/architecture/scenarios.md#delete-a-record-through-the-api)
+- [Asset record/content intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/87f638f1a6a424f151666d78f99eda45e7ad623f/asset-record-content-split/desired-behaviour.md)
+- [Asset record/content logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/87f638f1a6a424f151666d78f99eda45e7ad623f/asset-record-content-split/architecture/logical.md)
+- [Asset record deletion scenario](https://github.com/Comfy-Org/ideation-sharing/blob/87f638f1a6a424f151666d78f99eda45e7ad623f/asset-record-content-split/architecture/scenarios.md#delete-a-record-through-the-api)
 - [Current frontend output deletion path](../../src/platform/assets/composables/useMediaAssetActions.ts)
 - [Current history-derived asset store](../../src/stores/assetsStore.ts)
 - Assets PR meta-review meeting, 2026-08-27 (Christian, Simon, Austin, Alex):
