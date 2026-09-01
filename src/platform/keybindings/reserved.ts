@@ -30,6 +30,7 @@ export const RESERVED_BY_TEXT_INPUT = new Set([
   'Ctrl + x',
   'Ctrl + z',
   'Ctrl + y',
+  'Ctrl + Shift + z',
   'Ctrl + p',
   'Enter',
   'Shift + Enter',
