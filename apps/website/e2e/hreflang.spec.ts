@@ -43,9 +43,29 @@ test.describe('hreflang alternates', () => {
     request
   }) => {
     const sitemap = await (await request.get('/sitemap-0.xml')).text()
-    expect(sitemap).toContain(
-      '<url><loc>https://comfy.org/mcp/</loc><xhtml:link rel="alternate" hreflang="en" href="https://comfy.org/mcp/"/><xhtml:link rel="alternate" hreflang="zh-CN" href="https://comfy.org/zh-CN/mcp/"/><xhtml:link rel="alternate" hreflang="x-default" href="https://comfy.org/mcp/"/>'
+
+    // Extract the <url> entry for /mcp/ and read its xhtml:link alternates
+    // independent of attribute order, rather than matching one exact string.
+    const urlEntry = sitemap.match(
+      /<url><loc>https:\/\/comfy\.org\/mcp\/<\/loc>(.*?)<\/url>/
     )
+    expect(urlEntry, 'sitemap has a <url> entry for /mcp/').not.toBeNull()
+    const alternateTags = [
+      ...(urlEntry?.[1].matchAll(/<xhtml:link[^>]*\/>/g) ?? [])
+    ].map((match) => match[0])
+    const alternatesByHreflang = new Map(
+      alternateTags.map((tag) => {
+        const hreflang = tag.match(/hreflang="([^"]+)"/)?.[1]
+        const href = tag.match(/href="([^"]+)"/)?.[1]
+        return [hreflang, href]
+      })
+    )
+    expect(alternatesByHreflang.get('en')).toBe('https://comfy.org/mcp/')
+    expect(alternatesByHreflang.get('zh-CN')).toBe(
+      'https://comfy.org/zh-CN/mcp/'
+    )
+    expect(alternatesByHreflang.get('x-default')).toBe('https://comfy.org/mcp/')
+
     expect(sitemap).not.toMatch(
       /<loc>https:\/\/comfy\.org\/affiliates\/<\/loc><xhtml:link/
     )
