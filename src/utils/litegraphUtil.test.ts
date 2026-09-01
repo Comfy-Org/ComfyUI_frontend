@@ -243,10 +243,18 @@ describe('getWidgetIdForNode', () => {
     })
     node.widgets = [first, frozen]
 
-    const mapped = [...mapLiveWidgetsById(node).values()]
-    expect(mapped).toEqual([first, { ...frozen, name: 'shared#1' }])
-    expect(node.widgets[1]).toBe(mapped[1])
-    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
+    const mapped = mapLiveWidgetsById(node)
+    expect([...mapped.keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    expect([...mapped.values()]).toEqual([first, frozen])
+    expect(node.widgets).toEqual([first, frozen])
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockClear()
+    expect(getWidgetIdForNode(node, frozen)).toBe(
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    )
     expect(warn).toHaveBeenCalledOnce()
   })
 

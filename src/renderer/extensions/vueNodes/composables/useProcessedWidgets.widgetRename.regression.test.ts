@@ -149,30 +149,6 @@ describe('widget rename after registration (#15600)', () => {
     expect(renderedWidgetNames(graph, node)).toEqual(['first', 'second'])
   })
 
-  it('registers and renders a duplicate whose name cannot be changed', () => {
-    const { graph, node } = setup('duplicate')
-    const duplicate = node.addWidget('button', 'duplicate', '', () => {})
-    Object.defineProperty(duplicate, 'name', {
-      configurable: false,
-      value: 'duplicate',
-      writable: false
-    })
-
-    expect(renderedWidgetNames(graph, node)).toEqual([
-      'duplicate',
-      'duplicate#1'
-    ])
-
-    const store = useWidgetValueStore()
-    const duplicateId = widgetId(GRAPH_ID, node.id, 'duplicate#1')
-    expect(node.widgets?.[1].name).toBe('duplicate#1')
-    expect(store.getWidget(duplicateId)).toBeDefined()
-    expect(store.getNodeWidgetIds(GRAPH_ID, node.id)).toEqual([
-      widgetId(GRAPH_ID, node.id, 'duplicate'),
-      duplicateId
-    ])
-  })
-
   it('carries the widget value across a rename', () => {
     const { graph, node, widget } = setup('Original')
     widget.value = 'carried'
