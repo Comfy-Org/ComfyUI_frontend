@@ -4,7 +4,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
@@ -89,14 +89,14 @@ vi.mock('@/composables/useExternalLink', () => ({
 }))
 
 // Mock release store
-const mockReleaseStore = {
+const mockReleaseStore = reactive({
   recentRelease: null as ReleaseNote | null,
   shouldShowToast: false,
   handleSkipRelease: vi.fn(),
   handleShowChangelog: vi.fn(),
   releases: [],
   fetchReleases: vi.fn()
-}
+})
 
 vi.mock('../common/releaseStore', () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
@@ -337,12 +337,15 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('auto-hides after timeout', async () => {
+    mockReleaseStore.shouldShowToast = false
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: '# Test Release'
     } as ReleaseNote
 
     renderComponent()
+    mockReleaseStore.shouldShowToast = true
+    await nextTick()
 
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
@@ -353,20 +356,31 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {
+    mockReleaseStore.shouldShowToast = false
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: '# Test Release'
     } as ReleaseNote
 
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
     renderComponent()
+    mockReleaseStore.shouldShowToast = true
+    await nextTick()
+
+    const autoHideTimerIndex = setTimeoutSpy.mock.calls.findIndex(
+      ([, delay]) => delay === 8000
+    )
+    const autoHideTimer = setTimeoutSpy.mock.results[autoHideTimerIndex]?.value
+    expect(autoHideTimer).toBeDefined()
 
     vi.advanceTimersByTime(1000)
 
     await user.click(screen.getByRole('button', { name: /skip/i }))
 
-    expect(vi.getTimerCount()).toBe(0)
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(autoHideTimer)
     expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
   })
 })
