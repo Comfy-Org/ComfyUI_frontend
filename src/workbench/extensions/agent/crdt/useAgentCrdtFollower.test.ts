@@ -381,6 +381,42 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('keeps failure counters monotonic across resets and workflow switches', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw new Error('mutation batch failed')
+    })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_node_payload'
+    })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 8 })
+
+    expect(status()).toMatchObject({
+      opNacks: 1,
+      lastOpNack: null,
+      projectionErrors: 1
+    })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_node_payload'
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(status()).toMatchObject({
+      opNacks: 2,
+      lastOpNack: null,
+      projectionErrors: 1
+    })
+    unmount()
+  })
+
   it('suspends a background target and catches up only after it becomes active', async () => {
     const { unmount, isTargetActive } = mountFollower('wf-a', false)
 

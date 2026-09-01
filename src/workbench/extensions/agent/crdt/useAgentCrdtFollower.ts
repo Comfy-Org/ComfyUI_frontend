@@ -134,10 +134,8 @@ export function useAgentCrdtFollower(
   const projectionErrors = ref(0)
   let projectionFailureReported = false
 
-  const resetBindingDiagnostics = (): void => {
-    opNacks.value = 0
+  const resetWorkflowDiagnostics = (): void => {
     lastOpNack.value = null
-    projectionErrors.value = 0
     projectionFailureReported = false
   }
 
@@ -412,7 +410,7 @@ export function useAgentCrdtFollower(
       adapter.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
-    resetBindingDiagnostics()
+    resetWorkflowDiagnostics()
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
@@ -527,7 +525,7 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        resetBindingDiagnostics()
+        resetWorkflowDiagnostics()
         if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
         adapter.bind(next, bridge.follower)
         boundWorkflowId = next
