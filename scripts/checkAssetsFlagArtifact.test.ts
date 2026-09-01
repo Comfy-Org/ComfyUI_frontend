@@ -19,6 +19,15 @@ describe('assertAssetApiGate', () => {
     }
   )
 
+  it.for(['localhost', 'desktop'])(
+    'accepts a compact disabled %s gate',
+    (distribution) => {
+      expect(() =>
+        assertAssetApiGate(['function isAssetAPIEnabled(){return!1}'], distribution)
+      ).not.toThrow()
+    }
+  )
+
   it('accepts a Cloud gate controlled by the opt-in setting', () => {
     expect(() =>
       assertAssetApiGate(
