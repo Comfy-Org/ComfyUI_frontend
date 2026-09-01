@@ -39,18 +39,29 @@ export function registerAgentPanelExtension(): void {
         return
       }
 
-      const canvas = app.canvas
-      const workflowStore = useWorkflowStore()
-      const workflowPath = workflowStore.activeWorkflow?.path
-      const nodes = nodeSelectionStore
-        .nodeIds(workflowPath)
-        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-        .filter(isLGraphNode)
-      nodeSelectionStore.restoreNodeIds(
-        nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
-      )
-      canvas?.selectItems(nodes)
-      useCanvasStore().updateSelectedItems()
+      try {
+        const canvas = app.canvas
+        const workflowStore = useWorkflowStore()
+        const workflowPath = workflowStore.activeWorkflow?.path
+        const nodes = nodeSelectionStore
+          .nodeIds(workflowPath)
+          .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
+          .filter(isLGraphNode)
+        nodeSelectionStore.restoreNodeIds(
+          nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
+        )
+        canvas?.selectItems(nodes)
+        useCanvasStore().updateSelectedItems()
+      } catch (error) {
+        nodeSelectionStore.finishWorkflowLoad()
+        throw error
+      }
+    },
+    onGraphLoadError() {
+      const nodeSelectionStore = useAgentNodeSelectionStore()
+      if (nodeSelectionStore.isLoadingWorkflow) {
+        nodeSelectionStore.finishWorkflowLoad()
+      }
     },
     afterConfigureGraph() {
       notifyMintPortsAfterGraphConfigure()

@@ -376,6 +376,10 @@ describe('ComfyApp', () => {
         'workflow-load',
         7
       )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'bad workflow json' })
+      )
     })
 
     it('never suppresses the workflow reset for an API JSON import', async () => {

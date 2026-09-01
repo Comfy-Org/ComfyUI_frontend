@@ -265,6 +265,39 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 
+  it('finishes restoration when graph configuration fails', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+
+    extension!.onGraphLoadError!(new Error('bad workflow json'), {} as never)
+
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
+  it('finishes restoration when selection restoration throws', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.agentStore.enabled = true
+    mocks.agentStore.isOpen = true
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+    mocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
+    mocks.getNodeByLocatorId.mockImplementation(() => {
+      throw new Error('selection restore failed')
+    })
+
+    expect(() =>
+      extension!.afterLoadGraph!({ rootGraph: {} } as never)
+    ).toThrow('selection restore failed')
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
   it('does not start selection restoration while the flag is disabled', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()

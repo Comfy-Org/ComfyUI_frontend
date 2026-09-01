@@ -1469,6 +1469,10 @@ export class ComfyApp {
           reportType: 'loadWorkflowError'
         })
         console.error(error)
+        await useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          error
+        )
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
