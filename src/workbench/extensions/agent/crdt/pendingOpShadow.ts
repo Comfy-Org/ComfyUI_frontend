@@ -96,7 +96,7 @@ function targetKey(target: ShadowTarget): string {
     case 'link':
       return `link:${target.linkId}`
     case 'widget':
-      return `widget:${target.nodeId}:${target.widgetName}`
+      return `widget:${encodeURIComponent(target.nodeId)}:${encodeURIComponent(target.widgetName)}`
   }
 }
 
