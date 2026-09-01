@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ModelThumbnailResult } from '@/components/load3d/modelThumbnail'
 import { i18n } from '@/i18n'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
@@ -31,7 +32,7 @@ const generateModelThumbnail = vi.hoisted(() =>
       _modelUrl: string,
       _assetName: string,
       _callerSignal?: AbortSignal
-    ): Promise<string | null> => null
+    ): Promise<ModelThumbnailResult> => ({ status: 'failed' })
   )
 )
 vi.mock('@/components/load3d/modelThumbnail', () => ({
@@ -94,7 +95,7 @@ describe('ReplyAssetGroup', () => {
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    generateModelThumbnail.mockReset().mockResolvedValue({ status: 'failed' })
     reportError.mockReset()
   })
 
@@ -217,7 +218,10 @@ describe('ReplyAssetGroup', () => {
 
   it('generates a thumbnail offscreen when the server has none', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    generateModelThumbnail.mockResolvedValue('data:image/png;base64,gen')
+    generateModelThumbnail.mockResolvedValue({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,gen'
+    })
     renderGroup([model])
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
@@ -261,8 +265,9 @@ describe('ReplyAssetGroup', () => {
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
   })
 
-  it('retries an unpreviewable model once, not on every streaming pass', async () => {
+  it('retries a timed-out model once, not on every streaming pass', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue({ status: 'timed-out' })
     const { rerender } = renderGroup([model])
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
 
@@ -273,6 +278,17 @@ describe('ReplyAssetGroup', () => {
     await rerender({ assets: [{ ...model }] })
 
     expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a model that cannot be rendered', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const { rerender } = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    await rerender({ assets: [{ ...model }] })
+    await rerender({ assets: [{ ...model }] })
+
+    expect(generateModelThumbnail).toHaveBeenCalledOnce()
   })
 
   it('aborts queued generation when unmounted', async () => {
@@ -297,12 +313,14 @@ describe('ReplyAssetGroup', () => {
       await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
       const dialog = showDialog.mock.calls.at(-1)?.[0]
       dialog.dialogComponentProps.onClose()
-      await Promise.resolve()
+      await vi.advanceTimersByTimeAsync(0)
       const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
+      expect(vi.getTimerCount()).toBe(1)
 
       unmount()
-      await vi.advanceTimersByTimeAsync(2_000)
+      expect(vi.getTimerCount()).toBe(0)
 
+      await vi.advanceTimersByTimeAsync(2_000)
       expect(findServerPreviewUrl).toHaveBeenCalledTimes(callsBeforeUnmount)
     } finally {
       vi.useRealTimers()
@@ -379,5 +397,6 @@ describe('ReplyAssetGroup', () => {
         expect.any(AbortSignal)
       )
     )
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(13)
   })
 })

@@ -43,10 +43,52 @@ describe('generateModelThumbnail', () => {
       'a.glb'
     )
 
-    expect(result).toBe('data:image/png;base64,thumb')
-    expect(instance.loadModel).toHaveBeenCalledWith('/api/view?filename=a.glb')
+    expect(result).toEqual({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,thumb'
+    })
+    expect(instance.loadModel).toHaveBeenCalledWith(
+      '/api/view?filename=a.glb',
+      undefined,
+      { silent: true }
+    )
     expect(instance.remove).toHaveBeenCalledTimes(1)
     expect(persistThumbnail).not.toHaveBeenCalled()
+  })
+
+  it('releases the queue the moment a running render is aborted', async () => {
+    vi.useFakeTimers()
+    try {
+      const stalled = mockInstance({
+        loadModel: vi.fn(() => new Promise(() => {}))
+      })
+      const next = mockInstance()
+      createLoad3d.mockReturnValueOnce(stalled).mockReturnValueOnce(next)
+      const controller = new AbortController()
+
+      const abortedRun = generateModelThumbnail(
+        '/slow.glb',
+        'slow.glb',
+        controller.signal
+      )
+      const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+
+      controller.abort()
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(abortedRun).resolves.toEqual({ status: 'cancelled' })
+      await expect(nextRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
+      expect(stalled.remove).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('skips a queued render whose caller aborted before its turn', async () => {
@@ -68,8 +110,8 @@ describe('generateModelThumbnail', () => {
       controller.abort()
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(blockedRun).resolves.toBeNull()
-      await expect(skippedRun).resolves.toBeNull()
+      await expect(blockedRun).resolves.toEqual({ status: 'timed-out' })
+      await expect(skippedRun).resolves.toEqual({ status: 'cancelled' })
       expect(createLoad3d).toHaveBeenCalledTimes(1)
     } finally {
       vi.useRealTimers()
@@ -84,7 +126,7 @@ describe('generateModelThumbnail', () => {
 
     const result = await generateModelThumbnail('/broken.glb', 'broken.glb')
 
-    expect(result).toBeNull()
+    expect(result).toEqual({ status: 'failed' })
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 
@@ -122,8 +164,11 @@ describe('generateModelThumbnail', () => {
       const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(firstRun).resolves.toBeNull()
-      await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
+      await expect(firstRun).resolves.toEqual({ status: 'timed-out' })
+      await expect(secondRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
       expect(first.remove).toHaveBeenCalledOnce()
       expect(second.remove).toHaveBeenCalledOnce()
       expect(reportError).toHaveBeenCalledWith(
@@ -150,8 +195,11 @@ describe('generateModelThumbnail', () => {
       const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(firstRun).resolves.toBeNull()
-      await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
+      await expect(firstRun).resolves.toEqual({ status: 'timed-out' })
+      await expect(secondRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
       expect(first.remove).toHaveBeenCalledOnce()
       expect(second.remove).toHaveBeenCalledOnce()
       expect(vi.getTimerCount()).toBe(0)

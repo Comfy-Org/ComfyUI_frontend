@@ -8,22 +8,33 @@ let queue: Promise<unknown> = Promise.resolve()
 const MODEL_THUMBNAIL_TIMEOUT_MS = 10_000
 
 /**
+ * Outcome of an offscreen thumbnail render. `timed-out` is the only
+ * failure worth retrying: the model may simply have been slower than the
+ * deadline, whereas `failed` means it could not be rendered at all.
+ */
+export type ModelThumbnailResult =
+  | { status: 'rendered'; dataUrl: string }
+  | { status: 'timed-out' }
+  | { status: 'cancelled' }
+  | { status: 'failed' }
+
+/**
  * Render a model to a thumbnail data URL offscreen, without opening the
  * viewer. Runs one generation at a time to bound live WebGL contexts and
  * persists the result through the asset API so other surfaces pick it up.
- * Resolves null when the model cannot be rendered, when generation exceeds
- * its deadline, or when `callerSignal` aborts — including while the request
- * is still waiting its turn in the queue.
+ * Aborting `callerSignal` settles the request and releases the queue, both
+ * while it waits its turn and once it is running.
  */
 export function generateModelThumbnail(
   modelUrl: string,
   assetName: string,
   callerSignal?: AbortSignal
-): Promise<string | null> {
-  const run = queue.then(() =>
-    callerSignal?.aborted
-      ? null
-      : renderThumbnailWithTimeout(modelUrl, assetName, callerSignal)
+): Promise<ModelThumbnailResult> {
+  const run = queue.then(
+    (): ModelThumbnailResult | Promise<ModelThumbnailResult> =>
+      callerSignal?.aborted
+        ? { status: 'cancelled' }
+        : renderThumbnailWithTimeout(modelUrl, assetName, callerSignal)
   )
   queue = run.catch(() => null)
   return run
@@ -33,32 +44,46 @@ async function renderThumbnailWithTimeout(
   modelUrl: string,
   assetName: string,
   callerSignal?: AbortSignal
-): Promise<string | null> {
+): Promise<ModelThumbnailResult> {
   const abortController = new AbortController()
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
   const timeoutError = new Error('Model thumbnail generation timed out')
-  const abortForCaller = () => abortController.abort(callerSignal?.reason)
-  callerSignal?.addEventListener('abort', abortForCaller, { once: true })
+  const cancelError = new Error('Model thumbnail generation cancelled')
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  let onCallerAbort: (() => void) | undefined
 
   try {
-    return await Promise.race([
+    const dataUrl = await Promise.race([
       renderThumbnail(modelUrl, assetName, abortController.signal),
       new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           abortController.abort(timeoutError)
           reject(timeoutError)
         }, MODEL_THUMBNAIL_TIMEOUT_MS)
+      }),
+      new Promise<never>((_, reject) => {
+        onCallerAbort = () => {
+          abortController.abort(cancelError)
+          reject(cancelError)
+        }
+        callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
       })
     ])
+    return { status: 'rendered', dataUrl }
   } catch (error) {
-    if (callerSignal?.aborted) return null
+    if (error === timeoutError) {
+      reportError(error, {
+        errorType: 'agent_model_thumbnail_generation_failure'
+      })
+      return { status: 'timed-out' }
+    }
+    if (callerSignal?.aborted) return { status: 'cancelled' }
     reportError(error, {
       errorType: 'agent_model_thumbnail_generation_failure'
     })
-    return null
+    return { status: 'failed' }
   } finally {
     if (timeoutId !== undefined) clearTimeout(timeoutId)
-    callerSignal?.removeEventListener('abort', abortForCaller)
+    if (onCallerAbort) callerSignal?.removeEventListener('abort', onCallerAbort)
   }
 }
 
@@ -85,7 +110,7 @@ async function renderThumbnail(
   signal.addEventListener('abort', remove, { once: true })
 
   try {
-    await load3d.loadModel(modelUrl)
+    await load3d.loadModel(modelUrl, undefined, { silent: true })
     signal.throwIfAborted()
     const dataUrl = await load3d.captureThumbnail(256, 256)
     signal.throwIfAborted()

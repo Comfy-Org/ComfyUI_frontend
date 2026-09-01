@@ -86,7 +86,7 @@ onBeforeUnmount(() => {
 /**
  * Drop the placeholder so the next watcher pass retries this model once.
  * Streaming deltas rebuild the asset list on every chunk, so an unbounded
- * retry would restart generation for an unpreviewable model indefinitely.
+ * retry would restart generation for a slow model on every chunk.
  */
 function allowThumbnailRetry(url: string): void {
   if (retriedThumbnails.has(url)) return
@@ -112,14 +112,15 @@ watch(
               return
             }
             if (!mounted) return
-            const generated = await generateModelThumbnail(
+            const result = await generateModelThumbnail(
               url,
               filename,
               thumbnailAbort.signal
             )
             if (!mounted) return
-            if (generated) modelThumbnails.value[url] = generated
-            else allowThumbnailRetry(url)
+            if (result.status === 'rendered')
+              modelThumbnails.value[url] = result.dataUrl
+            else if (result.status === 'timed-out') allowThumbnailRetry(url)
           })
           .catch((error) => {
             if (mounted) allowThumbnailRetry(url)
