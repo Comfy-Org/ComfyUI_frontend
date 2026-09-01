@@ -142,6 +142,10 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+vi.mock<unknown>(import('@/platform/missingModel/missingModelDownload'), () => ({
+  isModelDownloadable: mocks.isModelDownloadable
+}))
+
 vi.mock<unknown>(
   import('@/platform/missingModel/missingModelDownload'),
   () => ({
