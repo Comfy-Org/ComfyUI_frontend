@@ -1371,8 +1371,9 @@ describe('useNodeReplacement', () => {
         firstPlaceholder,
         secondPlaceholder
       ])
+      const firstReplacement = createNewNode()
       vi.mocked(LiteGraph.createNode)
-        .mockReturnValueOnce(createNewNode())
+        .mockReturnValueOnce(firstReplacement)
         .mockReturnValueOnce(createNewNode())
       vi.mocked(canTransferReplacementOwnership)
         .mockReturnValueOnce(true)
@@ -1393,6 +1394,7 @@ describe('useNodeReplacement', () => {
         nodeTypes: [oldNodeType]
       })
 
+      expect(graph._nodes).toStrictEqual([firstReplacement, secondPlaceholder])
       expect(
         getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
       ).toStrictEqual([oldNodeType])
