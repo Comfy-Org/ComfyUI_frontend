@@ -26,7 +26,7 @@ function chipRegistry() {
 }
 
 describe('useAttachment', () => {
-  it('T-07 / PM-675 / FE-1323 accepts picked and dropped MP4 attachments as video tiles', async () => {
+  it('adds previews for picked images but not picked videos', async () => {
     // A video object URL in an <img> renders as a broken thumbnail, so only
     // images get a previewUrl.
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
