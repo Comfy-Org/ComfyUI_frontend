@@ -149,7 +149,7 @@ import {
 type MockWidget = IBaseWidget
 
 function makeTargetWidget(overrides: Partial<MockWidget> = {}): MockWidget {
-  return {
+  return fromPartial<MockWidget>({
     name: 'seed',
     value: 1,
     callback: vi.fn(),
@@ -157,7 +157,7 @@ function makeTargetWidget(overrides: Partial<MockWidget> = {}): MockWidget {
     linkedWidgets: [],
     computedDisabled: false,
     ...overrides
-  } as MockWidget
+  })
 }
 
 function makeNode(inputs: LGraphNode['inputs'] = []) {

@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_DARK_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import {
@@ -126,6 +126,10 @@ describe('useColorPaletteService', () => {
       '--color-datatype-MISSING',
       '#ffffff'
     )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('adds valid custom palettes and persists the custom palette map', async () => {

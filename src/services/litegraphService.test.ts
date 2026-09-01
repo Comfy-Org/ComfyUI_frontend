@@ -364,6 +364,11 @@ function createMockWidget(
   })
 }
 
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
+  navigator,
+  'clipboard'
+)
+
 function installClipboard(write: Clipboard['write']) {
   class TestClipboardItem {
     constructor(readonly data: Record<string, Blob>) {}
@@ -375,6 +380,14 @@ function installClipboard(write: Clipboard['write']) {
     value: { write }
   })
   return TestClipboardItem
+}
+
+function restoreClipboard() {
+  if (originalClipboardDescriptor) {
+    Object.defineProperty(navigator, 'clipboard', originalClipboardDescriptor)
+  } else {
+    Reflect.deleteProperty(navigator, 'clipboard')
+  }
 }
 
 function createInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
@@ -459,6 +472,7 @@ describe('litegraphService', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    restoreClipboard()
   })
 
   describe('getExtraOptionsForWidget', () => {
@@ -494,13 +508,13 @@ describe('litegraphService', () => {
       expect(options[0].content).toContain('My Label')
     })
 
-    it('calls toggleFavorite when favorite option callback is invoked', () => {
+    it('calls toggleFavorite when favorite option callback is invoked', async () => {
       const node = createMockNode()
       const widget = createMockWidget()
 
       const options = getExtraOptionsForWidget(node, widget)
 
-      void invokeMenuCallback(options[0])
+      await invokeMenuCallback(options[0])
       expect(mockFavoritedWidgetsStore.toggleFavorite).toHaveBeenCalledWith(
         node,
         'test_widget'
