@@ -85,7 +85,6 @@ function repairResult(
 describe('useWorkflowValidation', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   afterEach(() => vi.restoreAllMocks())
