@@ -22,7 +22,10 @@ type PartnerRunGate = 'sign-in' | 'none'
 export function partnerRunGateBlocksAutoQueue(): boolean {
   if (isCloud) return false
   if (!useFeatureFlags().flags.partnerRunGateEnabled) return false
-  const { isLoggedIn } = useCurrentUser()
+  const { isLoggedIn, isAuthResolved } = useCurrentUser()
+  // A signed-in user reads as logged-out until Firebase resolves; never gate
+  // on that transient state.
+  if (!isAuthResolved.value) return false
   return !isLoggedIn.value && scanPartnerNodesInGraph().length > 0
 }
 
@@ -40,11 +43,14 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
   }
 
   const { partnerNodes, hasPartnerNodes } = usePartnerNodesInGraph()
-  const { isLoggedIn } = useCurrentUser()
+  const { isLoggedIn, isAuthResolved } = useCurrentUser()
   const { flags } = useFeatureFlags()
 
   const gate = computed<PartnerRunGate>(() =>
-    flags.partnerRunGateEnabled && hasPartnerNodes.value && !isLoggedIn.value
+    flags.partnerRunGateEnabled &&
+    isAuthResolved.value &&
+    hasPartnerNodes.value &&
+    !isLoggedIn.value
       ? 'sign-in'
       : 'none'
   )

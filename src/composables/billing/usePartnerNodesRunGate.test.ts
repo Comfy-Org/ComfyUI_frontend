@@ -32,12 +32,17 @@ vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
 vi.mock('@/composables/auth/useCurrentUser', async () => {
   const { computed, ref } = await import('vue')
   const loggedIn = ref(false)
+  const authResolved = ref(true)
   return {
     useCurrentUser: () => ({
-      isLoggedIn: computed(() => loggedIn.value)
+      isLoggedIn: computed(() => loggedIn.value),
+      isAuthResolved: computed(() => authResolved.value)
     }),
     __setLoggedIn: (value: boolean) => {
       loggedIn.value = value
+    },
+    __setAuthResolved: (value: boolean) => {
+      authResolved.value = value
     }
   }
 })
@@ -53,9 +58,11 @@ vi.mock('@/composables/useFeatureFlags', async () => {
   }
 })
 
-const { __setLoggedIn } = currentUserModule as typeof currentUserModule & {
-  __setLoggedIn: (value: boolean) => void
-}
+const { __setLoggedIn, __setAuthResolved } =
+  currentUserModule as typeof currentUserModule & {
+    __setLoggedIn: (value: boolean) => void
+    __setAuthResolved: (value: boolean) => void
+  }
 const { __setPartnerRunGateEnabled } =
   featureFlagsModule as typeof featureFlagsModule & {
     __setPartnerRunGateEnabled: (value: boolean) => void
@@ -73,6 +80,7 @@ describe('usePartnerNodesRunGate', () => {
     state.hasPartnerNodes = ref(false)
     state.partnerNodes = ref([])
     __setLoggedIn(false)
+    __setAuthResolved(true)
     __setPartnerRunGateEnabled(true)
   })
 
@@ -123,6 +131,26 @@ describe('usePartnerNodesRunGate', () => {
     expect(gate.value).toBe('sign-in')
   })
 
+  it('does not gate while auth is still resolving, then follows the outcome', async () => {
+    state.hasPartnerNodes.value = true
+    __setAuthResolved(false)
+    const { gate } = setup()
+    expect(gate.value, 'unresolved auth must never read as signed-out').toBe(
+      'none'
+    )
+
+    __setLoggedIn(true)
+    __setAuthResolved(true)
+    await nextTick()
+    expect(gate.value, 'a signed-in resolution keeps the gate open').toBe(
+      'none'
+    )
+
+    __setLoggedIn(false)
+    await nextTick()
+    expect(gate.value).toBe('sign-in')
+  })
+
   it('stays inert when the feature flag is off, even for a gated graph', async () => {
     state.hasPartnerNodes.value = true
     __setPartnerRunGateEnabled(false)
@@ -139,12 +167,19 @@ describe('partnerRunGateBlocksAutoQueue', () => {
   beforeEach(() => {
     state.partnerNodes = ref([])
     __setLoggedIn(false)
+    __setAuthResolved(true)
     __setPartnerRunGateEnabled(true)
   })
 
   it('blocks a signed-out local graph that contains partner nodes', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
     expect(partnerRunGateBlocksAutoQueue()).toBe(true)
+  })
+
+  it('never blocks while auth is still resolving', () => {
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+    __setAuthResolved(false)
+    expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 
   it('never blocks while the feature flag is off', () => {

@@ -21,6 +21,8 @@ export const useCurrentUser = () => {
   const isLoggedIn = computed(
     () => !!isApiKeyLogin.value || firebaseUser.value !== null
   )
+  /** False until Firebase has reported the initial auth state. */
+  const isAuthResolved = computed(() => authStore.isInitialized)
 
   const resolvedUserInfo = computed<AuthUserInfo | null>(() => {
     if (isApiKeyLogin.value && apiKeyStore.currentUser) {
@@ -119,6 +121,7 @@ export const useCurrentUser = () => {
   return {
     loading: authStore.loading,
     isLoggedIn,
+    isAuthResolved,
     isApiKeyLogin,
     isEmailProvider,
     userDisplayName,

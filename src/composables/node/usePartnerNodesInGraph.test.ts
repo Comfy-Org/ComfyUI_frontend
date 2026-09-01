@@ -145,6 +145,21 @@ describe('usePartnerNodesInGraph', () => {
     ])
   })
 
+  it('ignores a def that is missing the api_node field entirely', () => {
+    hoisted.nodeDefsByName['MalformedDef'] = {
+      name: 'MalformedDef',
+      display_name: 'Malformed'
+    } as (typeof hoisted.nodeDefsByName)[string]
+    hoisted.rootGraph = { nodes: [node('MalformedDef')] }
+
+    const { hasPartnerNodes } = setup()
+
+    expect(
+      hasPartnerNodes.value,
+      'a def without api_node must never read as a partner node'
+    ).toBe(false)
+  })
+
   it('finds partner nodes nested in subgraphs', () => {
     defineNodeDef('InnerPartner', { apiNode: true, displayName: 'Inner' })
     hoisted.rootGraph = {
