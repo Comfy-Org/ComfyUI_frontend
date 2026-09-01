@@ -1,9 +1,10 @@
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 
 const IMPLICIT_ASSET_ROOT = 'input'
+const ANNOTATION_SUFFIX = /\s*\[(input|output|temp)\]\s*$/i
 
 const hasAnnotation = (filepath: string): boolean =>
-  /\[(input|output|temp)\]/i.test(filepath)
+  ANNOTATION_SUFFIX.test(filepath)
 
 const createAnnotation = (
   filepath: string,
@@ -21,8 +22,6 @@ type AnnotatedPathOptions = {
   subfolder?: string
 }
 
-const ANNOTATION_SUFFIX = /\s*\[(input|output|temp)\]\s*$/i
-
 /**
  * Inverse of {@link createAnnotatedPath}: splits an annotated filepath back
  * into its path and the root folder the annotation names.
@@ -37,9 +36,14 @@ export function parseAnnotatedPath(
 ): { filepath: string; rootFolder: ResultItemType } {
   const match = ANNOTATION_SUFFIX.exec(filepath)
   if (!match) return { filepath, rootFolder: fallbackRoot }
+  const annotation = match[1].toLowerCase()
+  const rootFolder =
+    annotation === 'output' || annotation === 'temp'
+      ? annotation
+      : IMPLICIT_ASSET_ROOT
   return {
     filepath: filepath.slice(0, match.index),
-    rootFolder: match[1].toLowerCase() as ResultItemType
+    rootFolder
   }
 }
 

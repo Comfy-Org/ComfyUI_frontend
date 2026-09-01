@@ -124,6 +124,11 @@ const roundTripCases = [
     path: 'nested/input.png',
     filepath: 'nested/input.png',
     rootFolder: 'input'
+  },
+  {
+    path: 'a [output]/photo.png [temp]',
+    filepath: 'a [output]/photo.png',
+    rootFolder: 'temp'
   }
 ] as const
 

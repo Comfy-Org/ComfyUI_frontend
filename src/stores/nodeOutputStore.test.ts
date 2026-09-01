@@ -512,7 +512,7 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
 
     // Restore from snapshot
-    store.restoreOutputs(snapshot)
+    store.restoreOutputSnapshot(snapshot)
 
     expect(app.nodeOutputs['3']).toStrictEqual(inputOutput)
     expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
@@ -548,11 +548,11 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Tab B: fresh empty workflow (no outputs)
     const tabBSnapshot = store.snapshotOutputs()
-    expect(Object.keys(tabBSnapshot)).toHaveLength(0)
+    expect(Object.keys(tabBSnapshot.outputs)).toHaveLength(0)
 
     // --- Switch back to Tab A: store Tab B then restore Tab A ---
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputs(tabASnapshot)
+    store.restoreOutputSnapshot(tabASnapshot)
 
     // Tab A's outputs should be fully restored
     expect(store.nodeOutputs['1']).toStrictEqual(outputA1)
@@ -591,20 +591,20 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Switch back to Tab A
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputs(snapshotA)
+    store.restoreOutputSnapshot(snapshotA)
 
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_a.png')
 
     // Switch back to Tab B
     const snapshotA2 = store.snapshotOutputs()
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputs(snapshotB)
+    store.restoreOutputSnapshot(snapshotB)
 
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_b.png')
 
     // And back to Tab A again - still correct
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputs(snapshotA2)
+    store.restoreOutputSnapshot(snapshotA2)
 
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_a.png')
   })
@@ -621,13 +621,29 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const snapshot = store.snapshotOutputs()
 
     // Mutate the snapshot
-    snapshot['1'].images![0].filename = 'mutated.png'
-    snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
+    snapshot.outputs['1'].images![0].filename = 'mutated.png'
+    snapshot.outputs['99'] = createMockOutputs([{ filename: 'new.png' }])
 
     // Store should be unchanged
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(app.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(store.nodeOutputs['99']).toBeUndefined()
+  })
+
+  it('preserves widget preview provenance across snapshot restoration', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'generated.png [output]')
+    const snapshot = store.snapshotOutputs()
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputSnapshot(snapshot)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs()
+    )
+
+    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('generated.png')
   })
 })
 

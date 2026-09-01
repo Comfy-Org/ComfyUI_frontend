@@ -58,6 +58,11 @@ interface SetOutputOptions {
   widgetSourced?: boolean
 }
 
+export interface NodeOutputSnapshot {
+  outputs: Record<string, ExecutedWsMessage['output']>
+  widgetSourcedPreviews: NodeLocatorId[]
+}
+
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const workflowStore = useWorkflowStore()
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
@@ -187,19 +192,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
-
-    if (options.widgetSourced) {
-      widgetSourcedPreviews.add(nodeLocatorId)
-    } else if (hasIncomingImages) {
-      widgetSourcedPreviews.delete(nodeLocatorId)
-    }
+    const preserveWidgetSource =
+      options.widgetSourced ||
+      (!hasIncomingImages && widgetSourcedPreviews.has(nodeLocatorId))
 
     const existingOutput = nodeOutputs.value[nodeLocatorId]
     if (
       !hasIncomingImages &&
       existingOutput &&
-      (widgetSourcedPreviews.has(nodeLocatorId) ||
-        isInputPreviewOutput(existingOutput))
+      (preserveWidgetSource || isInputPreviewOutput(existingOutput))
     ) {
       outputs = {
         ...outputs,
@@ -220,14 +221,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             mergedOutput[k] = newValue
           }
         }
-        nodeOutputs.value[nodeLocatorId] = mergedOutput
-        app.nodeOutputs[nodeLocatorId] = clone(mergedOutput)
-        return
+        outputs = mergedOutput
       }
     }
 
     nodeOutputs.value[nodeLocatorId] = outputs
     app.nodeOutputs[nodeLocatorId] = clone(outputs)
+    if (preserveWidgetSource) widgetSourcedPreviews.add(nodeLocatorId)
+    else widgetSourcedPreviews.delete(nodeLocatorId)
   }
 
   function setNodeOutputs(
@@ -450,8 +451,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
 
-  function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
-    return clone(nodeOutputs.value)
+  function snapshotOutputs(): NodeOutputSnapshot {
+    return {
+      outputs: clone(nodeOutputs.value),
+      widgetSourcedPreviews: [...widgetSourcedPreviews].filter(
+        (locatorId) => locatorId in nodeOutputs.value
+      )
+    }
   }
 
   function replaceOutputsFromLegacy(
@@ -485,6 +491,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     replaceOutputsFromLegacy(outputs)
     app.nodeOutputs = clone(nodeOutputs.value)
+  }
+
+  function restoreOutputSnapshot(snapshot: NodeOutputSnapshot) {
+    restoreOutputs(snapshot.outputs)
+    for (const locatorId of snapshot.widgetSourcedPreviews) {
+      if (locatorId in nodeOutputs.value) widgetSourcedPreviews.add(locatorId)
+    }
   }
 
   function refreshNodeOutputs(node: LGraphNode) {
@@ -553,6 +566,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setOutputFromLegacy,
     removeOutputFromLegacy,
     restoreOutputs,
+    restoreOutputSnapshot,
     resetAllOutputsAndPreviews,
 
     nodeOutputs,
