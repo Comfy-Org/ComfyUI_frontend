@@ -423,6 +423,7 @@ export function useNodeReplacement() {
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
+    const failedTypes = new Set<string>()
     let replacementFailed = false
     const graph = app.rootGraph
 
@@ -491,10 +492,18 @@ export function useNodeReplacement() {
         )
         if (!replaced) {
           replacementFailed = true
+          failedTypes.add(match.type)
+          const replacedTypeIndex = replacedTypes.indexOf(match.type)
+          if (replacedTypeIndex !== -1) {
+            replacedTypes.splice(replacedTypeIndex, 1)
+          }
           continue
         }
 
-        if (!replacedTypes.includes(match.type)) {
+        if (
+          !failedTypes.has(match.type) &&
+          !replacedTypes.includes(match.type)
+        ) {
           replacedTypes.push(match.type)
         }
       }
