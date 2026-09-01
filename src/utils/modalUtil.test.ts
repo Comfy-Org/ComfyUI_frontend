@@ -72,6 +72,16 @@ describe('isModalOpen', () => {
       expect(isModalOpen(NO_MANAGED_DIALOGS)).toBe(false)
     })
 
+    // Most Popover call sites pass `unstyled`, which drops the theme class
+    // and leaves data-pc-name as the only marker.
+    it('ignores an unstyled PrimeVue popover', () => {
+      render(
+        '<div data-pc-name="popover" role="dialog" aria-modal="true"></div>'
+      )
+
+      expect(isModalOpen(NO_MANAGED_DIALOGS)).toBe(false)
+    })
+
     it('ignores content nested inside a popover', () => {
       render(`
         <div class="p-popover">
