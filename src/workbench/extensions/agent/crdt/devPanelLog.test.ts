@@ -75,12 +75,20 @@ describe('devPanelLog', () => {
   })
 
   it('stringifies binary payloads defensively', () => {
-    recordDevEvent('doc_update', { update: new Uint8Array([1, 2, 3]) })
+    recordDevEvent('doc_update', {
+      buffer: new ArrayBuffer(4),
+      clamped: new Uint8ClampedArray([1, 2, 3]),
+      view: new DataView(new ArrayBuffer(2))
+    })
 
     const serialized = stringifyDevEvents(devEvents.value)
     const parsed = JSON.parse(serialized) as Array<{
-      detail: { update: string }
+      detail: { buffer: string; clamped: string; view: string }
     }>
-    expect(parsed[0].detail.update).toBe('Uint8Array(3)')
+    expect(parsed[0].detail).toEqual({
+      buffer: 'ArrayBuffer(4)',
+      clamped: 'Uint8ClampedArray(3)',
+      view: 'DataView(2)'
+    })
   })
 })
