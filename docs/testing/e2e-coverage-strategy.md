@@ -12,15 +12,15 @@ regenerated.
 ## 1. Summary
 
 - Coverage is already instrumented end to end for the `chromium` project and
-  published to Codecov (`e2e` flag), GitHub Pages, and Slack. Nothing gates on
-  it, and nobody looks at per-area numbers, so gaps persist unnoticed.
+  published to Codecov (`e2e` flag), GitHub Pages, and Slack. Nothing gates on it and
+  there is no per-area view, so gaps go unnoticed.
 - The headline E2E figure (68.1% of lines) is inflated. V8 coverage only sees
   chunks the browser actually loaded, so 457 source files (~65k raw lines,
   almost as many as the 70.5k lines that are measured) never enter the
   denominator. The `cloud`, `mobile-*`, and `2x` projects do not collect
   coverage at all, so everything cloud-only looks worse than it is, or is
   invisible.
-- The three cheapest wins are measurement fixes, not tests: collect coverage in
+- The three cheapest wins are measurement fixes rather than new tests: collect coverage in
   every project, count never-loaded files, and report coverage per feature area
   (Codecov components). Each is a one-PR change and turns the existing pipeline
   into a gap finder.
@@ -63,7 +63,7 @@ regenerated.
 
 ### What the numbers hide
 
-1. **Never-loaded chunks are not counted.** monocart converts V8 coverage for
+1. Never-loaded chunks are not counted. monocart converts V8 coverage for
    scripts the page fetched. Lazy chunks that no test triggers never appear in
    the lcov, so the denominator excludes them. Absent from the E2E report
    entirely: 457 `src/` files. The biggest clusters, in raw source lines:
@@ -84,14 +84,14 @@ regenerated.
    Some of these are type-only or cloud-only (see point 2), but a true E2E
    line figure over all of `src/` is closer to 45 to 50% than 68%.
 
-2. **Only the `chromium` project collects coverage.** The `cloud` project runs
+2. Only the `chromium` project collects coverage. The `cloud` project runs
    154 tests against the cloud build, including the agent panel, workspace
    switcher, billing and subscription dialogs, and sign-in. None of that work
    is credited. `workspace` shows 33.9% and `auth` 26.6% in the report, and
    the agent panel shows 2 files, purely because the measuring job never runs
    those tests.
 
-3. **The litegraph canvas has one measuring layer.** `vite.config.mts`
+3. The litegraph canvas has one measuring layer. `vite.config.mts`
    excludes `src/lib/litegraph/src/canvas/**`, `widgets/**`, and the top-level
    `src/lib/litegraph/src/*.ts` from unit coverage. E2E is therefore the only
    coverage those 11.9k lines get, and it stands at 49.6% (canvas) and 48.3%
@@ -99,16 +99,16 @@ regenerated.
    `GradientSliderWidget`, `InputIndicators`, and `FloatingRenderLink` are at
    0 to 5%.
 
-4. **No per-area view.** Codecov's project status is off and patch status is
+4. No per-area view. Codecov's project status is off and patch status is
    informational. The Slack post reports two global percentages. A global 68%
    cannot tell anyone that `platform/workspace` is at 34% while `vueNodes` is
    at 81%.
 
-5. **Organizational tags are not used by CI.** `@smoke` is applied to 46 tests
-   and nothing runs it. There is no list of user journeys the suite promises to
-   protect, so behavior coverage is unmeasured.
+5. CI ignores the organizational tags: `@smoke` is applied to 46 tests and
+   nothing runs it, and there is no list of the user journeys the suite
+   promises to protect, so behavior coverage is unmeasured.
 
-6. **Flakes are masked.** With `retries: 3`, a test that fails twice per run
+6. Flakes are masked. With `retries: 3`, a test that fails twice per run
    is still green. The `cloud` job on the analysed run had one flaky test.
    `report.json` records `flaky` outcomes, and nothing aggregates them.
 
@@ -121,7 +121,7 @@ sensitivity, specificity, speed, and cost of change. Isolated tests that each
 set up everything from scratch are easy to reason about but multiply. When two
 dimensions are demonstrably orthogonal, test each dimension once instead of
 the cross product: four interest calculations times five report formats needs
-about nine tests, not twenty. The cost is that orthogonality must be designed
+about nine tests instead of twenty. The cost is that orthogonality must be designed
 and shown, and that fewer assertions per test can feel unsafe.
 
 How this applies here:
@@ -134,7 +134,7 @@ How this applies here:
   cross product. A feature spec proves the feature; one or two view-mode
   specs prove the mode swaps the same store state in and out.
 - The `legacyDoNotReplicate` folder is the right shape for compatibility
-  pins: one narrow test per contract, not a copy of the feature suite.
+  pins: one narrow test per contract rather than a copy of the feature suite.
 
 ### Playwright best practices (playwright.dev)
 
@@ -166,7 +166,7 @@ Mutation testing detects assertion gaps but is far too slow for E2E suites.
 For this suite the practical translation is:
 
 - Use E2E coverage to find **execution gaps**: areas the suite never loads
-  or barely touches. That is exactly what the tables in section 4 show.
+  or barely touches. The tables in section 4 are that report.
 - Use a **journey inventory** to find **assertion gaps**: for each critical
   user journey, name the spec that proves it and the observable it asserts.
 - Reserve mutation testing (StrykerJS) for pure, well-unit-tested modules
@@ -223,7 +223,7 @@ Measured hits confirm the spec-name scan: `contextMenuFilter.ts` (8.9%),
 | `nodeSearchBox.spec.ts` (24), `nodeSearchBoxV2.spec.ts` (12), `nodeSearchBoxV2Extended.spec.ts` (20)                            | V2 and V2Extended repeat the same describe titles (`Category navigation`, `Filter workflow`, `Category sidebar`) | Merge V2 files into `tests/nodeSearch/`; diff the duplicated describes and keep one            |
 | `sidebar/assets.spec.ts` (48), `sidebar/assetsSidebarTab.spec.ts` (16), `assetHelper.spec.ts` (21), `browseModelAssets.spec.ts` | Four entry points to one browser                                                                                 | Fold into `tests/assets/` by behavior (browse, filter, sort, select, context menu)             |
 | `interaction.spec.ts`                                                                                                           | 64 tests, 62 `toHaveScreenshot`; its snapshot folder is the most churned path in `browser_tests` since June      | Convert link/drag/select assertions to `nodeOps` state checks; keep screenshots for appearance |
-| `appMode*.spec.ts` (11 files) + `linearMode.spec.ts`                                                                            | Fragmented, not duplicated                                                                                       | Move under `tests/appMode/`; no test changes                                                   |
+| `appMode*.spec.ts` (11 files) + `linearMode.spec.ts`                                                                            | Fragmented but no duplication                                                                                    | Move under `tests/appMode/`; test bodies unchanged                                             |
 | `keybindings.spec.ts`, `defaultKeybindings.spec.ts`, `keyboardShortcutActions.spec.ts`, `keybindingPanel.spec.ts`               | Overlapping fixtures, distinct behaviors                                                                         | Leave; document the split in a folder README                                                   |
 | `@screenshot` (104 tests, 185 assertions)                                                                                       | Screenshot maintenance dominates flake and regen PR volume                                                       | Audit against README rule "screenshots only when appearance is the behavior"                   |
 
@@ -233,7 +233,7 @@ Ordered by safety gained per hour. Each phase is independently shippable.
 
 ### Phase 0: make the existing measurement honest (three small PRs)
 
-1. **Collect coverage in every Playwright project.** Set
+1. Collect coverage in every Playwright project. Set
    `COLLECT_COVERAGE: 'true'` on the `playwright-tests` matrix job and pass it
    to `build-cloud-frontend` so the cloud bundle keeps its
    `sourceMappingURL` comments. Upload each project's `coverage/playwright/`
@@ -241,17 +241,17 @@ Ordered by safety gained per hour. Each phase is independently shippable.
    `e2e-coverage-shard-*` artifact. Expected effect: workspace, subscription,
    onboarding, auth, and agent code starts being credited, and the real gap
    there becomes visible.
-2. **Count never-loaded files.** Give monocart the `all` option in
+2. Count never-loaded files. Give monocart the `all` option in
    `globalTeardown.ts` (`all: { dir: ['src'], filter: coverageSourceFilter }`)
-   so source files with no V8 entry are reported at 0% instead of omitted. The
-   Slack target and the Pages report then describe the whole app. The
-   headline number will drop; that is the point.
-3. **Report per area.** Add Codecov `component_management` entries keyed to
+   so source files with no V8 entry are reported at 0% instead of omitted, and
+   the Slack target and the Pages report then describe the whole app. The
+   headline number will drop, and that drop is the intended effect.
+3. Report per area. Add Codecov `component_management` entries keyed to
    the areas in section 4 (vueNodes, litegraph canvas, litegraph widgets,
    extensions/core, workflow, assets, manager, workspace, cloud, layerEditor,
    maskeditor, agent). Each PR comment then shows a per-component table for
-   `unit`, `e2e`, and combined. Keep statuses informational; the value is
-   visibility, not blocking. Optionally extend
+   `unit`, `e2e`, and combined. Keep statuses informational. The goal is that people see the table, and a
+   blocking status would only get disabled again. Optionally extend
    `scripts/coverage-slack-notify.ts` to print the three lowest components.
 
 Also worth folding into this phase: a `scripts/coverage-gaps.ts` that joins
@@ -273,7 +273,7 @@ from the appendix, made permanent.
    that are not journeys. Add a `smoke` Playwright project that greps
    `@smoke`, and run it first in `ci-tests-e2e.yaml` so a broken journey fails
    in about two minutes instead of fifteen. The existing 16 shards keep
-   running; the smoke project is a fast-fail, not a replacement.
+   running; the smoke project fails fast ahead of them and replaces nothing.
 3. Journeys with no spec become the first new tests. From the current draft
    that is: install a custom node pack (manager), and top up credits and
    change plan (workspace/billing), both testable with typed route mocks in
@@ -281,8 +281,8 @@ from the appendix, made permanent.
 
 ### Phase 2: fill the highest-value execution gaps
 
-One spec folder each, using existing page objects where they exist. Target
-the journey, not line count; the lines follow because the chunk loads.
+One spec folder each, using existing page objects where they exist. Write each test around the journey. Line coverage follows because the chunk
+loads.
 
 | Order | Area                               | First test to write                                                                                                         | Why first                                                                                                            |
 | ----- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -308,7 +308,8 @@ and any second-renderer copy of an existing Vue-nodes widget spec.
    appearance ones. This removes the most churned snapshot directory.
 3. Aggregate `flaky` outcomes from `report.json` in `merge-reports` and post
    the count in the PR comment. Once the count is stable, lower CI
-   `retries` from 3 to 2. Do not lower it first.
+   `retries` from 3 to 2. Lowering it before the count exists would only hide
+   which tests are flaky.
 4. Shard `ci-tests-unit.yaml` (vitest `--shard`) to cut its 17-minute wall
    clock; unrelated to coverage but the same runner budget.
 
@@ -321,8 +322,8 @@ and any second-renderer copy of an existing Vue-nodes widget spec.
   not blocking.
 - Once Phase 0 has run for a month, set per-component Codecov thresholds at
   current value minus 2% for the well-covered areas only (vueNodes, workflow,
-  settings, subgraph). Never a global threshold; that is what got the
-  project status disabled.
+  settings, subgraph). A global threshold is what got the project status disabled, so none is
+  added.
 - Review `JOURNEYS.md` whenever a feature ships behind a flag flip; a flag
   that turns a feature on for users should turn its journey into `@smoke`.
 
