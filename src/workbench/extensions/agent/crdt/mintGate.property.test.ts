@@ -37,49 +37,25 @@ describe('shouldMint — exhaustive over the whole input domain', () => {
     expect(new Set(ALL_STATES.map((s) => JSON.stringify(s))).size).toBe(16)
   })
 
-  it('is exactly flag ∧ bound ∧ local ∧ ¬teardown in every state', () => {
-    for (const state of ALL_STATES) {
-      const expected =
-        state.flagEnabled &&
-        state.docBound &&
-        state.localProvenance &&
-        !state.teardown
-      expect({ state, mints: shouldMint(state) }).toEqual({
-        state,
-        mints: expected
-      })
-    }
-  })
-
-  it('opens in exactly one of the 16 states', () => {
-    const open = ALL_STATES.filter(shouldMint)
-    expect(open).toEqual([
-      {
-        flagEnabled: true,
-        docBound: true,
-        localProvenance: true,
-        teardown: false
-      }
-    ])
-  })
-
-  it('never mints during teardown, whatever the other three conjuncts say', () => {
-    const teardownStates = ALL_STATES.filter((state) => state.teardown)
-    expect(teardownStates).toHaveLength(8)
-    for (const state of teardownStates) expect(shouldMint(state)).toBe(false)
-  })
-
-  it('is monotone: closing any conjunct can never open a gate that was shut', () => {
-    for (const state of ALL_STATES) {
-      if (shouldMint(state)) continue
-      // Every one-step "worsening" of an already-shut gate stays shut.
-      const worsened: MintGateInput[] = [
-        { ...state, flagEnabled: false },
-        { ...state, docBound: false },
-        { ...state, localProvenance: false },
-        { ...state, teardown: true }
-      ]
-      for (const next of worsened) expect(shouldMint(next)).toBe(false)
-    }
+  it('matches the literal truth table', () => {
+    const expected = [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+    expect(ALL_STATES.map(shouldMint)).toEqual(expected)
   })
 })
