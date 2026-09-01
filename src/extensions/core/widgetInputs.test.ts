@@ -241,6 +241,39 @@ describe('PrimitiveNode', () => {
 
     expect(onLastDisconnect).toHaveBeenCalled()
   })
+
+  it('keeps its serialized value when the widget cannot be built during load', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    useLinkStore().registerLink(graphScopeOf(graph), {
+      id: toLinkId(999),
+      graphId: graphScopeOf(graph).owningGraphId,
+      originNodeId: primitive.id,
+      originSlot: 0,
+      targetNodeId: toNodeId(42),
+      targetSlot: 0,
+      type: '*'
+    })
+    primitive.configure(fromPartial({ widgets_values: [222] }))
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.length).toBeFalsy()
+
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+  })
 })
 
 describe('getWidgetConfig', () => {

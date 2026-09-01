@@ -140,7 +140,6 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
-    this.configuredWidgetValues = undefined
   }
 
   override onConnectionsChange(
@@ -260,7 +259,6 @@ export class PrimitiveNode extends LGraphNode {
     const configuredWidgetValues = recreating
       ? undefined
       : this.configuredWidgetValues
-    if (!recreating) this.configuredWidgetValues = undefined
     const hasConfiguredWidgetValue =
       configuredWidgetValues !== undefined && 0 in configuredWidgetValues
     const configuredWidgetValue = configuredWidgetValues?.[0]
@@ -273,6 +271,7 @@ export class PrimitiveNode extends LGraphNode {
       const theirWidget = node.widgets?.find((w) => w.name === widgetName)
       if (theirWidget) widget.value = theirWidget.value
       if (hasConfiguredWidgetValue) widget.value = configuredWidgetValue
+      if (!recreating) this.configuredWidgetValues = undefined
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
       return
     }
@@ -322,6 +321,7 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
+    if (!recreating) this.configuredWidgetValues = undefined
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
   }
 
