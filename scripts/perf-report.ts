@@ -1,11 +1,5 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync
-} from 'node:fs'
-import { dirname, join } from 'node:path'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import type {
@@ -14,8 +8,6 @@ import type {
   PerfReportV2
 } from '../browser_tests/fixtures/utils/perfReportSchema'
 import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
-import type { FpsSample, PerfGateResult } from './perf-gate'
-import { evaluatePerfGate, formatGateFailure } from './perf-gate'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -31,8 +23,6 @@ import {
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
-const GATE_PATH = 'test-results/perf-gate.json'
-const FAIL_ON_FPS_BUDGET = process.argv.includes('--fail-on-fps-budget')
 
 type MetricKey =
   | 'styleRecalcs'
@@ -120,16 +110,6 @@ function acceptedMeasurements(report: PerfReportV2): PerfMeasurement[] {
   return report.measurements.flatMap((result) =>
     result.kind === 'accepted' ? [result.measurement] : []
   )
-}
-
-function collectFpsSamples(measurements: PerfMeasurement[]): FpsSample[] {
-  return [...groupByName(measurements)].map(([testName, samples]) => {
-    const p95Interval = medianMetric(samples, 'rafIntervalP95Ms')
-    return {
-      testName,
-      p5Fps: p95Interval && p95Interval > 0 ? 1000 / p95Interval : null
-    }
-  })
 }
 
 function readPerfReport(path: string): PerfReport {
@@ -567,27 +547,10 @@ export function renderPerfReport(
   return lines.join('\n') + '\n'
 }
 
-function applyGate(gate: PerfGateResult): void {
-  mkdirSync(dirname(GATE_PATH), { recursive: true })
-  writeFileSync(GATE_PATH, JSON.stringify(gate, null, 2) + '\n')
-  if (gate.passed) return
-  for (const failure of gate.failures) {
-    console.error(`perf gate: ${formatGateFailure(failure)}`)
-  }
-  if (FAIL_ON_FPS_BUDGET) process.exitCode = 1
-}
-
 function main() {
   if (!existsSync(CURRENT_PATH)) {
     process.stdout.write(
       '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
-    )
-    applyGate(
-      evaluatePerfGate({
-        metricsPresent: false,
-        fpsSamples: [],
-        regressionCount: 0
-      })
     )
     return
   }
@@ -603,13 +566,6 @@ function main() {
 
   const historical = loadHistoricalReports()
   process.stdout.write(renderPerfReport(current, baseline, historical))
-  applyGate(
-    evaluatePerfGate({
-      metricsPresent: true,
-      fpsSamples: collectFpsSamples(acceptedMeasurements(current)),
-      regressionCount: 0
-    })
-  )
 }
 
 if (

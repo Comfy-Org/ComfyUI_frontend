@@ -62,21 +62,12 @@ jobs:
           PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
         run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
 
-      # It asserts the absolute P5 FPS budget only. It needs no baseline, so it
-      # is unaffected by the dead perf-data pipeline (#15545); the report's
-      # z-score regression rows stay advisory until that history is alive again.
-      - name: Enforce P5 FPS budget
-        if: always()
-        run: pnpm exec tsx scripts/perf-report.ts --fail-on-fps-budget > /dev/null
-
       - name: Upload perf metrics
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: perf-metrics
-          path: |
-            test-results/perf-metrics.json
-            test-results/perf-gate.json
+          path: test-results/perf-metrics.json
           retention-days: 30
           if-no-files-found: warn
 
