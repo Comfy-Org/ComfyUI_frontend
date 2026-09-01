@@ -17,7 +17,7 @@
     <!-- Connection Dot -->
     <SlotConnectionDot
       :slot-key
-      :accessible-name
+      :accessible-name="dotAccessibleName"
       class="w-3 translate-x-1/2"
       :slot-data
       @pointerdown="onPointerDown"
@@ -65,6 +65,11 @@ const accessibleName = computed(
     props.slotData.localized_name ||
     props.slotData.name ||
     undefined
+)
+const dotAccessibleName = computed(() =>
+  accessibleName.value
+    ? t('g.connectSlot', { name: accessibleName.value })
+    : undefined
 )
 
 // Error boundary implementation

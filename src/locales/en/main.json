@@ -1,5 +1,6 @@
 {
   "g": {
+    "connectSlot": "Connect {name}",
     "shortcutSuffix": " ({shortcut})",
     "user": "User",
     "you": "You",
