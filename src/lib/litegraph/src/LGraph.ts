@@ -2751,7 +2751,7 @@ export class LGraph
     try {
       // TODO: Finish typing configure()
       if (!data) return
-      data = normalizeConfiguredTopology(data)
+      data = normalizeConfiguredTopology(data, 'root')
       if (options.clearGraph) this.clear()
       else detachGraphLayouts([this])
 
@@ -3213,7 +3213,7 @@ export class Subgraph
       | (SerialisableGraph & ExportedSubgraph),
     keep_old?: boolean
   ): boolean | undefined {
-    const normalized = normalizeConfiguredTopology(data)
+    const normalized = normalizeConfiguredTopology(data, 'subgraph')
     const r = super.configure(normalized, keep_old)
 
     this._configureSubgraph(normalized)

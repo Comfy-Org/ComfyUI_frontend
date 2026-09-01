@@ -21,6 +21,7 @@ type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
   Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>
 
 type ConfiguredLink = SerialisedLLinkArray | SerialisableLLink
+type LinkDeduplicationContext = 'root' | 'subgraph'
 
 function linkFields(link: ConfiguredLink) {
   if (!Array.isArray(link)) return link
@@ -57,7 +58,8 @@ export function remapLinkReferences(
 }
 
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
-  data: T
+  data: T,
+  context: LinkDeduplicationContext
 ): T {
   if (!data.links?.length) return data
 
@@ -84,26 +86,24 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
     const isExactDuplicate =
       toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
       survivor.origin_slot === fields.origin_slot
-    let droppedLinkId = fields.id
-    let survivorLinkId = survivor.id
-    if (
+    const shouldPreferIncomingLink =
       !isExactDuplicate &&
       referencedInputLinks.has(fields.id) &&
       !referencedInputLinks.has(survivor.id)
-    ) {
+    const dropped = shouldPreferIncomingLink ? survivor : fields
+    const surviving = shouldPreferIncomingLink ? fields : survivor
+    const droppedLinkId = dropped.id
+    const survivorLinkId = surviving.id
+    if (shouldPreferIncomingLink) {
       links[survivorIndex] = link
       for (const [id, survivorId] of survivorByDuplicateId) {
         if (survivorId === survivor.id) survivorByDuplicateId.set(id, fields.id)
       }
       survivorByDuplicateId.set(survivor.id, fields.id)
-      droppedLinkId = survivor.id
-      survivorLinkId = fields.id
     } else {
       survivorByDuplicateId.set(fields.id, survivor.id)
     }
     if (!isExactDuplicate) {
-      const dropped = droppedLinkId === fields.id ? fields : survivor
-      const surviving = survivorLinkId === fields.id ? fields : survivor
       console.warn('Dropping competing link to an occupied input', {
         droppedLinkId,
         survivorLinkId,
@@ -111,6 +111,7 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
         targetSlot: fields.target_slot
       })
       useTelemetry()?.trackLinkDedupDrop({
+        context,
         target: key,
         dropped_link_id: droppedLinkId,
         survivor_link_id: survivorLinkId,

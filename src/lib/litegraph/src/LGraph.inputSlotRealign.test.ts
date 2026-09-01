@@ -334,7 +334,7 @@ describe('normalizeConfiguredTopology', () => {
     data.links[1].origin_id = 99
     data.links[1].target_slot = 0
 
-    const normalized = normalizeConfiguredTopology(data)
+    const normalized = normalizeConfiguredTopology(data, 'root')
 
     expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
     expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)

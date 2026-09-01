@@ -61,7 +61,7 @@ export function normalizeSubgraphDefinitions(
 
   for (const [index, subgraph] of clonedSubgraphs.entries()) {
     dropSameOwnerDuplicates(subgraph)
-    clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph)
+    clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph, 'subgraph')
   }
 
   deduplicateClonedSubgraphNodeIds(

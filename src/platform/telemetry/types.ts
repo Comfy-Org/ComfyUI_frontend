@@ -594,6 +594,7 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 export interface LinkDedupDropMetadata {
+  context: 'root' | 'subgraph'
   target: string
   dropped_link_id: number
   survivor_link_id: number

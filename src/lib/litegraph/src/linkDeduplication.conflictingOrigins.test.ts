@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { normalizeConfiguredTopology } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
@@ -114,11 +115,30 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     configureConflictingOrigins()
 
     expect(trackLinkDedupDrop).toHaveBeenCalledExactlyOnceWith({
+      context: 'root',
       target: '3:0',
       dropped_link_id: 1,
       survivor_link_id: 2,
       dropped_origin: '1:0',
       survivor_origin: '2:0'
+    })
+  })
+
+  it('reports the actual survivor origin when competing links share an id', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const data = structuredClone(conflictingOriginLinksRoot)
+    data.links![1].id = 1
+    data.nodes![2].inputs![0].link = 1
+
+    normalizeConfiguredTopology(data, 'subgraph')
+
+    expect(trackLinkDedupDrop).toHaveBeenCalledExactlyOnceWith({
+      context: 'subgraph',
+      target: '3:0',
+      dropped_link_id: 1,
+      survivor_link_id: 1,
+      dropped_origin: '2:0',
+      survivor_origin: '1:0'
     })
   })
 
