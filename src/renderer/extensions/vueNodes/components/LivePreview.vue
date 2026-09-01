@@ -12,6 +12,8 @@
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
       class="pointer-events-none min-h-55 w-full flex-1 object-contain contain-size"
+      @load="handleImageLoad"
+      @error="imageError = true"
     />
     <div class="text-node-component-header-text mt-1 text-center text-xs">
       {{
@@ -24,7 +26,6 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 interface LivePreviewProps {
@@ -33,30 +34,30 @@ interface LivePreviewProps {
 
 const props = defineProps<LivePreviewProps>()
 
-const {
-  state: imageState,
-  isReady,
-  error
-} = useImage(
-  computed(() => ({ src: props.imageUrl }))
-)
-
 // Cache last successfully loaded dimensions so the placeholder text does not
 // flicker back to "Calculating dimensions" each time `imageUrl` changes during
 // live preview streaming. Update only when a new image is ready, never on
 // URL change alone.
 const cachedWidth = ref<number | null>(null)
 const cachedHeight = ref<number | null>(null)
+const imageError = ref(false)
 
-watch([isReady, imageState], ([ready, img]) => {
-  if (!ready || !img) return
+function handleImageLoad(event: Event) {
+  if (!(event.target instanceof HTMLImageElement)) return
+  const img = event.target
+  imageError.value = false
   if (img.naturalWidth && img.naturalHeight) {
     cachedWidth.value = img.naturalWidth
     cachedHeight.value = img.naturalHeight
   }
-})
+}
 
-const imageError = computed(() => !!error.value)
+watch(
+  () => props.imageUrl,
+  () => {
+    imageError.value = false
+  }
+)
 
 const actualDimensions = computed(() =>
   cachedWidth.value && cachedHeight.value

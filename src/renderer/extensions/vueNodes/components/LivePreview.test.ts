@@ -1,31 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Ref } from 'vue'
-import { nextTick } from 'vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-const useImageMock = vi.hoisted(() => ({
-  state: null as Ref<HTMLImageElement | undefined> | null,
-  isReady: null as Ref<boolean> | null,
-  error: null as Ref<unknown> | null
-}))
-
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  const { ref } = await import('vue')
-  useImageMock.state = ref<HTMLImageElement | undefined>(undefined)
-  useImageMock.isReady = ref(false)
-  useImageMock.error = ref<unknown>(null)
-  return {
-    ...(actual as Record<string, unknown>),
-    useImage: () => ({
-      state: useImageMock.state,
-      isReady: useImageMock.isReady,
-      error: useImageMock.error
-    })
-  }
-})
 
 import LivePreview from '@/renderer/extensions/vueNodes/components/LivePreview.vue'
 
@@ -44,8 +20,7 @@ const i18n = createI18n({
   }
 })
 
-function makeFakeLoadedImage(width: number, height: number): HTMLImageElement {
-  const img = new Image()
+function setNaturalDimensions(img: HTMLElement, width: number, height: number) {
   Object.defineProperty(img, 'naturalWidth', {
     configurable: true,
     value: width
@@ -54,7 +29,6 @@ function makeFakeLoadedImage(width: number, height: number): HTMLImageElement {
     configurable: true,
     value: height
   })
-  return img
 }
 
 describe('LivePreview', () => {
@@ -78,12 +52,6 @@ describe('LivePreview', () => {
       }
     })
   }
-
-  beforeEach(() => {
-    useImageMock.state!.value = undefined
-    useImageMock.isReady!.value = false
-    useImageMock.error!.value = null
-  })
 
   it('renders preview when imageUrl provided', () => {
     renderLivePreview()
@@ -117,9 +85,9 @@ describe('LivePreview', () => {
   it('handles image load event', async () => {
     const { container } = renderLivePreview()
 
-    useImageMock.state!.value = makeFakeLoadedImage(512, 512)
-    useImageMock.isReady!.value = true
-    await nextTick()
+    const img = screen.getByRole('img')
+    setNaturalDimensions(img, 512, 512)
+    await fireEvent.load(img)
 
     expect(container.textContent).toContain('512 x 512')
   })
@@ -127,18 +95,14 @@ describe('LivePreview', () => {
   it('keeps last good dimensions when imageUrl changes (no flicker)', async () => {
     const { container, rerender } = renderLivePreview()
 
-    useImageMock.state!.value = makeFakeLoadedImage(800, 600)
-    useImageMock.isReady!.value = true
-    await nextTick()
+    const img = screen.getByRole('img')
+    setNaturalDimensions(img, 800, 600)
+    await fireEvent.load(img)
     expect(container.textContent).toContain('800 x 600')
 
-    // Simulate the source changing during live preview streaming. useImage
-    // would normally reset isReady to false until the next image is ready.
-    useImageMock.isReady!.value = false
     await rerender({
       imageUrl: '/api/view?filename=test_sample_2.png&type=temp'
     })
-    await nextTick()
 
     // Dimensions should still display, not flicker back to "Calculating".
     expect(container.textContent).toContain('800 x 600')
@@ -147,8 +111,7 @@ describe('LivePreview', () => {
 
   it('handles image error state', async () => {
     renderLivePreview()
-    useImageMock.error!.value = new Event('error')
-    await nextTick()
+    await fireEvent.error(screen.getByRole('img'))
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     screen.getByText('Image failed to load')
@@ -157,22 +120,17 @@ describe('LivePreview', () => {
   it('resets error state when imageUrl changes', async () => {
     const { container, rerender } = renderLivePreview()
 
-    useImageMock.error!.value = new Event('error')
-    await nextTick()
+    await fireEvent.error(screen.getByRole('img'))
     expect(container.textContent).toContain('Error loading image')
 
-    // useImage resets error automatically when src changes.
-    useImageMock.error!.value = null
     await rerender({ imageUrl: '/new-image.png' })
-    await nextTick()
 
     expect(container.textContent).not.toContain('Error loading image')
   })
 
   it('shows error state when image fails to load', async () => {
     const { container } = renderLivePreview()
-    useImageMock.error!.value = new Event('error')
-    await nextTick()
+    await fireEvent.error(screen.getByRole('img'))
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     screen.getByText('Image failed to load')
