@@ -42,14 +42,16 @@ function graphSnapshot() {
         outputs: node.outputs
       }))
       .sort((left, right) => String(left.id).localeCompare(String(right.id))),
-    links: [...useLinkStore().graphTopologies(scope)].map((link) => ({
-      id: link.id,
-      originNodeId: link.originNodeId,
-      originSlot: link.originSlot,
-      targetNodeId: link.targetNodeId,
-      targetSlot: link.targetSlot,
-      type: link.type
-    })).sort((left, right) => Number(left.id) - Number(right.id)),
+    links: [...useLinkStore().graphTopologies(scope)]
+      .map((link) => ({
+        id: link.id,
+        originNodeId: link.originNodeId,
+        originSlot: link.originSlot,
+        targetNodeId: link.targetNodeId,
+        targetSlot: link.targetSlot,
+        type: link.type
+      }))
+      .sort((left, right) => Number(left.id) - Number(right.id)),
     widgets: [toNodeId(1), toNodeId(2)].flatMap((nodeId) =>
       ['seed', 'stale'].flatMap((name) => {
         const widget = useWidgetValueStore().getWidget(
@@ -305,14 +307,11 @@ describe('EcsFollowerAdapter integration', () => {
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
     )
-    reloadedAdapter.bind('wf', reloadedFollower)
     expect(
-      reloadedAdapter.applyFrame({
-        workflowId: 'wf',
-        seq: 2,
-        update: savedSnapshot,
+      reloadedAdapter.bind('wf', reloadedFollower, {
+        source: 'agent-remote',
         actor: 'agent:replay',
-        opIds: ['reload-replay']
+        opId: 'reload-snapshot'
       })
     ).toBe(true)
     expect(graphSnapshot()).toEqual(projectedBeforeReload)
