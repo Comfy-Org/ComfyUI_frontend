@@ -259,6 +259,7 @@ describe('nodeOutputStore legacy entry synchronization', () => {
 describe('nodeOutputStore replaceNodeOutputImages', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
+    app.nodePreviewImages = {}
   })
 
   it('drops the previous output metadata when replacing the images', () => {
@@ -285,6 +286,18 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
     expect(store.nodeOutputs['7']?.animated).toBeUndefined()
     expect(store.nodeOutputs['7']?.video).toBeUndefined()
     expect(store.nodeOutputs['7']?.images).toEqual(images)
+  })
+
+  it('ignores an empty replacement', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png', type: 'input' as const }]
+    const node = createMockNode({ id: 7, images })
+    store.setOutputFromLegacy('7', { images })
+
+    store.replaceNodeOutputImages(node, [])
+
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+    expect(node.images).toEqual(images)
   })
 })
 

@@ -262,6 +262,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node: LGraphNode,
     images: NonNullable<ExecutedWsMessage['output']['images']>
   ) {
+    if (!images.length) return
+
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
 
