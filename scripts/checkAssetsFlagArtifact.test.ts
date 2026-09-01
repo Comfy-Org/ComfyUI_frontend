@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   assertAssetApiGate,
   assertBuildProvenance,
-  assertNoTestFixtures
+  assertNoTestFixtures,
+  checkAssetsFlagArtifact
 } from './checkAssetsFlagArtifact'
 
 describe('assertAssetApiGate', () => {
@@ -66,6 +70,15 @@ describe('assertAssetApiGate', () => {
     expect(() => assertAssetApiGate([], 'localhost')).toThrow(
       'Expected one Asset API gate in the build, found 0'
     )
+  })
+
+  it('rejects an unsupported distribution rather than assuming non-cloud', () => {
+    expect(() =>
+      assertAssetApiGate(
+        ['function isAssetAPIEnabled() {\n  return false;\n}'],
+        'Cloud'
+      )
+    ).toThrow('Unsupported distribution: Cloud')
   })
 
   it('parses a gate with a nested block through its matching brace', () => {
@@ -152,5 +165,73 @@ describe('assertNoTestFixtures', () => {
     expect(() =>
       assertNoTestFixtures([`const fixture="${chunkMarker}"`])
     ).toThrow(`Build contains test fixture marker: ${reportedMarker}`)
+  })
+})
+
+describe('checkAssetsFlagArtifact', () => {
+  const commit = '0123456789abcdef0123456789abcdef01234567'
+  let directory = ''
+
+  beforeEach(() => {
+    directory = mkdtempSync(join(tmpdir(), 'assets-artifact-'))
+    mkdirSync(join(directory, 'assets'))
+    writeFileSync(
+      join(directory, 'build-manifest.json'),
+      JSON.stringify({ commit, distribution: 'localhost' })
+    )
+    writeFileSync(
+      join(directory, 'assets', 'chunk.js'),
+      'function isAssetAPIEnabled() {\n  return false;\n}'
+    )
+    process.env.EXPECTED_FRONTEND_COMMIT = commit
+    process.env.EXPECTED_DISTRIBUTION = 'localhost'
+  })
+
+  afterEach(() => {
+    rmSync(directory, { recursive: true, force: true })
+    delete process.env.EXPECTED_FRONTEND_COMMIT
+    delete process.env.EXPECTED_DISTRIBUTION
+  })
+
+  it('accepts a verified localhost artifact', () => {
+    expect(() => checkAssetsFlagArtifact(directory)).not.toThrow()
+  })
+
+  it('does not count a sourcemap copy of the gate as a second gate', () => {
+    writeFileSync(
+      join(directory, 'assets', 'chunk.js.map'),
+      JSON.stringify({
+        version: 3,
+        sources: ['../../src/platform/assets/services/assetService.ts'],
+        sourcesContent: [
+          'function isAssetAPIEnabled() {\n  if (!isCloud) return false\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}'
+        ]
+      })
+    )
+
+    expect(() => checkAssetsFlagArtifact(directory)).not.toThrow()
+  })
+
+  it('still reads sourcemaps when hunting leaked fixtures', () => {
+    writeFileSync(
+      join(directory, 'assets', 'chunk.js.map'),
+      JSON.stringify({
+        version: 3,
+        sources: ['../../browser_tests/fixtures/assets.ts'],
+        sourcesContent: ['export const assets = []']
+      })
+    )
+
+    expect(() => checkAssetsFlagArtifact(directory)).toThrow(
+      'Build contains test fixture marker: browser_tests/fixtures/'
+    )
+  })
+
+  it('requires the expected commit even when the distribution is set', () => {
+    delete process.env.EXPECTED_FRONTEND_COMMIT
+
+    expect(() => checkAssetsFlagArtifact(directory)).toThrow(
+      'EXPECTED_FRONTEND_COMMIT is required'
+    )
   })
 })

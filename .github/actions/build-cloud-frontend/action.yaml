@@ -1,5 +1,14 @@
 name: Build Cloud Frontend
 description: 'Build the cloud distribution and upload it as the frontend-dist-cloud artifact'
+inputs:
+  expected_commit:
+    description: >-
+      Frontend commit the built artifact must declare. Set it to verify the
+      build before it is uploaded. Leave empty to skip verification — callers
+      that check out a ref other than the workflow SHA have no value to assert
+      against, and `test:assets-flag-artifact` requires an exact match.
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -10,9 +19,11 @@ runs:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
     - name: Verify cloud frontend
+      if: inputs.expected_commit != ''
       shell: bash
       run: pnpm test:assets-flag-artifact
       env:
+        EXPECTED_FRONTEND_COMMIT: ${{ inputs.expected_commit }}
         EXPECTED_DISTRIBUTION: cloud
 
     - name: Upload cloud frontend

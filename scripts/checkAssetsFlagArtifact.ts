@@ -19,6 +19,8 @@ const TEXT_ASSET_EXTENSIONS = new Set([
   '.css',
   '.map'
 ])
+/** Sourcemaps carry the gate's own source, which would count as a second gate. */
+const EXECUTABLE_ASSET_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.html'])
 
 function artifactFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -46,7 +48,9 @@ function assetApiGates(chunks: ReadonlyArray<string>): string {
 
   if (gates.length !== 1) {
     throw new Error(
-      `Expected one Asset API gate in the build, found ${gates.length}`
+      `Expected one Asset API gate in the build, found ${gates.length}. ` +
+        'The gate is located by its declared name, which minification renames: ' +
+        'run this against an unminified build (ENABLE_MINIFY unset).'
     )
   }
 
@@ -106,10 +110,13 @@ export function assertNoTestFixtures(chunks: ReadonlyArray<string>): void {
 }
 
 export function checkAssetsFlagArtifact(directory = 'dist'): void {
-  const files = artifactFiles(directory)
-  const chunks = files
+  const textAssets = artifactFiles(directory)
     .filter((path) => TEXT_ASSET_EXTENSIONS.has(extname(path)))
-    .map((path) => readFileSync(path, 'utf8'))
+    .map((path) => ({ path, source: readFileSync(path, 'utf8') }))
+  const chunks = textAssets.map(({ source }) => source)
+  const executableChunks = textAssets
+    .filter(({ path }) => EXECUTABLE_ASSET_EXTENSIONS.has(extname(path)))
+    .map(({ source }) => source)
   const expectedCommit = process.env.EXPECTED_FRONTEND_COMMIT
   const expectedDistribution = process.env.EXPECTED_DISTRIBUTION
 
@@ -125,7 +132,7 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
     expectedDistribution
   )
   assertNoTestFixtures(chunks)
-  assertAssetApiGate(chunks, expectedDistribution)
+  assertAssetApiGate(executableChunks, expectedDistribution)
 }
 
 if (

@@ -64,6 +64,8 @@ jobs:
 
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
+        with:
+          expected_commit: ${{ github.sha }}
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
