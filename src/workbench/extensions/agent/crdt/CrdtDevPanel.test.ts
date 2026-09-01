@@ -162,6 +162,7 @@ describe('CrdtDevPanel', () => {
   })
 
   it('copies the filtered event log and restores the copy label timer', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const writeClipboard = createClipboardSpy()
     openPanel()
     recordDevEvent('schema_error', { reason: 'bad schema' })
