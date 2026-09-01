@@ -42,17 +42,20 @@ mismatched generation IDs are lineage breaks; state vectors must never cross the
 3. A missing, unverifiable, or different generation is a lineage break. The follower
    MUST dispatch `doc_reset` to every projector and consumer before replacing the doc
    and subscribing from an empty state vector.
-4. Applying an update from an unverified or different generation to the existing doc is
-   a defect.
+4. An explicit `doc_reset` follows the same lineage-break path. The reset event MUST be
+   dispatched before replacement.
+5. Replacing a follower doc after a confirmed same-generation gap is a defect. Applying
+   an update from an unverified or different generation to the existing doc is also a
+   defect.
 
 ### `doc_reset` versus an ordinary sequence gap
 
-A lost or undelivered `doc_reset` and an ordinary sequence gap are not the same event. A
-`doc_reset` declares a lineage break and requires full document replacement after every
-projector and consumer has been notified. A sequence gap only says that transport frames
-were missed; it never authorizes replacement of the existing Y.Doc. The transport-cursor,
-missed-reset precedence, and replacement-completion-barrier contracts remain deferred to
-DQ-24 and are not decided by this ADR.
+A sequence gap does not reveal which frame was lost. If generation validation confirms
+the existing lineage, the missing frame was not a reset and delta replay preserves the
+follower doc. If validation fails, recovery must infer a lineage break because the lost
+frame may have been `doc_reset`. Both an inferred lineage break and an explicit
+`doc_reset` use the same ordered reset-before-replacement lifecycle. The transport-cursor
+and replacement-completion-barrier details remain deferred to DQ-24.
 
 ### Governing ADR-019 tradeoffs
 
@@ -73,8 +76,8 @@ lineage, cursor, reset-precedence, or replacement-barrier contracts.
 
 ## Consequences
 
-- Reviews of any sync/reconnect code check for doc replacement outside the `doc_reset`
-  path.
+- Reviews of sync/reconnect code reject both replacement after a confirmed
+  same-generation gap and delta replay without a confirmed generation.
 - Follower recovery logic must track the doc's generation and state vector. The
   transport protocol must reject delta resubscription across generations.
 - Projectors and other doc consumers must handle `doc_reset` as an explicit lifecycle
