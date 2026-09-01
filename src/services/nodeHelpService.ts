@@ -60,7 +60,12 @@ class NodeHelpService {
     if (res.status === 404) {
       return undefined
     }
-    if (!res.ok) throw new Error(res.statusText || `HTTP ${res.status}`)
+    if (!res.ok) {
+      console.warn(
+        `nodeHelpService: failed to fetch markdown (${res.status} ${res.statusText}) at ${path}`
+      )
+      return undefined
+    }
 
     const contentType = res.headers?.get?.('content-type') ?? ''
     const text = await res.text()
