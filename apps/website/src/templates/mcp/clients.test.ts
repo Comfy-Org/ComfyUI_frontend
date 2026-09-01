@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { isConnectionId, isMcpClientId } from './clients'
+import { createMcpConnections, isConnectionId, isMcpClientId } from './clients'
+
+const connections = createMcpConnections('en')
 
 describe('isConnectionId', () => {
   it.for([{ value: 'cloud' }, { value: 'local' }])(
     'accepts $value',
     ({ value }) => {
-      expect(isConnectionId(value)).toBe(true)
+      expect(isConnectionId(value, connections)).toBe(true)
     }
   )
 
@@ -17,7 +19,7 @@ describe('isConnectionId', () => {
     { label: 'undefined', value: undefined },
     { label: 'a number', value: 0 }
   ])('rejects $label', ({ value }) => {
-    expect(isConnectionId(value)).toBe(false)
+    expect(isConnectionId(value, connections)).toBe(false)
   })
 })
 
@@ -34,7 +36,7 @@ describe('isMcpClientId', () => {
     { value: 'local-cursor' },
     { value: 'local-other' }
   ])('accepts $value', ({ value }) => {
-    expect(isMcpClientId(value)).toBe(true)
+    expect(isMcpClientId(value, connections)).toBe(true)
   })
 
   it.for([
@@ -45,6 +47,6 @@ describe('isMcpClientId', () => {
     { label: 'undefined', value: undefined },
     { label: 'an inherited Object property', value: 'toString' }
   ])('rejects $label', ({ value }) => {
-    expect(isMcpClientId(value)).toBe(false)
+    expect(isMcpClientId(value, connections)).toBe(false)
   })
 })
