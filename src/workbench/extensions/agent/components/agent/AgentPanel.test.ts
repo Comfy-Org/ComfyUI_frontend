@@ -364,6 +364,74 @@ describe('AgentPanel', () => {
     expect(screen.getByRole('button', { name: 'Draft title' })).toHaveFocus()
   })
 
+  it('commits the rename and emits when the input loses focus', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1',
+        customTitle: 'Original title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Original title' }))
+    await nextTick()
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await user.clear(renameInput)
+    await user.type(renameInput, 'Blur committed title')
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
+
+    expect(emitted().renameChat).toHaveLength(1)
+    expect(emitted().renameChat[0]).toEqual(['Blur committed title'])
+  })
+
+  it('discards empty and unchanged renames without emitting', async () => {
+    const user = userEvent.setup()
+    const { emitted: emittedEmpty } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1',
+        customTitle: 'Kept title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Kept title' }))
+    await nextTick()
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await user.clear(renameInput)
+    await user.keyboard('{Enter}')
+    await nextTick()
+
+    expect(emittedEmpty().renameChat).toBeUndefined()
+  })
+
   it('deletes only a current chat with a session id', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AgentPanel, {
