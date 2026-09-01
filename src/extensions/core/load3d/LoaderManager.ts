@@ -81,6 +81,18 @@ export class LoaderManager implements LoaderManagerInterface {
 
   dispose(): void {}
 
+  /**
+   * Mark any in-flight `loadModel()` call as stale without waiting for it.
+   * Bumps `currentLoadId` so the abandoned load's own staleness check (the
+   * same one that already protects against overlapping `loadModel` calls)
+   * makes it a no-op on completion — it will neither publish its adapter nor
+   * call `modelManager.setupModel()`. Callers that give up on a load (e.g. a
+   * timeout) but keep this manager instance alive must call this first.
+   */
+  invalidate(): void {
+    this.currentLoadId++
+  }
+
   async loadModel(
     url: string,
     originalFileName?: string,
