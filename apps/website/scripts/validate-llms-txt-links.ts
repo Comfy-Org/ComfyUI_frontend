@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { findCanonicalDrift, parseLlmsTxtLinks } from '../src/lib/llms-txt'
@@ -25,6 +25,13 @@ function canonicalFor(pathname: string): string | undefined {
 }
 
 function main(): void {
+  if (!existsSync(DIST_DIR)) {
+    console.error(
+      `llms.txt link validation failed: ${DIST_DIR} does not exist.`
+    )
+    process.exit(1)
+  }
+
   const llmsTxt = readFileSync(
     join(process.cwd(), 'public', 'llms.txt'),
     'utf8'
