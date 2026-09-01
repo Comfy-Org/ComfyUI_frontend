@@ -188,7 +188,7 @@ describe('agentApiSchema contract subtleties', () => {
     expect(
       zAgentWsEvent.safeParse({
         type: 'agent_tool_call',
-        data: { ...data, status: 'ok', args: [] }
+        data: { ...data, status: 'success', args: [] }
       }).success
     ).toBe(false)
   })
