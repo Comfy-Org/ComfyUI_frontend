@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -22,6 +23,7 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -73,8 +75,26 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { canAccessSubscriptionFeatures, showSubscriptionDialog } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    showSubscriptionDialog,
+    subscription
+  } = useBillingContext()
+
+  function blockRunWithoutSubscription(): boolean {
+    if (!isCloud || canAccessSubscriptionFeatures.value) return false
+    if (isSalesManagedTier(subscription.value?.tier)) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('subscription.salesManagedRunBlockedTitle'),
+        detail: t('subscription.salesManagedRunBlockedDetail'),
+        life: 5000
+      })
+    } else {
+      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+    }
+    return true
+  }
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -409,7 +429,9 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        app.canvas.fitViewToSelectionAnimated()
+        app.canvas.fitViewToSelectionAnimated({
+          viewport: visibleCanvasViewport(app.canvas)
+        })
       }
     },
     {
@@ -506,10 +528,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -529,10 +548,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -551,10 +567,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()
@@ -934,6 +947,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (app.canvas.selectOnly) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })

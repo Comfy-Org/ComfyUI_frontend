@@ -21,6 +21,10 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_ZH, 'zh-CN']
 ]
 
+const pastCardEvents = pastEvents.filter(
+  (event) => event.media ?? event.featured?.media
+)
+
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
@@ -297,7 +301,7 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
-  test('past events gallery renders one card per event with WATCH NOW links', async ({
+  test('past events gallery renders one card per renderable event with WATCH NOW links', async ({
     page
   }) => {
     for (const [path, locale] of LOCALES) {
@@ -306,9 +310,9 @@ test.describe('Events page — desktop @smoke', () => {
       await section.scrollIntoViewIfNeeded()
 
       const cards = section.locator('[data-slot="card"]')
-      await expect(cards).toHaveCount(pastEvents.length)
+      await expect(cards).toHaveCount(pastCardEvents.length)
 
-      for (const [i, event] of pastEvents.entries()) {
+      for (const [i, event] of pastCardEvents.entries()) {
         const card = cards.nth(i)
         await expect(card).toContainText(event.title[locale])
         const watch = card.getByRole('link', {
@@ -333,7 +337,7 @@ test.describe('Events page — mobile @mobile', () => {
     const section = pastSection(page, 'en')
     await section.scrollIntoViewIfNeeded()
     const cards = section.locator('[data-slot="card"]')
-    await expect(cards).toHaveCount(pastEvents.length)
+    await expect(cards).toHaveCount(pastCardEvents.length)
 
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()

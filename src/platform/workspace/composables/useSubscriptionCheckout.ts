@@ -33,7 +33,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
-  clearPendingSubscriptionCheckout,
+  clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
@@ -137,13 +137,9 @@ export function useSubscriptionCheckout(
     subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const {
-    canSubscribeSelfServe,
-    canReactivate,
-    canChangeSeats,
-    canDowngradeToPersonal
-  } = useBillingCapabilities()
-  const { permissions } = useWorkspaceUI()
+  const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
+    useBillingCapabilities()
+  const { permissions, canReactivatePlan } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -1302,37 +1298,34 @@ export function useSubscriptionCheckout(
     initialActionUrl?: string
   ) {
     activeCheckoutOperationId.value = opId
-    try {
-      const metadata = {
-        tier: context.tier,
-        cycle: context.cycle,
-        checkoutType: context.checkoutType,
-        paymentIntentSource,
-        attemptStartedAt: context.attemptStartedAt,
-        ...(embeddedCheckoutEnabled && {
-          suppressProcessingToast: true,
-          autoHandleRequiresAction: true
-        })
-      }
-      const terminalOperation = initialActionUrl
-        ? billingOperationStore.startOperation(
-            opId,
-            'subscription',
-            metadata,
-            initialActionUrl
-          )
-        : billingOperationStore.startOperation(opId, 'subscription', metadata)
-      if (embeddedCheckoutEnabled) isSubscribing.value = false
-      const operation = await terminalOperation
-      if (
-        operation.status === 'succeeded' &&
-        activeCheckoutOperationId.value === opId &&
-        operation.workspaceId === workspaceStore.activeWorkspaceId
-      ) {
-        checkoutStep.value = 'success'
-      }
-    } finally {
-      clearPendingSubscriptionCheckout(opId)
+    const metadata = {
+      tier: context.tier,
+      cycle: context.cycle,
+      checkoutType: context.checkoutType,
+      paymentIntentSource,
+      attemptStartedAt: context.attemptStartedAt,
+      ...(embeddedCheckoutEnabled && {
+        suppressProcessingToast: true,
+        autoHandleRequiresAction: true
+      })
+    }
+    const terminalOperation = initialActionUrl
+      ? billingOperationStore.startOperation(
+          opId,
+          'subscription',
+          metadata,
+          initialActionUrl
+        )
+      : billingOperationStore.startOperation(opId, 'subscription', metadata)
+    if (embeddedCheckoutEnabled) isSubscribing.value = false
+    const operation = await terminalOperation
+    clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
+    ) {
+      checkoutStep.value = 'success'
     }
   }
 
@@ -1459,12 +1452,7 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
-    if (
-      !(isCloud
-        ? canReactivate.value
-        : permissions.value.canManageSubscriptionLifecycle)
-    )
-      return
+    if (!canReactivatePlan.value) return
 
     const source = 'pricing_dialog' as const
 

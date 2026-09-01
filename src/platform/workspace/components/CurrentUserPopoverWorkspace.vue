@@ -281,9 +281,9 @@ const {
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
-const { permissions } = useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe, canReactivate } =
-  useBillingCapabilities()
+const { permissions, canReactivatePlan, canOpenPricingSurface } =
+  useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
@@ -346,9 +346,7 @@ const displayedCredits = computed(() => {
   })
 })
 
-const showPlansAndPricing = computed(
-  () => permissions.value.canManageSubscription
-)
+const showPlansAndPricing = canOpenPricingSurface
 // Subscribing is a Cloud-only concept: Local users manage plan/credits
 // through settings instead (see showLocalPlansAndCredits below), regardless
 // of subscription status.
@@ -366,12 +364,13 @@ const showManagePlan = computed(
     permissions.value.canManageSubscription &&
     (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
+
 const showSubscribeAction = computed(
   () =>
-    // Subscribing is Cloud-only, so the whole action stays gated on isCloud;
-    // inside it the server-resolved capabilities are authoritative.
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud.
+    // Self-serve subscribe is server-authoritative; reactivation is not.
     isCloud &&
-    ((isCancelled.value && canReactivate.value) ||
+    ((isCancelled.value && canReactivatePlan.value) ||
       (!canAccessSubscriptionFeatures.value &&
         !hasDelinquentSubscription.value &&
         canSubscribeSelfServe.value))

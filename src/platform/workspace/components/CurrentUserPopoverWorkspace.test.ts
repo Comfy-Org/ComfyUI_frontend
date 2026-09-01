@@ -22,6 +22,9 @@ const state = vi.hoisted(() => ({
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   canReactivate: false,
+  canReactivatePlan: false,
+  canOpenPricingSurface: false,
+  shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   showPricingTable: vi.fn(),
@@ -76,7 +79,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: computed(() => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    }))
+    })),
+    canReactivatePlan: computed(() => state.canReactivatePlan),
+    canOpenPricingSurface: computed(() => state.canOpenPricingSurface)
   })
 }))
 
@@ -85,6 +90,12 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
     canTopUp: computed(() => state.canTopUp),
     canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
     canReactivate: computed(() => state.canReactivate)
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
@@ -189,7 +200,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canOpenPricingSurface = false
     state.canReactivate = false
+    state.shouldUseWorkspaceBilling = true
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -506,7 +519,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.isCancelled = isCancelled
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
-      state.canReactivate = canReactivate
+      state.canReactivatePlan = canReactivate
       state.canSubscribeSelfServe = canSubscribeSelfServe
 
       renderComponent('team')
@@ -526,7 +539,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    state.canReactivatePlan = true
+    state.canOpenPricingSurface = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -536,6 +550,49 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
+    // Server-resolved for Enterprise/unrecognized tiers: no self-serve
+    // catalog, so canOpenPricingSurface resolves false while the plan is
+    // still manageable through settings.
+    state.canManageSubscription = true
+    state.canOpenPricingSurface = false
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+  })
+
+  it('hides Resubscribe for a cancelled sales-managed plan', () => {
+    state.isCancelled = true
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    state.canReactivatePlan = false
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('reads the derived reactivate policy, not the raw server capability', () => {
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+    // The legacy rail resolves can_reactivate false but still permits
+    // reactivation, so the button must follow canReactivatePlan. Rail
+    // selection itself is covered in useWorkspaceUI.test.ts.
+    state.canReactivate = false
+    state.canReactivatePlan = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.getByRole('button', { name: 'Resubscribe' })
+    ).toBeInTheDocument()
   })
 
   for (const workspaceType of ['personal', 'team'] as const) {
