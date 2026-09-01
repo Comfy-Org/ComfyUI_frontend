@@ -206,8 +206,10 @@ curl --fail-with-body -sS --config "$READ_CONFIG" \
 jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.verified.json" \
   >"$WORK_DIR/schedule.put.verified.json"
 diff -u \
-  <(jq -S '.data.attributes.tags' "$WORK_DIR/schedule.put.edited.json") \
-  <(jq -S '.data.attributes.tags' "$WORK_DIR/schedule.put.verified.json")
+  <(jq -S '[.data.attributes.tags[] | ascii_downcase] | sort' \
+    "$WORK_DIR/schedule.put.edited.json") \
+  <(jq -S '[.data.attributes.tags[] | ascii_downcase] | sort' \
+    "$WORK_DIR/schedule.put.verified.json")
 ```
 
 The GET response is JSON:API: layers and members live in `included`. The `jq`
@@ -224,7 +226,10 @@ if anything changed. It also stops unless `tags` is still an array and every
 other field in the edited body exactly matches the original. Before writing,
 it displays the complete tag delta and requires explicit confirmation. After
 writing, it fetches the schedule once more and verifies that the complete
-stored tag set equals the intended tag set.
+stored tag set equals the intended tag set. That last comparison lower-cases
+and sorts both sides: Datadog lower-cases the tags it accepts, so a sheriff
+whose GitHub login has capitals in it would otherwise fail verification on a
+write that landed exactly as intended.
 
 The trap worth stating plainly: **a `PUT` whose body omits `tags` wipes every
 tag**, returns 200, and warns about nothing. Any tags-unaware edit to the
