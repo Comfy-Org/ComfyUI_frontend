@@ -109,6 +109,8 @@ function targetKey(target: ShadowTarget): string {
 export function createPendingOpShadowSurface(): PendingOpShadowSurface {
   /** Insertion-ordered by show; op ids are never re-minted or reused. */
   const shadows = new Map<string, PendingShadow>()
+  /** Lifetime uniqueness guard: delayed effects must never hit a replacement. */
+  const seenOpIds = new Set<string>()
   /** Refcount of pending ops per target key (several ops may share one). */
   const targetCounts = new Map<string, number>()
   /** First-seen target per key, for deduplicated pendingTargets snapshots. */
@@ -154,7 +156,7 @@ export function createPendingOpShadowSurface(): PendingOpShadowSurface {
 
   return {
     show(opId, targets) {
-      if (shadows.has(opId)) return false
+      if (seenOpIds.has(opId)) return false
       const shadow: PendingShadow = Object.freeze({
         opId,
         targets: Object.freeze(
@@ -162,6 +164,7 @@ export function createPendingOpShadowSurface(): PendingOpShadowSurface {
         )
       })
       shadows.set(opId, shadow)
+      seenOpIds.add(opId)
       for (const target of shadow.targets) retain(target)
       notify({ type: 'show', opId })
       return true

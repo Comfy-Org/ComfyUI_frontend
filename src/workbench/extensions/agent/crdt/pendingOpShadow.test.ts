@@ -26,6 +26,15 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(surface.size()).toBe(1)
   })
 
+  it('never reuses an op id after its shadow is removed', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1')])
+    surface.clear('op-1')
+
+    expect(surface.show('op-1', [node('n2')])).toBe(false)
+    expect(surface.isPending(node('n2'))).toBe(false)
+  })
+
   it('tracks node, link, and widget targets for one op', () => {
     const surface = createPendingOpShadowSurface()
     surface.show('op-1', [node('n1'), link('l1'), widget('n1', 'seed')])
