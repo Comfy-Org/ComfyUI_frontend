@@ -126,8 +126,11 @@ jobs:
           exit 1
 
   perf-baseline-freshness:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
+    concurrency:
+      group: perf-freshness
+      cancel-in-progress: false
     permissions:
       contents: read
     steps:
