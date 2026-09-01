@@ -1019,6 +1019,44 @@ describe('node:before-removed event', () => {
     ])
   })
 
+  it('orders connection and lifecycle callbacks during node removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('output', '*')
+    const target = new LGraphNode('target')
+    target.addInput('input', '*')
+    graph.add(source)
+    graph.add(target)
+    source.connect(0, target, 0)
+    const order: string[] = []
+
+    graph.events.addEventListener('node:before-removed', () => {
+      order.push('before-removed')
+    })
+    target.onConnectionsChange = () => order.push('target-connection-change')
+    source.onConnectionsChange = () => order.push('source-connection-change')
+    source.onRemoved = () => order.push('onRemoved')
+    graph.onNodeRemoved = () => {
+      order.push(
+        `onNodeRemoved(graph=${source.graph === null ? 'null' : 'set'})`
+      )
+    }
+    graph.events.addEventListener('node:removed', () => {
+      order.push(`removed(graph=${source.graph === null ? 'null' : 'set'})`)
+    })
+
+    graph.remove(source)
+
+    expect(order).toEqual([
+      'before-removed',
+      'target-connection-change',
+      'source-connection-change',
+      'onRemoved',
+      'onNodeRemoved(graph=null)',
+      'removed(graph=null)'
+    ])
+  })
+
   it('fires node:added once the node is attached and registered', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
