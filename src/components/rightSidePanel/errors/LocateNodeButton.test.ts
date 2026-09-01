@@ -43,13 +43,16 @@ describe('LocateNodeButton', () => {
     expect(onAncestorClick).not.toHaveBeenCalled()
   })
 
-  it('emits locate on keyboard activation without relying on implicit tab order', async () => {
+  it('emits locate on keyboard activation', async () => {
     const user = userEvent.setup()
     const { emitted } = render(LocateNodeButton, {
       props: { label: 'Locate node on canvas' }
     })
 
-    screen.getByRole('button', { name: 'Locate node on canvas' }).focus()
+    await user.tab()
+    expect(
+      screen.getByRole('button', { name: 'Locate node on canvas' })
+    ).toHaveFocus()
     await user.keyboard('{Enter}')
 
     expect(emitted().locate).toHaveLength(1)
