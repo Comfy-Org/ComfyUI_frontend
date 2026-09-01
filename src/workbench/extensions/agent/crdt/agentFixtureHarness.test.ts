@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import addNodeFixture from './__fixtures__/add-node.json'
 import type {
   AgentFixtureAdapter,
-  AgentResponseFixture,
   FixtureNode,
   FixtureWorkflow,
   RemoteMutationContext
 } from './agentFixtureHarness'
-import { replayAgentFixture } from './agentFixtureHarness'
+import {
+  parseAgentResponseFixture,
+  replayAgentFixture
+} from './agentFixtureHarness'
 
 class TestGraphAdapter implements AgentFixtureAdapter {
   readonly nodes = new Map<FixtureNode['id'], FixtureNode>()
@@ -43,7 +45,7 @@ describe('replayAgentFixture', () => {
     const adapter = new TestGraphAdapter()
 
     replayAgentFixture(
-      addNodeFixture as AgentResponseFixture,
+      parseAgentResponseFixture(addNodeFixture),
       adapter,
       'fixture-actor'
     )
@@ -53,5 +55,20 @@ describe('replayAgentFixture', () => {
       widgets_values: ['reference.png', 'image']
     })
     expect(adapter.emitLocalOp).not.toHaveBeenCalled()
+  })
+
+  it('rejects an empty frame list', () => {
+    expect(() =>
+      parseAgentResponseFixture({ scenario: 'empty', frames: [] })
+    ).toThrow('frames must be non-empty')
+  })
+
+  it('rejects a frame with missing data', () => {
+    expect(() =>
+      parseAgentResponseFixture({
+        scenario: 'malformed',
+        frames: [{ type: 'draft_patch' }]
+      })
+    ).toThrow('malformed draft_patch frame')
   })
 })
