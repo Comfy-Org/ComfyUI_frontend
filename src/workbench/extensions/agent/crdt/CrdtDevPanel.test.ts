@@ -113,6 +113,13 @@ describe('CrdtDevPanel', () => {
     expect(screen.getByText('remints (doc_reset)')).toBeVisible()
     expect(screen.getByText('doc nodes added')).toBeVisible()
     expect(screen.getByText('doc nodes removed')).toBeVisible()
+    expect(
+      screen.getByRole('row', { name: 'remints (doc_reset) 1' })
+    ).toBeVisible()
+    expect(screen.getByRole('row', { name: 'doc nodes added 2' })).toBeVisible()
+    expect(
+      screen.getByRole('row', { name: 'doc nodes removed 1' })
+    ).toBeVisible()
     expect(screen.getByText('2 events')).toBeVisible()
   })
 
