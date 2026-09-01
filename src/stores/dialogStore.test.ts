@@ -204,6 +204,23 @@ describe('dialogStore', () => {
     })
   })
 
+  describe('active dialog after close', () => {
+    it('reactivates the most recently opened dialog, not the highest priority one', () => {
+      const store = useDialogStore()
+      store.showDialog({
+        key: 'persistent',
+        component: MockComponent,
+        priority: 5
+      })
+      store.showDialog({ key: 'settings', component: MockComponent })
+      store.showDialog({ key: 'confirm', component: MockComponent })
+
+      store.closeDialog({ key: 'confirm' })
+
+      expect(store.activeKey).toBe('settings')
+    })
+  })
+
   describe('ESC key behavior with multiple dialogs', () => {
     it('should only allow the active dialog to close with ESC key', () => {
       const store = useDialogStore()
@@ -242,6 +259,8 @@ describe('dialogStore', () => {
 
       // Close the active dialog
       store.closeDialog({ key: store.activeKey! })
+
+      expect(store.activeKey).toBe('dialog-2')
 
       // The new active dialog should now be closable with ESC
       const newActiveDialog = store.dialogStack.find(

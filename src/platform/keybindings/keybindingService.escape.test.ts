@@ -41,6 +41,7 @@ describe('keybindingService - Escape key handling', () => {
 
   beforeEach(() => {
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+    vi.spyOn(useCommandStore(), 'isRegistered').mockReturnValue(true)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0

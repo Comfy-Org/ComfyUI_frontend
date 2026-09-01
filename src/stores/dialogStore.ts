@@ -137,6 +137,19 @@ export const useDialogStore = defineStore('dialog', () => {
    * Only the active dialog can be closed with the ESC key.
    */
   const activeKey = ref<string | null>(null)
+  let activationOrder: string[] = []
+
+  function activate(key: string) {
+    activationOrder = [...activationOrder.filter((k) => k !== key), key]
+    activeKey.value = key
+  }
+
+  function deactivate(key: string) {
+    activationOrder = activationOrder.filter(
+      (k) => k !== key && dialogStack.value.some((d) => d.key === k)
+    )
+    activeKey.value = activationOrder.at(-1) ?? null
+  }
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
@@ -162,7 +175,7 @@ export const useDialogStore = defineStore('dialog', () => {
     if (index !== -1) {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
-      activeKey.value = dialogKey
+      activate(dialogKey)
       updateCloseOnEscapeStates()
     }
   }
@@ -177,10 +190,7 @@ export const useDialogStore = defineStore('dialog', () => {
     const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
     if (index !== -1) dialogStack.value.splice(index, 1)
 
-    activeKey.value =
-      dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
-        : null
+    deactivate(targetDialog.key)
 
     updateCloseOnEscapeStates()
   }
@@ -238,7 +248,7 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     insertDialogByPriority(dialog)
-    activeKey.value = options.key
+    activate(options.key)
     updateCloseOnEscapeStates()
 
     return dialog

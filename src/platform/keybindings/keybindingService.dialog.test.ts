@@ -37,6 +37,7 @@ describe('keybindingService - dialog gate', () => {
 
   beforeEach(() => {
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+    vi.spyOn(useCommandStore(), 'isRegistered').mockReturnValue(true)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
