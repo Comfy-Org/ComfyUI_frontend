@@ -3,6 +3,7 @@ import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
+import * as featureFlagsModule from '@/composables/useFeatureFlags'
 
 import {
   partnerRunGateBlocksAutoQueue,
@@ -41,9 +42,24 @@ vi.mock('@/composables/auth/useCurrentUser', async () => {
   }
 })
 
+vi.mock('@/composables/useFeatureFlags', async () => {
+  const { reactive } = await import('vue')
+  const flags = reactive({ partnerRunGateEnabled: true })
+  return {
+    useFeatureFlags: () => ({ flags }),
+    __setPartnerRunGateEnabled: (value: boolean) => {
+      flags.partnerRunGateEnabled = value
+    }
+  }
+})
+
 const { __setLoggedIn } = currentUserModule as typeof currentUserModule & {
   __setLoggedIn: (value: boolean) => void
 }
+const { __setPartnerRunGateEnabled } =
+  featureFlagsModule as typeof featureFlagsModule & {
+    __setPartnerRunGateEnabled: (value: boolean) => void
+  }
 
 let scope: EffectScope
 
@@ -57,6 +73,7 @@ describe('usePartnerNodesRunGate', () => {
     state.hasPartnerNodes = ref(false)
     state.partnerNodes = ref([])
     __setLoggedIn(false)
+    __setPartnerRunGateEnabled(true)
   })
 
   afterEach(() => {
@@ -105,17 +122,35 @@ describe('usePartnerNodesRunGate', () => {
     await nextTick()
     expect(gate.value).toBe('sign-in')
   })
+
+  it('stays inert when the feature flag is off, even for a gated graph', async () => {
+    state.hasPartnerNodes.value = true
+    __setPartnerRunGateEnabled(false)
+    const { gate } = setup()
+    expect(gate.value).toBe('none')
+
+    __setPartnerRunGateEnabled(true)
+    await nextTick()
+    expect(gate.value, 'flag flips back on without a reload').toBe('sign-in')
+  })
 })
 
 describe('partnerRunGateBlocksAutoQueue', () => {
   beforeEach(() => {
     state.partnerNodes = ref([])
     __setLoggedIn(false)
+    __setPartnerRunGateEnabled(true)
   })
 
   it('blocks a signed-out local graph that contains partner nodes', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
     expect(partnerRunGateBlocksAutoQueue()).toBe(true)
+  })
+
+  it('never blocks while the feature flag is off', () => {
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+    __setPartnerRunGateEnabled(false)
+    expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 
   it('allows a signed-out graph with no partner nodes', () => {

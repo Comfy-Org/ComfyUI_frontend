@@ -6,6 +6,7 @@ import {
   scanPartnerNodesInGraph,
   usePartnerNodesInGraph
 } from '@/composables/node/usePartnerNodesInGraph'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
@@ -20,6 +21,7 @@ type PartnerRunGate = 'sign-in' | 'none'
  */
 export function partnerRunGateBlocksAutoQueue(): boolean {
   if (isCloud) return false
+  if (!useFeatureFlags().flags.partnerRunGateEnabled) return false
   const { isLoggedIn } = useCurrentUser()
   return !isLoggedIn.value && scanPartnerNodesInGraph().length > 0
 }
@@ -39,9 +41,12 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
 
   const { partnerNodes, hasPartnerNodes } = usePartnerNodesInGraph()
   const { isLoggedIn } = useCurrentUser()
+  const { flags } = useFeatureFlags()
 
   const gate = computed<PartnerRunGate>(() =>
-    hasPartnerNodes.value && !isLoggedIn.value ? 'sign-in' : 'none'
+    flags.partnerRunGateEnabled && hasPartnerNodes.value && !isLoggedIn.value
+      ? 'sign-in'
+      : 'none'
   )
 
   return { gate, partnerNodes }
