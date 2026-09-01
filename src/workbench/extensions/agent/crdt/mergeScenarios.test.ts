@@ -8,10 +8,10 @@ import { describe, expect, it } from 'vitest'
 import { reactive } from 'vue'
 
 import type { MergeScenario } from './mergeScenarios'
-import { MERGE_SCENARIOS, runScenario } from './mergeScenarios'
+import { getMergeScenarios, runScenario } from './mergeScenarios'
 
 function scenario(id: string) {
-  const found = MERGE_SCENARIOS.find((candidate) => candidate.id === id)
+  const found = getMergeScenarios().find((candidate) => candidate.id === id)
   if (!found) throw new Error(`no scenario ${id}`)
   return found
 }
@@ -121,7 +121,7 @@ describe('merge scenarios', () => {
   })
 
   it('gives every op a register, a stamp and a human explanation', () => {
-    for (const candidate of MERGE_SCENARIOS) {
+    for (const candidate of getMergeScenarios()) {
       for (const entry of runScenario(candidate).entries) {
         expect(entry.register).not.toBe('')
         expect(entry.stamp).toHaveLength(3)

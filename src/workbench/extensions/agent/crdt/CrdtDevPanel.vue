@@ -29,7 +29,7 @@ import {
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
-import { MERGE_SCENARIOS, runScenario } from './mergeScenarios'
+import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
@@ -266,7 +266,8 @@ function onLevelChange(next: CrdtLogLevel) {
 }
 
 // ── merge lab ─────────────────────────────────────────────────────────────
-const scenario = shallowRef<MergeScenario>(MERGE_SCENARIOS[0])
+const mergeScenarios = getMergeScenarios()
+const scenario = shallowRef<MergeScenario>(mergeScenarios[0])
 const simulation = shallowRef<MergeSimulation | null>(null)
 const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
 
@@ -289,7 +290,7 @@ watch(testerNote, (next) => {
 })
 
 function selectScenario(id: string) {
-  const next = MERGE_SCENARIOS.find((candidate) => candidate.id === id)
+  const next = mergeScenarios.find((candidate) => candidate.id === id)
   if (!next) return
   scenario.value = next
   simulation.value = null
@@ -697,7 +698,7 @@ function fmtTime(at: number): string {
             @change="selectScenario(($event.target as HTMLSelectElement).value)"
           >
             <option
-              v-for="option in MERGE_SCENARIOS"
+              v-for="option in mergeScenarios"
               :key="option.id"
               :value="option.id"
               :selected="option.id === scenario.id"

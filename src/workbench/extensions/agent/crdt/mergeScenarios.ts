@@ -273,7 +273,10 @@ function addNodeA(actor: string, baseVersion: number): Op {
  * demo: the title says what is contested and the `question` says what the
  * outcome is supposed to teach.
  */
-export const MERGE_SCENARIOS: readonly MergeScenario[] = [
+let mergeScenarios: readonly MergeScenario[] | undefined
+
+export function getMergeScenarios(): readonly MergeScenario[] {
+  return (mergeScenarios ??= [
   {
     id: 'delete-then-write-then-add',
     title: 'delete A → set widget on A → add A',
@@ -390,4 +393,5 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
       ]
     ]
   }
-]
+  ])
+}

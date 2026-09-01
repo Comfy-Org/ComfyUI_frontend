@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { MERGE_SCENARIOS, runScenario } from './mergeScenarios'
+import { getMergeScenarios, runScenario } from './mergeScenarios'
 import { groupByRegister, nodeLifecycle, registerLabel } from './mergeTrace'
 
 function scenarioEntries(id: string) {
-  const found = MERGE_SCENARIOS.find((candidate) => candidate.id === id)
+  const found = getMergeScenarios().find((candidate) => candidate.id === id)
   if (!found) throw new Error(`no scenario ${id}`)
   return runScenario(found).entries
 }
