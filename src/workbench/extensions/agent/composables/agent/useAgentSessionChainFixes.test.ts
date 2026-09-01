@@ -24,6 +24,7 @@ import type {
 } from '../../services/agent/agentRestClient'
 import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 import { useAgentSession } from './useAgentSession'
 
@@ -42,6 +43,9 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
     ),
+    getDraft: vi.fn(async (): Promise<never> => {
+      throw new Error('getDraft unused in this harness')
+    }),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResult> => ({
         name: 'n',
@@ -258,7 +262,7 @@ describe('08-fix1 receipts and pins', () => {
 
     expect(ok).toBe(true)
     expect(adopted).toHaveBeenCalledTimes(1)
-    expect(session.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     expect(session.isSending.value).toBe(false)
     emit(delta('msg-1', 'reply landed'))
     emit(done('msg-1'))
@@ -356,7 +360,7 @@ describe('08-fix1 receipts and pins', () => {
     expect(body.workflowId).toBe('wf-7')
     expect(body.tabs).toBe(tabsSnapshot)
     expect(adopted).toHaveBeenCalledTimes(1)
-    expect(adopted).toHaveBeenCalledWith('wf-1', context)
+    expect(adopted).toHaveBeenCalledWith('wf-1', context, false)
   })
 
   it('(t2b) a resolving prepare gates the post; workflow context is read after the gate', async () => {
@@ -496,17 +500,20 @@ describe('08-fix1 receipts and pins', () => {
   })
 
   it('(t5a) a remount with a surviving thread keeps the ack-established workflow binding', async () => {
+    // The binding now lives in the draft store (bound on ack), which
+    // survives a panel remount within the same app the same way the
+    // module-level memory it replaced did.
     const rest = fakeRest()
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
     await first.sendMessage('bind me')
-    expect(first.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     first.stop()
 
     const second = useAgentSession({ rest, events: fakeEvents().source })
-    expect(second.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     second.start()
-    expect(second.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     expect(rest.getMessages).toHaveBeenCalledTimes(1)
     await vi.mocked(rest.getMessages).mock.results[0].value
     await Promise.resolve()
@@ -523,7 +530,7 @@ describe('08-fix1 receipts and pins', () => {
     localStorage.clear()
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
-    expect(second.boundWorkflowId.value).toBeNull()
+    expect(useAgentDraftStore().workflowId).toBeNull()
   })
 })
 

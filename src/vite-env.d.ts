@@ -18,6 +18,7 @@ declare global {
   }
 
   interface ImportMetaEnv {
+    VITE_AGENT_CRDT_FOLLOWER?: string
     VITE_APP_VERSION?: string
     VITE_STAGING_API_BASE_URL?: string
     VITE_STAGING_CLOUD_BASE_URL?: string

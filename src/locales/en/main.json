@@ -4783,6 +4783,10 @@
       "apply_failed": {
         "title": "Agent edit failed",
         "desc": "An agent edit could not be applied to the workflow document."
+      },
+      "agent_draft_apply_failed": {
+        "title": "Couldn't apply agent changes",
+        "desc": "Couldn't apply the agent's draft to the canvas."
       }
     }
   },
@@ -5216,6 +5220,8 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "confirmDeleteChat": "Delete this chat? This cannot be undone.",
+    "confirmDeleteChatTitle": "Delete chat"
   }
 }

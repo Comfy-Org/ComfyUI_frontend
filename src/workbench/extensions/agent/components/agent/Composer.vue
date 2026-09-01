@@ -61,6 +61,7 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
   'agentAssetDragActive',
   ref(false)
 )
+
 const duplicateIdClass =
   'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
 

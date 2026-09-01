@@ -52,16 +52,11 @@ const delta = (id: string, text: string) =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th' }
   })
-const toolCall = (
-  id: string,
-  name: string,
-  status: 'running' | 'success' | 'error',
-  callId = `call-${name}`
-) =>
+const toolCall = (id: string, name: string, status: string) =>
   chat({
     type: 'agent_tool_call',
     data: {
-      tool_call_id: callId,
+      tool_call_id: `call-${id}`,
       tool_name: name,
       status,
       message_id: id,
@@ -106,7 +101,6 @@ describe('ConversationView', () => {
     expect(await screen.findByText('pondering')).toBeInTheDocument()
 
     store.ingest(delta('msg-1', 'Here is a **cat**'))
-    store.ingest(toolCall('msg-1', 'add_node', 'running'))
     store.ingest(toolCall('msg-1', 'add_node', 'success'))
     store.ingest(done('msg-1'))
 

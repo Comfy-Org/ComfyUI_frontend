@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -10,33 +11,82 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 const ACTION_BARS_TRANSITION_MS = 300
 const BANNER_TRANSITION_MS = 150
 const SIDEBAR_PANEL_TRANSITION_MS = 200
-const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
+
+/**
+ * Marks the body for the duration of the mode. The mode owns the class rather
+ * than any one toast component, since PrimeVue teleports every `<Toast>`
+ * container to `<body>` and several components mount their own groups, so no
+ * single component renders all of them. The `.p-toast` rule that actually
+ * hides the layer arrives with the 16 consumers; at this head the class is
+ * set but nothing styles it.
+ */
 const NODE_SELECTION_CLASS = 'node-selection-active'
+
+const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
+
+/* Graph units around the framed nodes so none sit flush with the edge. */
+const FRAME_PADDING = 40
+
+/**
+ * Bounds are taken from `pos`/`size`, the geometry litegraph maintains for
+ * canvas and Vue nodes alike (`boundingRect` is a renderer cache that stays
+ * zeroed under Vue nodes). Structural rather than class-based so selected
+ * groups frame the same way selected nodes do.
+ */
+interface FramableItem {
+  pos?: ArrayLike<number>
+  size?: ArrayLike<number>
+}
+
+function frameBounds(
+  items: readonly FramableItem[]
+): [number, number, number, number] | null {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const item of items) {
+    if (!item.pos || !item.size) continue
+    minX = Math.min(minX, item.pos[0])
+    minY = Math.min(minY, item.pos[1])
+    maxX = Math.max(maxX, item.pos[0] + item.size[0])
+    maxY = Math.max(maxY, item.pos[1] + item.size[1])
+  }
+  if (minX === Infinity) return null
+  return [
+    minX - FRAME_PADDING,
+    minY - FRAME_PADDING,
+    maxX - minX + FRAME_PADDING * 2,
+    maxY - minY + FRAME_PADDING * 2
+  ]
+}
 
 export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
   () => {
-    const canvasStore = useCanvasStore()
     const dialogStore = useDialogStore()
-    const settingStore = useSettingStore()
     const sidebarTabStore = useSidebarTabStore()
+    const canvasStore = useCanvasStore()
+    const settingStore = useSettingStore()
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
     const isLoadingWorkflow = ref(false)
     const restoredNodeIds = ref<string[] | null>(null)
     const nodeIdsByWorkflow = ref<Record<string, string[]>>({})
-    let restoreAllowDragNodes: boolean | undefined
-    let restoreMultiSelect: boolean | undefined
-    let restoreSelectOnly: boolean | undefined
-    let restoreMinimap = false
-    let restoreSidebarTabId: string | null = null
-    let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined
+    let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
+    let restoreSidebarTabId: string | null = null
+    let restoreMinimap = false
 
     watch(isActive, (active) => {
-      clearTimeout(sidebarTimeoutId)
       clearTimeout(transitionTimeoutId)
+      clearTimeout(sidebarTimeoutId)
+
+      // This watcher is created with the store, so it runs before any watcher a
+      // component registers on `isActive`. That ordering is what will let
+      // GlobalToast replay deferred messages onto an already-visible layer
+      // once that deferral arrives with the 16 consumers; nothing defers here.
       document.body.classList.toggle(NODE_SELECTION_CLASS, active)
 
       if (active) {
@@ -52,6 +102,10 @@ export const useAgentNodeSelectionStore = defineStore(
           }, SIDEBAR_PANEL_TRANSITION_MS)
         }
 
+        // Flipping the user's own setting rather than overriding the minimap
+        // leaves the normal toggle working: anyone who wants the map back while
+        // picking can just switch it on, and only what we turned off is
+        // restored on exit.
         restoreMinimap = settingStore.get(MINIMAP_SETTING)
         if (restoreMinimap) void settingStore.set(MINIMAP_SETTING, false)
         return
@@ -62,6 +116,9 @@ export const useAgentNodeSelectionStore = defineStore(
         isActionBarsHidden.value = false
       }, BANNER_TRANSITION_MS)
 
+      // Staged like the entry side rather than snapping back: the panel
+      // reappears with the action bars, once the banner has retracted, so the
+      // two never animate over each other.
       if (restoreSidebarTabId) {
         const tabId = restoreSidebarTabId
         restoreSidebarTabId = null
@@ -77,33 +134,39 @@ export const useAgentNodeSelectionStore = defineStore(
     })
 
     function enter(): void {
-      if (isActive.value) return
-      const canvas = canvasStore.canvas
-      if (canvas) {
-        restoreAllowDragNodes = canvas.allow_dragnodes
-        restoreMultiSelect = canvas.multi_select
-        restoreSelectOnly = canvas.selectOnly
-        canvas.allow_dragnodes = false
-        canvas.multi_select = true
-        canvas.selectOnly = true
-        canvas.fitViewToSelectionAnimated({ duration: 300 })
-        canvas.canvas.focus()
-      }
       isActive.value = true
+      frameForPicking()
+    }
+
+    /**
+     * Every entry path frames the pick surface: the minimap is off during the
+     * mode, so a node outside the view would have to be found by blind
+     * panning. Items selected before entry take priority; otherwise the whole
+     * graph is framed. The viewport excludes the docked agent panel so the
+     * frame lands in the visible area.
+     */
+    function frameForPicking(): void {
+      const canvas = canvasStore.canvas
+      if (!canvas) return
+      const selected = [...canvas.selectedItems]
+      const bounds = frameBounds(
+        selected.length ? selected : (canvas.graph?.nodes ?? [])
+      )
+      if (!bounds) return
+      canvas.animateToBounds(bounds, {
+        viewport: visibleCanvasViewport(canvas)
+      })
     }
 
     function exit(): void {
-      if (!isActive.value) return
+      // Order matters: dropping out of the mode first stops the basket
+      // mirroring the canvas, so clearing the selection below leaves the
+      // staged chips intact. Picking is finished - the references stay in the
+      // composer, but the graph goes back to looking untouched.
       isActive.value = false
+
       const canvas = canvasStore.canvas
-      if (!canvas) return
-      canvas.allow_dragnodes = restoreAllowDragNodes ?? true
-      canvas.multi_select = restoreMultiSelect ?? false
-      canvas.selectOnly = restoreSelectOnly ?? false
-      restoreAllowDragNodes = undefined
-      restoreMultiSelect = undefined
-      restoreSelectOnly = undefined
-      if (!canvas.selectedItems.size) return
+      if (!canvas?.selectedItems.size) return
       canvas.deselectAll()
       canvasStore.updateSelectedItems()
     }

@@ -34,8 +34,26 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const promptErrorTitleSeeds = vi.hoisted(
+  () =>
+    ({
+      agent_api_failed: 'seeded agent_api_failed title',
+      agent_draft_apply_failed: 'seeded agent_draft_apply_failed title',
+      op_rejected: 'seeded op_rejected title',
+      prefix_abort: 'seeded prefix_abort title',
+      guard_trip: 'seeded guard_trip title',
+      apply_failed: 'seeded apply_failed title'
+    }) as const
+)
+
 vi.mock('@/i18n', () => {
   const messages: Record<string, string> = {
+    ...Object.fromEntries(
+      Object.entries(promptErrorTitleSeeds).map(([type, title]) => [
+        `errorCatalog.promptErrors.${type}.title`,
+        title
+      ])
+    ),
     'errorCatalog.validationErrors.required_input_missing.title':
       'Missing connection',
     'errorCatalog.validationErrors.required_input_missing.message':
@@ -64,7 +82,8 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
-    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
+    'errorCatalog.promptErrors.agent_api_failed.desc':
+      'Comfy Agent hit a server error. Try again.',
     'errorCatalog.promptErrors.apply_failed.desc':
       'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
@@ -127,6 +146,7 @@ vi.mock(
   })
 )
 
+import { resolvePromptErrorMessage } from '@/platform/errorCatalog/promptErrorResolver'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -139,7 +159,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useErrorGroups } from './useErrorGroups'
+import { AGENT_PROMPT_ERROR_TYPES, useErrorGroups } from './useErrorGroups'
+import type { AgentPromptErrorType } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
@@ -212,6 +233,10 @@ function createErrorGroups() {
   const groups = useErrorGroups(searchQuery)
   return { store, searchQuery, groups }
 }
+
+const AGENT_PROMPT_ERROR_TYPE_MEMBERS = Object.keys(
+  promptErrorTitleSeeds
+) as AgentPromptErrorType[]
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
@@ -1363,5 +1388,33 @@ describe('useErrorGroups', () => {
       expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
       expect(groups.selectionMatchedCardIds.value.has('node-9')).toBe(false)
     })
+  })
+
+  it('keeps every agent prompt error type resolvable in the prompt catalog', () => {
+    // A legitimate change to the agent error-type set touches, together:
+    // the list in useErrorGroups.ts, KNOWN_PROMPT_ERROR_TYPES in
+    // promptErrorResolver.ts, the locale catalog titles, and the seeds at
+    // the top of this file. The satisfies below turns a set member with no
+    // seed into a compile error, so a silent addition cannot pass.
+    const catalogTitles = promptErrorTitleSeeds satisfies Record<
+      AgentPromptErrorType,
+      string
+    >
+
+    expect([...AGENT_PROMPT_ERROR_TYPES].sort()).toEqual(
+      Object.keys(promptErrorTitleSeeds).sort()
+    )
+
+    for (const type of AGENT_PROMPT_ERROR_TYPE_MEMBERS) {
+      const resolved = resolvePromptErrorMessage(
+        fromAny({ type, message: 'x', details: 'd' }),
+        fromAny({ isCloud: false })
+      )
+
+      expect({ type, title: resolved.displayTitle }).toEqual({
+        type,
+        title: catalogTitles[type]
+      })
+    }
   })
 })
