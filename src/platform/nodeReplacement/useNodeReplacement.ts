@@ -244,8 +244,6 @@ function replaceWithMapping(
 ): boolean {
   const order = node.order
   newNode.id = node.id
-  newNode.pos = [...node.pos]
-  newNode.size = [...node.size]
   newNode.order = order
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }

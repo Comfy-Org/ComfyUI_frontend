@@ -359,4 +359,24 @@ describe('useAgentConversationStore', () => {
     expect(texts).toContain('second reply')
     expect(store.isStreaming).toBe(true)
   })
+
+  it('does not duplicate a settled background turn persisted under a server turn id', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'live reply'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go'),
+      historyRow(2, 'assistant', 'server-turn', 'persisted reply', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+    expect(partTexts(store)).toEqual(['persisted reply'])
+    expect(store.isStreaming).toBe(false)
+  })
 })
