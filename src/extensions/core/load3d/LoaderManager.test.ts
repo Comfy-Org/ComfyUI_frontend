@@ -622,6 +622,31 @@ describe('LoaderManager', () => {
       expect(endEmits).toHaveLength(1)
     })
 
+    it('cancels an in-flight load when disposed', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      let resolveLoad!: (value: ReturnType<typeof loadResult>) => void
+      const pendingLoad = new Promise<ReturnType<typeof loadResult>>(
+        (resolve) => {
+          resolveLoad = resolve
+        }
+      )
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.MeshBasicMaterial()
+      const model = new THREE.Mesh(geometry, material)
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeMaterial = vi.spyOn(material, 'dispose')
+      meshLoad.mockReturnValueOnce(pendingLoad)
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      lm.dispose()
+      resolveLoad(loadResult(model))
+
+      await expect(load).rejects.toMatchObject({ name: 'AbortError' })
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(disposeGeometry).toHaveBeenCalledOnce()
+      expect(disposeMaterial).toHaveBeenCalledOnce()
+    })
+
     it('logs and drops the load when the URL is missing a filename param', async () => {
       const { lm, modelManager } = makeLoaderManager()
       const consoleError = vi

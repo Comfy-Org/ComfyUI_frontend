@@ -1,4 +1,4 @@
-import type * as THREE from 'three'
+import * as THREE from 'three'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -9,7 +9,8 @@ import type {
   AdapterRef,
   ModelAdapter,
   ModelAdapterCapabilities,
-  ModelLoadContext
+  ModelLoadContext,
+  ModelLoadResult
 } from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
@@ -60,6 +61,7 @@ export class LoaderManager implements LoaderManagerInterface {
   private readonly adapters: ModelAdapter[]
   private readonly adapterRef: AdapterRef
   private currentLoadId: number = 0
+  private disposed = false
 
   constructor(
     modelManager: ModelManagerInterface,
@@ -77,15 +79,21 @@ export class LoaderManager implements LoaderManagerInterface {
     return this.adapterRef.current
   }
 
-  init(): void {}
+  init(): void {
+    this.disposed = false
+  }
 
-  dispose(): void {}
+  dispose(): void {
+    this.disposed = true
+    this.currentLoadId += 1
+  }
 
   async loadModel(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
+    if (this.disposed) throw this.createAbortError()
     const loadId = ++this.currentLoadId
 
     try {
@@ -119,6 +127,8 @@ export class LoaderManager implements LoaderManagerInterface {
       const result = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
+        if (result) this.disposeLoadResult(result)
+        if (this.disposed) throw this.createAbortError()
         // A newer loadModel has superseded us — do not publish our adapter
         // and do not setup the model. Whichever load is current owns the
         // shared state.
@@ -136,6 +146,7 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
     } catch (error) {
+      if (this.disposed) throw this.createAbortError()
       if (loadId === this.currentLoadId) {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
@@ -144,6 +155,29 @@ export class LoaderManager implements LoaderManagerInterface {
         }
       }
     }
+  }
+
+  private createAbortError(): Error {
+    const error = new Error('Model load aborted')
+    error.name = 'AbortError'
+    return error
+  }
+
+  private disposeLoadResult(
+    result: ModelLoadResult & { adapter: ModelAdapter }
+  ): void {
+    result.adapter.disposeModel?.(result.object)
+    result.object.traverse((child) => {
+      if (!(child instanceof THREE.Mesh || child instanceof THREE.Points))
+        return
+      child.geometry?.dispose()
+      const materials = Array.isArray(child.material)
+        ? child.material
+        : [child.material]
+      for (const material of materials) {
+        if (material !== this.modelManager.standardMaterial) material?.dispose()
+      }
+    })
   }
 
   private async pickAdapter(
