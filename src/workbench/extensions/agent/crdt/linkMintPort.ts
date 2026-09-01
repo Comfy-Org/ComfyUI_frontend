@@ -144,7 +144,10 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
             if (surfaced.has(key)) continue
             surfaced.add(key)
             if (!entry.rootScoped) {
-              surfaceUnrepresentable('subgraph-interior disconnect', key)
+              surfaceUnrepresentable(
+                'subgraph-interior disconnect',
+                String(entry.linkId)
+              )
             }
           }
         }
