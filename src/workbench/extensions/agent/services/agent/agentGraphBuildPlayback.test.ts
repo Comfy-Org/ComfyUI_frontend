@@ -62,6 +62,57 @@ describe('agent graph build playback', () => {
     expect(present).toHaveBeenCalledWith(null)
   })
 
+  it('does not present a node owned by an offscreen graph', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const prepare = vi.fn()
+    const present = vi.fn()
+
+    stageAgentGraphNodeBuild({
+      key: 'background-workflow:1',
+      label: 'Background node',
+      source: { x: 20, y: 500 },
+      target: { x: 620, y: 120 },
+      isPresentable: () => false,
+      prepare,
+      present,
+      toClient: (position) => position
+    })
+
+    expect(prepare).not.toHaveBeenCalled()
+    expect(present).toHaveBeenCalledOnce()
+    expect(present).toHaveBeenCalledWith(null)
+  })
+
+  it('drops a queued presentation when its graph leaves the canvas', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    let presentable = true
+    const prepare = vi.fn()
+    const present = vi.fn()
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow-that-was-visible:1',
+      label: 'Formerly visible node',
+      source: { x: 20, y: 500 },
+      target: { x: 620, y: 120 },
+      isPresentable: () => presentable,
+      prepare,
+      present,
+      toClient: (position) => position,
+      durationMs: 0,
+      gapMs: 0
+    })
+    presentable = false
+
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(prepare).not.toHaveBeenCalled()
+    expect(present).toHaveBeenCalledOnce()
+    expect(present).toHaveBeenCalledWith(null)
+    vi.runAllTimers()
+  })
+
   it('counts a synchronous Agent node batch as one ordered playback', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('matchMedia', () => ({ matches: false }))

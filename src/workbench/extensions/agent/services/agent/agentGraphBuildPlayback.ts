@@ -16,6 +16,7 @@ interface AgentGraphBuildRequest {
   label: string
   source: AgentGraphBuildPoint
   target: AgentGraphBuildPoint
+  isPresentable?: () => boolean
   prepare?: () => void
   present(position: AgentGraphBuildPoint | null): void
   toClient(position: AgentGraphBuildPoint): AgentGraphBuildPoint
@@ -65,7 +66,7 @@ function updateCursor(item: QueuedBuild, position: AgentGraphBuildPoint): void {
 }
 
 function present(item: QueuedBuild, position: AgentGraphBuildPoint): void {
-  if (item.cancelled) return
+  if (item.cancelled || item.isPresentable?.() === false) return
   item.present(position)
   updateCursor(item, position)
 }
@@ -101,7 +102,12 @@ async function animate(item: QueuedBuild): Promise<void> {
 
   let previousFrameTime = now()
   let elapsed = 0
-  while (elapsed < durationMs && !skipRequested && !item.cancelled) {
+  while (
+    elapsed < durationMs &&
+    !skipRequested &&
+    !item.cancelled &&
+    item.isPresentable?.() !== false
+  ) {
     if (state.value.phase === 'paused') {
       await waitUntilResumed()
       previousFrameTime = now()
@@ -139,6 +145,10 @@ async function drainQueue(): Promise<void> {
       if (skipRequested) break
       const item = queue.shift()
       if (!item || item.cancelled) continue
+      if (item.isPresentable?.() === false) {
+        item.present(null)
+        continue
+      }
       active = item
       restoreConnections ??= item.suspendConnections?.()
       dispatch({ type: 'started', nodeLabel: item.label })
@@ -185,6 +195,10 @@ function scheduleDrain(): void {
 export function stageAgentGraphNodeBuild(
   request: AgentGraphBuildRequest
 ): void {
+  if (request.isPresentable?.() === false) {
+    request.present(null)
+    return
+  }
   if (prefersReducedMotion()) {
     request.present(null)
     return
@@ -197,7 +211,7 @@ export function stageAgentGraphNodeBuild(
   const item = queue.at(-1)
   if (item?.prepare)
     queueMicrotask(() => {
-      if (!item.cancelled) item.prepare?.()
+      if (!item.cancelled && item.isPresentable?.() !== false) item.prepare?.()
     })
   dispatch({ type: 'staged' })
   scheduleDrain()

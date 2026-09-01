@@ -197,12 +197,13 @@ const graphMutations = (workflowId: string) => {
           timestamp: Date.now()
         })
         if (LiteGraph.vueNodesMode) {
+          const isCurrentGraph = () =>
+            canvasStore.rootGraphId === scope.rootGraphId &&
+            canvasStore.currentGraph?.id === scope.owningGraphId
           const presenter = createAgentGraphNodePresenter(
             nodeId,
             position,
-            () =>
-              workflowStore.activeWorkflow?.activeState?.id ===
-              scope.rootGraphId
+            isCurrentGraph
           )
           stageAgentGraphNodeBuild({
             key: buildKey,
@@ -211,6 +212,7 @@ const graphMutations = (workflowId: string) => {
               t('agent.graphBuild.node'),
             source: graphBuildSource(position),
             target: position,
+            isPresentable: isCurrentGraph,
             prepare: presenter.prepare,
             present: presenter.present,
             toClient: graphBuildClientPosition,
@@ -625,7 +627,10 @@ start()
 const agentComposerStore = useAgentComposerStore()
 void refreshCloudWorkflowIds()
 watch(
-  () => workflowStore.activeWorkflow?.path,
+  [
+    () => workflowStore.activeWorkflow?.path,
+    () => canvasStore.currentGraph?.id
+  ],
   () => skipAgentGraphBuild()
 )
 onBeforeUnmount(() => {
