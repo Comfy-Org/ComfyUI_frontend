@@ -3,7 +3,7 @@ import {
   createSharedComposable,
   useBreakpoints
 } from '@vueuse/core'
-import { readonly, ref } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -13,8 +13,15 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+
+export const GETTING_STARTED_DIALOG_KEY = 'global-getting-started'
+
+const GettingStartedScreen = defineAsyncComponent(
+  () => import('./GettingStartedScreen.vue')
+)
 
 /**
  * Decides what a first-time user sees once startup reports its outcome: the
@@ -23,9 +30,35 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
  */
 export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
-  const gettingStartedVisible = ref(false)
+  const dialogStore = useDialogStore()
+  const gettingStartedVisible = computed(() =>
+    dialogStore.isDialogOpen(GETTING_STARTED_DIALOG_KEY)
+  )
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
+
+  /**
+   * A backdrop-tier (priority 0) dialog-stack entry: real dialogs (desktop
+   * sign-in approval, invite links) always stack above it and own focus while
+   * they are up. Any close path — Escape, programmatic — lands in `onClose`.
+   */
+  function showGettingStarted() {
+    dialogStore.showDialog({
+      key: GETTING_STARTED_DIALOG_KEY,
+      component: GettingStartedScreen,
+      priority: 0,
+      dialogComponentProps: {
+        headless: true,
+        modal: false,
+        showCloseButton: false,
+        dismissableMask: false,
+        dismissOnFocusOutside: false,
+        contentClass:
+          'inset-0 top-0 left-0 size-full max-h-none max-w-none translate-none rounded-none border-none shadow-none sm:max-w-none',
+        onClose: () => void markTutorialCompleted()
+      }
+    })
+  }
 
   /**
    * `defer` is ineligibility a later boot can lift — the tour flag, the
@@ -66,7 +99,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     }
 
     if (decision === 'getting-started') {
-      gettingStartedVisible.value = true
+      showGettingStarted()
       return
     }
 
@@ -108,13 +141,12 @@ export const useFirstRunEntry = createSharedComposable(() => {
     }
   }
 
-  async function dismissGettingStarted() {
-    gettingStartedVisible.value = false
-    await markTutorialCompleted()
+  function dismissGettingStarted() {
+    dialogStore.closeDialog({ key: GETTING_STARTED_DIALOG_KEY })
   }
 
   return {
-    gettingStartedVisible: readonly(gettingStartedVisible),
+    gettingStartedVisible,
     handleStartupOutcome,
     handleUrlWorkflow,
     dismissGettingStarted

@@ -9,11 +9,11 @@
     >
       <DialogPortal>
         <DialogOverlay
-          v-reka-z-index
+          v-reka-z-index="item.priority"
           :class="item.dialogComponentProps.overlayClass"
         />
         <DialogContent
-          v-reka-z-index
+          v-reka-z-index="item.priority"
           :size="item.dialogComponentProps.size ?? 'md'"
           :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
@@ -163,8 +163,14 @@ function onRekaOpenChange(key: string, open: boolean) {
 // or footer button). Dialog content that marks an input with `autofocus` (e.g.
 // the keybinding capture input, the prompt input) relied on PrimeVue honoring
 // that attribute, so honor it here: focus the autofocus target and cancel
-// Reka's default auto-focus when one is present.
+// Reka's default auto-focus when one is present. A dialog that mounts below
+// the top of the stack (a backdrop-tier takeover under an open dialog) must
+// not pull focus from the active dialog at all.
 function onRekaOpenAutoFocus(event: Event, key: string) {
+  if (dialogStore.activeKey !== key) {
+    event.preventDefault()
+    return
+  }
   const content = document.querySelector<HTMLElement>(
     `[aria-labelledby="${CSS.escape(key)}"]`
   )
