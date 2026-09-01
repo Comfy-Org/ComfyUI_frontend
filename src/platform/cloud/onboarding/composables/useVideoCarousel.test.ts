@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 import type { EffectScope } from 'vue'
 
@@ -42,15 +42,8 @@ async function mountCarousel(slideCount: number) {
   return { carousel, videos, rootEl }
 }
 
-beforeEach(() => {
-  vi.useFakeTimers()
-})
-
 afterEach(() => {
   scope?.stop()
-  vi.useRealTimers()
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
 })
 
 describe('useVideoCarousel', () => {

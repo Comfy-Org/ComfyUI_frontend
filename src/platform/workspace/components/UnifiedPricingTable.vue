@@ -165,7 +165,7 @@
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex flex-row items-center gap-2">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -243,7 +243,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex flex-row items-center gap-2">
                   <i
-                    class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
                   />
                   <span
@@ -417,10 +417,11 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  hasActivePaidPlan,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -433,7 +434,9 @@ import {
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -465,7 +468,24 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { permissions } = useWorkspaceUI()
+const capabilities = useBillingCapabilities()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
+
+const canSubscribeSelfServe = computed(() =>
+  isCloud
+    ? capabilities.canSubscribeSelfServe.value
+    : permissions.value.canManageSubscription
+)
+const canChangeSeats = computed(() =>
+  isCloud
+    ? capabilities.canChangeSeats.value
+    : permissions.value.canManageSubscription
+)
+const canDowngradeToPersonal = computed(() =>
+  isCloud
+    ? capabilities.canDowngradeToPersonal.value
+    : permissions.value.canDowngradeToPersonal
+)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -475,8 +495,8 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
-const PRICING_URL = 'https://www.comfy.org/pricing'
+const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -494,7 +514,7 @@ interface PlanScopeOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -613,7 +633,7 @@ const {
 } = useBillingContext()
 
 const canSelectPersonalPlan = computed(
-  () => !isTeamPlan.value || permissions.value.canDowngradeToPersonal
+  () => !isTeamPlan.value || canDowngradeToPersonal.value
 )
 
 const planScopeOptions = computed(() =>
@@ -741,14 +761,14 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-const isTeamButtonDisabled = computed(
-  () =>
-    !permissions.value.canManageSubscription ||
-    isLoading ||
-    (isTeamSubscribed.value &&
-      isTeamCurrentPlanSelected.value &&
-      !isCancelled.value)
-)
+const isTeamButtonDisabled = computed(() => {
+  if (isLoading) return true
+  if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
+  if (isTeamCurrentPlanSelected.value) {
+    return !isCancelled.value || !canReactivatePlan.value
+  }
+  return !canChangeSeats.value
+})
 
 // A subscriber moving off their current plan is a prorated change rather than a
 // fresh subscribe; re-subscribe and the locked current plan exit before the
@@ -779,10 +799,12 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
+const currentAccountTier = computed(() =>
+  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
+)
+
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier && !isEnded.value
-    ? TIER_TO_KEY[subscription.value.tier]
-    : null
+  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
 )
 
 const isYearlySubscription = computed(
@@ -815,11 +837,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       : t('subscription.currentPlan')
   }
 
-  // Free tier is not a paid plan to "change" from — those users subscribe.
-  const hasActivePaidPlan =
-    currentTierKey.value !== null && currentTierKey.value !== 'free'
-
-  return hasActivePaidPlan
+  return hasActivePaidPlan(currentAccountTier.value)
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }
@@ -834,18 +852,19 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const isButtonDisabled = (tier: PricingTierConfig): boolean => {
-  if (
-    isLoading ||
-    !permissions.value.canManageSubscription ||
-    !canSelectPersonalPlan.value
-  )
-    return true
-  if (isCurrentPlan(tier.key)) {
-    return !isCancelled.value
+const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
+  if (!canSelectPersonalPlan.value) return false
+  if (isTeamPlan.value) return canDowngradeToPersonal.value
+  if (isCurrentPlan(tierKey)) {
+    return isCancelled.value && canReactivatePlan.value
   }
-  return false
+  return hasActivePaidPlan(currentAccountTier.value)
+    ? canChangeSeats.value
+    : canSubscribeSelfServe.value
 }
+
+const isButtonDisabled = (tier: PricingTierConfig): boolean =>
+  isLoading || !canUsePersonalPlanAction(tier.key)
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -866,12 +885,7 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (
-    isLoading ||
-    !permissions.value.canManageSubscription ||
-    !canSelectPersonalPlan.value
-  )
-    return
+  if (isLoading || !canUsePersonalPlanAction(tierKey)) return
   if (isCurrentPlan(tierKey)) {
     if (isCancelled.value) {
       emit('resubscribe')

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
 
@@ -109,9 +107,6 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null
     mockStore.rgbCanvas = null
@@ -119,10 +114,6 @@ describe('usePanAndZoom', () => {
     mockStore.brushVisible = true
     mockStore.displayZoomRatio = 1
     mockStore.resetZoomTrigger = 0
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('initializeCanvasPanZoom', () => {
@@ -202,11 +193,14 @@ describe('usePanAndZoom', () => {
       expect(mockStore.setPanOffset).toHaveBeenCalled()
     })
 
-    it('throws if move called without start', async () => {
+    it('ignores move called without start', async () => {
       const pz = usePanAndZoom()
-      await expect(
-        pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
-      ).rejects.toThrow('mouseDownPoint is null')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
+
+      expect(consoleSpy).toHaveBeenCalledWith('mouseDownPoint is null')
+      expect(mockStore.setPanOffset).not.toHaveBeenCalled()
     })
   })
 
@@ -353,20 +347,14 @@ describe('usePanAndZoom', () => {
     })
 
     it('triggers undo on two-finger double-tap', () => {
-      vi.useFakeTimers()
+      const pz = usePanAndZoom()
+      const touches = createTouchList({ x: 100, y: 200 }, { x: 300, y: 200 })
 
-      try {
-        const pz = usePanAndZoom()
-        const touches = createTouchList({ x: 100, y: 200 }, { x: 300, y: 200 })
+      pz.handleTouchStart(createTouchEvent(touches))
+      vi.advanceTimersByTime(100)
+      pz.handleTouchStart(createTouchEvent(touches))
 
-        pz.handleTouchStart(createTouchEvent(touches))
-        vi.advanceTimersByTime(100)
-        pz.handleTouchStart(createTouchEvent(touches))
-
-        expect(mockStore.canvasHistory.undo).toHaveBeenCalled()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(mockStore.canvasHistory.undo).toHaveBeenCalled()
     })
 
     it('single-touch move pans the canvas', async () => {

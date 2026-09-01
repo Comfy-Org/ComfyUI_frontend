@@ -112,9 +112,9 @@ export interface BillingState {
   canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
-  /** Coarse funding state (`billing_status`); legacy reports null. */
+  /** Coarse funding state (`billing_status`). */
   billingStatus: ComputedRef<BillingStatus | null>
-  /** Lifecycle state; legacy synthesizes it from active/cancelled flags. */
+  /** Subscription lifecycle state. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
@@ -137,6 +137,7 @@ export interface BillingContext extends BillingState, BillingActions {
   isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
   canRunWorkflows: ComputedRef<boolean>
+  showsSubscribeToRunPrompt: ComputedRef<boolean>
   /** @deprecated Use canAccessSubscriptionFeatures instead */
   isActiveSubscription: ComputedRef<boolean>
 }

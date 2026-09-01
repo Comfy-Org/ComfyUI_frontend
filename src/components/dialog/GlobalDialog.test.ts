@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -33,10 +31,18 @@ vi.mock(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
+        quoteIsCurrent: ref(false),
+        savedPaymentMethods: ref([]),
+        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        authenticationError: ref(null),
+        canRetryAuthentication: ref(false),
+        isAuthenticating: ref(false),
+        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -47,6 +53,11 @@ vi.mock(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
+        handleSubscriptionPayment: vi.fn(),
+        handleTeamSubscriptionPayment: vi.fn(),
+        retryPaymentAuthentication: vi.fn(),
+        applyPromotionCode: vi.fn(),
+        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }
@@ -105,14 +116,6 @@ function mountDialog() {
 }
 
 describe('GlobalDialog renderer branching', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders the Reka branch when renderer is omitted (default)', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -177,14 +180,6 @@ describe('GlobalDialog renderer branching', () => {
 })
 
 describe('GlobalDialog Reka parity with PrimeVue', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -368,14 +363,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 })
 
 describe('GlobalDialog Reka overlay scrim', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders a backdrop scrim for modal Reka dialogs', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -490,14 +477,6 @@ describe('GlobalDialog Reka overlay scrim', () => {
 })
 
 describe('GlobalDialog Reka focus-outside binding', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   // Reka's DismissableLayer fires focus-outside off a real focus transition
   // (blur inside the layer, then focusin on the new target), so drive the
   // mounted binding by moving focus to a fresh element outside the dialog

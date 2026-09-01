@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -16,8 +16,6 @@ const nanFixturePath = path.resolve(
   __dirname,
   '__fixtures__/with_nan_metadata.avif'
 )
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('AVIF metadata', () => {
   it('extracts workflow and prompt from EXIF data in ISOBMFF boxes', async () => {

@@ -93,6 +93,7 @@ export type RemoteConfig = {
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
   comfy_api_base_url?: string
+  comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
   firebase_env?: 'dev'
@@ -122,8 +123,8 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
-  consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
+  legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string

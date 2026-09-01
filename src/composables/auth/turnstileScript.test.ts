@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TurnstileApi } from '@/composables/auth/turnstileScript'
 
@@ -77,11 +77,6 @@ describe('loadTurnstile', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
-  })
-
   it('resolves immediately with the existing global and appends no script', async () => {
     const api = fakeApi()
     window.turnstile = api
@@ -118,7 +113,6 @@ describe('loadTurnstile', () => {
   })
 
   it('polls for the global when it is published asynchronously after the load event', async () => {
-    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
@@ -134,7 +128,6 @@ describe('loadTurnstile', () => {
   })
 
   it('rejects and clears the cache when the global never appears after load (poll timeout)', async () => {
-    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
@@ -173,7 +166,6 @@ describe('loadTurnstile', () => {
   })
 
   it('rejects, removes the script, and clears the cache on timeout', async () => {
-    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
@@ -184,7 +176,6 @@ describe('loadTurnstile', () => {
   })
 
   it('reuses a pre-existing script tag and resolves promptly once the global appears (no duplicate, tag left in place)', async () => {
-    vi.useFakeTimers()
     const existing = new FakeScript()
     existing.src = TURNSTILE_SRC
     inserted.push(existing)
@@ -208,7 +199,6 @@ describe('loadTurnstile', () => {
   })
 
   it('reuses a pre-existing script tag and times out (clearing the cache) if the global never appears, leaving the tag in place', async () => {
-    vi.useFakeTimers()
     const existing = new FakeScript()
     existing.src = TURNSTILE_SRC
     inserted.push(existing)

@@ -157,7 +157,6 @@ let originalResizeObserver: typeof ResizeObserver | undefined
 
 describe('MaskEditorContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMockStore()
     mockMaskEditorLoader.loadFromNode.mockResolvedValue(undefined)
     mockImageLoader.loadImages.mockResolvedValue({ width: 100, height: 100 })

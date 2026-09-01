@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -26,7 +26,9 @@ function createMember(
   }
 }
 
-function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
+function createInvite(
+  overrides: Partial<WorkspacePendingInvite> = {}
+): WorkspacePendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',
@@ -270,7 +272,9 @@ const {
   mockIsTeamPlan,
   mockSubscriptionStatus,
   mockWorkspaceRole,
-  mockSubscription
+  mockSubscription,
+  mockCanChangeSeats,
+  mockCanInviteMembers
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
@@ -280,7 +284,7 @@ const {
       type: 'personal'
     }),
     mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<PendingInvite[]>([]),
+    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockMaxSeats: ref<number | null>(73),
     mockOccupiedSeats: ref<number | null>(0),
@@ -292,8 +296,7 @@ const {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
@@ -313,6 +316,8 @@ const {
     mockIsTeamPlan: ref(true),
     mockSubscriptionStatus: ref<string | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
+    mockCanChangeSeats: ref(true),
+    mockCanInviteMembers: ref(true),
     mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
       tier: 'PRO',
       isCancelled: false
@@ -351,6 +356,15 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: mockPermissions,
     uiConfig: mockUiConfig,
     workspaceRole: mockWorkspaceRole
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canChangeSeats: mockCanChangeSeats,
+    canInviteMembers: mockCanInviteMembers
   })
 }))
 
@@ -423,7 +437,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 describe('useMembersPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockBillingControlEnabled.value = true
     mockActiveWorkspace.value = { type: 'personal' }
     mockMembers.value = []
@@ -436,6 +449,8 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
+    mockCanChangeSeats.value = true
+    mockCanInviteMembers.value = true
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -445,8 +460,7 @@ describe('useMembersPanel', () => {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }
     mockUiConfig.value = {
       showMembersList: true,
@@ -800,6 +814,7 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
+      mockCanChangeSeats.value = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -987,8 +1002,36 @@ describe('useMembersPanel', () => {
 
     it('hides the invite button for workspace members', async () => {
       mockWorkspaceRole.value = 'member'
+      mockCanInviteMembers.value = false
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(false)
+    })
+
+    it('hides invite actions when the server denies invitations', async () => {
+      mockCanInviteMembers.value = false
+      const panel = await setup()
+
+      expect(panel.showInviteButton.value).toBe(false)
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      panel.handleRevokeInvite(createInvite({ id: 'inv-1' }))
+      panel.handleInviteMember()
+
+      expect(mockResendInvite).not.toHaveBeenCalled()
+      expect(mockShowRevokeInviteDialog).not.toHaveBeenCalled()
+      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+    })
+
+    it('hides member management when the server denies seat changes', async () => {
+      mockCanChangeSeats.value = false
+      const panel = await setup()
+      const member = createMember({ id: 'member-1' })
+
+      expect(panel.permissions.value.canManageMembers).toBe(false)
+      panel.handleRemoveMember(member)
+      panel.handleChangeRole(member, 'owner')
+
+      expect(mockShowRemoveMemberDialog).not.toHaveBeenCalled()
+      expect(mockShowChangeMemberRoleDialog).not.toHaveBeenCalled()
     })
 
     it('keeps invite disabled while billing is initializing', async () => {

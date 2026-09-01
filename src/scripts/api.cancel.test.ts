@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -16,10 +16,6 @@ describe('api jobs-namespace cancel', () => {
 
   beforeEach(() => {
     fetchApiSpy = vi.spyOn(api, 'fetchApi').mockResolvedValue(okResponse())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('cancelJob (single)', () => {

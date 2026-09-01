@@ -6,6 +6,7 @@
  * Jobs API provides a memory-optimized alternative to history API.
  */
 
+import { zJobEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { resultItemType, zTaskOutput } from '@/schemas/apiSchema'
@@ -62,7 +63,13 @@ const zRawJobListItem = z
     execution_start_time: z.number().nullable().optional(),
     execution_end_time: z.number().nullable().optional(),
     preview_output: zPreviewOutput.nullable().optional(),
-    outputs_count: z.number().nullable().optional(),
+    // Sourced from the generated `@comfyorg/ingest-types` JobEntry schema
+    // (outputs_count/previewable_outputs_count), widened to nullable since
+    // local ComfyUI's /api/jobs sends explicit nulls where Cloud omits.
+    // .int() inherited from zJobEntry; intentionally stricter than the previous z.number()
+    outputs_count: zJobEntry.shape.outputs_count.nullable(),
+    previewable_outputs_count:
+      zJobEntry.shape.previewable_outputs_count.nullable(),
     execution_error: zExecutionError.nullable().optional(),
     workflow_id: z.string().nullable().optional(),
     priority: z.number().optional()

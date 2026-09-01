@@ -5,10 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
-import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
   mockCreateInvite,
+  mockFetchPendingInvites,
   mockCloseDialog,
   mockToastAdd,
   mockTrackInviteSent,
@@ -18,6 +19,7 @@ const {
   mockOccupiedSeats
 } = vi.hoisted(() => ({
   mockCreateInvite: vi.fn(),
+  mockFetchPendingInvites: vi.fn(),
   mockCloseDialog: vi.fn(),
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
@@ -37,7 +39,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite
+    createInvite: mockCreateInvite,
+    fetchPendingInvites: mockFetchPendingInvites,
+    pendingInvites: []
   })
 }))
 
@@ -68,7 +72,7 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function pendingInviteFor(email: string): PendingInvite {
+function pendingInviteFor(email: string): WorkspacePendingInvite {
   return {
     id: `inv-${email}`,
     email,
@@ -95,7 +99,7 @@ function inviteButton() {
 
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockFetchPendingInvites.mockResolvedValue([])
     mockFetchStatus.mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
@@ -170,7 +174,11 @@ describe('InviteMemberDialogContent', () => {
     await user.type(emailInput(), 'a@b.com b@c.com ')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
-    expect(screen.queryByText('b@c.com')).not.toBeInTheDocument()
+    expect(screen.getByText('b@c.com')).toBeInTheDocument()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).toBeInTheDocument()
+    expect(inviteButton()).toBeDisabled()
   })
 
   it('flags invalid emails and keeps Invite disabled', async () => {

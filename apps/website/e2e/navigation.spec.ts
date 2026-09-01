@@ -4,8 +4,8 @@ import { test } from './fixtures/blockExternalMedia'
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
-const minimaxRoute = '/minimax'
-const minimaxRouteZh = '/zh-CN/minimax'
+const minimaxRoute = '/minimax-h3'
+const minimaxRouteZh = '/zh-CN/minimax-h3'
 
 const TOP_LEVEL_LABELS = [
   'Products',

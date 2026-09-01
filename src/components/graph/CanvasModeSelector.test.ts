@@ -1,19 +1,19 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
 
 const mockExecute = vi.fn()
-const mockGetCommand = vi.fn().mockReturnValue({
+const mockGetCommand = vi.fn(() => ({
   keybinding: {
     combo: {
       getKeySequences: () => ['V']
     }
   }
-})
-const mockFormatKeySequence = vi.fn().mockReturnValue('V')
+}))
+const mockFormatKeySequence = vi.fn(() => 'V')
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
@@ -65,10 +65,6 @@ function renderComponent() {
 }
 
 describe('CanvasModeSelector', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should render menu with menuitemradio roles and aria-checked', () => {
     renderComponent()
 

@@ -112,15 +112,12 @@ describe('frameNode', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     setReducedMotion(false)
     canvasRect = new DOMRect(0, 0, VIEWPORT.width, VIEWPORT.height)
   })
 
   afterEach(() => {
     endRunningSteps()
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
     camera.animateToBounds.mockClear()
     camera.ds.fitToBounds.mockClear()
     camera.ds.offset = [0, 0]
