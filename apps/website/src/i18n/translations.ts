@@ -7595,31 +7595,30 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
-  'platform.serverlessDeploy.1.title': {
-    en: 'Ship in minutes',
-    'zh-CN': '几分钟内上线'
+  'platform.howItWorks.1.title': {
+    en: 'Deploy your workflow as an API',
+    'zh-CN': '把工作流部署为 API'
   },
-  'platform.serverlessDeploy.1.description': {
-    en: 'Start with an existing ComfyUI installation or a single workflow.',
-    'zh-CN': '从现有的 ComfyUI 安装或单个工作流开始。'
-  },
-  'platform.serverlessDeploy.2.title': {
-    en: 'Package the environment',
-    'zh-CN': '打包环境'
-  },
-  'platform.serverlessDeploy.2.description': {
-    en: 'Builder auto-resolves Python dependencies and packages custom nodes and models into one build.',
+  'platform.howItWorks.1.description': {
+    en: 'Take your workflow JSON and deploy it as an API. Custom nodes, models, and Python dependencies are automatically configured for you by Builder.',
     'zh-CN':
-      'Builder 自动解析 Python 依赖，并将自定义节点和模型打包到一个构建中。'
+      '拿起你的工作流 JSON，直接部署为 API。自定义节点、模型和 Python 依赖都由 Builder 自动配置。'
   },
-  'platform.serverlessDeploy.3.title': {
-    en: 'Deploy with confidence',
-    'zh-CN': '放心部署'
+  'platform.howItWorks.2.title': {
+    en: 'Share it with your team',
+    'zh-CN': '与团队共享'
   },
-  'platform.serverlessDeploy.3.description': {
-    en: 'Custom nodes are installed correctly, models are packaged correctly, and the workflow runs in the environment you tested.',
-    'zh-CN':
-      '正确安装自定义节点、正确打包模型，并在经过测试的环境中运行工作流。'
+  'platform.howItWorks.2.description': {
+    en: 'Easily share the workflow with colleagues.',
+    'zh-CN': '轻松把工作流分享给同事。'
+  },
+  'platform.howItWorks.3.title': {
+    en: 'Use it anywhere',
+    'zh-CN': '在任何地方使用'
+  },
+  'platform.howItWorks.3.description': {
+    en: 'Use the API in your internal tool, application, website, workflow, and more.',
+    'zh-CN': '在内部工具、应用、网站、工作流等任何场景中调用这个 API。'
   },
   'platform.serverlessDeploy.tabInstall': {
     en: 'Start with your environment',

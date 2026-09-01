@@ -6,7 +6,7 @@ import { t } from '../../i18n/translations'
 import ServerlessHowItWorksSection from './ServerlessHowItWorksSection.vue'
 
 describe('ServerlessHowItWorksSection', () => {
-  it('shows the packaging and deployment steps', () => {
+  it('walks the three steps from workflow JSON to applications', () => {
     render(ServerlessHowItWorksSection, { props: { locale: 'en' } })
 
     expect(
@@ -14,12 +14,19 @@ describe('ServerlessHowItWorksSection', () => {
         name: t('platform.serverlessDeploy.heading', 'en')
       })
     ).toBeTruthy()
-    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    for (const step of [1, 2, 3] as const) {
+      expect(
+        screen.getByText(t(`platform.howItWorks.${step}.title`, 'en'))
+      ).toBeTruthy()
+    }
+  })
+
+  it('localizes the step copy for zh-CN', () => {
+    render(ServerlessHowItWorksSection, { props: { locale: 'zh-CN' } })
+
     expect(
-      screen.getByText(t('platform.serverlessDeploy.2.title', 'en'))
-    ).toBeTruthy()
-    expect(
-      screen.getByText(t('platform.serverlessDeploy.3.title', 'en'))
+      screen.getByText(t('platform.howItWorks.1.title', 'zh-CN'))
     ).toBeTruthy()
   })
 })
