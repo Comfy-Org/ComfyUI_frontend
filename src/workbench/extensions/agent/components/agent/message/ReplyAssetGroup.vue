@@ -8,11 +8,13 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { generateModelThumbnail } from '@/components/load3d/modelThumbnail'
 import {
   findOutputAsset,
   findServerPreviewUrl,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -70,9 +72,12 @@ const galleryIndex = ref(-1)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
+const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
+  for (const timeout of refreshTimeouts) clearTimeout(timeout)
+  refreshTimeouts.clear()
 })
 
 watch(
@@ -87,16 +92,23 @@ watch(
         modelThumbnails.value[url] = ''
         void findServerPreviewUrl(filename)
           .then(async (preview) => {
+            if (!mounted) return
             if (preview) {
-              if (mounted) modelThumbnails.value[url] = preview
+              modelThumbnails.value[url] = preview
               return
             }
-            const { generateModelThumbnail } =
-              await import('@/components/load3d/modelThumbnail')
+            if (!mounted) return
             const generated = await generateModelThumbnail(url, filename)
-            if (mounted && generated) modelThumbnails.value[url] = generated
+            if (!mounted) return
+            if (generated) modelThumbnails.value[url] = generated
+            else delete modelThumbnails.value[url]
           })
-          .catch(() => {})
+          .catch((error) => {
+            if (mounted) delete modelThumbnails.value[url]
+            reportError(error, {
+              errorType: 'agent_reply_asset_preview_failure'
+            })
+          })
       }
       if (!(url in assetNames.value)) {
         assetNames.value[url] = ''
@@ -119,14 +131,28 @@ const MediaLightbox = defineAsyncComponent(
 )
 
 function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
-  if (!isAssetPreviewSupported() || modelThumbnails.value[asset.url]) return
-  void findServerPreviewUrl(asset.filename).then((preview) => {
-    if (preview) {
-      modelThumbnails.value[asset.url] = preview
-    } else if (retry) {
-      setTimeout(() => refreshModelThumbnail(asset, false), 2000)
-    }
-  })
+  if (
+    !mounted ||
+    !isAssetPreviewSupported() ||
+    modelThumbnails.value[asset.url]
+  )
+    return
+  void findServerPreviewUrl(asset.filename)
+    .then((preview) => {
+      if (!mounted) return
+      if (preview) {
+        modelThumbnails.value[asset.url] = preview
+      } else if (retry) {
+        const timeout = setTimeout(() => {
+          refreshTimeouts.delete(timeout)
+          refreshModelThumbnail(asset, false)
+        }, 2000)
+        refreshTimeouts.add(timeout)
+      }
+    })
+    .catch((error) => {
+      reportError(error, { errorType: 'agent_reply_asset_preview_failure' })
+    })
 }
 
 function inspect(asset: ReplyAsset): void {
