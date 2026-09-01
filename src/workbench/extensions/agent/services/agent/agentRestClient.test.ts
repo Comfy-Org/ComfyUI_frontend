@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
@@ -69,7 +71,11 @@ describe('agentRestClient route + method', () => {
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
-    const page = (offset: number, data: unknown[], hasMore: boolean) =>
+    const page = (
+      offset: number,
+      data: CloudWorkflowEntry[],
+      hasMore: boolean
+    ) =>
       jsonResponse(200, {
         data,
         pagination: {
