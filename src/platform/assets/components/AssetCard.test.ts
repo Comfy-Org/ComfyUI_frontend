@@ -1,6 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
@@ -49,10 +50,10 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  return {
+  return fromPartial({
     id: 'asset-1',
     name: HASH,
-    asset_hash: HASH,
+    hash: HASH,
     tags: ['input'],
     preview_url: '/preview.png',
     secondaryText: '',
@@ -61,11 +62,10 @@ function createDisplayAsset(
     user_metadata: {},
     metadata: { filename: ORIGINAL_FILENAME },
     ...overrides
-  }
+  })
 }
 
 function renderCard(asset: AssetDisplayItem) {
-  setActivePinia(createPinia())
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -92,12 +92,8 @@ function renderCard(asset: AssetDisplayItem) {
 }
 
 describe('AssetCard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('FE-228: filename rendering', () => {
-    it('renders the human-readable filename instead of asset_hash when asset.name equals asset_hash', () => {
+    it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()
 
       renderCard(asset)
@@ -130,7 +126,7 @@ describe('AssetCard', () => {
       const asset = createDisplayAsset({
         id: 'model-1',
         name: MODEL_FILENAME,
-        asset_hash: undefined,
+        hash: undefined,
         tags: ['models', 'loras'],
         user_metadata: { name: CURATED_NAME },
         metadata: { filename: MODEL_FILENAME }
@@ -146,7 +142,7 @@ describe('AssetCard', () => {
     it('ignores user_metadata.name that duplicates the hash and falls back to metadata.filename', () => {
       const asset = createDisplayAsset({
         name: HASH,
-        asset_hash: HASH,
+        hash: HASH,
         user_metadata: { name: HASH },
         metadata: { filename: ORIGINAL_FILENAME }
       })

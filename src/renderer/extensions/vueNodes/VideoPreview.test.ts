@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -40,10 +40,6 @@ describe('VideoPreview', () => {
       '/api/view?filename=test2.mp4&type=output'
     ]
   }
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
 
   function renderVideoPreview(
     props: Partial<ComponentProps<typeof VideoPreview>> = {}

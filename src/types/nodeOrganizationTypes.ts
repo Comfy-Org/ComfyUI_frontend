@@ -47,15 +47,15 @@ export interface NodeOrganizationOptions {
 
 export type NodeCategoryId =
   | 'blueprints'
-  | 'partnerNodes'
   | 'comfyNodes'
   | 'extensions'
+  | 'partnerNodes'
 
 export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
   blueprints: 'sideToolbar.nodeLibraryTab.sections.subgraphBlueprints',
-  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes',
   comfyNodes: 'sideToolbar.nodeLibraryTab.sections.comfyNodes',
-  extensions: 'sideToolbar.nodeLibraryTab.sections.extensions'
+  extensions: 'sideToolbar.nodeLibraryTab.sections.extensions',
+  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes'
 }
 
 export interface NodeSection {

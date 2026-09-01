@@ -66,6 +66,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -130,10 +131,12 @@ const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
-  const node = litegraphService.addNodeOnGraph(
-    nodeDef,
-    { pos: getNewNodeLocation() },
-    { ghost: useSearchBoxV2.value && followCursor, dragEvent }
+  const node = withNodeAddSource('search_modal', () =>
+    litegraphService.addNodeOnGraph(
+      nodeDef,
+      { pos: getNewNodeLocation() },
+      { ghost: useSearchBoxV2.value && followCursor, dragEvent }
+    )
   )
   if (!node) return
 
@@ -235,11 +238,16 @@ function showContextMenu(e: CanvasPointerEvent) {
     canvas.canvas,
     'connect-new-default-node',
     (createEvent) => {
-      if (!(createEvent instanceof CustomEvent))
-        throw new Error('Invalid event')
+      if (!(createEvent instanceof CustomEvent)) {
+        console.error('Invalid event')
+        return
+      }
 
       const node: unknown = createEvent.detail?.node
-      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
+      if (!(node instanceof LGraphNode)) {
+        console.error('Invalid node')
+        return
+      }
 
       disconnectOnReset = false
       createEvent.preventDefault()

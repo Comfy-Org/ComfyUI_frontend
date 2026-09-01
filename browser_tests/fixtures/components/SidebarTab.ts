@@ -4,7 +4,7 @@ import { expect } from '@playwright/test'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-class SidebarTab {
+export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
 
@@ -12,9 +12,9 @@ class SidebarTab {
     public readonly page: Page,
     public readonly tabId: string
   ) {
-    this.tabButton = page.locator(`.${tabId}-tab-button`)
-    this.selectedTabButton = page.locator(
-      `.${tabId}-tab-button.side-bar-button-selected`
+    this.tabButton = page.getByTestId(TestIds.sidebar.tabButton(tabId))
+    this.selectedTabButton = this.tabButton.and(
+      page.locator('.side-bar-button-selected')
     )
   }
 
@@ -93,16 +93,18 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly searchInput: Locator
   public readonly sidebarContent: Locator
   public readonly allTab: Locator
-  public readonly blueprintsTab: Locator
+  public readonly essentialsTab: Locator
   public readonly sortButton: Locator
+  public readonly nodePreview: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
     this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
-    this.allTab = this.getTab('All')
-    this.blueprintsTab = this.getTab('Blueprints')
+    this.allTab = this.getTab('All nodes')
+    this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
+    this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }
 
   getTab(name: string) {
@@ -137,6 +139,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
   public readonly searchInput: Locator
+  public readonly refreshButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -145,6 +148,9 @@ export class WorkflowsSidebarTab extends SidebarTab {
       '.comfyui-workflows-open .p-tree-node-selected .node-label'
     )
     this.searchInput = this.root.getByRole('combobox').first()
+    this.refreshButton = this.root.getByTestId(
+      TestIds.sidebar.workflowsRefreshButton
+    )
   }
 
   async getOpenedWorkflowNames() {
@@ -248,6 +254,18 @@ export class ModelLibrarySidebarTab extends SidebarTab {
       .filter({ hasText: label })
       .first()
   }
+
+  /**
+   * A folder's own row (not the whole subtree). Required for nested folders:
+   * an ancestor `.p-tree-node`'s text contains its descendants' labels, so
+   * `getFolderByLabel` would match — and click — the ancestor instead.
+   */
+  getFolderRowByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node:not(.p-tree-node-leaf) > .p-tree-node-content')
+      .filter({ hasText: label })
+      .first()
+  }
 }
 
 type MediaFilterKind = 'image' | 'video' | 'audio' | '3d'
@@ -282,8 +300,11 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
   public readonly filterButton: Locator
+  public readonly filterSearchInput: Locator
 
-  // --- Filter menu checkboxes (cloud-only, shown inside filter popover) ---
+  // --- Filter menu (cloud-only) ---
+  public readonly mediaTypeFilterMenuItem: Locator
+  public readonly dateFilterMenuItem: Locator
   public readonly filterImageCheckbox: Locator
   public readonly filterVideoCheckbox: Locator
   public readonly filterAudioCheckbox: Locator
@@ -291,11 +312,15 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- View mode ---
   public readonly listViewOption: Locator
-  public readonly gridViewOption: Locator
+  public readonly gridSmallOption: Locator
+  public readonly gridLargeOption: Locator
+  public readonly gridItems: Locator
 
   // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
+  public readonly sortAToZ: Locator
+  public readonly sortZToA: Locator
   public readonly sortLongestFirst: Locator
   public readonly sortFastestFirst: Locator
 
@@ -316,6 +341,9 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
+  // --- Panel chrome ---
+  public readonly panelHeader: Locator
+
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -329,38 +357,49 @@ export class AssetsSidebarTab extends SidebarTab {
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
     this.filterButton = page.getByRole('button', { name: 'Filter by' })
-    this.filterImageCheckbox = page.getByRole('checkbox', { name: 'Image' })
-    this.filterVideoCheckbox = page.getByRole('checkbox', { name: 'Video' })
-    this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
-    this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
+    this.filterSearchInput = page.getByRole('textbox', { name: 'Filter by' })
+    this.mediaTypeFilterMenuItem = page.getByRole('menuitem', {
+      name: /Media type/
+    })
+    this.dateFilterMenuItem = page.getByRole('menuitem', { name: 'Date' })
+    this.filterImageCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Image'
+    })
+    this.filterVideoCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Video'
+    })
+    this.filterAudioCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Audio'
+    })
+    this.filter3DCheckbox = page.getByRole('menuitemcheckbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
-    this.gridViewOption = page.getByText('Grid view')
+    this.gridSmallOption = page.getByText('Grid (small)')
+    this.gridLargeOption = page.getByText('Grid (large)')
+    this.gridItems = page.locator('[data-virtual-grid-item]')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
+    this.sortAToZ = page.getByText('Name (A → Z)')
+    this.sortZToA = page.getByText('Name (Z → A)')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
     this.sortFastestFirst = page.getByText('Generation time (fastest first)')
-    this.assetCards = page
-      .getByRole('button')
-      .and(page.locator('[data-selected]'))
-    this.selectedCards = page.locator('[data-selected="true"]')
+    this.assetCards = page.locator(
+      '.sidebar-content-container [data-asset-id][data-selected]'
+    )
+    this.selectedCards = page.locator(
+      '.sidebar-content-container [data-asset-id][data-selected="true"]'
+    )
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
-    this.selectionFooter = page
-      .locator('.sidebar-content-container')
-      .locator('..')
-      .locator('[class*="h-18"]')
-    this.selectionCountButton = page.getByText(/Assets Selected: \d+/)
-    this.deselectAllButton = page.getByText('Deselect all')
-    this.deleteSelectedButton = page
-      .getByTestId('assets-delete-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
-      .first()
-    this.downloadSelectedButton = page
-      .getByTestId('assets-download-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
-      .first()
-    this.backToAssetsButton = page.getByText('Back to all assets')
+    this.selectionFooter = page.getByTestId('assets-selection-bar')
+    this.selectionCountButton = page.getByText(/\d+ selected/)
+    this.deselectAllButton = page.getByTestId('assets-deselect-selected')
+    this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
+    this.downloadSelectedButton = page.getByTestId('assets-download-selected')
+    this.backToAssetsButton = page.getByRole('button', {
+      name: 'Back to all assets'
+    })
+    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
@@ -371,8 +410,18 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   filterCheckbox(filter: MediaFilterKind | MediaFilterLabel) {
-    return this.page.getByRole('checkbox', {
+    return this.page.getByRole('menuitemcheckbox', {
       name: getMediaFilterLabel(filter)
+    })
+  }
+
+  dateFilterOption(label: string) {
+    return this.page.getByRole('menuitemradio', { name: label })
+  }
+
+  removeFilterButton(label: string) {
+    return this.page.getByRole('button', {
+      name: `Remove ${label} filter`
     })
   }
 
@@ -380,15 +429,24 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.assetCards.filter({ hasText: name })
   }
 
+  async getFirstGridItemWidth() {
+    return await this.gridItems.first().evaluate((element) => {
+      return element.getBoundingClientRect().width
+    })
+  }
+
   contextMenuItem(label: string) {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
-  override async open() {
+  override async open({ waitForAssets = true } = {}) {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
+    if (waitForAssets) {
+      await this.waitForAssets()
+    }
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
@@ -418,30 +476,54 @@ export class AssetsSidebarTab extends SidebarTab {
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
-    // Wait for popover content to render
-    await this.listViewOption
-      .or(this.gridViewOption)
-      .first()
-      .waitFor({ state: 'visible', timeout: 3000 })
+    await expect(
+      this.listViewOption
+        .or(this.gridSmallOption)
+        .or(this.gridLargeOption)
+        .first()
+    ).toBeVisible()
   }
 
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    await this.filterCheckbox('Image').waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.mediaTypeFilterMenuItem).toBeVisible()
+  }
+
+  async closeFilterMenu() {
+    for (let depth = 0; depth < 2; depth++) {
+      if ((await this.filterButton.getAttribute('aria-expanded')) !== 'true') {
+        return
+      }
+      await this.page.keyboard.press('Escape')
+    }
+    await expect(this.filterButton).toHaveAttribute('aria-expanded', 'false')
+  }
+
+  async openMediaTypeFilterMenu() {
+    if (await this.filterCheckbox('Image').isVisible()) {
+      return
+    }
+    await this.mediaTypeFilterMenuItem.click()
+    await expect(this.filterCheckbox('Image')).toBeVisible()
   }
 
   async toggleMediaTypeFilter(
     filter: MediaFilterKind | MediaFilterLabel
   ): Promise<void> {
+    await this.openMediaTypeFilterMenu()
     const checkbox = this.filterCheckbox(filter)
     const before = await checkbox.getAttribute('aria-checked')
     await checkbox.click()
     const expected = before === 'true' ? 'false' : 'true'
     await expect(checkbox).toHaveAttribute('aria-checked', expected)
+  }
+
+  async selectDateFilter(label: string): Promise<void> {
+    if (!(await this.dateFilterOption(label).isVisible())) {
+      await this.dateFilterMenuItem.click()
+    }
+    await this.dateFilterOption(label).click()
   }
 
   async getAssetCardOrder(): Promise<string[]> {

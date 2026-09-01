@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -52,15 +52,10 @@ function makeViewer(overrides: Record<string, unknown> = {}) {
 
 describe('load3dService', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     nodeMap.clear()
     const svc = useLoad3dService()
     for (const node of createdNodes) svc.removeViewer(node)
     createdNodes.clear()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
   })
 
   describe('singleton', () => {

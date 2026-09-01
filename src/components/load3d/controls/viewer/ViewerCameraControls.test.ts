@@ -7,42 +7,13 @@ import { createI18n } from 'vue-i18n'
 import ViewerCameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('primevue/select', () => ({
-  default: {
-    name: 'Select',
-    props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
-    emits: ['update:modelValue'],
-    template: `
-      <select
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
-      >
-        <option v-for="opt in options" :key="opt[optionValue]" :value="opt[optionValue]">
-          {{ opt[optionLabel] }}
-        </option>
-      </select>
-    `
-  }
-}))
+vi.mock('@/components/ui/select/Select.vue')
+vi.mock('@/components/ui/select/SelectContent.vue')
+vi.mock('@/components/ui/select/SelectItem.vue')
+vi.mock('@/components/ui/select/SelectTrigger.vue')
+vi.mock('@/components/ui/select/SelectValue.vue')
 
-vi.mock('primevue/slider', () => ({
-  default: {
-    name: 'Slider',
-    props: ['modelValue', 'min', 'max', 'step', 'ariaLabel'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        :value="modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        :aria-label="ariaLabel"
-        @input="$emit('update:modelValue', Number($event.target.value))"
-      />
-    `
-  }
-}))
+vi.mock('@/components/ui/slider/Slider.vue')
 
 const i18n = createI18n({
   legacy: false,

@@ -56,6 +56,7 @@ export const getCategoryIcon = (categoryId: string): string => {
  * Each entry can be a single color or [color1, color2] for gradient.
  */
 const PROVIDER_COLORS: Record<string, string | [string, string]> = {
+  anthropic: '#D97757',
   bfl: '#ffffff',
   bria: '#B6B6B6',
   elevenlabs: '#B6B6B6',

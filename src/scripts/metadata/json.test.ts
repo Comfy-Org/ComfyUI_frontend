@@ -1,11 +1,19 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import fs from 'fs'
+import path from 'path'
+import { describe, expect, it } from 'vitest'
 
 import {
+  EXPECTED_PROMPT_NAN_COERCED,
   mockFileReaderAbort,
   mockFileReaderError,
   mockFileReaderResult
 } from './__fixtures__/helpers'
 import { getDataFromJSON } from './json'
+
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.json'
+)
 
 function jsonFile(content: object): File {
   return new File([JSON.stringify(content)], 'test.json', {
@@ -41,6 +49,15 @@ describe('getDataFromJSON', () => {
     expect(result).toEqual({ templates })
   })
 
+  it('parses Python generated API prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath, 'utf-8')
+    const file = new File([bytes], 'nan.json', { type: 'application/json' })
+
+    const result = await getDataFromJSON(file)
+
+    expect(result).toEqual({ prompt: EXPECTED_PROMPT_NAN_COERCED })
+  })
+
   it('returns undefined for non-JSON content', async () => {
     const file = new File(['not valid json'], 'bad.json', {
       type: 'application/json'
@@ -52,10 +69,6 @@ describe('getDataFromJSON', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => {
-      vi.restoreAllMocks()
-    })
-
     it('resolves undefined when the FileReader fires error', async () => {
       mockFileReaderError('readAsText')
 

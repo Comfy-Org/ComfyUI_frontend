@@ -1,22 +1,36 @@
 import { mergeTests } from '@playwright/test'
 import type { Locator, Page, Request } from '@playwright/test'
-import type { JobsListResponse } from '@comfyorg/ingest-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
-import { createMockJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import {
+  createRouteMockJob,
+  jobsRouteFixture
+} from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 
 const TOTAL_MOCK_JOBS = 20
 const MAX_HISTORY_ITEMS_SETTING = 'Comfy.Queue.MaxHistoryItems'
-const overflowJobsListRoutePattern = '**/api/jobs?*'
+
+function createMockJobs(count: number): RawJobListItem[] {
+  const now = Date.now()
+  return Array.from({ length: count }, (_, i) =>
+    createRouteMockJob({
+      id: `job-${String(i + 1).padStart(3, '0')}`,
+      create_time: now - i * 60_000,
+      execution_start_time: now - i * 60_000,
+      execution_end_time: now - i * 60_000 + 5000
+    })
+  )
+}
 
 function isHistoryJobsRequest(url: string): boolean {
   if (!url.includes('/api/jobs')) return false
@@ -44,21 +58,16 @@ function getJobListResults(page: Page): Locator {
 test.describe('Queue settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Queue.MaxHistoryItems', () => {
     test.describe('limit query parameter', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.assets.mockOutputHistory(
-          createMockJobs(TOTAL_MOCK_JOBS)
-        )
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.assets.clearMocks()
-      })
-
       test('limit query parameter on /api/jobs reflects the setting', async ({
         comfyPage,
-        getWebSocket
+        getWebSocket,
+        jobsRoutes
       }) => {
         const TARGET_LIMIT = 6
+        await jobsRoutes.mockJobsHistory(
+          createMockJobs(TOTAL_MOCK_JOBS),
+          TARGET_LIMIT
+        )
         await comfyPage.settings.setSetting(
           MAX_HISTORY_ITEMS_SETTING,
           TARGET_LIMIT
@@ -73,39 +82,14 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
 
     test('queue panel caps history items to the configured number', async ({
       comfyPage,
-      getWebSocket
+      getWebSocket,
+      jobsRoutes
     }) => {
-      // Add a mock route that returns all jobs regardless of the request's `limit` param
-      const overflowJobs = createMockJobs(TOTAL_MOCK_JOBS)
-      await comfyPage.page.route(
-        overflowJobsListRoutePattern,
-        async (route) => {
-          const url = new URL(route.request().url())
-          if (!url.searchParams.get('status')?.includes('completed')) {
-            await route.continue()
-            return
-          }
-          const response = {
-            jobs: overflowJobs,
-            pagination: {
-              offset: 0,
-              limit: overflowJobs.length,
-              total: overflowJobs.length,
-              has_more: false
-            }
-          } satisfies {
-            jobs: unknown[]
-            pagination: JobsListResponse['pagination']
-          }
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify(response)
-          })
-        }
-      )
-
       const VISIBLE_LIMIT = 6
+      const overflowJobs = createMockJobs(TOTAL_MOCK_JOBS)
+      await jobsRoutes.mockJobsHistory(overflowJobs, VISIBLE_LIMIT, {
+        responseLimit: overflowJobs.length
+      })
       await comfyPage.settings.setSetting(
         MAX_HISTORY_ITEMS_SETTING,
         VISIBLE_LIMIT

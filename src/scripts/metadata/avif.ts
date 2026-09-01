@@ -1,3 +1,7 @@
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   type AvifIinfBox,
   type AvifIlocBox,
@@ -6,6 +10,9 @@ import {
   ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
+
+import { readFileAsArrayBuffer } from './readFile'
 
 const readNullTerminatedString = (
   dataView: DataView,
@@ -281,7 +288,10 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
       if (typeof value === 'string') {
         if (key === 'usercomment') {
           try {
-            const metadataJson = JSON.parse(value)
+            const metadataJson = parseJsonWithNonFinite<{
+              prompt?: ComfyApiWorkflow
+              workflow?: ComfyWorkflowJSON
+            }>(value)
             if (metadataJson.prompt) {
               metadata[ComfyMetadataTags.PROMPT] = metadataJson.prompt
             }
@@ -301,7 +311,9 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
               ComfyMetadataTags.WORKFLOW.toLowerCase()
           ) {
             try {
-              const jsonValue = JSON.parse(metadataValue)
+              const jsonValue = parseJsonWithNonFinite<
+                ComfyApiWorkflow | ComfyWorkflowJSON
+              >(metadataValue)
               metadata[metadataKey.toLowerCase() as keyof ComfyMetadata] =
                 jsonValue
             } catch (e) {
@@ -378,36 +390,24 @@ function parseExifData(exifData) {
   return ifdData
 }
 
-export function getFromAvifFile(file: File): Promise<Record<string, string>> {
-  return new Promise<Record<string, string>>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const buffer = event.target?.result as ArrayBuffer
-      if (!buffer) {
-        resolve({})
-        return
-      }
+export async function getFromAvifFile(
+  file: File
+): Promise<Record<string, string>> {
+  const buffer = await readFileAsArrayBuffer(file)
+  if (!buffer) return {}
 
-      try {
-        const comfyMetadata = parseAvifMetadata(buffer)
-        const result: Record<string, string> = {}
-        if (comfyMetadata.prompt) {
-          result.prompt = JSON.stringify(comfyMetadata.prompt)
-        }
-        if (comfyMetadata.workflow) {
-          result.workflow = JSON.stringify(comfyMetadata.workflow)
-        }
-        resolve(result)
-      } catch (e) {
-        console.error('Parser: Error parsing AVIF metadata:', e)
-        resolve({})
-      }
+  try {
+    const comfyMetadata = parseAvifMetadata(buffer)
+    const result: Record<string, string> = {}
+    if (comfyMetadata.prompt) {
+      result.prompt = JSON.stringify(comfyMetadata.prompt)
     }
-    reader.onerror = (err) => {
-      console.error('FileReader: Error reading AVIF file:', err)
-      resolve({})
+    if (comfyMetadata.workflow) {
+      result.workflow = JSON.stringify(comfyMetadata.workflow)
     }
-    reader.onabort = () => resolve({})
-    reader.readAsArrayBuffer(file)
-  })
+    return result
+  } catch (e) {
+    console.error('Parser: Error parsing AVIF metadata:', e)
+    return {}
+  }
 }

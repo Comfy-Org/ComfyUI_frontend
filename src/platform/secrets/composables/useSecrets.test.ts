@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
 import { useSecrets } from './useSecrets'
@@ -14,10 +14,12 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 const mockListSecrets = vi.fn()
+const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
 vi.mock('../api/secretsApi', () => ({
   listSecrets: () => mockListSecrets(),
+  listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
   SecretsApiError: class SecretsApiError extends Error {
     constructor(
@@ -45,10 +47,6 @@ function createMockSecret(
 }
 
 describe('useSecrets', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('fetchSecrets', () => {
     it('fetches and populates secrets list', async () => {
       const mockSecrets = [
@@ -131,6 +129,50 @@ describe('useSecrets', () => {
         summary: 'g.error',
         detail: 'Delete failed'
       })
+    })
+  })
+
+  describe('fetchProviders', () => {
+    it('populates availableProviders from the API', async () => {
+      mockListSecretProviders.mockResolvedValue([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      expect(availableProviders.value).toBeNull()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
+    })
+
+    it('distinguishes a server-returned empty allowlist from not-loaded', async () => {
+      mockListSecretProviders.mockResolvedValue([])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual([])
+    })
+
+    it('leaves availableProviders null on API failure', async () => {
+      const { SecretsApiError } = await import('../api/secretsApi')
+      mockListSecretProviders.mockRejectedValue(
+        new SecretsApiError('unavailable', 503)
+      )
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toBeNull()
+      expect(mockAdd).not.toHaveBeenCalled()
     })
   })
 

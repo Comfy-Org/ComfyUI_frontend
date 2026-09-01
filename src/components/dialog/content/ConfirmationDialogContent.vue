@@ -9,16 +9,14 @@
           {{ item }}
         </li>
       </ul>
-      <Message
+      <div
         v-if="hint"
-        class="mt-2"
-        icon="pi pi-info-circle"
-        severity="secondary"
-        size="small"
-        variant="simple"
+        role="status"
+        class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
       >
-        {{ hint }}
-      </Message>
+        <i class="pi pi-info-circle mt-0.5" aria-hidden="true" />
+        <span>{{ hint }}</span>
+      </div>
     </div>
     <div class="flex shrink-0 flex-wrap justify-end gap-4">
       <div
@@ -55,7 +53,7 @@
       </div>
 
       <Button
-        v-if="type !== 'info'"
+        v-if="type !== 'info' && type !== 'dirtyClose'"
         variant="secondary"
         autofocus
         @click="onCancel"
@@ -86,9 +84,9 @@
       <template v-else-if="type === 'dirtyClose'">
         <Button variant="secondary" @click="onDeny">
           <i class="pi pi-times" />
-          {{ $t('g.no') }}
+          {{ denyLabel ?? $t('g.no') }}
         </Button>
-        <Button @click="onConfirm">
+        <Button autofocus @click="onConfirm">
           <i class="pi pi-save" />
           {{ $t('g.save') }}
         </Button>
@@ -115,7 +113,6 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -131,6 +128,7 @@ const props = defineProps<{
   onConfirm: (value?: boolean) => void
   itemList?: string[]
   hint?: string
+  denyLabel?: string
 }>()
 
 const { t } = useI18n()

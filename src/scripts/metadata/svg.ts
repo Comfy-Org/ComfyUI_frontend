@@ -1,4 +1,5 @@
 import { type ComfyMetadata } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 export async function getSvgMetadata(file: File): Promise<ComfyMetadata> {
   const text = await file.text()
@@ -7,7 +8,7 @@ export async function getSvgMetadata(file: File): Promise<ComfyMetadata> {
 
   if (metadataMatch && metadataMatch[1]) {
     try {
-      return JSON.parse(metadataMatch[1].trim())
+      return parseJsonWithNonFinite<ComfyMetadata>(metadataMatch[1].trim())
     } catch (error) {
       console.error('Error parsing SVG metadata:', error)
       return {}

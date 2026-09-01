@@ -29,6 +29,8 @@
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
+  <TourOverlay v-if="graphReady" />
+  <FirstRunTour />
 </template>
 
 <script setup lang="ts">
@@ -49,6 +51,8 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -56,17 +60,19 @@ import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import { i18n, loadLocale } from '@/i18n'
+import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -109,7 +115,8 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const { isBuilderMode } = useAppMode()
+const graphReady = ref(false)
+const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {
@@ -127,9 +134,9 @@ watch(
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
     if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
+      document.documentElement.classList.remove(DARK_THEME_CLASS)
     } else {
-      document.body.classList.add(DARK_THEME_CLASS)
+      document.documentElement.classList.add(DARK_THEME_CLASS)
     }
     if (isDesktop) {
       electronAPI().changeTheme({
@@ -189,15 +196,17 @@ watchEffect(() => {
 
 watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
-  if (locale) {
-    // Load the locale dynamically if not already loaded
-    try {
-      await loadLocale(locale)
-      // Type assertion is safe here as loadLocale validates the locale exists
-      i18n.global.locale.value = locale as typeof i18n.global.locale.value
-    } catch (error) {
-      console.error(`Failed to switch to locale "${locale}":`, error)
+  if (!locale) return
+  try {
+    const resolved = await setActiveLocale(locale)
+    // Self-heal: a stored value from an older build (e.g. 'de') would otherwise
+    // leave the language dropdown — derived from SUPPORTED_LOCALE_OPTIONS —
+    // showing nothing selected until the user picks one manually.
+    if (resolved !== locale) {
+      await settingStore.set('Comfy.Locale', resolved)
     }
+  } catch (error) {
+    console.error(`Failed to switch to locale "${locale}":`, error)
   }
 })
 
@@ -248,11 +257,17 @@ const onExecutionSuccess = async () => {
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
+const refreshOnReconnect = useReconnectQueueRefresh()
+
+const handleReconnected = async () => {
+  onReconnected()
+  await refreshOnReconnect()
+}
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
 useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', onReconnected)
+useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()
@@ -284,6 +299,7 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
+  graphReady.value = true
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
@@ -340,6 +356,16 @@ const onGraphReady = () => {
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
+    // Shell layout snapshot, once per session (cloud only)
+    if (isCloud && telemetry) {
+      telemetry.trackShellLayout(
+        getShellLayoutSnapshot({
+          view_mode: mode.value,
+          is_app_mode: isAppMode.value
+        })
+      )
     }
 
     // Setting values now available after comfyApp.setup.

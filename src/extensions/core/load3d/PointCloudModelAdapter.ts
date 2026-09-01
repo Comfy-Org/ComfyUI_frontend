@@ -8,27 +8,30 @@ import { fetchModelData } from './ModelAdapter'
 import type {
   ModelAdapter,
   ModelAdapterCapabilities,
-  ModelLoadContext
+  ModelLoadContext,
+  ModelLoadResult
 } from './ModelAdapter'
 import type { MaterialMode } from './interfaces'
 import { FastPLYLoader } from './loader/FastPLYLoader'
 
-export function getPLYEngine(): string {
+function getPLYEngine(): string {
   return useSettingStore().get('Comfy.Load3D.PLYEngine') as string
+}
+
+const POINT_CLOUD_CAPABILITIES: ModelAdapterCapabilities = {
+  fitToViewer: true,
+  requiresMaterialRebuild: true,
+  gizmoTransform: false,
+  lighting: true,
+  exportable: true,
+  materialModes: ['original', 'pointCloud', 'normal', 'wireframe'],
+  fitTargetSize: 5
 }
 
 export class PointCloudModelAdapter implements ModelAdapter {
   readonly kind = 'pointCloud' as const
   readonly extensions = ['ply'] as const
-  readonly capabilities: ModelAdapterCapabilities = {
-    fitToViewer: true,
-    requiresMaterialRebuild: true,
-    gizmoTransform: false,
-    lighting: true,
-    exportable: true,
-    materialModes: ['original', 'pointCloud', 'normal', 'wireframe'],
-    fitTargetSize: 5
-  }
+  readonly capabilities = POINT_CLOUD_CAPABILITIES
 
   private readonly plyLoader = new PLYLoader()
   private readonly fastPlyLoader = new FastPLYLoader()
@@ -36,9 +39,10 @@ export class PointCloudModelAdapter implements ModelAdapter {
   async load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
-  ): Promise<THREE.Object3D | null> {
-    const arrayBuffer = await fetchModelData(path, filename)
+    filename: string,
+    fetchBytes?: () => Promise<ArrayBuffer>
+  ): Promise<ModelLoadResult | null> {
+    const arrayBuffer = await (fetchBytes?.() ?? fetchModelData(path, filename))
     const isASCII = isPLYAsciiFormat(arrayBuffer)
 
     const plyGeometry =
@@ -50,12 +54,18 @@ export class PointCloudModelAdapter implements ModelAdapter {
     plyGeometry.computeVertexNormals()
 
     const hasVertexColors = plyGeometry.attributes.color !== undefined
+    const hasFaces = (plyGeometry.index?.count ?? 0) > 0
 
-    if (ctx.materialMode === 'pointCloud') {
-      return buildPointsGroup(ctx, plyGeometry, hasVertexColors)
-    }
+    const object =
+      ctx.materialMode === 'pointCloud' || !hasFaces
+        ? buildPointsGroup(ctx, plyGeometry, hasVertexColors)
+        : buildMeshGroup(ctx, plyGeometry, hasVertexColors)
 
-    return buildMeshGroup(ctx, plyGeometry, hasVertexColors)
+    const capabilities = hasFaces
+      ? POINT_CLOUD_CAPABILITIES
+      : { ...POINT_CLOUD_CAPABILITIES, materialModes: ['pointCloud'] as const }
+
+    return { object, capabilities }
   }
 }
 

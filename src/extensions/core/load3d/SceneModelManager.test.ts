@@ -1,17 +1,13 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
+
+import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
 import type { EventManagerInterface } from './interfaces'
-
-function createMockRenderer(): THREE.WebGLRenderer {
-  return {
-    outputColorSpace: THREE.SRGBColorSpace,
-    dispose: vi.fn()
-  } as unknown as THREE.WebGLRenderer
-}
 
 function createMockEventManager(): EventManagerInterface {
   return {
@@ -29,7 +25,7 @@ function createManager(
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
-  const renderer = createMockRenderer()
+  const viewState = createRendererViewState()
   const eventManager = overrides.eventManager ?? createMockEventManager()
   const camera = new THREE.PerspectiveCamera()
   const getActiveCamera = () => camera
@@ -42,7 +38,7 @@ function createManager(
 
   const manager = new SceneModelManager(
     scene,
-    renderer,
+    viewState,
     eventManager,
     getActiveCamera,
     setupCamera,
@@ -53,7 +49,7 @@ function createManager(
   return {
     manager,
     scene,
-    renderer,
+    viewState,
     eventManager,
     camera,
     setupCamera,
@@ -66,7 +62,6 @@ function createManagerWithPose(opts: {
   pose: { size: THREE.Vector3; center: THREE.Vector3 } | null
 }) {
   const scene = new THREE.Scene()
-  const renderer = createMockRenderer()
   const eventManager = createMockEventManager()
   const camera = new THREE.PerspectiveCamera()
   const setupCamera = vi.fn()
@@ -78,7 +73,7 @@ function createManagerWithPose(opts: {
 
   const manager = new SceneModelManager(
     scene,
-    renderer,
+    createRendererViewState(),
     eventManager,
     () => camera,
     setupCamera,
@@ -211,20 +206,40 @@ describe('SceneModelManager', () => {
       expect(setupCamera).toHaveBeenCalled()
     })
 
-    it('does not skip materialMode when it differs from original', async () => {
+    it('reapplies non-original materialMode after snapshotting', async () => {
       const { manager } = createManager()
       const model = createMeshModel()
 
-      // setupModel checks materialMode !== 'original' and calls
-      // setMaterialMode, but the guard `mode === this.materialMode`
-      // causes it to no-op. Then setupModelMaterials resets to 'original'.
+      // setupModel calls setupModelMaterials first (which internally calls
+      // setMaterialMode('original') to reset), then reapplies the stored mode.
       manager.materialMode = 'wireframe'
       const spy = vi.spyOn(manager, 'setMaterialMode')
       await manager.setupModel(model)
 
-      // setMaterialMode is called with the stored mode and then 'original'
-      expect(spy).toHaveBeenCalledWith('wireframe')
       expect(spy).toHaveBeenCalledWith('original')
+      expect(spy).toHaveBeenCalledWith('wireframe')
+      // The final material mode visible on the mesh should be wireframe.
+      const mesh = model.children[0] as THREE.Mesh
+      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+    })
+
+    it('snapshots original materials before applying materialMode so restore is correct', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      const mesh = model.children[0] as THREE.Mesh
+      const originalMat = mesh.material
+
+      // Set a non-original mode before loading — this was the bug:
+      // originalMaterials would capture the wireframe material instead of the real one.
+      manager.materialMode = 'wireframe'
+      await manager.setupModel(model)
+
+      // The snapshot must hold the *pre-mutation* material.
+      expect(manager.originalMaterials.get(mesh)).toBe(originalMat)
+
+      // Restoring to 'original' must give back the true original, not wireframe.
+      manager.setMaterialMode('original')
+      expect(mesh.material).toBe(originalMat)
     })
 
     it('applies current up direction if not original', async () => {
@@ -335,6 +350,20 @@ describe('SceneModelManager', () => {
       expect(geoDispose).toHaveBeenCalled()
       expect(matDispose).toHaveBeenCalled()
     })
+
+    it('preserves SparkRenderer across model reloads', async () => {
+      const { manager, scene } = createManager()
+      const sparkRenderer = new SparkRenderer({
+        renderer: {} as THREE.WebGLRenderer
+      })
+      scene.add(sparkRenderer)
+
+      const model = createMeshModel()
+      await manager.setupModel(model)
+      manager.clearModel()
+
+      expect(scene.children).toContain(sparkRenderer)
+    })
   })
 
   describe('reset', () => {
@@ -439,7 +468,7 @@ describe('SceneModelManager', () => {
     })
 
     it('switches to depth material', async () => {
-      const { manager, renderer } = createManager()
+      const { manager, viewState } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
 
@@ -447,7 +476,7 @@ describe('SceneModelManager', () => {
 
       const mesh = model.children[0] as THREE.Mesh
       expect(mesh.material).toBeInstanceOf(THREE.MeshDepthMaterial)
-      expect(renderer.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
+      expect(viewState.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
     })
 
     it('restores original material when switching back', async () => {
@@ -478,16 +507,16 @@ describe('SceneModelManager', () => {
       expect((mesh.material as THREE.MeshStandardMaterial).map).toBe(texture)
     })
 
-    it('sets renderer color space to SRGB for non-depth modes', async () => {
-      const { manager, renderer } = createManager()
+    it('sets view color space to SRGB for non-depth modes', async () => {
+      const { manager, viewState } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
 
       manager.setMaterialMode('depth')
-      expect(renderer.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
+      expect(viewState.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
 
       manager.setMaterialMode('normal')
-      expect(renderer.outputColorSpace).toBe(THREE.SRGBColorSpace)
+      expect(viewState.outputColorSpace).toBe(THREE.SRGBColorSpace)
     })
 
     it('delegates to handlePLYModeSwitch for BufferGeometry original model', async () => {
@@ -676,6 +705,80 @@ describe('SceneModelManager', () => {
       manager.setShowSkeleton(true)
 
       expect(helper.visible).toBe(true)
+    })
+  })
+
+  describe('fitToViewer', () => {
+    it('does nothing when no current model', () => {
+      const { manager, setupCamera, setupGizmo } = createManager()
+
+      manager.fitToViewer()
+
+      expect(setupCamera).not.toHaveBeenCalled()
+      expect(setupGizmo).not.toHaveBeenCalled()
+    })
+
+    it('reapplies currentUpDirection after fitting', async () => {
+      const { manager, eventManager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('+z')
+      vi.mocked(eventManager.emitEvent).mockClear()
+
+      manager.fitToViewer()
+
+      // rotation.x should reflect +z direction (-PI/2) applied to the post-fit base (0,0,0)
+      expect(model.rotation.x).toBeCloseTo(-Math.PI / 2)
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'upDirectionChange',
+        '+z'
+      )
+    })
+
+    it('does not compound rotations when fitToViewer is called multiple times', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('-x')
+
+      manager.fitToViewer()
+      const rotationAfterFirst = model.rotation.z
+
+      manager.fitToViewer()
+      expect(model.rotation.z).toBeCloseTo(rotationAfterFirst)
+    })
+
+    it('leaves rotation at zero when currentUpDirection is original', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.fitToViewer()
+
+      expect(model.rotation.x).toBeCloseTo(0)
+      expect(model.rotation.y).toBeCloseTo(0)
+      expect(model.rotation.z).toBeCloseTo(0)
+    })
+
+    it('does not compound rotation when fitToViewer is called after manual rotation override', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      // Set an up direction, then manually override originalRotation to simulate
+      // a prior state where the base rotation was non-zero before fit
+      manager.setUpDirection('+x')
+      // Simulate that originalRotation was captured at a non-zero rotation
+      manager.originalRotation = new THREE.Euler(0.5, 0.3, 0.1)
+
+      manager.fitToViewer()
+
+      // After fit, the rotation should be correct for +x direction applied to (0,0,0) base
+      // Not compounded with the stale originalRotation
+      expect(model.rotation.x).toBeCloseTo(0)
+      expect(model.rotation.z).toBeCloseTo(-Math.PI / 2)
     })
   })
 

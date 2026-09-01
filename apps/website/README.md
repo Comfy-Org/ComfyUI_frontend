@@ -37,7 +37,7 @@ This repo's `.github/workflows/*.yaml` changes cannot be pushed by a
 GitHub App. A maintainer must apply the following edits **once**:
 
 **`.github/workflows/ci-website-build.yaml`** — pass the env into the
-build step and run the unit tests before it:
+build step:
 
 ```yaml
 jobs:
@@ -47,9 +47,6 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
-
-      - name: Run website unit tests
-        run: pnpm --filter @comfyorg/website test:unit
 
       - name: Build website
         env:
@@ -113,9 +110,53 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 The script exits non-zero on any non-fresh outcome so stale/empty
 snapshots can't be accidentally committed.
 
-## HubSpot contact form
+## Cloud nodes integration
 
-The contact page uses HubSpot's hosted form embed for the interest form:
+`/cloud/supported-nodes` (and `/zh-CN/`) lists custom-node packs preinstalled on Comfy Cloud, joined with public metadata from the [ComfyUI Custom Node Registry](https://registry.comfy.org) ([`api.comfy.org`](https://api.comfy.org)). See [`src/components/cloud-nodes/AGENTS.md`](src/components/cloud-nodes/AGENTS.md) for the build pipeline, source-file map, and key invariants.
+
+Build-time env var: `WEBSITE_CLOUD_API_KEY` (Cloud `/api/object_info` auth; the build falls back to the committed snapshot when unset). Must also be set in the Vercel project environment.
+
+### Production strictness
+
+`src/utils/cloudNodes.build.ts` throws when `fetchCloudNodesForBuild()` returns
+`{ status: 'stale' }` **and** `process.env.VERCEL_ENV === 'production'`. This
+prevents the production deploy from silently shipping an out-of-date snapshot
+when the Cloud API is unreachable or `WEBSITE_CLOUD_API_KEY` is missing. Preview
+and local builds continue to use the committed snapshot with a warning
+annotation.
+
+### Required GitHub Actions / Vercel secrets
+
+| Name                    | Where                                           | Purpose                                                                |
+| ----------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `WEBSITE_CLOUD_API_KEY` | GitHub Actions repo secret + Vercel project env | Auth for Cloud `/api/object_info`. Required for fresh production data. |
+
+The `Release: Website` workflow uses the GitHub Actions secret to regenerate
+`apps/website/src/data/cloud-nodes.snapshot.json` via
+`.github/actions/cloud-nodes-pull/action.yaml`. The Vercel environment value is
+read at build time by `vercel build` in `ci-vercel-website-preview.yaml`; the
+`deploy-production` job hard-fails before `vercel build --prod` if the secret
+is missing.
+
+### Refreshing the snapshot
+
+To update the committed snapshot manually (e.g. after onboarding new packs
+to Comfy Cloud):
+
+```bash
+WEBSITE_CLOUD_API_KEY=… \
+  pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot
+git commit apps/website/src/data/cloud-nodes.snapshot.json
+```
+
+The script exits non-zero on any non-fresh outcome so stale/empty snapshots
+can't be accidentally committed. Otherwise the `Release: Website` GitHub
+Actions workflow runs the same step on every manual dispatch and opens a PR
+with the refreshed snapshot.
+
+## HubSpot forms
+
+Pages that collect leads use HubSpot's hosted form embed:
 
 ```html
 <script
@@ -130,13 +171,19 @@ The contact page uses HubSpot's hosted form embed for the interest form:
 ></div>
 ```
 
-The localized `/zh-CN/contact` page uses the same portal and script with form
-ID `6885750c-02ef-4aa2-ba0d-213be9cccf93`.
+Every form lives under portal `244637579` in region `na2` and is addressed by
+form ID:
+
+| Page                                    | Form ID                                |
+| --------------------------------------- | -------------------------------------- |
+| `/contact`                              | `94e05eab-1373-47f7-ab5e-d84f9e6aa262` |
+| `/zh-CN/contact`                        | `6885750c-02ef-4aa2-ba0d-213be9cccf93` |
+| `/minimax/license/professional-request` | `40ef858c-374a-4958-8180-bfa54f0a67fb` |
 
 This keeps submission handling, validation, anti-spam updates, and field
 configuration in HubSpot. The local implementation in
-`src/components/contact/HubspotFormEmbed.vue` only loads the hosted script and
-renders the documented embed container.
+`src/components/common/HubspotFormEmbed.vue` takes the form ID as a prop, loads
+the hosted script once, and renders the documented embed container.
 
 ## Scripts
 
@@ -146,3 +193,4 @@ renders the documented embed container.
 - `pnpm test:unit` — Vitest unit tests
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
+- `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

@@ -22,6 +22,7 @@ Steps:
 - Explicit return types on exported functions
 - Use `es-toolkit` for utility functions, NOT lodash. Flag any new `import ... from 'lodash'` or `import ... from 'lodash/*'`
 - Never use `z.any()` in Zod schemas — use `z.unknown()` and narrow
+- Never hand-declare or duplicate server/API response types locally — flag any local interface/type that reimplements a type already generated from an OpenAPI spec (e.g. `@comfyorg/ingest-types`, `@comfyorg/registry-types` in `packages/`) instead of importing it. This caused real bugs in PR #14771 (see `docs/guidance/typescript.md`)
 
 ### Vue (if applicable)
 
