@@ -8,6 +8,7 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -487,10 +488,14 @@ export class ChangeTracker {
   }
 
   async undo() {
+    // Undo/redo mutates the graph; the canvas is a picking surface while agent node-selection mode is on.
+    if (isSelectOnly(app.canvas)) return
     await this.updateState(this.undoQueue, this.redoQueue)
   }
 
   async redo() {
+    // Undo/redo mutates the graph; the canvas is a picking surface while agent node-selection mode is on.
+    if (isSelectOnly(app.canvas)) return
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 

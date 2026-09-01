@@ -124,7 +124,8 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/litegraphUtil')>()),
   createNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn(),
@@ -2041,6 +2042,21 @@ describe('ComfyApp', () => {
   })
 
   describe('handleFile', () => {
+    it('does not paste legacy templates while the canvas is picking-only', () => {
+      const pasteFromClipboard = vi.fn()
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: true,
+        pasteFromClipboard
+      } as unknown as LGraphCanvas
+
+      app.loadTemplateData({
+        templates: [{ data: JSON.stringify({ reroutes: [] }) }]
+      })
+
+      expect(pasteFromClipboard).not.toHaveBeenCalled()
+    })
+
     it('should handle image files by creating LoadImage node', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
 
@@ -2343,6 +2359,53 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    it('ignores dropped files while the canvas is picking-only', async () => {
+      const adjustMouseEvent = vi.fn()
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: true,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      const event = new DragEvent('drop', { cancelable: true })
+      document.dispatchEvent(event)
+      await Promise.resolve()
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(adjustMouseEvent).not.toHaveBeenCalled()
+      expect(vi.mocked(extractFilesFromDragEvent)).not.toHaveBeenCalled()
+    })
+
+    it('ignores extracted files when the target canvas is replaced', async () => {
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: false,
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      } as unknown as LGraphCanvas
+      let finishExtraction: (files: File[]) => void = () => {}
+      vi.mocked(extractFilesFromDragEvent).mockReturnValue(
+        new Promise((resolve) => {
+          finishExtraction = resolve
+        })
+      )
+      const handleFile = vi
+        .spyOn(app, 'handleFile')
+        .mockResolvedValue(undefined)
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+      await vi.waitFor(() =>
+        expect(extractFilesFromDragEvent).toHaveBeenCalled()
+      )
+      app.canvas = { ...mockCanvas } as unknown as LGraphCanvas
+      finishExtraction([createTestFile('workflow.json', 'application/json')])
+      await Promise.resolve()
+
+      expect(handleFile).not.toHaveBeenCalled()
+    })
+
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {

@@ -20,10 +20,21 @@ const delta = (id: string, text: string): AgentChatEvent =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th' }
   })
-const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
+const toolCall = (
+  id: string,
+  name: string,
+  status: 'running' | 'success' | 'error',
+  callId = `call-${name}`
+): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
-    data: { tool_name: name, status, args: [], message_id: id, thread_id: 'th' }
+    data: {
+      tool_call_id: callId,
+      tool_name: name,
+      status,
+      message_id: id,
+      thread_id: 'th'
+    }
   })
 const done = (id: string): AgentChatEvent =>
   chat({
@@ -201,7 +212,9 @@ describe('useAgentConversationStore', () => {
   it('folds a tool_call into the active turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'ok'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    expect(store.messages[0].parts).toHaveLength(1)
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
       name: 'add_node',
