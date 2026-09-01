@@ -15,6 +15,7 @@ const bridgeState = vi.hoisted(() => {
     subscribe = vi.fn((workflowId: string) => {
       if (!transport.up) return
       this.subscribedWorkflowId = workflowId
+      this.lastSequence = 0
     })
 
     unsubscribe = vi.fn(() => {
@@ -25,7 +26,7 @@ const bridgeState = vi.hoisted(() => {
     reconcile = vi.fn()
     destroy = vi.fn()
     subscribedWorkflowId: string | null = null
-    lastSequence = 41
+    lastSequence = 0
     follower = {
       updatesApplied: 0,
       doc: {
@@ -216,7 +217,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
   it('still accepts a late workflow A result by op_id while workflow B is active', async () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
+    bridge().lastSequence = 41
     enqueue([deleteNode('a-inflight')])
+    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
     enqueue([deleteNode('b-pending')])
@@ -230,6 +233,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
+    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
     const operationBId = clientState.sent[1].ops[0].op_id
 
     // Current risk characterization: result frames carry workflowId, but the
