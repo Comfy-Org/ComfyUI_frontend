@@ -23,7 +23,7 @@ import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import type { DocFrameTransport, DocUpdate } from './docFrameClient'
+import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
@@ -146,6 +146,45 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     bridge.reconcile()
     bridge.reconcile()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('sends human ops before the subscription acknowledgement arrives', () => {
+    const { transport, bridge } = wire()
+    const preAckOp: DocOp = {
+      op_id: 'op-before-ack',
+      actor: 'human:user:tab-a',
+      type: 'node.move'
+    }
+    const postAckOp: DocOp = {
+      op_id: 'op-after-ack',
+      actor: 'human:user:tab-a',
+      type: 'node.move'
+    }
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    bridge.sendHumanOps('tab-a', [preAckOp])
+    expect(transport.framesOfType('doc_ops')).toEqual([
+      {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          tab: 'tab-a',
+          ops: [preAckOp]
+        }
+      }
+    ])
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    bridge.sendHumanOps('tab-a', [postAckOp])
+
+    expect(transport.framesOfType('doc_ops')).toHaveLength(2)
   })
 
   it('a workflow switch made while the socket is down lands on the next open', () => {

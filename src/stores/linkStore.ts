@@ -175,12 +175,8 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   /**
-   * Registers a link under its current endpoints. The first registration for
-   * a link id or target slot wins — a duplicate stays detached instead of
-   * clobbering the incumbent — and re-registering the already-registered
-   * topology is a no-op.
-   * @returns The store-held reactive state when `topology` holds the
-   * registration afterwards, otherwise `undefined`.
+   * @returns The registered topology, or `undefined` when its ID or
+   * non-floating target slot is occupied.
    */
   function registerLink(
     scope: GraphScope,

@@ -32,7 +32,7 @@ const parsedFaqs = computed(() =>
         </h2>
       </div>
 
-      <Accordion type="multiple" class="flex-1">
+      <Accordion type="multiple" :unmount-on-hide="false" class="flex-1">
         <AccordionItem
           v-for="(faq, index) in parsedFaqs"
           :key="faq.id"

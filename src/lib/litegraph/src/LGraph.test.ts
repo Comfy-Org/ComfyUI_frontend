@@ -18,7 +18,6 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { serialiseMutableGraphParts } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -39,7 +38,7 @@ import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, compareNodeIds, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createNestedSubgraphs,
@@ -715,7 +714,24 @@ describe('Store-driven serialization parity', () => {
       new LGraph(floatingLinkGraph)
     ]) {
       const stored = graph.asSerialisable({ sortNodes: true })
-      const mutable = serialiseMutableGraphParts(graph, true)
+      const nodes = [...graph._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      const mutable = {
+        nodes: nodes.map((node) => node.serialize()),
+        groups: graph._groups.map((group) => group.serialize()),
+        links: graph.links.size
+          ? [...graph.links.values()].map((link) => link.asSerialisable())
+          : undefined,
+        floatingLinks: graph.floatingLinks.size
+          ? [...graph.floatingLinks.values()].map((link) =>
+              link.asSerialisable()
+            )
+          : undefined,
+        reroutes: graph.reroutes.size
+          ? [...graph.reroutes.values()].map((reroute) =>
+              reroute.asSerialisable()
+            )
+          : undefined
+      }
       const normalizedStored = {
         nodes: stored.nodes,
         groups: stored.groups,
@@ -1000,6 +1016,56 @@ describe('node:before-removed event', () => {
       'before-removed(graph=set)',
       'onRemoved(graph=set)',
       'onNodeRemoved(graph=null)'
+    ])
+  })
+
+  it('orders connection and lifecycle callbacks during node removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('output', '*')
+    const target = new LGraphNode('target')
+    target.addInput('input', '*')
+    graph.add(source)
+    graph.add(target)
+    source.connect(0, target, 0)
+    const order: string[] = []
+
+    graph.events.addEventListener('node:before-removed', () => {
+      order.push('before-removed')
+    })
+    target.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('target-connection-change')
+    }
+    source.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('source-connection-change')
+    }
+    source.onRemoved = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('onRemoved')
+    }
+    graph.onNodeRemoved = () => {
+      order.push(
+        `onNodeRemoved(graph=${source.graph === null ? 'null' : 'set'})`
+      )
+    }
+    graph.events.addEventListener('node:removed', () => {
+      order.push(`removed(graph=${source.graph === null ? 'null' : 'set'})`)
+    })
+
+    graph.remove(source)
+
+    expect(order).toEqual([
+      'before-removed',
+      'target-connection-change',
+      'source-connection-change',
+      'onRemoved',
+      'onNodeRemoved(graph=null)',
+      'removed(graph=null)'
     ])
   })
 
