@@ -43,6 +43,12 @@ const chatHistoryStub = defineComponent({
   `
 })
 
+const attachmentCalls = {
+  add: [] as unknown[][],
+  update: [] as unknown[][],
+  remove: [] as unknown[][]
+}
+
 const eventComposerStub = defineComponent({
   emits: [
     'send',
@@ -58,9 +64,15 @@ const eventComposerStub = defineComponent({
     expose({
       insert: () => {},
       replaceDraft: () => {},
-      addAttachment: () => {},
-      updateAttachment: () => {},
-      removeAttachment: () => {}
+      addAttachment: (...args: unknown[]) => {
+        attachmentCalls.add.push(args)
+      },
+      updateAttachment: (...args: unknown[]) => {
+        attachmentCalls.update.push(args)
+      },
+      removeAttachment: (...args: unknown[]) => {
+        attachmentCalls.remove.push(args)
+      }
     })
   },
   template: `
@@ -102,6 +114,9 @@ const eventPanelHeaderStub = defineComponent({
 describe('AgentPanel', () => {
   beforeEach(() => {
     localStorage.clear()
+    attachmentCalls.add.length = 0
+    attachmentCalls.update.length = 0
+    attachmentCalls.remove.length = 0
   })
 
   it('shows the minimized run notice and disclaimer by default', () => {
