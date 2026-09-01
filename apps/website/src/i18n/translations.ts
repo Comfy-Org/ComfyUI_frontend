@@ -3506,6 +3506,8 @@ const translations = {
     en: 'Affiliate Program',
     'zh-CN': 'Affiliate Program'
   },
+  'footer.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'footer.useCases': { en: 'Use Cases', 'zh-CN': '用例' },
   'footer.location': {
     en: 'San Francisco, USA',
     'zh-CN': '美国旧金山'
@@ -5844,13 +5846,13 @@ const translations = {
   // Launches page (/launches) — head metadata
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.page.title': {
-    en: 'ComfyUI Live Demo & Q&A - June 29 Launch Livestream',
-    'zh-CN': 'ComfyUI 直播演示与问答 - 6 月 29 日发布直播'
+    en: 'Launches: Everything New in ComfyUI',
+    'zh-CN': '发布：ComfyUI 的所有新内容'
   },
   'launches.page.description': {
-    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
+    en: 'Every ComfyUI launch in one place: new models, desktop, cloud, MCP, CLI, and core engine releases, with the livestreams that walk through them.',
     'zh-CN':
-      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
+      '所有 ComfyUI 发布汇总：新模型、桌面版、云端、MCP、CLI 与核心引擎更新，以及逐一讲解的直播回放。'
   },
 
   // Launches page (/launches) — hero section
