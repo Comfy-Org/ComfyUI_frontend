@@ -41,18 +41,18 @@ jobs:
         env:
           COLLECT_COVERAGE: 'true'
 
-      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Verify localhost Assets default
+        run: pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: localhost
+
+      # Upload only verified dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: frontend-dist
           path: dist/
           retention-days: 1
-
-      - name: Verify localhost Assets default
-        run: pnpm test:assets-flag-artifact
-        env:
-          EXPECTED_DISTRIBUTION: localhost
 
       - name: Build and verify desktop Assets default
         run: |
@@ -64,11 +64,6 @@ jobs:
 
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
-
-      - name: Verify Cloud Assets default
-        run: pnpm test:assets-flag-artifact
-        env:
-          EXPECTED_DISTRIBUTION: cloud
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:

@@ -9,6 +9,12 @@ runs:
       env:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
+    - name: Verify cloud frontend
+      shell: bash
+      run: pnpm test:assets-flag-artifact
+      env:
+        EXPECTED_DISTRIBUTION: cloud
+
     - name: Upload cloud frontend
       uses: actions/upload-artifact@v6
       with:
