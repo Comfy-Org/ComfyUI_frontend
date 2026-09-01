@@ -35,7 +35,6 @@ describe('useCanvasViewportInsets', () => {
   afterEach(() => {
     canvasEl.remove()
     panelEl.remove()
-    vi.restoreAllMocks()
   })
 
   async function load() {
