@@ -5,6 +5,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const DOM_WIDGET_SELECTOR = '.comfy-multiline-input'
 const VISIBLE_DOM_WIDGET_SELECTOR = `${DOM_WIDGET_SELECTOR}:visible`
+const PROMOTED_SUBGRAPH_NODE_ID = '11'
 
 async function setVueMode(
   comfyPage: ComfyPage,
@@ -39,11 +40,11 @@ test.describe(
         'Promoted text widget should be visible before collapse'
       ).toHaveCount(1)
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
 
       await expect(visibleWidgets).toHaveCount(0)
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
 
       await expect(visibleWidgets).toHaveCount(1)
     })
@@ -61,7 +62,7 @@ test.describe(
         'Both promoted text widgets should be visible before collapse'
       ).toHaveCount(2)
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
 
       await expect(visibleWidgets).toHaveCount(0)
     })
@@ -73,7 +74,7 @@ test.describe(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
       await expect(
         comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
       ).toHaveCount(0)
@@ -107,7 +108,7 @@ test.describe(
       const visibleWidgets = comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
       await expect(visibleWidgets).toHaveCount(1)
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
       await expect(visibleWidgets).toHaveCount(0)
 
       await setVueMode(comfyPage, true)
@@ -123,7 +124,7 @@ test.describe(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
       const visibleWidgets = comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
 
       for (let i = 0; i < 3; i++) {
@@ -141,12 +142,12 @@ test.describe(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
 
       await setVueMode(comfyPage, true)
       await setVueMode(comfyPage, false)
 
-      await comfyPage.subgraph.toggleCollapse('11')
+      await comfyPage.subgraph.toggleCollapse(PROMOTED_SUBGRAPH_NODE_ID)
 
       await expect(
         comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
