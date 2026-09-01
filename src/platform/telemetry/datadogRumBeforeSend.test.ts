@@ -19,7 +19,7 @@ function createErrorEvent(
 
 describe('rumBeforeSend', () => {
   beforeEach(() => {
-    setAssertReporter(vi.fn())
+    setAssertReporter(vi.fn(), { forwardsToRum: true })
   })
 
   afterEach(() => {
@@ -64,6 +64,17 @@ describe('rumBeforeSend', () => {
     setAssertReporter(null)
     const event = createErrorEvent(
       '[Assertion failed]: fired before boot finished',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps the console copy when the installed reporter does not forward to RUM', () => {
+    setAssertReporter(vi.fn())
+    const event = createErrorEvent(
+      '[Assertion failed]: handled by another telemetry sink',
       undefined,
       'console'
     )

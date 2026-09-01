@@ -1,6 +1,6 @@
 import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
-import { ASSERTION_FAILURE_PREFIX, hasAssertReporter } from '@/base/assert'
+import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 const RUM_NOISE_HOSTS = [
   'facebook.com',
@@ -41,7 +41,7 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
  */
 function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   return (
-    hasAssertReporter() &&
+    hasRumAssertReporter() &&
     event.error.source === 'console' &&
     event.error.message.startsWith(ASSERTION_FAILURE_PREFIX)
   )

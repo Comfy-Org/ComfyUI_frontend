@@ -3,18 +3,23 @@ export const ASSERTION_FAILURE_PREFIX = '[Assertion failed]: '
 type AssertReporter = (message: string) => void
 
 let reporter: AssertReporter | null = null
+let reporterForwardsToRum = false
 
 /**
  * Register a reporter for assertion failures in non-DEV environments.
  * Called once at app startup by platform/ or higher layers to wire in
  * Sentry, toast notifications, etc.
  */
-export function setAssertReporter(fn: AssertReporter | null): void {
+export function setAssertReporter(
+  fn: AssertReporter | null,
+  options: { forwardsToRum?: boolean } = {}
+): void {
   reporter = fn
+  reporterForwardsToRum = fn !== null && options.forwardsToRum === true
 }
 
-export function hasAssertReporter(): boolean {
-  return reporter !== null
+export function hasRumAssertReporter(): boolean {
+  return reporterForwardsToRum
 }
 
 /**
