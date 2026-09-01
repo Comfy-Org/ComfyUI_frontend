@@ -11,6 +11,7 @@ import {
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -83,6 +84,7 @@ describe('LGraph Serialisation', () => {
     const registered = new LGraphNode('Registered')
     graph.add(registered)
     const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
     graph._nodes.push(adapterOnly)
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -96,6 +98,21 @@ describe('LGraph Serialisation', () => {
     expect(error).toHaveBeenCalledWith(
       expect.stringContaining(`live node ${adapterOnly.id} has no stored state`)
     )
+  })
+
+  test('serialises a node held twice in the live array only once', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Doubled')
+    graph.add(node)
+    graph._nodes.push(node)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual(['Doubled'])
+    expect(error).not.toHaveBeenCalled()
   })
 
   test('round trips namespaced node and graph extension payloads', ({

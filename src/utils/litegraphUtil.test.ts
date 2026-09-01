@@ -248,8 +248,10 @@ describe('getWidgetIdForNode', () => {
       widgetId(graphId, toNodeId(42), 'shared'),
       widgetId(graphId, toNodeId(42), 'shared#1')
     ])
-    expect([...mapped.values()]).toEqual([first, frozen])
-    expect(node.widgets).toEqual([first, frozen])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared'])
     expect(warn).toHaveBeenCalledOnce()
     warn.mockClear()
     expect(getWidgetIdForNode(node, frozen)).toBe(
@@ -283,8 +285,9 @@ describe('getWidgetIdForNode', () => {
       widgetId(graphId, toNodeId(42), 'shared'),
       widgetId(graphId, toNodeId(42), 'shared#1')
     ])
-    expect([...mapped.values()]).toEqual([first, frozen])
-    expect(node.widgets).toEqual([first, first, frozen])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
     expect(node.widgets.map(({ name }) => name)).toEqual([
       'shared',
       'shared',

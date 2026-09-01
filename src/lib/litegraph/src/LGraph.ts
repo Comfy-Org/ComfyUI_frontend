@@ -369,7 +369,8 @@ function serialiseOwnedTopology(owner: LGraph) {
 }
 
 function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
-  const adapters = new Map(owner._nodes.map((node) => [node.id, node]))
+  const liveNodes = [...new Set(owner._nodes)]
+  const adapters = new Map(liveNodes.map((node) => [node.id, node]))
   const states = useNodeDataStore().getGraphNodesFor(
     owner.rootGraph.id,
     owner.id
@@ -383,25 +384,25 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
   })
   if (
     serialisers.length !== ordered.length ||
-    ordered.length !== owner._nodes.length
+    ordered.length !== adapters.size
   ) {
     const missingState = ordered.find((state) => !adapters.has(state.id))
     let missingAdapter: LGraphNode | undefined
     if (missingState === undefined) {
       const stateIds = new Set(ordered.map((state) => state.id))
-      missingAdapter = owner._nodes.find((adapter) => !stateIds.has(adapter.id))
+      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
     }
     const mismatch = missingState
       ? `stored node ${missingState.id} has no live adapter`
       : missingAdapter
         ? `live node ${missingAdapter.id} has no stored state`
-        : `${ordered.length} stored nodes do not match ${owner._nodes.length} live nodes`
+        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
     console.error(
       `Cannot serialize graph ${owner.id} from store: ${mismatch}; using live graph nodes`
     )
     const nodes = sortNodes
-      ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
-      : owner._nodes
+      ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      : liveNodes
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
