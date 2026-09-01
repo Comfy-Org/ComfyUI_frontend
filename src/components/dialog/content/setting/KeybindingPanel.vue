@@ -191,7 +191,7 @@
                 <div
                   v-for="(binding, idx) in (slotProps.data as ICommandData)
                     .keybindings"
-                  :key="binding.combo.serialize()"
+                  :key="binding.serialize()"
                   data-testid="keybinding-expansion-binding"
                   class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
                 >
@@ -472,7 +472,6 @@ function editKeybinding(commandData: ICommandData, binding: KeybindingImpl) {
     commandId: commandData.id,
     commandLabel: commandData.label,
     currentCombo: binding.combo,
-    mode: 'edit',
     existingBinding: binding
   })
 }
@@ -481,8 +480,7 @@ function addKeybinding(commandData: ICommandData) {
   editKeybindingDialog.show({
     commandId: commandData.id,
     commandLabel: commandData.label,
-    currentCombo: null,
-    mode: 'add'
+    currentCombo: null
   })
 }
 

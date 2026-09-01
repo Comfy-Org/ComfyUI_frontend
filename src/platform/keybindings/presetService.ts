@@ -41,10 +41,8 @@ function buildPresetFromStore(
   name: string,
   keybindingStore: ReturnType<typeof useKeybindingStore>
 ): KeybindingPreset {
-  const newBindings = Object.values(toRaw(keybindingStore.getUserKeybindings()))
-  const unsetBindings = Object.values(
-    toRaw(keybindingStore.getUserUnsetKeybindings())
-  )
+  const newBindings = toRaw(keybindingStore.getUserKeybindings())
+  const unsetBindings = toRaw(keybindingStore.getUserUnsetKeybindings())
   return { name, newBindings, unsetBindings }
 }
 
