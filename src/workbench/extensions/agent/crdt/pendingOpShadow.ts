@@ -144,7 +144,9 @@ export function createPendingOpShadowSurface(): PendingOpShadowSurface {
       if (shadows.has(opId)) return false
       const shadow: PendingShadow = Object.freeze({
         opId,
-        targets: Object.freeze(targets.map((t) => ({ ...t }) as ShadowTarget))
+        targets: Object.freeze(
+          targets.map((target) => Object.freeze({ ...target }) as ShadowTarget)
+        )
       })
       shadows.set(opId, shadow)
       for (const target of shadow.targets) retain(target)
