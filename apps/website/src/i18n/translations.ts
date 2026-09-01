@@ -3506,6 +3506,8 @@ const translations = {
     en: 'Affiliate Program',
     'zh-CN': 'Affiliate Program'
   },
+  'footer.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'footer.useCases': { en: 'Use Cases', 'zh-CN': '用例' },
   'footer.location': {
     en: 'San Francisco, USA',
     'zh-CN': '美国旧金山'
