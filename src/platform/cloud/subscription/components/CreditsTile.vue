@@ -80,7 +80,7 @@
         </div>
         <div class="flex items-center justify-between gap-2 text-sm">
           <Skeleton
-            v-if="isLoadingBalance"
+            v-if="!balanceIsKnown"
             class="@max-[300px]:hidden"
             width="5rem"
             height="1rem"
@@ -88,7 +88,7 @@
           <span v-else class="text-muted @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
+          <Skeleton v-if="!balanceIsKnown" width="9rem" height="1rem" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -141,7 +141,7 @@
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
           </span>
-          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <Skeleton v-if="!balanceIsKnown" width="3rem" height="1rem" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"

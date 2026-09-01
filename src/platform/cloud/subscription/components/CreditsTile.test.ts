@@ -447,6 +447,15 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
+  it('withholds the breakdown figures on an active plan until the balance is read', () => {
+    activeProSubscription()
+    state.balance = null
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+  })
+
   it('gives an inactive sales-managed plan the same retained-credit treatment', () => {
     activeProSubscription()
     state.canTopUp = true
