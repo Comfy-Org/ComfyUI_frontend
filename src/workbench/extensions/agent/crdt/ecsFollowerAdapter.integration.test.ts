@@ -45,7 +45,8 @@ function graphSnapshot() {
         title: node.title,
         inputs: node.inputs,
         outputs: node.outputs
-      })),
+      }))
+      .sort((left, right) => String(left.id).localeCompare(String(right.id))),
     links: [...useLinkStore().graphTopologies(scope)].map((link) => ({
       id: link.id,
       originNodeId: link.originNodeId,
@@ -53,7 +54,7 @@ function graphSnapshot() {
       targetNodeId: link.targetNodeId,
       targetSlot: link.targetSlot,
       type: link.type
-    })),
+    })).sort((left, right) => Number(left.id) - Number(right.id)),
     widgets: [toNodeId(1), toNodeId(2)].flatMap((nodeId) =>
       ['seed', 'stale'].flatMap((name) => {
         const widget = useWidgetValueStore().getWidget(
