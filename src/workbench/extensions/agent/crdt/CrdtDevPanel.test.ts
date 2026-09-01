@@ -111,7 +111,9 @@ describe('CrdtDevPanel', () => {
 
     expect(chip()).toBeTruthy()
     expect(restore()).toBeNull()
-    expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('false')
+    expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe(
+      'false'
+    )
     expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
   })
 
