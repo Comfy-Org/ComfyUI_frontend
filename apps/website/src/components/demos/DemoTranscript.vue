@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import { t } from '../../i18n/translations'
+import SafeRichText from '../common/SafeRichTextContent'
 
 const { transcript, locale = 'en' } = defineProps<{
   transcript: string
@@ -34,7 +35,8 @@ const expanded = ref(false)
         </span>
       </button>
 
-      <div
+      <SafeRichText
+        as="div"
         role="region"
         :aria-label="t('demos.transcript.label', locale)"
         :class="
@@ -43,7 +45,7 @@ const expanded = ref(false)
             'text-sm/relaxed text-primary-warm-gray'
           )
         "
-        v-html="transcript"
+        :html="transcript"
       />
     </div>
   </section>

@@ -8,6 +8,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { hasKey, t, translationKeys } from '../../i18n/translations'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { scrollTo } from '../../scripts/smoothScroll'
+import SafeRichText from '../common/SafeRichTextContent'
 
 const {
   prefix,
@@ -215,10 +216,11 @@ function listItems(key: TranslationKey): string[] {
           </h2>
 
           <template v-for="block in section.blocks" :key="block.key">
-            <p
+            <SafeRichText
               v-if="block.type === 'paragraph'"
+              as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas lg:text-base/relaxed"
-              v-html="t(block.key, locale)"
+              :html="t(block.key, locale)"
             />
             <ul
               v-else
@@ -233,7 +235,7 @@ function listItems(key: TranslationKey): string[] {
                   class="bg-primary-comfy-yellow mt-2 size-1.5 shrink-0 rounded-full"
                   aria-hidden="true"
                 />
-                <span v-html="item" />
+                <SafeRichText as="span" :html="item" />
               </li>
             </ul>
           </template>
