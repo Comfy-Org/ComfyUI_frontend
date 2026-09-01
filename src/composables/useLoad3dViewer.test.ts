@@ -827,6 +827,45 @@ describe('useLoad3dViewer', () => {
       )
     })
 
+    it('ignores an older model load that resolves after a newer load', async () => {
+      isAssetPreviewSupported.mockReturnValue(true)
+      let releaseFirst!: () => void
+      let releaseSecond!: () => void
+      vi.mocked(mockLoad3d.loadModel!)
+        .mockImplementationOnce(
+          () => new Promise<void>((resolve) => (releaseFirst = resolve))
+        )
+        .mockImplementationOnce(
+          () => new Promise<void>((resolve) => (releaseSecond = resolve))
+        )
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      const firstLoad = viewer.initializeStandaloneViewer(
+        containerRef,
+        '/api/view?filename=first.glb&type=output'
+      )
+      const secondLoad = viewer.initializeStandaloneViewer(
+        containerRef,
+        '/api/view?filename=second.glb&type=output'
+      )
+      releaseSecond()
+      await secondLoad
+      releaseFirst()
+      await firstLoad
+
+      await vi.waitFor(() =>
+        expect(persistThumbnailFromDataUrl).toHaveBeenCalledWith(
+          'second.glb',
+          'data:image/png;base64,x'
+        )
+      )
+      expect(persistThumbnailFromDataUrl).not.toHaveBeenCalledWith(
+        'first.glb',
+        expect.anything()
+      )
+    })
+
     it('skips thumbnail persistence when the asset API is unavailable', async () => {
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
