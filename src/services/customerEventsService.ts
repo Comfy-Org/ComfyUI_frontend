@@ -24,6 +24,8 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
+type ErrorResponse = components['schemas']['ErrorResponse']
+
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),
   headers: {
@@ -53,7 +55,7 @@ export const useCustomerEventsService = () => {
       return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
 
-    const axiosError = err as AxiosError<{ message: string }>
+    const axiosError = err as AxiosError<ErrorResponse>
     if (!axiosError.response) {
       return `${context} failed: ${axiosError.message}`
     }

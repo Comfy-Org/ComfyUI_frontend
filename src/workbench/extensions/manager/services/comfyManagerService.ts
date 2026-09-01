@@ -101,20 +101,24 @@ export const useComfyManagerService = () => {
       isQueueOperation?: boolean
     }
   ): Promise<T | null> => {
+    const { isQueueOperation, ...requestOptions } = options
+
     // Block service calls if not in NEW_UI state
     if (!isManagerServiceAvailable()) {
-      error.value = 'Manager service is not available in current mode'
+      const message = 'Manager service is not available in current mode'
+      error.value = message
+      requestOptions.onError?.(message)
       return Promise.resolve(null)
     }
 
-    const { isQueueOperation, ...requestOptions } = options
     return sendRequest(apiCall, {
       ...requestOptions,
       onSuccess: isQueueOperation
         ? async () => {
-            await startQueue()
-            if (!error.value) return
-            reportError(new Error(error.value), {
+            const queueStartError = await requestQueueStart()
+            if (!queueStartError) return
+            error.value = queueStartError
+            reportError(new Error(queueStartError), {
               errorType: 'manager_queue_start_failed'
             })
             return false
@@ -123,16 +127,36 @@ export const useComfyManagerService = () => {
     })
   }
 
-  const startQueue = async (signal?: AbortSignal) => {
+  /**
+   * Resolves to *this* invocation's failure message, or `null` on success.
+   * The shared `error` ref cannot answer that: concurrent Manager requests
+   * reset it on start and overwrite it on failure.
+   */
+  const requestQueueStart = async (
+    signal?: AbortSignal
+  ): Promise<string | null> => {
     const errorContext = 'Starting ComfyUI-Manager job queue'
     const routeSpecificErrors = {
       201: 'Created: ComfyUI-Manager job queue is already running'
     }
 
-    return executeRequest<null>(
+    let failure: string | null = null
+    await executeRequest<null>(
       (client) => client.post(ManagerRoute.START_QUEUE, null, { signal }),
-      { errorContext, routeSpecificErrors }
+      {
+        errorContext,
+        routeSpecificErrors,
+        onError: (message) => {
+          failure = message
+        }
+      }
     )
+    return failure
+  }
+
+  const startQueue = async (signal?: AbortSignal): Promise<null> => {
+    await requestQueueStart(signal)
+    return null
   }
 
   const getQueueStatus = async (client_id?: string, signal?: AbortSignal) => {

@@ -307,6 +307,32 @@ describe('useComfyManagerService', () => {
         errorType: 'manager_queue_start_failed'
       })
     })
+
+    it('does not blame the queue start for a concurrent request failure', async () => {
+      mockAxiosInstance.post.mockImplementation((url: string) =>
+        url === 'manager/queue/start'
+          ? Promise.resolve({ data: null })
+          : Promise.resolve({ data: { queued: true } })
+      )
+      mockAxiosInstance.get.mockRejectedValue({
+        response: { status: 500, data: {} }
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const [result] = await Promise.all([
+        service.installPack({
+          id: 'pack',
+          version: '1.0.0',
+          selected_version: '1.0.0',
+          mode: 'remote',
+          channel: 'default'
+        }),
+        service.listInstalledPacks()
+      ])
+
+      expect(result).toEqual({ queued: true })
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   describe('error mapping', () => {

@@ -23,6 +23,12 @@ export interface ExecuteRequestOptions {
    * resolves to `null` and leaves `error` as the side effect set it.
    */
   onSuccess?: () => boolean | void | Promise<boolean | void>
+  /**
+   * Called with the mapped message when *this* request fails, so a caller can
+   * tell its own failure apart from the shared `error` ref, which any
+   * concurrent request may reset or overwrite. Not called on cancellation.
+   */
+  onError?: (message: string) => void
 }
 
 /**
@@ -45,7 +51,7 @@ export function useApiRequest({
     apiCall: (client: AxiosInstance) => Promise<AxiosResponse<T>>,
     options: ExecuteRequestOptions
   ): Promise<T | null> {
-    const { errorContext, routeSpecificErrors, onSuccess } = options
+    const { errorContext, routeSpecificErrors, onSuccess, onError } = options
 
     pendingCount.value++
     error.value = null
@@ -57,7 +63,9 @@ export function useApiRequest({
     } catch (err) {
       if (isAbortError(err)) return null
 
-      error.value = mapError(err, errorContext, routeSpecificErrors)
+      const message = mapError(err, errorContext, routeSpecificErrors)
+      error.value = message
+      onError?.(message)
       return null
     } finally {
       pendingCount.value--
