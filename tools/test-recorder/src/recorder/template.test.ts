@@ -328,6 +328,29 @@ describe('recording template', () => {
       expect(keyA).not.toBe(keyB)
     })
 
+    it('keeps HTTP and HTTPS custom backends in separate buckets', () => {
+      const distribution = {
+        id: 'custom',
+        label: 'Custom backend',
+        hint: '',
+        script: 'dev',
+        needsLocalBackend: false
+      } as const
+
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'http://agent.comfy.org/'
+        })
+      ).toBe('custom-http%3A%2F%2Fagent.comfy.org')
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'https://agent.comfy.org/'
+        })
+      ).toBe('custom-agent.comfy.org')
+    })
+
     it('keeps custom backends on different ports in separate buckets', () => {
       const distribution = {
         id: 'custom',
@@ -342,13 +365,13 @@ describe('recording template', () => {
           ...distribution,
           backendUrl: 'http://localhost:8100/'
         })
-      ).toBe('custom-localhost-8100')
+      ).toBe('custom-http%3A%2F%2Flocalhost-8100')
       expect(
         storageStateKey({
           ...distribution,
           backendUrl: 'http://localhost:8200/'
         })
-      ).toBe('custom-localhost-8200')
+      ).toBe('custom-http%3A%2F%2Flocalhost-8200')
     })
 
     it('encodes IPv6 hostnames for Windows-safe storage paths', () => {
@@ -361,7 +384,7 @@ describe('recording template', () => {
           needsLocalBackend: false,
           backendUrl: 'http://[::1]:8100/'
         })
-      ).toBe('custom-%5B%3A%3A1%5D-8100')
+      ).toBe('custom-http%3A%2F%2F%5B%3A%3A1%5D-8100')
     })
 
     it('removes the legacy shared custom-backend storage state', () => {
