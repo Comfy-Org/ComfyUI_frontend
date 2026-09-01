@@ -11,7 +11,7 @@ import type {
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-export const alphaJob = createRouteMockJob({
+const alphaJob = createRouteMockJob({
   id: 'alpha',
   create_time: routeMockJobTimestamp - 1_000,
   execution_start_time: routeMockJobTimestamp - 1_000,
@@ -129,7 +129,7 @@ export const viewFiles = {
   'previewable-count-b.png': {}
 }
 
-export async function mockInputFiles(page: Page, files: readonly string[]) {
+async function mockInputFiles(page: Page, files: readonly string[]) {
   await page.route('**/internal/files/input**', async (route) => {
     if (route.request().method().toUpperCase() !== 'GET') {
       await route.fallback()
