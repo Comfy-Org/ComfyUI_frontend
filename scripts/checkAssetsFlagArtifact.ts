@@ -22,6 +22,17 @@ const TEXT_ASSET_EXTENSIONS = new Set([
 /** Sourcemaps carry the gate's own source, which would count as a second gate. */
 const EXECUTABLE_ASSET_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.html'])
 
+/**
+ * The whole compiled gate body, anchored: a substring search accepts a
+ * `return true` sitting next to a mention of the setting key. The alternations
+ * are what minification emits — `return!1`, a renamed getter, a re-quoted key.
+ */
+const GATE_BODIES = {
+  nonCloud: /^return\s*(?:false|!1)\s*;?$/,
+  cloud:
+    /^return\s*!!\s*[\w$.]+(?:\(\))?\.get\(\s*(['"`])Comfy\.Assets\.UseAssetAPI\1\s*\)\s*;?$/
+} as const
+
 function artifactFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name)
@@ -49,8 +60,8 @@ function assetApiGates(chunks: ReadonlyArray<string>): string {
   if (gates.length !== 1) {
     throw new Error(
       `Expected one Asset API gate in the build, found ${gates.length}. ` +
-        'The gate is located by its declared name, which minification renames: ' +
-        'run this against an unminified build (ENABLE_MINIFY unset).'
+        'The gate is located by its declared name: check that it was not ' +
+        'renamed, inlined, or duplicated across chunks.'
     )
   }
 
@@ -65,14 +76,11 @@ export function assertAssetApiGate(
     throw new Error(`Unsupported distribution: ${distribution}`)
   }
   const gate = assetApiGates(chunks)
-  const hasDisabledReturn = /return(?: false|!1)/.test(gate)
-  const hasSettingLookup = /Comfy\.Assets\.UseAssetAPI/.test(gate)
-  const valid =
-    distribution === 'cloud'
-      ? hasSettingLookup
-      : hasDisabledReturn && !hasSettingLookup
+  const body = gate.slice(gate.indexOf('{') + 1, gate.lastIndexOf('}')).trim()
+  const expected =
+    distribution === 'cloud' ? GATE_BODIES.cloud : GATE_BODIES.nonCloud
 
-  if (!valid) {
+  if (!expected.test(body)) {
     throw new Error(
       `Built Asset API gate is invalid for ${distribution}:\n${gate.trim()}`
     )
@@ -110,13 +118,6 @@ export function assertNoTestFixtures(chunks: ReadonlyArray<string>): void {
 }
 
 export function checkAssetsFlagArtifact(directory = 'dist'): void {
-  const textAssets = artifactFiles(directory)
-    .filter((path) => TEXT_ASSET_EXTENSIONS.has(extname(path)))
-    .map((path) => ({ path, source: readFileSync(path, 'utf8') }))
-  const chunks = textAssets.map(({ source }) => source)
-  const executableChunks = textAssets
-    .filter(({ path }) => EXECUTABLE_ASSET_EXTENSIONS.has(extname(path)))
-    .map(({ source }) => source)
   const expectedCommit = process.env.EXPECTED_FRONTEND_COMMIT
   const expectedDistribution = process.env.EXPECTED_DISTRIBUTION
 
@@ -126,6 +127,15 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
   if (!expectedDistribution) {
     throw new Error('EXPECTED_DISTRIBUTION is required')
   }
+
+  const textAssets = artifactFiles(directory)
+    .filter((path) => TEXT_ASSET_EXTENSIONS.has(extname(path)))
+    .map((path) => ({ path, source: readFileSync(path, 'utf8') }))
+  const chunks = textAssets.map(({ source }) => source)
+  const executableChunks = textAssets
+    .filter(({ path }) => EXECUTABLE_ASSET_EXTENSIONS.has(extname(path)))
+    .map(({ source }) => source)
+
   assertBuildProvenance(
     readFileSync(join(directory, 'build-manifest.json'), 'utf8'),
     expectedCommit,

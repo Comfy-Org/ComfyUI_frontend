@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   assertAssetApiGate,
@@ -46,6 +46,35 @@ describe('assertAssetApiGate', () => {
     ).not.toThrow()
   })
 
+  it('accepts a minified Cloud gate with a renamed getter and re-quoted key', () => {
+    expect(() =>
+      assertAssetApiGate(
+        [
+          'function isAssetAPIEnabled(){return!!$().get(`Comfy.Assets.UseAssetAPI`)}'
+        ],
+        'cloud'
+      )
+    ).not.toThrow()
+  })
+
+  it.for([
+    'function isAssetAPIEnabled() {\n  return true;\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}',
+    'function isAssetAPIEnabled() {\n  /* Comfy.Assets.UseAssetAPI */\n  return true;\n}'
+  ])('rejects a Cloud gate that enables beside the setting: %s', (gate) => {
+    expect(() => assertAssetApiGate([gate], 'cloud')).toThrow(
+      'Built Asset API gate is invalid for cloud'
+    )
+  })
+
+  it.for([
+    'function isAssetAPIEnabled() {\n  if (!api.getServerFeature("assets", false)) return false;\n  return true;\n}',
+    'function isAssetAPIEnabled() {\n  if (false) return false;\n  return true;\n}'
+  ])('rejects a localhost gate that can still enable: %s', (gate) => {
+    expect(() => assertAssetApiGate([gate], 'localhost')).toThrow(
+      'Built Asset API gate is invalid for localhost'
+    )
+  })
+
   it('rejects a localhost artifact that still carries the Cloud setting gate', () => {
     expect(() =>
       assertAssetApiGate(
@@ -72,6 +101,14 @@ describe('assertAssetApiGate', () => {
     )
   })
 
+  it('rejects a build carrying the gate in more than one chunk', () => {
+    const gate = 'function isAssetAPIEnabled() {\n  return false;\n}'
+
+    expect(() => assertAssetApiGate([gate, gate], 'localhost')).toThrow(
+      'Expected one Asset API gate in the build, found 2'
+    )
+  })
+
   it('rejects an unsupported distribution rather than assuming non-cloud', () => {
     expect(() =>
       assertAssetApiGate(
@@ -81,7 +118,7 @@ describe('assertAssetApiGate', () => {
     ).toThrow('Unsupported distribution: Cloud')
   })
 
-  it('parses a gate with a nested block through its matching brace', () => {
+  it('reports a gate with a nested block through its matching brace', () => {
     expect(() =>
       assertAssetApiGate(
         [
@@ -89,7 +126,7 @@ describe('assertAssetApiGate', () => {
         ],
         'cloud'
       )
-    ).not.toThrow()
+    ).toThrow('return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}')
   })
 })
 
@@ -183,14 +220,12 @@ describe('checkAssetsFlagArtifact', () => {
       join(directory, 'assets', 'chunk.js'),
       'function isAssetAPIEnabled() {\n  return false;\n}'
     )
-    process.env.EXPECTED_FRONTEND_COMMIT = commit
-    process.env.EXPECTED_DISTRIBUTION = 'localhost'
+    vi.stubEnv('EXPECTED_FRONTEND_COMMIT', commit)
+    vi.stubEnv('EXPECTED_DISTRIBUTION', 'localhost')
   })
 
   afterEach(() => {
     rmSync(directory, { recursive: true, force: true })
-    delete process.env.EXPECTED_FRONTEND_COMMIT
-    delete process.env.EXPECTED_DISTRIBUTION
   })
 
   it('accepts a verified localhost artifact', () => {
@@ -228,7 +263,7 @@ describe('checkAssetsFlagArtifact', () => {
   })
 
   it('requires the expected commit even when the distribution is set', () => {
-    delete process.env.EXPECTED_FRONTEND_COMMIT
+    vi.stubEnv('EXPECTED_FRONTEND_COMMIT', '')
 
     expect(() => checkAssetsFlagArtifact(directory)).toThrow(
       'EXPECTED_FRONTEND_COMMIT is required'

@@ -3,10 +3,10 @@ description: 'Build the cloud distribution and upload it as the frontend-dist-cl
 inputs:
   expected_commit:
     description: >-
-      Frontend commit the built artifact must declare. Set it to verify the
-      build before it is uploaded. Leave empty to skip verification — callers
-      that check out a ref other than the workflow SHA have no value to assert
-      against, and `test:assets-flag-artifact` requires an exact match.
+      Frontend commit the built artifact must declare. Callers that check out
+      the workflow SHA should pass it. Callers that check out some other ref
+      have no value to assert against and may omit it: the gate and fixture
+      checks still run, only the provenance assertion is skipped.
     required: false
     default: ''
 runs:
@@ -19,9 +19,12 @@ runs:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
     - name: Verify cloud frontend
-      if: inputs.expected_commit != ''
       shell: bash
-      run: pnpm test:assets-flag-artifact
+      # Never skip: HEAD still proves dist/ is this build, not a leftover one.
+      run: |
+        set -euo pipefail
+        EXPECTED_FRONTEND_COMMIT="${EXPECTED_FRONTEND_COMMIT:-$(git rev-parse HEAD)}" \
+          pnpm test:assets-flag-artifact
       env:
         EXPECTED_FRONTEND_COMMIT: ${{ inputs.expected_commit }}
         EXPECTED_DISTRIBUTION: cloud
