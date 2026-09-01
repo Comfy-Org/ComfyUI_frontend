@@ -66,7 +66,9 @@ export class TopUpCreditsDialog extends BaseDialog {
       name: 'View pricing details'
     })
 
-    const payStepper = this.root.getByText('You Pay', { exact: true }).locator('..')
+    const payStepper = this.root
+      .getByText('You Pay', { exact: true })
+      .locator('..')
     const creditsStepper = this.root
       .getByText('You Get', { exact: true })
       .locator('..')
