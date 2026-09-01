@@ -25,7 +25,6 @@ describe(useNodeImageStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useNodeImageStore()
-    vi.clearAllMocks()
     setNodeLocatorResolver(mockNodeToNodeLocatorId)
   })
 
