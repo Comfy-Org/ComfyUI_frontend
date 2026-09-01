@@ -369,4 +369,21 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.queryByText('subscription.preview.quoteUnavailable')
     ).toBeNull()
   })
+
+  it('withholds an exact quote that arrives without a currency to price it in', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          cost_today_cents: 31_850,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600),
+          currency: undefined
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getAllByText('subscription.preview.quoteUnavailable')
+    ).toHaveLength(2)
+  })
 })
