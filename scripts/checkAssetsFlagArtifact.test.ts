@@ -23,7 +23,10 @@ describe('assertAssetApiGate', () => {
     'accepts a compact disabled %s gate',
     (distribution) => {
       expect(() =>
-        assertAssetApiGate(['function isAssetAPIEnabled(){return!1}'], distribution)
+        assertAssetApiGate(
+          ['function isAssetAPIEnabled(){return!1}'],
+          distribution
+        )
       ).not.toThrow()
     }
   )
