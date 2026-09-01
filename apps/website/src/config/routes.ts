@@ -5,7 +5,8 @@ const baseRoutes = {
   download: '/download',
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
-  cloudEnterprise: '/cloud/enterprise',
+  enterprise: '/enterprise',
+  managedBuilds: '/enterprise/managed-builds',
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
@@ -22,13 +23,17 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
+  modelsShowcase: '/models',
   mcp: '/mcp',
+  cli: '/cli',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
+  minimaxLicense: '/minimax/license',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
   ltx: '/ltx-2.5',
+  geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
   brand: '/brand'
@@ -58,6 +63,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
+  'enterprise',
+  'managedBuilds',
   'models'
 ])
 
@@ -69,6 +76,13 @@ const LOCALE_INVARIANT_PATHS = new Set<string>(
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
  * URLs and locale-invariant routes pass through unchanged.
  */
+/** True for a locale-invariant route or anything nested under one. */
+export function isLocaleInvariantPath(pathname: string): boolean {
+  return [...LOCALE_INVARIANT_PATHS].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  )
+}
+
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
@@ -96,7 +110,13 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
+  comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
+  docsCli: 'https://docs.comfy.org/agent-tools/cli',
+  // Markdown variant handed to agents in the "ask your agent" cards, same
+  // rationale as docsMcpMd below.
+  docsCliMd: 'https://docs.comfy.org/agent-tools/cli.md',
+  docsCliReference: 'https://docs.comfy.org/comfy-cli/reference',
   docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
   docsMcpLocal:
     'https://docs.comfy.org/agent-tools/mcp#local-comfy-mcp-connection',
@@ -122,7 +142,8 @@ export const externalLinks = {
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
-  workflows: 'https://comfy.org/workflows',
+  workflows: 'https://comfy.org/workflows/',
+  workflowUseCases: 'https://comfy.org/workflows/use-cases/',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const

@@ -18,12 +18,22 @@ vi.mock('@stripe/stripe-js/pure', () => ({
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
+const mockRefreshCapabilities = vi.fn()
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
     reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    refresh: mockRefreshCapabilities
   })
 }))
 
@@ -99,6 +109,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
     mockFeatureFlags.embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
@@ -347,7 +358,6 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString()
       })
-
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
@@ -356,6 +366,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
+      expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
 
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(mockFetchStatus).not.toHaveBeenCalled()
@@ -401,6 +412,22 @@ describe('billingOperationStore', () => {
 
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+    })
+
+    it('opens Credits settings after a polled local topup succeeds', async () => {
+      mockDistributionTypes.isCloud = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -1592,6 +1619,26 @@ describe('billingOperationStore', () => {
         failure_category: 'reconciliation_needed',
         duration_ms: 0
       })
+    })
+
+    it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
+      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-reconcile-legacy',
+        status: 'reconciliation_needed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation(
+        'op-reconcile-legacy',
+        'subscription'
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('reconciliation_needed')
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
     })
 
     it('handles a redacted retryable status without a capability', async () => {

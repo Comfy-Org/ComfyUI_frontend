@@ -15,6 +15,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { CORE_PART_ORDER } from '@/types/badgeData'
 import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
 import type { NodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -66,11 +67,17 @@ function badgeTextVisible(
 /** Projects a node's core and credits badge rows from their sources. */
 export function computeBadges(sources: BadgeSources): BadgeData[] {
   const { nodeId, nodeDef, badgeModes, colors, pricing } = sources
-  const coreParts: [CoreBadgePart, NodeBadgeMode, string][] = [
-    ['lifecycle', badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
-    ['id', badgeModes.id, `#${nodeId}`],
-    ['source', badgeModes.source, nodeDef?.sourceText ?? '']
-  ]
+  const corePartsByPart: Record<CoreBadgePart, [NodeBadgeMode, string]> = {
+    id: [badgeModes.id, `#${nodeId}`],
+    lifecycle: [badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
+    source: [badgeModes.source, nodeDef?.sourceText ?? '']
+  }
+  const coreParts = CORE_PART_ORDER.map(
+    (part): [CoreBadgePart, NodeBadgeMode, string] => [
+      part,
+      ...corePartsByPart[part]
+    ]
+  )
   const rows: BadgeData[] = coreParts
     .filter(
       ([, mode, text]) => badgeTextVisible(nodeDef, mode) && text.length > 0
@@ -177,7 +184,8 @@ function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
       : undefined
   )
   for (const leaf of apiLeaves) {
-    void pricing.getNodeRevisionRef(leaf.id).value
+    const graphId = leaf.graph?.rootGraph.id
+    if (graphId !== undefined) touchPricingSources(graphId, leaf)
   }
 
   if (apiLeaves.length !== 1) {
@@ -290,6 +298,6 @@ export function graphCreditsBadges(
 }
 
 /** Installs {@link nodeBadges} as the legacy canvas's badge row source. */
-export function installNodeBadges(): void {
-  registerBadgeRowsProvider(nodeBadges)
+export function installNodeBadges(): () => void {
+  return registerBadgeRowsProvider(nodeBadges)
 }

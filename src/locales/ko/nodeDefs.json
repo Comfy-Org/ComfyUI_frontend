@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트로 오디오가 포함된 동영상을 생성합니다. 선택적으로 참조 이미지 및/또는 동영상을 제공하여 결과를 안내하거나 편집할 수 있습니다. 원하는 길이(3~10초)를 프롬프트에 직접 설명하세요.",
+    "display_name": "Google Gemini Omni (동영상)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "동영상 생성에 사용되는 Gemini 동영상 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "3D 모델 파일(GLB, GLTF, OBJ, STL)을 메시 처리 노드(폴리곤 감소, 리메시, UV 언랩, 베이크, ...)에서 사용할 수 있는 편집 가능한 MESH로 파싱합니다. 모든 장면 노드/프리미티브는 변환이 적용된 하나의 메시로 병합되며, 텍스처와 재질 계수는 첫 번째 재질에서 가져옵니다. MeshToFile3D의 대응 기능입니다.",
+    "display_name": "3D 구성 요소 가져오기",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3D 또는 다른 3D 노드의 3D 모델 파일입니다. FBX/USDZ는 지원되지 않으므로 먼저 GLB로 변환하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "모드",
-        "tooltip": "'speed'는 더 빠르며, 'precision'은 두 배의 비용으로 더 높은 품질의 입 모양 동기화를 제공합니다."
+        "tooltip": "'speed'는 더 빠르며, 'precision'은 더 높은 비용으로 더 높은 품질의 립싱크를 생성합니다."
       },
       "output_language": {
         "name": "출력 언어",
@@ -16596,6 +16648,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerse로 기존 비디오를 이어서 생성하며, 필요에 따라 네이티브 오디오를 포함할 수 있습니다. 소스는 40초 미만이어야 하며 어느 한 변도 1920px 이하여야 합니다. 출력은 소스의 해상도를 유지하므로, quality는 프레임 크기가 아니라 이어지는 부분의 렌더링 품질을 설정합니다.",
+    "display_name": "PixVerse V6 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "이어서 생성할 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerse를 사용하여 첫 프레임에서 마지막 프레임으로 전환되는 비디오를 생성하며, 필요에 따라 네이티브 오디오를 포함할 수 있습니다. 출력은 첫 프레임의 가로세로 비율을 유지합니다.",
+    "display_name": "PixVerse V6 첫-마지막 프레임에서 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerse를 사용하여 참조 피사체, 배경 및 비디오로 비디오를 구성합니다. 프롬프트에서 이름을 지정하여 참조를 장면에 배치합니다. 예: '{'@'}Subject1이 {'@'}Background1을 가로질러 걷습니다'. 참조 비디오를 연결하면 모델이 Omni 모드로 전환되며, 출력 길이는 가장 긴 참조 비디오와 일치합니다.",
+    "display_name": "PixVerse V6 퓨전(참조에서 비디오)",
+    "inputs": {
+      "backgrounds": {
+        "name": "배경",
+        "tooltip": "피사체가 배치될 장면의 참조 이미지입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "길이(초)"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_style": {
+        "name": "스타일"
+      },
+      "subjects": {
+        "name": "피사체",
+        "tooltip": "장면에 배치할 피사체의 참조 이미지입니다."
+      },
+      "videos": {
+        "name": "비디오",
+        "tooltip": "피사체, 움직임, 구도 또는 스타일을 참조할 비디오입니다. 최대 2개까지 가능하며, 총 길이는 최대 15초입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "PixVerse를 사용해 이미지에 애니메이션을 적용하며, 선택적으로 네이티브 오디오를 포함할 수 있습니다. 출력은 입력 이미지의 종횡비를 유지합니다.",
+    "display_name": "PixVerse V6 이미지-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_duration_seconds": {
+        "name": "길이(초)"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_multi_clip": {
+        "name": "멀티 클립"
+      },
+      "model_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_style": {
+        "name": "스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerse를 사용해 텍스트 프롬프트에서 비디오를 생성하며, 선택적으로 네이티브 오디오를 포함할 수 있습니다.",
+    "display_name": "PixVerse V6 텍스트-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration_seconds": {
+        "name": "길이(초)"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_multi_clip": {
+        "name": "멀티 클립"
+      },
+      "model_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_style": {
+        "name": "스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "다항 지수 스케줄러",
     "inputs": {
@@ -17540,7 +17824,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "realistic_image 스타일과 선택적 하위 스타일을 선택하세요.",
+    "description": "logo_raster 스타일과 하위 스타일을 선택합니다.",
     "display_name": "Recraft 스타일 - 로고 래스터",
     "inputs": {
       "substyle": {
@@ -17651,6 +17935,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1~10개의 참조 이미지로 재사용 가능한 Recraft V4 스타일을 생성합니다. 반환된 style_id는 동일한 출력 유형의 모든 Recraft V4 및 V4.1 모델에서 작동합니다. 모든 이미지의 총 크기는 10MB로 제한됩니다.",
+    "display_name": "Recraft V4 스타일 생성",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "스타일을 정의하는 참조 이미지입니다. 유사한 참조는 일치도를 높이고, 다양한 참조는 범위를 넓힙니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "스타일이 생성될 출력 유형입니다: 래스터 이미지에는 recraftv4_styles, SVG에는 recraftv4_styles_vector."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4 또는 V4 Pro 모델을 사용하여 이미지를 생성합니다.",
     "display_name": "Recraft V4 텍스트-이미지",
@@ -17660,7 +17964,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
       },
       "model_size": {
         "name": "size"
@@ -17684,10 +17988,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "적용할 Recraft V4 스타일의 UUID입니다. 예: Recraft V4 스타일 생성 노드 또는 이전 실행의 style_id 출력에서 가져올 수 있습니다. style_references와 함께 사용할 수 없습니다."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "스타일을 따르는 정도입니다: precise는 세부적으로 재현하고, flexible는 전반적인 느낌을 일치시킵니다. 스타일이 제공된 경우에만 사용됩니다."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "생성 시 즉석에서 스타일을 만들기 위한 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용할 수 있도록 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +18021,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
       },
       "model_size": {
         "name": "size"
@@ -17725,10 +18045,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "적용할 Recraft V4 벡터 스타일의 UUID입니다. 예: Recraft V4 스타일 생성 노드 또는 이전 실행의 style_id 출력에서 가져올 수 있습니다. style_references와 함께 사용할 수 없습니다."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "스타일을 따르는 정도입니다: precise는 세부적으로 재현하고, flexible는 전반적인 느낌을 일치시킵니다. 스타일이 제공된 경우에만 사용됩니다."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "생성 시 즉석에서 벡터 스타일을 만들기 위한 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용할 수 있도록 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -23452,30 +23788,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "v1.4 Tripo 모델로 생성된 드래프트 모델만 정제합니다.",
-    "display_name": "Tripo: 드래프트 모델 정제",
-    "inputs": {
-      "model_task_id": {
-        "name": "모델 작업 ID",
-        "tooltip": "v1.4 Tripo 모델이어야 합니다"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 task_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: 리깅된 모델 리타겟",
     "inputs": {
@@ -24405,61 +24717,11 @@
       },
       "resolution": {
         "name": "해상도",
-        "tooltip": "출력 비디오 해상도입니다. 4K는 veo-3.1-lite 및 veo-3.0 모델에서 지원되지 않습니다."
+        "tooltip": "출력 동영상 해상도입니다. veo-3.1-lite 모델에서는 4K를 사용할 수 없습니다."
       },
       "seed": {
         "name": "시드",
         "tooltip": "비디오 생성을 위한 시드 (0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google의 Veo API를 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다",
-    "display_name": "Google Veo2 비디오 생성",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "출력 비디오의 가로세로 비율"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "출력 비디오의 길이(초)"
-      },
-      "enhance_prompt": {
-        "name": "프롬프트 개선",
-        "tooltip": "AI 지원으로 프롬프트를 향상시킬지 여부"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오 생성을 안내할 선택적 참조 이미지"
-      },
-      "model": {
-        "name": "모델",
-        "tooltip": "비디오 생성에 사용할 Veo 2 모델"
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트",
-        "tooltip": "비디오에서 피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트"
-      },
-      "person_generation": {
-        "name": "사람 생성",
-        "tooltip": "비디오에서 사람 생성을 허용할지 여부"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오에 대한 텍스트 설명"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "비디오 생성용 시드 (0은 무작위)"
       }
     },
     "outputs": {
@@ -24485,6 +24747,23 @@
       },
       "video": {
         "name": "비디오"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "비디오 자르기",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "픽셀 단위로 영역을 자릅니다. 너비/높이가 0이면 전체 프레임을 유지합니다."
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -24594,6 +24873,27 @@
       },
       "model": {
         "name": "모델"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "비디오 트리밍 (고급)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True인 경우, 지정한 길이가 불가능하면 오류가 발생합니다."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "시작/종료 프레임을 사용하여 구간을 트리밍합니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

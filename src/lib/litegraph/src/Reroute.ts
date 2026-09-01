@@ -428,12 +428,13 @@ export class Reroute
    */
   setFloatingLinkOrigin(node: LGraphNode, index: number) {
     const floatingOutLinks = this.getFloatingLinks('output')
-    if (!floatingOutLinks)
-      throw new Error('[setFloatingLinkOrigin]: Invalid network.')
+    if (!floatingOutLinks) {
+      console.error('[setFloatingLinkOrigin]: Invalid network.')
+      return
+    }
 
     for (const link of floatingOutLinks) {
-      link.origin_id = node.id
-      link.origin_slot = index
+      link.updateEndpoints({ originNodeId: node.id, originSlot: index })
     }
   }
 

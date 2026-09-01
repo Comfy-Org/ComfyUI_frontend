@@ -557,6 +557,36 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).not.toHaveBeenCalled()
     })
 
+    it('subscribe() omits an empty credential from the request', async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+
+      await workspaceApi.subscribe('pro-monthly', { confirmationToken: '' })
+
+      const body = mockAxiosInstance.post.mock.calls[0][1]
+      expect(body).not.toHaveProperty('confirmation_token', '')
+      expect(body.confirmation_token).toBeUndefined()
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+      await workspaceApi.subscribe('pro-monthly', { savedPaymentMethodId: '' })
+
+      const savedBody = mockAxiosInstance.post.mock.calls[1][1]
+      expect(savedBody).not.toHaveProperty('saved_payment_method_id', '')
+      expect(savedBody.saved_payment_method_id).toBeUndefined()
+    })
+
+    it('subscribe() rejects an empty credential alongside a saved one', async () => {
+      await expect(
+        workspaceApi.subscribe('pro-monthly', {
+          confirmationToken: '',
+          savedPaymentMethodId: 'pm_saved'
+        })
+      ).rejects.toThrow(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
     it('previewSubscribe() sends fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })

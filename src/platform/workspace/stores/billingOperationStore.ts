@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingFailure,
@@ -23,6 +24,7 @@ import type {
   BillingAuthenticationState,
   BillingDeclineReason
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -304,8 +306,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (
-        flags.embeddedCheckoutEnabled &&
-        (response.status === 'reconciliation_needed' ||
+        response.status === 'reconciliation_needed' ||
+        (flags.embeddedCheckoutEnabled &&
           response.authentication_state === 'reconciliation_needed')
       ) {
         handleReconciliationNeeded(opId)
@@ -689,12 +691,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const billingContext = useBillingContext()
+    const capabilities = useBillingCapabilities()
     if (operation.type === 'subscription') {
-      await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
+      await Promise.allSettled([
+        billingContext.reconcileSubscriptionSuccess(),
+        capabilities.refresh()
+      ])
     } else {
       await Promise.allSettled([
         billingContext.fetchStatus(),
-        billingContext.fetchBalance()
+        billingContext.fetchBalance(),
+        capabilities.refresh()
       ])
     }
 
@@ -708,7 +715,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // so leave it open. Top-ups have no such step: close and surface settings.
     if (operation.type === 'topup') {
       useDialogStore().closeDialog({ key: 'top-up-credits' })
-      useSettingsDialog().show('workspace')
+      useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
     }
 
     const toastStore = useToastStore()

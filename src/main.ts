@@ -23,6 +23,7 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -115,6 +116,9 @@ flushErrorReports()
 setAssertReporter((message) => {
   if (isDesktop) {
     captureMessage(message, { level: 'warning' })
+  }
+  if (isCloud) {
+    reportAssertFailure(message)
   }
   if (isNightly) {
     useToastStore(pinia).add({
