@@ -308,7 +308,7 @@ export class PrimitiveNode extends LGraphNode {
 
     configuredWidgetValues?.slice(1).forEach((value, index) => {
       const controlWidget = this.widgets?.[index + 1]
-      if (controlWidget && typeof value === 'string') {
+      if (controlWidget && typeof value === 'string' && value !== '') {
         controlWidget.value = value
       }
     })
