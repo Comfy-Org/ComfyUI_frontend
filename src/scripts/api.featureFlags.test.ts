@@ -120,6 +120,7 @@ describe('API Feature Flags', () => {
     })
 
     it('should handle server without feature flags support', async () => {
+      vi.useFakeTimers()
       // Initialize API connection
       const initPromise = api.init()
 
@@ -150,8 +151,12 @@ describe('API Feature Flags', () => {
 
       await initPromise
 
+      await vi.advanceTimersByTimeAsync(5_000)
+
       // Server features should remain empty
       expect(api.serverFeatureFlags.value).toEqual({})
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+      vi.useRealTimers()
     })
   })
 

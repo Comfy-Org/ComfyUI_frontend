@@ -5,6 +5,8 @@ import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
+const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
+
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
   fetchWithUnifiedRemint,
@@ -747,6 +749,16 @@ export class ComfyApi extends EventTarget {
           data: this.getClientFeatureFlags()
         })
       )
+
+      setTimeout(() => {
+        if (
+          this.socket === socket &&
+          !this.serverFeatureFlagsReceived.value
+        ) {
+          this.serverFeatureFlags.value = {}
+          this.serverFeatureFlagsReceived.value = true
+        }
+      }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
