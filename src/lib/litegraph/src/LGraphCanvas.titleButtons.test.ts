@@ -97,6 +97,22 @@ describe('LGraphCanvas Title Button Rendering', () => {
       expect(ctx.rect).not.toHaveBeenCalled()
     })
 
+    it('clips card nodes with square bottom corners', () => {
+      node.shape = RenderShape.CARD
+      node.clip_area = true
+
+      canvas.drawNode(node, ctx)
+
+      expect(ctx.roundRect).toHaveBeenCalledWith(
+        0,
+        0,
+        node.size[0],
+        node.size[1],
+        [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
+      )
+      expect(ctx.clip).toHaveBeenCalled()
+    })
+
     it('should render visible title buttons', () => {
       const button1 = node.addTitleButton({
         name: 'button1',

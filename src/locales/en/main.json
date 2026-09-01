@@ -2079,6 +2079,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -3374,7 +3375,9 @@
       "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
       "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
       "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
-      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
+      "pendingInviteSingle": "This person already has a pending invite",
+      "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
+      "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

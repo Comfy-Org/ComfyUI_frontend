@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' est plus rapide ; 'precision' produit une synchronisation labiale de meilleure qualité à un coût doublé."
+        "tooltip": "« speed » est plus rapide ; « precision » produit une synchronisation labiale de meilleure qualité, mais à un coût plus élevé."
       },
       "output_language": {
         "name": "langue de sortie",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recadrer la vidéo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Zone de recadrage en pixels. Une largeur/hauteur nulle conserve l’image entière."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Échantillonnez un nombre fixe d’images d’une vidéo en utilisant différentes stratégies.",
     "display_name": "Échantillonner une image vidéo",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Découper la vidéo (avancé)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Si True, lorsqu’il n’est pas possible d’obtenir la durée spécifiée, une erreur est générée."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Fenêtre de découpage utilisant les images de début et de fin."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

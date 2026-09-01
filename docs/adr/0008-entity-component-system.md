@@ -58,6 +58,13 @@ system's pricing dependencies. Badge rows remain transient: they are
 not serialized, transmitted through CRDT, or included in undo history. See
 [Node Badge Store](../architecture/node-badge-store.md) for the design history.
 
+### Amendment (2026-08-23): registration and collision contract
+
+Entity registration collision and recovery policy is defined by
+[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+Node ID reminting policy is defined by
+[ADR 0018](0018-node-id-reminting-at-the-merge-boundary.md).
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.
