@@ -60,14 +60,9 @@ describe('resolveTemplateModelMetadata', () => {
     const result = await resolveTemplateModelMetadata([shared, unique, shared])
 
     expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(2)
-    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenNthCalledWith(
-      1,
-      shared.url
-    )
-    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenNthCalledWith(
-      2,
-      unique.url
-    )
+    expect(
+      mocks.fetchModelMetadataWithStatus.mock.calls.map(([url]) => url)
+    ).toEqual([shared.url, unique.url])
     expect(result).toEqual({
       status: 'completed',
       entries: [
