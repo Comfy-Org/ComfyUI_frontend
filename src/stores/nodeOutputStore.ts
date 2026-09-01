@@ -267,6 +267,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
 
+    revokePreviewsByLocatorId(locatorId)
     setOutputsByLocatorId(locatorId, { images })
     node.images = images
   }

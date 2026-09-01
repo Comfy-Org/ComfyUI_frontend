@@ -299,6 +299,21 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
     expect(store.nodeOutputs['7']?.images).toEqual(images)
     expect(node.images).toEqual(images)
   })
+
+  it('removes stale previews when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'preview:stale'
+    ])
+
+    store.replaceNodeOutputImages(node, [
+      { filename: 'painted.png', type: 'input' }
+    ])
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(app.nodePreviewImages['7']).toBeUndefined()
+  })
 })
 
 describe('nodeOutputStore restoreOutputs', () => {
