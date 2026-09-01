@@ -19,6 +19,7 @@ import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -112,10 +113,7 @@ const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
 const graphDocumentStore = useGraphDocumentStore()
-const graphMutationsByWorkflow = new Map<
-  string,
-  ReturnType<typeof createGraphMutations>
->()
+const graphMutationsByWorkflow = new Map<string, GraphMutations>()
 /**
  * Resolve the live document for a workflow id, creating the registry entry
  * when none exists. Never captured: a workflow id can be remapped to a new
@@ -124,6 +122,34 @@ const graphMutationsByWorkflow = new Map<
 const resolveDocumentId = (workflowId: string) =>
   graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
   graphDocumentStore.createDocument({ workflowId })
+/**
+ * Record every successful write against the target's document so its
+ * revision advances (ADR-0024 dirty tracking). Each method re-resolves the
+ * document id at success time: the workflow may have been rebound to a new
+ * document between creation and the write.
+ */
+const withMutationTracking = (
+  inner: GraphMutations,
+  workflowId: string
+): GraphMutations => {
+  const track = (committed: boolean): boolean => {
+    if (committed) {
+      const documentId = resolveDocumentId(workflowId)
+      if (documentId) graphDocumentStore.markMutated(documentId)
+    }
+    return committed
+  }
+  return {
+    batch: (context, define) => track(inner.batch(context, define)),
+    addNode: (payload, context) => track(inner.addNode(payload, context)),
+    setWidget: (nodeId, name, value, context) =>
+      track(inner.setWidget(nodeId, name, value, context)),
+    connect: (link, context) => track(inner.connect(link, context)),
+    deleteNode: (nodeId, removedLinkIds, context) =>
+      track(inner.deleteNode(nodeId, removedLinkIds, context)),
+    clearSemanticGraph: (context) => track(inner.clearSemanticGraph(context))
+  }
+}
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
@@ -191,8 +217,9 @@ const graphMutations = (workflowId: string) => {
       }
     }
   })
-  graphMutationsByWorkflow.set(workflowId, mutations)
-  return mutations
+  const tracked = withMutationTracking(mutations, workflowId)
+  graphMutationsByWorkflow.set(workflowId, tracked)
+  return tracked
 }
 const { focusNodeInstance } = useFocusNode()
 
