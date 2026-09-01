@@ -1681,6 +1681,7 @@ describe('ComfyApp', () => {
 
       vi.spyOn(app, 'loadGraphData').mockImplementation(async () => {
         ;(app.canvas as unknown as { graph: LGraph }).graph = newGraph
+        return true as any
       })
 
       ;(app as unknown as { addDropHandler(): void }).addDropHandler()
