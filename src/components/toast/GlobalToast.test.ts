@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { GRAPH_CANVAS_ANCHOR } from '@/constants/splitterConstants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
@@ -66,6 +67,34 @@ describe('GlobalToast', () => {
     expect(toastStore.removeAllRequested).toBe(false)
   })
 
+  it('anchors the main toast to the canvas panel with viewport fallbacks', () => {
+    renderToast()
+    // Toast is stubbed, so the outlets carry no roles or text; the stub
+    // elements' attributes are the only assertion surface.
+    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub renders no role or testid, so no Testing Library query can select it
+    const [main] = document.body.querySelectorAll('toast-stub')
+    const classes = main.getAttribute('class') ?? ''
+
+    // Both sides build from GRAPH_CANVAS_ANCHOR; each anchor() carries a
+    // fallback so the toast still renders before the panel mounts.
+    expect(main.getAttribute('position')).toBe('bottom-right')
+    expect(classes).toContain(`anchor(${GRAPH_CANVAS_ANCHOR}_top,1rem)`)
+    expect(classes).toContain(
+      `anchor(${GRAPH_CANVAS_ANCHOR}_right,anchor(--docked-agent-panel_left,calc(100vw-var(--workspace-inset-right,0px)-0.75rem)))`
+    )
+  })
+
+  it('keeps the billing-operation toast group on its own top-right outlet', () => {
+    renderToast()
+    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub renders no role or testid, so no Testing Library query can select it
+    const stubs = document.body.querySelectorAll('toast-stub')
+
+    expect(stubs).toHaveLength(2)
+    expect(stubs[1].getAttribute('group')).toBe('billing-operation')
+    expect(stubs[1].getAttribute('position')).toBe('top-right')
+    // The main outlet stays ungrouped so it never swallows billing messages.
+    expect(stubs[0].getAttribute('group')).toBeNull()
+  })
   it('holds messages raised during node selection mode until it exits', async () => {
     renderToast()
     const toastStore = useToastStore()

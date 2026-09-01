@@ -1,18 +1,19 @@
 import { useExtensionService } from '@/services/extensionService'
 
 // The initTelemetry.ts idiom: the guard lives INSIDE the unconditionally
-// retained function, and every agent-specific module is imported dynamically
+// retained function, and every agent-chunk module is imported dynamically
 // past it. OSS builds fold the guard, drop the dead remainder with its
 // import() edges, and emit no agent code; cloud builds keep the shell inline
 // in the core graph so a flag-off session fetches no separate gate chunk.
-// The graph-load hooks are async for the same reason; the extension service
-// awaits them, so the mint-port notifications keep their load bracketing.
 const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
 export function registerAgentPanelExtension(): void {
   if (!IS_CLOUD_BUILD) return
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
+    // Selection persistence across workflow loads. The panel store lives past
+    // the cloud-guard chunk boundary, so it loads dynamically like every other
+    // agent module here; both hooks are awaited by invokeExtensionsAsync.
     async beforeLoadGraph() {
       const { notifyMintPortsBeforeGraphLoad } =
         await import('@/workbench/extensions/agent/crdt/mintPortWiring')
@@ -23,16 +24,16 @@ export function registerAgentPanelExtension(): void {
           import('@/stores/agentNodeSelectionStore')
         ])
       if (!useAgentPanelStore().isOpen) return
+
       useAgentNodeSelectionStore().beginWorkflowLoad()
     },
     async afterLoadGraph(app) {
-      const [{ useAgentPanelStore }, { useAgentNodeSelectionStore }] =
-        await Promise.all([
-          import('@/workbench/extensions/agent/stores/agent/agentPanelStore'),
-          import('@/stores/agentNodeSelectionStore')
-        ])
+      const { useAgentNodeSelectionStore } =
+        await import('@/stores/agentNodeSelectionStore')
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
+      const { useAgentPanelStore } =
+        await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
       if (!useAgentPanelStore().isOpen) {
         nodeSelectionStore.finishWorkflowLoad()
         return
