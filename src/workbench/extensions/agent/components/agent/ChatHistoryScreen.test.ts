@@ -320,8 +320,8 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toBeUndefined()
   })
 
-  // Deliberately asserts only that nothing is silently committed. Whether the
-  // editor should survive a regroup is unsettled, so this test does not pin it.
+  // Editor survival through a regroup is pinned by 'keeps the editor focused
+  // and the draft intact'; this one only covers the commit side.
   it('commits nothing when the row changes bucket mid-rename', async () => {
     const user = userEvent.setup()
     const { emitted, rerender } = renderScreen(
