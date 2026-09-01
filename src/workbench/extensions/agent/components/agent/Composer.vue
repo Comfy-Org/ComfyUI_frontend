@@ -7,7 +7,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  nextTick,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -74,6 +82,11 @@ const mentionNodes = computed(() => {
 })
 const mentionAssets = ref<AssetItem[]>([])
 let mentionAssetsGeneration = 0
+// Invalidate any in-flight asset request so a settle after unmount can
+// neither write state nor report a spurious load failure.
+onUnmounted(() => {
+  mentionAssetsGeneration++
+})
 function loadMentionNodes(): void {
   graphNodes.value = getMentionNodes().toSorted((a, b) =>
     a.title.localeCompare(b.title)
