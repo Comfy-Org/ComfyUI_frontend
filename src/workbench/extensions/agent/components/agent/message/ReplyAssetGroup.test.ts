@@ -32,6 +32,9 @@ vi.mock('@/components/load3d/modelThumbnail', () => ({
   generateModelThumbnail
 }))
 
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+
 const image = (n: number): ReplyAsset => ({
   url: `https://x/i${n}.png`,
   filename: `i${n}.png`,
@@ -86,6 +89,7 @@ describe('ReplyAssetGroup', () => {
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
     generateModelThumbnail.mockReset().mockResolvedValue(null)
+    reportError.mockReset()
   })
 
   it('renders image and video previews inline', () => {
@@ -216,6 +220,59 @@ describe('ReplyAssetGroup', () => {
       'https://x/mesh.glb',
       'mesh.glb'
     )
+  })
+
+  it('does not generate a thumbnail after unmounting during preview lookup', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    let resolvePreview!: (value: string | null) => void
+    findServerPreviewUrl.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePreview = resolve
+      })
+    )
+    const { unmount } = renderGroup([model])
+
+    unmount()
+    resolvePreview(null)
+    await Promise.resolve()
+
+    expect(generateModelThumbnail).not.toHaveBeenCalled()
+  })
+
+  it('reports preview lookup failures and retries generation on a later pass', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findServerPreviewUrl.mockRejectedValueOnce(new Error('preview failed'))
+    const { rerender } = renderGroup([model])
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_reply_asset_preview_failure'
+      })
+    )
+
+    await rerender({ assets: [model, image(1)] })
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+  })
+
+  it('clears a pending thumbnail refresh when unmounted', async () => {
+    vi.useFakeTimers()
+    try {
+      isAssetPreviewSupported.mockReturnValue(true)
+      const { unmount } = renderGroup([model])
+      await vi.waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalled())
+      await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+      const dialog = showDialog.mock.calls.at(-1)?.[0]
+      dialog.dialogComponentProps.onClose()
+      await Promise.resolve()
+      const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
+
+      unmount()
+      await vi.advanceTimersByTimeAsync(2_000)
+
+      expect(findServerPreviewUrl).toHaveBeenCalledTimes(callsBeforeUnmount)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('refreshes the tile thumbnail after the viewer closes', async () => {
