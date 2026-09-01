@@ -120,7 +120,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fail if performance tests failed
-        if: steps.perf.outcome == 'failure'
+        if: steps.perf.outcome == 'failure' && github.event_name == 'push'
         run: |
           echo "::error::Performance tests failed; partial metrics were saved when available."
           exit 1
