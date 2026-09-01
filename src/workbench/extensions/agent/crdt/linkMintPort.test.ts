@@ -143,6 +143,8 @@ describe('attachLinkMintPort', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
+
+    expect(minted).toEqual([])
     await afterSweep()
 
     expect(minted).toEqual([
@@ -160,9 +162,7 @@ describe('attachLinkMintPort', () => {
     port.severances.take('1')
     await afterSweep()
 
-    expect(minted).toEqual([
-      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
-    ])
+    expect(minted).toEqual([])
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })

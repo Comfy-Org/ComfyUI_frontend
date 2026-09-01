@@ -8,8 +8,6 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
-import { assert } from '@/base/assert'
-
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -143,7 +141,16 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
-            if (!entry.rootScoped) {
+            if (entry.rootScoped) {
+              deps.enqueue([
+                {
+                  op: 'disconnect',
+                  link_id: entry.linkId,
+                  to_node: entry.topology.targetNodeId,
+                  to_slot: entry.topology.targetSlot
+                }
+              ])
+            } else {
               surfaceUnrepresentable(
                 'subgraph-interior disconnect',
                 String(entry.linkId)
@@ -175,20 +182,6 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     }
     capture(topology.originNodeId, entry)
     capture(topology.targetNodeId, entry)
-    if (mintable && rootScoped) {
-      assert(
-        rootScoped,
-        'breaks CRDT invariant #1 (ops are the replication unit): standalone disconnect ops require a root-scope link; see ADR-0016'
-      )
-      deps.enqueue([
-        {
-          op: 'disconnect',
-          link_id: topology.id,
-          to_node: topology.targetNodeId,
-          to_slot: topology.targetSlot
-        }
-      ])
-    }
     scheduleSweep()
   }
 
