@@ -46,7 +46,8 @@ export class PrimitiveNode extends LGraphNode {
    * exist yet when `configure()` applies its own positional-restore loop, and
    * `widgetValueStore`'s restoration record is already cleared by the time
    * `onAfterGraphConfigured` runs, so this node keeps its own copy across that
-   * gap instead.
+   * gap instead. Consumed (cleared) by the first non-recreating build so a
+   * later rebuild can't resurrect the workflow-file value.
    */
   private _configuredWidgetsValues?: readonly WidgetValue[]
 
@@ -248,6 +249,12 @@ export class PrimitiveNode extends LGraphNode {
       widget.name,
       recreating
     )
+
+    // Consume-once: the serialized restore applies only to the first
+    // post-configure build. Later rebuilds (e.g. disconnect → reconnect
+    // after load) must reflect the live target widget, not resurrect the
+    // workflow-file value (the same snap-back class as #16006).
+    if (!recreating) this._configuredWidgetsValues = undefined
   }
 
   private _createWidget(

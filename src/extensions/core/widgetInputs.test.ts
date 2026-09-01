@@ -159,6 +159,65 @@ describe('PrimitiveNode', () => {
     )!
     expect(reloadedPrimitive.widgets?.[0]?.value).toBe(7)
   })
+
+  it('does not resurrect the workflow-file value when reconnected after load', async () => {
+    const TargetType = await applyNodeDefHooks((nodeType) => {
+      nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
+        this.serialize_widgets = true
+        this.addWidget('number', 'value', 0, () => {}, { min: 0, max: 100 })
+        this.addInput('value', 'INT')
+        this.inputs[0].widget = { name: 'value' }
+        setWidgetConfig(this.inputs[0], ['INT', { min: 0, max: 100 }])
+      }
+    })
+    TargetType.nodeData = fromPartial({
+      input: { required: { value: ['INT', { min: 0, max: 100 }] } }
+    })
+    LiteGraph.registerNodeType('TargetReconnect', TargetType)
+
+    const graph = new LGraph()
+    const target = LiteGraph.createNode('TargetReconnect')
+    if (!target) throw new Error('TargetReconnect was not registered')
+    graph.add(target)
+
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode))
+      throw new Error('PrimitiveNode was not registered')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+    primitive.onAfterGraphConfigured()
+    primitive.widgets![0].value = 7
+
+    const serialized = graph.serialize()
+
+    graph.clear()
+    appState.configuringGraph = true
+    const reloaded = new LGraph()
+    reloaded.configure(serialized)
+    appState.configuringGraph = false
+    for (const node of reloaded.nodes) node.onGraphConfigured?.()
+    for (const node of reloaded.nodes) node.onAfterGraphConfigured?.()
+
+    const reloadedPrimitive = reloaded.nodes.find(
+      (n): n is PrimitiveNode => n instanceof PrimitiveNode
+    )!
+    const reloadedTarget = reloaded.nodes.find(
+      (n) => n.type === 'TargetReconnect'
+    )!
+    expect(reloadedPrimitive.widgets?.[0]?.value).toBe(7)
+
+    // The user disconnects the primitive, edits the target directly, then
+    // reconnects. The rebuild must copy the target's live value — the
+    // serialized restore applies only to the initial post-configure build
+    // (same bug class as #16006's snap-back).
+    reloadedPrimitive.disconnectOutput(0)
+    expect(reloadedPrimitive.widgets?.length ?? 0).toBe(0)
+
+    reloadedTarget.widgets![0].value = 9
+    reloadedPrimitive.connect(0, reloadedTarget, 0)
+
+    expect(reloadedPrimitive.widgets?.[0]?.value).toBe(9)
+  })
 })
 
 describe('getWidgetConfig', () => {
