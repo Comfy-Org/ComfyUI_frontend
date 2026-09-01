@@ -10,6 +10,15 @@ const TEST_FIXTURE_MARKERS = [
 ] as const
 
 const DISTRIBUTIONS = ['localhost', 'desktop', 'cloud'] as const
+const TEXT_ASSET_EXTENSIONS = new Set([
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.html',
+  '.json',
+  '.css',
+  '.map'
+])
 
 function artifactFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -99,7 +108,7 @@ export function assertNoTestFixtures(chunks: ReadonlyArray<string>): void {
 export function checkAssetsFlagArtifact(directory = 'dist'): void {
   const files = artifactFiles(directory)
   const chunks = files
-    .filter((path) => extname(path) === '.js')
+    .filter((path) => TEXT_ASSET_EXTENSIONS.has(extname(path)))
     .map((path) => readFileSync(path, 'utf8'))
   const expectedCommit = process.env.EXPECTED_FRONTEND_COMMIT
   const expectedDistribution = process.env.EXPECTED_DISTRIBUTION
