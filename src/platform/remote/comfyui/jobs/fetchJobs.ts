@@ -18,6 +18,16 @@ import type {
 } from './jobTypes'
 import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
 
+export class JobsApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number
+  ) {
+    super(message)
+    this.name = 'JobsApiError'
+  }
+}
+
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
   total: number
@@ -53,7 +63,10 @@ async function fetchJobsRaw(
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
   const res = await fetchApi(url)
   if (!res.ok) {
-    throw new Error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+    throw new JobsApiError(
+      `[Jobs API] Failed to fetch jobs: ${res.status}`,
+      res.status
+    )
   }
   const data = zJobsListResponse.parse(await res.json())
   return {
