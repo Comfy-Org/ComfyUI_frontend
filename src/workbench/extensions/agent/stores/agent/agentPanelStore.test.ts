@@ -2,6 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { api } from '@/scripts/api'
+
 const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
@@ -23,6 +25,16 @@ describe('agentPanelStore engagement telemetry', () => {
 
   afterEach(() => {
     useAgentPanelStore().$dispose()
+  })
+
+  it('derives flag delivery directly from the API state', async () => {
+    api.serverFeatureFlagsReceived.value = false
+    const store = useAgentPanelStore()
+
+    expect(store.flagDelivered).toBe(false)
+    api.serverFeatureFlagsReceived.value = true
+    await nextTick()
+    expect(store.flagDelivered).toBe(true)
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
