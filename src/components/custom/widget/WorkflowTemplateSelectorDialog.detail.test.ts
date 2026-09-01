@@ -339,7 +339,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       name: 'Template requirements'
     })
     expect(
-      within(requirements).getByText(fixtures.activeModel.name)
+      within(requirements).getByText(
+        `${fixtures.activeModel.name} · Used by Active loader`
+      )
     ).toBeInTheDocument()
     expect(
       within(requirements).queryByText(fixtures.bypassedModel.name)
@@ -351,7 +353,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: `Download ${fixtures.activeModel.name}`
+        name: 'Download Checkpoint · 1 KB'
       })
     )
 
@@ -425,7 +427,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
   it('starts eligible rows before Download models & open opens the workflow', async () => {
     const { user } = await clickTemplateCardAfterRender()
     await user.click(
-      await screen.findByRole('button', { name: 'Download models & open' })
+      await screen.findByRole('button', {
+        name: 'Download models & open (1 KB)'
+      })
     )
 
     await waitFor(() => {

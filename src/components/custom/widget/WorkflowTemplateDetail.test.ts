@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -35,6 +35,7 @@ const groups = [
 ] as const
 
 function renderDetail({
+  description = 'Create a video from a starting image.',
   renderedGroups = groups,
   cloudUrl,
   isPartnerNode = false,
@@ -44,6 +45,7 @@ function renderDetail({
   requirementsMet = false,
   modelDownloadsAvailable = false
 }: {
+  description?: string
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
@@ -63,7 +65,7 @@ function renderDetail({
   return render(WorkflowTemplateDetail, {
     props: {
       title: 'Wan 2.2 Image to Video',
-      description: 'Create a video from a starting image.',
+      description,
       groups: renderedGroups,
       cloudUrl,
       isPartnerNode,
@@ -73,11 +75,72 @@ function renderDetail({
     slots: {
       preview: '<img src="/thumbnail.webp" alt="Wan 2.2 workflow preview" />'
     },
-    global: { plugins: [i18n] }
+    global: { directives: { tooltip: {} }, plugins: [i18n] }
   })
 }
 
 describe('WorkflowTemplateDetail', () => {
+  it('shows the description control from rendered overflow and updates it after resize', async () => {
+    const user = userEvent.setup()
+    const resizeObserverState = {
+      callback: null as ResizeObserverCallback | null
+    }
+    const originalResizeObserver = globalThis.ResizeObserver
+    class MockResizeObserver implements ResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        resizeObserverState.callback = callback
+      }
+
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    globalThis.ResizeObserver = MockResizeObserver
+
+    let scrollHeight = 64
+    let clientHeight = 48
+    const scrollHeightSpy = vi
+      .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+      .mockImplementation(() => scrollHeight)
+    const clientHeightSpy = vi
+      .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+      .mockImplementation(() => clientHeight)
+
+    try {
+      renderDetail({
+        description:
+          'Short descriptions can still wrap beyond three lines in a narrow panel.'
+      })
+
+      expect(
+        await screen.findByRole('button', { name: 'Show more' })
+      ).toBeInTheDocument()
+
+      expect(resizeObserverState.callback).not.toBeNull()
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
+      clientHeight = 64
+      resizeObserverState.callback!([], {} as ResizeObserver)
+      expect(
+        screen.getByRole('button', { name: 'Show less' })
+      ).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Show less' }))
+      scrollHeight = 48
+      clientHeight = 48
+      resizeObserverState.callback!([], {} as ResizeObserver)
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('button', { name: 'Show more' })
+        ).not.toBeInTheDocument()
+      })
+    } finally {
+      scrollHeightSpy.mockRestore()
+      clientHeightSpy.mockRestore()
+      globalThis.ResizeObserver = originalResizeObserver
+    }
+  })
+
   it('presents only declared model requirements', () => {
     renderDetail()
 
@@ -470,8 +533,8 @@ describe('WorkflowTemplateDetail', () => {
     })
     expect(pausedUnknown).not.toHaveAttribute('aria-valuenow')
     expect(pausedUnknown).toHaveAttribute('aria-valuetext', 'Paused')
-    expect(
-      screen.getByRole('status', { name: 'Downloaded' })
-    ).toHaveTextContent('Downloaded')
+    expect(screen.getByRole('status', { name: 'Installed' })).toHaveTextContent(
+      'Installed'
+    )
   })
 })

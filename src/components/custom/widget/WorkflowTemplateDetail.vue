@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  useId,
+  useTemplateRef
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -23,7 +31,8 @@ const {
   modelSetupEnabled = false,
   setupPending = false,
   requirementsMet = false,
-  modelDownloadsAvailable = false
+  modelDownloadsAvailable = false,
+  remainingModelDownloadSize
 } = defineProps<{
   title: string
   description: string
@@ -35,6 +44,7 @@ const {
   setupPending?: boolean
   requirementsMet?: boolean
   modelDownloadsAvailable?: boolean
+  remainingModelDownloadSize?: string
 }>()
 
 const emit = defineEmits<{
@@ -54,10 +64,31 @@ const offerDownloadAndOpen = computed(
     !requirementsMet &&
     (setupPending || modelDownloadsAvailable)
 )
+const downloadModelsAndOpenLabel = computed(() =>
+  remainingModelDownloadSize
+    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', {
+        size: remainingModelDownloadSize
+      })
+    : t('templateWorkflows.detail.downloadModelsAndOpen')
+)
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
 })
+
+const showFullDescription = shallowRef(false)
+const descriptionElement =
+  useTemplateRef<HTMLParagraphElement>('descriptionElement')
+const descriptionOverflows = shallowRef(false)
+
+function measureDescriptionOverflow() {
+  const element = descriptionElement.value
+  descriptionOverflows.value =
+    !!element && element.scrollHeight > element.clientHeight + 1
+}
+
+onMounted(measureDescriptionOverflow)
+useResizeObserver(descriptionElement, measureDescriptionOverflow)
 
 type DownloadingState = Extract<
   TemplateModelDownloadState,
@@ -141,7 +172,6 @@ function getFailedDownloadLabel(
       : 'templateWorkflows.detail.downloadFailed'
   )
 }
-
 </script>
 
 <template>
@@ -149,7 +179,7 @@ function getFailedDownloadLabel(
     ref="detailRoot"
     :aria-label="title"
     tabindex="-1"
-    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="template-detail-enter @container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <div
       class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border-subtle @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
@@ -167,7 +197,7 @@ function getFailedDownloadLabel(
           class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary-background/50 p-4"
         >
           <div class="flex min-w-0 flex-col gap-2">
-            <h3 :id="cloudTitleId" class="m-0 text-sm font-medium">
+            <h3 :id="cloudTitleId" class="m-0 text-sm/5 font-semibold">
               {{
                 t(
                   isPartnerNode
@@ -176,7 +206,7 @@ function getFailedDownloadLabel(
                 )
               }}
             </h3>
-            <p class="m-0 text-xs/4 font-normal text-muted-foreground">
+            <p class="m-0 text-[13px]/[18px] font-normal text-muted-foreground">
               {{
                 t(
                   isPartnerNode
@@ -192,7 +222,7 @@ function getFailedDownloadLabel(
             target="_blank"
             rel="noopener noreferrer"
             variant="secondary"
-            size="md"
+            size="lg"
             class="w-full text-base-foreground no-underline"
           >
             {{ t('templateWorkflows.detail.openInCloud') }}
@@ -207,10 +237,40 @@ function getFailedDownloadLabel(
           {{ title }}
         </h2>
         <p
-          class="m-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground"
+          ref="descriptionElement"
+          :class="
+            cn(
+              'm-0 max-w-2xl overflow-hidden text-sm/relaxed wrap-break-word text-muted-foreground transition-[max-height] duration-200 ease-out [interpolate-size:allow-keywords] motion-reduce:transition-none',
+              showFullDescription ? 'max-h-max' : 'line-clamp-3 max-h-[3lh]'
+            )
+          "
         >
           {{ description }}
         </p>
+        <button
+          v-if="descriptionOverflows || showFullDescription"
+          type="button"
+          class="m-0 flex w-fit cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm text-base-foreground hover:underline"
+          :aria-expanded="showFullDescription"
+          @click="showFullDescription = !showFullDescription"
+        >
+          {{
+            t(
+              showFullDescription
+                ? 'templateWorkflows.detail.descriptionLess'
+                : 'templateWorkflows.detail.descriptionMore'
+            )
+          }}
+          <i
+            aria-hidden="true"
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] size-3.5 transition-transform duration-200 motion-reduce:transition-none',
+                showFullDescription && 'rotate-180'
+              )
+            "
+          />
+        </button>
       </div>
 
       <div
@@ -218,7 +278,7 @@ function getFailedDownloadLabel(
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
         tabindex="0"
-        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2"
+        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2 @[48rem]/template-detail:px-6"
       >
         <section
           v-for="group in groups"
@@ -234,7 +294,7 @@ function getFailedDownloadLabel(
               :label="group.rows.length"
               severity="secondary"
               variant="circle"
-              class="size-4"
+              class="size-5 text-xs"
             />
             <span
               v-if="group.total"
@@ -250,13 +310,13 @@ function getFailedDownloadLabel(
               :key="row.id"
               :class="
                 cn(
-                  'flex min-h-14 items-center gap-3 rounded-md p-2',
+                  'grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-md p-2',
                   row.status?.kind === 'installed' && 'opacity-60'
                 )
               "
             >
               <span
-                class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
+                class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
               >
                 <img
                   v-if="
@@ -284,12 +344,14 @@ function getFailedDownloadLabel(
                   :class="
                     row.kind === 'input'
                       ? 'icon-[lucide--file-input] size-4'
-                      : 'icon-[lucide--box] size-4'
+                      : 'icon-[comfy--ai-model] size-4'
                   "
                 />
               </span>
 
-              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span
+                class="col-start-2 row-start-1 flex min-w-0 flex-col gap-0.5"
+              >
                 <span class="truncate text-sm" :title="row.name">
                   {{ row.name }}
                 </span>
@@ -306,7 +368,7 @@ function getFailedDownloadLabel(
                 :href="row.status.href"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="focus-visible:ring-ring shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
+                class="focus-visible:ring-ring col-start-3 row-start-1 shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
               >
                 {{ row.status.label }}
                 <span aria-hidden="true">↗</span>
@@ -318,11 +380,14 @@ function getFailedDownloadLabel(
                   (!row.status.downloadState ||
                     row.status.downloadState.status === 'idle')
                 "
+                v-tooltip.top="{
+                  value: row.status.label,
+                  class: 'template-detail-tooltip'
+                }"
                 :aria-label="getDownloadAriaLabel(row)"
-                :title="row.status.label"
                 variant="textonly"
                 size="unset"
-                class="size-6 shrink-0 rounded-sm p-1"
+                class="col-start-3 row-start-1 size-8 shrink-0 rounded-md p-1.5"
                 @click="emit('download-model', row.id)"
               >
                 <i aria-hidden="true" class="icon-[tabler--download] size-4" />
@@ -334,10 +399,19 @@ function getFailedDownloadLabel(
                   (row.status.downloadState?.status === 'queued' ||
                     row.status.downloadState?.status === 'starting')
                 "
-                role="status"
-                class="shrink-0 text-xs text-muted-foreground"
+                class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 text-xs text-muted-foreground"
               >
-                {{ getPassiveDownloadLabel(row.status.downloadState) }}
+                <span
+                  aria-hidden="true"
+                  class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
+                >
+                  <span
+                    class="block h-full w-1/3 animate-pulse rounded-full bg-primary-background"
+                  />
+                </span>
+                <span role="status" class="shrink-0">
+                  {{ getPassiveDownloadLabel(row.status.downloadState) }}
+                </span>
               </span>
 
               <span
@@ -345,7 +419,7 @@ function getFailedDownloadLabel(
                   row.status?.kind === 'downloadable' &&
                   row.status.downloadState?.status === 'downloading'
                 "
-                class="flex shrink-0 items-center gap-2"
+                class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3"
               >
                 <span
                   role="progressbar"
@@ -356,7 +430,7 @@ function getFailedDownloadLabel(
                   aria-valuemax="100"
                   :aria-valuenow="getProgressPercent(row.status.downloadState)"
                   :aria-valuetext="getProgressText(row.status.downloadState)"
-                  class="block h-1 w-24 overflow-hidden rounded-full bg-secondary-background"
+                  class="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
                 >
                   <span
                     :class="
@@ -377,7 +451,7 @@ function getFailedDownloadLabel(
                     "
                   />
                 </span>
-                <span class="text-xs text-muted-foreground">
+                <span class="shrink-0 text-xs text-muted-foreground">
                   {{ getProgressText(row.status.downloadState) }}
                 </span>
               </span>
@@ -388,10 +462,10 @@ function getFailedDownloadLabel(
                   row.status.downloadState?.status === 'done'
                 "
                 role="status"
-                :aria-label="t('templateWorkflows.detail.downloaded')"
-                :label="t('templateWorkflows.detail.downloaded')"
+                :aria-label="t('templateWorkflows.detail.installed')"
+                :label="t('templateWorkflows.detail.installed')"
                 variant="label"
-                class="h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
+                class="col-start-3 row-start-1 h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
               />
 
               <span
@@ -399,9 +473,16 @@ function getFailedDownloadLabel(
                   row.status?.kind === 'downloadable' &&
                   row.status.downloadState?.status === 'failed'
                 "
-                class="flex shrink-0 items-center gap-2"
+                class="col-start-3 row-start-1 flex shrink-0 items-center gap-2"
               >
                 <Badge
+                  v-tooltip.top="{
+                    value:
+                      row.status.downloadState.reason === 'error'
+                        ? t('templateWorkflows.detail.downloadFailedHint')
+                        : undefined,
+                    class: 'template-detail-tooltip'
+                  }"
                   role="status"
                   :aria-label="getFailedDownloadLabel(row.status.downloadState)"
                   :label="getFailedDownloadLabel(row.status.downloadState)"
@@ -425,17 +506,17 @@ function getFailedDownloadLabel(
                 role="img"
                 :aria-label="row.status.label"
                 :title="row.status.label"
-                class="flex size-6 shrink-0 items-center justify-center"
+                class="col-start-3 row-start-1 flex size-8 shrink-0 items-center justify-center text-success-background"
               >
                 <i
                   aria-hidden="true"
-                  class="icon-[lucide--circle-check] size-4 text-success-background"
+                  class="icon-[lucide--circle-check] size-4"
                 />
               </span>
 
               <span
                 v-else-if="row.status"
-                class="flex shrink-0 items-center gap-2"
+                class="col-start-3 row-start-1 flex shrink-0 items-center gap-2"
               >
                 <Badge
                   :label="row.status.label"
@@ -453,34 +534,59 @@ function getFailedDownloadLabel(
     <footer
       class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
     >
-      <Button
-        v-if="offerDownloadAndOpen"
-        variant="outline"
-        size="sm"
-        :disabled="openPending"
-        @click="emit('open-template')"
-      >
-        {{ t('templateWorkflows.detail.openNow') }}
-      </Button>
-      <Button
-        variant="inverted"
-        size="sm"
-        :loading="openPending"
-        :disabled="offerDownloadAndOpen && setupPending"
-        @click="
-          offerDownloadAndOpen
-            ? emit('download-models-and-open')
-            : emit('open-template')
-        "
-      >
-        {{
-          t(
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <Button
+          v-if="offerDownloadAndOpen"
+          variant="outline"
+          size="lg"
+          :disabled="openPending"
+          @click="emit('open-template')"
+        >
+          {{ t('templateWorkflows.detail.openNow') }}
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          :loading="openPending"
+          :disabled="offerDownloadAndOpen && setupPending"
+          @click="
             offerDownloadAndOpen
-              ? 'templateWorkflows.detail.downloadModelsAndOpen'
-              : 'templateWorkflows.detail.openNow'
-          )
-        }}
-      </Button>
+              ? emit('download-models-and-open')
+              : emit('open-template')
+          "
+        >
+          {{
+            offerDownloadAndOpen
+              ? downloadModelsAndOpenLabel
+              : t('templateWorkflows.detail.openNow')
+          }}
+        </Button>
+      </div>
     </footer>
   </article>
 </template>
+
+<style>
+.template-detail-enter {
+  animation: template-detail-enter 180ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@keyframes template-detail-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-detail-enter {
+    animation: none;
+  }
+}
+
+.template-detail-tooltip .p-tooltip-text {
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+</style>

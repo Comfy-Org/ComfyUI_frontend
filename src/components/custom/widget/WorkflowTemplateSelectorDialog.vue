@@ -412,6 +412,7 @@
         :setup-pending="activeDetail.modelSetup.pending"
         :requirements-met="activeDetailModelRequirementsMet"
         :model-downloads-available="activeDetailModelDownloadsAvailable"
+        :remaining-model-download-size="activeDetailRemainingModelDownloadSize"
         @open-template="onOpenTemplate"
         @download-models-and-open="onDownloadModelsAndOpen"
         @download-model="onDownloadModel"
@@ -990,9 +991,14 @@ function getModelTypeLabel(row: TemplateModelSetupRow): string {
     : formatCategoryLabel(row.modelType.raw)
 }
 
-function getModelDetailDescription(row: TemplateModelSetupRow): string {
+function getModelDetailTitle(row: TemplateModelSetupRow): string {
   const parts = [getModelTypeLabel(row)]
   if (row.fileSize !== null) parts.push(formatSize(row.fileSize))
+  return parts.filter(Boolean).join(' · ')
+}
+
+function getModelDetailDescription(row: TemplateModelSetupRow): string {
+  const parts = [row.model.name]
   if (row.usedBy.length > 0) {
     parts.push(
       t(
@@ -1012,7 +1018,7 @@ function toModelDetailRow(
   const detailRow: TemplateDetailRow = {
     id: `model:${getModelFileKey(row.model)}`,
     kind: 'model',
-    name: row.model.name,
+    name: getModelDetailTitle(row),
     description: getModelDetailDescription(row)
   }
 
@@ -1147,15 +1153,32 @@ const activeDetailModelRequirementsMet = computed(() => {
   )
 })
 
-const activeDetailModelDownloadsAvailable = computed(() => {
+const activeDetailModelDownloadCandidates = computed<
+  readonly TemplateModelSetupRow[]
+>(() => {
   const setup = activeDetail.value?.modelSetup
-  return Boolean(
-    setup &&
-    !setup.pending &&
-    setup.result.rows.some((row) =>
-      isModelDownloadCandidate(row, setup.rowDownloads)
-    )
+  if (!setup || setup.pending) return []
+
+  return setup.result.rows.filter((row) =>
+    isModelDownloadCandidate(row, setup.rowDownloads)
   )
+})
+
+const activeDetailModelDownloadsAvailable = computed(
+  () => activeDetailModelDownloadCandidates.value.length > 0
+)
+
+const activeDetailRemainingModelDownloadSize = computed(() => {
+  const rows = activeDetailModelDownloadCandidates.value
+  if (rows.length === 0) return undefined
+
+  let totalBytes = 0
+  for (const row of rows) {
+    if (row.fileSize === null) return undefined
+    totalBytes += row.fileSize
+  }
+
+  return formatSize(totalBytes)
 })
 
 async function updateTemplateModelMetadata(
