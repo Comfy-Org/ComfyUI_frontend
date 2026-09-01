@@ -19,6 +19,7 @@
  * degrade to a note in the log section rather than abort the whole bundle.
  */
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
 
@@ -117,6 +118,11 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
   try {
     return { label, ok: true as const, value: await load() }
   } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_debug_report_source_failed',
+      tags: { source: label },
+      level: 'warning'
+    })
     return { label, ok: false as const, error: String(error) }
   }
 }

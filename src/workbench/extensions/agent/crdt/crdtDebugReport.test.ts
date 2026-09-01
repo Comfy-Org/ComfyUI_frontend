@@ -6,6 +6,10 @@ const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
   getSettings: vi.fn()
 }))
 
+const { reportError } = vi.hoisted(() => ({
+  reportError: vi.fn()
+}))
+
 vi.mock('@/scripts/api', () => ({
   api: {
     getSystemStats: () => getSystemStats(),
@@ -17,6 +21,10 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/stores/extensionStore', () => ({
   useExtensionStore: () => ({ extensions: [{ name: 'Comfy.TestExtension' }] })
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError
 }))
 
 import type { ReportSources } from './crdtDebugReport'
@@ -111,6 +119,11 @@ describe('collectCrdtDebugReport', () => {
 
     expect(report).toContain('backend unreachable')
     expect(report).toContain('doc-1')
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_debug_report_source_failed',
+      tags: { source: 'System stats' },
+      level: 'warning'
+    })
   })
 
   it('redacts credential-shaped setting values and says the section needs review', async () => {
