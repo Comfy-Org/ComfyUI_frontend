@@ -64,6 +64,12 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     composer.releaseSubmission()
     expect(mounted.value).toBe(false)
+    composer.requestAttachments([
+      new File(['reference'], 'reference.png', { type: 'image/png' })
+    ])
+    expect(mounted.value).toBe(true)
+    composer.takeAttachmentRequest()
+    expect(mounted.value).toBe(false)
     store.isOpen = true
     expect(mounted.value).toBe(true)
     store.close('close_button')

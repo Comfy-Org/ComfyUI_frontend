@@ -30,7 +30,8 @@ export function useAgentDockMount(): AgentDockMount {
       () =>
         agentPanelStore.enabled &&
         (agentPanelStore.isOpen ||
-          agentComposerStore.compactSessionPhase !== 'idle')
+          agentComposerStore.compactSessionPhase !== 'idle' ||
+          agentComposerStore.hasPendingAttachmentWork)
     ),
     DockedAgentPanel: defineAsyncComponent(
       () => import('../components/agent/DockedAgentPanel.vue')

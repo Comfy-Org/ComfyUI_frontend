@@ -117,6 +117,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
+const agentComposerStore = useAgentComposerStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
@@ -196,7 +197,10 @@ const graphMutations = (workflowId: string) => {
           opId: context.opId,
           timestamp: Date.now()
         })
-        if (LiteGraph.vueNodesMode) {
+        if (
+          LiteGraph.vueNodesMode &&
+          agentComposerStore.compactSessionPhase !== 'idle'
+        ) {
           const isCurrentGraph = () =>
             canvasStore.rootGraphId === scope.rootGraphId &&
             canvasStore.currentGraph?.id === scope.owningGraphId
@@ -624,7 +628,6 @@ async function onAgentActiveTab(
 }
 
 start()
-const agentComposerStore = useAgentComposerStore()
 void refreshCloudWorkflowIds()
 watch(
   [
@@ -778,7 +781,6 @@ function onNewChat(): void {
   newChat()
 }
 
-const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
@@ -915,10 +917,35 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
-  stage: (staged) => panelRef.value?.addAttachment(staged),
-  update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
-  remove: (id) => panelRef.value?.removeAttachment(id)
+  stage: agentComposerStore.addAttachment,
+  update: agentComposerStore.updateAttachment,
+  remove: agentComposerStore.removeAttachment
 })
+
+let drainingCompactAttachmentRequests = false
+async function drainCompactAttachmentRequests(): Promise<void> {
+  if (drainingCompactAttachmentRequests) return
+  drainingCompactAttachmentRequests = true
+  try {
+    let request = agentComposerStore.takeAttachmentRequest()
+    while (request !== undefined) {
+      await attachment.addFiles(request.files)
+      request = agentComposerStore.takeAttachmentRequest()
+    }
+  } finally {
+    drainingCompactAttachmentRequests = false
+    if (agentComposerStore.pendingAttachmentRequests.length > 0)
+      void drainCompactAttachmentRequests()
+  }
+}
+
+watch(
+  () => agentComposerStore.pendingAttachmentRequests.length,
+  (count) => {
+    if (count > 0) void drainCompactAttachmentRequests()
+  },
+  { immediate: true }
+)
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1016,7 +1043,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
   }
 
   if (asset.ref && asset.kind !== 'other') {
-    panelRef.value?.addAttachment({
+    agentComposerStore.addAttachment({
       id: `asset:${asset.ref}`,
       name: asset.name,
       ref: asset.ref,
@@ -1108,7 +1135,6 @@ watch(
     </div>
     <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
-      ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :user-name="userName"

@@ -22,7 +22,7 @@ const paused = computed(() => progress.value?.phase === 'paused')
   <div
     v-if="progress"
     aria-hidden="true"
-    class="pointer-events-none fixed top-0 left-0 z-60 transition-transform duration-75 ease-linear motion-reduce:hidden"
+    class="pointer-events-none fixed top-0 left-0 z-1100 transition-transform duration-75 ease-linear motion-reduce:hidden"
     :style="{
       transform: `translate3d(${progress.cursorX}px, ${progress.cursorY}px, 0)`
     }"
@@ -45,7 +45,7 @@ const paused = computed(() => progress.value?.phase === 'paused')
   >
     <div
       v-if="progress"
-      class="pointer-events-none fixed inset-x-4 bottom-20 z-60 flex justify-center sm:inset-x-18"
+      class="pointer-events-none fixed inset-x-4 bottom-20 z-1100 flex justify-center sm:inset-x-18"
     >
       <div
         role="status"

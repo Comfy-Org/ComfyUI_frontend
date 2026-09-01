@@ -35,6 +35,9 @@ describe('DockedAgentPanel chunk-load failure', () => {
     store.isOpen = true
     composer.draft = 'Keep this prompt after a failed panel load'
     expect(composer.requestSubmission()).toBe(true)
+    composer.requestAttachments([
+      new File(['reference'], 'reference.png', { type: 'image/png' })
+    ])
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -52,6 +55,8 @@ describe('DockedAgentPanel chunk-load failure', () => {
       errorType: 'agent_panel_load_failure'
     })
     expect(composer.pendingSubmission).toBeNull()
+    expect(composer.pendingAttachmentRequests).toEqual([])
+    expect(composer.hasPendingAttachmentWork).toBe(false)
     expect(composer.draft).toBe('Keep this prompt after a failed panel load')
     expect(composer.compactSessionPhase).toBe('idle')
   })

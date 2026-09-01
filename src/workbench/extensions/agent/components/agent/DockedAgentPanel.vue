@@ -62,7 +62,11 @@ const AgentPanelRoot = defineAsyncComponent({
   loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
-    useAgentComposerStore().releaseSubmission()
+    const composerStore = useAgentComposerStore()
+    composerStore.releaseSubmission()
+    while (composerStore.takeAttachmentRequest() !== undefined) {
+      // The upload runtime never loaded, so no request can be consumed later.
+    }
     reportError(error, { errorType: 'agent_panel_load_failure' })
     fail()
   }
@@ -74,7 +78,9 @@ const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const mounted = computed(
   () =>
     enabled.value &&
-    (isOpen.value || agentComposerStore.compactSessionPhase !== 'idle')
+    (isOpen.value ||
+      agentComposerStore.compactSessionPhase !== 'idle' ||
+      agentComposerStore.hasPendingAttachmentWork)
 )
 
 const isResizing = ref(false)

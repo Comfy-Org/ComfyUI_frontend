@@ -714,6 +714,53 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('drains compact reference files through the same Agent upload path', async () => {
+    const uploaded: string[] = []
+    const messages: Array<Record<string, unknown>> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (init?.method === 'POST' && url.includes('/messages')) {
+          messages.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-42'))
+        }
+        if (!url.includes('/upload/')) return json(200, { threads: [] })
+        const file =
+          init?.body instanceof FormData ? init.body.get('image') : undefined
+        const name = file instanceof File ? file.name : 'unknown'
+        uploaded.push(name)
+        return json(200, {
+          name: `uploaded_${name}`,
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.requestAttachments([
+      new File(['dog'], 'dog.png', { type: 'image/png' }),
+      new File(['sheep'], 'sheep.png', { type: 'image/png' })
+    ])
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['dog.png', 'sheep.png']))
+    expect(composer.pendingAttachmentRequests).toEqual([])
+    expect(composer.attachments).toMatchObject([
+      { name: 'dog.png', ref: 'uploaded_dog.png', uploading: false },
+      { name: 'sheep.png', ref: 'uploaded_sheep.png', uploading: false }
+    ])
+
+    composer.draft = 'Animate the dog and sheep in one consistent story'
+    expect(composer.requestSubmission()).toBe(true)
+    await vi.waitFor(() => expect(messages).toHaveLength(1))
+    expect(messages[0]).toMatchObject({
+      content: 'Animate the dog and sheep in one consistent story',
+      attachments: ['uploaded_dog.png', 'uploaded_sheep.png']
+    })
+  })
+
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()

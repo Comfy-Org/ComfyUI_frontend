@@ -103,6 +103,22 @@ describe('DockedAgentPanel', () => {
     ).toBeTruthy()
   })
 
+  it('mounts the hidden runtime to upload a compact reference file', async () => {
+    const store = openPanel()
+    store.isOpen = false
+    useAgentComposerStore().requestAttachments([
+      new File(['reference'], 'reference.png', { type: 'image/png' })
+    ])
+    renderPanel()
+
+    expect(screen.getByTestId('docked-agent-panel')).not.toBeVisible()
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
+  })
+
   it('renders nothing while the feature is disabled', () => {
     const store = openPanel()
     store.enabled = false

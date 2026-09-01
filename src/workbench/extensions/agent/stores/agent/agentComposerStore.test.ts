@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 
@@ -104,5 +104,50 @@ describe('agentComposerStore submission bridge', () => {
     expect(store.attachments).toEqual([attachment])
     expect(store.compactSessionPhase).toBe('idle')
     expect(store.canSubmit).toBe(true)
+  })
+
+  it('queues file attachments for the existing Agent runtime in order', () => {
+    const store = useAgentComposerStore()
+    const first = new File(['first'], 'first.png', { type: 'image/png' })
+    const second = new File(['second'], 'second.png', { type: 'image/png' })
+
+    expect(store.requestAttachments([])).toBe(false)
+    expect(store.requestAttachments([first])).toBe(true)
+    expect(store.requestAttachments([second])).toBe(true)
+    expect(store.hasPendingAttachmentWork).toBe(true)
+    store.draft = 'Do not send without the references'
+    expect(store.canSubmit).toBe(false)
+
+    expect(store.takeAttachmentRequest()?.files).toEqual([first])
+    expect(store.takeAttachmentRequest()?.files).toEqual([second])
+    expect(store.takeAttachmentRequest()).toBeUndefined()
+    expect(store.hasPendingAttachmentWork).toBe(false)
+    expect(store.canSubmit).toBe(true)
+  })
+
+  it('owns shared attachment state and revokes only removed blob previews', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.addAttachment({
+      id: 'upload-1',
+      name: 'reference.png',
+      ref: '',
+      previewUrl: 'blob:reference',
+      uploading: true
+    })
+    store.addAttachment({ id: 'upload-1', name: 'duplicate.png', ref: '' })
+
+    expect(store.attachments).toHaveLength(1)
+    expect(store.hasPendingAttachmentWork).toBe(true)
+    store.updateAttachment('upload-1', {
+      ref: 'uploaded_reference.png',
+      uploading: false
+    })
+    expect(store.canSubmit).toBe(true)
+
+    store.removeAttachment('upload-1')
+    expect(revoke).toHaveBeenCalledWith('blob:reference')
+    expect(store.attachments).toEqual([])
+    revoke.mockRestore()
   })
 })

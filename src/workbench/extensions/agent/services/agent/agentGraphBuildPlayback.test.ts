@@ -113,6 +113,45 @@ describe('agent graph build playback', () => {
     vi.runAllTimers()
   })
 
+  it('cleans an active presentation when its graph leaves the canvas', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    let presentable = true
+    let resolveFrame: ((time: number) => void) | undefined
+    const present = vi.fn()
+    const restoreConnections = vi.fn()
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow-that-left-mid-drag:1',
+      label: 'Interrupted node',
+      source: { x: 20, y: 500 },
+      target: { x: 620, y: 120 },
+      isPresentable: () => presentable,
+      present,
+      toClient: (position) => position,
+      suspendConnections: () => restoreConnections,
+      durationMs: 1_000,
+      gapMs: 0,
+      now: () => 0,
+      nextFrame: () =>
+        new Promise<number>((resolve) => {
+          resolveFrame = resolve
+        })
+    })
+    await vi.waitFor(() => expect(resolveFrame).toBeTypeOf('function'))
+    expect(present).toHaveBeenCalledWith({ x: 20, y: 500 })
+
+    presentable = false
+    resolveFrame?.(16)
+
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(present).toHaveBeenLastCalledWith(null)
+    expect(restoreConnections).toHaveBeenCalledOnce()
+    vi.runAllTimers()
+  })
+
   it('counts a synchronous Agent node batch as one ordered playback', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('matchMedia', () => ({ matches: false }))

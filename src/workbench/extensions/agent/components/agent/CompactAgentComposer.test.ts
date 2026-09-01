@@ -86,4 +86,82 @@ describe('CompactAgentComposer', () => {
     )
     expect(useAgentComposerStore().compactSessionPhase).toBe('queued')
   })
+
+  it('queues multiple reference files without opening the full panel', async () => {
+    render(CompactAgentComposer, { global: { plugins: [i18n] } })
+    const files = [
+      new File(['dog'], 'dog.png', { type: 'image/png' }),
+      new File(['sheep'], 'sheep.png', { type: 'image/png' })
+    ]
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-compact-file-input'),
+      files
+    )
+
+    const requests = useAgentComposerStore().pendingAttachmentRequests
+    expect(requests).toHaveLength(1)
+    expect(requests[0]?.files.map(({ name }) => name)).toEqual([
+      'dog.png',
+      'sheep.png'
+    ])
+    expect(
+      screen.getByRole('button', { name: i18n.global.t('agent.send') })
+    ).toBeDisabled()
+    expect(useAgentPanelStore().isOpen).toBe(false)
+  })
+
+  it('accepts attachable drops and claims unsupported file drops safely', () => {
+    render(CompactAgentComposer, { global: { plugins: [i18n] } })
+    const composer = screen.getByTestId('agent-compact-composer')
+    const drop = (files: File[]) => {
+      const event = new Event('drop', { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'dataTransfer', {
+        value: { files, types: ['Files'] }
+      })
+      composer.dispatchEvent(event)
+      return event
+    }
+    const unsupported = new File(['archive'], 'workflow.zip', {
+      type: 'application/zip'
+    })
+
+    expect(drop([unsupported]).defaultPrevented).toBe(true)
+    expect(useAgentComposerStore().pendingAttachmentRequests).toEqual([])
+
+    const image = new File(['image'], 'reference.png', { type: 'image/png' })
+    expect(drop([image]).defaultPrevented).toBe(true)
+    expect(useAgentComposerStore().pendingAttachmentRequests[0]?.files).toEqual(
+      [image]
+    )
+  })
+
+  it('shows shared upload progress and blocks send until it settles', async () => {
+    const store = useAgentComposerStore()
+    store.draft = 'Animate these references'
+    store.addAttachment({
+      id: 'upload-1',
+      name: 'dog.png',
+      ref: '',
+      uploading: true
+    })
+    render(CompactAgentComposer, { global: { plugins: [i18n] } })
+
+    expect(screen.getByText('dog.png')).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(i18n.global.t('agent.uploading'))
+    ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: i18n.global.t('agent.send') })
+    ).toBeDisabled()
+
+    store.updateAttachment('upload-1', {
+      ref: 'uploaded_dog.png',
+      uploading: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: i18n.global.t('agent.send') })
+    ).toBeEnabled()
+  })
 })
