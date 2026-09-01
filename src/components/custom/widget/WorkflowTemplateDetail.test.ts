@@ -75,7 +75,7 @@ function renderDetail({
     slots: {
       preview: '<img src="/thumbnail.webp" alt="Wan 2.2 workflow preview" />'
     },
-    global: { plugins: [i18n] }
+    global: { directives: { tooltip: {} }, plugins: [i18n] }
   })
 }
 
@@ -533,8 +533,8 @@ describe('WorkflowTemplateDetail', () => {
     })
     expect(pausedUnknown).not.toHaveAttribute('aria-valuenow')
     expect(pausedUnknown).toHaveAttribute('aria-valuetext', 'Paused')
-    expect(
-      screen.getByRole('status', { name: 'Downloaded' })
-    ).toHaveTextContent('Downloaded')
+    expect(screen.getByRole('status', { name: 'Installed' })).toHaveTextContent(
+      'Installed'
+    )
   })
 })
