@@ -97,7 +97,11 @@ export function serializeDocumentScope(scope: GraphScope): Uint8Array {
       widgets: widgetStore
         .getNodeWidgets(scope.rootGraphId, semantic.id)
         .map(({ name, type, value }) => ({ name, type, value }))
-        .sort((left, right) => left.name.localeCompare(right.name))
+        // Code-unit comparison, not localeCompare: canonical bytes must not
+        // depend on the host's locale.
+        .sort((left, right) =>
+          left.name < right.name ? -1 : left.name > right.name ? 1 : 0
+        )
     }))
 
   const links = [...linkStore.graphTopologies(scope)]
