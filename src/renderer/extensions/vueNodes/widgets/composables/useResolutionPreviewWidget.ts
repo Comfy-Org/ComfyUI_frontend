@@ -3,10 +3,8 @@ import type {
   IResolutionPreviewWidget,
   IWidgetResolutionPreviewOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type {
-  InputSpec as InputSpecV2,
-  ResolutionPreviewInputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isResolutionPreviewInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useResolutionPreviewWidget = (): ComfyWidgetConstructorV2 => {
@@ -14,18 +12,18 @@ export const useResolutionPreviewWidget = (): ComfyWidgetConstructorV2 => {
     node: LGraphNode,
     inputSpec: InputSpecV2
   ): IResolutionPreviewWidget => {
-    const spec = inputSpec as ResolutionPreviewInputSpec
+    const spec = isResolutionPreviewInputSpec(inputSpec) ? inputSpec : undefined
     const options: IWidgetResolutionPreviewOptions = {
       serialize: false,
       canvasOnly: false,
       hideInPanel: true,
-      ratio_widget: spec.ratio_widget,
-      megapixels_widget: spec.megapixels_widget,
-      multiple_widget: spec.multiple_widget
+      ratio_widget: spec?.ratio_widget,
+      megapixels_widget: spec?.megapixels_widget,
+      multiple_widget: spec?.multiple_widget
     }
     const rawWidget = node.addWidget(
       'resolutionpreview',
-      spec.name,
+      inputSpec.name,
       null,
       () => {},
       options

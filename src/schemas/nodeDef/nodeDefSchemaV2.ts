@@ -355,3 +355,9 @@ export const isGalleriaInputSpec = (
 ): inputSpec is GalleriaInputSpec => {
   return inputSpec.type === 'GALLERIA'
 }
+
+export const isResolutionPreviewInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ResolutionPreviewInputSpec => {
+  return inputSpec.type === 'RESOLUTION_PREVIEW'
+}

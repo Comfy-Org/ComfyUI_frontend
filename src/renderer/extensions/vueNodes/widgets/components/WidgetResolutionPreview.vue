@@ -46,6 +46,13 @@ const hostNode = computed(() =>
   nodeId === undefined ? undefined : resolveNode(nodeId)
 )
 
+// Python round() ties to even; Math.round ties up.
+function roundHalfToEven(value: number): number {
+  const floor = Math.floor(value)
+  if (value - floor !== 0.5) return Math.round(value)
+  return floor % 2 === 0 ? floor : floor + 1
+}
+
 // Mirrors ResolutionSelector.execute in comfy_extras/nodes_resolution.py —
 // keep the math in sync with the backend.
 const resolution = computed(() => {
@@ -74,8 +81,8 @@ const resolution = computed(() => {
   const wRatio = Number(match[1])
   const hRatio = Number(match[2])
   const scale = Math.sqrt((megapixels * 1024 * 1024) / (wRatio * hRatio))
-  const width = Math.round((wRatio * scale) / multiple) * multiple
-  const height = Math.round((hRatio * scale) / multiple) * multiple
+  const width = roundHalfToEven((wRatio * scale) / multiple) * multiple
+  const height = roundHalfToEven((hRatio * scale) / multiple) * multiple
   if (!width || !height) return null
 
   return {
