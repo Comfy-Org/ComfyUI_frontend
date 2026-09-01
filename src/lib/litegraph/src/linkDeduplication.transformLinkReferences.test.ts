@@ -131,11 +131,18 @@ interface LocationCase {
 const locations: LocationCase[] = [
   {
     name: 'node input.link',
-    attach: () => {
-      // targetNode() already references the survivor; nothing further
-      // needs the duplicate id attached for this location to be exercised
-      // (the duplicate link's own record IS the input.link case for
-      // whichever link loses the "remove" test's isExactDuplicate check).
+    attach: (graph, originId) => {
+      // Only override in "replace" mode (survivor and duplicate share an
+      // origin): there, links[] order — not which id input.link names —
+      // decides the survivor, so pointing the input at the duplicate still
+      // exercises a genuine remap. In "remove" mode, referencing the
+      // duplicate instead of the survivor would flip which link wins under
+      // remapLinkReferences' referencedInputLinks swap, changing what the
+      // fixture is testing.
+      if (originId === SURVIVOR_ORIGIN_ID) {
+        graph.nodes!.find((n) => n.id === TARGET_ID)!.inputs![0].link =
+          DUPLICATE_LINK_ID
+      }
     },
     read: (graph) => {
       const link = graph.nodes!.find((n) => n.id === TARGET_ID)!.inputs![0].link
