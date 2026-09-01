@@ -210,7 +210,14 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) entry.transport.settle()
+      for (const entry of backgroundTurns.values()) {
+        entry.transport.settle()
+        // Turns stashed without recordUser hold their previews only here, so
+        // dropAttachmentPreviews never sees them: this is their only revoke.
+        for (const { previewUrl } of entry.attachments ?? []) {
+          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
+        }
+      }
       backgroundTurns.clear()
     }
 

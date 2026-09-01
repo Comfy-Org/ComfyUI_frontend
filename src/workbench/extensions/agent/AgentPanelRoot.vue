@@ -78,6 +78,7 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import { useAgentLifetime } from './composables/agent/useAgentLifetime'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftStore } from './stores/agent/agentDraftStore'
@@ -434,10 +435,11 @@ const {
   }
 })
 
-const crdtWorkflowId = computed(() => draftStore.workflowId)
+onBeforeUnmount(exitNodeSelectionMode)
+const { docWorkflowId } = useAgentLifetime({ session: { start, stop } })
 
 const isBoundWorkflowActive = computed(() => {
-  const bound = crdtWorkflowId.value
+  const bound = docWorkflowId.value
   const active = workflowStore.activeWorkflow
   return (
     bound !== null &&
@@ -451,7 +453,7 @@ const isBoundWorkflowActive = computed(() => {
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
 const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
-  crdtWorkflowId,
+  docWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive
@@ -865,20 +867,16 @@ watch(
   }
 )
 
-start()
 void refreshCloudWorkflowIds()
+
 onBeforeUnmount(() => {
-  // Bump first: an in-flight active-tab link sees a stale generation and
-  // stops, so no tab is created - and no file written - after the close.
+  // Slice 15 moved stop/exit/activity teardown into useAgentLifetime and
+  // the exitNodeSelectionMode hook above. The active-tab generation bump
+  // (slice 14's post-close guard) has no owner there, so it stays: an
+  // in-flight active-tab link sees a stale generation and stops, so no tab
+  // is created and no file written after the close.
   activeTabGeneration++
   mintPortWiring.detach()
-  // stop() precedes the throw-capable exit so a raise there cannot leave the
-  // session subscribed.
-  stop()
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-  // Last: the throw-capable call no longer sits in front of the flag clears.
-  exitNodeSelectionMode()
 })
 
 const history = useAgentChatHistoryStore()

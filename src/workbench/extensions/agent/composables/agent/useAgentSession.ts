@@ -12,6 +12,10 @@ import type {
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
+import {
+  THREAD_STORAGE_KEY,
+  forgetAgentSessionMemory
+} from './agentSessionMemory'
 
 export interface SessionNotice {
   level: 'error'
@@ -57,7 +61,6 @@ export interface AgentSessionDeps {
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
@@ -105,14 +108,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       console.warn('[agent] failed to persist the thread id', error)
     }
   }
-  function storageRemove(): void {
-    try {
-      localStorage.removeItem(THREAD_STORAGE_KEY)
-    } catch (error) {
-      console.warn('[agent] failed to remove the thread id', error)
-    }
-  }
-
   async function resyncDraft(): Promise<void> {
     const id = draftStore.workflowId
     if (id === null || resyncing) return
@@ -191,14 +186,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
           conversationStore.reset()
         } else if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        storageRemove()
+        forgetAgentSessionMemory()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
       if (resetOwned) {
         conversationStore.stashActiveTurn()
         conversationStore.reset()
-        storageRemove()
+        forgetAgentSessionMemory()
       }
       return false
     }
@@ -400,7 +395,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.stashActiveTurn()
     conversationStore.reset()
     draftStore.reset()
-    storageRemove()
+    forgetAgentSessionMemory()
   }
 
   function listThreads() {

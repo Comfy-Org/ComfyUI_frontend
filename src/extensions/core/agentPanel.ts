@@ -69,17 +69,29 @@ export function registerAgentPanelExtension(): void {
     },
     async setup() {
       // The service's per-extension catch owns a rejection here, so a
-      // failed gate or tracker load can never surface as an unhandled
+      // failed gate or lifetime load can never surface as an unhandled
       // rejection.
-      await Promise.all([registerTabActivityTracker(), setupFlagGate()])
+      await Promise.all([registerLifetimes(), setupFlagGate()])
     }
   })
 }
 
-async function registerTabActivityTracker(): Promise<void> {
-  const { registerWorkflowTabActivityTracker } =
-    await import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker')
-  registerWorkflowTabActivityTracker()
+async function registerLifetimes(): Promise<void> {
+  // This slot now carries the cross-account purge, so a silent failure here
+  // is a fully working panel with no purge and no signal at all.
+  try {
+    const { registerAgentLifetimes } =
+      await import('@/workbench/extensions/agent/composables/agent/useAgentLifetime')
+    registerAgentLifetimes()
+  } catch (error) {
+    console.error('[Comfy.AgentPanel] agent lifetimes failed to load', error)
+    try {
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(error, { errorType: 'agent_lifetime_load_failure' })
+    } catch {
+      // Telemetry chunk unavailable; the console line above already records it.
+    }
+  }
 }
 
 async function setupFlagGate(): Promise<void> {
