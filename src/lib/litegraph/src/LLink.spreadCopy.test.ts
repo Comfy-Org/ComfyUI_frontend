@@ -52,34 +52,18 @@ describe('plain-object copies of LLink (uncovered)', () => {
 
   it('carries topology onto a spread copy of a link', () => {
     const { graph, link } = connectedPair(toRerouteId(7))
-    const copy: Partial<LLink> = { ...graph.links[link.id] }
+    const stored = graph.links[link.id]
+    stored.type = 'FLOAT'
+    stored.parentId = toRerouteId(8)
+    const copy: Partial<LLink> = { ...stored }
 
     expect(copy.id).toBe(link.id)
-    expect(copy.type).toBe(link.type)
+    expect(copy.type).toBe('FLOAT')
     expect(copy.origin_id).toBe(link.origin_id)
     expect(copy.origin_slot).toBe(link.origin_slot)
     expect(copy.target_id).toBe(link.target_id)
     expect(copy.target_slot).toBe(link.target_slot)
-    expect(copy.parentId).toBe(link.parentId)
-  })
-
-  it('spreads the seven live topology fields after store-backed mutations', () => {
-    const { graph, link } = connectedPair(toRerouteId(7))
-    const stored = graph.links[link.id]
-    stored.type = 'FLOAT'
-    stored.parentId = toRerouteId(8)
-
-    const copy: Partial<LLink> = { ...stored }
-
-    expect(copy).toMatchObject({
-      id: stored.id,
-      type: 'FLOAT',
-      origin_id: stored.origin_id,
-      origin_slot: stored.origin_slot,
-      target_id: stored.target_id,
-      target_slot: stored.target_slot,
-      parentId: toRerouteId(8)
-    })
+    expect(copy.parentId).toBe(toRerouteId(8))
   })
 
   it('rewires Custom-Scripts consumers from copied links (#15594)', () => {
