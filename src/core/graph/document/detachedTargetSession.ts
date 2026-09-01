@@ -84,6 +84,11 @@ export function createDetachedTargetSession(
   let lineage = options.initialLineage ?? createUuidv4()
   let committedDoc = new Y.Doc()
   let committedSeq: number | null = null
+  /**
+   * Sequences at or below this floor were inherited from a lineage reset,
+   * not committed through this session; `isCommitted` must reject them.
+   */
+  let committedSeqFloor = 0
   let revision = 0
   let lastCommitId: string | null = null
   let needsResync = false
@@ -201,6 +206,7 @@ export function createDetachedTargetSession(
     committedDoc = new Y.Doc()
     lineage = createUuidv4()
     committedSeq = atSeq
+    committedSeqFloor = atSeq
     expectedSeq = null
     lastCommitId = null
     needsResync = false
@@ -214,7 +220,10 @@ export function createDetachedTargetSession(
     const seq = Number(commitId.slice(separator + 1))
     if (!Number.isInteger(seq)) return false
     return (
-      commitLineage === lineage && committedSeq !== null && seq <= committedSeq
+      commitLineage === lineage &&
+      committedSeq !== null &&
+      seq <= committedSeq &&
+      seq > committedSeqFloor
     )
   }
 
