@@ -21,6 +21,8 @@ export interface ViewportInsets {
   right?: number
 }
 
+export type ViewportInsetsSource = ViewportInsets | (() => ViewportInsets)
+
 export type AnimationOptions = {
   /** Duration of the animation in milliseconds. */
   duration?: number
@@ -29,7 +31,7 @@ export type AnimationOptions = {
   /** The animation easing function (curve) */
   easing?: EaseFunction
   /** Insets that reduce the effective viewport for panel-aware fitting. */
-  insets?: ViewportInsets
+  insets?: ViewportInsetsSource
 }
 
 export class DragAndScale {
@@ -202,7 +204,7 @@ export class DragAndScale {
    */
   fitToBounds(
     bounds: ReadOnlyRect,
-    { zoom = 0.75, insets }: { zoom?: number; insets?: ViewportInsets } = {}
+    { zoom = 0.75, insets }: { zoom?: number; insets?: ViewportInsetsSource } = {}
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
@@ -213,8 +215,9 @@ export class DragAndScale {
     const fullCw = width / window.devicePixelRatio
     const fullCh = height / window.devicePixelRatio
 
-    const insetLeft = insets?.left ?? 0
-    const insetRight = insets?.right ?? 0
+    const currentInsets = typeof insets === 'function' ? insets() : insets
+    const insetLeft = currentInsets?.left ?? 0
+    const insetRight = currentInsets?.right ?? 0
 
     const cw = fullCw - insetLeft - insetRight
     const ch = fullCh
@@ -268,8 +271,9 @@ export class DragAndScale {
     }
     const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
 
-    const insetLeft = insets?.left ?? 0
-    const insetRight = insets?.right ?? 0
+    const currentInsets = typeof insets === 'function' ? insets() : insets
+    const insetLeft = currentInsets?.left ?? 0
+    const insetRight = currentInsets?.right ?? 0
 
     const startTimestamp = performance.now()
     const fullCw = this.element.width / window.devicePixelRatio

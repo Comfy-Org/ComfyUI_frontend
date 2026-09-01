@@ -110,6 +110,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
+  const canvasViewportInsets = useCanvasViewportInsets()
 
   const bottomPanelStore = useBottomPanelStore()
 
@@ -430,7 +431,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         app.canvas.fitViewToSelectionAnimated({
-          insets: useCanvasViewportInsets().value
+          insets: () => canvasViewportInsets.value
         })
       }
     },

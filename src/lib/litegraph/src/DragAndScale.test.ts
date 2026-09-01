@@ -97,6 +97,16 @@ describe('DragAndScale.animateToBounds', () => {
     ).not.toThrow()
   })
 
+  it('reads inset getters when fitting begins', () => {
+    const ds = createDragAndScale(1920, 1080)
+    const bounds: [number, number, number, number] = [0, 0, 400, 300]
+    const getInsets = vi.fn(() => ({ right: 300 }))
+
+    ds.fitToBounds(bounds, { insets: getInsets })
+
+    expect(getInsets).toHaveBeenCalledOnce()
+  })
+
   it('ends at the same state as fitToBounds with the same insets', () => {
     vi.useFakeTimers()
     try {
