@@ -22,8 +22,12 @@ describe('agentRunModeStore', () => {
     setActivePinia(createPinia())
   })
 
-  it('uses the safe API default with no credit limit', () => {
+  it('uses the safe fallback when loading gets 404 with invalid local state', async () => {
+    localStorage.setItem('Comfy.Agent.RunModePreference', '{invalid')
+    fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
+
     const store = useAgentRunModeStore()
+    await store.load()
 
     expect(store.mode).toBe('ask_approval')
     expect(store.creditLimit).toBeNull()
