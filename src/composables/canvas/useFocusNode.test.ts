@@ -18,7 +18,9 @@ const { canvasStore, createCanvas } = vi.hoisted(() => {
   }
 
   return {
-    canvasStore: { canvas: createCanvas() },
+    canvasStore: {
+      canvas: createCanvas() as ReturnType<typeof createCanvas> | undefined
+    },
     createCanvas
   }
 })
@@ -59,9 +61,9 @@ describe('useFocusNode', () => {
     finishNavigationFrames()
     await focusPromise
 
-    expect(canvasStore.canvas.subgraph).toBe(graph)
-    expect(canvasStore.canvas.setGraph).toHaveBeenCalledWith(graph)
-    expect(canvasStore.canvas.animateToBounds).toHaveBeenCalledWith(bounds, {
+    expect(canvasStore.canvas!.subgraph).toBe(graph)
+    expect(canvasStore.canvas!.setGraph).toHaveBeenCalledWith(graph)
+    expect(canvasStore.canvas!.animateToBounds).toHaveBeenCalledWith(bounds, {
       viewport
     })
   })
@@ -72,7 +74,7 @@ describe('useFocusNode', () => {
       graph,
       boundingRect: [10, 20, 30, 40]
     } as unknown as LGraphNode
-    const staleCanvas = canvasStore.canvas
+    const staleCanvas = canvasStore.canvas!
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
@@ -89,6 +91,23 @@ describe('useFocusNode', () => {
     )
   })
 
+  it('does not animate when the canvas becomes unavailable', async () => {
+    const graph = { isRootGraph: false } as LGraph
+    const node = {
+      graph,
+      boundingRect: [10, 20, 30, 40]
+    } as unknown as LGraphNode
+    const staleCanvas = canvasStore.canvas!
+    const focusPromise = useFocusNode().focusNodeInstance(node)
+
+    await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
+    canvasStore.canvas = undefined
+    finishNavigationFrames()
+    await focusPromise
+
+    expect(staleCanvas.animateToBounds).not.toHaveBeenCalled()
+  })
+
   it('does not animate when a competing navigation changes the graph', async () => {
     const graph = { isRootGraph: false } as LGraph
     const competingGraph = { isRootGraph: true } as LGraph
@@ -99,11 +118,11 @@ describe('useFocusNode', () => {
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
-    canvasStore.canvas.graph = competingGraph
+    canvasStore.canvas!.graph = competingGraph
     finishNavigationFrames()
     await focusPromise
 
-    expect(canvasStore.canvas.animateToBounds).not.toHaveBeenCalled()
+    expect(canvasStore.canvas!.animateToBounds).not.toHaveBeenCalled()
   })
 
   it('uses the same viewport-aware path for an execution-id lookup', async () => {
@@ -112,12 +131,12 @@ describe('useFocusNode', () => {
       graph,
       boundingRect: [1, 2, 3, 4]
     } as unknown as LGraphNode
-    canvasStore.canvas.graph = graph
+    canvasStore.canvas!.graph = graph
 
     await useFocusNode().focusNode('node-1', new Map([['node-1', node]]))
 
-    expect(canvasStore.canvas.setGraph).not.toHaveBeenCalled()
-    expect(canvasStore.canvas.animateToBounds).toHaveBeenCalledWith(
+    expect(canvasStore.canvas!.setGraph).not.toHaveBeenCalled()
+    expect(canvasStore.canvas!.animateToBounds).toHaveBeenCalledWith(
       node.boundingRect,
       { viewport }
     )
