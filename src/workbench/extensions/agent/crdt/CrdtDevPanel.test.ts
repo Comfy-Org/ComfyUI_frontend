@@ -8,8 +8,6 @@ import CrdtDevPanel from './CrdtDevPanel.vue'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
-let writeClipboard: ReturnType<typeof vi.spyOn>
-
 vi.mock('@/scripts/api', () => ({
   api: {
     apiURL: vi.fn((path = '') => `http://agent.test${path}`)
@@ -38,6 +36,12 @@ function openPanel() {
   localStorage.setItem(OPEN_KEY, 'true')
 }
 
+function createClipboardSpy(): ReturnType<typeof vi.spyOn> {
+  return vi
+    .spyOn(navigator.clipboard, 'writeText')
+    .mockResolvedValue(undefined)
+}
+
 describe('CrdtDevPanel', () => {
   beforeEach(() => {
     cleanup()
@@ -46,9 +50,6 @@ describe('CrdtDevPanel', () => {
     clearDevEvents()
     ;(window as unknown as { __agentCrdtPoc?: unknown }).__agentCrdtPoc =
       undefined
-    writeClipboard = vi
-      .spyOn(navigator.clipboard, 'writeText')
-      .mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -152,6 +153,7 @@ describe('CrdtDevPanel', () => {
   })
 
   it('copies the filtered event log and restores the copy label timer', async () => {
+    const writeClipboard = createClipboardSpy()
     openPanel()
     recordDevEvent('schema_error', { reason: 'bad schema' })
     recordDevEvent('doc_update', { update_b64: new Uint8Array([1, 2, 3]) })
@@ -178,6 +180,7 @@ describe('CrdtDevPanel', () => {
   })
 
   it('clears the poll interval and tolerates the copy-label timer after unmount', async () => {
+    createClipboardSpy()
     openPanel()
     const clearIntervalSpy = vi.spyOn(window, 'clearInterval')
     recordDevEvent('doc_update', { update_b64: 'abc' })
