@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "“speed”速度更快；“precision”可生成更高质量的唇形同步，但价格翻倍。"
+        "tooltip": "'speed' 速度更快；'precision' 可生成质量更高的口型同步效果，但价格更高。"
       },
       "output_language": {
         "name": "目标语言",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "裁剪视频",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "以像素为单位的裁剪区域。宽度或高度为零时保留完整帧。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "使用多种策略从视频中采样固定数量的帧。",
     "display_name": "采样视频帧",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪视频（高级）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "如果为 True，且无法满足指定时长，将引发错误。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "使用起始/结束帧修剪窗口。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
