@@ -5,8 +5,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import TabLinkCard from './TabLinkCard.vue'
+import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
 
 interface FakeTab {
   path: string
@@ -224,5 +226,26 @@ describe('TabLinkCard', () => {
       locatorId: 'root-a:42'
     })
     expect(mocks.openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('shows recovery feedback when a node target is no longer available', async () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+    mocks.navigate.mockRejectedValueOnce(
+      new AgentTargetNavigationError('missing_node', 'wf-1', '42')
+    )
+
+    render(TabLinkCard, {
+      props: { workflowId: 'wf-1', locatorId: '42' },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual({
+      severity: 'warn',
+      detail: 'This workflow target is no longer available.',
+      life: 5000
+    })
   })
 })
