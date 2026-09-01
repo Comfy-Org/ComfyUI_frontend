@@ -96,6 +96,8 @@ watch(
             if (!mounted) return
             const { generateModelThumbnail } =
               await import('@/components/load3d/modelThumbnail')
+            // Re-check: the component may have unmounted during the import.
+            if (!mounted) return
             const generated = await generateModelThumbnail(url, filename)
             if (mounted && generated) modelThumbnails.value[url] = generated
           })
