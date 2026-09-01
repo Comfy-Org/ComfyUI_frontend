@@ -1,5 +1,5 @@
 import { useTimeoutFn } from '@vueuse/core'
-import { mapKeys } from 'es-toolkit'
+import { mapKeys, omit } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -246,7 +246,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!locatorId) return
 
     setOutputsByLocatorId(locatorId, {
-      ...nodeOutputs.value[locatorId],
+      ...omit(nodeOutputs.value[locatorId] ?? {}, ['animated']),
       images
     })
     node.images = images

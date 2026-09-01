@@ -256,6 +256,33 @@ describe('nodeOutputStore legacy entry synchronization', () => {
   })
 })
 
+describe('nodeOutputStore setNodeOutputImages', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('drops the previous animated flags when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setOutputFromLegacy(
+      '7',
+      fromAny({ images: [{ filename: 'previous.webp' }], animated: [true] })
+    )
+
+    const images = [
+      {
+        filename: 'painted.png',
+        subfolder: 'clipspace',
+        type: 'input' as const
+      }
+    ]
+    store.setNodeOutputImages(node, images)
+
+    expect(store.nodeOutputs['7']?.animated).toBeUndefined()
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+  })
+})
+
 describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
