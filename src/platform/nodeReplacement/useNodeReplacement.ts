@@ -21,6 +21,7 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
@@ -422,6 +423,8 @@ export function useNodeReplacement() {
   const toastStore = useToastStore()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
+    // In-place replacement edits the graph; the canvas is a picking surface while agent node-selection mode is on.
+    if (isSelectOnly(app.canvas)) return []
     const replacedTypes: string[] = []
     let replacementFailed = false
     const graph = app.rootGraph
