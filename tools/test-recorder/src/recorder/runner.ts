@@ -9,6 +9,7 @@ import {
   generateRecordingTemplate,
   recordedCodePath,
   recordingTarget,
+  removeLegacyCustomStorageState,
   storageStateKey,
   storageStatePath
 } from './template'
@@ -88,6 +89,9 @@ export async function runRecording(
   let storageStateFile: string | undefined
   if (target === 'cloud') {
     storageStateFile = storageStatePath(storageStateKey(options.distribution))
+    if (options.distribution?.id === 'custom') {
+      removeLegacyCustomStorageState(storageStateFile)
+    }
     ensureStorageStateDir(storageStateFile)
   }
 
