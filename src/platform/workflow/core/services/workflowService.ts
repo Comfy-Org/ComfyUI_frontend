@@ -742,8 +742,9 @@ export const useWorkflowService = () => {
     options: { position?: Point } = {}
   ) => {
     const canvas = app.canvas
+    const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
-    if (app.canvas !== canvas) return
+    if (app.canvas !== canvas || canvas.graph !== graph) return
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.

@@ -1640,11 +1640,12 @@ describe('useWorkflowService', () => {
   })
 
   describe('insertWorkflow', () => {
-    it('does not insert after the canvas changes while loading', async () => {
-      const originalCanvas = app.canvas
-      const originalDeserialize = vi.fn()
-      const replacementDeserialize = vi.fn()
-      Reflect.set(originalCanvas, '_deserializeItems', originalDeserialize)
+    it('does not insert after the canvas graph changes while loading', async () => {
+      const canvas = app.canvas
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(canvas, 'graph', originalGraph)
+      Reflect.set(canvas, '_deserializeItems', deserialize)
       let finishLoad: (value: unknown) => void = () => {}
       const workflow = {
         load: vi.fn(
@@ -1657,16 +1658,13 @@ describe('useWorkflowService', () => {
 
       try {
         const pending = useWorkflowService().insertWorkflow(workflow)
-        Reflect.set(app, 'canvas', {
-          _deserializeItems: replacementDeserialize
-        })
+        Reflect.set(canvas, 'graph', {})
         finishLoad({ initialState: { nodes: [], links: [] } })
         await pending
 
-        expect(originalDeserialize).not.toHaveBeenCalled()
-        expect(replacementDeserialize).not.toHaveBeenCalled()
+        expect(deserialize).not.toHaveBeenCalled()
       } finally {
-        Reflect.set(app, 'canvas', originalCanvas)
+        Reflect.set(canvas, 'graph', originalGraph)
       }
     })
   })
