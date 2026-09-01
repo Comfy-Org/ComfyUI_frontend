@@ -126,14 +126,14 @@
           <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span class="text-foreground text-sm font-normal">
-                {{ t('subscription.monthlyCreditsPerMemberLabel') }}
+                {{ t(creditsPerMemberLabelKey) }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--coins] text-sm text-credit" />
+                <i class="icon-[lucide--coins] size-4 text-credit" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
-                  {{ n(getMonthlyCreditsPerMember(tier)) }}
+                  {{ n(getCreditsPerMember(tier)) }}
                 </span>
               </div>
             </div>
@@ -206,7 +206,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
-                  ~{{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -307,6 +307,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
+  amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -401,6 +402,14 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const creditsPerMemberLabelKey = computed(() =>
+  isYearly.value
+    ? 'subscription.yearlyCreditsPerMemberLabel'
+    : 'subscription.monthlyCreditsPerMemberLabel'
+)
 
 onMounted(() => {
   void fetchPlans()
@@ -516,8 +525,11 @@ const maxMembersByTier = computed(
     >
 )
 
-const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
-  tier.pricing.credits
+const getCreditsPerMember = (tier: PricingTierConfig): number =>
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  amountForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return

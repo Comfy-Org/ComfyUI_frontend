@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
@@ -164,7 +164,7 @@ const i18n = createI18n({
         subscribeTo: 'Subscribe to {plan}',
         changeTo: 'Change to {plan}',
         tierNameYearly: '{name} Yearly',
-        yearlyCreditsLabel: 'Yearly credits',
+        yearlyCreditsLabel: 'Total yearly credits',
         monthlyCreditsLabel: 'Monthly credits',
         maxDurationLabel: 'Max duration',
         gpuLabel: 'GPU',
@@ -520,6 +520,31 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
+    })
+  })
+
+  describe('credit allotment display', () => {
+    it('states the whole-year allotment and a matching video estimate on the yearly cycle', async () => {
+      renderComponent()
+      await flushPromises()
+
+      expect(screen.getAllByText('Total yearly credits')).toHaveLength(3)
+      expect(screen.getByText('50,400')).toBeTruthy()
+      expect(screen.getByText('~4,560')).toBeTruthy()
+      expect(screen.getByText('253,200')).toBeTruthy()
+      expect(screen.getByText('~22,980')).toBeTruthy()
+    })
+
+    it('states the monthly allotment on the monthly cycle', async () => {
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+      await nextTick()
+
+      expect(screen.getAllByText('Monthly credits')).toHaveLength(3)
+      expect(screen.getByText('4,200')).toBeTruthy()
+      expect(screen.getByText('~380')).toBeTruthy()
     })
   })
 

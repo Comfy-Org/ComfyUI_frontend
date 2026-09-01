@@ -2994,6 +2994,7 @@
     "personalHeaderAction": "To add teammates, subscribe to the team plan.",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
+    "yearlyCredits": "credits per year",
     "videoEstimate": "Generates ~{count} 5s videos*",
     "saveYearlyUpTo": "Save up to 20%",
     "teamPlan": {
@@ -3035,6 +3036,7 @@
     "subscribeTo": "Subscribe to {plan}",
     "monthlyCreditsLabel": "Monthly credits",
     "monthlyCreditsPerMemberLabel": "Monthly credits / member",
+    "yearlyCreditsPerMemberLabel": "Yearly credits / member",
     "maxMembersLabel": "Max. members",
     "yearlyCreditsLabel": "Total yearly credits",
     "memberCount": "{count} member | {count} members",

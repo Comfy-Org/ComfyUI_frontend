@@ -2,7 +2,8 @@ import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -539,5 +540,86 @@ describe('UnifiedPricingTable outside Cloud', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+const cycleToggleStub = {
+  props: ['options'],
+  emits: ['update:modelValue'],
+  template: `<div><button
+      v-for="option in options"
+      :key="option.value"
+      :data-testid="'cycle-' + option.value"
+      @click="$emit('update:modelValue', option.value)"
+    >{{ option.label }}</button></div>`
+}
+
+function renderWithCycleToggle(
+  props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
+) {
+  return render(UnifiedPricingTable, {
+    props,
+    global: {
+      plugins: [i18n],
+      components: { Button },
+      stubs: {
+        SelectButton: cycleToggleStub,
+        CreditSlider: { template: '<div />' }
+      }
+    }
+  })
+}
+
+describe('UnifiedPricingTable credit allotment copy', () => {
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('states the whole-year allotment for personal tiers on the yearly cycle', () => {
+    renderWithCycleToggle()
+
+    expect(screen.getAllByText('credits per year')).toHaveLength(3)
+    expect(screen.queryAllByText('monthly credits')).toHaveLength(0)
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('253,200')).toBeTruthy()
+    expect(screen.queryByText('4,200')).toBeNull()
+    expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
+  })
+
+  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getAllByText('monthly credits')).toHaveLength(3)
+    expect(screen.queryAllByText('credits per year')).toHaveLength(0)
+    expect(screen.getByText('4,200')).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getByText('Generates ~380 5s videos*')).toBeTruthy()
+  })
+
+  it('scales the team allotment with the billing cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('credits per year')).toBeTruthy()
+    expect(screen.getByText('1,772,400')).toBeTruthy()
+    expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getByText('monthly credits')).toBeTruthy()
+    expect(screen.getByText('147,700')).toBeTruthy()
+    expect(screen.getByText('Generates ~13,405 5s videos*')).toBeTruthy()
   })
 })
