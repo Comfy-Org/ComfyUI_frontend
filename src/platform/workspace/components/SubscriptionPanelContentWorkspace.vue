@@ -220,9 +220,10 @@
                     {{ planDisplayName }}
                   </h3>
                   <StatusBadge
-                    v-if="isSubscriptionCancelled"
-                    :label="$t('subscription.canceled')"
-                    severity="warn"
+                    v-if="planStatusBadge"
+                    data-testid="plan-status-badge"
+                    :label="planStatusBadge.label"
+                    :severity="planStatusBadge.severity"
                   />
                 </div>
                 <div
@@ -615,25 +616,30 @@ const scheduledPlanName = computed(() => {
 })
 
 const showSubscriptionStateCard = computed(
-  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
+  () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
-  isSubscriptionEnded.value
-    ? t('subscription.canceledCard.endedTitle')
-    : t('subscription.canceledCard.title')
+  t('subscription.canceledCard.title')
 )
 
-const subscriptionStateCardDescription = computed(() => {
-  if (isSubscriptionEnded.value) {
-    return t('subscription.canceledCard.endedDescription')
-  }
-  if (!formattedEndDate.value) {
-    return t('subscription.canceledCard.descriptionWithoutDate')
-  }
-  return t('subscription.canceledCard.description', {
-    date: formattedEndDate.value
-  })
+const subscriptionStateCardDescription = computed(() =>
+  formattedEndDate.value
+    ? t('subscription.canceledCard.description', {
+        date: formattedEndDate.value
+      })
+    : t('subscription.canceledCard.descriptionWithoutDate')
+)
+
+const planStatusBadge = computed(() => {
+  if (isSubscriptionEnded.value && !isInPersonalWorkspace.value)
+    return {
+      label: t('subscription.inactive.badge'),
+      severity: 'secondary' as const
+    }
+  if (isSubscriptionCancelled.value)
+    return { label: t('subscription.canceled'), severity: 'warn' as const }
+  return null
 })
 
 const planDateDisplay = computed(() => {
