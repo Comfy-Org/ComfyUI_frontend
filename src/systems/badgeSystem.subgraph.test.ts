@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -19,12 +20,13 @@ function defaultDisplayPrice(
   return String(overrides?.get('prompt') ?? '$0.05/Run')
 }
 const getNodeDisplayPrice = vi.fn(defaultDisplayPrice)
+const pricingMocks = vi.hoisted(() => ({ hasDynamicPricing: vi.fn() }))
 
 vi.mock('@/composables/node/useNodePricing', () => ({
   useNodePricing: () => ({
     getNodeDisplayPrice,
     getNodeRevisionRef: () => ({ value: 0 }),
-    hasDynamicPricing: () => true,
+    hasDynamicPricing: pricingMocks.hasDynamicPricing,
     getRelevantWidgetNames: () => ['prompt'],
     getInputNames: () => [],
     getInputGroupPrefixes: () => []
@@ -47,6 +49,8 @@ describe('badge derivation subgraph credits aggregation', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     getNodeDisplayPrice.mockReset()
     getNodeDisplayPrice.mockImplementation(defaultDisplayPrice)
+    pricingMocks.hasDynamicPricing.mockReset()
+    pricingMocks.hasDynamicPricing.mockReturnValue(false)
   })
 
   function setup() {
@@ -130,7 +134,8 @@ describe('badge derivation subgraph credits aggregation', () => {
     expect(wrapperCredits()).toEqual(['outer value'])
   })
 
-  it('reacts to an unpromoted inner pricing widget', () => {
+  it('reacts to an unpromoted inner pricing widget', async () => {
+    pricingMocks.hasDynamicPricing.mockReturnValue(true)
     const { addInner, wrapperCredits } = setup()
     const apiNode = new ApiNode('api')
     const widget = apiNode.addWidget(
@@ -149,6 +154,7 @@ describe('badge derivation subgraph credits aggregation', () => {
     expect(wrapperCredits()).toEqual(['first'])
 
     useWidgetValueStore().setValue(id, 'second')
+    await nextTick()
 
     expect(wrapperCredits()).toEqual(['second'])
   })

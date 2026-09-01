@@ -141,13 +141,9 @@ export type OnboardingTourNudgeStage =
   | 'nudge_shown'
   | 'explore_templates_clicked'
 
-/** A continuation action on the nudge, which reports its own outcome. */
-export type OnboardingTourSuggestionStage = 'nudge_suggestion_clicked'
-
 export type OnboardingTourStage =
   | OnboardingTourStepStage
   | OnboardingTourNudgeStage
-  | OnboardingTourSuggestionStage
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -177,32 +173,21 @@ export interface OnboardingTourStepMetadata {
   not_started_reason?: OnboardingTourNotStartedReason
 }
 
-/** The nudge is post-tour, so it reports no step and no step count. */
+/** The nudge is post-tour, so it reports no step and no count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
   /**
-   * How many continuations the card could offer. Zero is the card falling back
-   * to the template browser — either the run produced no image, or the
-   * install's pinned template package serves none of them. Without it that
-   * case is indistinguishable from a nudge that never appeared.
+   * Whether the tour was walked to the end. Without it `nudge_shown` and
+   * `explore_templates_clicked` cannot be split by how the tour ended, so a
+   * conversion from a completed tour and one from a tour that never started
+   * land in the same bucket.
    */
-  suggestion_count: number
-}
-
-/**
- * Which continuation the card converted on. `loaded` separates a chosen action
- * from one that reached a template the install could not open, which otherwise
- * reads as a successful conversion.
- */
-export interface OnboardingTourSuggestionMetadata extends OnboardingTourNudgeMetadata {
-  suggestion: string
-  loaded: boolean
+  tour_completed?: boolean
 }
 
 export type OnboardingTourMetadata =
   | OnboardingTourStepMetadata
   | OnboardingTourNudgeMetadata
-  | OnboardingTourSuggestionMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -556,6 +541,44 @@ export interface TemplateFilterMetadata {
 export interface UiButtonClickMetadata {
   button_id: string
   element_group: string
+}
+
+/**
+ * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * prior thumb, which the eval pipeline records as a retraction rather than dropping.
+ */
+export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
+  message_id: string
+  vote: 'up' | 'down' | null
+}
+
+export type AgentPanelCloseSource =
+  | 'close_button'
+  | 'workflow_switch'
+  | 'topbar_button'
+export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
+  source: 'restored' | 'topbar_button'
+}
+export interface AgentPanelClosedMetadata extends Record<string, unknown> {
+  source: AgentPanelCloseSource
+  open_duration_ms: number | null
+}
+export interface AgentEntryButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  resulting_state: 'opened' | 'closed'
+}
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  attachment_count: number
+  node_tag_count: number
+}
+export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
+  source: 'mention_picker'
+}
+export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
+  workflow_id: string
+  target: 'active_tab_switch' | 'active_tab_open'
 }
 
 /**
@@ -981,10 +1004,6 @@ export interface TelemetryProvider {
     stage: OnboardingTourNudgeStage,
     metadata: OnboardingTourNudgeMetadata
   ): void
-  trackOnboardingTour?(
-    stage: OnboardingTourSuggestionStage,
-    metadata: OnboardingTourSuggestionMetadata
-  ): void
 
   // Email verification events
   trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
@@ -1045,6 +1064,17 @@ export interface TelemetryProvider {
 
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
+
+  // In-App Agent message rating (PM-98)
+  trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+  trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
+  trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
+  trackAgentCloseButtonClicked?(): void
+  trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentAttachButtonClicked?(): void
+  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1139,8 +1169,6 @@ export const TelemetryEvents = {
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
   ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
-  ONBOARDING_TOUR_NUDGE_SUGGESTION_CLICKED:
-    'app:onboarding_tour_nudge_suggestion_clicked',
   ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
     'app:onboarding_tour_explore_templates_clicked',
 
@@ -1200,6 +1228,17 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // In-App Agent
+  AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
+  AGENT_PANEL_OPENED: 'app:agent_panel_opened',
+  AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
+  AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
+  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
@@ -1224,8 +1263,6 @@ export const OnboardingTourEvents: Record<
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
   skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
   nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
-  nudge_suggestion_clicked:
-    TelemetryEvents.ONBOARDING_TOUR_NUDGE_SUGGESTION_CLICKED,
   explore_templates_clicked:
     TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
