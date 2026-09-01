@@ -1,6 +1,8 @@
 <template>
   <BaseModalLayout
+    ref="modalLayout"
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
+    content-padding="none"
     size="md"
     close-button-variant="textonly"
   >
@@ -11,11 +13,35 @@
       </h2>
     </template>
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems" />
+      <LeftSidePanel
+        :model-value="selectedNavItem"
+        :nav-items="navItems"
+        @update:model-value="onSelectNavItem"
+      />
     </template>
 
     <template #header>
-      <div class="flex min-w-0 flex-1 items-center gap-2">
+      <nav
+        v-show="activeDetail"
+        :aria-label="$t('templateWorkflows.detail.breadcrumbLabel')"
+        class="flex min-w-0 flex-1 items-center gap-2"
+      >
+        <Button
+          :aria-label="backToTemplatesLabel"
+          :disabled="openPending"
+          size="unset"
+          variant="muted-textonly"
+          class="shrink-0 gap-2 text-sm font-medium text-muted-foreground hover:bg-transparent"
+          @click="onBackToTemplates"
+        >
+          <i aria-hidden="true" class="icon-[lucide--arrow-left] size-4" />
+          {{ pageTitle }}
+        </Button>
+      </nav>
+      <div
+        v-show="!activeDetail"
+        class="flex min-w-0 flex-1 items-center gap-2"
+      >
         <h2
           class="text-neutral m-0 hidden shrink-0 truncate text-base font-medium min-[880px]:block"
         >
@@ -34,6 +60,7 @@
 
     <template #contentFilter>
       <div
+        v-show="!activeDetail"
         :class="
           cn(
             '@container/filters relative px-6',
@@ -126,8 +153,8 @@
     <template #content>
       <!-- No Results State (only show when loaded and no results) -->
       <div
-        v-if="!isLoading && filteredTemplates.length === 0"
-        class="flex h-64 flex-col items-center justify-center text-neutral-500"
+        v-if="!activeDetail && !isLoading && filteredTemplates.length === 0"
+        class="flex h-64 flex-col items-center justify-center px-6 text-neutral-500"
       >
         <i class="mb-4 icon-[lucide--search] size-12 opacity-50" />
         <p class="mb-2 text-lg">
@@ -142,7 +169,7 @@
           }}
         </p>
       </div>
-      <div v-else>
+      <div v-else v-show="!activeDetail" class="px-6">
         <!-- Title -->
         <span
           v-if="isLoading"
@@ -197,7 +224,7 @@
             class="group/card h-full transition-colors hover:bg-secondary-background/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
-            @click="onLoadWorkflow(template)"
+            @click="onLoadWorkflow(template, $event)"
           >
             <template #top>
               <CardTop ratio="square">
@@ -215,6 +242,7 @@
                     "
                     :get-logo-url="workflowTemplatesStore.getLogoUrl"
                     :is-hovered="hoveredTemplate === template.name"
+                    :hover-zoom="0"
                   >
                     <template #overlay>
                       <ProgressSpinner
@@ -348,8 +376,9 @@
       <!-- Load More Trigger -->
       <div
         v-if="!isLoading && hasMoreTemplates"
+        v-show="!activeDetail"
         ref="loadTrigger"
-        class="mt-4 flex h-4 w-full items-center justify-center"
+        class="mt-4 flex h-4 w-full items-center justify-center px-6"
       >
         <div v-if="isLoadingMore" class="text-sm text-muted">
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
@@ -357,7 +386,11 @@
       </div>
 
       <!-- Results Summary -->
-      <div v-if="!isLoading" class="mt-6 px-6 text-sm text-muted">
+      <div
+        v-if="!isLoading"
+        v-show="!activeDetail"
+        class="mt-6 px-6 pb-10 text-sm text-muted"
+      >
         {{
           $t('templateWorkflows.resultsCount', {
             count: filteredCount,
@@ -365,6 +398,29 @@
           })
         }}
       </div>
+
+      <WorkflowTemplateDetail
+        v-if="activeDetail"
+        ref="detailView"
+        :title="activeDetailTitle"
+        :description="getTemplateDescription(activeDetail.template)"
+        :groups="activeDetailGroups"
+        :cloud-url="activeDetailCloudUrl"
+        :is-partner-node="activeDetail.template.openSource === false"
+        :open-pending="openPending"
+        @open-template="onOpenTemplate"
+      >
+        <template #preview>
+          <TemplatePreview
+            :template="activeDetail.template"
+            :base-image-src="getBaseThumbnailSrc(activeDetail.template)"
+            :overlay-image-src="getOverlayThumbnailSrc(activeDetail.template)"
+            :alt="activeDetailTitle"
+            :get-logo-url="workflowTemplatesStore.getLogoUrl"
+            :hover-zoom="0"
+          />
+        </template>
+      </WorkflowTemplateDetail>
     </template>
   </BaseModalLayout>
 </template>
@@ -372,7 +428,16 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import {
+  computed,
+  markRaw,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -381,6 +446,7 @@ import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
 import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
+import WorkflowTemplateDetail from '@/components/custom/widget/WorkflowTemplateDetail.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import TemplatePreview from '@/components/templates/thumbnails/TemplatePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -393,20 +459,39 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
+import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
+import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
   TemplateInfo,
   TemplateTypeFilter
 } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
   filterTemplatesByType,
   getTemplateTags,
   isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'
+import { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
+import { extractTemplateModelRequirementDetails } from '@/platform/workflow/templates/utils/templateModelRequirements'
+import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
+import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
+import { deriveTemplateModelSetup } from '@/platform/workflow/templates/utils/templateModelSetup'
+import type {
+  TemplateModelSetupResult,
+  TemplateModelSetupRow
+} from '@/platform/workflow/templates/utils/templateModelSetup'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { formatSize } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -426,6 +511,7 @@ onMounted(() => {
 
 // Wrap onClose to track session end
 const onClose = () => {
+  invalidateDetailWork()
   const timeSpentSeconds = Math.floor(
     (Date.now() - sessionStartTime.value) / 1000
   )
@@ -444,9 +530,11 @@ provide(OnCloseKey, onClose)
 const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
-  loadWorkflowTemplate,
   getTemplateThumbnailUrl,
-  getTemplateTitle
+  getTemplateTitle,
+  getTemplateDescription,
+  openPreparedWorkflowTemplate,
+  prepareWorkflowTemplateForOpen
 } = useTemplateWorkflows()
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
@@ -658,6 +746,26 @@ const mobileFiltersOpen = ref(false)
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
+type ActiveTemplateModelSetup = {
+  result: TemplateModelSetupResult
+  pending: boolean
+}
+
+const modalLayout = ref<InstanceType<typeof BaseModalLayout> | null>(null)
+const detailView = ref<InstanceType<typeof WorkflowTemplateDetail> | null>(null)
+const activeDetail = ref<{
+  template: TemplateInfo
+  prepared: PreparedWorkflowTemplate
+  modelSetup: ActiveTemplateModelSetup
+} | null>(null)
+const openPending = ref(false)
+let detailGeneration = 0
+let modelMetadataController: AbortController | undefined
+let detailOrigin: HTMLElement | null = null
+let listScrollTop = 0
+
+const { resolveAvailability: resolveModelAvailability } =
+  useTemplateModelAvailability()
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
@@ -810,7 +918,9 @@ const displayTemplates = computed(() =>
 )
 
 // Set up intersection observer for lazy loading
-useIntersectionObserver(loadTrigger, () => {
+useIntersectionObserver(loadTrigger, (entries) => {
+  if (!entries.some((entry) => entry.isIntersecting)) return
+
   if (
     shouldUsePagination.value &&
     hasMoreTemplates.value &&
@@ -832,6 +942,8 @@ watch(
     selectedRunsOn
   ],
   () => {
+    invalidateDetailWork()
+    activeDetail.value = null
     resetPagination()
     // Clear loading state and force re-render of template list
     loadingTemplate.value = null
@@ -840,18 +952,214 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
+function invalidateDetailWork() {
+  modelMetadataController?.abort()
+  modelMetadataController = undefined
+  detailGeneration++
+}
+
+function formatRequirementType(directory: string): string {
+  const normalized = directory.trim().replace(/[_-]+/g, ' ')
+  if (!normalized) return ''
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+function getModelTypeLabel(row: TemplateModelSetupRow): string {
+  return row.modelType.kind === 'known'
+    ? t(`templateWorkflows.detail.modelTypes.${row.modelType.key}`)
+    : formatRequirementType(row.modelType.raw)
+}
+
+function getModelDetailDescription(row: TemplateModelSetupRow): string {
+  const parts = [getModelTypeLabel(row)]
+  if (row.fileSize !== null) parts.push(formatSize(row.fileSize))
+  if (row.usedBy.length > 0) {
+    parts.push(
+      t(
+        'templateWorkflows.detail.usedBy',
+        { nodes: row.usedBy.join(', ') },
+        { escapeParameter: false }
+      )
+    )
+  }
+  return parts.filter(Boolean).join(' · ')
+}
+
+function buildTemplateDetailGroups(
+  setup: TemplateModelSetupResult
+): readonly TemplateDetailGroup[] {
+  if (setup.rows.length === 0) return []
+
+  return [
+    {
+      id: 'models',
+      label: t('templateWorkflows.detail.models'),
+      ...(setup.rowTotal.isComplete && {
+        total: formatSize(setup.rowTotal.bytes)
+      }),
+      rows: setup.rows.map((row) => ({
+        id: `model:${getModelFileKey(row.model)}`,
+        name: row.model.name,
+        description: getModelDetailDescription(row)
+      }))
+    }
+  ]
+}
+
+const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
+  const setup = activeDetail.value?.modelSetup.result
+  return setup ? buildTemplateDetailGroups(setup) : []
+})
+
+async function updateTemplateModelMetadata(
+  generation: number,
+  controller: AbortController,
+  requirements: readonly TemplateModelRequirementDetail[],
+  availability: readonly ResolvedTemplateModelAvailability[]
+) {
+  try {
+    const metadata = await resolveTemplateModelMetadata(
+      requirements.map(({ model }) => model),
+      { signal: controller.signal }
+    )
+    if (metadata.status === 'aborted' || generation !== detailGeneration) return
+
+    const setup = activeDetail.value?.modelSetup
+    if (!setup) return
+
+    setup.result = deriveTemplateModelSetup(
+      requirements,
+      availability,
+      metadata,
+      { isDownloadable: isModelDownloadable }
+    )
+    setup.pending = false
+  } catch (error) {
+    if (!controller.signal.aborted && generation === detailGeneration) {
+      const setup = activeDetail.value?.modelSetup
+      if (setup) setup.pending = false
+      reportError(error, {
+        errorType: 'workflow_template_model_metadata_failed',
+        level: 'warning'
+      })
+    }
+  } finally {
+    if (modelMetadataController === controller) {
+      modelMetadataController = undefined
+    }
+  }
+}
+
+async function openPreparedTemplate(
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+): Promise<void> {
+  if (openPending.value) return
+
+  openPending.value = true
+  try {
+    const didOpen = await openPreparedWorkflowTemplate(prepared, {
+      closeDialog: false
+    })
+    if (didOpen && generation === detailGeneration) onClose()
+  } finally {
+    if (generation === detailGeneration) openPending.value = false
+  }
+}
+
+const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
+  if (openPending.value) return
+
+  invalidateDetailWork()
+  const generation = detailGeneration
+  detailOrigin =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  listScrollTop = modalLayout.value?.getContentScrollTop() ?? 0
+  templateWasSelected.value = true
   loadingTemplate.value = template.name
   try {
-    await loadWorkflowTemplate(
+    const prepared = await prepareWorkflowTemplateForOpen(
       template.name,
       getEffectiveSourceModule(template)
     )
-    templateWasSelected.value = true
-    onClose()
+    if (!prepared || generation !== detailGeneration) return
+
+    if (!isDesktop) {
+      await openPreparedTemplate(prepared, generation)
+      return
+    }
+
+    const requirements = extractTemplateModelRequirementDetails(
+      prepared.workflow
+    )
+    if (requirements.length === 0) {
+      await openPreparedTemplate(prepared, generation)
+      return
+    }
+
+    const availability = await resolveModelAvailability(
+      requirements.map(({ model }) => model)
+    )
+    if (generation !== detailGeneration) return
+    if (availability.every(({ status }) => status === 'installed')) {
+      await openPreparedTemplate(prepared, generation)
+      return
+    }
+
+    activeDetail.value = {
+      template,
+      prepared: markRaw(prepared),
+      modelSetup: {
+        result: deriveTemplateModelSetup(
+          requirements,
+          availability,
+          { status: 'aborted' },
+          { isDownloadable: isModelDownloadable }
+        ),
+        pending: true
+      }
+    }
+    await nextTick()
+    detailView.value?.focus()
+
+    const controller = new AbortController()
+    modelMetadataController = controller
+    void updateTemplateModelMetadata(
+      generation,
+      controller,
+      requirements,
+      availability
+    )
   } finally {
-    loadingTemplate.value = null
+    if (generation === detailGeneration) loadingTemplate.value = null
   }
+}
+
+async function onBackToTemplates() {
+  if (openPending.value) return
+
+  invalidateDetailWork()
+  activeDetail.value = null
+  loadingTemplate.value = null
+  await nextTick()
+  modalLayout.value?.setContentScrollTop(listScrollTop)
+  detailOrigin?.focus()
+}
+
+function onSelectNavItem(value: string | null) {
+  if (openPending.value) return
+
+  invalidateDetailWork()
+  activeDetail.value = null
+  loadingTemplate.value = null
+  selectedNavItem.value = value
+}
+
+const onOpenTemplate = async () => {
+  const detail = activeDetail.value
+  if (!detail || openPending.value) return
+
+  await openPreparedTemplate(detail.prepared, detailGeneration)
 }
 
 const pageTitle = computed(() => {
@@ -871,6 +1179,40 @@ const pageTitle = computed(() => {
         t('templateWorkflows.allTemplates', 'All Templates')
 })
 
+const backToTemplatesLabel = computed(() =>
+  t(
+    'templateWorkflows.detail.backToTemplates',
+    { category: pageTitle.value },
+    { escapeParameter: false }
+  )
+)
+
+const activeDetailTitle = computed(() => {
+  const detail = activeDetail.value
+  return detail
+    ? getTemplateTitle(detail.template, detail.prepared.sourceModule)
+    : ''
+})
+
+const activeDetailCloudUrl = computed(() => {
+  const detail = activeDetail.value
+  if (
+    isCloud ||
+    !detail ||
+    detail.prepared.sourceModule !== 'default' ||
+    (detail.template.includeOnDistributions?.length &&
+      !detail.template.includeOnDistributions.includes(
+        TemplateIncludeOnDistributionEnum.Cloud
+      ))
+  ) {
+    return undefined
+  }
+
+  const url = new URL(getComfyCloudBaseUrl())
+  url.searchParams.set('template', detail.template.name)
+  return url.toString()
+})
+
 // Initialize templates loading with useAsyncState
 const { isLoading } = useAsyncState(
   async () => {
@@ -887,6 +1229,8 @@ const { isLoading } = useAsyncState(
 )
 
 onBeforeUnmount(() => {
+  invalidateDetailWork()
+  detailOrigin = null
   cardRefs.value = [] // Release DOM refs
 })
 </script>
