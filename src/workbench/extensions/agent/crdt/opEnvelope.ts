@@ -15,7 +15,7 @@ export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
 // Reserve space for the doc_ops frame fields outside `ops` (type, protocol,
 // workflow id and tab). The server's identifiers are bounded well below this.
-export const WIRE_FRAME_OVERHEAD_BYTES = 1024
+const WIRE_FRAME_OVERHEAD_BYTES = 1024
 
 export interface MintContext {
   actor: Actor
