@@ -5,6 +5,7 @@ import type {
   AgentFixtureAdapter,
   AgentResponseFixture,
   FixtureNode,
+  FixtureWorkflow,
   RemoteMutationContext
 } from './agentFixtureHarness'
 import { replayAgentFixture } from './agentFixtureHarness'
@@ -26,7 +27,7 @@ class TestGraphAdapter implements AgentFixtureAdapter {
   }
 
   applyDraftPatch(
-    workflow: { readonly nodes: readonly FixtureNode[] },
+    workflow: FixtureWorkflow,
     context: RemoteMutationContext
   ): void {
     expect(context).toBe(this.activeContext)

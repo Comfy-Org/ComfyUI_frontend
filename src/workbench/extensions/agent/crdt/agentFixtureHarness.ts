@@ -4,7 +4,7 @@ export interface FixtureNode {
   readonly widgets_values: readonly unknown[]
 }
 
-interface FixtureWorkflow {
+export interface FixtureWorkflow {
   readonly nodes: readonly FixtureNode[]
 }
 
