@@ -9,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { app } from '@/scripts/app'
 
 import type {
   AddCreditsClickMetadata,
@@ -636,7 +637,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowExecution(): void {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
-      ...getExecutionContext(),
+      ...getExecutionContext(app.rootGraph),
       trigger_source: this.lastTriggerSource ?? 'unknown',
       event_source: EXECUTION_EVENT_SOURCE
     })

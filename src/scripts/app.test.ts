@@ -1193,14 +1193,13 @@ describe('ComfyApp', () => {
         modified: 0,
         size: 0
       })
-      const trackWorkflowQueued = vi.fn()
       const registry = new TelemetryRegistry()
-      registry.registerProvider({ trackWorkflowQueued })
+      registry.registerProvider({ trackExecutionOutcome: vi.fn() })
       setTelemetryRegistry(registry)
       Reflect.set(app, 'rootGraphInternal', initialGraph)
       mockWorkspaceWorkflow.activeWorkflow = initialWorkflow
       let resolveAuthToken!: (token: string | undefined) => void
-      mockAuthStore.getAuthToken.mockImplementation(
+      mockAuthStore.getWorkspaceAuthToken.mockImplementation(
         () =>
           new Promise<string | undefined>((resolve) => {
             resolveAuthToken = resolve
@@ -1218,13 +1217,16 @@ describe('ComfyApp', () => {
 
       try {
         const queuePromise = app.queuePrompt(0)
+        await vi.waitFor(() => {
+          expect(resolveAuthToken).toBeTypeOf('function')
+        })
         Reflect.set(app, 'rootGraphInternal', submissionGraph)
         mockWorkspaceWorkflow.activeWorkflow = submissionWorkflow
-        resolveAuthToken(undefined)
+        resolveAuthToken('workspace-token')
         await queuePromise
 
         expect(graphToPrompt).toHaveBeenCalledWith(submissionGraph)
-        expect(trackWorkflowQueued).toHaveBeenCalledWith(
+        expect(useExecutionStore().queuedJobs['job-1']).toMatchObject(
           expect.objectContaining({
             workflowContext: expect.objectContaining({ total_node_count: 3 })
           })
