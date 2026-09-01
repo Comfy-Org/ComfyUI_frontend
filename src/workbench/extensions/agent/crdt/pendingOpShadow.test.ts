@@ -139,6 +139,19 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(changes).toEqual([{ type: 'show', opId: 'op-1' }])
   })
 
+  it('isolates subscriber failures after committing a change', () => {
+    const surface = createPendingOpShadowSurface()
+    const changes: ShadowChange[] = []
+    surface.subscribe(() => {
+      throw new Error('renderer failed')
+    })
+    surface.subscribe((change) => changes.push(change))
+
+    expect(() => surface.show('op-1', [node('n1')])).not.toThrow()
+    expect(changes).toEqual([{ type: 'show', opId: 'op-1' }])
+    expect(surface.isPending(node('n1'))).toBe(true)
+  })
+
   it('snapshots are decoupled from caller input and internal state', () => {
     const surface = createPendingOpShadowSurface()
     const input = [node('n1')]
