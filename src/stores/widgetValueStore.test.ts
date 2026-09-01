@@ -178,7 +178,7 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidgetRenderState(seedA)).toEqual({})
     })
 
-    it('updates display and preserves dynamic suppression on re-registration', () => {
+    it('refreshes byExtension and preserves byConnection on re-registration', () => {
       const store = useWidgetValueStore()
       store.registerWidget(
         seedA,
@@ -199,7 +199,7 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getWidgetVisibility(seedA)).toEqual({
         display: { canvas: 'never', vueNode: 'never', panel: 'never' },
-        suppression: { byExtension: true, byConnection: true }
+        suppression: { byExtension: false, byConnection: true }
       })
     })
 

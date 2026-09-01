@@ -200,6 +200,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       })
       Object.assign(existing.render, renderState)
       Object.assign(existing.visibility.display, visibility.display)
+      existing.visibility.suppression.byExtension =
+        visibility.suppression.byExtension
       appendNodeWidgetOrder(widgetId)
       return existing.state
     }
