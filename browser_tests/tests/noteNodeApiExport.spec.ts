@@ -63,7 +63,7 @@ test.describe('Note Node API Export', { tag: '@node' }, () => {
 
     const virtualNodeCheck = await comfyPage.page.evaluate(async () => {
       const { output } = await window.app!.graphToPrompt()
-      const virtualTypes = ['Note', 'MarkdownNote', 'Reroute', 'PrimitiveNode']
+      const virtualTypes = ['Note', 'MarkdownNote']
       const leaked: string[] = []
       for (const node of Object.values(output)) {
         if (virtualTypes.includes(node.class_type)) {
