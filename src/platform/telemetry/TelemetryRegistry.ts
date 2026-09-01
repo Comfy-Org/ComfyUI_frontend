@@ -20,6 +20,7 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -391,6 +392,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackNamedValuesShadowDiffSummary?.(metadata)
     )
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
