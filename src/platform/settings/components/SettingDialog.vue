@@ -183,8 +183,10 @@ const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
 const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
   useSettingsHeaderCollapse()
 
-// A panel change swaps the scroller out from under the collapse state.
+// A panel change swaps the scroller out from under the collapse state, and the
+// state outlives the dialog, so a reopen would otherwise start collapsed.
 watch(activeCategoryKey, resetHeaderCollapse)
+onBeforeUnmount(resetHeaderCollapse)
 
 const navItems = computed(() => navGroups.value.flatMap((group) => group.items))
 const searchableNavItems = computed(() =>

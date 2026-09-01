@@ -1,10 +1,10 @@
 <template>
   <div
-    v-bind="$attrs"
+    v-bind="attrsWithoutClass"
     :class="
       cn(
         'flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white',
-        $attrs.class as string
+        attrsClass
       )
     "
     :style="{
@@ -19,9 +19,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useAttrsClass } from '@/composables/useAttrsClass'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
+
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const { workspaceName } = defineProps<{
   workspaceName: string
