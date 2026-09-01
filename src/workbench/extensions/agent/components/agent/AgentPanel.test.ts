@@ -328,6 +328,7 @@ describe('AgentPanel', () => {
     await user.type(renameInput, 'After title{Enter}')
     await nextTick()
 
+    expect(emitted().renameChat).toHaveLength(1)
     expect(emitted().renameChat[0]).toEqual(['After title'])
     expect(screen.getByRole('button', { name: 'Before title' })).toHaveFocus()
   })
