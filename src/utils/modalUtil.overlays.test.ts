@@ -38,11 +38,17 @@ const NO_MANAGED_DIALOGS = 0
 /**
  * The overlay vocabularies in use, keyed by how a component reaches for one.
  * Every overlay in the app is one of these composed into something bigger, and
- * the gate reads attributes each library emits unconditionally, so classifying
- * the vocabulary classifies every component built on it - which `MoreButton`, a
- * PrimeVue `Popover` one layer down, is here to demonstrate. That transitivity
- * is why the gate must never key on anything a call site can switch off, as
- * `.p-popover` was until `unstyled` call sites proved otherwise.
+ * the gate reads attributes each library emits unconditionally, so one case
+ * pins how the gate treats every component built on that vocabulary - which
+ * `MoreButton`, a PrimeVue `Popover` one layer down, is here to demonstrate.
+ * That is also why the gate must never key on anything a call site can switch
+ * off, as `.p-popover` was until `unstyled` call sites proved otherwise.
+ *
+ * What it does not pin is whether that treatment is still *right* for a call
+ * site that changes the surface's blocking semantics. Reka's `modal` prop is
+ * the live example: `<Popover modal>` inerts the page, and the gate reports no
+ * modal, because popper content is excluded wholesale. Nothing passes it today.
+ * A call site that does needs its own case, and a decision about the gate.
  *
  * Sibling entries from the same libraries are listed even when nothing uses
  * them yet, so adopting one trips the coverage guard below. A whole new overlay
