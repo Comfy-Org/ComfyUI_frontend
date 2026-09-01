@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
+        'group relative overflow-clip rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -10,7 +10,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute inset-x-0 top-0 z-10 rounded-t-lg bg-component-node-widget-background px-3 pt-1.5 pb-0.5 text-2xs text-muted-foreground"
+      class="pointer-events-none absolute inset-x-0 top-0 z-10 -mt-0.5 mr-4 rounded-t-lg bg-component-node-widget-background pt-2 pl-3 text-2xs text-muted-foreground"
     >
       {{ displayName }}
     </label>
