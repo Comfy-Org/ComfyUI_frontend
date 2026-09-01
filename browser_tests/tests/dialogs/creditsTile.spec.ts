@@ -291,9 +291,7 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
     const content = await openPlanAndCredits(page)
-    await expect(content.getByText('Your subscription has ended')).toHaveCount(
-      0
-    )
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect

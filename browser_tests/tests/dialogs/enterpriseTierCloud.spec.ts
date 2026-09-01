@@ -185,9 +185,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     )
     const content = await workspace.openPlanAndCreditsSettings()
 
-    await expect(content.getByText('Your subscription has ended')).toHaveCount(
-      0
-    )
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
     await expect(
       content.getByRole('heading', { name: 'Enterprise' })
     ).toBeVisible()

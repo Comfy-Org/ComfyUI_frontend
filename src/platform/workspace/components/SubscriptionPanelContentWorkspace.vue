@@ -55,6 +55,7 @@
       <!-- Cancelled subscription info card -->
       <div
         v-if="showSubscriptionStateCard"
+        data-testid="subscription-state-card"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div

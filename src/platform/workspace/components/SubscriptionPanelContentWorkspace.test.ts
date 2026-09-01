@@ -516,7 +516,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
         'secondary'
       )
       expect(
-        screen.queryByText('Your subscription has ended')
+        screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()
     })
 
@@ -527,6 +527,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByText('Canceled')).toBeInTheDocument()
       expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {
@@ -739,7 +740,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByText('Your subscription has ended')
+      screen.queryByTestId('subscription-state-card')
     ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
@@ -782,7 +783,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
       expect(
-        screen.queryByText('Your subscription has ended')
+        screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Subscribe' })
@@ -836,13 +837,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByText('Your subscription has ended')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('Your subscription is no longer active.')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText(/features remain active/i)
+      screen.queryByTestId('subscription-state-card')
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
     expect(
@@ -875,7 +870,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByText('Your subscription has ended')
+      screen.queryByTestId('subscription-state-card')
     ).not.toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Inactive team subscription' })
@@ -940,7 +935,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByText('Your subscription has ended')
+      screen.queryByTestId('subscription-state-card')
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
