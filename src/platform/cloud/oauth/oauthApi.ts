@@ -148,5 +148,5 @@ export async function submitOAuthConsentDecision({
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
   }
 
-  globalThis.location.href = redirectUrl
+  globalThis.location.href = target.href
 }
