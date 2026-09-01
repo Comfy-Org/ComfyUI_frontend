@@ -90,6 +90,26 @@ const translations = {
     en: 'ControlNet',
     'zh-CN': 'ControlNet'
   },
+  'tags.textToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'tags.imageToImage': {
+    en: 'Image to Image',
+    'zh-CN': '图生图'
+  },
+  'tags.inpainting': {
+    en: 'Inpainting',
+    'zh-CN': '局部重绘'
+  },
+  'tags.outpainting': {
+    en: 'Outpainting',
+    'zh-CN': '扩图'
+  },
+  'tags.upscaling': {
+    en: 'Upscaling',
+    'zh-CN': '放大'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -1862,9 +1882,9 @@ Enterprise`
       '面向初学者的 ComfyUI 教程：从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
   },
   'learning.categories.basics.metaDescription': {
-    en: 'Free ComfyUI tutorials for beginners. Learn the node graph first, then add LoRAs, style transfer, and ControlNets, with a workflow to open at every step.',
+    en: 'Free ComfyUI tutorials for beginners: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.',
     'zh-CN':
-      '面向初学者的免费 ComfyUI 教程。先学节点图，再加入 LoRA、风格迁移与 ControlNet，每一步都有可打开的工作流。'
+      '面向初学者的免费 ComfyUI 教程：节点图、文生图与图生图、LoRA 与 ControlNet，再到局部重绘、扩图与放大。'
   },
   'learning.categories.vfx.heading': {
     en: 'VFX Tutorials',
