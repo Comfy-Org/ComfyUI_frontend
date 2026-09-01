@@ -95,8 +95,7 @@ export function createDetachedTargetSession(
   function assertTarget(frameWorkflowId: string): void {
     assert(
       frameWorkflowId === workflowId,
-      `DetachedTargetSession(${workflowId}) received a frame addressed to ` +
-        `"${frameWorkflowId}"; frames must never cross targets`
+      'DetachedTargetSession received a frame addressed to a different target; frames must never cross targets'
     )
   }
 
