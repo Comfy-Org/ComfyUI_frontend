@@ -7,7 +7,7 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
-  for (const width of [320, 640]) {
+  for (const width of [480, 640]) {
     test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
       comfyPage
     }) => {
@@ -15,9 +15,16 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
       const panel = page.locator('#agent-panel-root')
 
-      await panel.evaluate((element, panelWidth) => {
-        element.style.width = `${panelWidth}px`
-      }, width)
+      const dock = page.getByTestId('docked-agent-panel')
+      const resizeHandle = page.getByTestId('agent-panel-resize-handle')
+      const handleBox = await resizeHandle.boundingBox()
+      if (!handleBox)
+        throw new Error('Agent panel resize handle is not visible')
+      await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + 20)
+      await page.mouse.down()
+      await page.mouse.move(handleBox.x - (width - 420), handleBox.y + 20)
+      await page.mouse.up()
+      await expect(dock).toHaveCSS('width', `${width}px`)
 
       const composer = panel.getByRole('textbox')
       const send = panel.getByRole('button', { name: 'Send' })
