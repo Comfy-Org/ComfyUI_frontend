@@ -198,15 +198,11 @@ describe('agentEventTransport thinking narration', () => {
   })
 
   it('a tool call clears the live narration but retains the completed step', () => {
-    const now = vi
-      .spyOn(Date, 'now')
-      .mockReturnValueOnce(1000)
-      .mockReturnValueOnce(2300)
+    vi.spyOn(Date, 'now').mockReturnValueOnce(1000).mockReturnValueOnce(2300)
     const message = drive([
       thinking('Adding a node'),
       toolCall('add_node', 'success')
     ])
-    now.mockRestore()
     expect(message.thinkingText).toBeUndefined()
     expect(thinkingParts(message)).toEqual([
       {
@@ -227,9 +223,8 @@ describe('agentEventTransport thinking narration', () => {
   })
 
   it('the first text delta clears the live narration but retains the step', () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([thinking('Writing a reply'), delta('Here')])
-    now.mockRestore()
     expect(message.thinkingText).toBeUndefined()
     expect(thinkingParts(message)).toEqual([
       { type: 'thinking', text: 'Writing a reply', state: 'done' }
@@ -240,10 +235,9 @@ describe('agentEventTransport thinking narration', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
-    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    vi.spyOn(Date, 'now').mockReturnValue(1000)
     transport.ingest(thinking('Wrapping up'))
     transport.settle()
-    now.mockRestore()
     const final = emit.mock.calls.at(-1)?.[0] ?? message
     expect(final.thinkingText).toBeUndefined()
     expect(thinkingParts(final)).toEqual([
@@ -273,15 +267,13 @@ describe('agentEventTransport thinking narration', () => {
   })
 
   it('retains alternating reasoning and tool events in transcript order', () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([
       thinking('Inspecting the graph'),
       toolCall('list_slots', 'success'),
       thinking('Applying the edit'),
       toolCall('set_widget', 'success')
     ])
-    now.mockRestore()
-
     expect(message.parts).toEqual([
       {
         type: 'thinking',
