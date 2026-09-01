@@ -2,6 +2,7 @@ import type { Distribution } from '@/platform/distribution/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallPresentation =
+  | { kind: 'unknown' }
   | { kind: 'subscribed'; showUpgrade: boolean }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
@@ -11,6 +12,7 @@ export type AgentPaywallPresentation =
 interface AgentPaywallPresentationInput {
   distribution: Distribution
   role: WorkspaceRole
+  hasAuthoritativeCapabilities: boolean
   canTopUp: boolean
   canSubscribeSelfServe: boolean
 }
@@ -25,11 +27,13 @@ interface AgentPaywallPresentationInput {
 export function resolveAgentPaywallPresentation({
   distribution,
   role,
+  hasAuthoritativeCapabilities,
   canTopUp,
   canSubscribeSelfServe
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
   if (role === 'member') return { kind: 'member' }
   if (distribution !== 'cloud') return { kind: 'local' }
+  if (!hasAuthoritativeCapabilities) return { kind: 'unknown' }
   if (!canTopUp) {
     return canSubscribeSelfServe
       ? { kind: 'subscriptionRequired' }

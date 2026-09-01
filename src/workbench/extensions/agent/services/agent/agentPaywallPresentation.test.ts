@@ -11,6 +11,7 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Cloud owner with both self-serve actions',
       distribution: 'cloud',
       role: 'owner',
+      hasAuthoritativeCapabilities: true,
       canTopUp: true,
       canSubscribeSelfServe: true,
       expected: { kind: 'subscribed', showUpgrade: true }
@@ -19,6 +20,7 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Cloud owner with top-up only',
       distribution: 'cloud',
       role: 'owner',
+      hasAuthoritativeCapabilities: true,
       canTopUp: true,
       canSubscribeSelfServe: false,
       expected: { kind: 'subscribed', showUpgrade: false }
@@ -27,6 +29,7 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Cloud owner who must subscribe before buying credits',
       distribution: 'cloud',
       role: 'owner',
+      hasAuthoritativeCapabilities: true,
       canTopUp: false,
       canSubscribeSelfServe: true,
       expected: { kind: 'subscriptionRequired' }
@@ -35,6 +38,7 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Cloud sales-managed owner',
       distribution: 'cloud',
       role: 'owner',
+      hasAuthoritativeCapabilities: true,
       canTopUp: false,
       canSubscribeSelfServe: false,
       expected: { kind: 'salesManaged' }
@@ -43,6 +47,7 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Cloud workspace member',
       distribution: 'cloud',
       role: 'member',
+      hasAuthoritativeCapabilities: true,
       canTopUp: true,
       canSubscribeSelfServe: true,
       expected: { kind: 'member' }
@@ -51,14 +56,16 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Desktop owner without a subscription',
       distribution: 'desktop',
       role: 'owner',
+      hasAuthoritativeCapabilities: false,
       canTopUp: true,
       canSubscribeSelfServe: false,
-      expected: { kind: 'local' }
+      expected: { kind: 'member' }
     },
     {
       name: 'Localhost owner without a subscription',
       distribution: 'localhost',
       role: 'owner',
+      hasAuthoritativeCapabilities: false,
       canTopUp: true,
       canSubscribeSelfServe: false,
       expected: { kind: 'local' }
@@ -67,14 +74,25 @@ describe('resolveAgentPaywallPresentation', () => {
       name: 'Desktop workspace member',
       distribution: 'desktop',
       role: 'member',
+      hasAuthoritativeCapabilities: false,
       canTopUp: true,
       canSubscribeSelfServe: false,
-      expected: { kind: 'member' }
+      expected: { kind: 'local' }
+    },
+    {
+      name: 'Cloud owner while capabilities are unresolved',
+      distribution: 'cloud',
+      role: 'owner',
+      hasAuthoritativeCapabilities: false,
+      canTopUp: false,
+      canSubscribeSelfServe: false,
+      expected: { kind: 'unknown' }
     }
   ] satisfies Array<{
     name: string
     distribution: Distribution
     role: WorkspaceRole
+    hasAuthoritativeCapabilities: boolean
     canTopUp: boolean
     canSubscribeSelfServe: boolean
     expected: ReturnType<typeof resolveAgentPaywallPresentation>
