@@ -92,11 +92,7 @@ function useVueNodeLifecycleIndividual() {
       // cycle. The legacy renderer re-establishes needed overrides during
       // its first draw pass via PromotedWidgetView.draw / y setter.
       const domWidgetStore = useDomWidgetStore()
-      for (const [widgetId, state] of domWidgetStore.widgetStates) {
-        if (state.positionOverride) {
-          domWidgetStore.clearPositionOverride(widgetId)
-        }
-      }
+      domWidgetStore.clearAllPositionOverrides()
 
       // Force arrange() on all nodes so input.pos is computed before
       // the first legacy drawConnections frame (which may run before

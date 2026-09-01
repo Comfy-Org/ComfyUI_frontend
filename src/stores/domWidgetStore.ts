@@ -91,6 +91,12 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     if (state) state.positionOverride = undefined
   }
 
+  function clearAllPositionOverrides() {
+    for (const state of widgetStates.value.values()) {
+      state.positionOverride = undefined
+    }
+  }
+
   function clear() {
     widgetStates.value.clear()
   }
@@ -106,6 +112,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     setWidget,
     setPositionOverride,
     clearPositionOverride,
+    clearAllPositionOverrides,
     clear
   }
 })
