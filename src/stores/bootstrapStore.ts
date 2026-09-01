@@ -128,8 +128,10 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     void loadI18n()
     const storeLoads = loadAuthenticatedStores()
 
-    bootstrapTracer.milestone('stores-ready')
-    void Promise.allSettled(storeLoads).then(() => bootstrapTracer.logSummary())
+    void Promise.allSettled(storeLoads).then(() => {
+      bootstrapTracer.milestone('stores-ready')
+      bootstrapTracer.logSummary()
+    })
   }
 
   return {
