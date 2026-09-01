@@ -27,6 +27,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import * as Y from 'yjs'
 
 import type { MergeTraceEntry, MergeVerdict } from './mergeTrace'
 import { opNodeId, traceEntry } from './mergeTrace'
@@ -120,12 +121,9 @@ function asPlainJson(workflow: WorkflowJSON): WorkflowJSON {
 /**
  * Replay `batches` against a fresh document minted from `workflow`.
  *
- * Duplicate detection and node presence are both sampled BEFORE the batch and
- * then advanced op by op as the batch is walked, so a resend and the op it
- * repeats — and a delete and the write it defeats — can share one batch and
- * still be explained at their own positions. Register ownership is the one
- * fact read AFTER the batch, because the incumbent stamp is only decided once
- * the batch has settled.
+ * Duplicate detection, node presence and register ownership are sampled at
+ * each op's position. The real batch still determines the final outcome; a
+ * prefix replay on a clone captures the stamp visible when that op settled.
  */
 function simulateOpStream(
   workflow: WorkflowJSON,
@@ -149,8 +147,14 @@ function simulateOpStream(
       if (id !== null && !present.has(id)) present.set(id, hasNode(doc, id))
     }
 
+    const beforeBatch = Y.encodeStateAsUpdate(doc)
     const result = applyOps(doc, batch, catalog)
-    const stampsAfter = readStamps(doc)
+    const stampsByPosition = batch.map((_, position) => {
+      const prefixDoc = new Y.Doc()
+      Y.applyUpdate(prefixDoc, beforeBatch)
+      applyOps(prefixDoc, batch.slice(0, position + 1), catalog)
+      return readStamps(prefixDoc)
+    })
 
     batch.forEach((op, position) => {
       const outcome = result.outcomes[position]
@@ -160,7 +164,7 @@ function simulateOpStream(
             outcome,
             spentOpIds.has(op.op_id),
             nodeId === null ? null : (present.get(nodeId) ?? false),
-            stampKeyOf(stampsAfter[stampTargetKey(op)])
+            stampKeyOf(stampsByPosition[position][stampTargetKey(op)])
           )
         : { kind: 'no-op', because: 'unknown' }
 

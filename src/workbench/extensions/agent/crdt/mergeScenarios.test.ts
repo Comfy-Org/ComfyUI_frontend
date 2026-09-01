@@ -46,6 +46,30 @@ describe('merge scenarios', () => {
     expect(loser.explanation).toContain('Last-writer-wins')
   })
 
+  it('reads an incumbent stamp at the losing op position inside one batch', () => {
+    const source = scenario('stale-write-loses')
+    const [winnerOp, loserOp] = source.batches.flat()
+    if (!winnerOp || !loserOp) throw new Error('scenario needs two writes')
+    const laterOp = {
+      ...winnerOp,
+      op_id: crypto.randomUUID().replaceAll('-', ''),
+      base_version: winnerOp.base_version + 1
+    }
+    const [winner, loser, later] = runScenario({
+      ...source,
+      batches: [[winnerOp, loserOp, laterOp]]
+    }).entries
+
+    expect(loser.verdict).toEqual({
+      kind: 'lww-dropped',
+      incumbent: winner.stamp
+    })
+    expect(loser.verdict).not.toEqual({
+      kind: 'lww-dropped',
+      incumbent: later.stamp
+    })
+  })
+
   it('distinguishes an idempotent resend from a conflict', () => {
     expect(verdicts('idempotent-resend')).toEqual([
       { kind: 'applied' },
