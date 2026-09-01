@@ -17,10 +17,20 @@ function artifactFiles(directory: string): string[] {
 }
 
 function assetApiGates(chunks: ReadonlyArray<string>): string {
-  const gates = chunks.flatMap(
-    (chunk) =>
-      chunk.match(/function isAssetAPIEnabled\(\)\s*\{[\s\S]*?\n\s*\}/g) ?? []
-  )
+  const gates = chunks.flatMap((chunk) => {
+    const matches: string[] = []
+    const declaration = /function isAssetAPIEnabled\(\)\s*\{/g
+    for (const match of chunk.matchAll(declaration)) {
+      let depth = 1
+      let index = (match.index ?? 0) + match[0].length
+      for (; index < chunk.length && depth > 0; index++) {
+        if (chunk[index] === '{') depth++
+        if (chunk[index] === '}') depth--
+      }
+      if (depth === 0) matches.push(chunk.slice(match.index, index))
+    }
+    return matches
+  })
 
   if (gates.length !== 1) {
     throw new Error(
@@ -39,7 +49,7 @@ export function assertAssetApiGate(
   const expected =
     distribution === 'cloud'
       ? /return !!useSettingStore\(\)\.get\(["']Comfy\.Assets\.UseAssetAPI["']\)/
-      : /return false/
+      : /return(?: false|!1)/
 
   if (!expected.test(gate)) {
     throw new Error(
