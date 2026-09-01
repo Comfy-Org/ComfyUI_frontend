@@ -7,6 +7,7 @@ import {
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
+  zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
@@ -15,6 +16,7 @@ import {
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry,
@@ -144,6 +146,20 @@ export function createAgentRestClient() {
     return page.threads
   }
 
+  async function getRunMode(): Promise<AgentRunModePreference> {
+    return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
+  }
+
+  async function putRunMode(
+    preference: AgentRunModePreference
+  ): Promise<AgentRunModePreference> {
+    return request(
+      '/agent/run-mode',
+      jsonInit('PUT', preference),
+      zAgentRunMode
+    )
+  }
+
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore = false
@@ -194,10 +210,15 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getRunMode,
+    putRunMode,
     listCloudWorkflows,
     cancelMessage,
     uploadImage
   }
 }
 
-export type AgentRestClient = ReturnType<typeof createAgentRestClient>
+export type AgentRestClient = Omit<
+  ReturnType<typeof createAgentRestClient>,
+  'getRunMode' | 'putRunMode'
+>

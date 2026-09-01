@@ -4764,6 +4764,10 @@
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
       },
+      "agent_api_failed": {
+        "title": "Comfy Agent error",
+        "desc": "Comfy Agent hit a server error. Try again."
+      },
       "op_rejected": {
         "title": "Agent edit rejected",
         "desc": "The workflow document refused an agent edit. The canvas and the shared document may briefly differ until the next update."
@@ -4779,10 +4783,6 @@
       "apply_failed": {
         "title": "Agent edit failed",
         "desc": "An agent edit could not be applied to the workflow document."
-      },
-      "agent_api_failed": {
-        "title": "Comfy Agent error",
-        "desc": "Comfy Agent hit a server error."
       }
     }
   },

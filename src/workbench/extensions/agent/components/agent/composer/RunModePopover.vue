@@ -32,7 +32,10 @@ function onOpenChange(next: boolean): void {
 }
 
 function saveChanges(): void {
-  store.save(draftMode.value, draftLimit.value)
+  void store.save(
+    draftMode.value,
+    draftMode.value === 'auto_limited' ? draftLimit.value : null
+  )
   open.value = false
 }
 
@@ -45,26 +48,26 @@ const dirty = computed(
   () => draftMode.value !== store.mode || draftLimit.value !== store.creditLimit
 )
 
-const limitValid = computed(
-  () =>
-    draftMode.value !== 'auto-limit' ||
-    (Number.isFinite(draftLimit.value) && Math.floor(draftLimit.value) > 0)
-)
+const limitValid = computed(() => {
+  if (draftMode.value !== 'auto_limited') return true
+  const limit = draftLimit.value
+  return limit !== null && Number.isFinite(limit) && Math.floor(limit) > 0
+})
 
 const saveable = computed(() => dirty.value && limitValid.value)
 
 const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
-  ask: 'agent.runModeTriggerAsk',
+  ask_approval: 'agent.runModeTriggerAsk',
   auto: 'agent.runModeTriggerAuto',
-  'auto-limit': 'agent.runModeTriggerAutoLimit'
+  auto_limited: 'agent.runModeTriggerAutoLimit'
 }
 
 const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
 
 const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
-  ask: 'agent.runModeTriggerAskTooltip',
+  ask_approval: 'agent.runModeTriggerAskTooltip',
   auto: 'agent.runModeTriggerAutoTooltip',
-  'auto-limit': 'agent.runModeTriggerAutoLimitTooltip'
+  auto_limited: 'agent.runModeTriggerAutoLimitTooltip'
 }
 
 const triggerTooltip = computed(() => t(TRIGGER_TOOLTIP_KEYS[store.mode]))
@@ -76,7 +79,7 @@ const options: {
   description: string
 }[] = [
   {
-    mode: 'ask',
+    mode: 'ask_approval',
     icon: 'icon-[lucide--hand]',
     title: 'agent.runModeAsk',
     description: 'agent.runModeAskDescription'
@@ -88,7 +91,7 @@ const options: {
     description: 'agent.runModeAutoDescription'
   },
   {
-    mode: 'auto-limit',
+    mode: 'auto_limited',
     icon: 'icon-[lucide--gauge]',
     title: 'agent.runModeLimit',
     description: 'agent.runModeLimitDescription'
@@ -170,7 +173,9 @@ const options: {
               />
             </RadioGroupItem>
             <div
-              v-if="option.mode === 'auto-limit' && draftMode === 'auto-limit'"
+              v-if="
+                option.mode === 'auto_limited' && draftMode === 'auto_limited'
+              "
               class="flex items-center gap-3 px-9.5 pb-2.5"
             >
               <input
