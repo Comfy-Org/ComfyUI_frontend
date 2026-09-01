@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN'
+type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
   // Tags (global, reusable across sections)
@@ -131,16 +131,19 @@ const translations = {
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
-    'zh-CN': '视觉 AI 的\n最强可控性'
+    'zh-CN': '视觉 AI 的\n最强可控性',
+    ja: 'ビジュアルAIを自在にコントロール'
   },
   'hero.subtitle': {
     en: 'Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output.',
     'zh-CN':
-      'Comfy 是面向专业视觉人士的 AI 创作引擎。您可以精确掌控每个模型、每个参数和每个输出。'
+      'Comfy 是面向专业视觉人士的 AI 创作引擎。您可以精确掌控每个模型、每个参数和每个输出。',
+    ja: 'Comfyは、あらゆるモデル、あらゆるパラメータ、あらゆる出力を完全にコントロールしたいビジュアルプロフェッショナルのためのAIクリエーションエンジンです。'
   },
   'hero.runFirstWorkflow': {
     en: 'Run your first workflow',
-    'zh-CN': '运行你的第一个工作流'
+    'zh-CN': '运行你的第一个工作流',
+    ja: '最初のワークフローを実行する'
   },
   'hero.getStartedFree': {
     en: 'Get started for free',
@@ -239,11 +242,13 @@ const translations = {
   'showcase.subtitle1': {
     en: 'Connect models, processing steps, and outputs on a canvas where every decision is visible and every step is inspectable.',
     'zh-CN':
-      '在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。'
+      '在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。',
+    ja: 'モデル、処理ステップ、出力をキャンバス上で接続。すべての判断が見え、すべてのステップを検証できます。'
   },
   'showcase.subtitle2': {
     en: 'Start from a community template or build from scratch.',
-    'zh-CN': '从工作流模板开始，或从零构建。'
+    'zh-CN': '从工作流模板开始，或从零构建。',
+    ja: 'コミュニティテンプレートから始めることも、ゼロから構築することもできます。'
   },
   'showcase.feature1.title': {
     en: 'Full Control with Nodes',
@@ -306,7 +311,8 @@ const translations = {
   },
   'industries.cta': {
     en: 'EXPLORE WORKFLOWS',
-    'zh-CN': '探索工作流'
+    'zh-CN': '探索工作流',
+    ja: 'ワークフローを探索する'
   },
 
   // GetStartedSection
@@ -366,7 +372,9 @@ const translations = {
   },
   'products.heading': {
     en: 'The AI creation\nengine for complete control',
-    'zh-CN': '完全掌控的\nAI 创作引擎'
+    'zh-CN': '完全掌控的\nAI 创作引擎',
+    ja: `すべてをコントロールできる
+AIクリエーションエンジン`
   },
   'products.subheading': {
     en: 'Over every model, every node, every step, every output.',
@@ -374,51 +382,67 @@ const translations = {
   },
   'products.local.title': {
     en: 'Comfy\nDesktop',
-    'zh-CN': 'Comfy\n桌面版'
+    'zh-CN': 'Comfy\n桌面版',
+    ja: `Comfy
+Desktop`
   },
   'products.local.description': {
     en: 'Run ComfyUI on your own hardware.',
-    'zh-CN': '在您自己的硬件上运行 ComfyUI。'
+    'zh-CN': '在您自己的硬件上运行 ComfyUI。',
+    ja: 'あなたのハードウェアでComfyUIを実行。'
   },
   'products.local.cta': {
     en: 'SEE DESKTOP FEATURES',
-    'zh-CN': '查看桌面版属性'
+    'zh-CN': '查看桌面版属性',
+    ja: 'デスクトップ機能を見る'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
-    'zh-CN': 'Comfy\nCloud'
+    'zh-CN': 'Comfy\nCloud',
+    ja: `Comfy
+Cloud`
   },
   'products.cloud.description': {
     en: 'The full power of ComfyUI from anywhere.',
-    'zh-CN': '随时随地使用 ComfyUI 的全部能力。'
+    'zh-CN': '随时随地使用 ComfyUI 的全部能力。',
+    ja: 'どこからでもComfyUIのフルパワーを。'
   },
   'products.cloud.cta': {
     en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端属性'
+    'zh-CN': '查看云端属性',
+    ja: 'クラウド機能を見る'
   },
   'products.api.title': {
     en: 'Comfy\nAPI',
-    'zh-CN': 'Comfy\nAPI'
+    'zh-CN': 'Comfy\nAPI',
+    ja: `Comfy
+API`
   },
   'products.api.description': {
     en: 'Turn workflows into production endpoints.',
-    'zh-CN': '将工作流转化为生产级 API 端点。'
+    'zh-CN': '将工作流转化为生产级 API 端点。',
+    ja: 'ワークフローを本番環境のエンドポイントに。'
   },
   'products.api.cta': {
     en: 'SEE API FEATURES',
-    'zh-CN': '查看 API 属性'
+    'zh-CN': '查看 API 属性',
+    ja: 'API機能を見る'
   },
   'products.enterprise.title': {
     en: 'Comfy\nEnterprise',
-    'zh-CN': 'Comfy\n企业版'
+    'zh-CN': 'Comfy\n企业版',
+    ja: `Comfy
+Enterprise`
   },
   'products.enterprise.description': {
     en: 'Enterprise-grade infrastructure for the creative engine inside your organization.',
-    'zh-CN': '为组织内的创作引擎提供企业级基础设施。'
+    'zh-CN': '为组织内的创作引擎提供企业级基础设施。',
+    ja: '組織内のクリエイティブエンジンのためのエンタープライズグレードインフラ。'
   },
   'products.enterprise.cta': {
     en: 'SEE ENTERPRISE FEATURES',
-    'zh-CN': '查看企业版属性'
+    'zh-CN': '查看企业版属性',
+    ja: 'エンタープライズ機能を見る'
   },
 
   // CaseStudySpotlightSection
@@ -428,21 +452,25 @@ const translations = {
   },
   'caseStudy.heading': {
     en: 'See ComfyUI\nin the real world',
-    'zh-CN': '看看 ComfyUI\n在真实世界中的应用'
+    'zh-CN': '看看 ComfyUI\n在真实世界中的应用',
+    ja: '実際の現場で活用されるComfyUI'
   },
   'caseStudy.subheading': {
     en: 'Videos & case studies from teams building with ComfyUI',
-    'zh-CN': '来自使用 ComfyUI 构建的团队的视频和案例研究'
+    'zh-CN': '来自使用 ComfyUI 构建的团队的视频和案例研究',
+    ja: 'ComfyUIを活用するチームの動画とケーススタディ'
   },
   'caseStudy.seeAll': {
     en: 'SEE ALL CASE STUDIES',
-    'zh-CN': '查看全部案例'
+    'zh-CN': '查看全部案例',
+    ja: 'すべてのケーススタディを見る'
   },
 
   // BuildWhatSection
   'buildWhat.subtitle': {
     en: "Comfy gives you the building blocks to create workflows nobody's imagined yet — and share them with everyone.",
-    'zh-CN': 'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。'
+    'zh-CN': 'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。',
+    ja: 'Comfyは誰も想像したことのないワークフローを作成し、みんなと共有するための構成要素を提供します。'
   },
 
   // API – HeroSection
@@ -1435,9 +1463,13 @@ const translations = {
       '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
 
-  'buildWhat.row1': { en: 'BUILD WHAT', 'zh-CN': '构建' },
-  'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的' },
-  'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
+  'buildWhat.row1': {
+    en: 'BUILD WHAT',
+    'zh-CN': '构建',
+    ja: 'まだ存在しないものを'
+  },
+  'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的', ja: '構築' },
+  'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物', ja: 'しよう' },
 
   // PricingSection
   'pricing.title': { en: 'Choose a plan', 'zh-CN': '价格' },
