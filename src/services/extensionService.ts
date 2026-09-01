@@ -1,12 +1,18 @@
+import { fromZodError } from 'zod-validation-error'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { zKeybinding } from '@/platform/keybindings/types'
+import { parseWhenClause } from '@/platform/keybindings/whenClause'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -79,8 +85,38 @@ export const useExtensionService = () => {
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
+    const contextKeyStore = useContextKeyStore()
+    extension.contextKeys?.forEach((key) => {
+      if (
+        !contextKeyStore.register(`${extension.name}.${key}`, extension.name)
+      ) {
+        toastErrorHandler(
+          new Error(
+            t('g.invalidExtensionContextKey', { name: extension.name, key })
+          )
+        )
+      }
+    })
     extension.keybindings?.forEach((keybinding) => {
-      addKeybinding(new KeybindingImpl(keybinding))
+      const parsed = zKeybinding.safeParse(keybinding)
+      if (!parsed.success) {
+        toastErrorHandler(
+          new Error(
+            `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${fromZodError(parsed.error).message}`
+          )
+        )
+        return
+      }
+      const when = parsed.data.when && parseWhenClause(parsed.data.when)
+      if (when && !when.success) {
+        toastErrorHandler(
+          new Error(
+            `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${when.error}`
+          )
+        )
+        return
+      }
+      addKeybinding(new KeybindingImpl(parsed.data))
     })
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)
