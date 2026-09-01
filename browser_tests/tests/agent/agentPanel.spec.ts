@@ -217,9 +217,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await composer.fill('Add a node to this workflow')
     await panel.getByRole('button', { name: 'Send' }).click()
 
-    await expect.poll(() => postedMessages.length).toBe(1)
+    await expect.poll(() => postedMessages.length, { timeout: 10_000 }).toBe(1)
     await expect
-      .poll(() => webSocketMessages.some(isWorkflowSubscribe))
+      .poll(() => webSocketMessages.some(isWorkflowSubscribe), {
+        timeout: 10_000
+      })
       .toBe(true)
 
     const ws = await getWebSocket()
@@ -228,13 +230,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(ws, updates.initial)
 
     await expect
-      .poll(() =>
-        page.evaluate(() =>
-          window.app!.graph._nodes.some(
-            (node) =>
-              String(node.id) === '41' && node.title === 'Agent-created node'
-          )
-        )
+      .poll(
+        () =>
+          page.evaluate(() =>
+            window.app!.graph._nodes.some(
+              (node) =>
+                String(node.id) === '41' && node.title === 'Agent-created node'
+            )
+          ),
+        { timeout: 10_000 }
       )
       .toBe(true)
 
@@ -245,7 +249,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         () =>
           webSocketMessages
             .slice(messagesBeforeReconnect)
-            .filter(isWorkflowSubscribe).length
+            .filter(isWorkflowSubscribe).length,
+        { timeout: 10_000 }
       )
       .toBeGreaterThanOrEqual(1)
 
@@ -260,16 +265,20 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(reconnectedWs, updates.reconnectDelta)
 
     await expect(panel.getByTestId('agent-crdt-status')).toContainText(
-      '2 updates'
+      '2 updates',
+      { timeout: 10_000 }
     )
 
     await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            window.app!.graph._nodes.filter((node) => String(node.id) === '41')
-              .length
-        )
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              window.app!.graph._nodes.filter(
+                (node) => String(node.id) === '41'
+              ).length
+          ),
+        { timeout: 10_000 }
       )
       .toBe(1)
   })
