@@ -231,7 +231,7 @@ test.describe('Product cards links @smoke', () => {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
 
-    for (const href of ['/download', '/cloud', '/api', '/cloud/enterprise']) {
+    for (const href of ['/download', '/cloud', '/api', '/enterprise']) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })

@@ -5,12 +5,17 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
+import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'
-import HubspotFormEmbed from './HubspotFormEmbed.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+
+const contactFormIds: Record<Locale, string> = {
+  en: '94e05eab-1373-47f7-ab5e-d84f9e6aa262',
+  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+}
 
 function tk(suffix: string): TranslationKey {
   return `contact.form.${suffix}` as TranslationKey
@@ -81,7 +86,7 @@ useHeroAnimation({
 
     <!-- Right column: form -->
     <div ref="formRef" class="mt-12 lg:mt-0 lg:w-1/2">
-      <HubspotFormEmbed :locale />
+      <HubspotFormEmbed :form-id="contactFormIds[locale]" :locale />
     </div>
   </section>
 </template>

@@ -5789,8 +5789,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.beginPath()
       if (shape == RenderShape.BOX) {
         ctx.rect(0, 0, size[0], size[1])
-      } else if (shape == RenderShape.ROUND) {
-        ctx.roundRect(0, 0, size[0], size[1], [10])
+      } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
+        ctx.roundRect(
+          0,
+          0,
+          size[0],
+          size[1],
+          shape == RenderShape.CARD
+            ? [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
+            : [LiteGraph.ROUND_RADIUS]
+        )
       } else if (shape == RenderShape.CIRCLE) {
         ctx.arc(size[0] * 0.5, size[1] * 0.5, size[0] * 0.5, 0, Math.PI * 2)
       }
@@ -7277,8 +7285,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const div = document.createElement('div')
     const dialog: PromptDialog = Object.assign(div, customProperties)
 
-    const graphcanvas = LGraphCanvas.active_canvas
-    const { canvas } = graphcanvas
+    const { canvas } = this
     if (!canvas.parentNode)
       throw new TypeError(
         'canvas element parentNode was null when opening a prompt.'

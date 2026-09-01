@@ -64,3 +64,28 @@ describe('legacy MiniMax H3 redirects', () => {
     expect(findRedirect(canonicalPath)).toBeUndefined()
   })
 })
+
+describe('legacy Enterprise redirects', () => {
+  it.for([
+    '/cloud/enterprise',
+    '/cloud/enterprise/',
+    '/zh-CN/cloud/enterprise',
+    '/zh-CN/cloud/enterprise/'
+  ])('sends %s to the canonical Enterprise route permanently', (source) => {
+    const redirect = findRedirect(source)
+
+    if (!redirect) {
+      throw new Error(`${source} is missing from vercel.json`)
+    }
+
+    expect(redirect.destination).toBe('/enterprise/')
+    expect(redirect.permanent).toBe(true)
+  })
+
+  it('leaves the canonical Enterprise routes unredirected', () => {
+    expect(findRedirect('/enterprise')).toBeUndefined()
+    expect(findRedirect('/enterprise/')).toBeUndefined()
+    expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
+    expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
+  })
+})
