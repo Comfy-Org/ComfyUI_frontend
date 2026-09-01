@@ -138,6 +138,31 @@ describe('serializeDocumentScope', () => {
     expect(serializeDocumentScope(clean)).toEqual(serializeDocumentScope(dirty))
   })
 
+  it('sorts widgets by code unit, independent of host locale', () => {
+    const scope = scopeFor('root-widget-sort')
+    useNodeDataStore().registerNode(scope, createNodeState({ id: toNodeId(1) }))
+    const widgetStore = useWidgetValueStore()
+    // Registration order: 'a' first. localeCompare would sort 'a' before 'B';
+    // code-unit order puts 'B' (66) before 'a' (97).
+    widgetStore.registerWidget(widgetId(scope.rootGraphId, toNodeId(1), 'a'), {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    widgetStore.registerWidget(widgetId(scope.rootGraphId, toNodeId(1), 'B'), {
+      type: 'number',
+      value: 2,
+      options: {}
+    })
+
+    const decoded = decode(serializeDocumentScope(scope))
+
+    expect(decoded.nodes[0].widgets.map((widget) => widget.name)).toEqual([
+      'B',
+      'a'
+    ])
+  })
+
   it('throws on pathologically deep semantic state instead of hanging', () => {
     const scope = scopeFor('root-deep')
     let deep: unknown = 0
