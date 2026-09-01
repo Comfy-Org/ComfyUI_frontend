@@ -14,7 +14,7 @@ describe('resolveAgentPaywallPresentation', () => {
       hasAuthoritativeCapabilities: true,
       canTopUp: true,
       canSubscribeSelfServe: true,
-      expected: { kind: 'subscribed', showUpgrade: true }
+      expected: { kind: 'topUpAvailable', showUpgrade: true }
     },
     {
       name: 'Cloud owner with top-up only',
@@ -23,7 +23,7 @@ describe('resolveAgentPaywallPresentation', () => {
       hasAuthoritativeCapabilities: true,
       canTopUp: true,
       canSubscribeSelfServe: false,
-      expected: { kind: 'subscribed', showUpgrade: false }
+      expected: { kind: 'topUpAvailable', showUpgrade: false }
     },
     {
       name: 'Cloud owner who must subscribe before buying credits',
