@@ -249,14 +249,19 @@ describe('Composer', () => {
       ['ask', 'Ask', 'Ask for permission'],
       ['auto', 'Auto', 'Run workflow without permission'],
       ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
-    ] as const)('shows the %s mode tooltip copy', ([mode, , tooltipCopy]) => {
-      const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
-      useAgentRunModeStore().save(mode, 450)
+    ] as const)(
+      'shows the %s mode tooltip copy',
+      ([mode, triggerName, tooltipCopy]) => {
+        useAgentRunModeStore().save(mode, 450)
 
-      mount()
+        mount()
 
-      expect(spy).toHaveBeenCalledWith(tooltipCopy)
-    })
+        const trigger = screen.getByRole('button', { name: triggerName })
+        expect(tooltipBindings.get(trigger)).toEqual(
+          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
+        )
+      }
+    )
 
     it('discards an unsaved draft when the popover closes without saving', async () => {
       mount()
