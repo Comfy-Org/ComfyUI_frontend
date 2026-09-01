@@ -17,6 +17,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -430,6 +431,10 @@ describe('ComfyApp', () => {
       // `setOutputFromLegacy` commit per single-key write.
       app.vueAppReady = true
       const nodeCount = 50
+      const storedOutputs = new Map<string, NodeExecutionOutput>()
+      mockNodeOutputStore.setOutputFromLegacy.mockImplementation((id, output) =>
+        storedOutputs.set(id, output)
+      )
 
       for (let i = 0; i < nodeCount; i++) {
         mockNodeOutputStore.setOutputFromLegacy.mockClear()
@@ -444,6 +449,13 @@ describe('ComfyApp', () => {
       expect(
         mockNodeOutputStore.replaceOutputsFromLegacy
       ).not.toHaveBeenCalled()
+
+      expect(storedOutputs.size).toBe(nodeCount)
+      for (let i = 0; i < nodeCount; i++) {
+        expect(storedOutputs.get(String(i))).toEqual({
+          images: [{ filename: `${i}.png` }]
+        })
+      }
     })
 
     it('commits legacy property mutations to the output store', () => {
