@@ -90,6 +90,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(page.locator('#agent-panel-root')).toBeVisible()
 
