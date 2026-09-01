@@ -112,14 +112,16 @@ export function toCalendarEvent(
   locale: Locale
 ): CalendarEvent {
   const target = eventVideoId(event)
-    ? eventPageHref(event.id)[locale]
-    : (event.link?.href[locale] ?? eventPageHref(event.id)[locale])
+    ? localizeHref(eventPath(event), locale)
+    : event.link?.href[locale] ||
+      event.link?.href.en ||
+      localizeHref(eventPath(event), locale)
   const href = new URL(target, SITE_ORIGIN).href
   const start = new Date(event.startDateTime)
   return {
-    title: event.title[locale],
-    description: `${event.description[locale]}\n\n${href}`,
-    location: event.location?.[locale] ?? '',
+    title: event.title[locale] || event.title.en,
+    description: `${event.description[locale] || event.description.en}\n\n${href}`,
+    location: event.location?.[locale] || event.location?.en || '',
     start,
     end: eventEnd(event)
   }
@@ -136,17 +138,19 @@ export function eventJsonLdNode(
 ): JsonLdNode {
   const { siteUrl, site, pageUrl, locale } = input
   const href =
-    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+    event.link?.href[locale] ||
+    event.link?.href.en ||
+    localizeHref(eventPath(event), locale)
   const online = event.location?.en === 'Online'
   return eventNode({
     siteUrl,
     id: jsonLdId(pageUrl, `event-${event.id}`),
-    name: event.title[locale],
-    description: event.description[locale],
+    name: event.title[locale] || event.title.en,
+    description: event.description[locale] || event.description.en,
     startDate: event.startDateTime,
     ...(online
       ? { virtualUrl: href.startsWith('/') ? absoluteUrl(site, href) : href }
-      : { placeName: event.location?.[locale] }),
+      : { placeName: event.location?.[locale] || event.location?.en }),
     locale
   })
 }
@@ -367,7 +371,11 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '2026年8月26日 · 上午10点（PT）'
     },
     startDateTime: '2026-08-26T10:00:00-07:00',
-    liveVideoId: '6yH_15XSd0w'
+    liveVideoId: '6yH_15XSd0w',
+    media: eventImage('august-26-2026-local-mcp.jpg', {
+      en: 'Local MCP: Run ComfyUI with Your Agent & Hardware livestream',
+      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI 直播'
+    })
   },
   {
     id: 'beyond-the-models',

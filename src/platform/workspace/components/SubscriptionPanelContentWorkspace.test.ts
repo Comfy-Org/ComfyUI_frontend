@@ -86,6 +86,7 @@ const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanCancel = ref(true)
 const mockCanReactivate = ref(true)
 const mockCanReactivatePlan = ref(true)
+const mockCanOpenPricingSurface = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanChangeSeats = ref(true)
 const mockCanSubscribeSelfServe = ref(true)
@@ -225,6 +226,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
     canReactivatePlan: mockCanReactivatePlan,
+    canOpenPricingSurface: mockCanOpenPricingSurface,
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
@@ -346,9 +348,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanManageSubscriptionLifecycle.value = true
     mockCanCancel.value = true
     mockCanReactivate.value = true
+    mockCanReactivatePlan.value = true
     mockShouldUseWorkspaceBilling.value = true
     mockCanChangeSeats.value = true
     mockCanSubscribeSelfServe.value = true
+    mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
@@ -418,6 +422,111 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'data-show-invoice-history',
       'true'
     )
+  })
+
+  describe('sales-managed tiers (FE-1662)', () => {
+    const runtimeTier = (tier: string) =>
+      tier as unknown as SubscriptionInfo['tier']
+
+    // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
+    // self-serve catalog close, credit top-up stays open.
+    function useSalesManagedCapabilities() {
+      mockCanCancel.value = false
+      mockCanReactivate.value = false
+      mockCanReactivatePlan.value = false
+      mockCanChangeSeats.value = false
+      mockCanSubscribeSelfServe.value = false
+      mockCanOpenPricingSurface.value = false
+    }
+
+    function useEnterprisePlan() {
+      mockHasTeamPlan.value = false
+      mockSubscriptionTier.value = 'ENTERPRISE'
+      mockPlanSlug.value = 'enterprise_monthly'
+      mockCurrentTeamCreditStop.value = null
+      useSalesManagedCapabilities()
+    }
+
+    it('renders Enterprise without price, benefits, or a plan-change action', () => {
+      useEnterprisePlan()
+      renderComponent()
+
+      expect(screen.getByText('Enterprise')).toBeInTheDocument()
+      expect(screen.queryByText('$665')).not.toBeInTheDocument()
+      expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+      expect(screen.queryByText('Your plan includes:')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('View more details about plans & pricing')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('keeps Billing & invoices open on an Enterprise plan', () => {
+      useEnterprisePlan()
+      renderComponent()
+
+      expect(
+        screen.getByRole('button', { name: 'Billing & invoices' })
+      ).toBeInTheDocument()
+    })
+
+    it('hides Reactivate for a cancelled Enterprise plan', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'canceled'
+      renderComponent()
+
+      expect(
+        screen.queryByRole('button', { name: /reactivate/i })
+      ).not.toBeInTheDocument()
+    })
+
+    it('offers no subscribe or reactivate path for an ended Enterprise plan', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'ended'
+      mockIsActiveSubscription.value = false
+      renderComponent()
+
+      expect(screen.getByText('Enterprise')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /subscribe|reactivate/i })
+      ).not.toBeInTheDocument()
+    })
+
+    it('renders an unrecognized tier as Current plan without catalog content', () => {
+      mockHasTeamPlan.value = false
+      mockSubscriptionTier.value = runtimeTier('GALACTIC')
+      mockPlanSlug.value = 'galactic_monthly'
+      mockCurrentTeamCreditStop.value = null
+      useSalesManagedCapabilities()
+      renderComponent()
+
+      expect(screen.getByText('Current plan')).toBeInTheDocument()
+      expect(screen.queryByText('$665')).not.toBeInTheDocument()
+      expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('labels a scheduled change to Enterprise outside the self-serve catalog', () => {
+      mockScheduledPlanSlug.value = 'enterprise_monthly'
+      mockChangeAt.value = END_DATE_ISO
+      renderComponent()
+
+      expect(
+        screen.getByText(
+          `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
+        )
+      ).toBeInTheDocument()
+    })
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {
@@ -773,6 +882,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
       reason: 'settings_billing_panel'
     })
     expect(mockResubscribe).not.toHaveBeenCalled()
+  })
+
+  it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockCanSubscribeSelfServe.value = false
+    renderComponent()
+
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-inactive-plan',
+      'true'
+    )
   })
 
   it('does not show stale renewal copy for an explicitly ended active state', () => {

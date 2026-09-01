@@ -1,5 +1,12 @@
 import type {
   AddCreditsClickMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -12,6 +19,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  ImageLoadFailureMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -45,6 +53,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
@@ -93,6 +102,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {
@@ -314,6 +331,46 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPanelOpened?.(metadata))
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPanelClosed?.(metadata))
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentEntryButtonClicked?.(metadata)
+    )
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.dispatch((provider) => provider.trackAgentCloseButtonClicked?.())
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
+  }
+
+  trackAgentAttachButtonClicked(): void {
+    this.dispatch((provider) => provider.trackAgentAttachButtonClicked?.())
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
