@@ -47,8 +47,8 @@ const slotClass = computed(() =>
     'transition-all duration-150',
     'border border-solid border-node-component-slot-dot-outline',
     props.multi
-      ? 'h-5 w-2'
-      : 'size-2 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5]'
+      ? 'h-6 w-3'
+      : 'size-3 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5] group-[.lg-slot--snap-target]/slot:scale-125 group-[.lg-slot--snap-target]/slot:[--node-component-slot-dot-outline-opacity-mult:5]'
   )
 )
 </script>
