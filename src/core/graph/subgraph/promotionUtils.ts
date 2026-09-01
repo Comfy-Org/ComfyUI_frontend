@@ -21,7 +21,7 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -319,6 +319,7 @@ export function seedNestedPromotedInputState(
   sourceSlot: { widgetId?: WidgetId; label?: string }
 ): void {
   if (!sourceSlot.widgetId) return
+  if (subgraphNode.id === UNASSIGNED_NODE_ID) return
 
   const hostInput = subgraphNode.inputs.find(
     (input) => input._subgraphSlot?.name === inputName

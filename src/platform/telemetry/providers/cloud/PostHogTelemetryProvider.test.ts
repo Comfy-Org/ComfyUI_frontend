@@ -404,6 +404,22 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
+      )
+    })
+
     it('captures auth failure events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
