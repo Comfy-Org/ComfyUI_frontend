@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { constants } from 'node:fs'
 import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
@@ -195,7 +196,7 @@ function standaloneEnv(options: Options, dataDir: string, token: string) {
 
 async function run(options: Options): Promise<number> {
   await assertWorkspacePackage()
-  await access(options.airBin)
+  await access(options.airBin, constants.X_OK)
   const agentDir = resolve(options.cloudRepo, 'services/agent')
   await access(resolve(agentDir, '.air.toml'))
   await assertReachable(`${options.comfyUrl.replace(/\/$/, '')}/system_stats`)
@@ -229,6 +230,7 @@ async function run(options: Options): Promise<number> {
   process.once('SIGINT', onSigint)
   process.once('SIGTERM', onSigterm)
   agent.once('exit', (code) => requestExit(code ?? 1))
+  agent.once('error', () => requestExit(1))
 
   async function stop(exitCode: number): Promise<number> {
     if (stopping) return exitCode
@@ -285,6 +287,7 @@ async function run(options: Options): Promise<number> {
       }
     )
     frontend.once('exit', (code) => requestExit(code ?? 1))
+    frontend.once('error', () => requestExit(1))
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +
         `Playwright: PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=${frontendUrl} pnpm exec playwright test browser_tests/tests/agent\n` +
