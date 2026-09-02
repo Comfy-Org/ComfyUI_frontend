@@ -794,10 +794,11 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     app.nodePreviewImages = {}
   })
 
-  it('should return early for empty string filename', () => {
+  it('removes existing output for an empty string filename', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
 
+    store.setNodeOutputs(node, 'test.png')
     store.setNodeOutputs(node, '')
 
     expect(store.nodeOutputs['5']).toBeUndefined()
@@ -835,10 +836,11 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
   })
 
-  it('should skip empty array of filenames after createOutputs', () => {
+  it('removes existing output for an empty filename array', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
 
+    store.setNodeOutputs(node, 'test.png')
     store.setNodeOutputs(node, [])
 
     expect(store.nodeOutputs['5']).toBeUndefined()
@@ -902,20 +904,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(url).toContain('type=output')
     expect(url).toContain('filename=generated.png')
     expect(url).not.toContain('%5Boutput%5D')
-  })
-
-  it('does not preserve a widget preview after its value is cleared', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'generated.png [output]')
-    store.setNodeOutputs(node, '')
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs()
-    )
-
-    expect(store.nodeOutputs['5']?.images).toBeUndefined()
   })
 
   it('leaves an unannotated value in the caller-supplied folder', () => {

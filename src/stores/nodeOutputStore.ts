@@ -233,14 +233,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
-    if (!filenames) return
+    if (!filenames || (Array.isArray(filenames) && filenames.length === 0)) {
+      removeOutputsByLocatorId(locatorId)
+      return
+    }
     if (typeof filenames === 'string') {
-      setOutputsByLocatorId(locatorId, createOutputs([filenames], folder, isAnimated))
+      setOutputsByLocatorId(
+        locatorId,
+        createOutputs([filenames], folder, isAnimated)
+      )
     } else if (!Array.isArray(filenames)) {
       setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
-      if (!resultItems?.images?.length) return
       setOutputsByLocatorId(locatorId, resultItems)
     }
   }
