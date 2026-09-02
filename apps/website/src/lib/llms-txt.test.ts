@@ -1,3 +1,9 @@
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -194,5 +200,35 @@ describe('findCanonicalDrift', () => {
 
     expect(drift).toEqual([])
     expect(checked).toBe(0)
+  })
+})
+
+describe('validate-llms-txt-links', () => {
+  it('fails when no links can be checked against a built canonical', () => {
+    const workingDirectory = mkdtempSync(join(tmpdir(), 'llms-txt-validator-'))
+    mkdirSync(join(workingDirectory, 'dist'))
+    mkdirSync(join(workingDirectory, 'public'))
+    writeFileSync(
+      join(workingDirectory, 'public', 'llms.txt'),
+      '- [Enterprise](https://comfy.org/enterprise/): Enterprise.\n'
+    )
+
+    try {
+      const validatorPath = fileURLToPath(
+        new URL('../../scripts/validate-llms-txt-links.ts', import.meta.url)
+      )
+      const result = spawnSync(
+        process.execPath,
+        ['--import', import.meta.resolve('tsx'), validatorPath],
+        { cwd: workingDirectory, encoding: 'utf8' }
+      )
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toBe(
+        'llms.txt link validation failed: 0 of 1 link(s) were checked against a built canonical.\n'
+      )
+    } finally {
+      rmSync(workingDirectory, { recursive: true, force: true })
+    }
   })
 })
