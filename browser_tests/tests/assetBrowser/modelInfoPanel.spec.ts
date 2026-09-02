@@ -12,8 +12,15 @@ import { AssetBrowserHelper } from '@e2e/fixtures/helpers/AssetBrowserHelper'
 import type { TagMutationCall } from '@e2e/fixtures/helpers/AssetBrowserHelper'
 import { withAsset } from '@e2e/fixtures/helpers/AssetHelper'
 
+type UserMetadataUpdate = {
+  name?: string
+  user_description?: string
+  base_model?: string[]
+  additional_tags?: string[]
+}
+
 type MetadataBody = {
-  user_metadata?: Record<string, unknown>
+  user_metadata?: UserMetadataUpdate
 }
 
 test.describe('Asset Browser - ModelInfoPanel', () => {
@@ -312,9 +319,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBeGreaterThan(initial)
 
       const lastBody = getLastMetadataBody(comfyPage)
-      const baseModels = lastBody?.user_metadata?.base_model as
-        | string[]
-        | undefined
+      const baseModels = lastBody?.user_metadata?.base_model
       expect(baseModels).toContain('sd3.5-large')
       expect(baseModels).toContain('sdxl')
       expect(baseModels).toContain('flux.1-dev')
@@ -335,11 +340,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBeGreaterThan(initial)
 
       const lastBody = getLastMetadataBody(comfyPage)
-      const baseModels = lastBody?.user_metadata?.base_model as
-        | string[]
-        | undefined
+      const baseModels = lastBody?.user_metadata?.base_model
       expect(baseModels).toBeDefined()
-      expect(baseModels!.length).toBeLessThan(2)
+      expect(baseModels).toHaveLength(1)
     })
 
     test('adding an additional tag sends metadata update', async ({
@@ -356,9 +359,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBeGreaterThan(initial)
 
       const lastBody = getLastMetadataBody(comfyPage)
-      const tags = lastBody?.user_metadata?.additional_tags as
-        | string[]
-        | undefined
+      const tags = lastBody?.user_metadata?.additional_tags
       expect(tags).toContain('cinematic')
       expect(tags).toContain('portrait')
       expect(tags).toContain('detail')
@@ -379,11 +380,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBeGreaterThan(initial)
 
       const lastBody = getLastMetadataBody(comfyPage)
-      const tags = lastBody?.user_metadata?.additional_tags as
-        | string[]
-        | undefined
+      const tags = lastBody?.user_metadata?.additional_tags
       expect(tags).toBeDefined()
-      expect(tags!.length).toBeLessThan(2)
+      expect(tags).toHaveLength(1)
     })
   })
 
