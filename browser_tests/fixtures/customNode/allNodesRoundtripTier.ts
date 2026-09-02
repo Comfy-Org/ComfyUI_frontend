@@ -453,7 +453,20 @@ export async function assertRoundtripTier({
                 (node.widgets ?? []).map((widget) => widget.name)
               ])
             )
+          // Positional widgets_values omits widgets with serialize === false,
+          // so names taken from the full widget list do not line up with it.
+          // This map applies the same filter the serializer does.
+          const serializedWidgetNamesById = () =>
+            new Map(
+              window.app!.graph.nodes.map((node) => [
+                String(node.id),
+                (node.widgets ?? [])
+                  .filter((widget) => widget.serialize !== false)
+                  .map((widget) => widget.name)
+              ])
+            )
           let namesBefore = new Map<string, string[]>()
+          let serializedNamesBefore = new Map<string, string[]>()
           let firstPass: ReturnType<
             NonNullable<typeof window.app>['graph']['serialize']
           > | null = null
@@ -482,12 +495,14 @@ export async function assertRoundtripTier({
             },
             snapshotAndConfigure() {
               namesBefore = widgetNamesById()
+              serializedNamesBefore = serializedWidgetNamesById()
               firstPass = window.app!.graph.serialize()
               window.app!.graph.configure(firstPass)
             },
             compare(label: string, strict: boolean) {
               const secondPass = window.app!.graph.serialize()
               const namesAfter = widgetNamesById()
+              const serializedNamesAfter = serializedWidgetNamesById()
               const byId = (pass: NonNullable<typeof firstPass>) =>
                 new Map(
                   (pass.nodes ?? []).map((node) => [String(node.id), node])
@@ -613,14 +628,43 @@ export async function assertRoundtripTier({
                   if (relevantChanges.every((key) => allowedKeys.includes(key)))
                     continue
                 }
-                const comparedBeforeValues =
-                  !strict && Array.isArray(before.widgets_values)
+                // widgets_values is a union of a positional array and a
+                // name-keyed record, and packs may rewrite their own nodes to
+                // the record form in onSerialize. Both sides carry the same
+                // values, so when only the shape differs they are keyed by
+                // widget name before comparing; otherwise a legal reshape
+                // reports drift on every widget of the node.
+                const asNamedValues = (
+                  values: unknown,
+                  names: string[]
+                ): unknown =>
+                  Array.isArray(values)
+                    ? Object.fromEntries(
+                        values.flatMap((value, index) => {
+                          const name = names[index]
+                          return name === undefined ? [] : [[name, value]]
+                        })
+                      )
+                    : values
+                const shapesDiffer =
+                  Array.isArray(before.widgets_values) !==
+                  Array.isArray(after.widgets_values)
+                const comparedBeforeValues = shapesDiffer
+                  ? asNamedValues(
+                      before.widgets_values,
+                      serializedNamesBefore.get(id) ?? []
+                    )
+                  : !strict && Array.isArray(before.widgets_values)
                     ? before.widgets_values.filter((_, index) =>
                         declaredNames.has(beforeNames[index] ?? '')
                       )
                     : before.widgets_values
-                const comparedAfterValues =
-                  !strict && Array.isArray(after.widgets_values)
+                const comparedAfterValues = shapesDiffer
+                  ? asNamedValues(
+                      after.widgets_values,
+                      serializedNamesAfter.get(id) ?? []
+                    )
+                  : !strict && Array.isArray(after.widgets_values)
                     ? after.widgets_values.filter((_, index) =>
                         declaredNames.has(afterNames[index] ?? '')
                       )
