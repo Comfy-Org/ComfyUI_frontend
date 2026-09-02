@@ -124,8 +124,13 @@ API.
    execution payload as `prompt` and the workflow as
    `extra_data.extra_pnginfo.workflow`. Keep `ComfyApiWorkflow` flat and
    unchanged. Add version and provenance metadata to the request envelope, or
-   use a sidecar for other persistence targets. Consumers must be able to reject
-   a derived payload that is stale relative to its paired workflow.
+   use a sidecar for other persistence targets: a canonical digest of the
+   paired workflow, the transform-pipeline version, replayability status, and
+   any required artifact references (e.g. runtime-only file references from
+   `serializeValue` hooks). The digest lets a consumer reject a derived
+   payload whose paired workflow does not match, not just one whose
+   transform-pipeline version is stale — two different workflows on the same
+   pipeline version are otherwise indistinguishable from provenance alone.
 
 Mental model: **workflow → explicit named transforms → execution payload**. The
 payload is never edited directly; it is always regenerated from the workflow.
