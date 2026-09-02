@@ -43,6 +43,12 @@ describe('reduceDocument', () => {
       atRevision: dirty.revision
     })
     expect(persistenceOf(clean)).toBe('clean')
+    expect(
+      reduceDocument(clean, {
+        type: 'saveCompleted',
+        atRevision: clean.revision
+      })
+    ).toBe(clean)
   })
 
   it('a mutation that commits while a save is in flight leaves the document dirty', () => {
