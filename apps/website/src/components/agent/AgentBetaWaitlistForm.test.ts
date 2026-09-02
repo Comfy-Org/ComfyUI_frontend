@@ -68,7 +68,9 @@ describe('AgentBetaWaitlistForm', () => {
     await user.type(visibleInput, 'someone@example.com')
     const decoy = screen
       .getAllByRole('textbox', { hidden: true })
-      .find((input) => input !== visibleInput)!
+      .find((input) => input !== visibleInput)
+    // Narrows, and fails on the missing honeypot rather than downstream.
+    if (!decoy) throw new Error('honeypot input was not rendered')
     await fireEvent.update(decoy, 'spam corp')
     await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
 
@@ -111,7 +113,7 @@ describe('AgentBetaWaitlistForm', () => {
 
     const pendingButton = screen.getByRole('button', { name: /joining/i })
     expect(pendingButton.getAttribute('aria-busy')).toBe('true')
-    expect((pendingButton as HTMLButtonElement).disabled).toBe(true)
+    expect(pendingButton.hasAttribute('disabled')).toBe(true)
     expect(hoisted.submit).toHaveBeenCalledWith(
       'someone@example.com',
       'agent_beta_waitlist_joined'
