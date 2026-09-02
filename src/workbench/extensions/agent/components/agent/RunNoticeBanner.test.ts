@@ -20,7 +20,7 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('shows the run notice when it has not been dismissed', () => {
+  it('shows the edit-graph run notice on first launch', () => {
     mount()
     expect(
       screen.getByText(
