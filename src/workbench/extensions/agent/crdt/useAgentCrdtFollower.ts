@@ -118,8 +118,8 @@ function clearPersistedDocId(): void {
  * workflow look identical passively, so expiry probes instead of alarming.
  */
 export const STALE_AFTER_MS = 30_000
-export const RECONNECT_STORM_WINDOW_MS = 60_000
-export const RECONNECT_STORM_THRESHOLD = 3
+const RECONNECT_STORM_WINDOW_MS = 60_000
+const RECONNECT_STORM_THRESHOLD = 3
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
