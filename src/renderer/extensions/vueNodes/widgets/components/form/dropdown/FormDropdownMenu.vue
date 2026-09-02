@@ -28,6 +28,8 @@ interface Props {
   candidateIndex?: number
   candidateLabel?: string
   loadingMore?: boolean
+  onLoadMore?: () => unknown
+  canLoadMore?: boolean
 }
 
 const {
@@ -48,7 +50,6 @@ const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
   (e: 'search-enter'): void
   (e: 'show-picker'): void
-  (e: 'approach-end'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -170,7 +171,8 @@ const onWheel = (event: WheelEvent) => {
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
-      @approach-end="emit('approach-end')"
+      :on-load-more
+      :can-load-more
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem

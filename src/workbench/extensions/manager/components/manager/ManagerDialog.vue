@@ -121,7 +121,8 @@
           :items="resultsWithKeys"
           :buffer-rows="4"
           :grid-style="GRID_STYLE"
-          @approach-end="onApproachEnd"
+          :on-load-more="loadMorePacks"
+          :can-load-more="canLoadMorePacks"
         >
           <template #item="{ item }">
             <PackCard
@@ -344,6 +345,7 @@ const {
   searchQuery,
   pageNumber,
   isLoading: isSearchLoading,
+  hasMore: hasMorePacks,
   searchResults,
   searchMode,
   sortField,
@@ -384,9 +386,12 @@ const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
 }
 
-const onApproachEnd = () => {
+const loadMorePacks = () => {
   pageNumber.value++
 }
+const canLoadMorePacks = computed(
+  () => hasMorePacks.value && !isSearchLoading.value
+)
 
 const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''

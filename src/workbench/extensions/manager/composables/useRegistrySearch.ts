@@ -40,6 +40,7 @@ export function useRegistrySearch(
   const searchQuery = ref(initialSearchQuery)
   const searchResults = ref<RegistryNodePack[]>([])
   const suggestions = ref<QuerySuggestion[]>([])
+  const hasMore = ref(true)
 
   const searchAttributes = computed<SearchAttribute[]>(() =>
     searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
@@ -63,6 +64,8 @@ export function useRegistrySearch(
         restrictSearchableAttributes: searchAttributes.value
       }
     )
+
+    hasMore.value = nodePacks.length >= pageSize.value
 
     let sortedPacks = nodePacks
 
@@ -108,6 +111,7 @@ export function useRegistrySearch(
 
   return {
     isLoading,
+    hasMore,
     pageNumber,
     pageSize,
     sortField,

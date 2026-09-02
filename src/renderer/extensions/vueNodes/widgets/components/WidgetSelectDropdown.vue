@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
 import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -151,9 +150,8 @@ const acceptTypes = computed(() => {
 
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (outputAssets.hasMore) await outputAssets.loadMore()
-}, 300)
+const loadMoreAssets = () => outputAssets.loadMore()
+const canLoadMoreAssets = computed(() => toValue(outputAssets.hasMore))
 
 const isUploading = ref(false)
 async function updateFiles(files: File[]) {
@@ -185,10 +183,11 @@ async function updateFiles(files: File[]) {
       :is-uploading
       v-bind="combinedProps"
       :loading-more="toValue(outputAssets.isLoading)"
+      :on-load-more="loadMoreAssets"
+      :can-load-more="canLoadMoreAssets"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"
-      @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>
 </template>
