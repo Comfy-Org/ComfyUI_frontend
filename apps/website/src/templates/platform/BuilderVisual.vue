@@ -20,7 +20,7 @@ const animated = computed(
   <div
     ref="root"
     aria-hidden="true"
-    class="bg-primary-comfy-ink aspect-2/1 w-full overflow-hidden rounded-3xl"
+    class="aspect-2/1 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink"
   >
     <svg
       viewBox="0 48 1200 604"
