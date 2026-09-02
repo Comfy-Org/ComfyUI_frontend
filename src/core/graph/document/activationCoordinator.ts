@@ -1,4 +1,5 @@
 import type { DocumentId } from '@/types/documentId'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * View concerns attached by activation and detached by deactivation: the
@@ -53,7 +54,11 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     const stale = (): boolean => requestGeneration !== generation
     try {
       await deps.hydrate?.(documentId)
-    } catch {
+    } catch (error) {
+      reportError(error, {
+        errorType: 'document-activation-hydration-failed',
+        context: { documentId }
+      })
       return stale()
         ? { status: 'superseded', documentId }
         : { status: 'rejected', documentId, reason: 'hydration-failed' }
