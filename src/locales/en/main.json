@@ -3150,6 +3150,11 @@
       "addNewPaymentMethod": "Add new payment method",
       "alipay": "Alipay"
     },
+    "processingError": {
+      "title": "Payment couldn't be processed",
+      "body": "There was a technical problem on the payment side. Nothing is wrong with your card. Try again, or refresh the page if it keeps happening.",
+      "tryAgain": "Try again"
+    },
     "declined": {
       "title": "Payment declined",
       "body": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.",
