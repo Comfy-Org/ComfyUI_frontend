@@ -10,25 +10,24 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should not trigger non-modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.command.registerKeybinding({ key: 'k' }, () => {
-      window.TestCommand = true
-    })
+    const commandId = await comfyPage.command.registerKeybinding({ key: 'k' })
+    await comfyPage.command.mockCommand(commandId)
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.fill('k')
     await expect(textBox).toHaveValue('k')
-    await expect
-      .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
-      .toBe(undefined)
+    expect(await comfyPage.command.getExecutionCount(commandId)).toBe(0)
   })
 
   test('Should not trigger modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.command.registerKeybinding({ key: 'k', ctrl: true }, () => {
-      window.TestCommand = true
+    const commandId = await comfyPage.command.registerKeybinding({
+      key: 'k',
+      ctrl: true
     })
+    await comfyPage.command.mockCommand(commandId)
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
@@ -36,23 +35,22 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     await textBox.press('Control+k')
     await expect(textBox).toHaveValue('q')
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
-      .toBe(true)
+      .poll(() => comfyPage.command.getExecutionCount(commandId))
+      .toBe(1)
   })
 
   test('Should not trigger keybinding reserved by text input when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.command.registerKeybinding({ key: 'Ctrl+v' }, () => {
-      window.TestCommand = true
+    const commandId = await comfyPage.command.registerKeybinding({
+      key: 'Ctrl+v'
     })
+    await comfyPage.command.mockCommand(commandId)
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.press('Control+v')
     await expect(textBox).toBeFocused()
-    await expect
-      .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
-      .toBe(undefined)
+    expect(await comfyPage.command.getExecutionCount(commandId)).toBe(0)
   })
 })
