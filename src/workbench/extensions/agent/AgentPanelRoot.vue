@@ -292,9 +292,15 @@ function cloudIdFor(tab: ComfyWorkflow): string | undefined {
 
 const workflowDetached = ref(false)
 
-function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
+function activeWorkflowTurnContext(
+  originTabPath?: string
+): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
-  const active = workflowStore.activeWorkflow
+  const active =
+    originTabPath === undefined
+      ? workflowStore.activeWorkflow
+      : (workflowStore.getWorkflowByPath(originTabPath) ??
+        workflowStore.activeWorkflow)
   if (!active) return undefined
   const id = cloudIdFor(active)
   return id === undefined
@@ -343,7 +349,9 @@ function onClearWorkflow(): void {
   workflowDetached.value = true
 }
 
-function openTabsSnapshot(): OpenTabsSnapshot | undefined {
+function openTabsSnapshot(
+  originTabPath?: string
+): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
     const workflowId = cloudIdFor(tab)
     return workflowId === undefined
@@ -351,7 +359,11 @@ function openTabsSnapshot(): OpenTabsSnapshot | undefined {
       : [{ workflow_id: workflowId, name: tab.filename }]
   })
   if (openTabs.length === 0) return undefined
-  const active = workflowStore.activeWorkflow
+  const active =
+    originTabPath === undefined
+      ? workflowStore.activeWorkflow
+      : (workflowStore.getWorkflowByPath(originTabPath) ??
+        workflowStore.activeWorkflow)
   return {
     open_tabs: openTabs,
     current_tab:

@@ -47,10 +47,14 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   workflow?: {
-    current(): WorkflowTurnContext | undefined
+    // originTabPath, when given, pins resolution to the tab that initiated
+    // the send instead of whatever tab is active when this is called - it
+    // is read after prepare() so cloud ids it resolves are fresh, but must
+    // still describe the pre-await originating tab, not a later switch.
+    current(originTabPath?: string): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
     prepare?(): Promise<void>
-    tabs?(): OpenTabsSnapshot | undefined
+    tabs?(originTabPath?: string): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(): DraftSnapshot | undefined
   }
@@ -202,13 +206,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending.value = false
+    // Capture the originating tab identity before the first await: prepare()
+    // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
+    // pending must not reattribute this send to the newly active tab. The id
+    // lookups themselves stay post-await (prepare() is what warms them), but
+    // pinned to this originating path rather than whatever is active later.
+    const originTabPath = workflow?.current()?.tabPath
+    // The ack does not say whether the server minted a workflow or echoed
+    // the thread's existing one; an unbound tab may only adopt an id the
+    // session was not already bound to before this turn.
+    const priorWorkflowId = boundWorkflowId.value
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
-    const wfContext = workflow?.current()
-    const tabs = workflow?.tabs?.()
+    const wfContext = workflow?.current(originTabPath)
+    const tabs = workflow?.tabs?.(originTabPath)
     async function postTurn(threadId: string) {
       const draft = workflow?.draft?.()
       const shouldSendDraft =
@@ -230,10 +244,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
           : input
       )
     }
-    // The ack does not say whether the server minted a workflow or echoed
-    // the thread's existing one; an unbound tab may only adopt an id the
-    // session was not already bound to before this turn.
-    const priorWorkflowId = boundWorkflowId.value
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
       conversationStore.setThreadId(ack.thread_id)
