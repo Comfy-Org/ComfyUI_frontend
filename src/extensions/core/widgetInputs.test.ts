@@ -484,14 +484,6 @@ describe('PrimitiveNode', () => {
   })
 
   it('restores its serialized value after a reroute resolves its widget config', () => {
-    const animationFrames: FrameRequestCallback[] = []
-    vi.stubGlobal(
-      'requestAnimationFrame',
-      vi.fn((callback: FrameRequestCallback) => {
-        animationFrames.push(callback)
-        return animationFrames.length
-      })
-    )
     const graph = new LGraph()
     const reroute = new LGraphNode('Reroute')
     graph.add(reroute)
@@ -585,15 +577,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(111)
   })
 
-  it('clears an unconsumed serialized value once graph restoration ends', () => {
-    const animationFrames: FrameRequestCallback[] = []
-    vi.stubGlobal(
-      'requestAnimationFrame',
-      vi.fn((callback: FrameRequestCallback) => {
-        animationFrames.push(callback)
-        return animationFrames.length
-      })
-    )
+  it('keeps an unconsumed serialized value until its widget is first built', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -617,21 +601,23 @@ describe('PrimitiveNode', () => {
     ).toEqual({ type: 'INT', values: [222] })
 
     primitive.onAfterGraphConfigured()
-    const firstFrame = animationFrames.splice(0)
-    firstFrame.forEach((callback) => callback(0))
-    const secondFrame = animationFrames.splice(0)
-    secondFrame.forEach((callback) => callback(0))
 
     expect(
       useWidgetValueStore().getPrimitiveWidgetRestoration(
         graph.rootGraph.id,
         primitive.id
       )
-    ).toBeUndefined()
+    ).toEqual({ type: 'INT', values: [222] })
 
     primitive.connect(0, target, 0)
 
-    expect(primitive.widgets?.[0].value).toBe(111)
+    expect(primitive.widgets?.[0].value).toBe(222)
+    expect(
+      useWidgetValueStore().getPrimitiveWidgetRestoration(
+        graph.rootGraph.id,
+        primitive.id
+      )
+    ).toBeUndefined()
   })
 
   it('clears its serialized value when its output is disconnected', () => {

@@ -547,6 +547,9 @@ describe('useWidgetValueStore', () => {
       expect(
         store.getPrimitiveWidgetRestoration(graphB, nodeId)
       ).toBeUndefined()
+      expect(
+        store.getPrimitiveWidgetRestoration(graphA, toNodeId('node-2'))
+      ).toBeUndefined()
 
       store.clearPrimitiveWidgetRestoration(graphA, nodeId)
 

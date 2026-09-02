@@ -129,7 +129,10 @@ export class PrimitiveNode extends LGraphNode {
    * The widget of a PrimitiveNode is only built once its output link resolves,
    * which happens after `configure` has finished and the regular widget
    * restoration state has been cleared. Park the serialized values in the
-   * widget value store until the widget is built or graph restoration ends.
+   * widget value store until the widget is built. The build may be deferred
+   * past graph configuration (a reroute resolves its widget config on a later
+   * frame), so the entry lives until it is consumed by the first build, the
+   * output is disconnected, or the node is removed.
    */
   override onConfigure(serialisedNode: ISerialisedNode) {
     super.onConfigure?.(serialisedNode)
@@ -167,31 +170,10 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
-    this._scheduleConfiguredWidgetValuesClear()
   }
 
   private _restorationGraphId() {
     return this.graph?.rootGraph.id ?? zeroUuid
-  }
-
-  private _scheduleConfiguredWidgetValuesClear() {
-    const graphId = this._restorationGraphId()
-    const widgetValueStore = useWidgetValueStore()
-    const restoration = widgetValueStore.getPrimitiveWidgetRestoration(
-      graphId,
-      this.id
-    )
-    if (!restoration) return
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (
-          widgetValueStore.getPrimitiveWidgetRestoration(graphId, this.id) ===
-          restoration
-        ) {
-          widgetValueStore.clearPrimitiveWidgetRestoration(graphId, this.id)
-        }
-      })
-    })
   }
 
   private _clearConfiguredWidgetValues() {
