@@ -167,6 +167,9 @@ printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
 printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
   "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
 
+read -r -p 'Confirm a schedule change freeze is active? [y/N] ' CONFIRM_FREEZE
+test "$CONFIRM_FREEZE" = y
+
 cat >"$PUT_FILTER" <<'JQ'
   def included($response; $type; $id):
     [$response.included[] | select(.type == $type and .id == $id)]
@@ -253,12 +256,17 @@ PUT body remain beside it until the shell exits. The conversion preserves the
 schedule's `name`, `time_zone`, `tags`, and team references; every layer's
 complete attributes and `id`; and member order.
 
-Datadog offers no optimistic-concurrency token for this endpoint. After the
-editor closes, the procedure immediately fetches the schedule again and stops
-if anything changed. It also stops unless `tags` is still an array and every
-other field in the edited body exactly matches the original. After the write,
-it reads the complete schedule back and compares the full stored body with the
-intended body, normalizing only tag case and order to match Datadog's behavior.
+Datadog offers no optimistic-concurrency token for this endpoint. Coordinate an
+external change freeze with the other schedule administrators before running
+the script and keep it active until verification completes. The confirmation
+prompt records that coordination; it is not a lock. Another writer can still
+change the schedule between the final `GET` and `PUT`, and that full replacement
+would overwrite their update. After the editor closes, the procedure immediately
+fetches the schedule again and stops if anything changed. It also stops unless
+`tags` is still an array and every other field in the edited body exactly
+matches the original. After the write, it reads the complete schedule back and
+compares the full stored body with the intended body, normalizing only tag case
+and order to match Datadog's behavior.
 
 Although the GitHub mapping no longer depends on tags, preserving the complete
 schedule payload remains important: a partial `PUT` can still silently remove
