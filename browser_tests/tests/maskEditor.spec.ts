@@ -289,6 +289,51 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
   })
 
+  test('Ctrl+Z after typing in a brush input still undoes the mask', async ({
+    comfyPage,
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+
+    await maskEditor.brushInput(dialog, 'thickness').fill('12')
+    await maskEditor.drawStrokeAndExpectPixels(dialog)
+    await expect(dialog.getByTestId('pointer-zone')).toBeFocused()
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
+
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
+  })
+
+  test('Ctrl+Y and Ctrl+Shift+Z redo in the mask editor', async ({
+    comfyPage,
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+    await maskEditor.drawStrokeAndExpectPixels(dialog)
+
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
+    await comfyPage.page.keyboard.press('ControlOrMeta+y')
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBeGreaterThan(0)
+
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
+    await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBeGreaterThan(0)
+  })
+
+  test('Escape inside the mask editor keeps it open', async ({
+    comfyPage,
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+
+    await maskEditor.drawStrokeAndExpectPixels(dialog)
+    await comfyPage.page.keyboard.press('Escape')
+
+    await expect(dialog).toBeVisible()
+    expect(await maskEditor.pollMaskPixelCount()).toBeGreaterThan(0)
+  })
+
   test(
     'tool panel shows all five tools',
     { tag: ['@smoke'] },

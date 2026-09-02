@@ -18,7 +18,6 @@ import { serializeNodeId } from '@/types/nodeId'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
 import { app } from './app'
 
 function clone<T>(obj: T): T {
@@ -461,6 +460,7 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
+    if (this._restoringState) return
     const prevState = source.pop()
     if (prevState) {
       const previousState = this.activeState
@@ -487,20 +487,6 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-      const key = e.key.toUpperCase()
-      // Redo: Ctrl + Y, or Ctrl + Shift + Z
-      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        await this.redo()
-        return true
-      } else if (key === 'Z' && !e.shiftKey) {
-        await this.undo()
-        return true
-      }
-    }
-  }
-
   beforeChange() {
     this.changeCount++
   }
@@ -525,16 +511,13 @@ export class ChangeTracker {
         // This can happen when user is holding down "Space" to pan the canvas.
         if (e.repeat) return
 
-        // If the mask editor is opened, we don't want to trigger on key events
-        const comfyApp = app.constructor as typeof ComfyApp
-        if (comfyApp.maskeditor_is_opended?.()) return
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
-        requestAnimationFrame(async () => {
+        requestAnimationFrame(() => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
           if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
@@ -557,9 +540,6 @@ export class ChangeTracker {
 
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return
-
-          // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return

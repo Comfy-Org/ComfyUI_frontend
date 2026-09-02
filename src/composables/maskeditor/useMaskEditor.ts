@@ -2,6 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
+import { MASK_EDITOR_DIALOG_KEY } from '@/components/maskeditor/maskEditorDialogKey'
 
 export function useMaskEditor() {
   const openMaskEditor = (node: LGraphNode) => {
@@ -16,7 +17,7 @@ export function useMaskEditor() {
     }
 
     useDialogStore().showDialog({
-      key: 'global-mask-editor',
+      key: MASK_EDITOR_DIALOG_KEY,
       headerComponent: TopBarHeader,
       component: MaskEditorContent,
       props: {

@@ -1157,6 +1157,23 @@ describe('ChangeTracker', () => {
       )
     })
 
+    it('ignores an undo requested while a restore is in flight', async () => {
+      const first = createState(1)
+      const second = structuredClone(first)
+      second.nodes[0].widgets_values = [2]
+      const third = structuredClone(first)
+      third.nodes[0].widgets_values = [3]
+      const tracker = createTracker(third)
+      tracker.undoQueue.push(first, second)
+
+      await Promise.all([tracker.undo(), tracker.undo()])
+
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(tracker.activeState).toEqual(second)
+      expect(tracker.undoQueue).toEqual([first])
+      expect(tracker.redoQueue).toEqual([third])
+    })
+
     it('does not dispatch autoQueueGraphChanged for layout-only undo or redo', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
