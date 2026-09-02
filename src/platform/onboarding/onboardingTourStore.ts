@@ -91,6 +91,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     state.value.phase === 'idle' ? null : state.value.tour
   )
   const waitingForTarget = computed(() => state.value.phase === 'waiting')
+  const stepSettled = computed(() => state.value.phase === 'showing')
 
   const stepIdx = computed(() => shownIdx(state.value))
 
@@ -407,6 +408,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    stepSettled,
     startTour,
     replayTour,
     next,

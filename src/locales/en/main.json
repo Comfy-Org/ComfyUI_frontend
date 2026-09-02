@@ -1445,7 +1445,6 @@
       "download": "Download",
       "exportWorkflow": "Export workflow",
       "delete": "Delete",
-      "deleteAsset": "Delete asset",
       "removeJob": "Remove job",
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
@@ -3131,6 +3130,7 @@
       "quoteStale": "Your quote changed. Review the updated amount and try again.",
       "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",
       "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
+      "renewsAtAmount": "Renews at {amount}. Cancel anytime.",
       "discountComposition": "Discounts",
       "discount": {
         "plan": "Plan discount",
@@ -3876,13 +3876,19 @@
     }
   },
   "mediaAsset": {
-    "deleteAssetTitle": "Delete this asset?",
-    "deleteAssetDescription": "This asset will be permanently removed.",
-    "deleteSelectedTitle": "Delete selected assets?",
-    "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
-    "assetDeletedSuccessfully": "Asset deleted successfully",
+    "assetDelete": {
+        "error": "Items failed to delete",
+        "success": "Deletion successful",
+        "warn": "Some items failed to delete"
+    },
+    "assetsDeleted": "{n} / {total} assets were deleted",
+    "jobsDeleted": "{n} / {total} jobs were deleted",
+
+    "deleteItems": "Delete these items",
+    "deletePermanent": "They will be permanently removed.",
+    "deleteHistoryOnly": "Only history will be affected, files will remain on disk",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
-    "failedToDeleteAsset": "Failed to delete asset",
+    "deletionUnsupported": "Assets are enabled, but server doesn't support deletion",
     "actions": {
       "inspect": "Inspect asset",
       "more": "More options",
@@ -3916,9 +3922,6 @@
       "downloadStarted": "Downloading {count} file... | Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file | Started downloading {count} files",
       "exportStarted": "Preparing ZIP export for {count} file | Preparing ZIP export for {count} files",
-      "assetsDeletedSuccessfully": "{count} asset deleted successfully | {count} assets deleted successfully",
-      "failedToDeleteAssets": "Failed to delete selected assets",
-      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
       "nodesAddedToWorkflow": "{count} node(s) added to workflow",
       "failedToAddNodes": "Failed to add nodes to workflow",
       "partialAddNodesSuccess": "{succeeded} added successfully, {failed} failed",
