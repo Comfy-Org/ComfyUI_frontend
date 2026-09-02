@@ -193,9 +193,13 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.displayNameInput.fill('Cinematic Details v2')
       await modal.displayNameInput.press('Enter')
 
+      await modal.editDisplayNameButton.click()
+      await modal.displayNameInput.fill('Sentinel Name')
+      await modal.displayNameInput.press('Enter')
+
       await expect
-        .poll(() => metadataMutations(comfyPage).length, { timeout: 1200 })
-        .toBe(initial)
+        .poll(() => metadataMutations(comfyPage).length)
+        .toBe(initial + 1)
     })
 
     test('canceling display-name edit restores original text', async () => {
@@ -216,9 +220,13 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.displayNameInput.fill('')
       await modal.displayNameInput.press('Enter')
 
+      await modal.editDisplayNameButton.click()
+      await modal.displayNameInput.fill('Sentinel Name')
+      await modal.displayNameInput.press('Enter')
+
       await expect
-        .poll(() => metadataMutations(comfyPage).length, { timeout: 1200 })
-        .toBe(initial)
+        .poll(() => metadataMutations(comfyPage).length)
+        .toBe(initial + 1)
     })
   })
 
@@ -251,9 +259,12 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.modelTypeSelect.click()
       await modal.page.getByRole('option', { name: /lora/i }).click()
 
+      await modal.modelTypeSelect.click()
+      await modal.page.getByRole('option', { name: /checkpoints/i }).click()
+
       await expect
-        .poll(() => tagCalls.getCalls().length, { timeout: 1200 })
-        .toBe(initial)
+        .poll(() => tagCalls.getCalls().length)
+        .toBe(initial + 2)
     })
 
     test('updates combobox value immediately after selecting new model type', async () => {
@@ -460,9 +471,12 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.modelTypeSelect.click()
       await modal.page.getByRole('option', { name: /lora/i }).click()
 
+      await modal.modelTypeSelect.click()
+      await modal.page.getByRole('option', { name: /checkpoints/i }).click()
+
       await expect
-        .poll(() => tagCalls.getCalls().length, { timeout: 1200 })
-        .toBe(initial)
+        .poll(() => tagCalls.getCalls().length)
+        .toBe(initial + 2)
     })
   })
 })
