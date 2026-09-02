@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
+const transcript = () => screen.getByRole('tabpanel').textContent
+
 describe('ServerlessDeploySection', () => {
   it('walks through the install flow first and the workflow flow on demand', async () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
@@ -21,12 +23,10 @@ describe('ServerlessDeploySection', () => {
         /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Comfy API\./
       )
     ).toBeTruthy()
-    expect(
-      screen.getByText(/comfy build init Scanned this ComfyUI install/)
-    ).toBeTruthy()
-    expect(
-      screen.getByText(/comfy build push --release --target linux\/nvidia/)
-    ).toBeTruthy()
+    expect(transcript()).toContain('$ comfy build init\n')
+    expect(transcript()).toContain(
+      '$ comfy build push --release --target linux/nvidia'
+    )
 
     await userEvent.click(
       screen.getByRole('tab', {
@@ -34,6 +34,11 @@ describe('ServerlessDeploySection', () => {
       })
     )
 
-    expect(screen.getByText(/comfy build init --from-workflow/)).toBeTruthy()
+    expect(transcript()).toContain(
+      '$ comfy build init --from-workflow ./workflow.json'
+    )
+    expect(transcript()).toContain(
+      '$ comfy build push --release --target linux/nvidia'
+    )
   })
 })
