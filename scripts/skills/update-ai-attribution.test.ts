@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -51,6 +52,8 @@ describe('updateAttributionSettings', () => {
         ampPath,
         '{\n  // Keep this comment.\n  "token": "amp-secret"\n}\n'
       )
+      chmodSync(claudePath, 0o640)
+      chmodSync(ampPath, 0o660)
 
       const firstResults = updateAttributionSettings(home)
       const output = formatResults(firstResults)
@@ -80,6 +83,8 @@ describe('updateAttributionSettings', () => {
         'amp.git.commit.ampThread.enabled': false,
         'amp.git.commit.coauthor.enabled': false
       })
+      expect(statSync(claudePath).mode & 0o777).toBe(0o640)
+      expect(statSync(ampPath).mode & 0o777).toBe(0o660)
       expect(
         updateAttributionSettings(home).map(({ outcome }) => outcome)
       ).toEqual([
