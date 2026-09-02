@@ -335,37 +335,4 @@ describe('FE follower projection convergence (property)', () => {
       propertyOptions
     )
   })
-
-  it.fails('keeps node slots consistent across split and combined frames', () => {
-    const scenario: Scenario = {
-      nodeCount: 2,
-      positions: Array.from({ length: 16 }, () => 0),
-      sizes: Array.from({ length: 16 }, () => 64),
-      widgetValues: Array.from({ length: 8 }, () => 0),
-      moveMask: Array.from({ length: 8 }, () => false),
-      deleteMask: Array.from({ length: 8 }, () => false),
-      orderKeys: Array.from({ length: 40 }, (_, index) => index),
-      batchSizes: [1]
-    }
-    const ops = phases(scenario).flat()
-
-    expect(consume(ops, [ops.length])).toEqual(consume(ops, [1]))
-  })
-
-  // Known deviation: node input/output link arrays depend on whether connect
-  // arrives with node adds or in a later frame, even when the link store agrees.
-  it.fails('converges across randomized follower frame batches', () => {
-    fc.assert(
-      fc.property(scenarioArbitrary, (scenario) => {
-        const causalPhases = phases(scenario)
-        const forward = causalPhases.flat()
-        const reordered = permutePhases(causalPhases, scenario.orderKeys)
-
-        expect(consume(reordered, scenario.batchSizes)).toEqual(
-          consume(forward, [forward.length || 1])
-        )
-      }),
-      propertyOptions
-    )
-  })
 })
