@@ -90,8 +90,8 @@ regenerated.
    rather than 68%. The absent set is 22% of production files and 20% of raw
    lines. The exact figure arrives when those files enter the report.
 
-2. Only the `chromium` project collects coverage. The `cloud` project runs
-   154 tests against the cloud build, including the agent panel, workspace
+2. Only the `chromium` project collects coverage, even though the `cloud`
+   project runs 154 tests against the cloud build, including the agent panel, workspace
    switcher, billing and subscription dialogs, and sign-in. None of that work
    is credited. `workspace` shows 33.9% and `auth` 26.6% in the report, and
    the agent panel shows 2 files, purely because the measuring job never runs
