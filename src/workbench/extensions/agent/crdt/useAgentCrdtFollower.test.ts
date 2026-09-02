@@ -381,18 +381,46 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('reports an ECS projection rejection without throwing', () => {
+  it('reports an ECS projection rejection without a no-op resubscribe', () => {
     const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true, seq: 6 })
+    bridge().resubscribe.mockClear()
     adapterState.applyFrame.mockReturnValueOnce(false)
 
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
 
-    expect(status().projectionErrors).toBe(1)
-    expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
-    expect(bridge().resubscribe).toHaveBeenCalled()
+    // The bridge merged the frame's bytes before dispatch, so a state-vector
+    // resubscribe cannot redeliver it; the adapter already dropped its pending
+    // diff before batching. Neither is a recovery, so neither runs here.
+    expect(status()).toMatchObject({ projectionErrors: 1, connected: true })
+    expect(adapterState.discardPending).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(reportErrorMock).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'agent_crdt_projection_failure' })
+    )
+    unmount()
+  })
+
+  it('reports host nacks once per workflow, not once per mount', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: false })
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: false })
+    expect(reportErrorMock).toHaveBeenCalledTimes(1)
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: false })
+
+    expect(status().opNacks).toBe(3)
+    expect(reportErrorMock).toHaveBeenCalledTimes(2)
+    expect(reportErrorMock).toHaveBeenLastCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_host_operation_rejected',
+        tags: expect.objectContaining({ workflow_id: 'wf-2' })
+      })
     )
     unmount()
   })

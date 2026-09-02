@@ -132,11 +132,15 @@ export function useAgentCrdtFollower(
   const opNacks = ref(0)
   const lastOpNack = ref<OpNack | null>(null)
   const projectionErrors = ref(0)
+  // One Sentry report per failure class per WORKFLOW; the counters stay
+  // monotonic per mount so the dev panel keeps its running totals.
   let projectionFailureReported = false
+  let opNackReported = false
 
   const resetWorkflowDiagnostics = (): void => {
     lastOpNack.value = null
     projectionFailureReported = false
+    opNackReported = false
   }
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
@@ -302,9 +306,12 @@ export function useAgentCrdtFollower(
       message: error instanceof Error ? error.message : String(error)
     }
     recordDevEvent('projection_error', failure)
-    connected.value = false
-    adapter.discardPending(update.workflowId)
-    bridge.resubscribe()
+    // Count and report only. A state-vector resubscribe cannot redeliver this
+    // frame: the bridge merged its Yjs bytes before dispatching, so the host's
+    // catch-up delta is empty, and the adapter dropped its pending diff before
+    // batching. Healing needs an empty-vector resubscribe, which ADR-0024
+    // reserves for an explicit doc_reset. The channel itself is healthy, so
+    // `connected` stays as the subscription reported it.
     if (!projectionFailureReported) {
       projectionFailureReported = true
       reportError(error, {
@@ -380,7 +387,8 @@ export function useAgentCrdtFollower(
     opNacks.value += 1
     lastOpNack.value = nack
     recordDevEvent('op_nack', nack)
-    if (opNacks.value === 1)
+    if (!opNackReported) {
+      opNackReported = true
       reportError(new Error('Host rejected CRDT operations'), {
         errorType: 'agent_crdt_host_operation_rejected',
         tags: {
@@ -394,6 +402,7 @@ export function useAgentCrdtFollower(
           host_message: nack.message
         }
       })
+    }
   }
   const onDocReset: EventListener = (event) => {
     const detail =
