@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import type { TargetFrame } from '@/core/graph/document/detachedTargetSession'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import type {
+  GraphMutations,
+  SemanticLinkPayload,
+  SemanticNodePayload
+} from '@/core/graph/graphMutations'
 import { createTargetFrameApplyPort } from '@/workbench/extensions/agent/crdt/targetFrameProjection'
 
 type RecordedCall =
@@ -23,20 +27,23 @@ function recordingMutations(batchResult = true): {
   const mutations: GraphMutations = {
     batch(context, define) {
       contexts.push(context)
-      define({
+      const batch = {
         addNode: fail,
-        reconcileNode: (payload) =>
+        reconcileNode: (payload: SemanticNodePayload) =>
           calls.push({
             kind: 'reconcileNode',
             id: payload.id,
             type: payload.type
           }),
         setWidget: fail,
-        connect: (link) => calls.push({ kind: 'connect', id: link.id }),
+        connect: (link: SemanticLinkPayload) =>
+          calls.push({ kind: 'connect', id: link.id }),
+        removeMissing: fail,
         removeLinks: fail,
         deleteNode: fail,
         clearSemanticGraph: () => calls.push({ kind: 'clearSemanticGraph' })
-      })
+      }
+      define(batch)
       return batchResult
     },
     addNode: fail,
