@@ -475,7 +475,10 @@ export async function collectCrdtDebugReport(
       : [
           `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
           settings.ok
-            ? fence('json', json(redactSecrets(settings.value)))
+            ? fence(
+                'json',
+                truncate(json(redactSecrets(settings.value)), MAX_SECTION_CHARS)
+              )
             : `_${settings.label} unavailable: ${settings.error}_`
         ].join('\n\n')
   )
