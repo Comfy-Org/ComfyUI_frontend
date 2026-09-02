@@ -44,6 +44,7 @@ describe('pageContext', () => {
       url: 'https://comfy.org/about/'
     })
     expect(pageContext(site, '/zh-CN/', 'zh-CN').locale).toBe('zh-CN')
+    expect(pageContext(site, '/ja/', 'ja').locale).toBe('ja')
   })
 })
 

@@ -10,6 +10,12 @@ function hasOpenNativeDialog(): boolean {
   return document.querySelector('dialog[open]') !== null
 }
 
+function hasVisibleAriaModal(): boolean {
+  return Array.from(
+    document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+  ).some((dialog) => dialog.closest('[hidden], [aria-hidden="true"]') === null)
+}
+
 /** ComfyDialog toggles visibility via inline display ('flex' / 'none'). */
 function hasVisibleLegacyModal(): boolean {
   return Array.from(
@@ -22,9 +28,7 @@ function hasVisibleLegacyModal(): boolean {
 export function isModalOpen(managedDialogCount: number): boolean {
   return (
     managedDialogCount > 0 ||
-    document.querySelector(
-      '[role="dialog"][aria-modal="true"]:not([hidden])'
-    ) !== null ||
+    hasVisibleAriaModal() ||
     hasOpenRekaDialog() ||
     hasOpenNativeDialog() ||
     hasVisibleLegacyModal()

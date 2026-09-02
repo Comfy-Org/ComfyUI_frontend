@@ -3,7 +3,13 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ISerialisedGraph,
   ISerialisedNode,
@@ -233,6 +239,46 @@ describe('LGraph.configure remint link remap', () => {
       (link) => link.id === toLinkId(400)
     )
     expect(floating?.origin_id).toBe(newcomer.id)
+  })
+
+  it('remaps regular and floating link endpoints when configuring a subgraph', () => {
+    const rootGraph = new LGraph()
+    const subgraph = new Subgraph(rootGraph, createTestSubgraphData())
+    const incumbent = new DummyNode()
+    incumbent.id = toNodeId(1)
+    if (!registerNodeState(subgraph, incumbent)) {
+      throw new Error('failed to register incumbent subgraph node 1')
+    }
+    const payload = createTestSubgraphData({
+      ...mergePayload(),
+      id: subgraph.id,
+      state: {
+        lastNodeId: 3,
+        lastLinkId: 400,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      floatingLinks: [
+        {
+          id: 400,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: -1,
+          target_slot: -1,
+          type: 'number'
+        }
+      ]
+    })
+
+    subgraph.configure(payload, true)
+
+    const newcomer = getNodeByTitle(subgraph, 'newcomer')
+    expect(newcomer.id).not.toBe(toNodeId(1))
+    expect(subgraph.links.get(toLinkId(200))?.origin_id).toBe(newcomer.id)
+    expect(subgraph.links.get(toLinkId(201))?.target_id).toBe(newcomer.id)
+    expect(subgraph.floatingLinks.get(toLinkId(400))?.origin_id).toBe(
+      newcomer.id
+    )
   })
 
   it('keeps unassigned floating endpoints when a payload node requests -1', () => {

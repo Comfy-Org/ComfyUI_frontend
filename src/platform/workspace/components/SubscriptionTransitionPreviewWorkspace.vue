@@ -196,7 +196,7 @@
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
           <span class="font-bold text-base-foreground tabular-nums">
-            {{ exactAmountDue }}
+            {{ amountDueToday }}
           </span>
         </div>
         <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
@@ -323,7 +323,11 @@ import {
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
-import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import {
+  formatAmountDueToday,
+  formatRenewalAmount,
+  resolveRenewalDate
+} from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse
@@ -648,29 +652,19 @@ const confirmCta = computed(() => {
     amount: chargeDisplay.value
   })
 })
-const exactAmountDue = computed(() =>
-  previewData.amount_due_cents === undefined
-    ? t('subscription.preview.quoteUnavailable')
-    : formatQuoteMoney(
-        previewData.amount_due_cents,
-        previewData.currency,
-        locale.value
-      )
+const amountDueToday = computed(
+  () =>
+    formatAmountDueToday(previewData, locale.value) ||
+    t('subscription.preview.quoteUnavailable')
 )
 const renewalTerms = computed(() => {
-  if (
-    previewData.renewal_amount_cents === undefined ||
-    !previewData.renewal_at
-  ) {
-    return t('subscription.preview.quoteUnavailable')
-  }
+  const amount = formatRenewalAmount(previewData, locale.value)
+  if (!amount) return t('subscription.preview.quoteUnavailable')
+  const renewsAt = resolveRenewalDate(previewData)
+  if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
   return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(
-      previewData.renewal_amount_cents,
-      previewData.currency,
-      locale.value
-    ),
-    date: formatDate(previewData.renewal_at)
+    amount,
+    date: formatDate(renewsAt)
   })
 })
 </script>

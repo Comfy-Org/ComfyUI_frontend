@@ -147,7 +147,7 @@ export function detachSerialisedLinks(
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<readonly [NodeId, ISerialisedNode]>
+  nodesData: Iterable<readonly [NodeId, Pick<ISerialisedNode, 'id' | 'inputs'>]>
 ): void {
   for (const [nodeId, nodeData] of nodesData) {
     const node = graph.getNodeById(nodeId)

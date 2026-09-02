@@ -400,28 +400,6 @@ function serialiseStoredGroups(owner: LGraph) {
   return owner._groups.map((group) => group.serialize())
 }
 
-export function serialiseMutableGraphParts(
-  owner: LGraph,
-  sortNodes: boolean = false
-) {
-  const nodes = sortNodes
-    ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
-    : owner._nodes
-  return {
-    nodes: nodes.map((node) => node.serialize()),
-    groups: owner._groups.map((group) => group.serialize()),
-    links: owner.links.size
-      ? [...owner.links.values()].map((link) => link.asSerialisable())
-      : undefined,
-    floatingLinks: owner.floatingLinks.size
-      ? [...owner.floatingLinks.values()].map((link) => link.asSerialisable())
-      : undefined,
-    reroutes: owner.reroutes.size
-      ? [...owner.reroutes.values()].map((reroute) => reroute.asSerialisable())
-      : undefined
-  }
-}
-
 export class LGraph
   implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph>
 {
@@ -2213,8 +2191,10 @@ export class LGraph
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        link.target_id = subgraphNode.id
-        link.target_slot = i - 1
+        link.updateEndpoints({
+          targetNodeId: subgraphNode.id,
+          targetSlot: i - 1
+        })
         if (subgraphInput instanceof SubgraphInput) {
           subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
@@ -2900,7 +2880,10 @@ export class LGraph
 
       let error = false
       const nodeDataMap = new Map<NodeId, ISerialisedNode>()
-      const realignmentDataMap = new Map<NodeId, ISerialisedNode>()
+      const realignmentDataMap = new Map<
+        NodeId,
+        Pick<ISerialisedNode, 'id' | 'inputs'>
+      >()
 
       /**
        * Requested (serialized) id → final id for nodes whose id was
@@ -2946,7 +2929,7 @@ export class LGraph
           }
           nodeDataMap.set(node.id, n_info)
           realignmentDataMap.set(node.id, {
-            ...n_info,
+            id: n_info.id,
             inputs: n_info.inputs?.map((input) => ({ ...input }))
           })
         }

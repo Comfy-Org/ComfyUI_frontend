@@ -4,12 +4,10 @@ import type { Locator, Page } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+    }
   })
 
   test('Default workflow tab is visible on load', async ({ comfyPage }) => {
@@ -191,6 +189,36 @@ test.describe('Workflow tabs', () => {
     await topbar.closeWorkflowTab('Unsaved Workflow (2)')
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
   })
+
+  test(
+    'Scroll arrows navigate overflowing workflow tabs',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.page.setViewportSize({ width: 800, height: 720 })
+      const topbar = comfyPage.menu.topbar
+
+      for (let index = 0; index < 8; index++) {
+        await topbar.newWorkflowButton.click()
+      }
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(9)
+
+      const scrollLeft = topbar.workflowTabs.getByRole('button', {
+        name: 'Scroll Left'
+      })
+      const scrollRight = topbar.workflowTabs.getByRole('button', {
+        name: 'Scroll Right'
+      })
+      await expect(scrollLeft).toBeVisible()
+      await expect(scrollLeft).toBeEnabled()
+      await expect(scrollRight).toBeDisabled()
+
+      const activeTabName = await topbar.getActiveTabName()
+      await scrollLeft.dispatchEvent('mousedown')
+      await expect(scrollRight).toBeEnabled()
+      await scrollLeft.dispatchEvent('mouseup')
+      await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
+    }
+  )
 
   test.describe('Closing a modified workflow tab (FE-419)', () => {
     async function modifyActiveWorkflow(page: Page, activeTab: Locator) {
