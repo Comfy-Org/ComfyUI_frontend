@@ -1,14 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -41,7 +33,6 @@ function registerNullContractNode(): void {
     }
   }
   LiteGraph.registerNodeType(NODE_TYPE, NullContractNode)
-  onTestFinished(() => LiteGraph.unregisterNodeType(NODE_TYPE))
 }
 
 function makeGraphWithWidget(value: TWidgetValue): {
