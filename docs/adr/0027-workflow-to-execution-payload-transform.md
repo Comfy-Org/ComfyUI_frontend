@@ -120,19 +120,12 @@ API.
    or the transform must be explicitly listed as non-replayable and excluded
    from the replayability guarantee.
 
-3. **Optionally persist both representations together.** The queue payload may
-   include both the workflow and the resulting API payload alongside version and
-   provenance information, so consumers can validate or reproduce the conversion.
-   The execution payload remains derived state — the workflow is the single
-   source of truth.
-
-   Shape constraint: `ComfyApiWorkflow` is a flat dict keyed by node ID, so
-   `workflow`, `version`, and `provenance` cannot be added as sibling keys
-   without breaking the payload's validity. Pairing must use a versioned
-   envelope (or sidecar) around the untouched legacy prompt shape;
-   `api.queuePrompt()` keeps sending the legacy shape to the existing
-   endpoint, and consumers of the envelope must be able to reject a derived
-   payload that is stale relative to its paired workflow.
+3. **Version the existing pairing.** `api.queuePrompt()` already sends the
+   execution payload as `prompt` and the workflow as
+   `extra_data.extra_pnginfo.workflow`. Keep `ComfyApiWorkflow` flat and
+   unchanged. Add version and provenance metadata to the request envelope, or
+   use a sidecar for other persistence targets. Consumers must be able to reject
+   a derived payload that is stale relative to its paired workflow.
 
 Mental model: **workflow → explicit named transforms → execution payload**. The
 payload is never edited directly; it is always regenerated from the workflow.
