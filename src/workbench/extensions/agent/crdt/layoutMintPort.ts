@@ -214,9 +214,14 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   return {
     runIntentionalClear<T>(fn: () => T): T {
       const target = deps.target()
-      intentionalClear = target
-        ? { target, nodeIds: deps.source.nodeIds(target) }
-        : null
+      if (target) {
+        intentionalClear = { target, nodeIds: deps.source.nodeIds(target) }
+      } else {
+        intentionalClear = null
+        console.error(
+          '[agent-crdt] clear mint dropped: no active document target'
+        )
+      }
       try {
         return fn()
       } finally {
