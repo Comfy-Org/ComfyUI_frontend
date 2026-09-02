@@ -143,6 +143,16 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     deps.enqueue([pending.operation])
   }
 
+  /**
+   * A same-task deletion that cancels an unflushed placement: no connect
+   * ever reached `deps.enqueue()`, so nothing diverges from the local graph
+   * (which also omits the link) - drop it silently rather than reporting a
+   * `link connect` divergence for an op that never shipped.
+   */
+  function cancelPlacement(key: string): void {
+    pendingPlacements.delete(key)
+  }
+
   function scheduleSweep(): void {
     if (sweepScheduled) return
     sweepScheduled = true
@@ -176,8 +186,10 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
-    // Preserve mutation order when placement and deletion share a task.
-    flushPlacement(String(topology.id))
+    // A same-task placement that never flushed is canceled, not a real
+    // divergence: the local graph and the doc both end up without the link.
+    // Preserve mutation order for everything else that already flushed.
+    cancelPlacement(String(topology.id))
     const entry: SeveranceEntry = {
       linkId: topology.id,
       mintable: gateOpen() && isRootScope(scope)
