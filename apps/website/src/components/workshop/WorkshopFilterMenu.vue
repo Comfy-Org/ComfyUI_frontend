@@ -1,22 +1,16 @@
 <script setup lang="ts">
+import { Check, ChevronDown, ListFilter } from '@lucide/vue'
 import {
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ListFilter,
-  Search
-} from '@lucide/vue'
-import {
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot,
+  PopoverTrigger,
+  TabsContent,
+  TabsList,
+  TabsRoot,
+  TabsTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -29,7 +23,7 @@ export interface FacetMenuOption {
   readonly count: number
 }
 
-type Facet = 'capability' | 'provider'
+type Facet = 'provider' | 'capability'
 
 const {
   capabilityOptions,
@@ -44,31 +38,22 @@ const {
 const capabilities = defineModel<string[]>('capabilities', { required: true })
 const providers = defineModel<string[]>('providers', { required: true })
 
-const section = ref<Facet | 'root'>('root')
-const query = ref('')
-const searchBox = useTemplateRef<HTMLInputElement>('searchBox')
-
-// Switching sections unmounts the focused row; the menu would read that as
-// focus leaving and close, so focus moves to the search box instead.
-async function show(next: Facet | 'root') {
-  section.value = next
-  query.value = ''
-  await nextTick()
-  searchBox.value?.focus()
-}
+const open = ref(false)
+const activeFacet = ref<Facet>('provider')
+const search = ref<Record<Facet, string>>({ provider: '', capability: '' })
 
 const facets = computed(() => [
-  {
-    facet: 'capability' as const,
-    label: t('workshop.filter.capabilityGroup', locale),
-    options: capabilityOptions,
-    selected: capabilities
-  },
   {
     facet: 'provider' as const,
     label: t('workshop.filter.providerGroup', locale),
     options: providerOptions,
     selected: providers
+  },
+  {
+    facet: 'capability' as const,
+    label: t('workshop.filter.capabilityGroup', locale),
+    options: capabilityOptions,
+    selected: capabilities
   }
 ])
 
@@ -76,20 +61,14 @@ const selectedCount = computed(
   () => capabilities.value.length + providers.value.length
 )
 
-const needle = computed(() => query.value.trim().toLowerCase())
-
-function matches(option: FacetMenuOption) {
-  return !needle.value || option.label.toLowerCase().includes(needle.value)
+function visibleOptions(entry: (typeof facets.value)[number]) {
+  const needle = search.value[entry.facet].trim().toLowerCase()
+  return needle
+    ? entry.options.filter((option) =>
+        option.label.toLowerCase().includes(needle)
+      )
+    : entry.options
 }
-
-// While typing at the root, every facet lists its matches inline; inside a
-// facet the same box narrows that facet only.
-const visibleFacets = computed(() =>
-  facets.value
-    .filter(({ facet }) => section.value === 'root' || section.value === facet)
-    .map((entry) => ({ ...entry, options: entry.options.filter(matches) }))
-    .filter(({ options }) => options.length > 0)
-)
 
 function toggle(facet: Facet, value: string) {
   const selected = facet === 'capability' ? capabilities : providers
@@ -98,28 +77,15 @@ function toggle(facet: Facet, value: string) {
     : [...selected.value, value]
 }
 
-const open = (facet: Facet) => show(facet)
-const back = () => show('root')
-
 function clearAll() {
   capabilities.value = []
   providers.value = []
 }
-
-// The menu's typeahead must not swallow typing, but Escape still closes it.
-function stopTypeaheadKeys(event: KeyboardEvent) {
-  if (event.key !== 'Escape') event.stopPropagation()
-}
-
-const itemClass =
-  'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t8'
-const sectionLabelClass =
-  'px-3 pt-2 pb-1 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase'
 </script>
 
 <template>
-  <DropdownMenuRoot @update:open="(isOpen) => !isOpen && back()">
-    <DropdownMenuTrigger
+  <PopoverRoot v-model:open="open">
+    <PopoverTrigger
       data-testid="workshop-filter"
       :class="
         cn(
@@ -139,126 +105,117 @@ const sectionLabelClass =
       >
         {{ selectedCount }}
       </span>
-      <ChevronDown class="size-4" aria-hidden="true" />
-    </DropdownMenuTrigger>
-    <DropdownMenuPortal>
-      <DropdownMenuContent
+      <ChevronDown
+        :class="cn('size-4 transition-transform', open && 'rotate-180')"
+        aria-hidden="true"
+      />
+    </PopoverTrigger>
+    <PopoverPortal>
+      <PopoverContent
         align="end"
         :side-offset="8"
-        class="border-primary-comfy-ink-light bg-site-dropdown z-50 flex max-h-[min(28rem,var(--reka-dropdown-menu-content-available-height))] w-72 flex-col rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
         data-testid="workshop-filter-menu"
+        class="bg-site-dropdown z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
       >
-        <div
-          class="relative -mx-2 -mt-2 mb-1 border-b border-transparency-white-t8"
-        >
-          <Search
-            class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-          <input
-            ref="searchBox"
-            v-model="query"
-            type="search"
-            :placeholder="t('workshop.filter.filterBy', locale)"
-            :aria-label="t('workshop.filter.filterBy', locale)"
-            :data-testid="
-              section === 'root'
-                ? 'workshop-filter-search'
-                : `workshop-filter-${section}-search`
-            "
-            class="h-12 w-full bg-transparent pr-4 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray [&::-webkit-search-cancel-button]:hidden"
-            @keydown="stopTypeaheadKeys"
-          />
-        </div>
+        <TabsRoot v-model="activeFacet" class="flex flex-col">
+          <TabsList
+            class="flex items-center gap-1 border-b border-white/10 p-2"
+          >
+            <TabsTrigger
+              v-for="entry in facets"
+              :key="entry.facet"
+              :value="entry.facet"
+              :data-testid="`workshop-facet-${entry.facet}`"
+              class="text-content-secondary hover:text-content focus-visible:ring-brand data-[state=active]:text-content inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 data-[state=active]:bg-white/8"
+            >
+              {{ entry.label }}
+              <span
+                v-if="entry.selected.value.length"
+                class="bg-brand text-page inline-flex min-w-4 items-center justify-center rounded-full px-1 text-2xs font-bold tabular-nums"
+                :data-testid="`workshop-facet-${entry.facet}-count`"
+              >
+                {{ entry.selected.value.length }}
+              </span>
+            </TabsTrigger>
+          </TabsList>
 
-        <template v-if="section === 'root' && !needle">
-          <p :class="sectionLabelClass">
-            {{ t('workshop.filter.sectionLabel', locale) }}
-          </p>
-          <DropdownMenuItem
+          <TabsContent
             v-for="entry in facets"
             :key="entry.facet"
-            :class="itemClass"
-            :data-testid="`workshop-filter-${entry.facet}`"
-            @select.prevent="open(entry.facet)"
+            :value="entry.facet"
+            class="flex flex-col outline-none"
           >
-            <span class="flex-1">{{ entry.label }}</span>
-            <span
-              v-if="entry.selected.value.length"
-              class="bg-primary-comfy-yellow rounded-full px-1.5 text-[10px] font-bold text-primary-comfy-ink"
-              :data-testid="`workshop-filter-${entry.facet}-count`"
+            <div class="border-b border-white/10 p-2">
+              <input
+                v-model="search[entry.facet]"
+                type="search"
+                :placeholder="t('workshop.filter.search', locale)"
+                :aria-label="t('workshop.filter.search', locale)"
+                :data-testid="`workshop-filter-${entry.facet}-search`"
+                class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+              />
+            </div>
+            <ul
+              class="max-h-72 scrollbar-thin overflow-y-auto py-1"
+              role="listbox"
+              aria-multiselectable="true"
             >
-              {{ entry.selected.value.length }}
-            </span>
-            <ChevronRight
-              class="size-4 text-primary-warm-gray"
-              aria-hidden="true"
-            />
-          </DropdownMenuItem>
-        </template>
-
-        <template v-else>
-          <DropdownMenuItem
-            v-if="section !== 'root'"
-            :class="cn(itemClass, 'text-primary-warm-gray')"
-            data-testid="workshop-filter-back"
-            @select.prevent="back"
-          >
-            <ChevronLeft class="size-4" aria-hidden="true" />
-            {{ t('workshop.filter.back', locale) }}
-          </DropdownMenuItem>
-          <div class="min-h-0 overflow-y-auto">
-            <template v-for="entry in visibleFacets" :key="entry.facet">
-              <p :class="sectionLabelClass">{{ entry.label }}</p>
-              <DropdownMenuCheckboxItem
-                v-for="option in entry.options"
-                :key="option.value"
-                :model-value="entry.selected.value.includes(option.value)"
-                :data-testid="`filter-${entry.facet}-${option.value}`"
-                :class="itemClass"
-                @select.prevent
-                @update:model-value="toggle(entry.facet, option.value)"
-              >
-                <span
-                  :class="
-                    cn(
-                      'grid size-4 shrink-0 place-items-center rounded-sm border',
-                      entry.selected.value.includes(option.value)
-                        ? 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink'
-                        : 'border-transparency-white-t20'
-                    )
-                  "
+              <li v-for="option in visibleOptions(entry)" :key="option.value">
+                <button
+                  type="button"
+                  role="option"
+                  :aria-selected="entry.selected.value.includes(option.value)"
+                  :data-testid="`filter-${entry.facet}-${option.value}`"
+                  class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5"
+                  @click="toggle(entry.facet, option.value)"
                 >
-                  <Check
-                    v-if="entry.selected.value.includes(option.value)"
-                    class="size-3"
+                  <span
+                    :class="
+                      cn(
+                        'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                        entry.selected.value.includes(option.value)
+                          ? 'border-brand bg-brand text-page'
+                          : 'border-white/25'
+                      )
+                    "
                     aria-hidden="true"
-                  />
-                </span>
-                <span class="flex-1">{{ option.label }}</span>
-                <span class="text-primary-warm-gray">{{ option.count }}</span>
-              </DropdownMenuCheckboxItem>
-            </template>
-            <p
-              v-if="!visibleFacets.length"
-              class="px-3 py-2 text-sm text-primary-warm-gray"
-            >
-              {{ t('workshop.filter.noMatches', locale) }}
-            </p>
-          </div>
-        </template>
+                  >
+                    <Check
+                      v-if="entry.selected.value.includes(option.value)"
+                      class="size-3"
+                      :stroke-width="3"
+                    />
+                  </span>
+                  <span class="flex-1 truncate">{{ option.label }}</span>
+                  <span class="text-content/30 shrink-0 tabular-nums">
+                    {{ option.count }}
+                  </span>
+                </button>
+              </li>
+              <li
+                v-if="!visibleOptions(entry).length"
+                class="text-content-muted px-3 py-2 text-xs"
+              >
+                {{ t('workshop.filter.noMatches', locale) }}
+              </li>
+            </ul>
+          </TabsContent>
+        </TabsRoot>
 
-        <template v-if="selectedCount">
-          <DropdownMenuSeparator class="my-2 h-px bg-transparency-white-t8" />
-          <DropdownMenuItem
-            :class="cn(itemClass, 'text-primary-warm-gray')"
+        <div
+          v-if="selectedCount"
+          class="flex items-center justify-end border-t border-white/10 p-2"
+        >
+          <button
+            type="button"
             data-testid="workshop-filter-clear"
-            @select="clearAll"
+            class="text-content-secondary hover:text-content cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/5"
+            @click="clearAll"
           >
             {{ t('workshop.filter.clearAll', locale) }}
-          </DropdownMenuItem>
-        </template>
-      </DropdownMenuContent>
-    </DropdownMenuPortal>
-  </DropdownMenuRoot>
+          </button>
+        </div>
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
 </template>

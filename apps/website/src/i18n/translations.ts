@@ -8305,8 +8305,12 @@ Enterprise`
   'workshop.filter.back': { en: 'All filters', 'zh-CN': '全部筛选' },
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
-  'workshop.filter.providerGroup': { en: 'Provider', 'zh-CN': '提供方' },
-  'workshop.filter.capabilityGroup': { en: 'Capability', 'zh-CN': '能力' },
+  'workshop.filter.providerGroup': { en: 'Providers', 'zh-CN': '提供方' },
+  'workshop.filter.capabilityGroup': {
+    en: 'Capabilities',
+    'zh-CN': '能力'
+  },
+  'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
   'workshop.sort.popular': { en: 'Most popular', 'zh-CN': '最受欢迎' },
   'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },

@@ -73,7 +73,7 @@ describe('WorkshopModelsGrid', () => {
     ).toBe('true')
 
     await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('workshop-filter-capability'))
+    await user.click(await screen.findByTestId('workshop-facet-capability'))
     await user.click(await screen.findByTestId('filter-capability-Upscale'))
     expect(cardNames()).toHaveLength(0)
     expect(screen.getByTestId('workshop-empty')).toBeTruthy()
@@ -87,7 +87,7 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('workshop-filter-provider'))
+    await user.click(await screen.findByTestId('workshop-facet-provider'))
     await user.type(
       await screen.findByTestId('workshop-filter-provider-search'),
       'forest'
