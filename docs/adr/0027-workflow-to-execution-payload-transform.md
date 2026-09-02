@@ -58,11 +58,11 @@ Several transforms happen outside `graphToPrompt()` and are not visible to it:
 | Widget value propagation for UI feedback           | `src/extensions/core/widgetValuePropagation.ts`            | Separate extension hook, not in prompt path             |
 | Subgraph input promotion resolution                | `src/core/graph/subgraph/resolveConcretePromotedWidget.ts` | Called from within `node.resolveInput()` inside the DTO |
 
-The extension hook system (`ComfyExtension` in `src/types/comfy.ts`) exposes
-`beforeConfigureGraph`, `nodeCreated`, `loadedGraphNode`, and
-`afterConfigureGraph` — any extension can inject into the transform at these
-points. No contract governs ordering, idempotency, or what state is legal to
-mutate.
+Extensions can change graph or node state before queueing through lifecycle hooks
+such as `beforeConfigureGraph`, `nodeCreated`, `loadedGraphNode`, and
+`afterConfigureGraph`. For example, `dynamicPrompts.ts` uses `nodeCreated` to
+replace `widget.serializeValue`. These hooks do not define ordering,
+idempotency, or permitted mutations.
 
 ### Why this matters
 
