@@ -55,7 +55,6 @@ const yellowSvgs = [
   'apps/website/public/affiliates/brand/comfy-full-logo-yellow.svg',
   'apps/website/public/affiliates/brand/comfy-color-combo-yellow.svg',
   'apps/website/public/affiliates/brand/comfy-amplified-logo-mark.svg',
-  'apps/desktop-ui/public/assets/images/comfy-brand-mark.svg',
   'public/assets/images/comfy-cloud-logo.svg'
 ]
 
