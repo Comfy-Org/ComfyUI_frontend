@@ -1,4 +1,4 @@
-# ADR-LAYOUT: CRDT Layout Intent and Local Measurement
+# ADR-CRDT-LAYOUT-0003: CRDT Layout Intent and Local Measurement
 
 Date: 2025-08-27
 
@@ -35,7 +35,7 @@ The existing system allows each node to directly mutate its position within Lite
 - Accessibility requirements will necessitate DOM-based rendering options
 - Technical debt compounds with each new spatial feature
 
-This decision builds on [ADR-LITEGRAPH: Integrate LiteGraph into the Frontend](LITEGRAPH-integrate-litegraph-into-the-frontend.md), which enables the architectural restructuring proposed here.
+This decision builds on [ADR-DEPS-LITEGRAPH-0001: Integrate LiteGraph into the Frontend](DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md), which enables the architectural restructuring proposed here.
 
 ## Decision
 
@@ -221,7 +221,7 @@ mutation with no name.
 ### Amendment (2026-08-23): merge-boundary reconciliation constraint
 
 In-memory registration and collision recovery follow
-[ADR COLLISIONS](COLLISIONS-entity-id-collision-policy-and-recovery.md).
+[ADR COLLISIONS](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md).
 The CRDT boundary must reconcile distributed conflicts over stable entity
 identity keys before registration. Registries with recyclable structural keys
 retain their documented local policies.

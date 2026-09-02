@@ -2,7 +2,7 @@
 
 Status: Current implementation audit
 Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
-Scope: ADR-LAYOUT, ADR-ECS, and architecture documents changed by PR 14246
+Scope: ADR-CRDT-LAYOUT-0003, ADR-ECS-0008, and architecture documents changed by PR 14246
 
 The audit uses four document states:
 
@@ -19,7 +19,7 @@ sections below preserve the findings and the wording used to resolve them.
 
 ## ADR roles and current accuracy
 
-### ADR-LAYOUT: centralized CRDT layout
+### ADR-CRDT-LAYOUT-0003: centralized CRDT layout
 
 The ADR is the decision authority for canonical geometry in `layoutStore`, Yjs
 storage, mutation operations, and renderer-independent layout state.
@@ -31,7 +31,7 @@ multi-renderer inversion, and universal command-only mutation remain target.
 The 2026-07-30 amendment accurately removes the unused operation log, but its
 last sentence overstates command coverage.
 
-### ADR-ECS: entity/component direction
+### ADR-ECS-0008: entity/component direction
 
 The ADR defines the architectural constraints and taxonomy: dedicated stores,
 plain-data state, behavior outside components, graph ownership, and no
@@ -66,7 +66,7 @@ substantial behavior.
 
 ### 1. Slot mirrors were described as still present
 
-The audit found ADR-ECS, `ecs-target-architecture.md`,
+The audit found ADR-ECS-0008, `ecs-target-architecture.md`,
 `ecs-lifecycle-scenarios.md`, and `proto-ecs-stores.md` describing mutable class
 mirrors as current. On this branch, concrete slot accessors
 are deprecated, non-enumerable, store-derived compatibility views; writes warn
@@ -81,7 +81,7 @@ Applied wording:
 
 ### 2. LinkStore primary authority was misstated as target-slot keying
 
-The audit found target-slot primary-key claims in ADR-ECS,
+The audit found target-slot primary-key claims in ADR-ECS-0008,
 `ecs-lifecycle-scenarios.md`, and historical parts of
 `link-topology-store.md`. Current
 `useLinkStore` maintains root-wide `RootTopologyBucket.byId` authority;
@@ -95,7 +95,7 @@ Applied wording:
 > supports fan-out queries. Floating links share the ID namespace but are
 > absent from endpoint indexes until fully assigned.
 
-The ADR-ECS Link amendment, lifecycle load note, and key tables were updated.
+The ADR-ECS-0008 Link amendment, lifecycle load note, and key tables were updated.
 
 ### 3. Output `originIndex` was documented as derived computed state
 
@@ -136,7 +136,7 @@ are labeled **Target** wherever diagrammed.
 ### 5. Layout keying tables described raw node/link IDs
 
 The audit found variants of "raw node/link IDs; scoped group/reroute IDs" in
-inventory tables. ADR-LAYOUT's amendment and the
+inventory tables. ADR-CRDT-LAYOUT-0003's amendment and the
 implementation scope nodes, groups, and reroutes with
 `makeScopedLayoutKey(rootGraphId, id)`. Link segment geometry uses its separate
 segment cache key and is not CRDT link topology.
@@ -163,7 +163,7 @@ Applied wording:
 
 ### 7. Dedicated-store lifecycle was over-uniform
 
-The audit found a universal graph-key and `clearGraph(graphId)` rule in ADR-ECS. Actual stores differ by concern:
+The audit found a universal graph-key and `clearGraph(graphId)` rule in ADR-ECS-0008. Actual stores differ by concern:
 LinkStore and RerouteStore use root buckets plus owner indexes; NodeDataStore
 partitions by owning graph; LayoutStore uses root-scoped layout keys; global or
 locator stores have different lifecycle contracts.
@@ -255,8 +255,8 @@ being mistaken for API guidance.
 The audit corrections were applied in priority order:
 
 1. LinkStore primary identity, slot-accessor status, and duplicate-link load
-   behavior are current in ADR-ECS and lifecycle documentation.
-2. Layout keying and command scope are current in ADR-LAYOUT/ADR-ECS and inventory
+   behavior are current in ADR-ECS-0008 and lifecycle documentation.
+2. Layout keying and command scope are current in ADR-CRDT-LAYOUT-0003/ADR-ECS-0008 and inventory
    tables.
 3. Computed `originIndex` pseudocode and the removed badge store are historical.
 4. Stale lifecycle diagrams were replaced by current bridge facts and explicit

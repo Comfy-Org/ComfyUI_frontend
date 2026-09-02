@@ -14,8 +14,8 @@ References to commands, replay, transactions, or CRDT transport describe possibl
 later architecture, not requirements for this data-centralization phase.
 
 The governing decisions remain
-[ADR-LAYOUT](../../adr/LAYOUT-crdt-layout-intent-and-local-measurement.md) and
-[ADR-ECS](../../adr/ECS-entity-component-system.md). See
+[ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) and
+[ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md). See
 [ECS Decision Traceability](ecs-decision-traceability.md) for principle-level
 status and [ECS Target Architecture](../ecs-target-architecture.md) for the
 target.

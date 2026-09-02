@@ -1,4 +1,4 @@
-# ADR-TRAC: Telemetry Routing Across Consumers
+# ADR-TELEMETRY-ROUTING-0013: Telemetry Routing Across Consumers
 
 Date: 2026-07-28
 

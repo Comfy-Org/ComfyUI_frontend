@@ -1,4 +1,4 @@
-# ADR-COLLISIONS: Entity ID Collision Policy and Recovery
+# ADR-ECS-IDENTITY-0016: Entity ID Collision Policy and Recovery
 
 Date: 2026-08-24
 

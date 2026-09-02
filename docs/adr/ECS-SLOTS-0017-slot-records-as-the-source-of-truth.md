@@ -1,4 +1,4 @@
-# ADR-SLOTS: Slot Records as the Source of Truth
+# ADR-ECS-SLOTS-0017: Slot Records as the Source of Truth
 
 Date: 2026-08-24
 
@@ -57,7 +57,7 @@ straightforward but must account for slot renames and reordering. Minted IDs
 need explicit collision and reminting behavior.
 
 The implementation that chooses the key format must document its collision
-behavior in ADR-ECS and test it in
+behavior in ADR-ECS-0008 and test it in
 `src/stores/storeCollisionContracts.test.ts`.
 
 ## Migration path
@@ -83,7 +83,7 @@ behavior in ADR-ECS and test it in
 
 ## References
 
-- ADR-ECS, "Entity Component System"
+- ADR-ECS-0008, "Entity Component System"
 - `docs/architecture/output-slot-connectivity.md`
 - `docs/architecture/node-data-store.md`
 - `docs/exceptions-log.md`

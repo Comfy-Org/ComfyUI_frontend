@@ -1,6 +1,6 @@
 # Subgraph Boundaries and Widget Promotion
 
-A companion to [ADR-ECS](../adr/ECS-entity-component-system.md). Where the ADR
+A companion to [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md). Where the ADR
 defines the entity taxonomy and component decomposition, this document examines
 the three questions the ADR defers — questions that turn out to be facets of a
 single deeper insight.
@@ -304,7 +304,7 @@ must choose before Phase 3 of the migration.
 
 > **Historical note:** the legacy three-layer mechanism described below
 > (PromotionStore, PromotedWidgetViewManager, PromotedWidgetView) has been
-> removed by [ADR-PROMOTION](../adr/PROMOTION-represent-promoted-widgets-as-linked-inputs.md).
+> removed by [ADR-SUBGRAPH-PROMOTION-0009](../adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md).
 > Promoted value widgets are now standard linked `SubgraphInput` widgets.
 > This section is retained for archival context.
 
@@ -368,7 +368,7 @@ sequenceDiagram
 
 ### Candidate B: Simplified component promotion (rejected)
 
-ADR-PROMOTION chose Candidate A. Candidate B is retained here as the rejected
+ADR-SUBGRAPH-PROMOTION-0009 chose Candidate A. Candidate B is retained here as the rejected
 alternative; it relied on a source-widget lookup model that no longer exists.
 
 Promotion remains a first-class concept, simplified from three layers to one:
@@ -415,7 +415,7 @@ Whichever candidate is chosen:
 
 ### Decision
 
-[ADR-PROMOTION](../adr/PROMOTION-represent-promoted-widgets-as-linked-inputs.md)
+[ADR-SUBGRAPH-PROMOTION-0009](../adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)
 chooses Candidate A for promoted value widgets. It eliminates an entire
 subsystem by recognizing a structural truth: promotion is adding a typed input
 to a function signature. The type system already handles widget creation for
@@ -425,7 +425,7 @@ a second, narrower version of something the system already does.
 The cost of A is a migration path for existing `proxyWidgets` serialization. On
 load, the `SerializationSystem` converts value-widget `proxyWidgets` entries
 into interface inputs and boundary links. Once loaded and re-saved, the workflow
-uses the new format. ADR-PROMOTION separates display-only preview exposures from
+uses the new format. ADR-SUBGRAPH-PROMOTION-0009 separates display-only preview exposures from
 promoted value widgets; those previews use their own host-scoped serialized
 representation instead of linked `SubgraphInput` widgets.
 
@@ -515,7 +515,7 @@ SubgraphIO {
 }
 ```
 
-ADR-PROMOTION chooses Candidate A (connections-only promotion) for promoted value
+ADR-SUBGRAPH-PROMOTION-0009 chooses Candidate A (connections-only promotion) for promoted value
 widgets: they become interface inputs, serialized as additional `SubgraphIO`
 entries. On load, legacy value-widget `proxyWidgets` data is converted to
 interface inputs and boundary links. On save, repaired `proxyWidgets` entries
@@ -545,12 +545,12 @@ This is a hard constraint with no expiration:
 
 ---
 
-## 5. Impact on ADR-ECS
+## 5. Impact on ADR-ECS-0008
 
 This document proposes or surfaces the following changes to
-[ADR-ECS](../adr/ECS-entity-component-system.md):
+[ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md):
 
-| Area                | Current ADR-ECS                                                          | Proposed Change                                                                 |
+| Area                | Current ADR-ECS-0008                                                          | Proposed Change                                                                 |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
 | Entity taxonomy     | 7 kinds including `SubgraphEntityId`                                     | 6 kinds — subgraph is a node with `SubgraphStructure` component                 |
 | `SubgraphEntityId`  | `string & { __brand: 'SubgraphEntityId' }`                               | Eliminated; replaced by `GraphId` scope identifier                              |
@@ -558,11 +558,11 @@ This document proposes or surfaces the following changes to
 | Storage structure   | Implied per-graph containment                                            | Dedicated stores with `graphScope`-tagged entries; no single registry           |
 | Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation   |
 | Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
-| Widget promotion    | Treated as a given feature to migrate                                    | ADR-PROMOTION chooses Candidate A: promoted value widgets are linked inputs     |
+| Widget promotion    | Treated as a given feature to migrate                                    | ADR-SUBGRAPH-PROMOTION-0009 chooses Candidate A: promoted value widgets are linked inputs     |
 | Serialization       | Not explicitly separated from internal model                             | Internal model ≠ wire format; `SerializationSystem` is the membrane             |
 | Backward compat     | Implicit                                                                 | Explicit contract: load any prior format, indefinitely                          |
 
-These amendments should be applied to ADR-ECS and the related architecture
+These amendments should be applied to ADR-ECS-0008 and the related architecture
 documents in a follow-up pass after team review of this document:
 
 - [ECS Target Architecture](ecs-target-architecture.md) — World Overview

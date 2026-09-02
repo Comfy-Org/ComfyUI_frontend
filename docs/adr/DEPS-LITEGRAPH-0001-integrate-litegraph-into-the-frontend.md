@@ -1,4 +1,4 @@
-# ADR-LITEGRAPH: Integrate LiteGraph into the Frontend
+# ADR-DEPS-LITEGRAPH-0001: Integrate LiteGraph into the Frontend
 
 Date: 2025-08-05
 

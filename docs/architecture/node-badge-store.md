@@ -13,7 +13,7 @@ store. Follow-up to the
 [node data store draft](node-data-store.md)
 
 Design record for extracting node badges off `LGraphNode` instances into
-a dedicated store per [ADR-ECS](../adr/ECS-entity-component-system.md),
+a dedicated store per [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md),
 going straight to plain-data components — no interim closure storage.
 Vocabulary: [domain glossary § Badges](domain-glossary.md#badges).
 
@@ -38,7 +38,7 @@ the store rows the single truth both renderers read.
 
 ## Decision 1: Plain `BadgeData` rows, no interim shape
 
-The store holds only plain data (ADR-ECS component rule):
+The store holds only plain data (ADR-ECS-0008 component rule):
 
 ```
 BadgeData = CoreBadgeData | CreditsBadgeData   // discriminated on `kind`
@@ -80,7 +80,7 @@ function inside a thin watch shell and writes the node's rows. Sources
 are the existing stores: `nodeDefStore`, `settingStore`,
 `colorPaletteStore`, `useNodePricing` revision refs, `widgetValueStore`,
 `linkStore` input connectivity. The pure function is the future
-command-pipeline phase body (ADR-LAYOUT systems ADR); only the scheduler
+command-pipeline phase body (ADR-CRDT-LAYOUT-0003 systems ADR); only the scheduler
 shell changes when that lands.
 
 `useNodeBadge` / `usePriceBadge` stop pushing closures; their derivation
@@ -105,7 +105,7 @@ mirror: no other component stores this projection.
 `drawBadges` renders from `BadgeData`, constructing and caching
 `LGraphBadge` draw objects keyed by row content (the `Reroute` id-badge
 pattern, memoized). `_boundingRect` hit-test state stays renderer-side.
-Frame-budget parity per ADR-ECS's render mitigations applies.
+Frame-budget parity per ADR-ECS-0008's render mitigations applies.
 
 ## Implementation notes (slice A)
 

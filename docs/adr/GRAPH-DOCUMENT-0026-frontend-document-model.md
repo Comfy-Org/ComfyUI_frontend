@@ -1,4 +1,4 @@
-# 0026. Frontend Document Model
+# ADR-GRAPH-DOCUMENT-0026: Frontend Document Model
 
 Date: 2026-08-31
 
@@ -13,14 +13,14 @@ Proposed
 This ADR salvages the general document-system proposal from
 `origin/adr/frontend-document-model` (`8606edcbb7`, authored by
 Ben Cooley) after its original `0018` number collided with the already-merged
-[ADR MINT](MINT-merge-identity-for-node-transfers.md). It now lives as
-ADR-0026.
+[ADR-CRDT-MINT-0018](CRDT-MINT-0018-merge-identity-for-node-transfers.md). It now lives as
+ADR-GRAPH-DOCUMENT-0026.
 
-[ADR AGENT](AGENT-graph-activation-and-document-objects-for-in-app-agent-targets.md) remains the agent-specific
+[ADR-GRAPH-DOCUMENT-0024](GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md) remains the agent-specific
 `GraphDocument` and activation contract for offscreen targets, queues, and
 CRDT follower recovery. This ADR is the broader frontend document model that
 explains why workflow identity, lifecycle, sidecars, and event routing need a
-first-class document owner at all. [ADR FOLLOWER](FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)
+first-class document owner at all. [ADR-CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)
 continues to govern the CRDT follower and distribution boundaries.
 
 A traditional multi-document editor (VS Code, Photoshop, any word processor)
@@ -130,7 +130,7 @@ The maintenance history of the snapshot/restore system is the bug tracker:
   proxies over the layout store, and the in-development v2 node API
   prototype, which is parameterized on a graph-supplier _thunk_ rather than
   a graph reference.
-- The ECS target architecture (ADR-0008 and
+- The ECS target architecture (ADR-ECS-0008 and
   `docs/architecture/ecs-target-architecture.md`) already states that runtime
   state must be scoped per workflow instance. This ADR supplies the identity
   and lifecycle infrastructure that direction requires, without waiting on
@@ -193,7 +193,7 @@ it (see D4).
 Every live document has two identities with different lifetimes:
 
 - The stable **document_id** names the user workflow target. It is the
-  address ADR-0024 uses for `workflow_id` → `document_id` resolution, detached
+  address ADR-GRAPH-DOCUMENT-0024 uses for `workflow_id` → `document_id` resolution, detached
   target sessions, bounded CRDT queues, lineage, state vectors, and remote
   frames. It survives tab/view closure for as long as a target session is
   intentionally retained, and reopening a workflow resolves to the same stable
@@ -427,7 +427,7 @@ that reads it at `Deactivate`. No watcher, no flag, no timer.
 - **Keying by root-graph id or path**: both are attributes, not identity;
   see D1 for the concrete failure of each. Both remain in use _behind_ the
   uid for their legitimate jobs.
-- **Waiting for ECS**: the ECS direction (ADR-0008 amendment: graph-scoped
+- **Waiting for ECS**: the ECS direction (ADR-ECS-0008 amendment: graph-scoped
   dedicated stores) is _strengthened_ by this ADR — those stores are
   currently sabotaged by graph-id recycling. D1/D3 are the identity and
   scoping foundation the ECS migration's own identity-scope audit calls
@@ -601,9 +601,9 @@ type-agnostic) but nothing here builds them.
 ## Notes
 
 - Original source: `origin/adr/frontend-document-model` @ `8606edcbb7`
-  (`docs/adr/0018-frontend-document-model.md`), authored by Ben Cooley.
-- Ported to ADR-0026 on `main` @ `f954e479a3` (2026-08-31) after the original
-  ADR-0018 slot was occupied by node-id reminting.
+  (the original numbered frontend-document-model path), authored by Ben Cooley.
+- Ported to ADR-GRAPH-DOCUMENT-0026 on `main` @ `f954e479a3` (2026-08-31) after the original
+  sequence 0018 was occupied by node-id reminting.
 - Anticipated follow-up ADR: a generic document-behavior interface — basic
   editing behaviors such as undo/redo, cut/copy/paste/delete, possibly
   selection — that commands invoke on the active document, with each
@@ -617,7 +617,7 @@ type-agnostic) but nothing here builds them.
   (the hand-rolled scoping fixes this ADR generalizes); issue #3377,
   frontend PR #11951, and backend PR comfyanonymous/ComfyUI#13643
   (job→workflow attribution, the D2 rule's strong form);
-  ADR-0008 and `docs/architecture/ecs-target-architecture.md` (the scoping
+  ADR-ECS-0008 and `docs/architecture/ecs-target-architecture.md` (the scoping
   direction this ADR supplies the foundation for).
 - Prior art informing D3/D5: VS Code editor lifecycle
   (`onWillDispose`, `onWillSaveTextDocument`/`onDidSave`, memento LRU with
@@ -636,7 +636,7 @@ type-agnostic) but nothing here builds them.
   workflow session data such as graph content, undo/redo records, execution
   state, warnings, view state, and dirty state.
 - **`GraphDocument`** — the agent-facing workflow document shape specified by
-  [ADR AGENT](AGENT-graph-activation-and-document-objects-for-in-app-agent-targets.md). It specializes this
+  [ADR-GRAPH-DOCUMENT-0024](GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md). It specializes this
   ADR's broader document model for target routing and offscreen application.
 - **Document uid** — an in-memory session identifier minted when a document
   opens and erased when it closes. It is not persisted into workflow JSON.
@@ -650,7 +650,7 @@ type-agnostic) but nothing here builds them.
 - **Facade** — a compatibility surface, such as `app.graph`, that continues to
   look global to extensions while resolving through the active document.
 - **ECS** — Entity Component System, the store-oriented frontend architecture
-  described in [ADR ECS](ECS-entity-component-system.md).
+  described in [ADR-ECS-0008](ECS-0008-entity-component-system.md).
 - **CRDT follower** — the frontend path governed by
-  [ADR FOLLOWER](FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) that applies
+  [ADR-CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) that applies
   host-produced document updates without becoming the merge authority.

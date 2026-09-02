@@ -26,7 +26,7 @@ export const zResultItem = z.object({
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
-// See docs/adr/OPEN-output-passthrough-for-extensible-nodes.md
+// See docs/adr/NODE-OUTPUTS-0007-output-passthrough-for-extensible-nodes.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),

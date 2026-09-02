@@ -1,4 +1,4 @@
-# ADR-RED: Recoverable Event Diagnostics
+# ADR-TELEMETRY-DIAGNOSTICS-0019: Recoverable Event Diagnostics
 
 Date: 2026-08-25
 
@@ -68,5 +68,5 @@ the failed operation leaves state consistent.
 
 ## References
 
-- [ADR-TRAC: Telemetry Routing Across Consumers](TRAC-telemetry-routing-across-consumers.md)
+- [ADR-TELEMETRY-ROUTING-0013: Telemetry Routing Across Consumers](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)
 - [FE-1859](https://linear.app/comfyorg/issue/FE-1859/audit-and-replace-unsafe-throw-new-error-paths-with-fail-safe-handling)

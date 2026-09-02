@@ -1,12 +1,12 @@
-# ADR-PROMOTION: Represent Promoted Widgets as Linked Inputs
+# ADR-SUBGRAPH-PROMOTION-0009: Represent Promoted Widgets as Linked Inputs
 
 Date: 2026-05-05
 
 Appendices:
 
-- [Before/after flow diagrams](./PROMOTION-represent-promoted-widgets-as-linked-inputs/before-after-flows.md)
-- [System comparison](./PROMOTION-represent-promoted-widgets-as-linked-inputs/system-comparison.md)
-- [Removing `disambiguatingSourceNodeId`](./PROMOTION-represent-promoted-widgets-as-linked-inputs/disambiguating-source-node-id.md)
+- [Before/after flow diagrams](./SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs/before-after-flows.md)
+- [System comparison](./SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs/system-comparison.md)
+- [Removing `disambiguatingSourceNodeId`](./SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs/disambiguating-source-node-id.md)
 
 ## Status
 
@@ -317,7 +317,7 @@ for existing workflow consumers that still assume array order.
 
 ## Consequences
 
-- Promoted widget values become host-instance-owned and ECS-compatible.
+- Promoted widget values become host-instance-owned and ECS-0008-compatible.
 - Source widgets remain metadata/default providers, not persistence carriers.
 - Legacy workflows are repaired toward one standard representation.
 - Quarantine preserves unrepaired valid legacy data without reintroducing bare

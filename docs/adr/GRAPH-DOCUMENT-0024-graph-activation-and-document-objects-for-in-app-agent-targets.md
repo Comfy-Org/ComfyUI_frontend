@@ -1,4 +1,4 @@
-# ADR-AGENT: Graph Activation and Document Objects for In-App Agent Targets
+# ADR-GRAPH-DOCUMENT-0024: Graph Activation and Document Objects for In-App Agent Targets
 
 Date: 2026-08-28
 
@@ -34,8 +34,8 @@ silently discarded because no canvas is active.
 
 The design also follows the existing ECS direction. Dedicated stores own increasing
 shares of graph state, while LiteGraph classes remain compatibility shells and render
-targets. [ADR-LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md) keeps durable layout in a separate
-frontend-owned Y.Doc, and [ADR-ECS](ECS-entity-component-system.md) separates graph
+targets. [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) keeps durable layout in a separate
+frontend-owned Y.Doc, and [ADR-ECS-0008](ECS-0008-entity-component-system.md) separates graph
 identity, components, systems, and rendering. The document object composes those pieces;
 it does not create a second ECS or a second CRDT applier.
 
@@ -210,7 +210,7 @@ Yjs updates flow host to follower only. Semantic operations remain owned by the 
 `@comfyorg/comfy-multi-player` applier, and their original
 `[base_version, actor, op_id]` stamps are not regenerated, reordered, or replaced by
 frontend command IDs. The separate FE layout Y.Doc remains separate from the shared
-semantic document as required by ADR-LAYOUT.
+semantic document as required by ADR-CRDT-LAYOUT-0003.
 
 ### Unloaded-target queue and commit boundary
 
@@ -295,7 +295,7 @@ the prior incarnation to affect the new target occupant. Retries preserve the or
 - **Separate view state:** layout remains in the separate FE-owned Y.Doc; presence,
   selection, hover, viewport, and renderer measurements are not semantic shared state.
 - **Byte-identical persistence:** the test first performs any node-ID reminting required by
-  ADR-MINT, serializes the normalized document with the production serializer, and captures
+  ADR-CRDT-MINT-0018, serializes the normalized document with the production serializer, and captures
   those exact bytes as its baseline. It then deactivates/activates the document any number
   of times, saves, reloads, and serializes again with the same serializer. The final bytes
   must exactly equal the post-normalization baseline; no later ID normalization or
@@ -369,8 +369,8 @@ document registry and target-aware tracker seam are the intended follow-up.
 
 ## References
 
-- [ADR-LAYOUT: Centralized Layout Management with CRDT](LAYOUT-crdt-layout-intent-and-local-measurement.md)
-- [ADR-ECS: Entity Component System](ECS-entity-component-system.md)
+- [ADR-CRDT-LAYOUT-0003: Centralized Layout Management with CRDT](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
+- [ADR-ECS-0008: Entity Component System](ECS-0008-entity-component-system.md)
 - [Change Tracker](../architecture/change-tracker.md)
 - [ECS Target Architecture](../architecture/ecs-target-architecture.md)
 - [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)

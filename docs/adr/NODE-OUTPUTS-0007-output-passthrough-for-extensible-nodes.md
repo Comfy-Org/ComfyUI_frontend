@@ -1,4 +1,4 @@
-# ADR-OPEN: Output Passthrough for Extensible Nodes
+# ADR-NODE-OUTPUTS-0007: Output Passthrough for Extensible Nodes
 
 Date: 2026-03-11
 

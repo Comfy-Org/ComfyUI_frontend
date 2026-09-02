@@ -50,7 +50,7 @@ transactions, and CRDT support beyond layout are later work outside this phase.
 | Question                                                          | Reference                                                             |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------- |
 | What has shipped and what remains?                                | [Migration plan](ecs-migration-plan.md)                               |
-| How does implementation align with ADR-LAYOUT and ADR-ECS?        | [Decision traceability](ecs-decision-traceability.md)                 |
+| How does implementation align with ADR-CRDT-LAYOUT-0003 and ADR-ECS-0008?        | [Decision traceability](ecs-decision-traceability.md)                 |
 | Which source owns each kind of state?                             | [State authority audit](ecs-state-authority-audit.md)                 |
 | How are entities registered, replaced, removed, and cleared?      | [Lifecycle audit](ecs-lifecycle-audit.md)                             |
 | Which writes are commands, store actions, or direct mutations?    | [Mutation audit](ecs-mutation-audit.md)                               |
@@ -60,7 +60,7 @@ transactions, and CRDT support beyond layout are later work outside this phase.
 | Which existing architecture documents are stale or contradictory? | [Documentation audit](ecs-documentation-audit.md)                     |
 
 The ADRs remain the decision records:
-[ADR-LAYOUT](../../adr/LAYOUT-crdt-layout-intent-and-local-measurement.md) governs centralized
-CRDT layout, and [ADR-ECS](../../adr/ECS-entity-component-system.md) governs
+[ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) governs centralized
+CRDT layout, and [ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md) governs
 the ECS direction. These audits report implementation status without
 modifying those decisions.

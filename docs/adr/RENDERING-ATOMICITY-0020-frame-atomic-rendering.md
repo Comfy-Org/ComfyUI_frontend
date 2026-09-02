@@ -1,4 +1,4 @@
-# ADR-FAR: Frame-Atomic Rendering
+# ADR-RENDERING-ATOMICITY-0020: Frame-Atomic Rendering
 
 Date: 2026-08-26
 
@@ -119,7 +119,7 @@ Specifically:
 ## Notes
 
 This decision narrows the renderer implications of
-[ADR-ECS](ECS-entity-component-system.md). The motivating regression and
+[ADR-ECS-0008](ECS-0008-entity-component-system.md). The motivating regression and
 frame-local render-order proof are tracked in
 [issue #15977](https://github.com/Comfy-Org/ComfyUI_frontend/issues/15977),
 [PR #15980](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15980), and

@@ -1,4 +1,4 @@
-# ADR-BUNDLE: Bundle Vue Dependencies in Extensions
+# ADR-EXTENSIONS-PUBLIC-API-0005: Bundle Vue Dependencies in Extensions
 
 Date: 2025-12-13
 

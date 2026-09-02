@@ -15,12 +15,12 @@ const createFixture = (): string => {
   mkdirSync(directory)
   temporaryDirectories.push(directory)
   writeFileSync(
-    join(directory, 'ECS-entity-component-system.md'),
-    '# ADR-ECS: Entity Component System\n\nDate: 2026-03-23\n\n## Status\n\nProposed\n'
+    join(directory, 'ECS-0008-entity-component-system.md'),
+    '# ADR-ECS-0008: Entity Component System\n\nDate: 2026-03-23\n\n## Status\n\nProposed\n'
   )
   writeFileSync(
     join(directory, 'README.md'),
-    '| [ECS](ECS-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |\n'
+    '| [ECS-0008](ECS-0008-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |\n'
   )
   return directory
 }
@@ -52,7 +52,7 @@ describe('validateAdrDirectory', () => {
     const directory = createFixture()
     writeFileSync(
       join(directory, 'README.md'),
-      '| [ECS](ECS-entity-component-system.md) | Wrong title | Proposed | 2026-03-23 |\n'
+      '| [ECS-0008](ECS-0008-entity-component-system.md) | Wrong title | Proposed | 2026-03-23 |\n'
     )
 
     expect(() => validateAdrDirectory(directory)).toThrow(
@@ -65,7 +65,7 @@ describe('validateAdrDirectory', () => {
     writeFileSync(
       join(directory, 'README.md'),
       [
-        '| [ECS](ECS-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |',
+        '| [ECS-0008](ECS-0008-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |',
         '| [0008](0008-entity) | Legacy duplicate | Proposed | 2026-03-23 |'
       ].join('\n')
     )
@@ -93,7 +93,7 @@ describe('findLegacyAdrReferences', () => {
 
   test('does not confuse an amendment date with an ADR number', () => {
     expect(
-      findLegacyAdrReferences('ADR-LAYOUT amendment (2026-08-23)')
+      findLegacyAdrReferences('ADR-CRDT-LAYOUT-0003 amendment (2026-08-23)')
     ).toEqual([])
   })
 })

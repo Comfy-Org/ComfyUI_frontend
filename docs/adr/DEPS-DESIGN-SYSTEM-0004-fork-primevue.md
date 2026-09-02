@@ -1,4 +1,4 @@
-# ADR-PRIMEVUE: Fork PrimeVue
+# ADR-DEPS-DESIGN-SYSTEM-0004: Fork PrimeVue
 
 Date: 2025-08-27
 

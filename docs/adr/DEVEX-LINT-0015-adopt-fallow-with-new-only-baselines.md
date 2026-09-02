@@ -1,4 +1,4 @@
-# ADR-FALLOW: Adopt Fallow with New-Only Baselines
+# ADR-DEVEX-LINT-0015: Adopt Fallow with New-Only Baselines
 
 Date: 2026-06-29
 

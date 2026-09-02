@@ -1,4 +1,4 @@
-# ADR-WELL: Widget Entities with a Legacy Layer
+# ADR-ECS-WIDGETS-0023: Widget Entities with a Legacy Layer
 
 Date: 2026-08-26
 
@@ -8,7 +8,7 @@ Proposed
 
 ## Context
 
-[ADR-ECS](ECS-entity-component-system.md) separates entity identity, plain
+[ADR-ECS-0008](ECS-0008-entity-component-system.md) separates entity identity, plain
 component data, and system behavior. Widgets only partly follow that model.
 `WidgetId` and widget values are store-backed, but `BaseWidget` still combines
 identity, mutable state, rendering, input handling, serialization hooks, and a
@@ -109,7 +109,7 @@ this one.
 
 This would simplify registration, but converting foreign objects can change
 their prototypes, descriptors, identity, and behavior. It would also make the
-class model permanent when ADR-ECS intends to separate state from behavior.
+class model permanent when ADR-ECS-0008 intends to separate state from behavior.
 
 ### Keep extension objects in stores
 
@@ -130,7 +130,7 @@ extensions before a replacement API and migration path exist.
 ### Mint a new widget identifier
 
 A minted identifier could survive a definition rename, but it would reopen the
-persistence and reattachment questions settled by ADR-ECS. It is not required
+persistence and reattachment questions settled by ADR-ECS-0008. It is not required
 to establish the behavior boundary.
 
 ## Consequences
@@ -148,14 +148,14 @@ extensions move to declarative APIs.
 
 The current `WidgetId` format still cannot distinguish duplicate names and does
 not preserve state across definition renames. This ADR accepts those limits
-from ADR-ECS rather than changing widget identity as part of the behavior
+from ADR-ECS-0008 rather than changing widget identity as part of the behavior
 migration.
 
 ## Notes
 
 This ADR narrows the widget portion of
-[ADR-ECS](ECS-entity-component-system.md). It follows
-[ADR-FAR](FAR-frame-atomic-rendering.md) by keeping compatibility work at
+[ADR-ECS-0008](ECS-0008-entity-component-system.md). It follows
+[ADR-RENDERING-ATOMICITY-0020](RENDERING-ATOMICITY-0020-frame-atomic-rendering.md) by keeping compatibility work at
 the registration boundary instead of adding it to renderer inner loops.
 
 Bevy's [ECS callback example](https://bevy.org/examples/ecs-entity-component-system/callbacks/)

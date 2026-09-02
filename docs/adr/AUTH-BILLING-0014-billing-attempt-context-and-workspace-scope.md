@@ -1,4 +1,4 @@
-# ADR-CONTEXT: Billing Attempt Context and Workspace Scope
+# ADR-AUTH-BILLING-0014: Billing Attempt Context and Workspace Scope
 
 Date: 2026-07-28
 

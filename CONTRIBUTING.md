@@ -264,7 +264,7 @@ For detailed instructions and code examples, see [packages/design-system/src/ico
 
 ## Working with litegraph.js
 
-Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/LITEGRAPH-integrate-litegraph-into-the-frontend.md)).
+Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md)).
 
 ### Important Notes
 

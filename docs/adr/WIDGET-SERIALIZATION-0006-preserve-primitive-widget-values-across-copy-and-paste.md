@@ -1,4 +1,4 @@
-# ADR-COPY: Preserve Primitive Widget Values Across Copy and Paste
+# ADR-WIDGET-SERIALIZATION-0006: Preserve Primitive Widget Values Across Copy and Paste
 
 Date: 2026-02-22
 

@@ -1,4 +1,4 @@
-# ADR-AUTH: Cloud Credential Lifecycle Invariants
+# ADR-AUTH-CREDENTIALS-0011: Cloud Credential Lifecycle Invariants
 
 Date: 2026-07-09
 
@@ -114,7 +114,7 @@ Alternatives considered:
 
 ## Notes
 
-- Related: [ADR-LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md) is unrelated in domain but
+- Related: [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) is unrelated in domain but
   shares the philosophy of designing invariants that make illegal states
   unrepresentable rather than guarding against them per call site.
 - Tickets: FE-613, FE-950, FE-963, FE-1072. PR: #13511.

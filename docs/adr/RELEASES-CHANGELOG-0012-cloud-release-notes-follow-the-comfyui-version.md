@@ -1,4 +1,4 @@
-# ADR-CLOUD: Cloud Release Notes Follow the ComfyUI Version
+# ADR-RELEASES-CHANGELOG-0012: Cloud Release Notes Follow the ComfyUI Version
 
 Date: 2026-07-13
 

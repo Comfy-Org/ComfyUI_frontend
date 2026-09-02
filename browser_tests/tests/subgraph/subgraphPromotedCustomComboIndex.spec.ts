@@ -29,7 +29,7 @@ test.describe(
 
       // Change the promoted `choice` widget from outside the subgraph, on
       // the host SubgraphNode -- editing the promoted widget is the only
-      // supported way to change a linked promotion's value post-ADR-PROMOTION.
+      // supported way to change a linked promotion's value post-ADR-SUBGRAPH-PROMOTION-0009.
       await comfyPage.vueNodes.selectComboOption(
         SUBGRAPH_NODE_TITLE,
         'choice',

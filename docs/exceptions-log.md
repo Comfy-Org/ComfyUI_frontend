@@ -40,7 +40,7 @@ representations have been removed: the class-instance arrays and any descriptor
 or Proxy compatibility layer. Once a field moves into a store record, no class
 or projection may become a separate source of truth for it.
 
-**Decision:** [ADR-SLOTS](adr/SLOTS-slot-records-as-the-source-of-truth.md)
+**Decision:** [ADR-ECS-SLOTS-0017](adr/ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md)
 
 ### EX-002: Store collision behavior is not yet documented and tested
 

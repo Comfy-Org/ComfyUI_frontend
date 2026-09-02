@@ -140,5 +140,5 @@ stacks. “Did not reproduce” is a result, not permission to record indefinite
 - Cleanup verified by:
 ```
 
-See [ADR-PERF](../adr/PERF-performance-evidence-and-regression-framework.md) for the
+See [ADR-PERF-BENCHMARKS-0022](../adr/PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md) for the
 measurement and CI policy behind this procedure.

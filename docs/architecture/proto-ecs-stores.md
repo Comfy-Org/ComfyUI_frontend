@@ -1,6 +1,6 @@
 # Proto-ECS: Existing State Extraction
 
-The codebase has already begun extracting entity state into external Pinia stores — an organic, partial migration toward the ECS principles described in [ADR-ECS](../adr/ECS-entity-component-system.md). This document catalogs those stores, analyzes how they align with the ECS target, and identifies what remains to be extracted.
+The codebase has already begun extracting entity state into external Pinia stores — an organic, partial migration toward the ECS principles described in [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md). This document catalogs those stores, analyzes how they align with the ECS target, and identifies what remains to be extracted.
 
 For the full problem analysis, see [Entity Problems](entity-problems.md). For the ECS target, see [ECS Target Architecture](ecs-target-architecture.md).
 
@@ -8,7 +8,7 @@ For the full problem analysis, see [Entity Problems](entity-problems.md). For th
 
 Dedicated stores extract entity state out of class instances into focused,
 queryable registries, each owning one concern. Promoted value-widget topology is
-no longer a store; ADR-PROMOTION represents it as ordinary linked `SubgraphInput`
+no longer a store; ADR-SUBGRAPH-PROMOTION-0009 represents it as ordinary linked `SubgraphInput`
 state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 `WidgetId`.
 
@@ -48,7 +48,7 @@ then deleted — badge rows are cheaper to derive on read than to store, so
 inputs. There is no `src/stores/nodeBadgeStore.ts`. See
 [Node Badge Store](node-badge-store.md) for the reversal.
 
-ADR-PROMOTION refines promoted-widget identity: promoted value widgets are keyed by
+ADR-SUBGRAPH-PROMOTION-0009 refines promoted-widget identity: promoted value widgets are keyed by
 the host boundary (`host node locator + SubgraphInput.name`), while interior
 source node/widget identity is migration and diagnostic metadata only.
 
@@ -120,7 +120,7 @@ graph LR
 
 ### ECS Alignment
 
-| Aspect                      | ECS-like | Why                                               |
+| Aspect                      | ECS-0008-like | Why                                               |
 | --------------------------- | -------- | ------------------------------------------------- |
 | `WidgetState` is plain data | Yes      | No methods, serializable, reactive                |
 | Graph-scoped lifecycle      | Yes      | `clearGraph(graphId)` cleans up                   |
@@ -132,7 +132,7 @@ graph LR
 
 ## 3. Linked promoted widgets and preview exposures
 
-`PromotionStore` was removed by ADR-PROMOTION. Promoted value widgets are represented
+`PromotionStore` was removed by ADR-SUBGRAPH-PROMOTION-0009. Promoted value widgets are represented
 by linked `SubgraphInput`s, and display-only previews are represented by
 host-scoped `properties.previewExposures` / `PreviewExposureStore` entries.
 Legacy `properties.proxyWidgets` is load-time migration input only.
@@ -158,7 +158,7 @@ and `PromotedWidgetViewManager`).
 
 ### ECS Alignment
 
-| Aspect                       | ECS-like | Why                                                            |
+| Aspect                       | ECS-0008-like | Why                                                            |
 | ---------------------------- | -------- | -------------------------------------------------------------- |
 | Canonical topology           | Yes      | Value exposure is ordinary subgraph input/link state           |
 | Host-scoped preview state    | Yes      | Preview exposure data is keyed by host locator                 |
@@ -205,10 +205,10 @@ objects do not instantiate the mutation composable at module scope.
 
 ### ECS Alignment
 
-| Aspect                           | ECS-like  | Why                                                         |
+| Aspect                           | ECS-0008-like  | Why                                                         |
 | -------------------------------- | --------- | ----------------------------------------------------------- |
 | Position data extracted          | Yes       | Closest to the ECS `Position` component                     |
-| CRDT-ready                       | Yes       | Enables collaboration (ADR-LAYOUT)                          |
+| CRDT-ready                       | Yes       | Enables collaboration (ADR-CRDT-LAYOUT-0003)                          |
 | Covers multiple entity kinds     | Yes       | Nodes, groups, and reroutes in one store                    |
 | Mutation API (composable)        | Partially | System-like, but called from entities, not a system         |
 | Direct store access              | Partially | Domain objects and `graphLayoutAttachment` import the store |
@@ -276,7 +276,7 @@ Each store owns the identity scheme that fits its concern:
 `WidgetValueStore` already keys on a branded `WidgetId` string (`src/types/widgetId.ts`),
 which carries its scope and survives renames at the store layer. The remaining
 stores can adopt their own branded string keys where cross-kind safety pays off,
-without a shared entity-ID space. For promoted value widgets, ADR-PROMOTION keys on
+without a shared entity-ID space. For promoted value widgets, ADR-SUBGRAPH-PROMOTION-0009 keys on
 the host boundary: the input's `WidgetId` (host node locator + `SubgraphInput.name`),
 not interior source identity.
 
@@ -377,7 +377,7 @@ graph TD
 
 ## 7. Migration Gap Analysis
 
-What each entity needs to reach the ECS target from [ADR-ECS](../adr/ECS-entity-component-system.md):
+What each entity needs to reach the ECS target from [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md):
 
 | Entity       | Already Extracted                                                                     | Still on Class                                                              | ECS Target Components                                                                | Gap                                                                                        |
 | ------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
@@ -389,7 +389,7 @@ What each entity needs to reach the ECS target from [ADR-ECS](../adr/ECS-entity-
 | **Group**    | pos, size, bounding (LayoutStore)                                                     | meta, visual, children                                                      | Position ✅, GroupMeta, GroupVisual, GroupChildren                                   | Medium — geometry shipped; meta, visual and children remain                                |
 | **Subgraph** | promoted value exposure (linked inputs); preview exposure (PreviewExposureStore)      | structure, meta, I/O, all LGraph state                                      | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
 
-`RerouteChain` supersedes the earlier `RerouteLinks` component (ADR-ECS
+`RerouteChain` supersedes the earlier `RerouteLinks` component (ADR-ECS-0008
 amendment, 2026-07-04): link membership is never stored — it is derived from
 the links' `parentId` chains over `LinkStore`.
 

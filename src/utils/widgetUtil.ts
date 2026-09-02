@@ -49,7 +49,7 @@ export function renameWidget(
   const label = newLabel || undefined
   // TODO(ecs-widget-label-identity): the `input.label` write below is the interim
   // on-ramp. End-state is an ECS WidgetIdentity.label serialized field (name =
-  // identity, label = display per ADR-PROMOTION) written via WidgetHandle.setLabel — the
+  // identity, label = display per ADR-SUBGRAPH-PROMOTION-0009) written via WidgetHandle.setLabel — the
   // widget entity owns its label, so the socketless/DOM-widget case (no input slot
   // to carry input.label, e.g. CLIPTextEncode `text`) is fixed by construction.
   const input =

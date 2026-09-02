@@ -151,7 +151,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * socket — so consumers rebind their observers to the new doc rather than
    * staying attached to the destroyed one. Re-subscribing to the SAME
    * workflow keeps the doc: that is the same-lineage catch-up path
-   * (AGENT), where the state vector makes the delta cheap.
+   * (ADR-GRAPH-DOCUMENT-0024), where the state vector makes the delta cheap.
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
@@ -249,7 +249,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (AGENT).
+    // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
     //
     // Before the first applied update the detector is armed from the ack seq
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
