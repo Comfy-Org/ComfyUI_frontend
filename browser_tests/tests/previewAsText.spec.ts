@@ -114,28 +114,29 @@ test.describe('Preview as Text node', () => {
         await expect(preview).toHaveValue('23.976')
       })
 
-      await test.step('null text does not wedge the widget', async () => {
-        // The shape the Cloud backend produced when it misclassified the text
-        // as a filename and dropped it from the payload (BE-3601).
-        execution.executed(jobId, id, { text: [null] })
-        await expect(preview).toHaveValue('')
+      const malformedOutputs = [
+        [
+          'null text',
+          // The shape the Cloud backend produced when it misclassified the
+          // text as a filename and dropped it from the payload (BE-3601).
+          { text: [null] },
+          'recovered'
+        ],
+        ['output with no text key', {}, 'recovered again'],
+        ['nullish output', null, 'recovered from nullish']
+      ] as const
 
-        execution.executed(jobId, id, { text: ['recovered'] })
-        await expect(preview).toHaveValue('recovered')
-      })
+      for (const [label, output, recoveredText] of malformedOutputs) {
+        await test.step(`${label} does not wedge the widget`, async () => {
+          execution.executed(jobId, id, output)
+          await expect(preview).toHaveValue('')
 
-      await test.step('output with no text key does not wedge the widget', async () => {
-        execution.executed(jobId, id, {})
-        await expect(preview).toHaveValue('')
+          execution.executed(jobId, id, { text: [recoveredText] })
+          await expect(preview).toHaveValue(recoveredText)
+        })
+      }
 
-        execution.executed(jobId, id, { text: ['recovered again'] })
-        await expect(preview).toHaveValue('recovered again')
-      })
-
-      await test.step('nullish output does not wedge the widget', async () => {
-        execution.executed(jobId, id, null)
-        await expect(preview).toHaveValue('')
-
+      await test.step('undefined output does not wedge the widget', async () => {
         execution.executed(jobId, id, undefined)
         await expect(preview).toHaveValue('')
 
