@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -9,6 +11,8 @@ import type {
 } from './linkMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
@@ -131,6 +135,10 @@ describe('attachLinkMintPort', () => {
 
     expect(minted).toEqual([])
     expect(consoleError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unrepresentable_link_operation',
+      context: { id: 41 }
+    })
     consoleError.mockRestore()
   })
 
