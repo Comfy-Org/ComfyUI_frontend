@@ -16,20 +16,15 @@ import type { CalendarEvent } from '../../utils/calendar'
 import { t } from '../../i18n/translations'
 import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
-const {
-  title,
-  description,
-  youtubeVideoId,
-  calendarEvent,
-  locale = 'en'
-} = defineProps<{
-  title: string
-  description: string
-  youtubeVideoId: string
-  /** Future events: offer adding the stream to the visitor's calendar. */
-  calendarEvent?: CalendarEvent
-  locale?: Locale
-}>()
+const { title, description, youtubeVideoId, calendarEvent, locale } =
+  defineProps<{
+    title: string
+    description: string
+    youtubeVideoId: string
+    /** Future events: offer adding the stream to the visitor's calendar. */
+    calendarEvent?: CalendarEvent
+    locale: Locale
+  }>()
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 

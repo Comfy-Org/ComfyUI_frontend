@@ -21,11 +21,11 @@ import GalleryItemAttribution from './GalleryItemAttribution.vue'
 const {
   items,
   initialIndex = 0,
-  locale = 'en'
+  locale
 } = defineProps<{
   items: GalleryItem[]
   initialIndex?: number
-  locale?: Locale
+  locale: Locale
 }>()
 
 const emit = defineEmits<{ close: [] }>()

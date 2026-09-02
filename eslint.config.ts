@@ -578,11 +578,30 @@ export default defineConfig([
     }
   },
 
-  // The website app is a marketing site with no vue-i18n setup
+  // The website app has no vue-i18n runtime — it translates through its own
+  // `t(key, locale)` helper in apps/website/src/i18n/translations.ts. no-raw-text
+  // is still the right gate: it only asks whether a user-visible literal reached
+  // the template, which is exactly what bypassing `t()` looks like.
   {
     files: ['apps/website/**/*.vue'],
     rules: {
-      '@intlify/vue-i18n/no-raw-text': 'off'
+      '@intlify/vue-i18n/no-raw-text': [
+        'error',
+        {
+          attributes: {
+            '/.+/': ['aria-label', 'label', 'placeholder', 'title'],
+            img: ['alt']
+          },
+          // Ignore strings that are:
+          // 1. Only symbols/numbers/whitespace — \P{L} covers every script, so
+          //    hardcoded Chinese still fails (the rule compiles this with /u)
+          // 2. Less than 2 characters
+          // 3. Email addresses
+          // 4. Product names and standard abbreviations, which are never translated
+          ignorePattern:
+            '^\\P{L}*$|^.{0,1}$|^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$|^(Comfy|Comfy Org|ComfyUI|CC)$'
+        }
+      ]
     }
   },
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the

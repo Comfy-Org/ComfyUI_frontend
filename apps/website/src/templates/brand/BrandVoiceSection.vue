@@ -4,7 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const principles = [
   {

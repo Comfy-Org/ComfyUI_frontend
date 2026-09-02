@@ -4,18 +4,14 @@ import { computed } from 'vue'
 
 import { t } from '../../i18n/translations'
 
-const {
-  locale = 'en',
-  billingPeriod,
-  yearlyTotal
-} = defineProps<{
+const { locale, billingPeriod, yearlyTotal } = defineProps<{
   price: string
   period: string
   originalPrice?: string
   discount?: string
   billingPeriod?: 'monthly' | 'yearly'
   yearlyTotal?: string
-  locale?: Locale
+  locale: Locale
 }>()
 
 const billingNote = computed(() => {

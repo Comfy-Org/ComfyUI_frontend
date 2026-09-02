@@ -8,8 +8,8 @@ import { t } from '../../i18n/translations'
 import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{
-  locale?: Locale
+const { locale } = defineProps<{
+  locale: Locale
 }>()
 
 const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'

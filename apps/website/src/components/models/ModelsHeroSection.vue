@@ -4,14 +4,8 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 
-const {
-  locale = 'en',
-  modelName,
-  ctaHref,
-  videoSrc,
-  videoAriaLabel
-} = defineProps<{
-  locale?: Locale
+const { locale, modelName, ctaHref, videoSrc, videoAriaLabel } = defineProps<{
+  locale: Locale
   modelName: string
   ctaHref: string
   videoSrc: string

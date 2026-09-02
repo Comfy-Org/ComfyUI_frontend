@@ -8,7 +8,7 @@ import ModelReleaseSection from './ModelReleaseSection.vue'
 // slide and the pagination dots; the other slides are asserted by text.
 describe('ModelReleaseSection', () => {
   it('renders the four model slides with locale-aware CTAs', () => {
-    render(ModelReleaseSection)
+    render(ModelReleaseSection, { props: { locale: 'en' } })
 
     expect(screen.getByText('Seedance 2.5', { selector: 'h2' })).toBeTruthy()
     expect(screen.getByText('LTX 2.5', { selector: 'h2' })).toBeTruthy()

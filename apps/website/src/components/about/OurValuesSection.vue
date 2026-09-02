@@ -5,7 +5,7 @@ import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 type TranslationKey = Parameters<typeof t>[0]
 

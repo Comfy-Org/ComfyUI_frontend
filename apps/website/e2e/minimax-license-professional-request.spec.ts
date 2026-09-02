@@ -5,7 +5,7 @@ import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = getRoutes('en').minimaxLicenseProfessionalRequest
-const TITLE = t('minimaxLicense.professionalRequest.title')
+const TITLE = t('minimaxLicense.professionalRequest.title', 'en')
 const HUBSPOT_FORM_ID = '40ef858c-374a-4958-8180-bfa54f0a67fb'
 const HUBSPOT_SCRIPT_SRC =
   'https://js-na2.hsforms.net/forms/embed/developer/244637579.js'
@@ -42,7 +42,7 @@ test.describe('MiniMax professional license request page @smoke', () => {
   test('links back to the license page for the terms', async ({ page }) => {
     await expect(
       page.getByRole('link', {
-        name: t('minimaxLicense.professionalRequest.introCta')
+        name: t('minimaxLicense.professionalRequest.introCta', 'en')
       })
     ).toHaveAttribute('href', getRoutes('en').minimaxLicense)
   })

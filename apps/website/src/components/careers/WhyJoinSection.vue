@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 import WireNodeLayout from '../common/WireNodeLayout.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const reasons: TranslationKey[] = [
   'careers.whyJoin.reason1',
@@ -20,7 +21,7 @@ const reasons: TranslationKey[] = [
       <template #right-card>
         <img
           src="https://media.comfy.org/website/about/team.webp"
-          alt="Comfy team"
+          :alt="t('ui.alt.comfyTeam', locale)"
           class="mt-2 w-full rounded-2xl object-cover"
           loading="lazy"
           decoding="async"
@@ -29,7 +30,7 @@ const reasons: TranslationKey[] = [
       <template #right-card-mobile>
         <img
           src="https://media.comfy.org/website/about/team.webp"
-          alt="Comfy team"
+          :alt="t('ui.alt.comfyTeam', locale)"
           class="mt-2 w-full rounded-2xl object-cover"
           loading="lazy"
           decoding="async"

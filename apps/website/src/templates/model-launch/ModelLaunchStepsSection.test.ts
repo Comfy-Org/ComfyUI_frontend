@@ -20,13 +20,17 @@ const steps = (count: number): ModelLaunchSteps => ({
 
 describe('ModelLaunchStepsSection', () => {
   it('lays two items out on a two-column grid', () => {
-    render(ModelLaunchStepsSection, { props: { steps: steps(2) } })
+    render(ModelLaunchStepsSection, {
+      props: { steps: steps(2), locale: 'en' }
+    })
 
     expect(screen.getByRole('list').className).toContain('md:grid-cols-2')
   })
 
   it('keeps the three-column grid for longer step lists', () => {
-    render(ModelLaunchStepsSection, { props: { steps: steps(3) } })
+    render(ModelLaunchStepsSection, {
+      props: { steps: steps(3), locale: 'en' }
+    })
 
     expect(screen.getByRole('list').className).toContain('md:grid-cols-3')
   })

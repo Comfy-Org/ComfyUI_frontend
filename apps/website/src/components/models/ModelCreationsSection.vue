@@ -9,7 +9,7 @@ import BrandButton from '../common/BrandButton.vue'
 import GalleryCard from '../gallery/GalleryCard.vue'
 import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const modelName = 'Grok'
 const ctaHref = 'https://comfy.org/workflows/model/grok'

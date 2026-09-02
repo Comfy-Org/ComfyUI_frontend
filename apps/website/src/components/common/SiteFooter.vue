@@ -8,7 +8,7 @@ import { t } from '../../i18n/translations'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 const routes = getRoutes(locale)
 
 const footerRef = ref<HTMLElement>()

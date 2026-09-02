@@ -25,9 +25,9 @@ const { siteUrl, locale } = pageContext(
     { name: t('breadcrumb.about', locale) },
   ]}
 >
-  <HeroSection client:load />
-  <StorySection />
-  <OurValuesSection />
-  <ValuesSection client:visible />
-  <CareersSection />
+  <HeroSection locale={locale} client:load />
+  <StorySection locale={locale} />
+  <OurValuesSection locale={locale} />
+  <ValuesSection locale={locale} client:visible />
+  <CareersSection locale={locale} />
 </BaseLayout>

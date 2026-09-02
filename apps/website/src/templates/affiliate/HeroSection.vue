@@ -5,11 +5,12 @@ import { t } from '../../i18n/translations'
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import { externalLinks } from '@/config/routes.ts'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>
   <HeroSplit01
+    :locale
     :badge-text="t('affiliate.hero.label', locale)"
     :title-highlight="t('affiliate.hero.headingHighlight', locale)"
     :title="t('affiliate.hero.headingMuted', locale)"

@@ -8,10 +8,10 @@ import Button from '../ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
-const { locale = 'en', href } = defineProps<{
+const { locale, href } = defineProps<{
   labelKey: TranslationKey
   descriptionKey: TranslationKey
-  locale?: Locale
+  locale: Locale
   href?: string
 }>()
 

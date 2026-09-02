@@ -8,11 +8,11 @@ import { t } from '../../../i18n/translations'
 import type { Locale } from '../../../i18n/translations'
 
 const {
-  locale = 'en',
+  locale,
   gapClass = 'gap-12 lg:gap-20',
   class: className
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   gapClass?: string
   class?: HTMLAttributes['class']
 }>()

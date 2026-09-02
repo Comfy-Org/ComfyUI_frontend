@@ -15,7 +15,7 @@ import {
   captureMcpConnectionTabClick
 } from '../../scripts/posthog'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 type ConnectionId = 'cloud' | 'local'
 

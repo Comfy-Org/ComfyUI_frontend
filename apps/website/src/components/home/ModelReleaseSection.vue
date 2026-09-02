@@ -6,7 +6,7 @@ import { t } from '../../i18n/translations'
 import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
 import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 const routes = getRoutes(locale)
 
 const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({

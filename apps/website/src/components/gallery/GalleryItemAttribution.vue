@@ -6,11 +6,11 @@ import { t } from '../../i18n/translations'
 const {
   item,
   highlightClass = 'text-primary-comfy-yellow',
-  locale = 'en'
+  locale
 } = defineProps<{
   item: GalleryItem
   highlightClass?: string
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

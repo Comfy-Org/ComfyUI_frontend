@@ -79,7 +79,7 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
         aria-expanded="false"
         class="cursor-pointer rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-extrabold tracking-widest text-primary-comfy-canvas hover:bg-white/10"
       >
-        {t('models.llms.button')} ▾
+        {t('models.llms.button', 'en')} ▾
       </button>
       <div
         id="llms-menu"
@@ -89,16 +89,16 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
           id="llms-copy"
           class="block w-full cursor-pointer px-4 py-2.5 text-left text-xs text-primary-comfy-canvas hover:bg-white/5"
         >
-          {t('models.llms.copy')}<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span>
+          {t('models.llms.copy', 'en')}<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span>
         </button>
         <a href={llms.mdPath} class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5">
-          {t('models.llms.view')}
+          {t('models.llms.view', 'en')}
         </a>
         <a
           href="/p/supported-models/llms.txt"
           class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
         >
-          {t('models.llms.catalog')}
+          {t('models.llms.catalog', 'en')}
         </a>
         <div class="my-1 border-t border-white/10"></div>
         <a
@@ -107,7 +107,7 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
           rel="noopener noreferrer"
           class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
         >
-          {t('models.llms.openClaude')} ↗
+          {t('models.llms.openClaude', 'en')} ↗
         </a>
         <a
           href={llms.chatgptUrl}
@@ -115,13 +115,14 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
           rel="noopener noreferrer"
           class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
         >
-          {t('models.llms.openChatgpt')} ↗
+          {t('models.llms.openChatgpt', 'en')} ↗
         </a>
       </div>
     </div>
   </div>
 
   <ModelHeroSection
+    locale="en"
     displayName={displayName}
     huggingFaceUrl={model.huggingFaceUrl}
     docsUrl={model.docsUrl}
@@ -133,7 +134,7 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
     <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
-      {t('models.whatIs.heading').replace('{name}', displayName)}
+      {t('models.whatIs.heading', 'en').replace('{name}', displayName)}
     </h2>
     <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
       {whatIsDescription}
@@ -145,7 +146,7 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
         rel="noopener noreferrer"
         class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
       >
-        {t('models.whatIs.tutorialLink')}
+        {t('models.whatIs.tutorialLink', 'en')}
       </a>
     )}
   </section>

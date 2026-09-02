@@ -5,9 +5,9 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 
-const { formId, locale = 'en' } = defineProps<{
+const { formId, locale } = defineProps<{
   formId: string
-  locale?: Locale
+  locale: Locale
 }>()
 
 const HUBSPOT_PORTAL_ID = '244637579'

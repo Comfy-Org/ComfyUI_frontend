@@ -92,14 +92,14 @@ export function isLocaleInvariantPath(pathname: string): boolean {
   )
 }
 
-export function localizeHref(href: string, locale: Locale = 'en'): string {
+export function localizeHref(href: string, locale: Locale): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
   if (locale === 'ja') return href === '/' ? '/ja/' : href
   return `/${locale}${href}`
 }
 
-export function getRoutes(locale: Locale = 'en'): Routes {
+export function getRoutes(locale: Locale): Routes {
   if (locale === 'en') return baseRoutes
   return Object.fromEntries(
     Object.entries(baseRoutes).map(([key, path]) => [

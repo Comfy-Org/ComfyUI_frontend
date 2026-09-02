@@ -5,7 +5,7 @@ import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
 import { affiliateHowItWorksSteps } from '../../data/affiliateHowItWorks'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const steps = affiliateHowItWorksSteps.map((step) => ({
   id: step.id,

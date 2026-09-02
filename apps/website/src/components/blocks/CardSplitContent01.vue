@@ -15,7 +15,7 @@ type Cta = {
 }
 
 const {
-  locale = 'en',
+  locale,
   eyebrow,
   title,
   body,
@@ -27,7 +27,7 @@ const {
   videoAriaLabel,
   class: className
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   eyebrow: string
   title: string
   body: string

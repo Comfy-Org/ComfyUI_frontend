@@ -8,7 +8,7 @@ import type { Locale } from '../../i18n/translations'
 import GalleryCard from './GalleryCard.vue'
 import GalleryDetailModal from './GalleryDetailModal.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const modalOpen = ref(false)
 const modalIndex = ref(0)

@@ -29,9 +29,9 @@ const statusTextClass: Record<PlanFeatureStatus, string> = {
   coming: 'text-primary-warm-gray'
 }
 
-const { locale = 'en' } = defineProps<{
+const { locale } = defineProps<{
   features: PlanFeatureGroup[]
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

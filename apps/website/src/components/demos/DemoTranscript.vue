@@ -6,9 +6,9 @@ import { ref } from 'vue'
 
 import { t } from '../../i18n/translations'
 
-const { transcript, locale = 'en' } = defineProps<{
+const { transcript, locale } = defineProps<{
   transcript: string
-  locale?: Locale
+  locale: Locale
 }>()
 
 const expanded = ref(false)

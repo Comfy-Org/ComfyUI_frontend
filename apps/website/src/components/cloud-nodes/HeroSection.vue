@@ -4,8 +4,8 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{
-  locale?: Locale
+const { locale } = defineProps<{
+  locale: Locale
 }>()
 </script>
 

@@ -13,7 +13,7 @@ import { absoluteUrl, organizationId, pageContext } from '../../../utils/jsonLd'
 // "MiniMax Commercial License - Professional" on HubSpot portal 244637579.
 const HUBSPOT_FORM_ID = '40ef858c-374a-4958-8180-bfa54f0a67fb'
 
-const TITLE = t('minimaxLicense.professionalRequest.title')
+const TITLE = t('minimaxLicense.professionalRequest.title', 'en')
 
 const { siteUrl } = pageContext(
   Astro.site,
@@ -25,13 +25,13 @@ const routes = getRoutes('en')
 
 <BaseLayout
   title={`${TITLE} - Comfy`}
-  description={t('minimaxLicense.professionalRequest.meta.description')}
+  description={t('minimaxLicense.professionalRequest.meta.description', 'en')}
   pageType="ContactPage"
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
-    { name: t('breadcrumb.home'), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', 'en'), url: absoluteUrl(Astro.site, '/') },
     {
-      name: t('minimaxLicense.breadcrumb.model'),
+      name: t('minimaxLicense.breadcrumb.model', 'en'),
       url: absoluteUrl(Astro.site, routes.minimaxLicense),
     },
     { name: TITLE },
@@ -44,15 +44,15 @@ const routes = getRoutes('en')
       </h1>
 
       <p class="mt-6 text-sm text-primary-comfy-canvas">
-        {t('minimaxLicense.professionalRequest.intro')} <a
+        {t('minimaxLicense.professionalRequest.intro', 'en')} <a
           href={routes.minimaxLicense}
           class="text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
-          >{t('minimaxLicense.professionalRequest.introCta')}</a
+          >{t('minimaxLicense.professionalRequest.introCta', 'en')}</a
         >.
       </p>
 
       <div class="mt-12">
-        <HubspotFormEmbed formId={HUBSPOT_FORM_ID} client:load />
+        <HubspotFormEmbed locale="en" formId={HUBSPOT_FORM_ID} client:load />
       </div>
     </div>
   </section>

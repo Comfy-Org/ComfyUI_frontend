@@ -42,9 +42,7 @@ const technologistIdentities = {
   }
 } as const
 
-export function technologists(
-  locale: Locale = 'en'
-): readonly FdctTechnologist[] {
+export function technologists(locale: Locale): readonly FdctTechnologist[] {
   return [
     {
       id: 'doug-hogan',
@@ -102,7 +100,7 @@ export interface FdctProject {
 // Top workflows from each technologist's hub page (most-popular order);
 // cover videos are the hub's own preview assets. Chris's picks land once
 // his hub page link is provided.
-export function projects(locale: Locale = 'en'): readonly FdctProject[] {
+export function projects(locale: Locale): readonly FdctProject[] {
   return [
     {
       id: 'product-advertisement-video',
@@ -324,7 +322,7 @@ export interface FdctFeaturedProject {
 // assets come from each workflow's own hub page; order and tag labels match
 // the design (10331:36004). The cards deliberately carry no workflow links.
 export function featuredProjects(
-  locale: Locale = 'en'
+  locale: Locale
 ): readonly FdctFeaturedProject[] {
   return [
     {

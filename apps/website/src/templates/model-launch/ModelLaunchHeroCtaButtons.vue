@@ -6,16 +6,11 @@ import type { ModelLaunchHero } from './types'
 import BrandButton from '../../components/common/BrandButton.vue'
 import { t } from '../../i18n/translations'
 
-const {
-  primaryCta,
-  primaryVariant,
-  secondaryCta,
-  locale = 'en'
-} = defineProps<{
+const { primaryCta, primaryVariant, secondaryCta, locale } = defineProps<{
   primaryCta?: ModelLaunchHero['primaryCta']
   primaryVariant: BrandButtonVariants['variant']
   secondaryCta?: ModelLaunchHero['secondaryCta']
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

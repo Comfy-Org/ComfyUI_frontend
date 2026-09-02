@@ -42,9 +42,9 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
-  <MinimaxLicenseHeroSection client:visible />
-  <CloudPricingSection client:load />
-  <WhatsIncludedSection />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
+  <CloudPricingSection locale={locale} client:load />
+  <WhatsIncludedSection locale={locale} />
   <ResourceCostsSection
     locale={locale}
     heading={t('pricing.resourceCosts.heading', locale)}

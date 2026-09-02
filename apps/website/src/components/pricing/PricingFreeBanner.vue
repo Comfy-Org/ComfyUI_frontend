@@ -5,7 +5,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 
-const { locale = 'en' } = defineProps<{
+const { locale } = defineProps<{
   titleKey: TranslationKey
   subtitleKey: TranslationKey
   cta: {
@@ -13,7 +13,7 @@ const { locale = 'en' } = defineProps<{
     href: string
     target?: AnchorHTMLAttributes['target']
   }
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

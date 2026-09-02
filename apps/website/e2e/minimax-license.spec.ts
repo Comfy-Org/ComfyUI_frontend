@@ -7,13 +7,13 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
 const CONTACT_HREF = 'https://comfy.org/contact'
-const META_TITLE = t('minimaxLicense.meta.title')
-const HERO_TITLE = t('minimaxLicense.hero.title')
-const HERO_CTA = t('minimaxLicense.hero.primaryCta')
+const META_TITLE = t('minimaxLicense.meta.title', 'en')
+const HERO_TITLE = t('minimaxLicense.hero.title', 'en')
+const HERO_CTA = t('minimaxLicense.hero.primaryCta', 'en')
 const HERO_VIDEO_PATTERN = /minimax-license\/hero\.mp4/
-const STEPS_HEADING = t('minimaxLicense.steps.heading')
-const FAQ_HEADING = t('minimaxLicense.faq.heading')
-const CLOSING_HEADING = t('minimaxLicense.cta.heading')
+const STEPS_HEADING = t('minimaxLicense.steps.heading', 'en')
+const FAQ_HEADING = t('minimaxLicense.faq.heading', 'en')
+const CLOSING_HEADING = t('minimaxLicense.cta.heading', 'en')
 
 test.describe('MiniMax license page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -61,14 +61,14 @@ test.describe('MiniMax license page @smoke', () => {
       .filter({
         has: page.getByRole('heading', { level: 2, name: CLOSING_HEADING })
       })
-      .getByRole('link', { name: t('minimaxLicense.cta.primaryCta') })
+      .getByRole('link', { name: t('minimaxLicense.cta.primaryCta', 'en') })
     await expect(closing).toHaveAttribute('href', CONTACT_HREF)
   })
 
   test('footer links back to this page', async ({ page }) => {
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.minimaxLicense') })
+      .getByRole('link', { name: t('footer.minimaxLicense', 'en') })
     await expect(footerLink).toHaveAttribute(
       'href',
       getRoutes('en').minimaxLicense

@@ -8,7 +8,7 @@ import { t } from '../../i18n/translations'
 import { ScrollTrigger } from '../../scripts/gsapSetup'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const sectionRef = ref<HTMLElement>()
 const logoRef = ref<HTMLElement>()
@@ -40,7 +40,7 @@ function handleLogoLoad() {
       >
         <img
           src="https://media.comfy.org/website/customers/c-projection.webp"
-          alt="Comfy 3D logo"
+          :alt="t('ui.alt.comfy3dLogo', locale)"
           width="1568"
           height="1763"
           class="mx-auto h-auto w-full max-w-md lg:max-w-none"

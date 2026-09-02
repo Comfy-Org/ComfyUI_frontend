@@ -30,15 +30,10 @@ export interface FeatureRow {
   media: RowMedia
 }
 
-const {
-  heading,
-  eyebrow,
-  locale = 'en',
-  rows
-} = defineProps<{
+const { heading, eyebrow, locale, rows } = defineProps<{
   heading: string
   eyebrow?: string
-  locale?: Locale
+  locale: Locale
   rows: readonly FeatureRow[]
 }>()
 </script>

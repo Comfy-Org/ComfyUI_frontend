@@ -19,7 +19,8 @@
     "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
     "generate:models": "tsx ./scripts/generate-models.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
-    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
+    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "validate:locale": "tsx ./scripts/validate-locale-props.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

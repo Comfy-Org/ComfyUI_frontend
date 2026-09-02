@@ -7,7 +7,7 @@ import type { FdctTechnologist } from '../../data/fdct'
 import { projects, technologists } from '../../data/fdct'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 // Each dialog shows its technologist's workflows from the shared past-projects
 // list (already in most-popular order); profiles without any get no grid.

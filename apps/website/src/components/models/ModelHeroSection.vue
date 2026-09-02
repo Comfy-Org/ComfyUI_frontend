@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '../common/BrandButton.vue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {
@@ -10,7 +11,8 @@ const {
   blogUrl,
   hubSlug,
   workflowCount,
-  directory
+  directory,
+  locale
 } = defineProps<{
   displayName: string
   huggingFaceUrl: string
@@ -19,6 +21,7 @@ const {
   hubSlug?: string
   workflowCount: number
   directory: string
+  locale: Locale
 }>()
 
 const workflowsUrl = hubSlug
@@ -62,12 +65,12 @@ const isPartnerNode = directory === 'partner_nodes'
       </p>
 
       <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-        {{ displayName }} in ComfyUI
+        {{ displayName }} {{ t('models.hero.inComfyUI', locale) }}
       </h1>
 
       <p class="text-sm text-primary-comfy-canvas/60">
         {{
-          t('models.hero.workflowCount').replace(
+          t('models.hero.workflowCount', locale).replace(
             '{count}',
             String(workflowCount)
           )
@@ -82,7 +85,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.primaryCta') }}
+          {{ t('models.hero.primaryCta', locale) }}
         </BrandButton>
 
         <BrandButton
@@ -94,7 +97,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.secondaryCta') }}
+          {{ t('models.hero.secondaryCta', locale) }}
         </BrandButton>
 
         <BrandButton
@@ -106,7 +109,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.cloudCta') }}
+          {{ t('models.hero.cloudCta', locale) }}
         </BrandButton>
 
         <BrandButton
@@ -118,7 +121,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.tutorialCta') }}
+          {{ t('models.hero.tutorialCta', locale) }}
         </BrandButton>
       </div>
 
@@ -129,7 +132,7 @@ const isPartnerNode = directory === 'partner_nodes'
           rel="noopener noreferrer"
           class="hover:text-primary-comfy-canvas underline"
         >
-          {{ t('models.hero.blogLink') }}
+          {{ t('models.hero.blogLink', locale) }}
         </a>
       </div>
     </div>

@@ -24,10 +24,10 @@ import Video from './content/Video.astro'
 
 interface Props {
   entry: CustomerStoryEntry
-  locale?: Locale
+  locale: Locale
 }
 
-const { entry, locale = 'en' } = Astro.props
+const { entry, locale } = Astro.props
 const { Content } = await render(entry)
 
 const categories = entry.data.sections.map((section) => ({
@@ -60,6 +60,7 @@ const contentComponents = {
     <aside class="hidden scrollbar-none lg:block lg:w-48 lg:shrink-0">
       <div class="sticky top-32">
         <ArticleNav
+          locale={locale}
           categories={categories}
           client:media="(min-width: 1024px)"
         />

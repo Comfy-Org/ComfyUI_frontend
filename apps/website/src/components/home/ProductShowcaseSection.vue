@@ -9,7 +9,7 @@ import NodeBadge from '../common/NodeBadge.vue'
 import LottieScene from './LottieScene.vue'
 import VideoMaskScene from './VideoMaskScene.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 interface Feature {
   title: string

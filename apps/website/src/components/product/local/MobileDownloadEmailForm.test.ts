@@ -37,30 +37,30 @@ describe('MobileDownloadEmailForm', () => {
 
   it('renders nothing when the write key is not configured', () => {
     hoisted.isEnabled = false
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 
   it('renders nothing for non-mobile user agents', () => {
     hoisted.isMobileUa = false
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 
   it('preloads the SDK when the visible form mounts', () => {
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
     expect(hoisted.mockPreload).toHaveBeenCalledOnce()
   })
 
   it('does not preload the SDK for non-mobile user agents', () => {
     hoisted.isMobileUa = false
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
     expect(hoisted.mockPreload).not.toHaveBeenCalled()
   })
 
   it('shows an inline validation message for an invalid email and sends nothing', async () => {
     const user = userEvent.setup()
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
 
     await user.type(screen.getByRole('textbox'), 'not-an-email')
     await user.click(
@@ -77,7 +77,7 @@ describe('MobileDownloadEmailForm', () => {
 
   it('fakes success without sending anything when the honeypot is filled', async () => {
     const user = userEvent.setup()
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
 
     const visibleInput = screen.getByRole('textbox')
     await user.type(visibleInput, 'someone@example.com')
@@ -98,7 +98,7 @@ describe('MobileDownloadEmailForm', () => {
   it('shows an inline error on failure and lets a retry succeed', async () => {
     const user = userEvent.setup()
     hoisted.mockSubmit.mockRejectedValueOnce(new Error('network down'))
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
 
     await user.type(screen.getByRole('textbox'), 'someone@example.com')
     const submitButton = screen.getByRole('button', {
@@ -126,7 +126,7 @@ describe('MobileDownloadEmailForm', () => {
           resolveSubmit = resolve
         })
     )
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
 
     await user.type(screen.getByRole('textbox'), 'someone@example.com')
     const submitButton = screen.getByRole('button', {
@@ -148,7 +148,7 @@ describe('MobileDownloadEmailForm', () => {
 
   it('submits the entered email and swaps to the success line', async () => {
     const user = userEvent.setup()
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
 
     await user.type(screen.getByRole('textbox'), 'someone@example.com')
     await user.click(
@@ -164,7 +164,7 @@ describe('MobileDownloadEmailForm', () => {
 
   it('moves focus to the success message when the form is removed', async () => {
     const user = userEvent.setup()
-    render(MobileDownloadEmailForm)
+    render(MobileDownloadEmailForm, { props: { locale: 'en' } })
 
     await user.type(screen.getByRole('textbox'), 'someone@example.com')
     await user.click(

@@ -50,7 +50,7 @@ afterEach(() => loaderScript()?.remove())
 
 describe('HubspotFormEmbed', () => {
   it('addresses the requested form on the embed container', () => {
-    render(HubspotFormEmbed, { props: { formId: FORM_ID } })
+    render(HubspotFormEmbed, { props: { formId: FORM_ID, locale: 'en' } })
 
     const embed = screen.getByTestId('hubspot-form-embed')
     expect(embed.getAttribute('data-form-id')).toBe(FORM_ID)
@@ -59,15 +59,17 @@ describe('HubspotFormEmbed', () => {
   })
 
   it('loads the HubSpot script once however many embeds mount', () => {
-    render(HubspotFormEmbed, { props: { formId: FORM_ID } })
-    render(HubspotFormEmbed, { props: { formId: 'a-second-form' } })
+    render(HubspotFormEmbed, { props: { formId: FORM_ID, locale: 'en' } })
+    render(HubspotFormEmbed, {
+      props: { formId: 'a-second-form', locale: 'en' }
+    })
 
     expect(scriptsCreated(createElementSpy)).toBe(1)
     expect(loaderScript()?.src).toBe(SCRIPT_SRC)
   })
 
   it('offers an email fallback when the script fails to load', async () => {
-    render(HubspotFormEmbed, { props: { formId: FORM_ID } })
+    render(HubspotFormEmbed, { props: { formId: FORM_ID, locale: 'en' } })
 
     loaderScript()?.dispatchEvent(new Event('error'))
     await nextTick()
