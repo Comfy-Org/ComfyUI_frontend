@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetBrowserModal } from '@e2e/fixtures/components/AssetBrowserModal'
 import {
@@ -43,26 +44,23 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     await modal.waitForAssetContent('bare_checkpoint.safetensors')
   }
 
-  function metadataMutations(comfyPage: {
-    assetApi: {
-      getMutations(): Array<{ method: string; endpoint: string; body: unknown }>
-    }
-  }) {
+  function metadataMutations(comfyPage: ComfyPage) {
     return comfyPage.assetApi
       .getMutations()
-      .filter((mutation) => mutation.method === 'PUT')
-      .filter((mutation) => /\/assets\/[^/]+$/.test(mutation.endpoint))
+      .filter(
+        (mutation) =>
+          mutation.method === 'PUT' &&
+          /\/assets\/[^/]+$/.test(mutation.endpoint)
+      )
   }
 
-  function getLastMetadataBody(comfyPage: {
-    assetApi: {
-      getMutations(): Array<{ method: string; endpoint: string; body: unknown }>
-    }
-  }): MetadataBody | undefined {
-    const list = metadataMutations(comfyPage)
-    const last = list[list.length - 1]
-    if (!last) return undefined
-    return (last.body ?? undefined) as MetadataBody | undefined
+  function getLastMetadataBody(
+    comfyPage: ComfyPage
+  ): MetadataBody | undefined {
+    const last = metadataMutations(comfyPage).at(-1)
+    return typeof last?.body === 'object' && last.body !== null
+      ? (last.body as MetadataBody)
+      : undefined
   }
 
   test.beforeEach(async ({ comfyPage }) => {
