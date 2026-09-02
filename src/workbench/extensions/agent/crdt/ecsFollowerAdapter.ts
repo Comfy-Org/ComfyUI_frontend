@@ -154,15 +154,18 @@ export class EcsFollowerAdapter {
     session.frameQueue.push(update)
     if (session.applying) return true
     session.applying = true
+    let updateCommitted = false
     try {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
-        if (frame) this.applyQueuedFrame(session, frame)
+        if (!frame) continue
+        const committed = this.applyQueuedFrame(session, frame)
+        if (frame === update) updateCommitted = committed
       }
     } finally {
       session.applying = false
     }
-    return true
+    return updateCommitted
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
@@ -210,7 +213,7 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): void {
+  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
@@ -292,6 +295,7 @@ export class EcsFollowerAdapter {
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
     if (committed) session.reconcileNextFrame = false
+    return committed
   }
 
   private discardSessionPending(session: TargetSession): void {
