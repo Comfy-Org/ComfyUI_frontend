@@ -231,11 +231,11 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
   })
 
   test.describe('4) Model Type Selection', () => {
-    test('shows model type options when combobox is opened', async ({
-      comfyPage
-    }) => {
+    test('shows model type options when combobox is opened', async () => {
       await modal.modelTypeSelect.click()
-      await expect(comfyPage.page.getByRole('option')).not.toHaveCount(0)
+      await expect(
+        modal.page.getByRole('option', { name: /loras/i })
+      ).toBeVisible()
     })
 
     test('changing model type sends tag mutation requests', async () => {
