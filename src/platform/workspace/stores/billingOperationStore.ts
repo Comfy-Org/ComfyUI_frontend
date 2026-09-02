@@ -1,3 +1,4 @@
+import { captureException } from '@sentry/vue'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
@@ -732,7 +733,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         life: 5000
       })
     } catch (error) {
-      console.error(`Billing operation ${opId} success handling failed`, error)
+      captureException(error, {
+        tags: { error_type: 'billing_success_handling_failed' },
+        extra: { billing_op_id: opId }
+      })
       throw error
     } finally {
       resolveTerminal(opId)

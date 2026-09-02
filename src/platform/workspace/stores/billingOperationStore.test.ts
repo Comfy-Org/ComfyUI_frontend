@@ -53,6 +53,12 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
+const mockCaptureException = vi.hoisted(() => vi.fn())
+
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
+}))
+
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
     getBillingOpStatus: vi.fn()
@@ -725,12 +731,8 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString()
       })
       const error = new Error('toast rendering failed')
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      mockToastAdd.mockImplementationOnce(() => {})
-      mockToastAdd.mockImplementationOnce(() => {
-        throw error
+      mockToastAdd.mockImplementation((toast: { severity: string }) => {
+        if (toast.severity === 'success') throw error
       })
 
       const store = useBillingOperationStore()
@@ -739,11 +741,10 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Billing operation op-1 success handling failed',
-        error
-      )
-      consoleErrorSpy.mockRestore()
+      expect(mockCaptureException).toHaveBeenCalledWith(error, {
+        tags: { error_type: 'billing_success_handling_failed' },
+        extra: { billing_op_id: 'op-1' }
+      })
     })
 
     it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
