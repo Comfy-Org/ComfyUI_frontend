@@ -12,8 +12,12 @@
     "name": "Subgraph scope",
     "catalog": {
       "types": {
-        "LoadImage": { "widget_order": ["image", "upload"] },
-        "PreviewImage": { "widget_order": [] },
+        "LoadImage": {
+          "widget_order": ["image", "upload"]
+        },
+        "PreviewImage": {
+          "widget_order": []
+        },
         "KSampler": {
           "widget_order": [
             "seed",
@@ -32,12 +36,20 @@
         {
           "id": 1,
           "type": "LoadImage",
-          "pos": [0, 0],
+          "pos": [80, 420],
           "size": [315, 314],
           "inputs": [],
           "outputs": [
-            { "name": "IMAGE", "type": "IMAGE", "links": [] },
-            { "name": "MASK", "type": "MASK", "links": [] }
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": []
+            },
+            {
+              "name": "MASK",
+              "type": "MASK",
+              "links": []
+            }
           ],
           "widgets_values": ["example.png", "image"]
         },
@@ -45,7 +57,7 @@
           "id": 2,
           "type": "9d1b2c3e-5f6a-4b7c-8d90-1e2f3a4b5c6d",
           "title": "Inner steps",
-          "pos": [420, 0],
+          "pos": [460, 420],
           "size": [220, 100],
           "inputs": [],
           "outputs": [],
@@ -64,9 +76,15 @@
               {
                 "id": 10,
                 "type": "PreviewImage",
-                "pos": [40, 40],
+                "pos": [120, 380],
                 "size": [210, 246],
-                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "inputs": [
+                  {
+                    "name": "images",
+                    "type": "IMAGE",
+                    "link": null
+                  }
+                ],
                 "outputs": [],
                 "widgets_values": []
               }
@@ -102,7 +120,10 @@
     },
     {
       "kind": "event",
-      "event": { "type": "agent_message_done", "data": {} }
+      "event": {
+        "type": "agent_message_done",
+        "data": {}
+      }
     }
   ]
 }

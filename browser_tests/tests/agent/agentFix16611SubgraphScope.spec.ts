@@ -45,13 +45,13 @@ test.describe(
 
       // Positive control: a ROOT-level human delete must mint, proving the
       // doc-bound mint path is live in this environment.
-      await page.locator('[data-node-id="1"]').click()
+      await vueNodes.selectNode('1')
       await page.keyboard.press('Delete')
       await expect.poll(deletedNodeIds, { timeout: 10_000 }).toEqual(['1'])
 
       // The regression surface: delete a node INSIDE the seeded subgraph.
       await vueNodes.enterSubgraph('2')
-      await page.locator('[data-node-id="10"]').click()
+      await vueNodes.selectNode('10')
       await page.keyboard.press('Delete')
 
       // Ordering anchor: exit to root and delete the subgraph instance
@@ -60,7 +60,7 @@ test.describe(
       // one - waiting for it gives the interior op every chance to surface
       // before the negative below is trusted.
       await page.getByTestId('subgraph-breadcrumb-back').click()
-      await page.locator('[data-node-id="2"]').click()
+      await vueNodes.selectNode('2')
       await page.keyboard.press('Delete')
       await expect
         .poll(() => deletedNodeIds().length, { timeout: 10_000 })
