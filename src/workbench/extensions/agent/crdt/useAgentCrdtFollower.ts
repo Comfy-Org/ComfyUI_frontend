@@ -1,3 +1,4 @@
+import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -11,9 +12,12 @@ import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
+import type { GraphReplayState } from './graphReplayQueue'
+import { GraphReplayQueue } from './graphReplayQueue'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { resolveReplayEnabled } from './replayGate'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -124,6 +128,44 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+  /** mm3-20 Option-B PoC: presentation-only replay state; `idle` when gated off. */
+  replayState: GraphReplayState
+}
+
+/**
+ * mm3-23: endpoint node ids of one `links` record, or null when the record is
+ * not a link shape we recognise. Root links are LiteGraph tuples; the object
+ * form is the subgraph-definition interior shape, kept as a fallback.
+ */
+export function linkEndpoints(
+  value: unknown
+): { originId: string; targetId: string } | null {
+  const asId = (v: unknown): string | null =>
+    typeof v === 'string' || typeof v === 'number' ? String(v) : null
+  if (Array.isArray(value)) {
+    const originId = asId(value[1])
+    const targetId = asId(value[3])
+    return originId !== null && targetId !== null
+      ? { originId, targetId }
+      : null
+  }
+  if (typeof value === 'object' && value !== null) {
+    const record = value as Record<string, unknown>
+    const originId = asId(record.origin_id)
+    const targetId = asId(record.target_id)
+    return originId !== null && targetId !== null
+      ? { originId, targetId }
+      : null
+  }
+  return null
+}
+
+function safeLocalStorage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage
+  } catch {
+    return null
+  }
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -220,6 +262,78 @@ export function useAgentCrdtFollower(
     } catch {
       return new Set()
     }
+  }
+  const docNodeExists = (id: string): boolean => {
+    try {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { has: (key: string) => boolean }
+      }
+      return doc.getMap('nodes').has(id)
+    } catch {
+      return false
+    }
+  }
+  let knownDocLinkIds: Set<string> = new Set()
+  // mm3-23: the root `links` map holds LiteGraph tuples
+  // `[id, origin_id, origin_slot, target_id, target_slot, type]` - both at
+  // mint (comfy-multi-player `mint.ts` `links.set(String(ln[0]), ...)`) and on
+  // `connect` (`applier.ts` writes the same tuple). Read indices 1/3 so the
+  // replay queue can hold a link back until its endpoint node is revealed.
+  // The `{origin_id, target_id}` object form only appears for subgraph
+  // definition interior links; accepted as a fallback in case a record ever
+  // arrives in that shape.
+  const currentDocLinkRecords = (): Map<
+    string,
+    { originId: string; targetId: string }
+  > => {
+    try {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      }
+      const raw = doc.getMap('links').toJSON()
+      const out = new Map<string, { originId: string; targetId: string }>()
+      for (const [key, value] of Object.entries(raw)) {
+        const endpoints = linkEndpoints(value)
+        if (endpoints) out.set(key, endpoints)
+      }
+      return out
+    } catch {
+      return new Map()
+    }
+  }
+  // mm3-20 Option-B PoC: a presentation-only replay queue. The doc and the
+  // ECS graph are ALWAYS fully applied by `adapter.applyFrame` above; the
+  // queue only paces which node/link ids are considered "revealed" so a
+  // client can render a veil over the rest. Gated off by default; resolved
+  // once per composable instance so a mid-session toggle never splits a
+  // batch. Reduced-motion users get every batch fast-forwarded.
+  const replayEnabled = resolveReplayEnabled({
+    buildFlag: (import.meta.env as Record<string, string | undefined>)
+      .VITE_AGENT_GRAPH_REPLAY,
+    search: typeof window === 'undefined' ? '' : window.location.search,
+    storage: safeLocalStorage()
+  })
+  const reducedMotion = usePreferredReducedMotion()
+  const replayState = ref<GraphReplayState>('idle')
+  // mm3-21: pending node ids, mirrored into a ref so a canvas veil can render
+  // reactively. Read fresh from the queue after every mutation rather than
+  // computed from the step/state payloads, since a step only reports what
+  // changed, not the remaining pending set.
+  const pendingReplayNodeIds = ref<ReadonlySet<string>>(new Set())
+  const replayQueue = new GraphReplayQueue({
+    nodeExists: docNodeExists,
+    onStep: (step) => {
+      recordDevEvent('replay_step', step)
+      pendingReplayNodeIds.value = replayQueue.pendingNodeIds
+    },
+    onStateChange: (state) => {
+      replayState.value = state
+      recordDevEvent('replay_state', { state })
+      pendingReplayNodeIds.value = replayQueue.pendingNodeIds
+    }
+  })
+  const settleReplay = () => {
+    if (replayEnabled) replayQueue.fastForward()
   }
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
@@ -345,6 +459,22 @@ export function useAgentCrdtFollower(
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     knownDocNodeIds = ids
+    // Everything below feeds only the replay queue; the gate is fixed for the
+    // composable's lifetime, so the default-off path stops here.
+    if (!replayEnabled) return
+    const linkRecords = currentDocLinkRecords()
+    const linkIds = new Set(linkRecords.keys())
+    const addedLinkIds = [...linkIds].filter((id) => !knownDocLinkIds.has(id))
+    knownDocLinkIds = linkIds
+    if (added.length > 0 || addedLinkIds.length > 0) {
+      const addedLinks = addedLinkIds.flatMap((id) => {
+        const record = linkRecords.get(id)
+        if (!record) return []
+        return [{ id, originId: record.originId, targetId: record.targetId }]
+      })
+      replayQueue.enqueueBatch({ nodeIds: added, links: addedLinks })
+      if (reducedMotion.value === 'reduce') replayQueue.fastForward()
+    }
   }
   const onOpsResult: EventListener = (event) => {
     if (staleProbeTimer !== null) {
@@ -382,6 +512,8 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
+    knownDocLinkIds = new Set()
+    settleReplay()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -408,6 +540,12 @@ export function useAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       adapter.bind(workflowId, bridge.follower)
+      knownDocNodeIds = new Set()
+      knownDocLinkIds = new Set()
+      // mm3-23: the replacement doc's lineage broke from the one the queue was
+      // pacing reveals against - force everything pending out now rather than
+      // let it sit veiled behind a doc that no longer exists.
+      settleReplay()
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -432,6 +570,11 @@ export function useAgentCrdtFollower(
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
+    // mm3-23: a mid-replay socket drop must never leave the view stuck
+    // showing a stale partial reveal while the follower is disconnected -
+    // reveal everything pending now; the resubscribe below will re-derive
+    // fresh adds/removes against the settled state once reconnected.
+    settleReplay()
     bridge.resubscribe()
   }
   /**
@@ -472,6 +615,8 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
+      knownDocLinkIds = new Set()
+      settleReplay()
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
@@ -523,6 +668,7 @@ export function useAgentCrdtFollower(
     try {
       clearSubscribeRetry()
       clearStaleProbe()
+      replayQueue.clear()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
@@ -544,12 +690,16 @@ export function useAgentCrdtFollower(
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    replayState: replayState.value
   }))
 
   return {
     status: readonly(status),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      sender.enqueue(operations),
+    // mm3-21: presentation-only, for a canvas veil over not-yet-revealed
+    // nodes. Empty whenever the replay gate is off (queue never enqueues).
+    pendingReplayNodeIds: readonly(pendingReplayNodeIds)
   }
 }

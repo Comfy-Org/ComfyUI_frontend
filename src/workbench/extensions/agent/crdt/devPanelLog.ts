@@ -20,6 +20,8 @@ export type DevEventKind =
   | 'doc_nodes_changed'
   | 'rebind'
   | 'stale_probe'
+  | 'replay_step'
+  | 'replay_state'
 
 export interface DevEvent {
   seq: number

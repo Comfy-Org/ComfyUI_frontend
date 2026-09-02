@@ -83,6 +83,7 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import { installReplayVeil } from './crdt/graphReplayVeil'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
@@ -389,12 +390,28 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
+const {
+  status: crdtStatus,
+  enqueueHumanOperations,
+  pendingReplayNodeIds
+} = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive
 )
+
+// mm3-21: canvas veil over nodes the replay queue hasn't revealed yet.
+// Presentation-only - reads the pending set, paints over node bounds, never
+// touches the graph. Empty (no-op paint) whenever the replay gate is off.
+// Installed once against whatever canvas is live at panel mount; `app.canvas`
+// does not change identity across a tab switch in this app.
+const replayVeil = app.canvas
+  ? installReplayVeil(app.canvas, () => pendingReplayNodeIds.value)
+  : null
+watch(pendingReplayNodeIds, () => {
+  app.canvas?.setDirty(true, false)
+})
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
@@ -557,6 +574,7 @@ onBeforeUnmount(() => {
   stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
+  replayVeil?.uninstall()
 })
 
 const history = useAgentChatHistoryStore()

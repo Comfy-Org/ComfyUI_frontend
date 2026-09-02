@@ -40,7 +40,9 @@ const S = {
   remints: 'remints (doc_reset)',
   nodesAdded: 'doc nodes added',
   nodesRemoved: 'doc nodes removed',
+  replayState: 'replay state',
   filterAll: 'all kinds',
+  filterLabel: 'Filter event log by kind',
   clear: 'Clear',
   copyJson: 'Copy JSON',
   copied: 'Copied',
@@ -67,12 +69,16 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'doc_subscribed',
   'doc_update',
   'doc_ops_result',
+  'human_ops_settled',
   'doc_reset',
   'schema_error',
   'reconnected',
   'subscribe_retry',
   'doc_nodes_changed',
-  'rebind'
+  'rebind',
+  'stale_probe',
+  'replay_step',
+  'replay_state'
 ] as const
 
 // ── open/close state, persisted ───────────────────────────────────────────
@@ -265,6 +271,10 @@ function fmtTime(at: number): string {
                 <td class="pr-2 text-muted">{{ S.nodesRemoved }}</td>
                 <td>{{ nodeDelta.removed }}</td>
               </tr>
+              <tr>
+                <td class="pr-2 text-muted">{{ S.replayState }}</td>
+                <td>{{ props.status.replayState }}</td>
+              </tr>
             </tbody>
           </table>
         </section>
@@ -304,6 +314,7 @@ function fmtTime(at: number): string {
               v-model="kindFilter"
               class="ml-auto rounded-sm border border-border-default bg-base-background px-1 py-0.5"
               data-testid="crdt-dev-panel-filter"
+              :aria-label="S.filterLabel"
             >
               <option value="">{{ S.filterAll }}</option>
               <option v-for="k in EVENT_KINDS" :key="k" :value="k">
@@ -326,6 +337,9 @@ function fmtTime(at: number): string {
           <div
             class="max-h-56 space-y-1 overflow-y-auto"
             data-testid="crdt-dev-panel-log"
+            tabindex="0"
+            role="log"
+            :aria-label="S.sectionLog"
           >
             <div
               v-for="e in filteredEvents"
