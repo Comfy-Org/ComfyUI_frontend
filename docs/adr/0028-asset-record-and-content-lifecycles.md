@@ -20,9 +20,9 @@ owns path, size, modification time, hash, and missing state.
 For generated outputs, `job_id` records the prompt associated with that
 record's creation event. It is informational provenance, not an ownership or
 lifecycle foreign key. A record may retain a `job_id` after its prompt is no
-longer present in transient history. The Asset API does not provide a
-job-to-outputs query; in-memory history remains the current mechanism for
-showing a run's outputs during that session.
+longer present in transient history. `getJobAssets(jobId)` calls the paginated
+`GET /api/jobs/{job_id}/assets`, but in-memory history remains the current
+mechanism for showing a run's outputs during that session.
 
 ## Current implementation
 
