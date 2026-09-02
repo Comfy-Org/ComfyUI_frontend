@@ -17,14 +17,20 @@ test.describe('Workshop entry', () => {
   }) => {
     await page.goto('/workshop/')
     const hub = page.getByTestId('workshop-hub')
-    await hub.getByTestId('hub-kind-graph').click()
-    await expect(hub.getByTestId('hub-card-app')).toHaveCount(0)
-    await expect(hub.getByTestId('hub-card-model').first()).toContainText(
-      'Partner Nodes'
+    await expect(hub.getByTestId('hub-card').first()).toBeVisible()
+    await hub.getByTestId('hub-tab-comfyApps').click()
+    await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(
+      'data-app',
+      'true'
     )
-    await hub.getByTestId('hub-search').fill('kling ai')
-    await hub.getByTestId('hub-card-model').first().click()
-    await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
+    await hub.getByTestId('hub-tab-all').click()
+    await hub.getByTestId('hub-search').fill('minimax h3 image')
+    await expect(hub.getByTestId('hub-card-link').first()).toContainText(
+      'MiniMax H3'
+    )
+    await hub.getByTestId('hub-filter').click()
+    await page.getByRole('option', { name: /^Flux \d+$/ }).click()
+    await expect(hub.getByTestId('hub-filter-count')).toHaveText('1')
   })
 })
 

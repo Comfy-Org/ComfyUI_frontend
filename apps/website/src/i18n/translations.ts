@@ -8616,32 +8616,34 @@ Enterprise`
     en: 'Search workflows, models, creators...',
     'zh-CN': '搜索工作流、模型、创作者...'
   },
-  'workshop.hub.kind.label': { en: 'Browse', 'zh-CN': '浏览' },
-  'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.hub.kind.all': { en: 'ALL', 'zh-CN': '全部' },
   'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
   'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
+  'workshop.hub.sort.popular': { en: 'Most Popular', 'zh-CN': '最受欢迎' },
+  'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
+  'workshop.hub.facets.clearAll': { en: 'Clear all', 'zh-CN': '全部清除' },
+  'workshop.hub.facets.search': { en: 'Search…', 'zh-CN': '搜索…' },
+  'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
+  'workshop.hub.models': { en: 'MODELS', 'zh-CN': '模型' },
+  'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.hub.openHub': {
-    en: 'Open comfy.org/workflows',
-    'zh-CN': '打开 comfy.org/workflows'
-  },
-  'workshop.hub.author': { en: 'ComfyUI', 'zh-CN': 'ComfyUI' },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
-  'workshop.hub.tag.graph': { en: 'Node Graph', 'zh-CN': '节点图' },
-  'workshop.hub.tag.app': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
-  'workshop.hub.task': {
-    en: '{input} to {output}',
-    'zh-CN': '{input}转{output}'
+  'workshop.hub.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
+  'workshop.hub.empty': {
+    en: 'No templates match your filters',
+    'zh-CN': '没有符合筛选条件的模板'
   },
-  'workshop.hub.io.text': { en: 'Text', 'zh-CN': '文本' },
-  'workshop.hub.io.image': { en: 'Image', 'zh-CN': '图像' },
-  'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
-  'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
-  'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
-  'workshop.hub.io.other': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.hub.emptyHint': {
+    en: 'Try removing some filters',
+    'zh-CN': '试试移除一些筛选条件'
+  },
+  'workshop.hub.showing': {
+    en: 'Showing {shown} of {total} templates',
+    'zh-CN': '显示 {shown} / {total} 个模板'
+  },
   'workshop.proto.scope.v1': {
     en: 'V1 · Models playground (11 Sep)',
     'zh-CN': 'V1 · 模型游乐场（9 月 11 日）'
