@@ -130,6 +130,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (pollHandle !== undefined) clearInterval(pollHandle)
+  clearTimeout(copiedTimer)
 })
 
 // ── derived counters from the event buffer ────────────────────────────────
@@ -152,16 +153,40 @@ const nodeDelta = computed(() => {
 // ── event log filter / actions ────────────────────────────────────────────
 const kindFilter = ref<'' | DevEventKind>('')
 
-const filteredEvents = computed<readonly DevEvent[]>(() => {
+interface LogRow {
+  event: DevEvent
+  /** Full stringified detail; what the per-row copy button writes. */
+  detail: string
+  /** Display excerpt of `detail`, cut at 200 chars. */
+  excerpt: string
+  nodeIds: readonly string[]
+}
+
+const logRows = computed<readonly LogRow[]>(() => {
   const events = devEvents.value
   const filtered = kindFilter.value
     ? events.filter((e) => e.kind === kindFilter.value)
     : events
-  // newest first, capped for render cost — full buffer still available via copy
-  return [...filtered].reverse().slice(0, 100)
+  // newest first, capped for render cost — full buffer still available via copy.
+  // Stringify once per row here rather than per template binding.
+  return [...filtered]
+    .reverse()
+    .slice(0, 100)
+    .map((event) => {
+      const detail = stringifyDetail(event.detail)
+      return {
+        event,
+        detail,
+        excerpt: detail.length > 200 ? detail.slice(0, 200) + '…' : detail,
+        nodeIds: eventNodeIds(event)
+      }
+    })
 })
 
 const copyLabel = ref<string>(S.copyJson)
+/** Key of the per-item copy button that most recently succeeded, if any. */
+const copiedKey = ref<string | null>(null)
+let copiedTimer: ReturnType<typeof setTimeout> | undefined
 
 async function copyText(value: string): Promise<boolean> {
   try {
@@ -170,6 +195,17 @@ async function copyText(value: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+async function copyItem(key: string, value: string) {
+  if (!(await copyText(value))) return
+  copiedKey.value = key
+  clearTimeout(copiedTimer)
+  copiedTimer = setTimeout(() => (copiedKey.value = null), 1200)
+}
+
+function copyButtonLabel(key: string): string {
+  return copiedKey.value === key ? S.copied : S.copy
 }
 
 async function copyEvents() {
@@ -184,12 +220,13 @@ async function copyEvents() {
 
 const proxyTarget = computed(() => api.apiURL(''))
 
-function fmtDetail(detail: unknown): string {
+function stringifyDetail(detail: unknown): string {
   try {
-    const raw = JSON.stringify(detail, (_k, v) =>
-      v instanceof Uint8Array ? `Uint8Array(${v.length})` : v
+    return (
+      JSON.stringify(detail, (_k, v) =>
+        v instanceof Uint8Array ? `Uint8Array(${v.length})` : v
+      ) ?? ''
     )
-    return raw && raw.length > 200 ? raw.slice(0, 200) + '…' : (raw ?? '')
   } catch {
     return String(detail)
   }
@@ -258,9 +295,14 @@ function fmtTime(at: number): string {
                       v-if="props.status.workflowId"
                       class="rounded-sm border border-border-default px-1.5 py-0.5"
                       :aria-label="S.copyDocumentId"
-                      @click="copyText(props.status.workflowId)"
+                      @click="
+                        copyItem(
+                          `doc:${props.status.workflowId}`,
+                          props.status.workflowId
+                        )
+                      "
                     >
-                      {{ S.copy }}
+                      {{ copyButtonLabel(`doc:${props.status.workflowId}`) }}
                     </button>
                   </div>
                 </td>
@@ -360,37 +402,36 @@ function fmtTime(at: number): string {
             data-testid="crdt-dev-panel-log"
           >
             <div
-              v-for="e in filteredEvents"
-              :key="e.seq"
+              v-for="row in logRows"
+              :key="row.event.seq"
               class="border-b border-border-default pb-1"
             >
-              <span class="text-muted">{{ fmtTime(e.at) }}</span>
-              <span class="ml-1 font-bold">{{ e.kind }}</span>
+              <span class="text-muted">{{ fmtTime(row.event.at) }}</span>
+              <span class="ml-1 font-bold">{{ row.event.kind }}</span>
               <div class="flex items-start gap-1">
-                <div class="break-all text-muted">
-                  {{ fmtDetail(e.detail) }}
-                </div>
+                <div class="break-all text-muted">{{ row.excerpt }}</div>
                 <button
-                  v-if="fmtDetail(e.detail)"
+                  v-if="row.detail"
                   class="rounded-sm border border-border-default px-1.5 py-0.5"
                   :aria-label="S.copyLogDetail"
-                  @click="copyText(fmtDetail(e.detail))"
+                  @click="copyItem(`detail:${row.event.seq}`, row.detail)"
                 >
-                  {{ S.copy }}
+                  {{ copyButtonLabel(`detail:${row.event.seq}`) }}
                 </button>
               </div>
-              <div
-                v-if="eventNodeIds(e).length"
-                class="mt-1 flex flex-wrap gap-1"
-              >
+              <div v-if="row.nodeIds.length" class="mt-1 flex flex-wrap gap-1">
                 <button
-                  v-for="nodeId in eventNodeIds(e)"
+                  v-for="nodeId in row.nodeIds"
                   :key="nodeId"
                   class="rounded-sm border border-border-default px-1.5 py-0.5"
                   :aria-label="`${S.copy} node id ${nodeId}`"
-                  @click="copyText(nodeId)"
+                  @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
                 >
-                  {{ nodeId }}
+                  {{
+                    copiedKey === `node:${row.event.seq}:${nodeId}`
+                      ? S.copied
+                      : nodeId
+                  }}
                 </button>
               </div>
             </div>
