@@ -256,6 +256,15 @@ describe('countByUseCase', () => {
 })
 
 describe('workshopModels', () => {
+  it('drops a provider suffix the registry put in the name', () => {
+    const seedance = workshopModels.find((m) => m.provider === 'ByteDance')
+    expect(seedance?.name).toBe('Seedance')
+    for (const model of workshopModels) {
+      if (model.provider)
+        expect(model.name).not.toContain(`(${model.provider})`)
+    }
+  })
+
   it('only contains canonical partner-node models', () => {
     expect(workshopModels.length).toBeGreaterThan(0)
     expect(workshopModels.map((m) => m.slug)).toEqual(

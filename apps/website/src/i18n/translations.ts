@@ -8386,7 +8386,6 @@ Enterprise`
     en: 'Pricing on model page',
     'zh-CN': '价格见模型页'
   },
-  'workshop.card.workflows': { en: 'workflows', 'zh-CN': '个工作流' },
   'workshop.card.tryCta': {
     en: 'Try in Playground',
     'zh-CN': '在 Playground 试用'

@@ -333,6 +333,15 @@ export function capabilitiesFor(
   return [...new Set(labels)].sort()
 }
 
+// The registry names some models "Model (Provider)"; the card already
+// shows the provider on its own line.
+function withoutProviderSuffix(name: string, provider?: string): string {
+  const suffix = provider ? `(${provider})` : undefined
+  return suffix && name.endsWith(suffix)
+    ? name.slice(0, -suffix.length).trim()
+    : name
+}
+
 function toWorkshopModel(model: Model): WorkshopModel {
   const overrides = display[model.slug] ?? {}
   const data = generated[model.slug]
@@ -344,7 +353,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
       : overrides.creditsPerRun
   return {
     slug: model.slug,
-    name: model.displayName,
+    name: withoutProviderSuffix(model.displayName, provider),
     workflowCount: model.workflowCount,
     href: modelDetailHref(model.slug),
     routerId: routerIdFor(model.slug, provider),

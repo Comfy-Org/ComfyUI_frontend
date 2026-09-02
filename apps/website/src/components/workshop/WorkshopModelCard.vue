@@ -129,10 +129,6 @@ const pillClass =
       </p>
       <p class="mt-1 text-sm text-primary-comfy-canvas/80">
         {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
-        <span class="text-primary-comfy-canvas/50">
-          · {{ model.workflowCount }}
-          {{ t('workshop.card.workflows', locale) }}
-        </span>
       </p>
     </div>
 
