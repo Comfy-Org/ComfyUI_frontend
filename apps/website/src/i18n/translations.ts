@@ -8210,7 +8210,19 @@ Enterprise`
   'nav.credits': { en: 'credits', 'zh-CN': '积分' },
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
   'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
-  'nav.workspace': { en: 'Workspace', 'zh-CN': '工作区' },
+  'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
+  'nav.creditsInfo': {
+    en: 'Credits are spent per run. Top up on Developer Platform.',
+    'zh-CN': '每次运行消耗积分。可在开发者平台充值。'
+  },
+  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
+  'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
+  'nav.partnerNodesPricing': {
+    en: 'Partner nodes pricing',
+    'zh-CN': '合作伙伴节点定价'
+  },
+  'nav.workspaceSettings': { en: 'Workspace settings', 'zh-CN': '工作区设置' },
+  'nav.accountSettings': { en: 'Account settings', 'zh-CN': '账户设置' },
   'nav.prototypeControls': { en: 'Prototype controls', 'zh-CN': '原型控制' },
   'nav.simulateZeroBalance': {
     en: 'Simulate zero balance',
@@ -8257,6 +8269,7 @@ Enterprise`
   'workshop.count.models': { en: 'models', 'zh-CN': '个模型' },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
+  'workshop.card.from': { en: 'from', 'zh-CN': '起' },
   'workshop.card.priceOnPage': {
     en: 'Pricing on model page',
     'zh-CN': '价格见模型页'
@@ -8341,6 +8354,11 @@ Enterprise`
     'zh-CN': '建议改用 {successor}'
   },
   'workshop.model.degraded': { en: 'Degraded', 'zh-CN': '性能下降' },
+  'workshop.model.runsNode': {
+    en: 'Runs the {node} node',
+    'zh-CN': '运行 {node} 节点'
+  },
+  'workshop.model.perRun': { en: 'run', 'zh-CN': '次' },
   'workshop.model.degradedBody': {
     en: 'The provider is reporting slow or failing runs right now.',
     'zh-CN': '提供方当前报告运行缓慢或失败。'
@@ -8361,10 +8379,7 @@ Enterprise`
   'workshop.field.format': { en: 'Format', 'zh-CN': '格式' },
   'workshop.field.maxTokens': { en: 'Max tokens', 'zh-CN': '最大 token 数' },
   'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
-  'workshop.field.uploadHint': {
-    en: 'PNG, JPG or WEBP up to 25 MB',
-    'zh-CN': 'PNG、JPG 或 WEBP，最大 25 MB'
-  },
+  'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
   'workshop.form.required': {
     en: 'This field is required',

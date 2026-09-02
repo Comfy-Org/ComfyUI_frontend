@@ -112,15 +112,16 @@ function clearFilters() {
       {{ visible.length }} {{ t('workshop.count.models', locale) }}
     </p>
 
-    <ul
-      v-if="visible.length"
-      class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      data-testid="workshop-models-grid"
-    >
-      <li v-for="model in visible" :key="model.slug">
-        <WorkshopModelCard :model :locale />
-      </li>
-    </ul>
+    <div v-if="visible.length" class="rounded-4xl bg-white/8 p-2">
+      <ul
+        class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        data-testid="workshop-models-grid"
+      >
+        <li v-for="model in visible" :key="model.slug">
+          <WorkshopModelCard :model :locale />
+        </li>
+      </ul>
+    </div>
 
     <div
       v-else

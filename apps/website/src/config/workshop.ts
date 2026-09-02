@@ -1,6 +1,7 @@
 import type { Model } from './models'
 import { models } from './models'
 import displayOverrides from './workshop-model-display.json'
+import generatedModels from './workshop-models.generated.json'
 
 const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -8,17 +9,81 @@ export type Modality = (typeof MODALITIES)[number]
 export const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
 export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 
-// Router only serves model id + billing today. Name, provider, modality and
-// price come from this hand-maintained file until Router exposes display
-// metadata (Detailed Requirements M1/M2). Values are placeholders.
 export type ModelStatus = 'deprecated' | 'degraded'
 
+// Hand-maintained overrides on top of workshop-models.generated.json:
+// status flags Router does not report and fallbacks for models the
+// generator could not resolve. Prices here are placeholders.
 interface WorkshopModelDisplay {
   readonly provider?: string
   readonly modality?: Modality
   readonly creditsPerRun?: number
   readonly status?: ModelStatus
   readonly successorSlug?: string
+}
+
+export type GeneratedField =
+  | {
+      readonly kind: 'text'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly multiline: boolean
+      readonly required: boolean
+      readonly default?: string
+    }
+  | {
+      readonly kind: 'number'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly min: number
+      readonly max: number
+      readonly step: number
+      readonly default: number
+    }
+  | {
+      readonly kind: 'select'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly options: readonly string[]
+      readonly default: string
+    }
+  | {
+      readonly kind: 'toggle'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly default: boolean
+    }
+  | {
+      readonly kind: 'file'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly accept: 'image' | 'video' | 'audio'
+      readonly required: boolean
+    }
+
+export interface GeneratedExample {
+  readonly name: string
+  readonly title: string
+  readonly description: string
+  readonly tags: readonly string[]
+  readonly thumbnailUrl: string
+  readonly values: Readonly<Record<string, string | number | boolean>>
+}
+
+interface GeneratedModel {
+  readonly thumbnailUrl?: string
+  readonly provider?: string
+  readonly modality?: Modality
+  readonly priceUsdFrom?: number
+  readonly node?: { id: string; displayName: string; template: string }
+  readonly fields: readonly GeneratedField[]
+  readonly defaults: Readonly<Record<string, string | number | boolean>>
+  readonly examples: readonly GeneratedExample[]
 }
 
 export interface WorkshopModel {
@@ -30,11 +95,24 @@ export interface WorkshopModel {
   readonly provider?: string
   readonly modality?: Modality
   readonly creditsPerRun?: number
+  readonly priceUsdFrom?: number
+  readonly thumbnailUrl?: string
   readonly status?: ModelStatus
   readonly successorSlug?: string
 }
 
+export interface WorkshopModelDetail extends WorkshopModel {
+  readonly nodeDisplayName?: string
+  readonly fields: readonly GeneratedField[]
+  readonly defaults: Readonly<Record<string, string | number | boolean>>
+  readonly examples: readonly GeneratedExample[]
+}
+
 const display = displayOverrides as Record<string, WorkshopModelDisplay>
+const generated = generatedModels as unknown as Record<string, GeneratedModel>
+
+// Placeholder until Router bills the playground: 100 credits per USD.
+export const CREDITS_PER_USD = 100
 
 function modelDetailHref(slug: string): string {
   return `/workshop/models/${slug}/`
@@ -51,14 +129,32 @@ function routerIdFor(slug: string, provider?: string): string {
 }
 
 function toWorkshopModel(model: Model): WorkshopModel {
-  const overrides = display[model.slug]
+  const overrides = display[model.slug] ?? {}
+  const data = generated[model.slug]
+  const provider = overrides.provider ?? data?.provider
+  const creditsPerRun =
+    data?.priceUsdFrom !== undefined
+      ? Math.round(data.priceUsdFrom * CREDITS_PER_USD)
+      : overrides.creditsPerRun
   return {
     slug: model.slug,
     name: model.displayName,
     workflowCount: model.workflowCount,
     href: modelDetailHref(model.slug),
-    routerId: routerIdFor(model.slug, overrides?.provider),
-    ...overrides
+    routerId: routerIdFor(model.slug, provider),
+    ...(provider ? { provider } : {}),
+    ...((overrides.modality ?? data?.modality)
+      ? { modality: overrides.modality ?? data?.modality }
+      : {}),
+    ...(creditsPerRun !== undefined ? { creditsPerRun } : {}),
+    ...(data?.priceUsdFrom !== undefined
+      ? { priceUsdFrom: data.priceUsdFrom }
+      : {}),
+    ...(data?.thumbnailUrl ? { thumbnailUrl: data.thumbnailUrl } : {}),
+    ...(overrides.status ? { status: overrides.status } : {}),
+    ...(overrides.successorSlug
+      ? { successorSlug: overrides.successorSlug }
+      : {})
   }
 }
 
@@ -74,6 +170,21 @@ export const workshopModels: readonly WorkshopModel[] = models
 
 export function getWorkshopModel(slug: string): WorkshopModel | undefined {
   return workshopModels.find((model) => model.slug === slug)
+}
+
+export function getWorkshopModelDetail(
+  slug: string
+): WorkshopModelDetail | undefined {
+  const model = getWorkshopModel(slug)
+  if (!model) return undefined
+  const data = generated[slug]
+  return {
+    ...model,
+    ...(data?.node ? { nodeDisplayName: data.node.displayName } : {}),
+    fields: data?.fields ?? [],
+    defaults: data?.defaults ?? {},
+    examples: data?.examples ?? []
+  }
 }
 
 export function modalityOf(

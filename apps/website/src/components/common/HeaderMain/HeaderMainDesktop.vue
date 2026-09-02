@@ -72,7 +72,10 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           :active="isNavItemActive(navItem, currentPath)"
           :class="navigationMenuTriggerStyle()"
         >
-          <a :href="navItem.href" class="inline-flex items-center gap-1">
+          <a
+            :href="navItem.href"
+            class="inline-flex items-center gap-1 whitespace-nowrap"
+          >
             <span class="ppformula-text-center">{{ navItem.label }}</span>
             <span v-if="navItem.badge" class="hidden xl:inline-flex">
               <NewBadge :locale="locale" size="xxs" />

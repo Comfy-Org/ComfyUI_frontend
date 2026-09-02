@@ -3,6 +3,7 @@ import { ArrowRight } from '@lucide/vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PlaygroundExample } from '../../config/workshop-playground'
+import { isVideoUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -12,11 +13,6 @@ const { examples, locale = 'en' } = defineProps<{
 }>()
 
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
-
-function promptOf(example: PlaygroundExample): string {
-  const prompt = example.values.prompt
-  return typeof prompt === 'string' ? prompt : ''
-}
 </script>
 
 <template>
@@ -29,50 +25,55 @@ function promptOf(example: PlaygroundExample): string {
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <ul v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <li
-        v-for="example in examples"
-        :key="example.id"
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8"
-        data-testid="example-card"
-      >
-        <div class="aspect-4/3 bg-primary-comfy-ink">
-          <img
-            v-if="example.outputUrl && !example.outputUrl.endsWith('.mp4')"
-            :src="example.outputUrl"
-            alt=""
-            class="size-full object-cover"
-            loading="lazy"
-          />
-          <video
-            v-else-if="example.outputUrl"
-            :src="example.outputUrl"
-            class="size-full object-cover"
-            muted
-            loop
-            playsinline
-            autoplay
-          />
-        </div>
-        <div class="flex flex-1 flex-col gap-2 p-4">
-          <h3 class="text-base font-semibold text-primary-comfy-canvas">
-            {{ t(example.title, locale) }}
-          </h3>
-          <p class="line-clamp-3 text-sm text-primary-warm-gray">
-            {{ promptOf(example) }}
-          </p>
-          <Button
-            variant="link"
-            size="sm"
-            class="mt-auto"
-            :append-icon="ArrowRight"
-            data-testid="example-open"
-            @click="emit('open', example)"
+    <div v-else class="rounded-4xl bg-white/8 p-2">
+      <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <li
+          v-for="example in examples"
+          :key="example.id"
+          class="group flex flex-col overflow-hidden rounded-3xl bg-primary-comfy-ink"
+          data-testid="example-card"
+        >
+          <div
+            class="bg-primary-comfy-ink-light relative aspect-4/3 overflow-hidden"
           >
-            {{ t('workshop.examples.open', locale) }}
-          </Button>
-        </div>
-      </li>
-    </ul>
+            <video
+              v-if="isVideoUrl(example.outputUrl)"
+              :src="example.outputUrl"
+              class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              muted
+              loop
+              playsinline
+              autoplay
+            />
+            <img
+              v-else-if="example.outputUrl"
+              :src="example.outputUrl"
+              :alt="example.title"
+              class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <div class="flex flex-1 flex-col gap-2 p-5">
+            <h3 class="text-lg/tight font-light text-primary-warm-white">
+              {{ example.title }}
+            </h3>
+            <p class="line-clamp-3 text-sm text-primary-warm-gray">
+              {{ example.description }}
+            </p>
+            <Button
+              variant="link"
+              size="sm"
+              class="mt-auto"
+              :append-icon="ArrowRight"
+              data-testid="example-open"
+              @click="emit('open', example)"
+            >
+              {{ t('workshop.examples.open', locale) }}
+            </Button>
+          </div>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>

@@ -3,14 +3,18 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import { getRoutes } from '../../../config/routes'
-import { getWorkshopModel, workshopModels } from '../../../config/workshop'
+import {
+  getWorkshopModel,
+  getWorkshopModelDetail,
+  workshopModels
+} from '../../../config/workshop'
 import { t } from '../../../i18n/translations'
 
 export const getStaticPaths: GetStaticPaths = () =>
   workshopModels.map((model) => ({ params: { slug: model.slug } }))
 
 const { slug } = Astro.params
-const model = getWorkshopModel(slug as string)!
+const model = getWorkshopModelDetail(slug as string)!
 const successor = model.successorSlug
   ? getWorkshopModel(model.successorSlug)
   : undefined
@@ -23,11 +27,27 @@ const modalityLabel = {
   '3d': t('workshop.filter.3d'),
   text: t('workshop.filter.text')
 } as const
+
+const price =
+  model.priceUsdFrom !== undefined
+    ? `${t('workshop.card.from')} ${new Intl.NumberFormat('en', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(model.priceUsdFrom)}`
+    : model.creditsPerRun !== undefined
+      ? `${model.creditsPerRun} ${t('nav.credits')}`
+      : undefined
+
+const statusClass =
+  'rounded-2xl border border-primary-comfy-orange/50 px-3 py-1 text-[11px] font-bold tracking-wider text-primary-comfy-orange uppercase'
+const pillClass =
+  'rounded-2xl bg-transparency-white-t8 px-3 py-1 text-[11px] font-bold tracking-wider text-primary-warm-white uppercase'
 ---
 
 <BaseLayout
   title={`${model.name} · ${t('workshop.title')} - Comfy`}
   description={t('workshop.model.meta.description').replace('{name}', model.name)}
+  ogImage={model.thumbnailUrl}
   noindex
 >
   <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
@@ -49,81 +69,92 @@ const modalityLabel = {
       </ol>
     </nav>
 
-    <header class="mb-10 flex flex-col gap-4">
-      <div class="flex flex-wrap items-center gap-2">
-        {
-          model.modality && (
-            <span class="rounded-full bg-transparency-white-t8 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-warm-white uppercase">
-              {modalityLabel[model.modality]}
-            </span>
-          )
-        }
-        <span class="rounded-full bg-transparency-white-t4 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-warm-gray uppercase">
-          {t('workshop.card.partnerNode')}
-        </span>
-        {
-          model.status === 'deprecated' && (
-            <span
-              class="rounded-full border border-primary-comfy-orange/50 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-comfy-orange uppercase"
-              data-testid="model-status"
-            >
-              {t('workshop.model.deprecated')}
-            </span>
-          )
-        }
-        {
-          model.status === 'degraded' && (
-            <span
-              class="rounded-full border border-primary-comfy-orange/50 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary-comfy-orange uppercase"
-              data-testid="model-status"
-            >
-              {t('workshop.model.degraded')}
-            </span>
-          )
-        }
-      </div>
-      <div class="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-5xl">
-            {model.name}
-          </h1>
-          <p class="mt-2 text-base text-primary-warm-gray">
+    <header
+      class="mb-12 flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-16"
+    >
+      <div class="flex flex-1 flex-col gap-5">
+        <div class="flex flex-wrap items-center gap-2">
+          <p
+            class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
+          >
             {model.provider ?? t('workshop.card.partnerNode')}
           </p>
+          {model.modality && <span class={pillClass}>{modalityLabel[model.modality]}</span>}
+          {
+            model.status === 'deprecated' && (
+              <span class={statusClass} data-testid="model-status">
+                {t('workshop.model.deprecated')}
+              </span>
+            )
+          }
+          {
+            model.status === 'degraded' && (
+              <span class={statusClass} data-testid="model-status">
+                {t('workshop.model.degraded')}
+              </span>
+            )
+          }
         </div>
+
+        <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+          {model.name}
+        </h1>
+
+        <p class="text-sm text-primary-comfy-canvas/60">
+          {
+            model.nodeDisplayName
+              ? t('workshop.model.runsNode').replace('{node}', model.nodeDisplayName)
+              : t('workshop.card.partnerNode')
+          }
+          {' · '}
+          {model.workflowCount} {t('workshop.card.workflows')}
+        </p>
+
         <p class="text-sm text-primary-comfy-canvas/70" data-testid="model-price">
           {
-            model.creditsPerRun !== undefined ? (
+            price ? (
               <>
-                <span class="text-2xl font-bold text-primary-comfy-yellow">
-                  {model.creditsPerRun}
-                </span>{' '}
-                {t('workshop.card.creditsPerRun')}
+                <span class="text-2xl font-bold text-primary-comfy-yellow">{price}</span>
+                {' / '}
+                {t('workshop.model.perRun')}
               </>
             ) : (
               t('workshop.card.priceOnPage')
             )
           }
         </p>
+
+        {
+          model.status === 'deprecated' && (
+            <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
+              {t('workshop.model.deprecatedBody')}
+              {successor && (
+                <a href={successor.href} class="ml-2 font-bold text-primary-comfy-yellow hover:underline">
+                  {t('workshop.model.deprecatedSuccessor').replace('{successor}', successor.name)} →
+                </a>
+              )}
+            </p>
+          )
+        }
+        {
+          model.status === 'degraded' && (
+            <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
+              {t('workshop.model.degradedBody')}
+            </p>
+          )
+        }
       </div>
 
       {
-        model.status === 'deprecated' && (
-          <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
-            {t('workshop.model.deprecatedBody')}
-            {successor && (
-              <a href={successor.href} class="ml-2 font-bold text-primary-comfy-yellow hover:underline">
-                {t('workshop.model.deprecatedSuccessor').replace('{successor}', successor.name)} →
-              </a>
-            )}
-          </p>
-        )
-      }
-      {
-        model.status === 'degraded' && (
-          <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
-            {t('workshop.model.degradedBody')}
-          </p>
+        model.thumbnailUrl && (
+          <div class="relative aspect-4/3 w-full overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light lg:w-2/5">
+            <img
+              src={model.thumbnailUrl}
+              alt={model.name}
+              class="size-full object-cover"
+              decoding="async"
+            />
+          </div>
         )
       }
     </header>

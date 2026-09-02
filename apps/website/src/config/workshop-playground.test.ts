@@ -3,21 +3,79 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
-  schemaFor,
+  schemaForModel,
   validateForm
 } from './workshop-playground'
 import { buildSnippet } from './workshop-snippets'
+import type { GeneratedField } from './workshop'
 
-describe('playground form', () => {
-  const schema = schemaFor('video')
+const generatedFields: GeneratedField[] = [
+  {
+    kind: 'text',
+    name: 'prompt',
+    label: 'Prompt',
+    multiline: true,
+    required: true
+  },
+  {
+    kind: 'select',
+    name: 'mode',
+    label: 'Mode',
+    options: ['std', 'pro'],
+    default: 'pro'
+  },
+  { kind: 'toggle', name: 'audio', label: 'Audio', default: true },
+  {
+    kind: 'file',
+    name: 'image',
+    label: 'Image',
+    accept: 'image',
+    required: false
+  }
+]
 
-  it('seeds selects and numbers, leaves text and files empty', () => {
-    const values = defaultValues(schema)
-    expect(values.aspectRatio).toBe('16:9')
-    expect(values.duration).toBe(5)
-    expect(values.prompt).toBeUndefined()
-    expect(values.image).toBeUndefined()
+describe('schemaForModel', () => {
+  it('uses the generated node inputs when present', () => {
+    const schema = schemaForModel({
+      fields: generatedFields,
+      modality: 'video'
+    })
+    expect(schema.map((f) => f.kind)).toEqual([
+      'text',
+      'select',
+      'toggle',
+      'file'
+    ])
   })
+
+  it('falls back to a modality schema otherwise', () => {
+    const schema = schemaForModel({ fields: [], modality: 'video' })
+    expect(schema.map((f) => f.name)).toContain('duration')
+  })
+})
+
+describe('defaultValues', () => {
+  const schema = schemaForModel({ fields: generatedFields, modality: 'video' })
+
+  it('seeds selects, numbers and toggles, leaves text and files empty', () => {
+    const values = defaultValues(schema)
+    expect(values).toEqual({
+      prompt: undefined,
+      mode: 'pro',
+      audio: true,
+      image: undefined
+    })
+  })
+
+  it('prefers the template values it is given', () => {
+    expect(
+      defaultValues(schema, { prompt: 'a cat', mode: 'std' })
+    ).toMatchObject({ prompt: 'a cat', mode: 'std', audio: true })
+  })
+})
+
+describe('validateForm', () => {
+  const schema = schemaForModel({ fields: generatedFields, modality: 'video' })
 
   it('requires a prompt', () => {
     expect(validateForm(schema, defaultValues(schema))).toEqual({
@@ -59,6 +117,7 @@ describe('buildSnippet', () => {
   const values = {
     prompt: 'a cat',
     seed: 7,
+    audio: true,
     image: { name: 'ref.png', size: 1, type: 'image/png' },
     unused: undefined
   }
@@ -67,6 +126,7 @@ describe('buildSnippet', () => {
     const python = buildSnippet('python', 'kling/kling-ai', values)
     expect(python).toContain('"kling/kling-ai"')
     expect(python).toContain('"prompt": "a cat"')
+    expect(python).toContain('"audio": true')
     expect(python).toContain('"image": "<ref.png>"')
     expect(python).not.toContain('unused')
   })

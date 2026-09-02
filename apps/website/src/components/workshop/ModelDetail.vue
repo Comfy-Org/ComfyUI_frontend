@@ -8,7 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
 import { useSignInDialog } from '../../composables/useSignInDialog'
 import { externalLinks } from '../../config/routes'
-import type { WorkshopModel } from '../../config/workshop'
+import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
   FieldErrors,
   FormValues,
@@ -16,8 +16,9 @@ import type {
 } from '../../config/workshop-playground'
 import {
   defaultValues,
-  examplesFor,
-  schemaFor,
+  examplesForModel,
+  isVideoUrl,
+  schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
 import type { RunOutput, RunState } from '../../config/workshop-run'
@@ -30,7 +31,7 @@ import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
 const { model, locale = 'en' } = defineProps<{
-  model: WorkshopModel
+  model: WorkshopModelDetail
   locale?: Locale
 }>()
 
@@ -43,9 +44,9 @@ const tabLabel: Record<Tab, TranslationKey> = {
 }
 const tab = ref<Tab>('playground')
 
-const schema = schemaFor(model.modality)
-const examples = examplesFor(model.modality)
-const values = ref<FormValues>(defaultValues(schema))
+const schema = schemaForModel(model)
+const examples = examplesForModel(model)
+const values = ref<FormValues>(defaultValues(schema, model.defaults))
 const runState = ref<RunState>(IDLE)
 const revealed = ref(false)
 const signedInNotice = ref(false)
@@ -148,7 +149,7 @@ function sampleOutput(): RunOutput {
   return {
     kind,
     url,
-    fileName: `${model.slug}-${values.value.seed ?? 0}.${kind === 'video' ? 'mp4' : kind === 'audio' ? 'mp3' : kind === '3d' ? 'glb' : kind === 'text' ? 'txt' : 'webp'}`,
+    fileName: `${model.slug}-${values.value.seed ?? 0}.${isVideoUrl(url) ? 'mp4' : kind === 'text' ? 'txt' : 'webp'}`,
     ...(kind === 'text'
       ? {
           text: `1. Shot by light, finished by you.\n2. Every product deserves a hero.\n3. Studio quality, ${typeof prompt === 'string' ? prompt.split(' ').length : 0} words in.`
@@ -208,7 +209,7 @@ function reset() {
 }
 
 function openExample(example: PlaygroundExample) {
-  values.value = { ...defaultValues(schema), ...example.values }
+  values.value = defaultValues(schema, example.values)
   reset()
   tab.value = 'playground'
 }
@@ -393,7 +394,8 @@ function useInCode() {
           :state="runState"
           :now
           :modality="model.modality"
-          :example-url="examples[0]?.outputUrl"
+          :example-url="examples[0]?.outputUrl ?? model.thumbnailUrl"
+          :example-title="examples[0]?.title"
           :locale
           @cancel="cancel"
           @retry="reset"

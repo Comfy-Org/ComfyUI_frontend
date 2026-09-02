@@ -10,7 +10,7 @@ export const SNIPPET_LANGUAGES: readonly SnippetLanguage[] = [
 
 function serializableInput(
   values: FormValues
-): Record<string, string | number> {
+): Record<string, string | number | boolean> {
   return Object.fromEntries(
     Object.entries(values).flatMap(([key, value]) => {
       if (value === undefined) return []

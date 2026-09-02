@@ -77,6 +77,9 @@ describe('countByModality', () => {
 describe('workshopModels', () => {
   it('only contains canonical partner-node models', () => {
     expect(workshopModels.length).toBeGreaterThan(0)
+    expect(workshopModels.filter((m) => m.thumbnailUrl).length).toBeGreaterThan(
+      40
+    )
     expect(
       isRouterModel({
         slug: 'x',

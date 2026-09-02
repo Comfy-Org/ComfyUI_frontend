@@ -71,6 +71,17 @@ function numberValue(name: string, fallback: number): number {
   const value = values.value[name]
   return typeof value === 'number' ? value : fallback
 }
+
+function booleanValue(name: string, fallback: boolean): boolean {
+  const value = values.value[name]
+  return typeof value === 'boolean' ? value : fallback
+}
+
+function acceptHint(accept: readonly string[]): string {
+  return accept
+    .map((type) => type.split('/')[1].replace('x-', '').toUpperCase())
+    .join(', ')
+}
 </script>
 
 <template>
@@ -78,35 +89,45 @@ function numberValue(name: string, fallback: number): number {
     <div
       v-for="field in schema"
       :key="field.name"
-      class="flex flex-col gap-1.5"
+      :class="
+        cn(
+          'flex flex-col gap-1.5',
+          field.kind === 'toggle' && 'flex-row items-center justify-between'
+        )
+      "
     >
-      <div class="flex items-baseline justify-between">
-        <label
-          :for="`field-${field.name}`"
-          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-        >
-          {{ t(field.label, locale) }}
-          <span
-            v-if="'required' in field && field.required"
-            class="text-primary-comfy-yellow"
-            aria-hidden="true"
+      <div class="flex min-w-0 flex-col gap-0.5">
+        <div class="flex items-baseline justify-between gap-3">
+          <label
+            :for="`field-${field.name}`"
+            class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
           >
-            *
+            {{ field.label }}
+            <span
+              v-if="'required' in field && field.required"
+              class="text-primary-comfy-yellow"
+              aria-hidden="true"
+            >
+              *
+            </span>
+          </label>
+          <span
+            v-if="field.kind === 'number'"
+            class="text-xs text-primary-warm-white tabular-nums"
+          >
+            {{ numberValue(field.name, field.defaultValue) }}
           </span>
-        </label>
-        <span
-          v-if="field.kind === 'number'"
-          class="text-xs text-primary-warm-white tabular-nums"
-        >
-          {{ numberValue(field.name, field.defaultValue) }}
-        </span>
+        </div>
+        <p v-if="field.hint" class="text-xs text-primary-warm-gray/80">
+          {{ field.hint }}
+        </p>
       </div>
 
       <textarea
         v-if="field.kind === 'text' && field.multiline"
         :id="`field-${field.name}`"
         :value="stringValue(field.name)"
-        :placeholder="t(field.placeholder, locale)"
+        :placeholder="field.placeholder"
         :disabled
         :aria-invalid="field.name in errors"
         :data-testid="`field-${field.name}`"
@@ -119,7 +140,7 @@ function numberValue(name: string, fallback: number): number {
         :id="`field-${field.name}`"
         type="text"
         :value="stringValue(field.name)"
-        :placeholder="t(field.placeholder, locale)"
+        :placeholder="field.placeholder"
         :disabled
         :aria-invalid="field.name in errors"
         :data-testid="`field-${field.name}`"
@@ -160,6 +181,34 @@ function numberValue(name: string, fallback: number): number {
         @input="onNumber(field.name, $event)"
       />
 
+      <button
+        v-else-if="field.kind === 'toggle'"
+        :id="`field-${field.name}`"
+        type="button"
+        role="switch"
+        :aria-checked="booleanValue(field.name, field.defaultValue)"
+        :disabled
+        :data-testid="`field-${field.name}`"
+        :class="
+          cn(
+            'relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors disabled:opacity-50',
+            booleanValue(field.name, field.defaultValue)
+              ? 'bg-primary-comfy-yellow'
+              : 'bg-transparency-white-t20'
+          )
+        "
+        @click="set(field.name, !booleanValue(field.name, field.defaultValue))"
+      >
+        <span
+          :class="
+            cn(
+              'absolute top-0.5 left-0.5 size-5 rounded-full bg-primary-comfy-ink transition-transform',
+              booleanValue(field.name, field.defaultValue) && 'translate-x-5'
+            )
+          "
+        />
+      </button>
+
       <template v-else-if="field.kind === 'file'">
         <div
           v-if="fileValue(field.name)"
@@ -194,7 +243,10 @@ function numberValue(name: string, fallback: number): number {
           <span class="font-bold tracking-wider uppercase">
             {{ t('workshop.field.upload', locale) }}
           </span>
-          <span>{{ t('workshop.field.uploadHint', locale) }}</span>
+          <span>
+            {{ acceptHint(field.accept) }} ·
+            {{ t('workshop.field.uploadLimit', locale) }}
+          </span>
           <input
             :id="`field-${field.name}`"
             type="file"

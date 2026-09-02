@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-const MODEL_PATH = '/workshop/models/kling-ai/'
+const MODEL_PATH = '/workshop/models/openai-dall-e/'
 
 test.describe('Workshop catalog', () => {
   test('lists partner models and filters by search and modality', async ({
@@ -64,6 +64,7 @@ test.describe('Model playground', () => {
     await page.getByTestId('sign-in-github').click()
 
     const run = page.getByTestId('run-button')
+    await page.getByTestId('field-prompt').fill('')
     await run.click()
     await expect(page.getByTestId('error-prompt')).toBeVisible()
 
@@ -81,11 +82,11 @@ test.describe('Model playground', () => {
     await expect(output).toHaveAttribute('data-state', 'succeeded', {
       timeout: 10_000
     })
-    await expect(page.getByTestId('run-credits-used')).toContainText('28')
+    await expect(page.getByTestId('run-credits-used')).toContainText('8')
     await expect(page.getByTestId('output-download')).toBeVisible()
     await expect(
-      page.getByTestId('desktop-nav-cta').getByTestId('header-account')
-    ).toContainText('1,222')
+      page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
+    ).toContainText('1,242')
   })
 
   test('asks to buy credits when the balance is too low', async ({ page }) => {
@@ -97,7 +98,7 @@ test.describe('Model playground', () => {
       .getByTestId('desktop-nav-cta')
       .getByTestId('header-account')
       .click()
-    await page.getByRole('menuitem', { name: 'Simulate zero balance' }).click()
+    await page.getByTestId('account-simulate-balance').click()
 
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
@@ -111,7 +112,9 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('snippet')).toContainText(
       'neon street at night'
     )
-    await expect(page.getByTestId('snippet')).toContainText('kling/kling-ai')
+    await expect(page.getByTestId('snippet')).toContainText(
+      'openai/openai-dall-e'
+    )
     await page.getByTestId('snippet-http').click()
     await expect(page.getByTestId('snippet')).toContainText('POST https://')
   })
@@ -120,9 +123,10 @@ test.describe('Model playground', () => {
     page
   }) => {
     await page.goto(MODEL_PATH)
+    await page.getByTestId('field-prompt').fill('')
     await page.getByTestId('tab-examples').click()
     await page.getByTestId('example-open').first().click()
     await expect(page.getByTestId('playground-tab')).toBeVisible()
-    await expect(page.getByTestId('field-prompt')).toHaveValue(/dolly-in/)
+    await expect(page.getByTestId('field-prompt')).not.toHaveValue('')
   })
 })

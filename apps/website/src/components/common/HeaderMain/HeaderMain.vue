@@ -73,7 +73,6 @@ const ctaButtons = [
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
-      <HeaderAccount :locale />
       <Button
         v-for="cta in ctaButtons"
         :key="cta.href"
@@ -87,6 +86,7 @@ const ctaButtons = [
           <span class="2xl:hidden">{{ cta.short }}</span>
         </span>
       </Button>
+      <HeaderAccount :locale class="ml-2" />
     </div>
     <SignInDialog :locale />
   </nav>

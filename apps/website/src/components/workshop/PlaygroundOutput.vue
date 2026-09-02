@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { Modality } from '../../config/workshop'
+import { isVideoUrl } from '../../config/workshop-playground'
 import type { RunFailure, RunState } from '../../config/workshop-run'
 import { formatElapsed } from '../../config/workshop-run'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -14,12 +15,14 @@ const {
   now,
   modality,
   exampleUrl,
+  exampleTitle,
   locale = 'en'
 } = defineProps<{
   state: RunState
   now: number
   modality?: Modality
   exampleUrl?: string
+  exampleTitle?: string
   locale?: Locale
 }>()
 
@@ -79,12 +82,12 @@ const blurred = computed(
     <!-- Idle: example output -->
     <div
       v-if="state.status === 'idle'"
-      class="relative flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
+      class="relative flex min-h-80 flex-1 flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center"
     >
       <video
-        v-if="exampleUrl && modality === 'video'"
+        v-if="exampleUrl && isVideoUrl(exampleUrl)"
         :src="exampleUrl"
-        class="absolute inset-0 size-full object-cover opacity-20"
+        class="absolute inset-0 size-full object-cover opacity-40"
         autoplay
         muted
         loop
@@ -94,9 +97,13 @@ const blurred = computed(
         v-else-if="exampleUrl"
         :src="exampleUrl"
         alt=""
-        class="absolute inset-0 size-full object-cover opacity-20"
+        class="absolute inset-0 size-full object-cover opacity-40"
       />
-      <p class="relative text-sm text-primary-comfy-canvas">
+      <div
+        v-if="exampleUrl"
+        class="absolute inset-0 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/40 to-transparent"
+      />
+      <p class="relative text-sm text-primary-warm-white">
         {{ t('workshop.output.placeholder', locale) }}
       </p>
       <p
@@ -104,6 +111,7 @@ const blurred = computed(
         class="relative text-xs tracking-wider text-primary-warm-gray uppercase"
       >
         {{ t('workshop.output.example', locale) }}
+        <template v-if="exampleTitle">· {{ exampleTitle }}</template>
       </p>
     </div>
 
@@ -175,14 +183,8 @@ const blurred = computed(
           :class="blurred ? 'blur-2xl select-none' : ''"
           class="size-full transition-[filter]"
         >
-          <img
-            v-if="state.output.kind === 'image' || state.output.kind === '3d'"
-            :src="state.output.url"
-            :alt="t('workshop.output.title', locale)"
-            class="size-full max-h-128 object-contain"
-          />
           <video
-            v-else-if="state.output.kind === 'video'"
+            v-if="state.output.url && isVideoUrl(state.output.url)"
             :src="state.output.url"
             class="size-full max-h-128 object-contain"
             autoplay
@@ -190,6 +192,12 @@ const blurred = computed(
             loop
             playsinline
             controls
+          />
+          <img
+            v-else-if="state.output.url && state.output.kind !== 'text'"
+            :src="state.output.url"
+            :alt="t('workshop.output.title', locale)"
+            class="size-full max-h-128 object-contain"
           />
           <pre
             v-else-if="state.output.kind === 'text'"
