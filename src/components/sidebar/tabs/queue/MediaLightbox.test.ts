@@ -29,7 +29,8 @@ const i18n = createI18n({
         gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next',
-        videoFailedToLoad: 'Video failed to load'
+        videoFailedToLoad: 'Video failed to load',
+        textFailedToLoad: 'Text failed to load'
       }
     }
   }
@@ -108,7 +109,7 @@ describe('MediaLightbox', () => {
     }
   ]
 
-  const renderGallery = (props = {}) => {
+  const renderGallery = (props = {}, stubs = {}) => {
     const onUpdateActiveIndex = vi.fn()
     const user = userEvent.setup()
     const { rerender, container } = render(MediaLightbox, {
@@ -120,7 +121,8 @@ describe('MediaLightbox', () => {
           ResultAudio: mockResultAudio
         },
         stubs: {
-          teleport: true
+          teleport: true,
+          ...stubs
         }
       },
       props: {
@@ -187,6 +189,35 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+  })
+
+  it('keeps failed text media actionable until the viewer closes', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 503 }))
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { user } = renderGallery(
+      {
+        allGalleryItems: [
+          {
+            ...mockGalleryItems[0],
+            isImage: false,
+            isText: true,
+            mediaType: 'text',
+            url: '/api/view?filename=failed.txt'
+          }
+        ] as ResultItemImpl[]
+      },
+      { ResultText: false }
+    )
+
+    expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
+
+    await user.click(screen.getByLabelText('Close'))
+
+    expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
   /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */

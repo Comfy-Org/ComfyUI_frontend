@@ -126,11 +126,6 @@
     "untitledChat": "Sans titre",
     "uploading": "Envoi en cours"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Coût par exécution",
-    "title": "Nœud(s) API",
-    "totalCost": "Coût total"
-  },
   "apiNodesSignInDialog": {
     "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
     "title": "Connexion requise pour utiliser les nœuds API"
@@ -3201,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "planificateurs",
     "scheduling": "planification",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "son",
@@ -5038,8 +5034,10 @@
       "failedCount": "Impossible d'envoyer {count} invitation. Réessayez. | Impossible d'envoyer {count} invitations. Réessayez.",
       "invalidEmailCount": "{count} adresse e-mail invalide | {count} adresses e-mail invalides",
       "invitedMessage": "Une invitation a été envoyée à {emails} | Des invitations ont été envoyées à {emails}",
+      "pendingInviteCount": "{count} de ces personnes ont déjà une invitation en attente. Elles seront ignorées.",
+      "pendingInviteSingle": "Cette personne a déjà une invitation en attente",
       "placeholder": "Entrez l'email de la personne",
-      "seatLimitReached": "Vous pouvez inviter jusqu'à {count} coéquipier. | Vous pouvez inviter jusqu'à {count} coéquipiers.",
+      "seatLimitExceeded": "Cet espace de travail est limité à {max} membres. Supprimez-en {overage} pour continuer.",
       "title": "Inviter une personne dans cet espace de travail"
     },
     "inviteUpsellDialog": {

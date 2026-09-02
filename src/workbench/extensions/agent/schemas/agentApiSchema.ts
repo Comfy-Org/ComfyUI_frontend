@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
+export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
 export const zAgentTurnAccepted = z
   .object({
@@ -81,9 +82,10 @@ const zAgentThinkingData = z
 
 const zAgentToolCallData = z
   .object({
+    tool_call_id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
-    args: z.array(z.string()),
+    status: z.enum(['running', 'success', 'error']),
+    args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()

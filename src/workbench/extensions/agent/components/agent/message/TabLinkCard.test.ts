@@ -61,7 +61,7 @@ describe('TabLinkCard', () => {
     openTabs()
   })
 
-  it('uses the backend display name and focuses the bound tab on click', async () => {
+  it('T-14 / PM-676 / FE-1310 renders the backend tab name and focuses its workflow on click', async () => {
     const tab = { path: 'flows/portrait.json', filename: 'portrait' }
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)

@@ -4,10 +4,9 @@ const baseRoutes = {
   home: '/',
   download: '/download',
   cloud: '/cloud',
-  cloudPricing: '/cloud/pricing',
+  pricing: '/pricing',
   enterprise: '/enterprise',
   managedBuilds: '/enterprise/managed-builds',
-  api: '/api',
   gallery: '/gallery',
   launches: '/launches',
   events: '/events',
@@ -25,6 +24,10 @@ const baseRoutes = {
   models: '/p/supported-models',
   modelsShowcase: '/models',
   mcp: '/mcp',
+  platform: '/platform',
+  platformComfyApi: '/platform/comfy-api',
+  platformModels: '/platform/models',
+  platformBuilder: '/platform/builder',
   cli: '/cli',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
@@ -92,6 +95,7 @@ export function isLocaleInvariantPath(pathname: string): boolean {
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  if (locale === 'ja') return href === '/' ? '/ja/' : href
   return `/${locale}${href}`
 }
 
@@ -131,7 +135,13 @@ export const externalLinks = {
   docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
   docsMcpLocalMd:
     'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
+  docsComfyRouter:
+    'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
+  docsPlatform: 'https://docs.comfy.org/development/overview',
+  docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
+  docsSelfHosted:
+    'https://docs.comfy.org/development/deploy/overview#self-hosted-comfyui',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
   github: 'https://github.com/Comfy-Org/ComfyUI',
@@ -141,6 +151,7 @@ export const externalLinks = {
   mcpEndpoint: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
+  platformBuilds: 'https://platform.comfy.org/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
