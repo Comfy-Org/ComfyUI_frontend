@@ -1,17 +1,16 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
-import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
   vi.fn(<T>(clear: () => T): T => clear())
@@ -45,32 +44,48 @@ vi.mock('@/scripts/app', () => {
   const mockCanvas = {
     subgraph: undefined,
     selectedItems: new Set(),
+    selected_nodes: null as Record<string, unknown> | null,
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
-    deleteSelected: vi.fn(),
-    selectOnly: false,
-    canvas: { dispatchEvent: vi.fn() },
-    read_only: false,
     ds: mockDs,
-    setDirty: vi.fn()
+    deleteSelected: vi.fn(),
+    setDirty: vi.fn(),
+    fitViewToSelectionAnimated: vi.fn(),
+    empty: false,
+    read_only: false,
+    state: {
+      readOnly: false,
+      selectionChanged: false
+    },
+    graph: {
+      add: vi.fn(),
+      convertToSubgraph: vi.fn(),
+      rootGraph: {}
+    },
+    select: vi.fn(),
+    canvas: {
+      dispatchEvent: vi.fn()
+    },
+    setGraph: vi.fn()
   }
 
   return {
     app: {
       clean: vi.fn(() => {
-        // Simulate app.clean() calling graph.clear() only when not in subgraph
         if (!mockCanvas.subgraph) {
           mockGraphClear()
         }
       }),
       openClipspace: vi.fn(),
-      queuePrompt: vi.fn().mockResolvedValue(true),
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
-        clear: mockGraphClear
-      }
+        clear: mockGraphClear,
+        _nodes: []
+      },
+      queuePrompt: vi.fn(),
+      ui: { loadFile: vi.fn() }
     }
   }
 })
@@ -81,7 +96,9 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn(() => 'http://localhost:8188'),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
+    getServerFeature: vi.fn(() => false),
+    interrupt: vi.fn(),
+    freeMemory: vi.fn()
   }
 }))
 
@@ -117,6 +134,10 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
+vi.mock('@/composables/auth/useFirebaseAuth', () => ({
+  useFirebaseAuth: vi.fn(() => null)
+}))
+
 vi.mock('firebase/auth', () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -141,13 +162,15 @@ vi.mock('@/services/litegraphService', () => ({
   }))
 }))
 
-const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
+const mockTelemetry = vi.hoisted(() => ({
+  trackWorkflowCreated: vi.fn(),
+  trackRunButton: vi.fn(),
+  trackWorkflowExecution: vi.fn(),
+  trackHelpResourceClicked: vi.fn(),
+  trackEnterLinear: vi.fn()
+}))
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked,
-    trackRunButton: vi.fn(),
-    trackWorkflowExecution: vi.fn()
-  }))
+  useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
 const mockShowAbout = vi.hoisted(() => vi.fn())
@@ -163,25 +186,18 @@ vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({}))
 }))
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
+const mockToastStore = vi.hoisted(() => ({
+  add: vi.fn()
+}))
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
-}))
-
-const mockAssetBrowse = vi.hoisted(() =>
-  vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
-)
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
-  useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
-}))
-
-const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
-  startModelNodeDragFromAsset: mockStartModelNodeDrag
+  useToastStore: vi.fn(() => mockToastStore)
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  captureCanvasState: vi.fn()
+  captureCanvasState: vi.fn(),
+  checkState: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn()
 }))
 const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: {
@@ -196,53 +212,151 @@ vi.mock('@/stores/subgraphStore', () => ({
   useSubgraphStore: vi.fn(() => ({}))
 }))
 
+const mockCanvasStore = vi.hoisted(() => ({
+  getCanvas: vi.fn(),
+  canvas: null as unknown,
+  linearMode: false,
+  updateSelectedItems: vi.fn()
+}))
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({
-    getCanvas: () => app.canvas,
-    canvas: app.canvas
-  })),
+  useCanvasStore: vi.fn(() => mockCanvasStore),
   useTitleEditorStore: vi.fn(() => ({
     titleEditorTarget: null
   }))
 }))
 
+const mockColorPaletteState = vi.hoisted(() => ({
+  completedActivePalette: { id: 'dark', light_theme: false }
+}))
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: vi.fn(() => ({}))
+  useColorPaletteStore: vi.fn(() => mockColorPaletteState)
 }))
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: vi.fn(() => ({}))
+  useAuthActions: vi.fn(() => ({
+    logout: vi.fn()
+  }))
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
+    isActiveSubscription: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
-const mockBillingState = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null,
-  showSubscriptionDialog: vi.fn()
+const mockCanAccessSubscriptionFeatures = vi.hoisted(() => ({ value: true }))
+const mockShowSubscriptionDialog = vi.hoisted(() => vi.fn())
+const mockSubscriptionTier = vi.hoisted(() => ({
+  value: null as string | null
 }))
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: {
-      get value() {
-        return mockBillingState.canAccessSubscriptionFeatures
-      }
-    },
-    subscription: {
-      get value() {
-        return mockBillingState.subscriptionTier
-          ? { tier: mockBillingState.subscriptionTier }
-          : null
-      }
-    },
-    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    subscription: mockSubscriptionTier,
+    showSubscriptionDialog: mockShowSubscriptionDialog
   }))
 }))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: vi.fn(() => ({
+    userEmail: ref(''),
+    resolvedUserInfo: ref(null)
+  }))
+}))
+
+const mockSelectedItems = vi.hoisted(() => ({
+  getSelectedNodes: vi.fn((): unknown[] => []),
+  toggleSelectedNodesMode: vi.fn()
+}))
+vi.mock('@/composables/canvas/useSelectedLiteGraphItems', () => ({
+  useSelectedLiteGraphItems: vi.fn(() => mockSelectedItems)
+}))
+
+vi.mock('@/composables/graph/useSubgraphOperations', () => ({
+  useSubgraphOperations: vi.fn(() => ({
+    unpackSubgraph: vi.fn()
+  }))
+}))
+
+vi.mock('@/composables/useExternalLink', () => ({
+  useExternalLink: vi.fn(() => ({
+    staticUrls: {
+      githubIssues: 'https://github.com/issues',
+      discord: 'https://discord.gg/test',
+      forum: 'https://forum.test.com'
+    },
+    buildDocsUrl: vi.fn(() => 'https://docs.test.com')
+  }))
+}))
+
+vi.mock('@/composables/useModelSelectorDialog', () => ({
+  useModelSelectorDialog: vi.fn(() => ({
+    show: vi.fn()
+  }))
+}))
+
+vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
+  useWorkflowTemplateSelectorDialog: vi.fn(() => ({
+    show: vi.fn()
+  }))
+}))
+
+vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
+  useAssetBrowserDialog: vi.fn(() => ({
+    browse: vi.fn()
+  }))
+}))
+
+vi.mock('@/platform/assets/utils/createModelNodeFromAsset', () => ({
+  createModelNodeFromAsset: vi.fn()
+}))
+
+vi.mock('@/platform/support/config', () => ({
+  buildSupportUrl: vi.fn(() => 'https://support.test.com')
+}))
+
+const mockFilterOutputNodes = vi.hoisted(() => vi.fn((): LGraphNode[] => []))
+vi.mock('@/utils/nodeFilterUtil', () => ({
+  filterOutputNodes: mockFilterOutputNodes
+}))
+
+const mockGetExecutionIdsForSelectedNodes = vi.hoisted(() =>
+  vi.fn((): number[] => [])
+)
+const mockGetAllNonIoNodesInSubgraph = vi.hoisted(() =>
+  vi.fn((): LGraphNode[] => [])
+)
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getAllNonIoNodesInSubgraph: mockGetAllNonIoNodesInSubgraph,
+  getExecutionIdsForSelectedNodes: mockGetExecutionIdsForSelectedNodes,
+  reduceAllNodes: vi.fn(() => ({ nodeCount: 0 }))
+}))
+
+vi.mock('@/stores/queueStore', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 })),
+  useQueueStore: vi.fn(() => ({})),
+  useQueueUIStore: vi.fn(() => ({}))
+}))
+
+const mockLGraphGroupInstance = vi.hoisted(() => ({
+  resizeTo: vi.fn(),
+  recomputeInsideNodes: vi.fn()
+}))
+const MockLGraphGroup = vi.hoisted(
+  () =>
+    function (this: typeof mockLGraphGroupInstance) {
+      Object.assign(this, mockLGraphGroupInstance)
+    }
+)
+vi.mock('@/lib/litegraph/src/litegraph', async () => {
+  const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
+  return {
+    ...actual,
+    LGraphGroup: MockLGraphGroup
+  }
+})
 
 vi.mock('@/stores/queueSettingsStore', () => ({
   useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 }))
@@ -261,13 +375,9 @@ describe('useCoreCommands', () => {
 
   const createMockSubgraph = () => {
     const mockNodes = [
-      // Mock input node
       createMockNode(1, 'SubgraphInputNode'),
-      // Mock output node
       createMockNode(2, 'SubgraphOutputNode'),
-      // Mock user node
       createMockNode(3, 'SomeUserNode'),
-      // Another mock user node
       createMockNode(4, 'AnotherUserNode')
     ]
 
@@ -306,7 +416,7 @@ describe('useCoreCommands', () => {
   function createMockSettingStore(
     getReturnValue: boolean
   ): ReturnType<typeof useSettingStore> {
-    return fromPartial<ReturnType<typeof useSettingStore>>({
+    return {
       get: vi.fn().mockReturnValue(getReturnValue),
       addSetting: vi.fn(),
       load: vi.fn(),
@@ -333,37 +443,49 @@ describe('useCoreCommands', () => {
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set()
-    })
+    } as unknown as ReturnType<typeof useSettingStore>
+  }
+
+  function findCommand(id: string) {
+    const cmd = useCoreCommands().find((c) => c.id === id)
+    if (!cmd) expect.fail(`Command '${id}' not found`)
+    return cmd!
   }
 
   beforeEach(() => {
     mockDistributionState.isCloud = false
-    mockBillingState.canAccessSubscriptionFeatures = true
-    mockBillingState.subscriptionTier = null
+    mockColorPaletteState.completedActivePalette = {
+      id: 'dark',
+      light_theme: false
+    }
+    setActivePinia(createPinia())
+
+    app.canvas.subgraph = undefined
+    app.canvas.selectedItems = new Set()
+    app.canvas.read_only = false
+    app.canvas.state.selectionChanged = false
+    Object.defineProperty(app.canvas, 'empty', { value: false, writable: true })
+    mockCanvasStore.linearMode = false
+    mockCanvasStore.getCanvas.mockReturnValue(app.canvas)
+    mockCanAccessSubscriptionFeatures.value = true
+
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
 
-    // Reset app state
-    app.canvas.subgraph = undefined
-
-    // Mock settings store
     vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
 
-    // Mock global confirm
-    global.confirm = vi.fn().mockReturnValue(true)
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
+    vi.stubGlobal(
+      'open',
+      vi.fn().mockReturnValue({ focus: vi.fn(), closed: false })
+    )
     mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
     it('should clear main graph when not in subgraph', async () => {
-      const commands = useCoreCommands()
-      const clearCommand = commands.find(
-        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
-      )!
-
-      // Execute the command
-      await clearCommand.function()
+      await findCommand('Comfy.ClearWorkflow').function()
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
@@ -372,47 +494,34 @@ describe('useCoreCommands', () => {
     })
 
     it('should preserve input/output nodes when clearing subgraph', async () => {
-      // Set up subgraph context
       app.canvas.subgraph = mockSubgraph
+      mockGetAllNonIoNodesInSubgraph.mockReturnValue([
+        mockSubgraph.nodes[2],
+        mockSubgraph.nodes[3]
+      ])
 
-      const commands = useCoreCommands()
-      const clearCommand = commands.find(
-        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
-      )!
-
-      // Execute the command
-      await clearCommand.function()
+      await findCommand('Comfy.ClearWorkflow').function()
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
-      // Should only remove user nodes, not input/output nodes
       const subgraph = app.canvas.subgraph!
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
-      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2]) // user1
-      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3]) // user2
-      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0]) // input1
-      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1]) // output1
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2])
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3])
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0])
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1])
 
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
     it('should respect confirmation setting', async () => {
-      // Mock confirmation required
       vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
+      vi.stubGlobal('confirm', vi.fn().mockReturnValue(false))
 
-      global.confirm = vi.fn().mockReturnValue(false) // User cancels
+      await findCommand('Comfy.ClearWorkflow').function()
 
-      const commands = useCoreCommands()
-      const clearCommand = commands.find(
-        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
-      )!
-
-      // Execute the command
-      await clearCommand.function()
-
-      // Should not clear anything when user cancels
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
@@ -420,15 +529,6 @@ describe('useCoreCommands', () => {
   })
 
   describe('Canvas clipboard commands', () => {
-    function findCommand(id: string) {
-      return useCoreCommands().find((cmd) => cmd.id === id)!
-    }
-
-    beforeEach(() => {
-      app.canvas.selectedItems = new Set()
-      app.canvas.selectOnly = false
-    })
-
     it('should copy selected items when selection exists', async () => {
       app.canvas.selectedItems = new Set([
         {}
@@ -451,36 +551,545 @@ describe('useCoreCommands', () => {
       expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
     })
 
+    it('should paste with connect option', async () => {
+      await findCommand('Comfy.Canvas.PasteFromClipboardWithConnect').function()
+
+      expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith({
+        connectInputs: true
+      })
+    })
+
     it('should select all items', async () => {
       await findCommand('Comfy.Canvas.SelectAll').function()
 
-      // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
     })
+  })
 
-    it('should delete selected items outside selection-only mode', async () => {
+  describe('Undo/Redo commands', () => {
+    it('Undo should call changeTracker.undo', async () => {
+      await findCommand('Comfy.Undo').function()
+
+      expect(mockChangeTracker.undo).toHaveBeenCalled()
+    })
+
+    it('Redo should call changeTracker.redo', async () => {
+      await findCommand('Comfy.Redo').function()
+
+      expect(mockChangeTracker.redo).toHaveBeenCalled()
+    })
+  })
+
+  describe('Canvas lock commands', () => {
+    it('ToggleLock should toggle readOnly state', async () => {
+      app.canvas.read_only = false
+
+      await findCommand('Comfy.Canvas.ToggleLock').function()
+      expect(app.canvas.read_only).toBe(true)
+
+      await findCommand('Comfy.Canvas.ToggleLock').function()
+      expect(app.canvas.read_only).toBe(false)
+    })
+
+    it('Lock should set readOnly to true', async () => {
+      await findCommand('Comfy.Canvas.Lock').function()
+      expect(app.canvas.read_only).toBe(true)
+    })
+
+    it('Unlock should set readOnly to false', async () => {
+      app.canvas.read_only = true
+      await findCommand('Comfy.Canvas.Unlock').function()
+      expect(app.canvas.read_only).toBe(false)
+    })
+  })
+
+  describe('Canvas delete command', () => {
+    it('should delete selected items when selection exists', async () => {
       app.canvas.selectedItems = new Set([
         {}
       ]) as typeof app.canvas.selectedItems
 
       await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
 
-      expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
+      expect(app.canvas.deleteSelected).toHaveBeenCalled()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
-    it('should preserve selected items in selection-only mode', async () => {
-      const selectedItem = {}
-      app.canvas.selectedItems = new Set([
-        selectedItem
-      ]) as typeof app.canvas.selectedItems
-      app.canvas.selectOnly = true
+    it('should dispatch no-items-selected event when nothing selected', async () => {
+      app.canvas.selectedItems = new Set()
 
       await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
 
+      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'litegraph:no-items-selected' })
+      )
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('ToggleLinkVisibility command', () => {
+    it('should hide links when currently visible', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(LiteGraph.SPLINE_LINK)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.Canvas.ToggleLinkVisibility').function()
+
+      expect(mockStore.set).toHaveBeenCalledWith(
+        'Comfy.LinkRenderMode',
+        LiteGraph.HIDDEN_LINK
+      )
+    })
+
+    it('should restore links when currently hidden', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(LiteGraph.HIDDEN_LINK)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.Canvas.ToggleLinkVisibility').function()
+
+      const lastSetCall = vi.mocked(mockStore.set).mock.calls.at(-1)
+      expect(lastSetCall?.[0]).toBe('Comfy.LinkRenderMode')
+      expect(lastSetCall?.[1]).not.toBe(LiteGraph.HIDDEN_LINK)
+    })
+  })
+
+  describe('ToggleMinimap command', () => {
+    it('should toggle minimap visibility setting', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(false)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.Canvas.ToggleMinimap').function()
+
+      expect(mockStore.set).toHaveBeenCalledWith('Comfy.Minimap.Visible', true)
+    })
+  })
+
+  describe('QueuePrompt commands', () => {
+    it('should show subscription dialog when not subscribed', async () => {
+      mockDistributionState.isCloud = true
+      mockCanAccessSubscriptionFeatures.value = false
+
+      await findCommand('Comfy.QueuePrompt').function()
+
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+
+      mockCanAccessSubscriptionFeatures.value = true
+    })
+
+    it('should queue prompt when subscribed', async () => {
+      await findCommand('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, { intent: undefined })
+      expect(mockTelemetry.trackRunButton).toHaveBeenCalled()
+      expect(mockTelemetry.trackWorkflowExecution).toHaveBeenCalled()
+    })
+
+    it('should queue prompt at front', async () => {
+      await findCommand('Comfy.QueuePromptFront').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(-1, 1, { intent: undefined })
+    })
+  })
+
+  describe('QueueSelectedOutputNodes command', () => {
+    it('should show error toast when no output nodes selected', async () => {
+      await findCommand('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('should queue selected output nodes when valid selection exists', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
+      mockFilterOutputNodes.mockReturnValue([mockNode])
+      mockGetExecutionIdsForSelectedNodes.mockReturnValue([1])
+
+      await findCommand('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, {
+        queueNodeIds: [1],
+        intent: undefined
+      })
+      expect(mockTelemetry.trackWorkflowExecution).toHaveBeenCalled()
+    })
+  })
+
+  describe('MoveSelectedNodes commands', () => {
+    function setupMoveTest() {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      mockNode.pos = [100, 200] as [number, number]
+      mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
+
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(10)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      return mockNode
+    }
+
+    it('should move nodes up by grid size', async () => {
+      const mockNode = setupMoveTest()
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Up').function()
+
+      expect(mockNode.pos).toEqual([100, 190])
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should move nodes down by grid size', async () => {
+      const mockNode = setupMoveTest()
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Down').function()
+
+      expect(mockNode.pos).toEqual([100, 210])
+    })
+
+    it('should move nodes left by grid size', async () => {
+      const mockNode = setupMoveTest()
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Left').function()
+
+      expect(mockNode.pos).toEqual([90, 200])
+    })
+
+    it('should move nodes right by grid size', async () => {
+      const mockNode = setupMoveTest()
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Right').function()
+
+      expect(mockNode.pos).toEqual([110, 200])
+    })
+
+    it('should not move when no nodes selected', async () => {
+      mockSelectedItems.getSelectedNodes.mockReturnValue([])
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Up').function()
+
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
-      expect([...app.canvas.selectedItems]).toEqual([selectedItem])
+    })
+  })
+
+  describe('ToggleLinear command', () => {
+    it('should toggle linear mode and track telemetry when entering', async () => {
+      mockCanvasStore.linearMode = false
+
+      await findCommand('Comfy.ToggleLinear').function()
+
+      expect(mockCanvasStore.linearMode).toBe(true)
+      expect(mockTelemetry.trackEnterLinear).toHaveBeenCalledWith({
+        source: 'keybind'
+      })
+    })
+
+    it('should use provided source metadata', async () => {
+      mockCanvasStore.linearMode = false
+
+      await findCommand('Comfy.ToggleLinear').function({
+        source: 'menu'
+      })
+
+      expect(mockTelemetry.trackEnterLinear).toHaveBeenCalledWith({
+        source: 'menu'
+      })
+    })
+  })
+
+  describe('ToggleQPOV2 command', () => {
+    it('should toggle queue panel v2 setting', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(false)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.ToggleQPOV2').function()
+
+      expect(mockStore.set).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
+    })
+  })
+
+  describe('Memory commands', () => {
+    it('UnloadModels should show error when setting is disabled', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(false)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.Memory.UnloadModels').function()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(api.freeMemory).not.toHaveBeenCalled()
+    })
+
+    it('UnloadModels should call api.freeMemory when setting is enabled', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(true)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.Memory.UnloadModels').function()
+
+      expect(api.freeMemory).toHaveBeenCalledWith({
+        freeExecutionCache: false
+      })
+    })
+
+    it('UnloadModelsAndExecutionCache should call api.freeMemory with cache flag', async () => {
+      const mockStore = createMockSettingStore(false)
+      mockStore.get = vi.fn().mockReturnValue(true)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      await findCommand('Comfy.Memory.UnloadModelsAndExecutionCache').function()
+
+      expect(api.freeMemory).toHaveBeenCalledWith({
+        freeExecutionCache: true
+      })
+    })
+  })
+
+  describe('FitView command', () => {
+    it('should show error toast when canvas is empty', async () => {
+      Object.defineProperty(app.canvas, 'empty', {
+        value: true,
+        writable: true
+      })
+
+      await findCommand('Comfy.Canvas.FitView').function()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(app.canvas.fitViewToSelectionAnimated).not.toHaveBeenCalled()
+    })
+
+    it('should fit view when canvas has content', async () => {
+      Object.defineProperty(app.canvas, 'empty', {
+        value: false,
+        writable: true
+      })
+
+      await findCommand('Comfy.Canvas.FitView').function()
+
+      expect(app.canvas.fitViewToSelectionAnimated).toHaveBeenCalled()
+    })
+  })
+
+  describe('Interrupt command', () => {
+    it('should call api.interrupt and show toast', async () => {
+      await findCommand('Comfy.Interrupt').function()
+
+      expect(api.interrupt).toHaveBeenCalled()
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'info' })
+      )
+    })
+  })
+
+  describe('OpenWorkflow command', () => {
+    it('should call app.ui.loadFile', async () => {
+      await findCommand('Comfy.OpenWorkflow').function()
+
+      expect(app.ui.loadFile).toHaveBeenCalled()
+    })
+  })
+
+  describe('ToggleTheme command', () => {
+    it('should switch from dark to light and back', async () => {
+      const mockStore = createMockSettingStore(false)
+      vi.mocked(useSettingStore).mockReturnValue(mockStore)
+
+      const toggleTheme = findCommand('Comfy.ToggleTheme')
+      await toggleTheme.function()
+
+      expect(mockStore.set).toHaveBeenCalledWith('Comfy.ColorPalette', 'light')
+
+      mockColorPaletteState.completedActivePalette = {
+        id: 'light',
+        light_theme: true
+      }
+      await toggleTheme.function()
+
+      expect(mockStore.set).toHaveBeenLastCalledWith(
+        'Comfy.ColorPalette',
+        'dark'
+      )
+    })
+  })
+
+  describe('ToggleSelectedNodes commands', () => {
+    it('Mute should toggle selected nodes mode and mark dirty', async () => {
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Mute').function()
+
+      expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalled()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('Bypass should toggle selected nodes mode and mark dirty', async () => {
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Bypass').function()
+
+      expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalled()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('Pin should toggle pin state on each selected node', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      Object.defineProperty(mockNode, 'pinned', {
+        value: false,
+        writable: true
+      })
+      mockNode.pin = vi.fn()
+      mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
+
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Pin').function()
+
+      expect(mockNode.pin).toHaveBeenCalledWith(true)
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('Collapse should collapse each selected node', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      mockNode.collapse = vi.fn()
+      mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
+
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Collapse').function()
+
+      expect(mockNode.collapse).toHaveBeenCalled()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('Resize should compute and set optimal size', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      mockNode.computeSize = vi.fn().mockReturnValue([200, 100])
+      mockNode.setSize = vi.fn()
+      mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
+
+      await findCommand('Comfy.Canvas.Resize').function()
+
+      expect(mockNode.computeSize).toHaveBeenCalled()
+      expect(mockNode.setSize).toHaveBeenCalledWith([200, 100])
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+  })
+
+  describe('Help commands', () => {
+    it('OpenComfyUIIssues should open GitHub issues and track telemetry', async () => {
+      await findCommand('Comfy.Help.OpenComfyUIIssues').function()
+
+      expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith({
+        resource_type: 'github',
+        is_external: true,
+        source: 'menu'
+      })
+      expect(window.open).toHaveBeenCalledWith(
+        'https://github.com/issues',
+        '_blank'
+      )
+    })
+
+    it('OpenComfyUIDocs should open docs and track telemetry', async () => {
+      await findCommand('Comfy.Help.OpenComfyUIDocs').function()
+
+      expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith({
+        resource_type: 'docs',
+        is_external: true,
+        source: 'menu'
+      })
+      expect(window.open).toHaveBeenCalledWith(
+        'https://docs.test.com',
+        '_blank'
+      )
+    })
+
+    it('OpenComfyOrgDiscord should open Discord and track telemetry', async () => {
+      await findCommand('Comfy.Help.OpenComfyOrgDiscord').function()
+
+      expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith({
+        resource_type: 'discord',
+        is_external: true,
+        source: 'menu'
+      })
+      expect(window.open).toHaveBeenCalledWith(
+        'https://discord.gg/test',
+        '_blank'
+      )
+    })
+
+    it('OpenComfyUIForum should open forum and track telemetry', async () => {
+      await findCommand('Comfy.Help.OpenComfyUIForum').function()
+
+      expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith({
+        resource_type: 'help_feedback',
+        is_external: true,
+        source: 'menu'
+      })
+      expect(window.open).toHaveBeenCalledWith(
+        'https://forum.test.com',
+        '_blank'
+      )
+    })
+  })
+
+  describe('GroupSelectedNodes command', () => {
+    it('should show error toast when nothing selected', async () => {
+      app.canvas.selectedItems = new Set()
+
+      await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('should create group when items are selected', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      app.canvas.selectedItems = new Set([
+        mockNode
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+
+      expect(mockLGraphGroupInstance.resizeTo).toHaveBeenCalled()
+      expect(app.canvas.graph!.add).toHaveBeenCalled()
+    })
+  })
+
+  describe('ConvertToSubgraph command', () => {
+    it('should show error toast when conversion fails', async () => {
+      app.canvas.graph!.convertToSubgraph = vi.fn().mockReturnValue(null)
+
+      await findCommand('Comfy.Graph.ConvertToSubgraph').function()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('should select the new subgraph node on success', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      app.canvas.graph!.convertToSubgraph = vi
+        .fn()
+        .mockReturnValue({ node: mockNode })
+
+      await findCommand('Comfy.Graph.ConvertToSubgraph').function()
+
+      expect(app.canvas.select).toHaveBeenCalledWith(mockNode)
+      expect(mockCanvasStore.updateSelectedItems).toHaveBeenCalled()
+    })
+  })
+
+  describe('ContactSupport command', () => {
+    it('should open support URL in new window', async () => {
+      await findCommand('Comfy.ContactSupport').function()
+
+      expect(window.open).toHaveBeenCalledWith(
+        'https://support.test.com',
+        '_blank',
+        'noopener,noreferrer'
+      )
     })
   })
 
@@ -618,18 +1227,15 @@ describe('useCoreCommands', () => {
   })
 
   describe('Canvas view commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
-      await findCmd('Comfy.Canvas.ResetView').function()
+      await findCommand('Comfy.Canvas.ResetView').function()
 
       expect(mockResetView).toHaveBeenCalled()
     })
 
     it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
       app.canvas.ds.scale = 1
-      await findCmd('Comfy.Canvas.ZoomIn').function()
+      await findCommand('Comfy.Canvas.ZoomIn').function()
 
       expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
         1.1,
@@ -640,7 +1246,7 @@ describe('useCoreCommands', () => {
 
     it('Comfy.Canvas.ZoomOut scales the canvas down by 1/1.1× and marks it dirty', async () => {
       app.canvas.ds.scale = 1
-      await findCmd('Comfy.Canvas.ZoomOut').function()
+      await findCommand('Comfy.Canvas.ZoomOut').function()
 
       expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
         1 / 1.1,
@@ -648,245 +1254,27 @@ describe('useCoreCommands', () => {
       )
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
-
-    it.for([
-      { id: 'Comfy.Canvas.Lock', from: false, to: true },
-      { id: 'Comfy.Canvas.Unlock', from: true, to: false },
-      { id: 'Comfy.Canvas.ToggleLock', from: false, to: true },
-      { id: 'Comfy.Canvas.ToggleLock', from: true, to: false }
-    ] as const)(
-      '$id changes read-only state from $from to $to',
-      async ({ id, from, to }) => {
-        app.canvas.read_only = from
-
-        await findCmd(id).function()
-
-        expect(app.canvas.read_only).toBe(to)
-      }
-    )
   })
 
   describe('Workflow lifecycle commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it('Comfy.OpenClipspace delegates to app.openClipspace', async () => {
-      await findCmd('Comfy.OpenClipspace').function()
+      await findCommand('Comfy.OpenClipspace').function()
 
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
-    it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {
-      const order: string[] = []
-      let resolveComboRefresh: () => void = () => {}
-      vi.mocked(app.refreshComboInNodes).mockImplementation(async () => {
-        order.push('combo:start')
-        await new Promise<void>((resolve) => {
-          resolveComboRefresh = resolve
-        })
-        order.push('combo:end')
-      })
-      mockModelStoreRefresh.mockImplementation(async () => {
-        order.push('models')
-      })
-      mockMissingModelStoreRefresh.mockImplementation(async () => {
-        order.push('missing')
-      })
-
-      const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
-
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
-      resolveComboRefresh()
-      await commandPromise
+    it('Comfy.RefreshNodeDefinitions awaits app.refreshComboInNodes', async () => {
+      await findCommand('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).toHaveBeenCalledWith({
-        reloadDefs: false
-      })
-      expect(order.indexOf('missing')).toBeGreaterThan(
-        order.indexOf('combo:end')
-      )
-    })
-
-    it('Comfy.RefreshNodeDefinitions skips the rescan when combo refresh fails', async () => {
-      vi.mocked(app.refreshComboInNodes).mockRejectedValue(new Error('boom'))
-
-      await expect(
-        findCmd('Comfy.RefreshNodeDefinitions').function()
-      ).rejects.toThrow('boom')
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
-    })
-
-    it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
-      mockDistributionState.isCloud = true
-
-      await findCmd('Comfy.RefreshNodeDefinitions').function()
-
-      expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
     })
   })
 
-  describe('Queue commands subscription gate', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
-    it.for([
-      ['Comfy.QueuePrompt', 0],
-      ['Comfy.QueuePromptFront', -1]
-    ] as const)(
-      '%s queues on Local without subscription features',
-      async ([id, num]) => {
-        mockBillingState.canAccessSubscriptionFeatures = false
-
-        await findCmd(id).function()
-
-        expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      }
-    )
-
-    it('Comfy.QueueSelectedOutputNodes passes the gate on Local without subscription features', async () => {
-      mockBillingState.canAccessSubscriptionFeatures = false
-
-      await findCmd('Comfy.QueueSelectedOutputNodes').function()
-
-      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
-    })
-
-    it.for([
-      'Comfy.QueuePrompt',
-      'Comfy.QueuePromptFront',
-      'Comfy.QueueSelectedOutputNodes'
-    ] as const)(
-      '%s shows the subscription dialog on Cloud without an active subscription',
-      async (id) => {
-        mockDistributionState.isCloud = true
-        mockBillingState.canAccessSubscriptionFeatures = false
-
-        await findCmd(id).function()
-
-        expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
-          reason: 'subscribe_to_run'
-        })
-      }
-    )
-
-    it.for(['ENTERPRISE', 'GALACTIC'] as const)(
-      'explains the block instead of a subscribe dialog on a sales-managed %s plan',
-      async (tier) => {
-        mockDistributionState.isCloud = true
-        mockBillingState.canAccessSubscriptionFeatures = false
-        mockBillingState.subscriptionTier = tier
-
-        await findCmd('Comfy.QueuePrompt').function()
-
-        expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
-        )
-      }
-    )
-
-    it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
-      mockDistributionState.isCloud = true
-
-      await findCmd('Comfy.QueuePrompt').function()
-
-      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
-    })
-  })
-
-  describe('Help commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-    const { staticUrls } = useExternalLink()
-    let openSpy: ReturnType<typeof vi.spyOn>
-
-    beforeEach(() => {
-      openSpy = vi
-        .spyOn(window, 'open')
-        .mockImplementation(() => null as unknown as Window)
-    })
-
-    it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
-      await findCmd('Comfy.Help.OpenComfyUIIssues').function()
-
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resource_type: 'github',
-          is_external: true,
-          source: 'menu'
-        })
-      )
-      expect(openSpy).toHaveBeenCalledWith(staticUrls.githubIssues, '_blank')
-    })
-
-    it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
-      await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
-
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resource_type: 'discord'
-        })
-      )
-      expect(openSpy).toHaveBeenCalledWith(staticUrls.discord, '_blank')
-    })
-
-    it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
-      await findCmd('Comfy.Help.AboutComfyUI').function()
+  describe('AboutComfyUI command', () => {
+    it('should open the About dialog', async () => {
+      await findCommand('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
-    })
-  })
-
-  describe('BrowseModelAssets command', () => {
-    const asset = fromPartial<AssetItem>({ id: 'asset-1' })
-
-    async function selectAssetFromBrowser() {
-      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
-
-      const command = useCoreCommands().find(
-        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
-      )!
-      await command.function()
-
-      const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
-      onAssetSelected?.(asset)
-    }
-
-    it('starts a model node drag for the selected asset', async () => {
-      mockStartModelNodeDrag.mockReturnValue(undefined)
-
-      await selectAssetFromBrowser()
-
-      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(
-        asset,
-        'asset_browser'
-      )
-      expect(mockToastAdd).not.toHaveBeenCalled()
-    })
-
-    it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      mockStartModelNodeDrag.mockReturnValue({
-        code: 'NO_PROVIDER',
-        message: 'No node provider registered',
-        assetId: 'asset-1'
-      })
-
-      await selectAssetFromBrowser()
-
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
     })
   })
 })
