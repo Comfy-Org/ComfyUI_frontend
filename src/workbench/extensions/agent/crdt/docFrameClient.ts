@@ -5,6 +5,7 @@ const MAX_DOC_FRAME_B64_LENGTH = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
 const MAX_ACTOR_LENGTH = 256
 const MAX_AWARENESS_STATE_BYTES = 8 << 10
+const utf8 = new TextEncoder()
 
 export interface DocOp {
   op_id: string
@@ -31,7 +32,8 @@ export interface DocSubscribed {
 
 interface DocOpFailure {
   index: number
-  op_id: string
+  /** Absent when the relay cannot map the failing index to an op id. */
+  op_id?: string
   code: string
   message: string
 }
@@ -151,7 +153,7 @@ function parseRecord(value: unknown): Record<string, unknown> | null {
 function isValidWorkflowId(value: string): boolean {
   return (
     value.length > 0 &&
-    new TextEncoder().encode(value).length <= MAX_WORKFLOW_ID_LENGTH &&
+    utf8.encode(value).length <= MAX_WORKFLOW_ID_LENGTH &&
     !/[\0\n\r\t :*?[\]]/.test(value)
   )
 }
@@ -159,7 +161,7 @@ function isValidWorkflowId(value: string): boolean {
 function isValidActor(value: string): boolean {
   if (
     value.length === 0 ||
-    new TextEncoder().encode(value).length > MAX_ACTOR_LENGTH ||
+    utf8.encode(value).length > MAX_ACTOR_LENGTH ||
     /[\0\n\r\t ]/.test(value)
   )
     return false
@@ -176,11 +178,21 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
+/**
+ * The relay serialises `applied`/`skipped` with `omitempty`, so an empty list
+ * arrives as an absent field. Absent means empty; present-but-malformed is a
+ * protocol violation.
+ */
+function parseOptionalStringArray(value: unknown): string[] | null {
+  if (value === undefined) return []
+  return isStringArray(value) ? value : null
+}
+
 function parseDocOpFailure(value: unknown): DocOpFailure | null {
   const failure = parseWireData(value)
   return failure !== null &&
     isSequence(failure.index) &&
-    typeof failure.op_id === 'string' &&
+    (failure.op_id === undefined || typeof failure.op_id === 'string') &&
     typeof failure.code === 'string' &&
     typeof failure.message === 'string'
     ? (failure as DocOpFailure)
@@ -189,7 +201,7 @@ function parseDocOpFailure(value: unknown): DocOpFailure | null {
 
 function encodedJsonSize(value: Record<string, unknown>): number | null {
   try {
-    return new TextEncoder().encode(JSON.stringify(value)).length
+    return utf8.encode(JSON.stringify(value)).length
   } catch {
     return null
   }
@@ -254,8 +266,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'doc_ops_result' && typeof data.ok === 'boolean') {
-    if (!isStringArray(data.applied) || !isStringArray(data.skipped))
-      return null
+    const applied = parseOptionalStringArray(data.applied)
+    const skipped = parseOptionalStringArray(data.skipped)
+    if (applied === null || skipped === null) return null
     if (
       data.ok
         ? !isSequence(data.seq)
@@ -273,8 +286,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
       data: {
         workflowId: data.workflow_id,
         ok: data.ok,
-        applied: data.applied,
-        skipped: data.skipped,
+        applied,
+        skipped,
         ...(isSequence(data.seq) && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message }),

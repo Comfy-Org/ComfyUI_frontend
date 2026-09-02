@@ -8,8 +8,6 @@ const resultFrame = (data: Record<string, unknown>) =>
     data: {
       v: 1,
       workflow_id: 'wf-1',
-      applied: [],
-      skipped: [],
       ...data
     }
   })
@@ -52,6 +50,28 @@ describe('document frame result arrays and acknowledgements', () => {
     ).toBeNull()
   })
 
+  it('accepts a failure without an op_id (relay omits it when unmapped)', () => {
+    expect(
+      resultFrame({
+        ok: false,
+        code: 'invalid_op',
+        message: 'invalid operation',
+        failed: { index: 0, code: 'invalid_op', message: 'invalid operation' }
+      })
+    ).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: false,
+        applied: [],
+        skipped: [],
+        code: 'invalid_op',
+        message: 'invalid operation',
+        failed: { index: 0, code: 'invalid_op', message: 'invalid operation' }
+      }
+    })
+  })
+
   it('rejects a failure with a non-string op_id', () => {
     expect(
       resultFrame({
@@ -73,6 +93,56 @@ describe('document frame result arrays and acknowledgements', () => {
 
   it('rejects a failed acknowledgement without a code', () => {
     expect(resultFrame({ ok: false, message: 'batch rejected' })).toBeNull()
+  })
+
+  // The relay serialises applied/skipped with `omitempty`: rejections carry
+  // neither, a fully-applied batch carries no `skipped`, and an all-redelivery
+  // no-op carries no `applied`. Absent must read as empty, not malformed.
+  it('accepts a relay rejection that omits applied and skipped', () => {
+    expect(
+      resultFrame({ ok: false, code: 'invalid_frame', message: 'bad frame' })
+    ).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: false,
+        applied: [],
+        skipped: [],
+        code: 'invalid_frame',
+        message: 'bad frame'
+      }
+    })
+  })
+
+  it('accepts a fully applied acknowledgement that omits skipped', () => {
+    expect(resultFrame({ ok: true, seq: 7, applied: ['op-1'] })).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: true,
+        seq: 7,
+        applied: ['op-1'],
+        skipped: []
+      }
+    })
+  })
+
+  it('accepts an all-redelivery acknowledgement that omits applied', () => {
+    expect(resultFrame({ ok: true, seq: 7, skipped: ['op-1'] })).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: true,
+        seq: 7,
+        applied: [],
+        skipped: ['op-1']
+      }
+    })
+  })
+
+  it('rejects present but malformed applied and skipped', () => {
+    expect(resultFrame({ ok: true, seq: 1, applied: 'op-1' })).toBeNull()
+    expect(resultFrame({ ok: true, seq: 1, skipped: null })).toBeNull()
   })
 
   it('accepts strictly typed result arrays and failure data', () => {
