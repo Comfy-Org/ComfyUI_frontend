@@ -4,10 +4,18 @@
 # would never run on push.
 #
 # `evaluate-candidate` opts a caller out of that default for merge_group only,
-# via `candidate-should-run`: a merge-queue candidate is a diff against a base
-# just like a pull request. Opt in only from a workflow that emits its required
-# check on every event whatever the verdict - a check GitHub never creates
-# leaves the queue waiting forever. Omitting the input keeps the output 'true'.
+# via `candidate-should-run`. dorny/paths-filter diffs `merge_group.base_sha`
+# (the target branch tip) against `merge_group.head_sha` (GitHub's temporary
+# merge commit for the candidate), which already folds in every queue entry
+# ahead of it - so this is whole-queue relevance, not an isolated diff of the
+# candidate's own PR. It still fails safely (an irrelevant-looking entry can
+# only be false-positive-relevant when an entry ahead of it touched a gated
+# path, never false-negative), but it is not the per-candidate optimization
+# the name implies; a later, unrelated entry queued behind a `src/**` change
+# still runs the gated suites. Opt in only from a workflow that emits its
+# required check on every event whatever the verdict - a check GitHub never
+# creates leaves the queue waiting forever. Omitting the input keeps the
+# output 'true'.
 #
 # Shared dependency files (root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
@@ -39,7 +47,7 @@ outputs:
     description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed. Ignores `evaluate-candidate`; read `candidate-should-run` to act on merge_group.'
     value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
   candidate-should-run:
-    description: 'As `should-run`, but also evaluated for merge-queue candidates when `evaluate-candidate` is set.'
+    description: 'As `should-run`, but also evaluated for merge-queue candidates when `evaluate-candidate` is set. That evaluation is against the accumulated merge-group diff (base branch tip vs. the temporary merge commit, which includes every queue entry ahead of this one), not this candidate PR in isolation.'
     value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
