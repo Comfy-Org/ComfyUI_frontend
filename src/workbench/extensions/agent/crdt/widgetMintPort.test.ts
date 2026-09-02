@@ -52,8 +52,10 @@ describe('attachWidgetMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      resolveInteriorPath: (_target, owningGraphId) =>
-        interiorPaths.get(owningGraphId) ?? null,
+      resolveInteriorPath: (target, owningGraphId) =>
+        target.rootGraphId === ROOT
+          ? (interiorPaths.get(owningGraphId) ?? null)
+          : null,
       enqueue: (batch) => {
         minted.push(...batch.operations)
         return enqueueAccepts
