@@ -283,9 +283,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
     } finally {
       extensionState.registerNodeDef.mockReset()
       setActivePinia(previousPinia)
-      if (groupType in LiteGraph.registered_node_types) {
-        LiteGraph.unregisterNodeType(groupType)
-      }
     }
   })
 

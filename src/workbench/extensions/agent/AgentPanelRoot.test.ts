@@ -1687,9 +1687,9 @@ describe('AgentPanelRoot transcript copy', () => {
       zAgentWsEventForTest({
         type: 'agent_tool_call',
         data: {
+          tool_call_id: 'call-add-node',
           tool_name: 'add_node',
-          status: 'ok',
-          args: [],
+          status: 'success',
           message_id: 'turn-1',
           thread_id: 'th-1'
         }
