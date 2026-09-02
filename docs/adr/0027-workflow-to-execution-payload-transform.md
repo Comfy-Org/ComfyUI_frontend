@@ -173,10 +173,8 @@ At that point:
 
 ### Negative / risks
 
-- **Migration cost.** `dynamicPrompts.ts`, `promotedWidgetControl.ts`, and any
-  third-party extension using `serializeValue` overrides must be migrated. The
-  `serializeValue` override pattern is used by the extension ecosystem (40+
-  custom node repos per ADR 0008 amendment).
+- **Migration cost.** `dynamicPrompts.ts`, `promotedWidgetControl.ts`, and
+  third-party extensions that override `widget.serializeValue` must migrate.
 - **Ordering sensitivity.** The current transforms run in an implicit order
   determined by call-site position and extension registration sequence. Making
   that order explicit may reveal latent bugs in extensions that rely on it.
