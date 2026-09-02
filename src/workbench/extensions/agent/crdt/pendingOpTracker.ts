@@ -15,8 +15,18 @@
  *   drew silence (`unacknowledged`). The shadow is reverted and the entry
  *   dropped, so the optimistic styling disappears instead of lingering.
  *
- * `skipped` (op id already present host-side) is treated like `applied`: an
- * effect already exists in the doc and its update clears the entry.
+ * `skipped` (op id already present host-side) is a duplicate: its effect is
+ * already in doc state, and a fully duplicate batch produces no new
+ * broadcast, so waiting for a `doc_update` carrying the id could wait
+ * forever. It is still never cleared on the ack itself (s3-opt-2): removal
+ * happens on an authoritative PROJECTION transition. A skipped entry clears
+ * when the follower has projected doc state at or beyond the ack's `seq` —
+ * immediately at ack time when the projected seq already covers it,
+ * otherwise on the first later projected `doc_update` whose seq covers it.
+ * When the ack carries no seq, the next projected authoritative transition
+ * of any seq clears it (the duplicate pre-existed the ack, so any later
+ * authoritative state contains it). A `doc_update` that happens to carry the
+ * id still clears it through the EFFECT path first.
  *
  * Nothing here touches the canvas; it only maintains the two data
  * structures and reports what it did so a renderer/dev-panel can react.
@@ -39,11 +49,22 @@ type PendingOpRevertReason =
 export type PendingOpTrackerEvent =
   | { type: 'reverted'; reason: PendingOpRevertReason; opIds: string[] }
   | { type: 'cleared'; opIds: string[] }
+  /** Skipped duplicates resolved by a projection at/after their ack seq. */
+  | { type: 'skipped_cleared'; seq: number | null; opIds: string[] }
+  /** Skipped duplicates parked until a projection covers their ack seq. */
+  | { type: 'skipped_awaiting'; seq: number | null; opIds: string[] }
   | { type: 'reset'; opIds: string[] }
 
 export interface PendingOpTrackerDeps {
   ledger?: PendingOpLedger<Op>
   shadow?: PendingOpShadowSurface
+  /**
+   * The highest doc seq the follower has PROJECTED (applied to the canvas),
+   * read at ack time to decide whether a skipped duplicate can resolve now.
+   * Defaults to 0: never covers a numbered ack seq, so skipped entries wait
+   * for {@link PendingOpTracker.onAuthoritativeState}.
+   */
+  currentSeq?(): number
   /** Observability tap; never throws back into the tracker. */
   onEvent?(event: PendingOpTrackerEvent): void
 }
@@ -57,6 +78,12 @@ export interface PendingOpTracker {
   onBatchSettled(outcome: BatchOutcome): void
   /** A `doc_update` carried these op ids: their effect is now in the doc. */
   onDocEffect(opIds: readonly string[]): void
+  /**
+   * The follower projected authoritative doc state at `seq` (null when the
+   * update carried no usable seq). Resolves every awaiting skipped duplicate
+   * whose ack seq is covered — this, not the ack, is its removal trigger.
+   */
+  onAuthoritativeState(seq: number | null): void
   /** Doc lineage broke (reset / replacement / teardown): nothing is pending. */
   reset(): void
   entries(): PendingOpEntry<Op>[]
@@ -97,23 +124,47 @@ export function createPendingOpTracker(
 ): PendingOpTracker {
   const ledger = deps.ledger ?? createPendingOpLedger<Op>()
   const shadow = deps.shadow ?? createPendingOpShadowSurface()
+  const currentSeq = deps.currentSeq ?? (() => 0)
   // Per-op send count, mirrored from the sender's transmit hook so a result
   // for an earlier attempt of a resent batch is rejected by the ledger.
   const attempts = new Map<string, number>()
+  // Skipped op id → the ack seq the follower must project before it resolves
+  // (null: the ack carried no seq; any later projection resolves it).
+  const awaitingSkipped = new Map<string, number | null>()
 
   function emit(event: PendingOpTrackerEvent): void {
     deps.onEvent?.(event)
   }
 
+  function drop(opId: string): PendingOpEntry<Op> | undefined {
+    attempts.delete(opId)
+    awaitingSkipped.delete(opId)
+    return ledger.take(opId)
+  }
+
   function revert(opIds: readonly string[], reason: PendingOpRevertReason) {
     const reverted: string[] = []
     for (const opId of opIds) {
-      const entry = ledger.take(opId)
+      const entry = drop(opId)
       shadow.revert(opId)
-      attempts.delete(opId)
       if (entry) reverted.push(opId)
     }
     if (reverted.length > 0) emit({ type: 'reverted', reason, opIds: reverted })
+  }
+
+  /**
+   * `clear`, not `revert`: authoritative state already contains the
+   * duplicate's outcome, so pending styling RESOLVES rather than rolls back.
+   */
+  function clearSkipped(opIds: readonly string[], seq: number | null) {
+    const cleared: string[] = []
+    for (const opId of opIds) {
+      const entry = drop(opId)
+      shadow.clear(opId)
+      if (entry) cleared.push(opId)
+    }
+    if (cleared.length > 0)
+      emit({ type: 'skipped_cleared', seq, opIds: cleared })
   }
 
   return {
@@ -150,6 +201,22 @@ export function createPendingOpTracker(
       })
       revert(summary.failed, 'failed')
       revert(summary.unprocessed, 'unprocessed')
+      if (summary.skipped.length > 0) {
+        const ackSeq = result.seq ?? null
+        if (ackSeq !== null && currentSeq() >= ackSeq) {
+          // The projection already folded doc state at/after the ack, so the
+          // duplicate's authoritative outcome is on screen NOW. This is a
+          // projection-based transition, not a clear-on-ack.
+          clearSkipped(summary.skipped, ackSeq)
+        } else {
+          for (const opId of summary.skipped) awaitingSkipped.set(opId, ackSeq)
+          emit({
+            type: 'skipped_awaiting',
+            seq: ackSeq,
+            opIds: summary.skipped
+          })
+        }
+      }
       if (result.ok) return
       // An anonymous `ok:false` (no lists, no failed op id) names nothing, so
       // the ledger leaves the batch in flight; nothing will ever clear it.
@@ -164,14 +231,29 @@ export function createPendingOpTracker(
       for (const entry of cleared) {
         shadow.clear(entry.opId)
         attempts.delete(entry.opId)
+        awaitingSkipped.delete(entry.opId)
       }
       if (cleared.length > 0)
         emit({ type: 'cleared', opIds: cleared.map((entry) => entry.opId) })
+    },
+    onAuthoritativeState(seq) {
+      if (awaitingSkipped.size === 0) return
+      const covered: string[] = []
+      for (const [opId, requiredSeq] of awaitingSkipped) {
+        // A null requirement (ack carried no seq) is satisfied by ANY later
+        // authoritative transition; a null seq (update carried no usable seq)
+        // still proves a transition happened, which is all a null requirement
+        // needs — but cannot prove coverage of a numbered requirement.
+        if (requiredSeq === null || (seq !== null && seq >= requiredSeq))
+          covered.push(opId)
+      }
+      clearSkipped(covered, seq)
     },
     reset() {
       const dropped = ledger.reset()
       shadow.clearAll()
       attempts.clear()
+      awaitingSkipped.clear()
       if (dropped.length > 0)
         emit({ type: 'reset', opIds: dropped.map((entry) => entry.opId) })
     },

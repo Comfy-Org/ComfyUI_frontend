@@ -458,6 +458,28 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('clears a skipped-duplicate shadow once a projection covers the ack seq (s3-opt-2)', () => {
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+
+      // Host already had this op; no doc_update will ever carry its id.
+      dispatchFrame('doc_ops_result', {
+        ok: true,
+        applied: [],
+        skipped: [opId],
+        seq: 43
+      })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 43 })
+      expect(follower.pendingShadows.isPending(node1)).toBe(false)
+      unmount()
+    })
+
     it('reverts the shadow when the host rejects the op', () => {
       const { unmount, follower, sentOpIds } = mountWithSender()
       follower.enqueueHumanOperations([deleteNode1])
