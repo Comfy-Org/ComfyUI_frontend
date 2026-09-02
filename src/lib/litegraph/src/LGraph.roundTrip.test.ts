@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
-import floatingLink from './__fixtures__/assets/floatingLink.json'
-import linkedNodes from './__fixtures__/assets/linkedNodes.json'
-import reroutesComplex from './__fixtures__/assets/reroutesComplex.json'
+import floatingLink from './__fixtures__/assets/floatingLink.json' with { type: 'json' }
+import linkedNodes from './__fixtures__/assets/linkedNodes.json' with { type: 'json' }
+import reroutesComplex from './__fixtures__/assets/reroutesComplex.json' with { type: 'json' }
 
 /**
  * Loading a workflow and saving it again must not lose entities.
