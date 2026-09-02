@@ -6,8 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 import GraphCanvas from './GraphCanvas.vue'
 
@@ -27,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  setDirty: vi.fn(),
   workspaceStore: {
     spinner: false,
     focusMode: false,
@@ -64,7 +72,7 @@ vi.mock('@/scripts/app', () => {
     render_canvas_border: false,
     graph: null,
     onSelectionChange: null,
-    setDirty: vi.fn(),
+    setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
   return {
@@ -153,6 +161,7 @@ async function mountGraphCanvas() {
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
+  if (app.canvas) app.canvas.graph = null
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
   useSettingStore().isReady = true
@@ -214,5 +223,208 @@ describe('GraphCanvas first-run tour wiring', () => {
       'image_to_image',
       undefined
     )
+  })
+})
+
+describe('GraphCanvas execution progress updates', () => {
+  async function mountProgressHarness({
+    totalNodes = 1_000,
+    activeEntries = 500
+  }: {
+    totalNodes?: number
+    activeEntries?: number
+  } = {}) {
+    await mountGraphCanvas()
+
+    let progressWrites = 0
+    const progressValues: Array<number | undefined> = []
+    const nodes = Array.from({ length: totalNodes }, (_, index) => {
+      const node = new LGraphNode(`Test node ${index + 1}`)
+      node.id = toNodeId(index + 1)
+      let progress: number | undefined
+      Object.defineProperty(node, 'progress', {
+        get: () => progress,
+        set: (value: number | undefined) => {
+          progressWrites++
+          progress = value
+          progressValues[index] = value
+        }
+      })
+      return node
+    })
+
+    const graph = new LGraph()
+    graph._nodes.push(...nodes)
+
+    const canvas = app.canvas
+    if (!canvas) throw new Error('GraphCanvas did not initialize the canvas')
+    canvas.graph = graph
+    useCanvasStore().canvas = canvas
+
+    const workflowStore = useWorkflowStore()
+    vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockImplementation((id) =>
+      createNodeLocatorId(null, id)
+    )
+
+    const executionStore = useExecutionStore()
+    const progressState = Object.fromEntries(
+      Array.from({ length: activeEntries }, (_, index) => {
+        const nodeId = String(index + 1)
+        return [
+          nodeId,
+          {
+            display_node_id: nodeId,
+            node_id: nodeId,
+            prompt_id: 'job',
+            state: 'running' as const,
+            value: 25,
+            max: 100
+          }
+        ]
+      })
+    )
+
+    executionStore.nodeProgressStates = progressState
+    await nextTick()
+    progressWrites = 0
+    mocks.setDirty.mockClear()
+    vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+
+    return {
+      executionStore,
+      workflowStore,
+      progressState,
+      progressValues,
+      get progressWrites() {
+        return progressWrites
+      }
+    }
+  }
+
+  it.for([
+    { totalNodes: 1, activeEntries: 0 },
+    { totalNodes: 1, activeEntries: 1 },
+    { totalNodes: 8, activeEntries: 8 },
+    { totalNodes: 1_000, activeEntries: 500 }
+  ])(
+    'pins equal-state fanout for $totalNodes nodes and $activeEntries active entries',
+    async ({ totalNodes, activeEntries }) => {
+      const harness = await mountProgressHarness({ totalNodes, activeEntries })
+
+      harness.executionStore.nodeProgressStates = Object.fromEntries(
+        Object.entries(harness.progressState).map(([nodeId, progress]) => [
+          nodeId,
+          { ...progress }
+        ])
+      )
+      await nextTick()
+
+      expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(harness.progressWrites).toBe(totalNodes)
+      expect(mocks.setDirty).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    { totalNodes: 1, activeEntries: 1 },
+    { totalNodes: 8, activeEntries: 8 },
+    { totalNodes: 1_000, activeEntries: 500 }
+  ])(
+    'pins single-change fanout for $totalNodes nodes and $activeEntries active entries',
+    async ({ totalNodes, activeEntries }) => {
+      const harness = await mountProgressHarness({ totalNodes, activeEntries })
+      const clonedProgressState = Object.fromEntries(
+        Object.entries(harness.progressState).map(([nodeId, progress]) => [
+          nodeId,
+          { ...progress }
+        ])
+      )
+
+      harness.executionStore.nodeProgressStates = {
+        ...clonedProgressState,
+        '1': { ...clonedProgressState['1'], value: 50 }
+      }
+      await nextTick()
+
+      expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(harness.progressWrites).toBe(totalNodes)
+      expect(harness.progressValues[0]).toBe(0.5)
+      expect(mocks.setDirty).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('clears stale progress when an execution entry is removed', async () => {
+    const harness = await mountProgressHarness({
+      totalNodes: 1,
+      activeEntries: 1
+    })
+
+    harness.executionStore.nodeProgressStates = {}
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(1)
+    expect(harness.progressValues[0]).toBeUndefined()
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+  })
+
+  it('clears stale progress when the current graph changes', async () => {
+    await mountProgressHarness({ totalNodes: 1, activeEntries: 1 })
+    const replacementNode = new LGraphNode('Replacement node')
+    replacementNode.id = toNodeId(2)
+    replacementNode.progress = 0.75
+    const replacementGraph = new LGraph()
+    replacementGraph._nodes.push(replacementNode)
+
+    const canvas = app.canvas
+    if (!canvas) throw new Error('GraphCanvas did not initialize the canvas')
+    canvas.graph = replacementGraph
+    useCanvasStore().currentGraph = replacementGraph
+    await nextTick()
+
+    expect(replacementNode.progress).toBeUndefined()
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+  })
+
+  it.fails('does no node work for structurally equal progress', async () => {
+    const harness = await mountProgressHarness()
+
+    harness.executionStore.nodeProgressStates = Object.fromEntries(
+      Object.entries(harness.progressState).map(([nodeId, progress]) => [
+        nodeId,
+        { ...progress }
+      ])
+    )
+    await nextTick()
+
+    expect(harness.workflowStore.nodeIdToNodeLocatorId).not.toHaveBeenCalled()
+    expect(harness.progressWrites).toBe(0)
+    expect(mocks.setDirty).not.toHaveBeenCalled()
+  })
+
+  it.fails('updates only the node whose progress changed', async () => {
+    const harness = await mountProgressHarness()
+
+    const clonedProgressState = Object.fromEntries(
+      Object.entries(harness.progressState).map(([nodeId, progress]) => [
+        nodeId,
+        { ...progress }
+      ])
+    )
+    harness.executionStore.nodeProgressStates = {
+      ...clonedProgressState,
+      '1': { ...clonedProgressState['1'], value: 50 }
+    }
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(1)
+    expect(harness.progressValues[0]).toBe(0.5)
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
   })
 })

@@ -61,7 +61,10 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
-import { createInputSlotView } from './node/slotDescriptorView'
+import {
+  createInputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
 import {
   extensionConfigureView,
@@ -1131,11 +1134,14 @@ export class LGraphNode
     }
     const namedValues = getNamedValues()
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    const shouldRestoreNamed =
+      LiteGraph.namedValuesRestore ||
+      this.constructor.nodeData?.fallbackWidgetsValuesNames
     try {
       useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
         positional: positionalValues,
         named: namedValues ? { ...namedValues } : undefined,
-        restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
+        restoreNamed: Boolean(namedValues && shouldRestoreNamed)
       })
 
       if (this.widgets) {
@@ -1152,18 +1158,6 @@ export class LGraphNode
             w.value = JSON.parse(
               JSON.stringify(this.properties[w.options.property])
             )
-        }
-
-        if (namedValues) {
-          const legacyShadow = computeLegacyWidgetShadow(
-            this.widgets,
-            info.widgets_values
-          )
-          reportNamedValuesShadowDiff(
-            this,
-            diffNamedValuesShadow(namedValues, legacyShadow),
-            Boolean(info.widgets_values_named)
-          )
         }
 
         let positionalIndex = 0
@@ -1190,6 +1184,17 @@ export class LGraphNode
       }
 
       this.onConfigure?.(extensionConfigureView(this, info))
+      if (this.widgets && namedValues) {
+        const legacyShadow = computeLegacyWidgetShadow(
+          this.widgets,
+          info.widgets_values
+        )
+        reportNamedValuesShadowDiff(
+          this,
+          diffNamedValuesShadow(namedValues, legacyShadow),
+          Boolean(info.widgets_values_named)
+        )
+      }
     } finally {
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
@@ -3642,7 +3647,10 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    return calculateInputSlotPosFromSlot(this._getSlotPositionContext(), input)
+    return calculateInputSlotPosFromSlot(
+      this._getSlotPositionContext(),
+      resolveInputSlotView(this.inputs, input)
+    )
   }
 
   /**
