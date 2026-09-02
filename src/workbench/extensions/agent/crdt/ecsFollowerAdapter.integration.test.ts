@@ -573,6 +573,8 @@ describe('EcsFollowerAdapter integration', () => {
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
         ?.value
     ).toBe(1)
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
 
     // Node 1 is re-minted at the same id as a different, unrelated type
     // ('Sink' has no widgets and no output) - not a widget/property edit.
@@ -624,6 +626,7 @@ describe('EcsFollowerAdapter integration', () => {
     expect(rejected).toHaveBeenCalledWith(
       expect.stringContaining('connect origin slot 0 does not exist')
     )
+    rejected.mockRestore()
 
     const stillSource = useNodeDataStore()
       .getGraphNodesFor('root', 'root')
@@ -642,11 +645,8 @@ describe('EcsFollowerAdapter integration', () => {
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toBeDefined()
-    expect(deleteLayouts).not.toHaveBeenCalledWith(
-      scope,
-      [toNodeId(1)],
-      expect.objectContaining({ opId: 'retype' })
-    )
+    expect(createLayout).not.toHaveBeenCalled()
+    expect(deleteLayouts).not.toHaveBeenCalled()
 
     adapter.destroy()
     follower.destroy()
