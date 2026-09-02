@@ -39,6 +39,7 @@ export function handleGcsRedirect(
     return
   }
 
+  proxyRes.resume()
   const rangeHeader = req.headers.range
   fetch(location, {
     headers: rangeHeader ? { range: rangeHeader } : undefined,

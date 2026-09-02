@@ -72,13 +72,16 @@ describe('handleGcsRedirect', () => {
   it('uses manual redirects and forwards range requests', async () => {
     const fetchMock = vi.fn().mockResolvedValue(fetchedResponse())
     vi.stubGlobal('fetch', fetchMock)
+    const proxyRes = proxyResponse(trustedHeaders)
+    const resume = vi.spyOn(proxyRes, 'resume')
 
     handleGcsRedirect(
-      proxyResponse(trustedHeaders),
+      proxyRes,
       request({ range: 'bytes=0-1' }),
       response() as unknown as ServerResponse
     )
 
+    expect(resume).toHaveBeenCalledOnce()
     await vi.waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(trustedHeaders.location, {
         headers: { range: 'bytes=0-1' },
