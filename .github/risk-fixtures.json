@@ -32,9 +32,74 @@
       "classes": ["billing"]
     },
     {
+      "path": "src/platform/telemetry/topupTracker.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/components/node/NodePricingBadge.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/composables/node/useNodePricing.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/services/cloud/subscriptionService.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/stores/workspace/pricingStore.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "apps/website/src/data/pricingPlans.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "apps/website/src/config/pricing.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "packages/cloud-client/src/billing/client.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "apps/desktop-ui/src/subscription/client.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
       "path": "apps/website/src/components/pricing/PricingCard.vue",
+      "tier": "R3",
+      "classes": ["billing", "website"]
+    },
+    {
+      "path": "apps/website/src/components/HeroSection.vue",
       "tier": "R2",
       "classes": ["website"]
+    },
+    {
+      "path": "apps/website/src/config/pricing.test.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "apps/website/src/templates/drops/AnnouncementBanner.stories.ts",
+      "tier": "R0",
+      "classes": ["storybook"]
+    },
+    {
+      "path": "apps/website/src/content/pricing.mdx",
+      "tier": "R0",
+      "classes": ["docs"]
     },
     {
       "path": "browser_tests/tests/priceBadge.spec.ts",
