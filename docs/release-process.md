@@ -162,6 +162,12 @@ printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
   "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
 
 cat >"$PUT_FILTER" <<'JQ'
+  def included($response; $type; $id):
+    [$response.included[] | select(.type == $type and .id == $id)]
+    | if length == 1 then .[0]
+      else error("expected exactly one included \($type) resource with id \($id)")
+      end;
+
   . as $response
   | .data as $schedule
   | {
@@ -172,16 +178,18 @@ cat >"$PUT_FILTER" <<'JQ'
           $schedule.attributes
           | .layers = [
               $schedule.relationships.layers.data[] as $layer_ref
-              | $response.included[]
-              | select(.type == "layers" and .id == $layer_ref.id)
+              | included($response; "layers"; $layer_ref.id)
               | . as $layer
               | $layer.attributes + {
                   id: $layer.id,
                   members: [
                     $layer.relationships.members.data[] as $member_ref
-                    | $response.included[]
-                    | select(.type == "members" and .id == $member_ref.id)
-                    | {user: {id: .relationships.user.data.id}}
+                    | included($response; "members"; $member_ref.id)
+                    | .relationships.user.data.id as $user_id
+                    | if ($user_id | type == "string" and length > 0)
+                      then {user: {id: $user_id}}
+                      else error("member \($member_ref.id) has no user id")
+                      end
                   ]
                 }
             ]
