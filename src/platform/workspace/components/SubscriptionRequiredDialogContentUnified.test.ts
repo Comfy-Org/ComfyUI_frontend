@@ -248,4 +248,18 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
+
+  it.for([true, false])(
+    'leaves the confirm step its own header and back action (embedded: %s)',
+    (embeddedCheckoutEnabled) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = 'team-new'
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+
+      renderComponent({ embeddedCheckoutEnabled })
+
+      expect(screen.queryByText('Choose your plan')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+    }
+  )
 })
