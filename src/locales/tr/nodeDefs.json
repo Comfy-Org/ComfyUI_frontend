@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Google'ın Gemini Omni Flash modellerini kullanarak bir metin isteminden sesli video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar sağlayın. İstenen uzunluğu (3-10 sn.) doğrudan istemde belirtin.",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Videoyu oluşturmak için kullanılan Gemini video modeli."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "iz_uzunluğu",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Bir 3D model dosyasını (GLB, GLTF, OBJ, STL), mesh işleme düğümlerinde (decimate, remesh, UV unwrap, bake, ...) düzenlenebilir bir MESH olarak ayrıştırır. Tüm sahne düğümleri/ilkelleri, dönüşümleri uygulanmış şekilde tek bir mesh içinde birleştirilir; dokular ve malzeme faktörleri ilk malzemeden alınır. MeshToFile3D'nin karşılığıdır.",
+    "display_name": "3D Bileşenlerini Al",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3D veya başka bir 3D düğümünden gelen 3D model dosyası. FBX/USDZ desteklenmez; önce GLB'ye dönüştürün."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' daha hızlıdır; 'precision' ise iki kat fiyatla daha yüksek kaliteli dudak senkronizasyonu sağlar."
+        "tooltip": "'speed' daha hızlıdır; 'precision' ise daha yüksek maliyetle daha yüksek kaliteli dudak senkronizasyonu sağlar."
       },
       "output_language": {
         "name": "output_language",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Koşullandırmaya 1-10 referans görseli ekleyin; biri düzenleme talimatı, birden fazlası ise konuya özel kişiselleştirme için.",
+    "description": "Sıralı referans görüntülerini pozitif ve negatif koşullandırmaya ekleyin.",
     "display_name": "HiDream-O1 Referans Görselleri",
     "inputs": {
       "images": {
         "name": "görseller",
-        "tooltip": "Referans görselleri. 1 görsel = düzenleme talimatı; 2-10 görsel = çoklu referans."
+        "tooltip": "Referans görüntüleri sayısal soket sırasına göre kullanılır."
       },
       "negative": {
         "name": "negatif"
@@ -12696,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Bir MiniMax H3 Fun ControlNet'i model yaması olarak metinden videoya modeline uygulayın.",
+    "display_name": "MiniMax H3 Fun ControlNet Uygula",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1, yeniden oluşturulacak bölgeleri işaretler."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Maskenin arkasındaki video; yalnızca bir maske verildiğinde okunur."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Görüntüden Videoya",
     "inputs": {
@@ -17772,7 +17864,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Gerçekçi_görüntü stilini ve isteğe bağlı alt stili seçin.",
+    "description": "logo_raster stilini ve alt stilini seçin.",
     "display_name": "Recraft Stili - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17883,6 +17975,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1-10 referans görüntüden yeniden kullanılabilir bir Recraft V4 stili oluşturun. Döndürülen style_id, aynı çıktı türündeki tüm Recraft V4 ve V4.1 modelleriyle çalışır. Tüm görüntülerin toplam boyutu 10 MB ile sınırlıdır.",
+    "display_name": "Recraft V4 Stil Oluştur",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Stili tanımlayan referans görüntüler. Benzer referanslar eşleşmeyi keskinleştirir, çeşitli referanslar ise kapsamını genişletir."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Stilin oluşturulacağı çıktı türü: raster görüntüler için recraftv4_styles, SVG için recraftv4_styles_vector."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4 veya V4 Pro modelleriyle görseller üretir.",
     "display_name": "Recraft V4 Metinden Görsele",
@@ -17892,7 +18004,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
       },
       "model_size": {
         "name": "boyut"
@@ -17916,10 +18028,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "Uygulanacak Recraft V4 stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında stil oluşturmak için kullanılan referans görüntüler; üretime ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +18061,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
       },
       "model_size": {
         "name": "boyut"
@@ -17957,10 +18085,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "Uygulanacak Recraft V4 vektör stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında vektör stili oluşturmak için kullanılan referans görüntüler; üretime ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -21009,6 +21153,23 @@
       },
       "scale": {
         "name": "ölçek"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNova akış kaydırmasını ayarlayın.",
+    "display_name": "SenseNova Örnekleme Seçenekleri",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
@@ -24613,57 +24774,7 @@
       },
       "resolution": {
         "name": "çözünürlük",
-        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite ve veo-3.0 modelleri için mevcut değildir."
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Video oluşturma için tohum (rastgele için 0)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google'ın Veo API'sini kullanarak metin istemlerinden videolar oluşturur",
-    "display_name": "Google Veo2 Video Oluşturma",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı",
-        "tooltip": "Çıktı videosunun en boy oranı"
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration_seconds": {
-        "name": "süre_saniye",
-        "tooltip": "Çıktı videosunun saniye cinsinden süresi"
-      },
-      "enhance_prompt": {
-        "name": "istemi_geliştir",
-        "tooltip": "İstemi yapay zeka yardımıyla geliştirip geliştirmeme"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Video oluşturmayı yönlendirmek için isteğe bağlı referans görüntü"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Video oluşturma için kullanılacak Veo 2 modeli"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Videoda kaçınılması gerekenleri yönlendirmek için negatif metin istemi"
-      },
-      "person_generation": {
-        "name": "kişi_oluşturma",
-        "tooltip": "Videoda insan oluşturmaya izin verip vermeme"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Videonun metin açıklaması"
+        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite modeli için kullanılamaz."
       },
       "seed": {
         "name": "tohum",
@@ -24690,6 +24801,23 @@
       "strict_duration": {
         "name": "kesin süre",
         "tooltip": "Doğruysa, belirtilen süre mümkün değilse bir hata oluşur."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "Videoyu Kırp",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Piksel cinsinden kırpma bölgesi. Sıfır genişlik/yükseklik tam kareyi korur."
       },
       "video": {
         "name": "video"
@@ -24802,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Videoyu Kes (Gelişmiş)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True ise, belirtilen süre mümkün olmadığında hata oluşturulur."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Başlangıç/bitiş karelerini kullanarak kesme aralığını belirler."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

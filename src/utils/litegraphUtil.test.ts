@@ -6,6 +6,8 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -14,6 +16,7 @@ import {
   createNode,
   getWidgetIdForNode,
   mapLiveWidgetsById,
+  migrateWidgetsValues,
   resolveNode
 } from './litegraphUtil'
 
@@ -186,10 +189,13 @@ describe('getWidgetIdForNode', () => {
       { name: 'shared', type: 'text', value: 'two', options: {}, y: 0 }
     ]
 
-    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
-      widgetId(graphId, toNodeId(42), 'shared'),
-      widgetId(graphId, toNodeId(42), 'shared#1')
-    ])
+    const widgetsById = mapLiveWidgetsById(node)
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared'))).toBe(
+      node.widgets[0]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#1'))).toBe(
+      node.widgets[1]
+    )
     expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
   })
 
@@ -201,11 +207,16 @@ describe('getWidgetIdForNode', () => {
       { name: 'shared#1', type: 'number', value: 3, options: {}, y: 0 }
     ]
 
-    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
-      widgetId(graphId, toNodeId(42), 'shared'),
-      widgetId(graphId, toNodeId(42), 'shared#2'),
-      widgetId(graphId, toNodeId(42), 'shared#1')
-    ])
+    const widgetsById = mapLiveWidgetsById(node)
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared'))).toBe(
+      node.widgets[0]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#2'))).toBe(
+      node.widgets[1]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#1'))).toBe(
+      node.widgets[2]
+    )
     expect(getWidgetIdForNode(node, node.widgets[1])).toBe(
       widgetId(graphId, toNodeId(42), 'shared#2')
     )
@@ -224,5 +235,71 @@ describe('getWidgetIdForNode', () => {
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+})
+
+describe('migrateWidgetsValues', () => {
+  const inputDefs = {
+    forced: fromPartial<InputSpec>({ name: 'forced', forceInput: true }),
+    preview: fromPartial<InputSpec>({ name: 'preview' }),
+    steps: fromPartial<InputSpec>({ name: 'steps' })
+  }
+
+  function makeWidget(name: string, serialize = true): IBaseWidget {
+    return fromPartial<IBaseWidget>({ name, serialize })
+  }
+
+  it('migrates a legacy force-input array with a trailing skipped widget', () => {
+    const widgets = [makeWidget('steps'), makeWidget('preview', false)]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
+  it('compacts a mid-list hole with a trailing skipped widget', () => {
+    const holeInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' }),
+      ui1: fromPartial<InputSpec>({ name: 'ui1' }),
+      b: fromPartial<InputSpec>({ name: 'b' }),
+      ui2: fromPartial<InputSpec>({ name: 'ui2' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui1', false),
+      makeWidget('b'),
+      makeWidget('ui2', false)
+    ]
+
+    expect(
+      migrateWidgetsValues(holeInputDefs, widgets, ['av', null, 'bv'])
+    ).toEqual(['av', 'bv'])
+  })
+
+  it('migrates a sparse value array with a non-trailing skipped widget', () => {
+    const widgets = [makeWidget('preview', false), makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, null, 20])).toEqual([
+      20
+    ])
+  })
+
+  it('preserves compacted values for dynamic widgets after a skipped widget', () => {
+    const dynamicInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui', false),
+      makeWidget('extra')
+    ]
+
+    expect(
+      migrateWidgetsValues(dynamicInputDefs, widgets, ['av', 'extra value'])
+    ).toEqual(['av', 'extra value'])
+  })
+
+  it('continues to migrate a value array without skipped widgets', () => {
+    const widgets = [makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
 })

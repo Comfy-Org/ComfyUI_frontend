@@ -8,6 +8,8 @@ import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
   advanced?: boolean
@@ -66,6 +68,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return positionalIndex < restoration.positional.length
       ? { value: restoration.positional[positionalIndex] }
       : undefined
+  }
+
+  function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
+    const restorations = graphWidgetRestorations.get(graphId)
+    if (!restorations) return
+    restorations.delete(nodeId)
+    if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
   }
 
   function getPositionalRestoredWidgetValue(
@@ -137,11 +146,20 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (order.length === 0) graphOrders.delete(nodeId)
   }
 
-  function registerWidget<TValue extends WidgetValue = WidgetValue>(
+  /**
+   * @returns The existing state for the same widget type, replacement state
+   * for a different type, or `undefined` for an invalid widget ID.
+   */
+  function registerWidget<
+    TValue extends WidgetValue = WidgetValue,
+    TType extends string = string,
+    TOptions extends IWidgetOptions = IWidgetOptions
+  >(
     widgetId: WidgetId,
-    init: WidgetStateInit<TValue>,
-    renderState: WidgetRenderState = {}
-  ): WidgetState<TValue> | undefined {
+    init: WidgetStateInit<TValue, TType, TOptions>,
+    renderState: WidgetRenderState = {},
+    _context?: RemoteMutationContext
+  ): WidgetState<TValue, TType, TOptions> | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
         'widgetValueStore.registerWidget: ignoring un-keyable widget id',
@@ -171,10 +189,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         y: init.y ?? existing.y
       })
       appendNodeWidgetOrder(widgetId)
-      return existing as WidgetState<TValue>
+      return existing as WidgetState<TValue, TType, TOptions>
     }
 
-    const state: WidgetState<TValue> = {
+    const state: WidgetState<TValue, TType, TOptions> = {
       ...init,
       nodeId,
       name: init.name ?? storageName,
@@ -183,7 +201,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
     appendNodeWidgetOrder(widgetId)
-    return widgetStates.get(widgetId) as WidgetState<TValue>
+    return widgetStates.get(widgetId) as WidgetState<TValue, TType, TOptions>
   }
 
   function registerWidgetRenderState(
@@ -219,7 +237,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return graphWidgetRenderStates.value.get(graphId)?.get(widgetId)
   }
 
-  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
+  function setValue(
+    widgetId: WidgetId,
+    value: WidgetState['value'],
+    _context?: RemoteMutationContext
+  ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
     state.value = value
@@ -380,7 +402,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphOrders.delete(localNodeId)
   }
 
-  function clearNode(graphId: UUID, nodeId: NodeId): void {
+  function clearNode(
+    graphId: UUID,
+    nodeId: NodeId,
+    _context?: RemoteMutationContext
+  ): void {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
@@ -411,6 +437,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     setNodeWidgetRestoration,
+    clearNodeWidgetRestoration,
     getRestoredWidgetValue,
     getPositionalRestoredWidgetValue,
     getWidget,

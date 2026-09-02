@@ -90,9 +90,6 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-// The legacy rail keeps lifecycle authorization on the client, and
-// handleResubscribe() skips its capability guard there, so the affordance has
-// to follow the same three-way condition or it hides a working action.
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''

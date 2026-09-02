@@ -9,7 +9,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const criteria = affiliateAudienceCriteria.map((criterion) => ({
   id: criterion.id,
-  label: criterion.label[locale]
+  label: criterion.label[locale] || criterion.label.en
 }))
 </script>
 

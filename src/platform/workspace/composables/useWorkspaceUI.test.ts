@@ -12,6 +12,8 @@ const mockStore = vi.hoisted(() => ({
 const mockIsCloud = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanReactivate = ref(false)
+const mockCanSubscribeSelfServe = ref(true)
+const mockSnapshotAuthoritative = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -54,7 +56,9 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
-    canReactivate: computed(() => mockCanReactivate.value)
+    canReactivate: computed(() => mockCanReactivate.value),
+    canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
+    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
   })
 }))
 
@@ -126,6 +130,8 @@ function resetStore() {
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
   mockCanReactivate.value = false
+  mockCanSubscribeSelfServe.value = true
+  mockSnapshotAuthoritative.value = true
 }
 
 describe('useWorkspaceUI', () => {
@@ -510,6 +516,64 @@ describe('useWorkspaceUI', () => {
 
       const ui = await loadComposable()
       expect(ui.canReactivatePlan.value).toBe(true)
+    })
+  })
+
+  describe('canOpenPricingSurface', () => {
+    beforeEach(() => {
+      mockStore.activeWorkspace = personalWorkspace
+    })
+
+    it('closes the catalog when the server resolves a sales-managed plan', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.canOpenPricingSurface.value).toBe(false)
+    })
+
+    it('opens the catalog when the server allows self-serve subscribing', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanSubscribeSelfServe.value = true
+
+      const ui = await loadComposable()
+      expect(ui.canOpenPricingSurface.value).toBe(true)
+    })
+
+    it('falls back to membership on the legacy rail, where no capability row exists', async () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscription).toBe(true)
+      expect(ui.canOpenPricingSurface.value).toBe(true)
+    })
+
+    it('falls back to membership off Cloud, where the endpoint is never called', async () => {
+      mockIsCloud.value = false
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.canOpenPricingSurface.value).toBe(true)
+    })
+
+    it('falls back to membership when the snapshot is not authoritative', async () => {
+      mockSnapshotAuthoritative.value = false
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.canOpenPricingSurface.value).toBe(true)
+    })
+
+    it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
+      mockStore.activeWorkspace = teamMemberWorkspace
+      mockSnapshotAuthoritative.value = false
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscription).toBe(false)
+      expect(ui.canOpenPricingSurface.value).toBe(false)
     })
   })
 })

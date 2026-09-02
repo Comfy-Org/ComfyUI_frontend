@@ -4,6 +4,7 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
@@ -234,7 +235,7 @@ const copiedLabel = t('ui.copied', locale)
         >
           {{ t('mcp.setup.requirementPrefix', locale)
           }}<a
-            :href="getRoutes(locale).cloudPricing"
+            :href="getRoutes(locale).pricing"
             class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
             >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
           >{{ t('mcp.setup.requirementSuffix', locale)
@@ -253,10 +254,12 @@ const copiedLabel = t('ui.copied', locale)
       </template>
     </SectionHeader>
 
+    <SurfaceToggle :locale="locale" active="mcp" class="mt-10" />
+
     <TabsRoot
       v-model="activeConnectionId"
       activation-mode="manual"
-      class="mt-10 block"
+      class="mt-6 block"
       @update:model-value="onConnectionTabChange"
     >
       <TabsList

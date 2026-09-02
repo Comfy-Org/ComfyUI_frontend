@@ -3,6 +3,7 @@ import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
@@ -195,6 +196,7 @@ export const useAuthActions = () => {
     // refresh on return still fires when telemetry consent is off.
     usePendingTopup().startPendingTopup()
     window.open(response.checkout_url, '_blank')
+    watchForTopupBalanceUpdate()
   }
 
   const purchaseCredits = wrapWithErrorHandlingAsync(

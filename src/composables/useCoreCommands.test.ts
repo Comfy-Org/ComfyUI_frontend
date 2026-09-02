@@ -13,6 +13,13 @@ import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
+  vi.fn(<T>(clear: () => T): T => clear())
+)
+vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+  runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
+}))
+
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
 vi.mock('vue-i18n', async () => {
@@ -41,6 +48,9 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    deleteSelected: vi.fn(),
+    selectOnly: false,
+    canvas: { dispatchEvent: vi.fn() },
     read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
@@ -68,7 +78,10 @@ vi.mock('@/scripts/app', () => {
 vi.mock('@/scripts/api', () => ({
   api: {
     dispatchCustomEvent: vi.fn(),
-    apiURL: vi.fn(() => 'http://localhost:8188')
+    apiURL: vi.fn(() => 'http://localhost:8188'),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
@@ -210,6 +223,7 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
+  subscriptionTier: null as string | null,
   showSubscriptionDialog: vi.fn()
 }))
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -217,6 +231,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: {
       get value() {
         return mockBillingState.canAccessSubscriptionFeatures
+      }
+    },
+    subscription: {
+      get value() {
+        return mockBillingState.subscriptionTier
+          ? { tier: mockBillingState.subscriptionTier }
+          : null
       }
     },
     showSubscriptionDialog: mockBillingState.showSubscriptionDialog
@@ -318,6 +339,7 @@ describe('useCoreCommands', () => {
   beforeEach(() => {
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
+    mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
@@ -330,6 +352,7 @@ describe('useCoreCommands', () => {
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
+    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -344,6 +367,7 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
+      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -359,8 +383,9 @@ describe('useCoreCommands', () => {
       // Execute the command
       await clearCommand.function()
 
-      expect(app.clean).toHaveBeenCalled()
+      expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
+      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       // Should only remove user nodes, not input/output nodes
       const subgraph = app.canvas.subgraph!
@@ -401,6 +426,7 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
+      app.canvas.selectOnly = false
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -430,6 +456,31 @@ describe('useCoreCommands', () => {
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
+    })
+
+    it('should delete selected items outside selection-only mode', async () => {
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should preserve selected items in selection-only mode', async () => {
+      const selectedItem = {}
+      app.canvas.selectedItems = new Set([
+        selectedItem
+      ]) as typeof app.canvas.selectedItems
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      expect(app.canvas.setDirty).not.toHaveBeenCalled()
+      expect([...app.canvas.selectedItems]).toEqual([selectedItem])
     })
   })
 
@@ -724,6 +775,23 @@ describe('useCoreCommands', () => {
         expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
+      }
+    )
+
+    it.for(['ENTERPRISE', 'GALACTIC'] as const)(
+      'explains the block instead of a subscribe dialog on a sales-managed %s plan',
+      async (tier) => {
+        mockDistributionState.isCloud = true
+        mockBillingState.canAccessSubscriptionFeatures = false
+        mockBillingState.subscriptionTier = tier
+
+        await findCmd('Comfy.QueuePrompt').function()
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
       }
     )
 

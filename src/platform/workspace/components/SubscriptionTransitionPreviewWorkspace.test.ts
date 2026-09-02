@@ -19,10 +19,21 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Only the renewal messages are supplied, so the renewal assertions verify
+// real interpolated output while every other key still renders as itself.
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: {
+    en: {
+      subscription: {
+        preview: {
+          renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
+          renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
+        }
+      }
+    }
+  }
 })
 
 const globalOptions = {
@@ -75,6 +86,23 @@ function preview(
     renewal_at: '2027-06-28T00:00:00Z',
     ...overrides
   }
+}
+
+// Shape returned while embedded checkout is disabled: every exact-quote field
+// is absent and only the legacy cost fields are populated.
+function legacyPreview(
+  overrides: Partial<PreviewSubscribeResponse>
+): PreviewSubscribeResponse {
+  const {
+    amount_due_cents,
+    currency,
+    renewal_amount_cents,
+    renewal_at,
+    quote_id,
+    quote_version,
+    ...legacy
+  } = preview(overrides)
+  return legacy
 }
 
 describe('SubscriptionTransitionPreviewWorkspace', () => {
@@ -273,5 +301,102 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.refillReplacesNote')
     ).toBeTruthy()
     expect(screen.getByText('$12,600.00')).toBeTruthy()
+  })
+
+  it('renders a Founders Edition refill without borrowing a catalog lookup', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('STANDARD', 'MONTHLY', 2000),
+          new_plan: plan('FOUNDERS_EDITION', 'MONTHLY', 10_000)
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Founders Edition/)).toBeTruthy()
+  })
+
+  it('renders a tier the catalog does not know as readable words', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('PRO', 'MONTHLY', 10_000),
+          new_plan: plan(
+            'SOME_FUTURE_TIER' as SubscriptionTier,
+            'MONTHLY',
+            20_000
+          )
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Some Future Tier/)).toBeTruthy()
+  })
+
+  it('prices a legacy preview from the server costs instead of reporting the quote unavailable', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview({
+          cost_today_cents: 31_850,
+          cost_next_period_cents: 33_600,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600)
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$318.50')).toBeTruthy()
+    expect(
+      screen.getByText('Renews at $336.00 on Jun 28, 2027. Cancel anytime.')
+    ).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
+  })
+
+  it('states legacy renewal terms without a date when the server supplies no period end', () => {
+    const { period_end, ...planWithoutPeriodEnd } = plan(
+      'CREATOR',
+      'ANNUAL',
+      33_600
+    )
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview({
+          cost_today_cents: 31_850,
+          cost_next_period_cents: 33_600,
+          new_plan: planWithoutPeriodEnd
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('Renews at $336.00. Cancel anytime.')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
+  })
+
+  it('withholds an exact quote that arrives without a currency to price it in', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          cost_today_cents: 31_850,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600),
+          currency: undefined
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getAllByText('subscription.preview.quoteUnavailable')
+    ).toHaveLength(2)
   })
 })

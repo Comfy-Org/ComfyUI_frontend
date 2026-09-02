@@ -99,14 +99,13 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(displayDiv!.innerHTML).toContain('<em>italic</em>')
     })
 
-    it('starts in display mode by default', (context) => {
-      context.skip(
-        'Something in the logic in these tests is definitely off. needs diagnosis'
-      )
+    it('starts in display mode by default', () => {
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
-      expect(container.querySelector('.comfy-markdown-content')).not.toBeNull()
+      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
+        'visible'
+      )
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     })
 
@@ -121,16 +120,17 @@ describe('WidgetMarkdown Dual Mode Display', () => {
   })
 
   describe('Edit Mode Toggle', () => {
-    it('switches to edit mode when clicked', async (context) => {
-      context.skip('markdown editor not disappearing. needs diagnosis')
+    it('switches to edit mode when clicked', async () => {
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
-      expect(container.querySelector('.comfy-markdown-content')).not.toBeNull()
+      const displayContent = container.querySelector('.comfy-markdown-content')
+      expect(displayContent).toHaveClass('visible')
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
       await dblClickToEdit(container)
 
-      expect(container.querySelector('.comfy-markdown-content')).toBeNull()
+      expect(displayContent).toHaveClass('invisible')
       expect(screen.getByRole('textbox')).toBeInTheDocument()
     })
 
@@ -147,16 +147,18 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(screen.getByRole('textbox')).toBeInTheDocument()
     })
 
-    it('switches back to display mode on textarea blur', async (context) => {
-      context.skip('textarea not disappearing. needs diagnosis')
+    it('switches back to display mode on textarea blur', async () => {
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
+      const displayContent = container.querySelector('.comfy-markdown-content')
+
       await dblClickToEdit(container)
       expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(displayContent).toHaveClass('invisible')
 
       await blurTextarea()
-      expect(container.querySelector('.comfy-markdown-content')).not.toBeNull()
+      expect(displayContent).toHaveClass('visible')
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     })
   })
@@ -171,22 +173,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
       const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
       expect(textarea.value).toBe('# Original Content')
-    })
-
-    it('applies styling and configuration to textarea', async (context) => {
-      context.skip(
-        'Props or styling are not as described in the test. needs diagnosis'
-      )
-      const widget = createMarkdownWidget('# Test')
-      const { container } = renderComponent(widget, '# Test')
-
-      await dblClickToEdit(container)
-
-      const textarea = screen.getByRole('textbox')
-      // Check rows attribute in the DOM
-      expect(textarea.getAttribute('rows')).toBe('6')
-      expect(textarea.classList.contains('text-xs')).toBe(true)
-      expect(textarea.classList.contains('w-full')).toBe(true)
     })
 
     it('stops click and keydown event propagation in edit mode', async () => {
@@ -442,12 +428,14 @@ Another line with more content.`
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
-      // Rapid toggling
       await dblClickToEdit(container)
       expect(screen.getByRole('textbox')).toBeInTheDocument()
 
       await blurTextarea()
-      expect(container.querySelector('.comfy-markdown-content')).not.toBeNull()
+      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
+        'visible'
+      )
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
       await dblClickToEdit(container)
       expect(screen.getByRole('textbox')).toBeInTheDocument()
@@ -455,18 +443,15 @@ Another line with more content.`
   })
 
   describe('Focus Management', () => {
-    it('creates textarea reference when entering edit mode', async () => {
+    it('focuses the textarea when entering edit mode', async () => {
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
-      // Initially not in edit mode - textarea should not be visible
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
-      // Double-click to start editing
       await dblClickToEdit(container)
 
-      // Check that textarea exists after entering edit mode
-      expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(screen.getByRole('textbox')).toHaveFocus()
     })
   })
 })

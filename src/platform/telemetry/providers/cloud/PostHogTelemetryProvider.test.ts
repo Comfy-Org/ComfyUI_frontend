@@ -155,6 +155,29 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it("lets the server's person_profiles win over the client default", async () => {
+      hoisted.refs.remoteConfig.value = {
+        posthog_config: { person_profiles: 'always' }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'always' })
+      )
+    })
+
+    it('defaults person_profiles to identified_only when the server omits it', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'identified_only' })
+      )
+    })
+
     it('registers onUserResolved callback after init', async () => {
       createProvider()
       await vi.dynamicImportSettled()
@@ -396,6 +419,46 @@ describe('PostHogTelemetryProvider', () => {
           error_code: 'auth/user-not-found',
           auth_action: 'email_sign_in'
         }
+      )
+    })
+
+    it('captures unified auth retry and refresh outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackUnifiedAuthRetry({
+        transport: 'ws',
+        outcome: 'failed',
+        failure_reason: 'token_unavailable'
+      })
+      provider.trackUnifiedAuthRefresh({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+        {
+          transport: 'ws',
+          outcome: 'failed',
+          failure_reason: 'token_unavailable'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+        { outcome: 'retry_scheduled', retry_count: 1 }
+      )
+    })
+
+    it('captures image load failures', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackImageLoadFailed({ source: 'node_image_preview' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.IMAGE_LOAD_FAILED,
+        { source: 'node_image_preview' }
       )
     })
 
@@ -1202,12 +1265,11 @@ describe('PostHogTelemetryProvider', () => {
       expect(result.$set_once).toHaveProperty('plan', 'free')
     })
 
-    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+    it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
       hoisted.refs.remoteConfig.value = {
         posthog_config: {
-          before_send: remoteBefore_send,
-          person_profiles: 'always'
+          before_send: remoteBefore_send
         }
       }
 
@@ -1217,7 +1279,6 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
-      expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
 })

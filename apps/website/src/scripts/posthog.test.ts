@@ -77,6 +77,55 @@ describe('captureDownloadClick', () => {
   })
 })
 
+describe('captureCliConnectionTabClick', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the tab click with the connection id', async () => {
+    const { initPostHog, captureCliConnectionTabClick } =
+      await import('./posthog')
+    initPostHog()
+    captureCliConnectionTabClick('cloud')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:cli_connection_tab_clicked',
+      { connection: 'cloud' }
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureCliConnectionTabClick } = await import('./posthog')
+    captureCliConnectionTabClick('local')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('captureCliClientTabClick', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the tab click with the client id', async () => {
+    const { initPostHog, captureCliClientTabClick } = await import('./posthog')
+    initPostHog()
+    captureCliClientTabClick('claude-code')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:cli_client_tab_clicked',
+      { client: 'claude-code' }
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureCliClientTabClick } = await import('./posthog')
+    captureCliClientTabClick('cursor')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
 describe('captureMcpClientTabClick', () => {
   beforeEach(() => {
     vi.resetModules()

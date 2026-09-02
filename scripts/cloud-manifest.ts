@@ -4,15 +4,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { parse } from 'yaml'
 
+import { zComfyNodeDef } from '@comfyorg/object-info-parser'
+
 import type {
   CloudManifest,
   CloudManifestEntry,
   CloudManifestSource
 } from '../browser_tests/fixtures/customNode/manifest'
-import {
-  assertCloudEntry,
-  assertCloudManifestShape
-} from '../browser_tests/fixtures/customNode/manifest'
+import { assertCloudEntry } from '../browser_tests/fixtures/customNode/manifest'
 import type { RawNodeDef } from '../browser_tests/fixtures/customNode/typePairing'
 import { packOf } from '../browser_tests/fixtures/customNode/typePairing'
 
@@ -148,18 +147,19 @@ export function validateObjectInfoSnapshot(value: unknown): ObjectInfoSnapshot {
     throw new Error(
       'object_info snapshot: expected the raw /object_info shape (nodes keyed by class name)'
     )
+  const snapshot: ObjectInfoSnapshot = {}
   for (const [node, def] of Object.entries(value)) {
-    if (!isRecord(def))
-      throw new Error(`object_info snapshot: node ${node} is not an object`)
-    if (
-      def.python_module !== undefined &&
-      typeof def.python_module !== 'string'
-    )
+    const parsed = zComfyNodeDef.safeParse(def)
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]
+      const path = issue?.path.length ? `.${issue.path.join('.')}` : ''
       throw new Error(
-        `object_info snapshot: node ${node} python_module is not a string`
+        `object_info snapshot: node ${node}${path} ${issue?.message ?? 'is invalid'}`
       )
+    }
+    snapshot[node] = parsed.data
   }
-  return value as ObjectInfoSnapshot
+  return snapshot
 }
 
 interface CuratedCloudWorkflow {
@@ -167,6 +167,7 @@ interface CuratedCloudWorkflow {
   tiers: CloudManifestEntry['tiers']
   expectedNodes?: string[]
   expectedRunnableCount?: number
+  expectedRunnableNodeTypesSha256?: string
   timeoutMs?: number
 }
 
@@ -177,6 +178,7 @@ const OVERLAY_KEYS = [
   'tiers',
   'expectedNodes',
   'expectedRunnableCount',
+  'expectedRunnableNodeTypesSha256',
   'timeoutMs'
 ]
 
@@ -232,6 +234,10 @@ export function validateCuratedCloudOverlay(
       throw new Error(
         `curated overlay: ${pack} expectedRunnableCount must be a positive integer`
       )
+    if (!/^[0-9a-f]{64}$/.test(String(entry.expectedRunnableNodeTypesSha256)))
+      throw new Error(
+        `curated overlay: ${pack} expectedRunnableNodeTypesSha256 must be a sha256 digest`
+      )
     if (
       entry.timeoutMs !== undefined &&
       (typeof entry.timeoutMs !== 'number' ||
@@ -248,6 +254,8 @@ export function validateCuratedCloudOverlay(
         ? { expectedNodes: entry.expectedNodes }
         : {}),
       expectedRunnableCount: entry.expectedRunnableCount as number,
+      expectedRunnableNodeTypesSha256:
+        entry.expectedRunnableNodeTypesSha256 as string,
       ...(entry.timeoutMs !== undefined ? { timeoutMs: entry.timeoutMs } : {})
     }
   }
@@ -295,6 +303,28 @@ function snapshotPacksOf(snapshot: ObjectInfoSnapshot): Map<string, string[]> {
 // to prove the pack's JS loaded, and a conditionally-registered extra would
 // red a healthy run.
 export type CloudExtensionSentinels = Record<string, string[]>
+
+export function validateCloudExtensionSentinels(
+  value: unknown
+): CloudExtensionSentinels {
+  if (!isRecord(value))
+    throw new Error(
+      'cloudExtensionSentinels: expected { "<pack dirname>": ["<extension>", ...] }'
+    )
+  const sidecar: CloudExtensionSentinels = {}
+  for (const [pack, extensions] of Object.entries(value)) {
+    if (
+      !isStringArray(extensions) ||
+      extensions.length === 0 ||
+      new Set(extensions).size !== extensions.length
+    )
+      throw new Error(
+        `cloudExtensionSentinels: ${pack} must be a non-empty array of unique non-empty extension names`
+      )
+    sidecar[pack] = [...extensions].sort()
+  }
+  return sidecar
+}
 
 // Per-pack auto-run calibration (nodes that cannot execute on pure defaults
 // against the cloud backend), carried as a sidecar so regeneration preserves
@@ -392,7 +422,11 @@ export function buildCloudManifest(
       workflow: curated?.workflow ?? '',
       expectedNodes: curated?.expectedNodes ?? enabled.slice(0, 2),
       ...(curated
-        ? { expectedRunnableCount: curated.expectedRunnableCount }
+        ? {
+            expectedRunnableCount: curated.expectedRunnableCount,
+            expectedRunnableNodeTypesSha256:
+              curated.expectedRunnableNodeTypesSha256
+          }
         : {}),
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],
@@ -437,6 +471,14 @@ export function buildCloudManifest(
       `cloudCannotRunAlone pack(s) with no generated row to attach to: ` +
         `${orphanedCalibration.sort().join(', ')} - keys must be snapshot pack dirnames`
     )
+  const orphanedSentinels = Object.keys(sentinels).filter(
+    (pack) => !packs.some((row) => row.pack === pack)
+  )
+  if (orphanedSentinels.length > 0)
+    throw new Error(
+      `cloudExtensionSentinels pack(s) with no generated row to attach to: ` +
+        `${orphanedSentinels.sort().join(', ')} - keys must be snapshot pack dirnames`
+    )
 
   packs.sort((a, b) => (a.pack < b.pack ? -1 : a.pack > b.pack ? 1 : 0))
   packs.forEach(assertCloudEntry)
@@ -460,56 +502,26 @@ function dataPath(name: string): string {
   )
 }
 
-function regenerationSidecars(manifest: CloudManifest): {
-  overlay: CuratedCloudOverlay
-  sentinels: CloudExtensionSentinels
-  cannotRunAlone: CloudCannotRunAlone
-} {
-  const runEntries = manifest.packs.filter((entry) =>
-    entry.tiers.includes('run')
-  )
-  return {
-    overlay: Object.fromEntries(
-      runEntries.map((entry) => [
-        entry.pack,
-        {
-          workflow: entry.workflow,
-          tiers: entry.tiers,
-          expectedNodes: entry.expectedNodes,
-          expectedRunnableCount: entry.expectedRunnableCount,
-          timeoutMs: entry.timeoutMs
-        }
-      ])
-    ),
-    sentinels: Object.fromEntries(
-      manifest.packs
-        .filter((entry) => entry.expectedExtensions.length > 0)
-        .map((entry) => [entry.pack, entry.expectedExtensions])
-    ),
-    cannotRunAlone: Object.fromEntries(
-      runEntries.flatMap((entry) =>
-        entry.cannotRunAlone === undefined
-          ? []
-          : [[entry.pack, entry.cannotRunAlone]]
-      )
-    )
-  }
-}
-
 function generate(snapshotPath: string): void {
   const yamlPath = dataPath('cloud/supported_nodes.yaml')
   const manifestPath = dataPath('customNodeManifest.cloud.json')
   const yamlContents = readFileSync(yamlPath, 'utf8')
-  const currentValue: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
-  const current = assertCloudManifestShape(currentValue, manifestPath)
   const snapshotValue: unknown = JSON.parse(readFileSync(snapshotPath, 'utf8'))
-  const { overlay, sentinels, cannotRunAlone } = regenerationSidecars(current)
+  const overlay: unknown = JSON.parse(
+    readFileSync(dataPath('cloud/curatedWorkflows.json'), 'utf8')
+  )
+  const sentinels: unknown = JSON.parse(
+    readFileSync(dataPath('cloud/extensionSentinels.json'), 'utf8')
+  )
+  const cannotRunAlone: unknown = JSON.parse(
+    readFileSync(dataPath('cloud/cannotRunAlone.json'), 'utf8')
+  )
   const manifest = buildCloudManifest(
     validateSupportedNodesDoc(parse(yamlContents)),
     validateObjectInfoSnapshot(snapshotValue),
     sourceFromSupportedNodesHeader(yamlContents),
     validateCuratedCloudOverlay(overlay),
-    sentinels,
+    validateCloudExtensionSentinels(sentinels),
     validateCloudCannotRunAlone(cannotRunAlone)
   )
   writeFileSync(manifestPath, renderCloudManifest(manifest))
