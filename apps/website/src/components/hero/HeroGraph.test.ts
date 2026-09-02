@@ -6,16 +6,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import type * as CameraWidgetModule from './camera/CameraWidget'
 import { DRAG_MARGIN, FLOW } from './graphLayout'
 import HeroGraph from './HeroGraph.vue'
 
-vi.mock('./camera/CameraWidget', () => ({
+vi.mock(import('./camera/CameraWidget'), () => ({
   CameraWidget: class {
     setState = vi.fn()
     pause = vi.fn()
     resume = vi.fn()
     dispose = vi.fn()
-  }
+  } as unknown as typeof CameraWidgetModule.CameraWidget
 }))
 
 const EM_PX = 10

@@ -6,7 +6,6 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodesSnapshot } from '../data/cloudNodes'
-import type * as ObjectInfoParser from '@comfyorg/object-info-parser'
 
 import type { RegistryPackWithNodes } from './cloudNodes.registry'
 
@@ -15,13 +14,13 @@ const fetchRegistryPacksWithNodesMock = vi.hoisted(() =>
 )
 const sanitizeCallSpy = vi.hoisted(() => vi.fn())
 
-vi.mock('./cloudNodes.registry', () => ({
-  DEFAULT_REGISTRY_BASE_URL: 'https://api.comfy.org',
+vi.mock(import('./cloudNodes.registry'), () => ({
+  DEFAULT_REGISTRY_BASE_URL: 'https://api.comfy.org' as const,
   fetchRegistryPacksWithNodes: fetchRegistryPacksWithNodesMock
 }))
 
-vi.mock('@comfyorg/object-info-parser', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof ObjectInfoParser
+vi.mock(import('@comfyorg/object-info-parser'), async (importOriginal) => {
+  const actual = await importOriginal()
   return {
     ...actual,
     sanitizeUserContent: (
@@ -127,7 +126,7 @@ describe('fetchCloudNodesForBuild', () => {
     const outcome = await fetchCloudNodesForBuild({
       apiKey: KEY,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(outcome.status).toBe('fresh')
@@ -158,7 +157,7 @@ describe('fetchCloudNodesForBuild', () => {
       apiKey: KEY,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(outcome.status).toBe('fresh')
@@ -194,7 +193,7 @@ describe('fetchCloudNodesForBuild', () => {
     await fetchCloudNodesForBuild({
       apiKey: KEY,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(sanitizeCallSpy).toHaveBeenCalledTimes(1)
@@ -232,7 +231,7 @@ describe('fetchCloudNodesForBuild', () => {
       apiKey: KEY,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
@@ -251,7 +250,7 @@ describe('fetchCloudNodesForBuild', () => {
       snapshotUrl,
       retryDelaysMs: [1, 1, 1],
       sleep,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
     expect(outcome.status).toBe('stale')
     expect(fetchImpl).toHaveBeenCalledTimes(4)
@@ -266,7 +265,7 @@ describe('fetchCloudNodesForBuild', () => {
       apiKey: KEY,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
@@ -296,14 +295,14 @@ describe('fetchCloudNodesForBuild', () => {
     await fetchCloudNodesForBuild({
       apiKey: KEY,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(() =>
       fetchCloudNodesForBuild({
         apiKey: 'different-key',
         baseUrl: BASE_URL,
-        fetchImpl: fetchImpl as typeof fetch
+        fetchImpl: fetchImpl
       })
     ).toThrow(/called twice with different options/)
   })
@@ -314,7 +313,7 @@ describe('fetchCloudNodesForBuild', () => {
     const outcome = await fetchCloudNodesForBuild({
       apiKey: KEY,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     // Falls back to object_info nodes when registry fails

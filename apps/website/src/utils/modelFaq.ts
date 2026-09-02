@@ -74,11 +74,7 @@ export function buildModelFaqs(
       question: fill(t('models.faq.whatIs.question', locale), values),
       answer: getWhatIsDescription(
         model,
-        t(
-          dirDescriptionKeys[model.directory] ??
-            'models.dirDescription.default',
-          locale
-        ),
+        t(dirDescriptionKeys[model.directory], locale),
         locale
       )
     },

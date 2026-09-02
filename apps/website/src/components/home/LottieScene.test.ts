@@ -6,11 +6,13 @@ import {
   setAllIntersecting,
   stubIntersectionObserver
 } from '../../test/fakeIntersectionObserver'
+import type * as LottieModule from 'lottie-web'
+
 import LottieScene from './LottieScene.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -24,8 +26,10 @@ const lottie = vi.hoisted(() => {
   return { animation, loadAnimation: vi.fn(() => animation) }
 })
 
-vi.mock('lottie-web', () => ({
-  default: { loadAnimation: lottie.loadAnimation }
+vi.mock(import('lottie-web'), () => ({
+  default: {
+    loadAnimation: lottie.loadAnimation
+  } as unknown as typeof LottieModule.default
 }))
 
 async function renderScene(props: { src: string; active?: boolean }) {

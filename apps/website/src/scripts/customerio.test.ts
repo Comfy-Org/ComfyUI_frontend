@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'
+
 const hoisted = vi.hoisted(() => ({
   sdkImported: vi.fn(),
   mockIdentify: vi.fn(async () => undefined),
@@ -13,13 +15,13 @@ const hoisted = vi.hoisted(() => ({
   )
 }))
 
-vi.mock('@customerio/cdp-analytics-browser', () => {
+vi.mock(import('@customerio/cdp-analytics-browser'), () => {
   hoisted.sdkImported()
   // AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context]
   return {
     AnalyticsBrowser: {
       load: hoisted.mockLoad
-    }
+    } as unknown as typeof CustomerioSdk.AnalyticsBrowser
   }
 })
 

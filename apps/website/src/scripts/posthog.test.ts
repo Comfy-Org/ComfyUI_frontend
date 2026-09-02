@@ -1,16 +1,18 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as PostHogModule from 'posthog-js'
+
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
   mockCapture: vi.fn()
 }))
 
-vi.mock('posthog-js', () => ({
+vi.mock(import('posthog-js'), () => ({
   default: {
     init: hoisted.mockInit,
     capture: hoisted.mockCapture
-  }
+  } as unknown as typeof PostHogModule.default
 }))
 
 describe('initPostHog', () => {

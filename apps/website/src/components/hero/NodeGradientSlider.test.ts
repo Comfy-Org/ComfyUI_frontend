@@ -30,8 +30,12 @@ function renderSlider(props: Partial<typeof defaultProps> = {}) {
     y: 0,
     toJSON: () => ({})
   })
+  // `emitted(name)` is typed as always returning an array, but returns
+  // undefined for an event the component never emitted.
+  const emissionsOf = (name: string): unknown[] | undefined =>
+    utils.emitted(name)
   const lastEmitted = () =>
-    (utils.emitted('update:modelValue')?.at(-1) as [number] | undefined)?.[0]
+    (emissionsOf('update:modelValue')?.at(-1) as [number] | undefined)?.[0]
   return { ...utils, slider, lastEmitted }
 }
 

@@ -25,12 +25,12 @@ describe('ColorNode', () => {
     screen
       .getByRole('slider', { name: 'HUE' })
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
-    expect(emitted('update:hue')?.at(-1)).toEqual([1])
+    expect(emitted('update:hue').at(-1)).toEqual([1])
 
     screen
       .getByRole('slider', { name: 'SATURATION' })
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
-    const [saturation] = emitted('update:saturation')?.at(-1) as [number]
+    const [saturation] = emitted('update:saturation').at(-1) as [number]
     expect(saturation).toBeCloseTo(0.95)
   })
 
