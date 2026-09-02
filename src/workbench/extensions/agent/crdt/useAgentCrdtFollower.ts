@@ -299,12 +299,26 @@ export function useAgentCrdtFollower(
   // TEL-10: mirrors the retry-exhaustion bookkeeping above, but for the
   // recovery path — armed by the SAME two disconnect signals
   // (`onReconnected`'s socket drop and a server `doc_subscribed{ok:false}`
-  // refusal) and cleared by the SAME confirmed-subscribe branch that clears
-  // the retry timer. `null` means "no reconnect in flight"; a confirmed
-  // subscribe while it is non-null is a reconnect SUCCESS, not just a mount.
+  // refusal). `null` means "no reconnect in flight"; a confirmed subscribe
+  // while it is non-null is a reconnect SUCCESS, not just a mount.
+  //
+  // The report is NOT emitted at the ok ack. The relay sends the ack first and
+  // the catch-up `doc_update` (same seq as the ack) AFTER it, so emitting at
+  // the ack would always report `replayed_bytes: 0`. Instead the ack turns the
+  // bookkeeping into a PENDING report (`reconnectAckSeq` non-null) that is
+  // flushed by the catch-up frame, by the first live frame above the ack seq
+  // (no catch-up was needed), or by any later lifecycle exit.
   let reconnectStartedAt: number | null = null
   let reconnectFromVersion = 0
   let reconnectReplayedBytes = 0
+  let reconnectAckSeq: number | null = null
+  // Snapshot of the attempt count taken at the ack, so the deferred report is
+  // not distorted by the counters resetting on that same confirmed subscribe.
+  // Distinct from `reconnectAttempt` below, which is TEL-9's live
+  // socket-reconnect counter.
+  let reconnectReportAttempt = 0
+  let reconnectDurationMs = 0
+  let reconnectToVersion = 0
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -365,19 +379,103 @@ export function useAgentCrdtFollower(
     subscribeRetryAttempt = 0
     subscribeRetryStartedAt = null
     subscribeRetryFailureReported = false
+  }
+
+  const clearReconnectTracking = (): void => {
     reconnectStartedAt = null
     reconnectFromVersion = 0
     reconnectReplayedBytes = 0
+    reconnectAckSeq = null
+    reconnectReportAttempt = 0
+    reconnectDurationMs = 0
+    reconnectToVersion = 0
+  }
+
+  // Emit the PENDING report (ack already seen) with whatever catch-up bytes
+  // were counted so far, then drop the bookkeeping. No-op unless pending, so
+  // every exit path can call it unconditionally. `attempt`, the duration and
+  // `to_version` were snapshotted at the ack: the wait for the catch-up frame
+  // (or for the first live frame that proves none was needed) must not stretch
+  // the duration.
+  const emitReconnectReport = (): void => {
+    useTelemetry()?.trackAgentReconnectSucceeded({
+      attempt: reconnectReportAttempt,
+      reconnect_duration_ms: reconnectDurationMs,
+      replayed_bytes: reconnectReplayedBytes,
+      from_version: reconnectFromVersion,
+      to_version: reconnectToVersion
+    })
+    clearReconnectTracking()
+  }
+  const flushPendingReconnectReport = (): void => {
+    if (reconnectStartedAt === null || reconnectAckSeq === null) return
+    emitReconnectReport()
   }
 
   // Arm reconnect tracking on the FIRST disconnect signal only — a later
   // retry attempt or a second `onReconnected` mid-recovery must not reset the
-  // duration clock or the from_version baseline it already captured.
+  // duration clock or the from_version baseline it already captured. A
+  // disconnect signal while a report is PENDING is a new reconnect, so the
+  // pending one is flushed first and the clock restarts.
   const armReconnectTracking = (): void => {
+    flushPendingReconnectReport()
     if (reconnectStartedAt !== null) return
     reconnectStartedAt = performance.now()
     reconnectFromVersion = bridge.lastSequence
     reconnectReplayedBytes = 0
+  }
+
+  // Confirmed subscribe while a reconnect is in flight. A numeric ack seq means
+  // a catch-up frame with that seq MAY follow, so the report goes pending; an
+  // ack without a seq has nothing to wait for and is reported at once. A second
+  // ok ack while already pending (the stale probe's `resubscribe()`) proves no
+  // catch-up arrived, so it flushes rather than re-arming.
+  const onReconnectConfirmed = (ackSeq: number | null): void => {
+    if (reconnectStartedAt === null) return
+    if (reconnectAckSeq !== null) {
+      flushPendingReconnectReport()
+      return
+    }
+    // Both disconnect signals produce subscribe attempts and both counters
+    // reset on this same confirmed subscribe, so the recovery cost is their
+    // sum: `onReconnected`'s immediate resubscribe plus every refusal-driven
+    // retry. Floored at 1 because a socket-drop recovery that never retried
+    // still took one attempt.
+    reconnectReportAttempt = Math.max(
+      1,
+      reconnectAttempt + subscribeRetryAttempt
+    )
+    reconnectDurationMs = Math.max(
+      0,
+      Math.round(performance.now() - reconnectStartedAt)
+    )
+    if (ackSeq === null) {
+      reconnectToVersion = 0
+      emitReconnectReport()
+      return
+    }
+    reconnectToVersion = ackSeq
+    reconnectAckSeq = ackSeq
+  }
+
+  // Doc frame while a reconnect is in flight. Before the ack every frame is
+  // counted (the ack can be overtaken). After the ack, frames at or below the
+  // ack seq are the catch-up: count them and flush on the one that matches
+  // the ack. A frame ABOVE the ack seq is live traffic, which proves the
+  // catch-up was empty (or already flushed): flush first, do not count it.
+  const trackReconnectUpdate = (update: DocUpdate): void => {
+    if (reconnectStartedAt === null) return
+    const bytes = update.update instanceof Uint8Array ? update.update.length : 0
+    if (reconnectAckSeq === null) {
+      reconnectReplayedBytes += bytes
+      return
+    }
+    if (update.seq > reconnectAckSeq) {
+      flushPendingReconnectReport()
+      return
+    }
+    reconnectReplayedBytes += bytes
+    if (update.seq === reconnectAckSeq) flushPendingReconnectReport()
   }
 
   const reportSubscribeRetryExhausted = (): void => {
@@ -451,27 +549,13 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      // Read before clearSubscribeRetry() wipes the reconnect bookkeeping —
-      // a non-null start time means this confirm follows a disconnect signal
+      // Snapshot before clearSubscribeRetry() resets the attempt counter. A
+      // non-null start time means this confirm follows a disconnect signal
       // (onReconnected or a prior refusal), i.e. it is a RECOVERY, not the
-      // panel's first-ever bind.
-      if (reconnectStartedAt !== null) {
-        useTelemetry()?.trackAgentReconnectSucceeded({
-          // Both disconnect signals produce subscribe attempts and both
-          // counters reset on this same confirmed subscribe, so the recovery
-          // cost is their sum: `onReconnected`'s immediate resubscribe plus
-          // every refusal-driven retry. Floored at 1 because a socket-drop
-          // recovery that never retried still took one attempt.
-          attempt: Math.max(1, reconnectAttempt + subscribeRetryAttempt),
-          reconnect_duration_ms: Math.max(
-            0,
-            Math.round(performance.now() - reconnectStartedAt)
-          ),
-          replayed_bytes: reconnectReplayedBytes,
-          from_version: reconnectFromVersion,
-          to_version: event.detail?.seq ?? bridge.lastSequence
-        })
-      }
+      // panel's first-ever bind. The report itself is deferred until the
+      // catch-up frame (see `trackReconnectUpdate`).
+      const seq = event.detail?.seq
+      onReconnectConfirmed(typeof seq === 'number' ? seq : null)
       clearSubscribeRetry()
       armStaleProbe()
       reconnectAttempt = 0
@@ -506,8 +590,7 @@ export function useAgentCrdtFollower(
       }
       return
     }
-    if (reconnectStartedAt !== null && update.update instanceof Uint8Array)
-      reconnectReplayedBytes += update.update.length
+    trackReconnectUpdate(update)
     if (staleProbeTimer !== null) armStaleProbe()
     markActivity()
     refreshPersistedDocId()
@@ -735,6 +818,11 @@ export function useAgentCrdtFollower(
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
       clearSubscribeRetry()
+      // A reconnect that was confirmed but still waiting for its catch-up
+      // frame DID succeed: report it before the binding changes. One that was
+      // never confirmed is dropped without a report.
+      flushPendingReconnectReport()
+      clearReconnectTracking()
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
@@ -790,6 +878,8 @@ export function useAgentCrdtFollower(
     // update twice after a remount.
     try {
       clearSubscribeRetry()
+      flushPendingReconnectReport()
+      clearReconnectTracking()
       clearStaleProbe()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
