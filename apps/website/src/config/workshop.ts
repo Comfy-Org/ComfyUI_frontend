@@ -13,7 +13,7 @@ export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 export type ModelStatus = 'deprecated' | 'degraded'
 
 const TASK_INPUTS = ['text', 'image', 'video', 'audio'] as const
-type TaskInput = (typeof TASK_INPUTS)[number]
+export type TaskInput = (typeof TASK_INPUTS)[number]
 export type WorkshopTask = `${TaskInput}-to-${Exclude<ModalityFilter, 'all'>}`
 
 // Hand-maintained overrides on top of workshop-models.generated.json:
@@ -265,13 +265,39 @@ export function splitTask(
   return input && output && output !== 'all' ? { input, output } : undefined
 }
 
-// The catalog is organised by what a model produces. Models with an unknown
-// modality only show up under "All".
-export const USE_CASES = ['image', 'video', '3d', 'audio', 'text'] as const
+// The catalog is organised by what a visitor wants to do: what the model
+// produces and, for images and videos, whether it starts from a prompt or
+// from existing media. Models with an unknown modality only show up under "All".
+export const USE_CASES = [
+  'generate-images',
+  'edit-images',
+  'generate-videos',
+  'animate-images',
+  'edit-videos',
+  '3d',
+  'audio',
+  'text'
+] as const
 export type UseCase = (typeof USE_CASES)[number]
 
 export function useCaseFor(model: WorkshopModel): UseCase | undefined {
-  return USE_CASES.find((value) => value === model.modality)
+  const input = model.task ? splitTask(model.task)?.input : undefined
+  switch (model.modality) {
+    case 'image':
+      return input === 'image' ? 'edit-images' : 'generate-images'
+    case 'video':
+      return input === 'image'
+        ? 'animate-images'
+        : input === 'video'
+          ? 'edit-videos'
+          : 'generate-videos'
+    case '3d':
+    case 'audio':
+    case 'text':
+      return model.modality
+    default:
+      return undefined
+  }
 }
 
 // Example tags that say what a model can do beyond its use case. Tags that
@@ -338,10 +364,12 @@ function toWorkshopModel(model: Model): WorkshopModel {
   const data = generated[model.slug]
   const provider = overrides.provider ?? data?.provider
   const modality = overrides.modality ?? data?.modality
+  // One preset price per model, edited in workshop-model-display.json.
   const creditsPerRun =
-    data?.priceUsdFrom !== undefined
+    overrides.creditsPerRun ??
+    (data?.priceUsdFrom !== undefined
       ? usdToCredits(data.priceUsdFrom)
-      : overrides.creditsPerRun
+      : undefined)
   return {
     slug: model.slug,
     name: withoutRegistrySuffix(model.displayName, provider),

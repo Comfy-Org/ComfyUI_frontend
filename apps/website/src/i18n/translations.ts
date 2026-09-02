@@ -8255,10 +8255,33 @@ Enterprise`
     'zh-CN':
       '顶尖合作伙伴模型，即开即用。无需安装配置：设置输入、查看价格、点击运行。'
   },
-  'workshop.useCase.label': { en: 'Browse by type', 'zh-CN': '按类型浏览' },
+  'workshop.task.label': {
+    en: '{input} to {output}',
+    'zh-CN': '{input}转{output}'
+  },
+  'workshop.task.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.task.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.useCase.label': {
+    en: 'Browse by use case',
+    'zh-CN': '按用途浏览'
+  },
   'workshop.useCase.all': { en: 'All', 'zh-CN': '全部' },
-  'workshop.useCase.image': { en: 'Images', 'zh-CN': '图像' },
-  'workshop.useCase.video': { en: 'Videos', 'zh-CN': '视频' },
+  'workshop.useCase.generateImages': {
+    en: 'Generate images',
+    'zh-CN': '生成图像'
+  },
+  'workshop.useCase.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
+  'workshop.useCase.generateVideos': {
+    en: 'Generate videos',
+    'zh-CN': '生成视频'
+  },
+  'workshop.useCase.animateImages': {
+    en: 'Animate images',
+    'zh-CN': '让图像动起来'
+  },
+  'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
   'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
   'workshop.useCase.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.useCase.text': { en: 'Text', 'zh-CN': '文本' },
@@ -8297,6 +8320,10 @@ Enterprise`
   },
   'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
   'workshop.example.loaded': { en: 'Example loaded:', 'zh-CN': '已加载示例：' },
+  'workshop.example.editable': {
+    en: 'Editable defaults: change anything and run.',
+    'zh-CN': '可编辑的默认值：随意修改后运行。'
+  },
   'workshop.example.clear': {
     en: 'Back to the default inputs',
     'zh-CN': '恢复默认输入'
@@ -8503,6 +8530,16 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.example': { en: 'Example output', 'zh-CN': '示例输出' },
+  'workshop.output.exampleHint': {
+    en: 'This is the example result. Run to generate your own.',
+    'zh-CN': '这是示例结果。运行以生成你自己的结果。'
+  },
+  'workshop.output.earlier': {
+    en: 'Earlier runs this session',
+    'zh-CN': '本次会话的早前运行'
+  },
+  'workshop.output.latest': { en: 'Latest', 'zh-CN': '最新' },
   'workshop.output.placeholder': {
     en: 'Your output will appear here.',
     'zh-CN': '你的输出会显示在这里。'
@@ -8586,25 +8623,6 @@ Enterprise`
     en: 'Results are not stored. Links live for 24 hours after the run; download an output to keep it.',
     'zh-CN': '结果不会被保存。链接在运行后 24 小时内有效；请下载以保留。'
   },
-  'workshop.buy.title': { en: 'Add credits', 'zh-CN': '添加积分' },
-  'workshop.buy.body': {
-    en: 'Credits are shared across Comfy Cloud, the API and the Workshop.',
-    'zh-CN': '积分在 Comfy Cloud、API 和 Workshop 之间通用。'
-  },
-  'workshop.buy.needed': {
-    en: 'This run needs {n} credits. Pick a pack and you come straight back to it.',
-    'zh-CN': '本次运行需要 {n} 积分。选择一个套餐后会直接回到这里。'
-  },
-  'workshop.buy.checkout': {
-    en: 'Continue to checkout',
-    'zh-CN': '前往结账'
-  },
-  'workshop.buy.paying': { en: 'Processing…', 'zh-CN': '处理中…' },
-  'workshop.buy.note': {
-    en: 'Prototype: checkout is simulated and credits are added to the mock account.',
-    'zh-CN': '原型：结账为模拟，积分会加到模拟账户。'
-  },
-  'workshop.buy.close': { en: 'Close', 'zh-CN': '关闭' },
   'workshop.proto.lowBalance': { en: 'Low balance', 'zh-CN': '余额不足' },
   'workshop.proto.member': {
     en: 'Team member (not owner)',
@@ -8684,12 +8702,12 @@ Enterprise`
   'workshop.proto.scope': { en: 'Scope', 'zh-CN': '范围' },
   'workshop.proto.entry': { en: 'Entry point', 'zh-CN': '入口' },
   'workshop.proto.entry.workshop': {
-    en: 'Workshop catalog',
-    'zh-CN': '工作坊目录'
+    en: 'V1 · Models catalog',
+    'zh-CN': 'V1 · 模型目录'
   },
   'workshop.proto.entry.hub': {
-    en: 'Comfy Workflows (comfy.org/workflows)',
-    'zh-CN': 'Comfy 工作流（comfy.org/workflows）'
+    en: 'V2 · Comfy Workflows (comfy.org/workflows)',
+    'zh-CN': 'V2 · Comfy 工作流（comfy.org/workflows）'
   },
   'workshop.hub.title': { en: 'Browse Workflows', 'zh-CN': '浏览工作流' },
   'workshop.hub.subtitle': {

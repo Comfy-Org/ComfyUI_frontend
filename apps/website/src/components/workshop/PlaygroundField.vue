@@ -100,7 +100,7 @@ function acceptHint(accept: readonly string[]): string {
       <div class="flex items-baseline justify-between gap-3">
         <label
           :for="`field-${field.name}`"
-          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+          class="text-primary-warm-gray text-xs font-bold tracking-wider uppercase"
         >
           {{ field.label }}
           <span
@@ -113,12 +113,12 @@ function acceptHint(accept: readonly string[]): string {
         </label>
         <span
           v-if="field.kind === 'number'"
-          class="text-xs text-primary-warm-white tabular-nums"
+          class="text-primary-warm-white text-xs tabular-nums"
         >
           {{ numberValue(field.defaultValue) }}
         </span>
       </div>
-      <p v-if="field.hint" class="text-xs text-primary-warm-gray/80">
+      <p v-if="field.hint" class="text-primary-warm-gray/80 text-xs">
         {{ field.hint }}
       </p>
     </div>
@@ -171,7 +171,7 @@ function acceptHint(accept: readonly string[]): string {
         </option>
       </select>
       <ChevronDown
-        class="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-primary-warm-gray"
+        class="text-primary-warm-gray pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2"
         aria-hidden="true"
       />
     </div>
@@ -215,7 +215,7 @@ function acceptHint(accept: readonly string[]): string {
       <span
         :class="
           cn(
-            'absolute top-0.5 left-0.5 size-5 rounded-full bg-primary-comfy-ink transition-transform',
+            'bg-primary-comfy-ink absolute top-0.5 left-0.5 size-5 rounded-full transition-transform',
             booleanValue(field.defaultValue) && 'translate-x-5'
           )
         "
@@ -225,16 +225,24 @@ function acceptHint(accept: readonly string[]): string {
     <template v-else-if="field.kind === 'file'">
       <div
         v-if="fileValue()"
-        class="bg-transparency-white-t4 flex h-11 items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 text-sm"
+        class="bg-transparency-white-t4 border-transparency-white-t20 flex h-11 items-center justify-between gap-3 rounded-2xl border px-4 text-sm"
       >
-        <span class="truncate text-primary-warm-white">
-          {{ fileValue()?.name }}
+        <span class="flex min-w-0 items-center gap-2">
+          <img
+            v-if="fileValue()?.previewUrl"
+            :src="fileValue()?.previewUrl"
+            alt=""
+            class="size-7 shrink-0 rounded-lg object-cover"
+          />
+          <span class="text-primary-warm-white truncate">
+            {{ fileValue()?.name }}
+          </span>
         </span>
         <button
           type="button"
           :aria-label="t('workshop.field.remove', locale)"
           :disabled
-          class="cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
+          class="text-primary-warm-gray hover:text-primary-warm-white cursor-pointer"
           @click="set(undefined)"
         >
           <X class="size-4" aria-hidden="true" />
@@ -244,7 +252,7 @@ function acceptHint(accept: readonly string[]): string {
         v-else
         :class="
           cn(
-            'flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed text-xs text-primary-warm-gray transition-colors hover:border-transparency-white-t20 hover:text-primary-warm-white',
+            'text-primary-warm-gray hover:border-transparency-white-t20 hover:text-primary-warm-white flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed text-xs transition-colors',
             invalid()
               ? 'border-primary-comfy-red'
               : 'border-transparency-white-t20',
@@ -256,7 +264,7 @@ function acceptHint(accept: readonly string[]): string {
         <span class="font-bold tracking-wider uppercase">
           {{ t('workshop.field.upload', locale) }}
         </span>
-        <span class="text-[11px] text-primary-warm-gray/70">
+        <span class="text-primary-warm-gray/70 text-[11px]">
           {{ acceptHint(field.accept) }} ·
           {{ t('workshop.field.uploadLimit', locale) }}
         </span>

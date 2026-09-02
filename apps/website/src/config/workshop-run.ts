@@ -22,6 +22,7 @@ export interface RunOutput {
 
 export type RunState =
   | { readonly status: 'idle' }
+  | { readonly status: 'example'; readonly output: RunOutput }
   | { readonly status: 'running'; readonly startedAt: number }
   | { readonly status: 'cancelled' }
   | {

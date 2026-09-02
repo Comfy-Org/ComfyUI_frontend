@@ -3,10 +3,15 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ModalityFilter, WorkshopModel } from '../../config/workshop'
-import { modalityOf } from '../../config/workshop'
+import type {
+  ModalityFilter,
+  TaskInput,
+  WorkshopModel
+} from '../../config/workshop'
+import { modalityOf, splitTask } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { getLogoPath } from '../../lib/hub/model-logos'
 import CardArrow from '../common/CardArrow.vue'
 
 const {
@@ -32,6 +37,26 @@ const modalityLabelKey: Record<
   text: 'workshop.filter.text',
   other: 'workshop.filter.other'
 }
+
+const taskInputKey: Record<TaskInput, TranslationKey> = {
+  text: 'workshop.task.text',
+  image: 'workshop.task.image',
+  video: 'workshop.task.video',
+  audio: 'workshop.task.audio'
+}
+
+const logo = computed(
+  () => getLogoPath(model.provider ?? '') ?? getLogoPath(model.name)
+)
+
+const taskLabel = computed(() => {
+  const task = model.task ? splitTask(model.task) : undefined
+  return task && task.output !== 'other'
+    ? t('workshop.task.label', locale)
+        .replace('{input}', t(taskInputKey[task.input], locale))
+        .replace('{output}', t(modalityLabelKey[task.output], locale))
+    : t(modalityLabelKey[modality.value], locale)
+})
 
 const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
   image: 'from-primary-comfy-plum to-secondary-deep-plum',
@@ -70,7 +95,7 @@ const pillClass =
       "
     >
       <span
-        class="font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
+        class="font-formula text-primary-warm-white/20 text-7xl font-bold select-none"
         aria-hidden="true"
       >
         {{ model.name[0] }}
@@ -81,34 +106,50 @@ const pillClass =
       class="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-black/35"
     />
 
-    <div
-      class="absolute inset-x-4 top-4 flex items-start justify-between gap-2"
+    <span
+      v-if="showStatus && model.status"
+      :class="cn(pillClass, 'bg-primary-comfy-yellow/80 absolute top-4 left-4')"
     >
-      <div class="flex flex-wrap gap-2">
-        <span :class="pillClass">
-          {{ t(modalityLabelKey[modality], locale) }}
-        </span>
-        <span
-          v-if="showStatus && model.status"
-          :class="cn(pillClass, 'bg-primary-comfy-yellow/80')"
-        >
-          {{
-            model.status === 'deprecated'
-              ? t('workshop.model.deprecated', locale)
-              : t('workshop.model.degraded', locale)
-          }}
-        </span>
-      </div>
-    </div>
+      {{
+        model.status === 'deprecated'
+          ? t('workshop.model.deprecated', locale)
+          : t('workshop.model.degraded', locale)
+      }}
+    </span>
 
     <div class="absolute right-16 bottom-5 left-5">
-      <p class="mb-1 text-sm text-primary-comfy-canvas/80">
-        {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
-      </p>
+      <div class="flex items-center gap-2">
+        <p
+          class="text-primary-warm-white min-w-0 text-2xl/tight font-light drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+        >
+          {{ model.name }}
+        </p>
+        <span
+          v-if="logo"
+          role="img"
+          :aria-label="model.provider ?? model.name"
+          :title="model.provider ?? model.name"
+          class="grid size-7 shrink-0 place-items-center rounded-lg bg-white/20 backdrop-blur-sm"
+          data-testid="model-card-logo"
+        >
+          <span
+            class="size-4 bg-white mask-contain mask-center mask-no-repeat"
+            :style="{ maskImage: `url(${logo})` }"
+          />
+        </span>
+        <span
+          v-else-if="model.provider"
+          :class="cn(pillClass, 'text-2xs h-6 shrink-0 px-2')"
+          data-testid="model-card-provider"
+        >
+          {{ model.provider }}
+        </span>
+      </div>
       <p
-        class="text-2xl/tight font-light text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+        class="text-primary-comfy-canvas/80 mt-1 text-sm"
+        data-testid="model-card-task"
       >
-        {{ model.name }}
+        {{ taskLabel }}
       </p>
     </div>
 

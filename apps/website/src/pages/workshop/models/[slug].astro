@@ -37,14 +37,9 @@ const modalityLabel = {
 } as const
 
 const price =
-  model.priceUsdFrom !== undefined
-    ? new Intl.NumberFormat('en', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(model.priceUsdFrom)
-    : model.creditsPerRun !== undefined
-      ? `${model.creditsPerRun} ${t('nav.credits')}`
-      : undefined
+  model.creditsPerRun !== undefined
+    ? `${model.creditsPerRun} ${t('nav.credits')}`
+    : undefined
 
 const pillClass =
   'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
@@ -67,7 +62,7 @@ const tags = [
   noindex
 >
   <div class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
-    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray">
+    <nav aria-label="Breadcrumb" class="mb-8 px-8 text-xs text-primary-warm-gray lg:px-10">
       <ol class="flex flex-wrap items-center gap-2">
         <li>
           <a href={routes.home} class="hover:text-primary-warm-white">
@@ -127,9 +122,6 @@ const tags = [
           {
             price ? (
               <>
-                <span class="text-[11px] tracking-wider uppercase">
-                  {t('workshop.card.from')}
-                </span>
                 <span class="text-lg font-bold text-primary-comfy-yellow">{price}</span>
                 {t('workshop.model.perRun')}
                 <span class="text-primary-comfy-canvas/40">·</span>

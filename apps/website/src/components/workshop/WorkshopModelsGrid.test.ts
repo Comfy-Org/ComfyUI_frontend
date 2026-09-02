@@ -64,10 +64,12 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
     expect(screen.queryByTestId('use-case-audio')).toBeNull()
 
-    await user.click(screen.getByTestId('use-case-video'))
+    await user.click(screen.getByTestId('use-case-generate-videos'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     expect(
-      screen.getByTestId('use-case-video').getAttribute('aria-pressed')
+      screen
+        .getByTestId('use-case-generate-videos')
+        .getAttribute('aria-pressed')
     ).toBe('true')
 
     await user.click(screen.getByTestId('workshop-filter'))

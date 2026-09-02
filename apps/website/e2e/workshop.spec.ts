@@ -11,7 +11,13 @@ async function useAccount(page: Page, kind: 'new' | 'existing') {
   await page.keyboard.press('Escape')
 }
 
-test.describe('Workshop entry', () => {
+test.describe('Workshop V2 entry', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem('comfy-workshop-entry', 'hub')
+    )
+  })
+
   test('mirrors comfy.org/workflows and links partner models to their page', async ({
     page
   }) => {
@@ -55,12 +61,6 @@ test.describe('Workshop entry', () => {
 })
 
 test.describe('Workshop catalog', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() =>
-      localStorage.setItem('comfy-workshop-entry', 'workshop')
-    )
-  })
-
   test('lists partner models by use case and filters by search', async ({
     page
   }) => {
@@ -70,9 +70,11 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
-    await page.getByTestId('use-case-video').click()
-    await expect(cards).toHaveCount(22)
-    await expect(cards.first()).toContainText('Video')
+    await page.getByTestId('use-case-generate-videos').click()
+    await expect(cards).toHaveCount(11)
+    await expect(cards.first().getByTestId('model-card-task')).toHaveText(
+      'Text to Video'
+    )
     await page.getByTestId('use-case-all').click()
 
     await page.getByTestId('workshop-search').fill('kling')
@@ -225,7 +227,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('account-upgrade')).toBeVisible()
   })
 
-  test('an empty balance buys credits in place and comes back ready', async ({
+  test('an empty balance is sent to Comfy Platform and the form survives the trip', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
@@ -234,14 +236,15 @@ test.describe('Model playground', () => {
     await page.getByTestId('tweak-zero-balance').click()
     await page.keyboard.press('Escape')
 
+    await page.getByTestId('field-prompt').fill('keep me around')
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
+    await expect(run).toHaveAttribute('href', /platform\.comfy\.org/)
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
     ).toHaveAttribute('href', /platform/)
-    await run.click()
-    await page.getByTestId('buy-credits-confirm').click()
-    await expect(run).toHaveAttribute('data-gate', 'ready')
+    await page.reload()
+    await expect(page.getByTestId('field-prompt')).toHaveValue('keep me around')
   })
 
   test('API tab mirrors the form values', async ({ page }) => {
@@ -262,6 +265,11 @@ test.describe('Model playground', () => {
     page
   }) => {
     await page.goto(MODEL_PATH)
+    await expect(page.getByTestId('playground-output')).toHaveAttribute(
+      'data-state',
+      'example'
+    )
+    await expect(page.getByTestId('field-prompt')).not.toHaveValue('')
     await page.getByTestId('field-prompt').fill('')
     await page.getByTestId('tab-examples').click()
     await page.getByTestId('example-open').first().click()

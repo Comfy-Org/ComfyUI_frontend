@@ -55,6 +55,7 @@ interface FileValue {
   readonly name: string
   readonly size: number
   readonly type: string
+  readonly previewUrl?: string
 }
 
 export type FieldValue = string | number | boolean | FileValue | undefined
@@ -278,31 +279,37 @@ export function examplesForModel(
   }))
 }
 
-export function isVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|mov)(\?|$)/i.test(url)
+// Prefills the form with an example: its values plus a stand-in upload for
+// every file field, so the page arrives ready to run.
+export function exampleValues(
+  schema: readonly FieldSchema[],
+  example: PlaygroundExample
+): FormValues {
+  const uploads = Object.fromEntries(
+    schema.flatMap((field) => {
+      if (field.kind !== 'file') return []
+      const type = field.accept.includes('image/webp')
+        ? 'image/webp'
+        : (field.accept[0] ?? 'application/octet-stream')
+      const extension = type.split('/')[1] ?? 'bin'
+      return [
+        [
+          field.name,
+          {
+            name: `${example.id}-${field.name}.${extension}`,
+            size: 1,
+            type,
+            ...(type.startsWith('image/')
+              ? { previewUrl: example.outputUrl }
+              : {})
+          }
+        ]
+      ]
+    })
+  )
+  return { ...defaultValues(schema, example.values), ...uploads }
 }
 
-// Placeholder pricing until Router quotes a run: partner nodes price by
-// duration, resolution and batch size, so the estimate moves with them.
-export function estimateCredits(base: number, values: FormValues): number {
-  const number = (name: string) => {
-    const value = values[name]
-    return typeof value === 'number' && value > 0 ? value : undefined
-  }
-  const text = (name: string) => {
-    const value = values[name]
-    return typeof value === 'string' ? value.toLowerCase() : ''
-  }
-  const duration = number('duration')
-  const resolution = text('resolution')
-  const batch = number('n') ?? number('num_images') ?? number('count') ?? 1
-  const resolutionFactor = /4k|2160/.test(resolution)
-    ? 2
-    : /1080/.test(resolution)
-      ? 1.5
-      : 1
-  return Math.max(
-    1,
-    Math.round(base * (duration ? duration / 5 : 1) * resolutionFactor * batch)
-  )
+export function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov)(\?|$)/i.test(url)
 }

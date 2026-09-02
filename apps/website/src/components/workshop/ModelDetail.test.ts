@@ -119,8 +119,31 @@ describe('ModelDetail', () => {
     ).toBeNull()
   })
 
+  it('arrives with the first example loaded, editable and cleared in one click', async () => {
+    await signedInDetail()
+    expect(
+      (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
+    ).toBe('a capybara')
+    expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('example')
+    expect(screen.getByTestId('active-example').textContent).toContain(
+      'Editable defaults'
+    )
+
+    await user().click(screen.getByTestId('active-example-clear'))
+    expect(
+      (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
+    ).toBe('')
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('idle')
+  })
+
   it('validates the form before charging anything', async () => {
     const api = await signedInDetail()
+    await user().clear(screen.getByTestId('field-prompt'))
     await user().click(screen.getByTestId('run-button'))
     expect(screen.getByTestId('error-prompt')).toBeTruthy()
     expect(credits(api)).toBe(EXISTING_CREDITS)
@@ -150,22 +173,33 @@ describe('ModelDetail', () => {
     expect(credits(api)).toBe(EXISTING_CREDITS)
   })
 
-  it('sells credits in place when the balance is short, then runs', async () => {
+  it('sends a short balance to Comfy Platform with the form saved for the return', async () => {
     const api = await signedInDetail()
     api.setCredits(3)
     await nextTick()
+    await user().type(screen.getByTestId('field-prompt'), ' in a hat')
     const run = screen.getByTestId('run-button')
     expect(run.getAttribute('data-gate')).toBe('noCredits')
+    expect(run.getAttribute('href')).toBe('https://platform.comfy.org')
     expect(screen.getByTestId('gate-note').textContent).toContain('3 credits')
+    expect(
+      JSON.parse(sessionStorage.getItem('comfy-workshop-form:demo') ?? '{}')
+        .prompt
+    ).toBe('a capybara in a hat')
+  })
 
-    await user().click(run)
-    await user().click(await screen.findByTestId('buy-credits-confirm'))
-    vi.advanceTimersByTime(2000)
+  it('shows the latest run and keeps earlier ones from this visit reachable', async () => {
+    const api = await signedInDetail()
+    await user().click(screen.getByTestId('run-button'))
+    vi.advanceTimersByTime(2500)
     await nextTick()
-    expect(credits(api)).toBe(2003)
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'ready'
-    )
+    expect(screen.queryByTestId('earlier-runs')).toBeNull()
+
+    await user().click(screen.getByTestId('run-button'))
+    vi.advanceTimersByTime(2500)
+    await nextTick()
+    expect(screen.getAllByTestId(/^earlier-run-/)).toHaveLength(1)
+    expect(credits(api)).toBe(EXISTING_CREDITS - 16)
   })
 
   it('sends a team member without credits to the owner or their own workspace', async () => {
@@ -206,12 +240,13 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId('active-example').textContent).toContain(
       'Demo First-Last-Frame'
     )
-    expect(screen.getByTestId('field-end_frame')).toBeTruthy()
+    expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
     expect(
       (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
     ).toBe('a capybara')
 
     await user().click(screen.getByTestId('active-example-clear'))
+    expect(screen.queryByText('flf-end_frame.webp')).toBeNull()
     expect(screen.queryByTestId('field-end_frame')).toBeNull()
   })
 })

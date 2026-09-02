@@ -37,7 +37,7 @@ const LOGO_MATCHERS: [RegExp, string][] = Object.entries(MODEL_TO_LOGO).map(
   ]
 )
 
-function getLogoPath(name: string): string | null {
+export function getLogoPath(name: string): string | null {
   const normalized = name.trim()
   const slug = MODEL_TO_LOGO[normalized]
   if (slug) return `/icons/ai-models/${slug}.svg`

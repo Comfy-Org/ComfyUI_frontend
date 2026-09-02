@@ -27,9 +27,9 @@ export type Scope = (typeof SCOPES)[number]
 export const OUTPUT_COUNTS = [1, 4, 9] as const
 type OutputCount = (typeof OUTPUT_COUNTS)[number]
 
-// Where /workshop starts: a first screen shaped like comfy.org/workflows with
-// partner models mixed in (default), or the dedicated models catalog.
-export const ENTRIES = ['hub', 'workshop'] as const
+// Where /workshop starts: V1 is the models catalog; the first screen shaped
+// like comfy.org/workflows with workflows and apps is V2.
+export const ENTRIES = ['workshop', 'hub'] as const
 export type Entry = (typeof ENTRIES)[number]
 
 const SCOPE_KEY = 'comfy-workshop-scope'
@@ -38,7 +38,7 @@ const ENTRY_KEY = 'comfy-workshop-entry'
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
 const scope = ref<Scope>('v1')
-const entry = ref<Entry>('hub')
+const entry = ref<Entry>('workshop')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 const outputCount = ref<OutputCount>(1)

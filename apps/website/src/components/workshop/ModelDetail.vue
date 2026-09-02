@@ -12,7 +12,7 @@ import {
 } from '../../composables/useMockSession'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { getRoutes } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
   FieldErrors,
@@ -21,7 +21,7 @@ import type {
 } from '../../config/workshop-playground'
 import {
   defaultValues,
-  estimateCredits,
+  exampleValues,
   examplesForModel,
   isVideoUrl,
   schemaForModel,
@@ -32,7 +32,6 @@ import { IDLE, runGate, transition } from '../../config/workshop-run'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ApiTab from './ApiTab.vue'
-import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
@@ -65,19 +64,43 @@ const sectionLabel: Record<Section, TranslationKey> = {
 const activeSection = ref<Section>('playground')
 
 const examples = examplesForModel(model)
-const activeExample = ref<PlaygroundExample>()
+const firstExample = examples[0]
+// Every page arrives with its first example loaded: prompt, inputs and the
+// matching output, all editable.
+const loadedExample = ref<PlaygroundExample | undefined>(firstExample)
+const activeExample = ref<PlaygroundExample | undefined>(
+  firstExample?.fields ? firstExample : undefined
+)
 const schema = computed(() =>
   schemaForModel({
     fields: activeExample.value?.fields ?? model.fields,
     modality: model.modality
   })
 )
-const values = ref<FormValues>(defaultValues(schema.value, model.defaults))
-const runState = ref<RunState>(IDLE)
+
+function exampleOutput(example: PlaygroundExample): RunOutput {
+  return {
+    kind: model.modality ?? 'other',
+    url: example.outputUrl,
+    fileName: `${model.slug}-${example.id}.${isVideoUrl(example.outputUrl) ? 'mp4' : 'webp'}`
+  }
+}
+
+const values = ref<FormValues>(
+  firstExample
+    ? exampleValues(schema.value, firstExample)
+    : defaultValues(schema.value, model.defaults)
+)
+const runState = ref<RunState>(
+  firstExample
+    ? { status: 'example', output: exampleOutput(firstExample) }
+    : IDLE
+)
+const runs = ref<RunOutput[]>([])
+const earlier = computed(() => runs.value.slice(1))
 const revealed = ref(false)
 
 const { session, setCredits, switchWorkspace } = useMockSession()
-const buyOpen = ref(false)
 const {
   outcome: simOutcome,
   modelState: simGate,
@@ -93,9 +116,7 @@ const credits = computed(() =>
 const subscribed = computed(
   () => session.value.status === 'signedIn' && session.value.account.subscribed
 )
-const creditsPerRun = computed(() =>
-  estimateCredits(model.creditsPerRun ?? 0, values.value)
-)
+const creditsPerRun = model.creditsPerRun ?? 0
 const modelStatus = computed(() =>
   simGate.value === 'deprecated' || simGate.value === 'degraded'
     ? simGate.value
@@ -107,7 +128,7 @@ const gate = computed(() =>
   runGate({
     signedIn: session.value.status === 'signedIn',
     credits: credits.value,
-    creditsPerRun: creditsPerRun.value,
+    creditsPerRun,
     modelStatus: modelStatus.value,
     policyDisabled: simGate.value === 'policy',
     unavailable: simGate.value === 'unavailable',
@@ -208,18 +229,21 @@ function finishRun() {
   switch (simOutcome.value) {
     case 'success':
     case 'nsfw':
-    case 'expired':
+    case 'expired': {
+      const output = sampleOutput()
       dispatch({
         type: 'complete',
         at,
-        output: sampleOutput(),
-        creditsUsed: creditsPerRun.value,
+        output,
+        creditsUsed: creditsPerRun,
         nsfw: simOutcome.value === 'nsfw',
         ...(simOutcome.value === 'expired' ? { ttlMs: 0 } : {})
       })
+      runs.value = [output, ...runs.value]
       now.value = at
-      setCredits(credits.value - creditsPerRun.value)
+      setCredits(credits.value - creditsPerRun)
       break
+    }
     case 'validation':
       dispatch({
         type: 'fail',
@@ -257,13 +281,16 @@ function reset() {
 }
 
 function openExample(example: PlaygroundExample) {
+  clearTimeout(timer)
+  loadedExample.value = example
   activeExample.value = example.fields ? example : undefined
-  values.value = defaultValues(schema.value, example.values)
-  reset()
+  values.value = exampleValues(schema.value, example)
+  runState.value = { status: 'example', output: exampleOutput(example) }
   activeSection.value = 'playground'
 }
 
 function clearExample() {
+  loadedExample.value = undefined
   activeExample.value = undefined
   values.value = defaultValues(schema.value, model.defaults)
   reset()
@@ -279,7 +306,7 @@ function useInCode() {
     <div
       role="tablist"
       :aria-label="t('workshop.title', locale)"
-      class="flex gap-8 border-b border-transparency-white-t8"
+      class="border-transparency-white-t8 flex gap-8 border-b"
       data-testid="model-tabs"
     >
       <button
@@ -294,7 +321,7 @@ function useInCode() {
             'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
             section === activeSection
               ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+              : 'text-primary-warm-gray hover:text-primary-warm-white border-transparent'
           )
         "
         @click="activeSection = section"
@@ -309,36 +336,39 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 lg:col-span-4"
+        class="bg-transparency-white-t4 border-transparency-white-t8 flex flex-col overflow-hidden rounded-2xl border lg:col-span-4"
         data-testid="playground-input"
       >
         <header
-          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+          class="border-transparency-white-t8 text-primary-warm-gray border-b px-5 py-3 text-xs font-bold tracking-wider uppercase"
         >
           <span>{{ t('workshop.input.title', locale) }}</span>
         </header>
 
         <div class="flex flex-col gap-6 p-5">
           <div
-            v-if="activeExample"
-            class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 py-2 text-xs"
+            v-if="loadedExample"
+            class="bg-transparency-white-t4 border-transparency-white-t20 flex items-center justify-between gap-3 rounded-2xl border px-4 py-2 text-xs"
             data-testid="active-example"
           >
-            <span class="min-w-0 truncate text-primary-warm-gray">
-              {{ t('workshop.example.loaded', locale) }}
-              <span class="text-primary-warm-white">
-                {{ activeExample.title }}
+            <span class="text-primary-warm-gray flex min-w-0 flex-col gap-0.5">
+              <span class="truncate">
+                {{ t('workshop.example.loaded', locale) }}
+                <span class="text-primary-warm-white">
+                  {{ loadedExample.title }}
+                </span>
+                <template v-if="activeExample?.nodeDisplayName">
+                  · {{ activeExample.nodeDisplayName }}
+                </template>
               </span>
-              <template v-if="activeExample.nodeDisplayName">
-                · {{ activeExample.nodeDisplayName }}
-              </template>
+              <span>{{ t('workshop.example.editable', locale) }}</span>
             </span>
             <button
               type="button"
               :aria-label="t('workshop.example.clear', locale)"
               :title="t('workshop.example.clear', locale)"
               data-testid="active-example-clear"
-              class="shrink-0 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
+              class="text-primary-warm-gray hover:text-primary-warm-white shrink-0 cursor-pointer"
               @click="clearExample"
             >
               <X class="size-4" aria-hidden="true" />
@@ -355,7 +385,7 @@ function useInCode() {
         </div>
 
         <div
-          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-3"
+          class="border-transparency-white-t8 mt-auto flex flex-col gap-2 border-t p-3"
         >
           <Button
             v-if="isRunning"
@@ -380,11 +410,12 @@ function useInCode() {
           </Button>
           <Button
             v-else-if="gate === 'noCredits' && subscribed"
+            as="a"
+            :href="externalLinks.platform"
             size="lg"
             class="w-full px-5"
             data-testid="run-button"
             data-gate="noCredits"
-            @click="buyOpen = true"
           >
             {{ t('workshop.run.buyCredits', locale) }}
           </Button>
@@ -433,7 +464,7 @@ function useInCode() {
             {{ t('workshop.run.run', locale) }}
             <template v-if="creditsPerRun" #append>
               <span
-                class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
+                class="bg-primary-comfy-ink/10 ml-auto inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
                 data-testid="run-cost"
               >
                 <Coins class="size-3.5" aria-hidden="true" />
@@ -457,7 +488,7 @@ function useInCode() {
           </Button>
           <p
             v-if="gate === 'noCredits'"
-            class="text-xs text-primary-warm-gray"
+            class="text-primary-warm-gray text-xs"
             data-testid="gate-note"
           >
             {{
@@ -470,7 +501,7 @@ function useInCode() {
           </p>
           <p
             v-else-if="gate === 'memberNoCredits'"
-            class="text-xs text-primary-warm-gray"
+            class="text-primary-warm-gray text-xs"
             data-testid="gate-note"
           >
             {{
@@ -507,7 +538,7 @@ function useInCode() {
                 )
               }}
             </Button>
-            <p class="text-xs text-primary-warm-gray" data-testid="clone-note">
+            <p class="text-primary-warm-gray text-xs" data-testid="clone-note">
               {{ cloneNote }}
             </p>
           </template>
@@ -518,6 +549,7 @@ function useInCode() {
         <PlaygroundOutput
           v-model:revealed="revealed"
           :state="runState"
+          :earlier
           :now
           :modality="model.modality"
           :locale
@@ -539,6 +571,5 @@ function useInCode() {
     <section v-if="activeSection === 'api'">
       <ApiTab :router-id="model.routerId" :values :locale />
     </section>
-    <BuyCreditsDialog v-model:open="buyOpen" :needed="creditsPerRun" :locale />
   </div>
 </template>

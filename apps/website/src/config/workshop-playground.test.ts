@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
-  estimateCredits,
+  exampleValues,
   examplesForModel,
   schemaForModel,
   validateForm
@@ -157,20 +157,48 @@ describe('examplesForModel', () => {
   })
 })
 
-describe('estimateCredits', () => {
-  it('scales the base price with duration, resolution and batch size', () => {
-    expect(estimateCredits(10, {})).toBe(10)
-    expect(estimateCredits(10, { duration: 10 })).toBe(20)
-    expect(estimateCredits(10, { resolution: '1080p' })).toBe(15)
-    expect(estimateCredits(10, { resolution: '4K', num_images: 2 })).toBe(40)
-    expect(estimateCredits(0, { duration: 10 })).toBe(1)
-  })
-
-  it('reads the batch size from n, num_images or count in that order', () => {
-    expect(estimateCredits(10, { n: 3 })).toBe(30)
-    expect(estimateCredits(10, { count: 2 })).toBe(20)
-    expect(estimateCredits(10, { n: 2, num_images: 5, count: 7 })).toBe(20)
-    expect(estimateCredits(10, { n: 0, num_images: 4 })).toBe(40)
-    expect(estimateCredits(10, { n: -2, count: 'many' })).toBe(10)
+describe('exampleValues', () => {
+  it('fills the form from the example and stands in for its uploads', () => {
+    const schema = schemaForModel({
+      fields: [
+        {
+          kind: 'text',
+          name: 'prompt',
+          label: 'Prompt',
+          multiline: true,
+          required: true
+        },
+        {
+          kind: 'file',
+          name: 'image',
+          label: 'Image',
+          accept: 'image',
+          required: true
+        },
+        {
+          kind: 'select',
+          name: 'size',
+          label: 'Size',
+          options: ['1K', '2K'],
+          default: '1K'
+        }
+      ],
+      modality: 'image'
+    })
+    const values = exampleValues(schema, {
+      id: 'demo',
+      title: 'Demo',
+      description: '',
+      values: { prompt: 'a capybara', size: '2K' },
+      outputUrl: 'https://example.com/out.webp'
+    })
+    expect(values.prompt).toBe('a capybara')
+    expect(values.size).toBe('2K')
+    expect(values.image).toMatchObject({
+      name: 'demo-image.webp',
+      type: 'image/webp',
+      previewUrl: 'https://example.com/out.webp'
+    })
+    expect(validateForm(schema, values)).toEqual({})
   })
 })
