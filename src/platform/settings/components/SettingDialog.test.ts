@@ -2,10 +2,19 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { NavGroupData } from '@/types/navTypes'
 
 import SettingDialog from './SettingDialog.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 const settingUiMocks = vi.hoisted(() => ({
   navGroups: null as unknown as Ref<NavGroupData[]>,
@@ -102,7 +111,7 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         BaseModalLayout: {
           template:
@@ -142,7 +151,7 @@ it('shows the workspace identity in the dialog header on workspace sections', as
   render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         BaseModalLayout: {
           template: '<div><slot name="header" /><slot name="content" /></div>'
@@ -177,7 +186,7 @@ it('leaves the dialog header empty outside workspace sections', async () => {
   render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         BaseModalLayout: {
           template: '<div><slot name="header" /><slot name="content" /></div>'
