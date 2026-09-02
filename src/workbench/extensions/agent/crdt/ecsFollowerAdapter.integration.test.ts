@@ -1,4 +1,4 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import { applyOps, linksMap, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -203,6 +203,82 @@ describe('EcsFollowerAdapter integration', () => {
         .getGraphNodesFor('root', 'root')
         .map(({ id }) => id)
     ).toEqual(['1'])
+    expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  // crdt-1: applyQueuedFrame collects every changed link into ONE
+  // session.mutations.batch(...) call. graphMutations.batch's `prepare` pass
+  // fails the entire batch string-early on the first invalid mutation (see
+  // graphMutations.ts `prepare`), so one dangling/invalid link in a frame
+  // used to discard unrelated valid node/widget/link changes queued in the
+  // SAME frame — unlike the CMP applier itself, which already applies only
+  // the valid prefix of a batch (see the 'aborted applier batch' test above).
+  // Fixed by isConnectableInFrame: unrepresentable links (missing endpoint,
+  // out-of-range slot) are dropped from the frame before they reach the
+  // batch, mirroring graphMutations.prepare's own connect preconditions.
+  // Source: FE #16486 review evidence (projectBaseline vs applyQueuedFrame
+  // split), https://github.com/Comfy-Org/ComfyUI_frontend/pull/16486#issuecomment-5501076931
+  it('drops a dangling link from a frame instead of discarding the whole frame', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    // A valid, unrelated node add and a dangling link (points at a node that
+    // never existed on the follower doc) land in the SAME Y update/frame —
+    // e.g. an out-of-order delivery or a link whose endpoint node arrives in
+    // a later frame. Written directly to linksMap to isolate the
+    // applyQueuedFrame/graphMutations boundary from CMP's own op validation,
+    // which already refuses to mint an invalid connect at the source.
+    host.transact(() => {
+      applyOps(
+        host,
+        [
+          op('valid-add', 1, {
+            op: 'add_node',
+            node_id: 1,
+            class_type: 'Source',
+            pos: [0, 0],
+            node: {
+              id: 1,
+              type: 'Source',
+              inputs: [],
+              outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+            }
+          })
+        ] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      linksMap(host).set('999', Y.Array.from([999, 404, 0, 405, 0, 'IMAGE']))
+    })
+
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['valid-add']
+      })
+    ).toBe(true)
+
+    // The valid node add survives; the dangling link never reaches
+    // graphMutations.batch, so it can no longer abort the frame.
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1)])
     expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
 
     adapter.destroy()

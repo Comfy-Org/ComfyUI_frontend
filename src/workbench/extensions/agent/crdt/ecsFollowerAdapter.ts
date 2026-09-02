@@ -93,6 +93,37 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
     : 'originOutputs']
 }
 
+/**
+ * Mirrors graphMutations.prepare's `connect` preconditions (endpoint
+ * presence, slot range) so an unrepresentable link can be dropped from a
+ * frame BEFORE it reaches the batch. graphMutations.batch fails its entire
+ * batch string-early on the first invalid mutation (crdt-1) — one dangling
+ * or slot-out-of-range link must never take a frame's unrelated valid
+ * node/widget/link changes down with it.
+ */
+function isConnectableInFrame(
+  link: SemanticLinkPayload,
+  session: Pick<TargetSession, 'nodes'>
+): boolean {
+  if (!session.nodes.has(String(link.originNodeId))) return false
+  if (!session.nodes.has(String(link.targetNodeId))) return false
+  if (
+    !link.originOutputs ||
+    link.originSlot < 0 ||
+    link.originSlot >= link.originOutputs.length
+  ) {
+    return false
+  }
+  if (
+    !link.targetInputs ||
+    link.targetSlot < 0 ||
+    link.targetSlot >= link.targetInputs.length
+  ) {
+    return false
+  }
+  return true
+}
+
 function frameContext(update: DocUpdate): RemoteMutationContext {
   const opIds = update.opIds?.filter((id) => id.length > 0)
   return {
@@ -266,7 +297,7 @@ export class EcsFollowerAdapter {
       }
       for (const id of changedLinkIds) {
         const link = readSemanticLink(session.follower.doc, id)
-        if (link) batch.connect(link)
+        if (link && isConnectableInFrame(link, session)) batch.connect(link)
       }
     })
   }
