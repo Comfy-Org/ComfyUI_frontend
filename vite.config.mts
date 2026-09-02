@@ -211,6 +211,12 @@ if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
   )
 }
 
+if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
+  throw new Error(
+    'VITE_AGENT_STANDALONE requires DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN; start via scripts/dev-agent-integration.ts.'
+  )
+}
+
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
