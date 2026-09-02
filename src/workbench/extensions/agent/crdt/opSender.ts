@@ -26,6 +26,13 @@ const RESULT_TIMEOUT_MS = 10_000
 
 export interface OpsResultView {
   ok: boolean
+  /**
+   * Workflow the host settled. A result for another workflow than the
+   * in-flight batch is ignored: the sender keeps one batch in flight across
+   * workflow switches, so the batch's own workflow, not the follower's
+   * current subscription, is the attribution key.
+   */
+  workflowId?: string
   applied: string[]
   skipped: string[]
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
@@ -149,6 +156,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
+    if (
+      result.workflowId !== undefined &&
+      result.workflowId !== inFlight.workflowId
+    )
+      return
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {

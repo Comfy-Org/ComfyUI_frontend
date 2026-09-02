@@ -179,13 +179,16 @@ export function useAgentCrdtFollower(
         if (
           detail === null ||
           typeof detail.workflowId !== 'string' ||
-          detail.workflowId !== bridge.subscribedWorkflowId ||
           typeof detail.ok !== 'boolean'
         )
           return
+        // Not filtered on the current subscription: after a workflow switch
+        // the previous workflow's batch is still the one in flight, and its
+        // result must settle it. The sender attributes by batch workflow.
         const failure = failureView(detail.failed)
         listener({
           ok: detail.ok,
+          workflowId: detail.workflowId,
           applied: detail.applied ?? [],
           skipped: detail.skipped ?? [],
           ...(failure && { failure })
@@ -362,6 +365,14 @@ export function useAgentCrdtFollower(
     const detail = event.detail as Partial<DocOpsResult> | null
     if (detail === null) return
     const resultWorkflowId = detail?.workflowId
+    const failed = failureView(detail.failed)
+    // Dev log sees every result frame (it carries its own workflowId);
+    // status and nack diagnostics are gated to the subscribed workflow so a
+    // late result for the previous workflow cannot contaminate them.
+    recordDevEvent('doc_ops_result', {
+      ...detail,
+      failed: failed ?? null
+    })
     if (
       typeof resultWorkflowId !== 'string' ||
       resultWorkflowId !== subscribedWorkflowId.value
@@ -369,11 +380,6 @@ export function useAgentCrdtFollower(
       return
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
-    const failed = failureView(detail.failed)
-    recordDevEvent('doc_ops_result', {
-      ...detail,
-      failed: failed ?? null
-    })
     if (detail.ok !== false) return
 
     const nack: OpNack = {

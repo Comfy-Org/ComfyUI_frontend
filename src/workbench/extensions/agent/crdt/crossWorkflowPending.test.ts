@@ -214,7 +214,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     })
   })
 
-  it('documents status contamination from a late workflow A result while workflow B is active', async () => {
+  it('settles the in-flight workflow A batch from its late result without touching workflow B status', async () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
@@ -237,18 +237,19 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
     const operationBId = clientState.sent[1].ops[0].op_id
 
-    // Documented defect expectation for R-73: result frames carry workflowId,
-    // but the composable updates workflow B's status from workflow A's frame.
-    // Flip this assertion when the result path gates status by workflowId.
+    // R-73: result frames carry workflowId; the composable gates status by
+    // it, so workflow A's late frame leaves workflow B's status untouched.
+    // The dev log still records the frame under its own workflowId.
     expect(status()).toMatchObject({
       workflowId: 'wf-b',
-      lastFrameType: 'doc_ops_result'
+      lastFrameType: null
     })
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith('doc_ops_result', {
       workflowId: 'wf-a',
       ok: true,
       applied: [operationAId],
-      skipped: []
+      skipped: [],
+      failed: null
     })
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
@@ -270,7 +271,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(operationBId).not.toBe(operationAId)
   })
 
-  it('documents an anonymous workflow A result settling workflow B in flight', async () => {
+  it('ignores an anonymous workflow A result while workflow B is in flight', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
@@ -293,11 +294,29 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
+    // The anonymous nack names workflow A; the sender's in-flight batch is
+    // workflow B's, so the result is not attributed to it. Workflow B stays
+    // in flight until its own result (or the result timeout).
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
-    expect(settlements).toHaveLength(2)
-    expect(settlements[1][1]).toMatchObject({
+    expect(settlements).toHaveLength(1)
+    expect(settlements[0][1]).toMatchObject({
+      state: 'acknowledged',
+      ops: [expect.objectContaining({ op_id: operationAId })]
+    })
+
+    dispatchOpsResult({
+      workflowId: 'wf-b',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    const settled = devLogState.recordDevEvent.mock.calls.filter(
+      ([event]) => event === 'human_ops_settled'
+    )
+    expect(settled).toHaveLength(2)
+    expect(settled[1][1]).toMatchObject({
       state: 'acknowledged',
       ops: [expect.objectContaining({ op_id: operationBId })],
       result: { ok: false, applied: [], skipped: [] }

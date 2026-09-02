@@ -195,6 +195,28 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
+  it('ignores a result attributed to a different workflow than the in-flight batch', () => {
+    sender.enqueue([addNode(1)])
+    const inFlight = sent[0].ops.map((op) => op.op_id)
+
+    resultListener?.({
+      ok: true,
+      workflowId: 'other-wf',
+      applied: inFlight,
+      skipped: []
+    })
+    expect(settled).toHaveLength(0)
+
+    resultListener?.({
+      ok: true,
+      workflowId: WORKFLOW,
+      applied: inFlight,
+      skipped: []
+    })
+    expect(settled).toHaveLength(1)
+    expect(settled[0].state).toBe('acknowledged')
+  })
+
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(10_000)
