@@ -327,6 +327,60 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FEC-5: a refused legacy record is dropped by the first unbound mount', () => {
+    sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
+
+    const { unmount } = mountFollower(null)
+
+    expect(sessionStorage.getItem(DOC_ID_KEY)).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: live doc traffic slides the persisted expiry', () => {
+    vi.useFakeTimers()
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const stampedAt = persistedRecord()?.expiresAt
+    expect(stampedAt).toBeTypeOf('number')
+
+    // Six minutes of steady updates: past the 5-minute TTL, but the channel is
+    // healthy so the stale probe never fires and nothing resubscribes.
+    for (let seq = 1; seq <= 18; seq++) {
+      vi.advanceTimersByTime(20_000)
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq,
+        actor: 'agent',
+        update: new Uint8Array()
+      })
+    }
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+    setup.unmount()
+    bridgeState.current = null
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
+    unmount()
+  })
+
+  it('FEC-5: an idle doc still expires', () => {
+    vi.useFakeTimers()
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+
+    vi.advanceTimersByTime(5 * 60 * 1000)
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
   it('retains the follower and resubscribes on a socket reconnect', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
