@@ -201,6 +201,7 @@ export function createDetachedTargetSession(
     committedDoc = new Y.Doc()
     lineage = createUuidv4()
     committedSeq = atSeq
+    revision += 1
     expectedSeq = null
     lastCommitId = null
     needsResync = false
