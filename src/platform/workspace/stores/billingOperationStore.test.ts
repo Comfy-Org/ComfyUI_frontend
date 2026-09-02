@@ -2731,6 +2731,29 @@ describe('billingOperationStore', () => {
       expect(await store.cancelOperation('op-1')).toBe('unreachable')
     })
 
+    it('reports unavailable for a 422 state refusal too', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
+        new WorkspaceApiError('state disallows cancel', 422)
+      )
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      expect(await store.cancelOperation('op-1')).toBe('unavailable')
+    })
+
+    it('treats an auth, routing, or rate-limit 4xx as no verdict', async () => {
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      for (const status of [401, 403, 404, 429]) {
+        vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValueOnce(
+          new WorkspaceApiError('not a cancel verdict', status)
+        )
+        expect(await store.cancelOperation('op-1')).toBe('unreachable')
+      }
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+    })
+
     it('reports unavailable for an unknown or already-settled operation', async () => {
       const store = useBillingOperationStore()
 

@@ -2773,7 +2773,11 @@
     "reconciliationTitle": "Payment received — confirmation pending",
     "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
     "cancelFailed": "Failed to cancel subscription",
-    "cancelTimeout": "Subscription cancellation timed out"
+    "cancelTimeout": "Subscription cancellation timed out",
+    "cancelPayment": "Cancel payment",
+    "cancelUnavailable": "This payment is already processing and can't be canceled.",
+    "cancelUnreachable": "Couldn't reach the server. Your payment has not been canceled — try again.",
+    "paymentCanceledNotice": "Payment canceled. Nothing was charged."
   },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
@@ -3138,11 +3142,7 @@
         "plan": "Plan discount",
         "promotion": "Promo code"
       },
-      "cancelPayment": "Cancel payment",
-      "cancelUnavailable": "This payment is already processing and can't be canceled.",
-      "cancelUnreachable": "Couldn't reach the server. Your payment has not been canceled — try again.",
       "changePaymentMethod": "Change",
-      "paymentCanceledNotice": "Payment canceled. Nothing was charged.",
       "verifyTitle": "Verify your payment",
       "verifyBody": "Your bank requires additional verification to complete this payment.",
       "verifyOpenedBody": "Complete the verification in the new tab. This updates automatically.",
