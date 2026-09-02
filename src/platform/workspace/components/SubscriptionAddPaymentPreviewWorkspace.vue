@@ -378,6 +378,7 @@ import type {
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
+import { isVerificationRecoveryActive } from '@/platform/workspace/utils/verificationRecovery'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
@@ -458,15 +459,12 @@ const quoteReady = computed(
     Boolean(previewData?.quote_id) &&
     previewData?.quote_version !== undefined
 )
-// A failed challenge is over: the intent has fallen back to
-// requires_payment_method and the only way forward is a fresh attempt, so the
-// confirm action has to stay live. requires_action and a reconciliation hold
-// are genuinely in flight and still lock it.
-const verificationRecoveryActive = computed(
-  () =>
-    embeddedCheckoutEnabled &&
-    (authenticationState === 'requires_action' ||
-      Boolean(reconciliationOperationId))
+const verificationRecoveryActive = computed(() =>
+  isVerificationRecoveryActive({
+    embeddedCheckoutEnabled,
+    authenticationState,
+    reconciliationOperationId
+  })
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 
