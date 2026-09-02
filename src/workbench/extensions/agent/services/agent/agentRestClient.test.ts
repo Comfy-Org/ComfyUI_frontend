@@ -112,7 +112,7 @@ describe('agentRestClient route + method', () => {
       })
     )
 
-    await makeClient().listCloudWorkflows()
+    await createAgentRestClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
