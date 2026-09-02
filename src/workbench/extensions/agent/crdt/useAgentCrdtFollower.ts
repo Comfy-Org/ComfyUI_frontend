@@ -251,6 +251,9 @@ export function useAgentCrdtFollower(
   }
   const disarmCoordinationFreeIds = (): void => {
     if (armedIdState !== null) setCoordinationFreeIds(armedIdState, false)
+    const currentState = idAllocationState()
+    if (currentState !== null && currentState !== armedIdState)
+      setCoordinationFreeIds(currentState, false)
     armedIdState = null
   }
 

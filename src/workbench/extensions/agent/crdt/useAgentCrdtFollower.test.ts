@@ -403,6 +403,18 @@ describe('useAgentCrdtFollower', () => {
     expect(mintNodeId(stateB)).toBe('1')
   })
 
+  it('disarms a replacement graph state during teardown', () => {
+    const initialState = createLGraphState()
+    let currentState = initialState
+    const { unmount } = mountFollower('wf-a', true, () => currentState)
+    currentState = createLGraphState(initialState)
+
+    expect(Number(mintNodeId(currentState))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    unmount()
+    expect(mintNodeId(currentState)).toBe('1')
+  })
+
   it('sends minted human operations through the doc client', () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
