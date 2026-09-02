@@ -55,7 +55,8 @@ const adapterState = vi.hoisted(() => ({
 
 const telemetryState = vi.hoisted(() => ({
   trackAgentReconnectFailed: vi.fn(),
-  trackAgentReconnectStarted: vi.fn()
+  trackAgentReconnectStarted: vi.fn(),
+  trackAgentReconnectSucceeded: vi.fn()
 }))
 
 const materializerState = vi.hoisted(() => ({
@@ -253,6 +254,52 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
     unmount()
+  })
+
+  it('TEL-10: reports reconnect success exactly once with normalized metadata', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    bridge().lastSequence = 41
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 42,
+      update: new Uint8Array(10)
+    })
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 10,
+      from_version: 41,
+      to_version: 43
+    })
+
+    // A later ordinary catch-up frame must not re-report — the reconnect
+    // bookkeeping was cleared by the confirm above.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      update: new Uint8Array(5)
+    })
+    dispatchFrame('doc_subscribed', { ok: false })
+    dispatchFrame('doc_subscribed', { ok: true, seq: 45 })
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('TEL-10: does not report reconnect success on the first-ever bind', () => {
+    vi.useFakeTimers()
+    mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true, seq: 1 })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
   })
 
   it('reports retry exhaustion exactly once with normalized metadata', () => {

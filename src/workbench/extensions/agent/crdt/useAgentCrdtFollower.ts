@@ -296,6 +296,16 @@ export function useAgentCrdtFollower(
   let subscribeRetryStartedAt: number | null = null
   let subscribeRetryFailureReported = false
 
+  // TEL-10: mirrors the retry-exhaustion bookkeeping above, but for the
+  // recovery path — armed by the SAME two disconnect signals
+  // (`onReconnected`'s socket drop and a server `doc_subscribed{ok:false}`
+  // refusal) and cleared by the SAME confirmed-subscribe branch that clears
+  // the retry timer. `null` means "no reconnect in flight"; a confirmed
+  // subscribe while it is non-null is a reconnect SUCCESS, not just a mount.
+  let reconnectStartedAt: number | null = null
+  let reconnectFromVersion = 0
+  let reconnectReplayedBytes = 0
+
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
@@ -355,6 +365,19 @@ export function useAgentCrdtFollower(
     subscribeRetryAttempt = 0
     subscribeRetryStartedAt = null
     subscribeRetryFailureReported = false
+    reconnectStartedAt = null
+    reconnectFromVersion = 0
+    reconnectReplayedBytes = 0
+  }
+
+  // Arm reconnect tracking on the FIRST disconnect signal only — a later
+  // retry attempt or a second `onReconnected` mid-recovery must not reset the
+  // duration clock or the from_version baseline it already captured.
+  const armReconnectTracking = (): void => {
+    if (reconnectStartedAt !== null) return
+    reconnectStartedAt = performance.now()
+    reconnectFromVersion = bridge.lastSequence
+    reconnectReplayedBytes = 0
   }
 
   const reportSubscribeRetryExhausted = (): void => {
@@ -393,6 +416,7 @@ export function useAgentCrdtFollower(
     const target = subscribedWorkflowId.value
     if (target === null) return
     subscribeRetryStartedAt ??= performance.now()
+    armReconnectTracking()
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
     subscribeRetryAttempt += 1
     subscribeRetryTimer = setTimeout(() => {
@@ -427,6 +451,27 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      // Read before clearSubscribeRetry() wipes the reconnect bookkeeping —
+      // a non-null start time means this confirm follows a disconnect signal
+      // (onReconnected or a prior refusal), i.e. it is a RECOVERY, not the
+      // panel's first-ever bind.
+      if (reconnectStartedAt !== null) {
+        useTelemetry()?.trackAgentReconnectSucceeded({
+          // Both disconnect signals produce subscribe attempts and both
+          // counters reset on this same confirmed subscribe, so the recovery
+          // cost is their sum: `onReconnected`'s immediate resubscribe plus
+          // every refusal-driven retry. Floored at 1 because a socket-drop
+          // recovery that never retried still took one attempt.
+          attempt: Math.max(1, reconnectAttempt + subscribeRetryAttempt),
+          reconnect_duration_ms: Math.max(
+            0,
+            Math.round(performance.now() - reconnectStartedAt)
+          ),
+          replayed_bytes: reconnectReplayedBytes,
+          from_version: reconnectFromVersion,
+          to_version: event.detail?.seq ?? bridge.lastSequence
+        })
+      }
       clearSubscribeRetry()
       armStaleProbe()
       reconnectAttempt = 0
@@ -461,6 +506,8 @@ export function useAgentCrdtFollower(
       }
       return
     }
+    if (reconnectStartedAt !== null && update.update instanceof Uint8Array)
+      reconnectReplayedBytes += update.update.length
     if (staleProbeTimer !== null) armStaleProbe()
     markActivity()
     refreshPersistedDocId()
@@ -610,6 +657,7 @@ export function useAgentCrdtFollower(
     }
     connected.value = false
     clearStaleProbe()
+    armReconnectTracking()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
