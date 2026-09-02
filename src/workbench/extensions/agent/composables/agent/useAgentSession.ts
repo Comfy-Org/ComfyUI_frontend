@@ -142,7 +142,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
-  watch(storageScope, () => {
+  const stopScopeWatch = watch(storageScope, () => {
+    if (ownedGeneration !== sessionGeneration) return
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.dropBackgroundTurns()
@@ -221,6 +222,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function stop(): void {
     started = false
+    stopScopeWatch()
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = null
