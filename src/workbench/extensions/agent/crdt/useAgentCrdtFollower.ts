@@ -183,6 +183,15 @@ export function useAgentCrdtFollower(
   // reality - and a stale channel's intent DOES equal reality).
   let staleProbeTimer: ReturnType<typeof setTimeout> | null = null
 
+  // BE-9740 (started leg): the last moment a doc-scoped frame confirmed the
+  // channel was alive. `onReconnected` diffs against this to report how long
+  // the follower was actually offline, not just how long since mount.
+  let lastActivityAt: number | null = null
+  let reconnectAttempt = 0
+  const markActivity = (): void => {
+    lastActivityAt = performance.now()
+  }
+
   const clearStaleProbe = (): void => {
     if (staleProbeTimer !== null) {
       clearTimeout(staleProbeTimer)
@@ -284,6 +293,8 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      reconnectAttempt = 0
+      markActivity()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -302,6 +313,7 @@ export function useAgentCrdtFollower(
     )
       return
     if (staleProbeTimer !== null) armStaleProbe()
+    markActivity()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     adapter.applyFrame(update)
@@ -384,6 +396,21 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
+    // Only a workflow already bound to this follower has a connection to
+    // lose; a reconnect firing before any subscribe intent exists is the
+    // initial-open case, not a loss/recovery, and is not reported.
+    if (subscribedWorkflowId.value !== null) {
+      reconnectAttempt += 1
+      useTelemetry()?.trackAgentReconnectStarted({
+        disconnect_class: 'socket_reconnect',
+        attempt: reconnectAttempt,
+        last_seen_version: bridge.lastSequence,
+        offline_duration_ms:
+          lastActivityAt === null
+            ? null
+            : Math.max(0, Math.round(performance.now() - lastActivityAt))
+      })
+    }
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)

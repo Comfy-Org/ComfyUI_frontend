@@ -50,7 +50,8 @@ const adapterState = vi.hoisted(() => ({
 }))
 
 const telemetryState = vi.hoisted(() => ({
-  trackAgentReconnectFailed: vi.fn()
+  trackAgentReconnectFailed: vi.fn(),
+  trackAgentReconnectStarted: vi.fn()
 }))
 
 const apiState = vi.hoisted(() => {
@@ -364,6 +365,59 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
     expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('reports reconnect started exactly once per socket reconnect, retaining lastSequence', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(5_000)
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith({
+      disconnect_class: 'socket_reconnect',
+      attempt: 1,
+      last_seen_version: 41,
+      offline_duration_ms: 5_000
+    })
+    unmount()
+  })
+
+  it('counts successive reconnect attempts and resets after a confirmed subscribe', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ attempt: 1 })
+    )
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ attempt: 2 })
+    )
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ attempt: 1 })
+    )
+    unmount()
+  })
+
+  it('does not report reconnect started when no subscribe intent exists yet', () => {
+    const { unmount } = mountFollower(null)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).not.toHaveBeenCalled()
     unmount()
   })
 
