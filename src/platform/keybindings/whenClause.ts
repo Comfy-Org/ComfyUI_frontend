@@ -45,7 +45,8 @@ export function matchesContext(
   context: ContextSnapshot
 ): boolean {
   return clause.every(
-    (atom) => atom.key in context && context[atom.key] !== atom.negated
+    (atom) =>
+      Object.hasOwn(context, atom.key) && context[atom.key] !== atom.negated
   )
 }
 

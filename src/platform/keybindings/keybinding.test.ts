@@ -28,6 +28,24 @@ describe('KeybindingImpl', () => {
     ).toBe(true)
   })
 
+  it('keeps scope fields that contain the separator apart', () => {
+    const combo = { key: 'z', ctrl: true }
+    const a = new KeybindingImpl({
+      commandId: 'test.command',
+      combo,
+      targetElementId: 'canvas:mask',
+      dialogKey: 'editor'
+    })
+    const b = new KeybindingImpl({
+      commandId: 'test.command',
+      combo,
+      targetElementId: 'canvas',
+      dialogKey: 'mask:editor'
+    })
+
+    expect(a.serialize()).not.toBe(b.serialize())
+  })
+
   it('serializes only the persisted fields', () => {
     const binding = new KeybindingImpl({
       commandId: 'test.command',

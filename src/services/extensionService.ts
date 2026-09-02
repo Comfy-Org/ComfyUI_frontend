@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -20,6 +21,8 @@ import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+
+const zContextKeys = z.array(z.string()).optional()
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
@@ -86,7 +89,13 @@ export const useExtensionService = () => {
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
     const contextKeyStore = useContextKeyStore()
-    extension.contextKeys?.forEach((key) => {
+    const contextKeys = zContextKeys.safeParse(extension.contextKeys)
+    if (!contextKeys.success) {
+      toastErrorHandler(
+        new Error(t('g.invalidExtensionContextKeys', { name: extension.name }))
+      )
+    }
+    contextKeys.data?.forEach((key) => {
       if (
         !contextKeyStore.register(`${extension.name}.${key}`, extension.name)
       ) {
