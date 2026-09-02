@@ -11,10 +11,13 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
  * as stale, so a fresh follower rendered an EMPTY graph. The seeded graph
  * projecting at all is the regression surface.
  *
- * Red recipe (recorded patch, no revertible commit on this base - the base
- * carries an evolved form of the fix): in layoutFollowerBridge's
- * onDocSubscribed, restore the pre-fix baseline write
- * `this.lastSeq = subscribed.seq ?? null` on the ok path.
+ * Red recipe (recorded two-line patch, no revertible commit on this base -
+ * the base carries an evolved form of the fix with two independent
+ * defenses): in layoutFollowerBridge, (1) restore the pre-fix baseline
+ * write `this.lastSeq = subscribed.seq ?? null` on onDocSubscribed's ok
+ * path AND (2) disable the catch-up carve-out in onDocUpdate
+ * (`const isCatchUp = false`). Either line alone stays green; both
+ * together reproduce the pre-fix drop (status shows `0 updates`).
  */
 test.describe(
   'Agent replay regression: #16285 catch-up baseline',
