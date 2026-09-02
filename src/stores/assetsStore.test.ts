@@ -1443,7 +1443,9 @@ describe('assetsStore - Refactored (Option A)', () => {
         createMockJobItem(100 + i)
       )
       vi.mocked(fetchHistoryPage)
-        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
+        .mockRejectedValueOnce(
+          new JobsApiError(400, '{"code":"INVALID_CURSOR"}')
+        )
         .mockResolvedValueOnce(mockHistoryPage(recoveredBatch))
       await store.loadMoreHistory()
 
