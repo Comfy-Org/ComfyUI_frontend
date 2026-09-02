@@ -105,6 +105,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.notifyBeforeGraphLoad.mockClear()
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
+    mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
@@ -233,6 +234,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([
       locator
     ])
+  })
+
+  it('skips graph-load selection tracking while the panel is closed', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.agentStore.isOpen = false
+
+    extension!.beforeLoadGraph!({} as never)
+
+    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
