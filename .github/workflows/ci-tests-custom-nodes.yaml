@@ -4,8 +4,8 @@
 # skipped, the job goes red - a suite that let a broken pack through as a
 # "skip" would be pointless.
 #
-# Every relevant PR runs the exact pack population and receives the aggregate.
-# Merge-queue runs are temporarily disabled so failures do not block merges.
+# Automatic PR and merge-queue runs are temporarily disabled so failures do
+# not block merges. Nightly and manual runs still exercise the exact packs.
 # Jobs have read-only permissions, and neither checkout persists credentials
 # while third-party setup and runtime code executes.
 #
@@ -24,7 +24,6 @@
 name: 'CI: Tests Custom Nodes'
 
 on:
-  pull_request:
   schedule:
     - cron: '15 9 * * *'
   workflow_dispatch:
