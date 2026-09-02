@@ -226,7 +226,7 @@ import { useMembersPanel } from '@/platform/workspace/composables/useMembersPane
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
-  'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
+  'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'
 
 const {
   searchQuery,
