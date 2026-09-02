@@ -18,17 +18,8 @@ export class AssetBrowserHelper {
 
   constructor(private readonly page: Page) {}
 
-  async mockAssetTags(
-    initialAssets?: Array<{ id: string; tags: string[] }>
-  ): Promise<{ getCalls(): TagMutationCall[] }> {
+  async mockAssetTags(): Promise<{ getCalls(): TagMutationCall[] }> {
     const calls: TagMutationCall[] = []
-    const tagsByAssetId = new Map<string, string[]>()
-
-    if (initialAssets) {
-      for (const asset of initialAssets) {
-        tagsByAssetId.set(asset.id, [...asset.tags])
-      }
-    }
 
     const handler = async (route: Route) => {
       const request = route.request()
@@ -38,14 +29,13 @@ export class AssetBrowserHelper {
         return
       }
 
-      const match = request.url().match(assetTagsRoutePattern)
-      const assetId = match?.[1]
+      const assetId = request.url().match(assetTagsRoutePattern)?.[1]
       if (!assetId) {
         await route.fallback()
         return
       }
 
-      const rawBody = request.postDataJSON() as { tags?: unknown }
+      const rawBody = request.postDataJSON() as { tags?: unknown } | null
       const tags = Array.isArray(rawBody?.tags)
         ? rawBody.tags.filter((tag): tag is string => typeof tag === 'string')
         : []
@@ -57,31 +47,10 @@ export class AssetBrowserHelper {
         body
       })
 
-      const existing = tagsByAssetId.get(assetId) ?? ['models']
-      const totalTags =
-        method === 'POST'
-          ? Array.from(new Set([...existing, ...tags]))
-          : existing.filter((tag) => !tags.includes(tag))
-
-      const added =
-        method === 'POST'
-          ? totalTags.filter((tag) => !existing.includes(tag))
-          : []
-      const removed =
-        method === 'DELETE'
-          ? existing.filter((tag) => !totalTags.includes(tag))
-          : []
-
-      tagsByAssetId.set(assetId, totalTags)
-
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          total_tags: totalTags,
-          added,
-          removed
-        })
+        body: JSON.stringify({ total_tags: tags })
       })
     }
 
