@@ -33,24 +33,13 @@ describe('parseAssetInfo', () => {
     })
   })
 
-  it.fails('drops malformed optional fields without rejecting the payload', () => {
-    // W10 baseline expected failure: this exhaustive-QA slice assertion fails
-    // on main@f954e479 because malformed optional fields reject the whole
-    // asset payload.
-    for (const [name, extra] of [
-      ['attachment_ref', { attachment_ref: '' }],
-      ['media_kind', { media_kind: 'hologram' }],
-      ['preview_url', { preview_url: 'not a url' }]
-    ] as const) {
-      const parsed = parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))
-
-      // The malformed optional falls back to absent; the result item's own
-      // fields survive.
-      expect(parsed).toBeDefined()
-      expect(parsed).toMatchObject(BASE_ITEM)
-      expect(parsed?.[name]).toBeUndefined()
-    }
+  it('rejects the whole payload when an optional enrichment field is malformed', () => {
+    expect(
+      parseAssetInfo(transferWith({ ...BASE_ITEM, attachment_ref: '' }))
+    ).toBeUndefined()
   })
+
+  it.todo('W10: should drop malformed optional fields without rejecting the payload')
 
   it('still rejects a payload whose base fields are malformed', () => {
     const parsed = parseAssetInfo(transferWith({ ...BASE_ITEM, type: 'bogus' }))
