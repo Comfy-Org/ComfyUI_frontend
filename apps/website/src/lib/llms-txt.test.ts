@@ -112,7 +112,7 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(
+    const { drift, checked } = findCanonicalDrift(
       links,
       () => 'https://comfy.org/enterprise/'
     )
@@ -120,6 +120,7 @@ describe('findCanonicalDrift', () => {
     expect(drift).toEqual([
       { link: links[0], canonical: 'https://comfy.org/enterprise/' }
     ])
+    expect(checked).toBe(1)
   })
 
   it('leaves a link whose canonical matches its own URL alone', () => {
@@ -131,12 +132,13 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(
+    const { drift, checked } = findCanonicalDrift(
       links,
       () => 'https://comfy.org/enterprise/'
     )
 
     expect(drift).toEqual([])
+    expect(checked).toBe(1)
   })
 
   it('skips a link with no built page (e.g. the external workflows app)', () => {
@@ -148,9 +150,10 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(links, () => undefined)
+    const { drift, checked } = findCanonicalDrift(links, () => undefined)
 
     expect(drift).toEqual([])
+    expect(checked).toBe(0)
   })
 
   it('flags a same-path canonical on a different origin', () => {
@@ -162,7 +165,7 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(
+    const { drift, checked } = findCanonicalDrift(
       links,
       () => 'https://evil.example.com/enterprise/'
     )
@@ -170,5 +173,26 @@ describe('findCanonicalDrift', () => {
     expect(drift).toEqual([
       { link: links[0], canonical: 'https://evil.example.com/enterprise/' }
     ])
+    expect(checked).toBe(1)
+  })
+
+  it('reports zero checked when every link is skipped (vacuous-pass guard)', () => {
+    const links = [
+      {
+        title: 'Enterprise',
+        url: 'https://comfy.org/enterprise/',
+        description: ''
+      },
+      {
+        title: 'Pricing',
+        url: 'https://comfy.org/pricing/',
+        description: ''
+      }
+    ]
+
+    const { drift, checked } = findCanonicalDrift(links, () => undefined)
+
+    expect(drift).toEqual([])
+    expect(checked).toBe(0)
   })
 })
