@@ -7,8 +7,16 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     querySlotAtPoint: vi.fn(),
     queryRerouteAtPoint: vi.fn(),
+    queryLinkSegmentAtPoint: vi.fn(),
     getNodeLayoutRef: vi.fn(() => ({ value: null })),
+    getNodeLayout: vi.fn(),
     getSlotLayout: vi.fn(),
+    batchUpdateNodeBounds: vi.fn(),
+    applyOperation: vi.fn(),
+    allocateZIndex: vi.fn(() => 0),
+    readNodeRect: vi.fn(() => false),
+    contentSizeOf: vi.fn(),
+    getGroupLayout: vi.fn(),
     setSource: vi.fn(),
     setActor: vi.fn()
   }
@@ -76,7 +84,6 @@ describe('_startDraggingItems defers onSelectionChange', () => {
 
   afterEach(() => {
     canvasElement.remove()
-    vi.useRealTimers()
   })
 
   it('does not call onSelectionChange synchronously when an unselected node starts dragging', () => {
