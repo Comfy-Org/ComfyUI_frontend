@@ -1,6 +1,26 @@
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import type { NodeId } from '@/types/nodeId'
 
 import type { PromotedPreview } from './usePromotedPreviews'
+
+/**
+ * A host's own first-hop exposures, keyed the same way
+ * {@link getPreviewExposureHostLocator} stores them — i.e. by the host's
+ * instance-scoped locator, not its bare `node.id`. The two only coincide for
+ * root-level hosts; a nested host's exposures live under its definition-
+ * scoped locator, so looking them up by bare id silently finds nothing.
+ */
+export function getHostExposedSourceNodeIds(node: SubgraphNode): NodeId[] {
+  const hostLocator = getPreviewExposureHostLocator(node)
+  if (!hostLocator) return []
+  return usePreviewExposureStore()
+    .getExposures(node.rootGraph.id, hostLocator)
+    .map((exposure) => exposure.sourceNodeId)
+}
 
 /**
  * Merges a subgraph host's exposure-promoted previews with its ambient

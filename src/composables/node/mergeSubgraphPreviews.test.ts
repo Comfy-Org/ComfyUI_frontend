@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { toNodeId } from '@/types/nodeId'
 
-import { mergeSubgraphPreviews } from './mergeSubgraphPreviews'
+import {
+  getHostExposedSourceNodeIds,
+  mergeSubgraphPreviews
+} from './mergeSubgraphPreviews'
 import type { PromotedPreview } from './usePromotedPreviews'
 
 function preview(
@@ -61,5 +72,31 @@ describe(mergeSubgraphPreviews, () => {
     const result = mergeSubgraphPreviews(promoted, [], [])
 
     expect(result).toEqual(promoted)
+  })
+})
+
+describe(getHostExposedSourceNodeIds, () => {
+  it("finds a nested host's own exposures under its instance locator, not its bare id", () => {
+    const outerSubgraph = createTestSubgraph()
+    const innerSubgraph = createTestSubgraph()
+    const innerHost = createTestSubgraphNode(innerSubgraph, { id: 5 })
+    outerSubgraph.add(innerHost)
+    const outerHost = createTestSubgraphNode(outerSubgraph, { id: 1 })
+    outerSubgraph.rootGraph.add(outerHost)
+
+    // `SubgraphNode._hydratePreviewExposures` stores a nested host's
+    // exposures under its instance-scoped locator (definition UUID + bare
+    // id), never under the bare id alone.
+    const instanceLocator = getPreviewExposureHostLocator(innerHost)
+    expect(instanceLocator).not.toBe(String(innerHost.id))
+    if (!instanceLocator) return
+
+    const store = usePreviewExposureStore()
+    store.addExposure(innerHost.rootGraph.id, instanceLocator, {
+      sourceNodeId: '3',
+      sourcePreviewName: 'exposure'
+    })
+
+    expect(getHostExposedSourceNodeIds(innerHost)).toEqual([toNodeId(3)])
   })
 })
