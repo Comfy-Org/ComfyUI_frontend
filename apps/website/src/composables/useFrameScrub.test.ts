@@ -116,6 +116,29 @@ describe('useFrameScrub', () => {
     expect(image.src).toContain('frame-1')
   })
 
+  it('cancels fallback image decoding on unmount', async () => {
+    const canvas = document.createElement('canvas')
+    stubCanvas(canvas)
+    const image = new Image()
+    function ImageMock() {
+      return image
+    }
+    vi.stubGlobal('Image', ImageMock)
+    vi.stubGlobal('createImageBitmap', undefined)
+
+    const { unmount } = renderFrameScrub(canvas, ['frame-1'])
+    expect(image.onload).toBeTypeOf('function')
+    expect(image.onerror).toBeTypeOf('function')
+
+    unmount()
+    await Promise.resolve()
+
+    expect(image.onload).toBeNull()
+    expect(image.onerror).toBeNull()
+    expect(image.getAttribute('src')).toBe('')
+    expect(gsapMocks.to).not.toHaveBeenCalled()
+  })
+
   it('does not initialize animation after an empty load is unmounted', async () => {
     const canvas = document.createElement('canvas')
     Object.defineProperties(canvas, {

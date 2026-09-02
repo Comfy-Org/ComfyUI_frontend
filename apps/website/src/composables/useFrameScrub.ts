@@ -20,12 +20,34 @@ function closeFrames(frames: Frame[]) {
   }
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
+function loadImage(
+  url: string,
+  signal: AbortSignal
+): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    const cleanup = () => {
+      img.onload = null
+      img.onerror = null
+      signal.removeEventListener('abort', handleAbort)
+    }
+    function handleAbort() {
+      cleanup()
+      img.src = ''
+      reject(signal.reason)
+    }
+
     img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`Failed to load ${url}`))
+    img.onload = () => {
+      cleanup()
+      resolve(img)
+    }
+    img.onerror = () => {
+      cleanup()
+      reject(new Error(`Failed to load ${url}`))
+    }
+    signal.addEventListener('abort', handleAbort, { once: true })
+    if (signal.aborted) return handleAbort()
     img.src = url
   })
 }
@@ -37,7 +59,7 @@ async function loadFrame(
   signal: AbortSignal
 ): Promise<Frame> {
   signal.throwIfAborted()
-  if (typeof createImageBitmap !== 'function') return loadImage(url)
+  if (typeof createImageBitmap !== 'function') return loadImage(url, signal)
 
   const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(`Failed to load ${url}`)
