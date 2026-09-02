@@ -940,15 +940,14 @@ export const useExecutionStore = defineStore('execution', () => {
     workflowInstanceId: string,
     newPath: string
   ) {
-    let rewritten = false
-    const next = new Map(jobIdToSessionWorkflowPath.value)
-    for (const [jobId, path] of next) {
+    let next: Map<string, string> | undefined
+    for (const [jobId, path] of jobIdToSessionWorkflowPath.value) {
       if (path === newPath) continue
       if (jobIdToWorkflowInstanceId.get(jobId) !== workflowInstanceId) continue
+      next ??= new Map(jobIdToSessionWorkflowPath.value)
       next.set(jobId, newPath)
-      rewritten = true
     }
-    if (rewritten) jobIdToSessionWorkflowPath.value = next
+    if (next) jobIdToSessionWorkflowPath.value = next
   }
 
   /**
