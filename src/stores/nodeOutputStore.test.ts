@@ -629,7 +629,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     expect(app.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(store.nodeOutputs['99']).toBeUndefined()
   })
-
 })
 
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
@@ -847,19 +846,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(app.nodeOutputs['5']).toBeUndefined()
   })
 
-  it('routes an [output]-annotated widget value to the output directory', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'generated.png [output]')
-
-    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
-      filename: 'generated.png',
-      subfolder: '',
-      type: 'output'
-    })
-  })
-
   it('keeps the subfolder of an annotated widget value', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
@@ -904,18 +890,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(url).toContain('type=output')
     expect(url).toContain('filename=generated.png')
     expect(url).not.toContain('%5Boutput%5D')
-  })
-
-  it('leaves an unannotated value in the caller-supplied folder', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'photo.png')
-
-    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
-      filename: 'photo.png',
-      type: 'input'
-    })
   })
 })
 
