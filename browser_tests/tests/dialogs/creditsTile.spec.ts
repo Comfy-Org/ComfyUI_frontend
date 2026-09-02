@@ -291,8 +291,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
     const content = await openPlanAndCredits(page)
+    const billingPortal = content.getByRole('button', {
+      name: 'Billing & invoices'
+    })
+    await expect(billingPortal).toBeVisible()
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
-    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+    await billingPortal.click()
 
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
