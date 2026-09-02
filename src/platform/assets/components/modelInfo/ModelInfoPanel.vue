@@ -17,6 +17,9 @@
           <EditableText
             :model-value="displayName"
             :is-editing="isEditingDisplayName"
+            :input-attrs="{
+              'aria-label': t('assetBrowser.modelInfo.displayName')
+            }"
             :class="cn('flex-auto break-all text-muted-foreground')"
             @dblclick="isEditingDisplayName = !isImmutable"
             @edit="handleDisplayNameEdit"

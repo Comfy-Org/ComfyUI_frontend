@@ -46,7 +46,9 @@ export class AssetBrowserModal {
     this.editDisplayNameButton = this.basicInfoSection.getByRole('button', {
       name: /edit/i
     })
-    this.displayNameInput = this.basicInfoSection.locator('input[type="text"]')
+    this.displayNameInput = this.basicInfoSection.getByRole('textbox', {
+      name: 'Display name'
+    })
     this.fileNameText = this.basicInfoSection
       .locator('span.break-all.text-muted-foreground')
       .first()

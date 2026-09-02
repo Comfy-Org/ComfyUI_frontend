@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
@@ -83,6 +83,21 @@ describe('ModelInfoPanel', () => {
       })
       renderPanel(asset)
       expect(screen.getByText('My Custom Model')).toBeInTheDocument()
+    })
+
+    it('labels the display name editor', async () => {
+      const asset = createMockAsset({
+        user_metadata: { name: 'My Custom Model' }
+      })
+      renderPanel(asset)
+
+      await fireEvent.dblClick(screen.getByText('My Custom Model'))
+
+      expect(
+        screen.getByRole('textbox', {
+          name: 'assetBrowser.modelInfo.displayName'
+        })
+      ).toBeInTheDocument()
     })
 
     it('falls back to asset name when user_metadata.name not present', () => {
