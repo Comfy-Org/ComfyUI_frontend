@@ -186,6 +186,40 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('undeliverable')
   })
 
+  it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(4)])
+    expect(sent).toHaveLength(1)
+
+    sender.abortIfUnbound()
+
+    // No timer advance: settle -> pump -> transmit re-reads the binding and
+    // settles each wf-1 batch in turn until it reaches the wf-2 one.
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    expect(vi.getTimerCount()).toBe(1)
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('abortIfUnbound is a no-op while the in-flight batch is still addressed to the bound workflow', () => {
     sender.enqueue([addNode(1)])
 

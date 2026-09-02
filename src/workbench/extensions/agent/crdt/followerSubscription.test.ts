@@ -705,6 +705,27 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it('clears send reality BEFORE re-dispatching the refusal, so listeners observe the unbind synchronously', () => {
+    // useAgentCrdtFollower's onSubscribed calls sender.abortIfUnbound() inside
+    // this listener and relies on reading a null binding at that moment.
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    const seenDuringDispatch: Array<string | null> = []
+    bridge.addEventListener('doc_subscribed', () => {
+      seenDuringDispatch.push(bridge.subscribedWorkflowId)
+    })
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code: 'not_found'
+    })
+
+    expect(seenDuringDispatch).toEqual([null])
+  })
+
   it('a refused subscribe re-opens intent so the next reconcile retries', () => {
     const { transport, bridge } = wire()
     transport.open = true

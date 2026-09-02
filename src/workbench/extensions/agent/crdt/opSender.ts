@@ -75,6 +75,11 @@ export interface OpSender {
    * signal that the subscription is gone (e.g. `doc_subscribed {ok:false}`)
    * should call this immediately; a no-op otherwise (still bound, or the
    * unbind already resolved through the normal transmit-time check).
+   *
+   * Not for reconnect: `resubscribe()` re-binds the SAME id synchronously on
+   * a live socket, so this stays a no-op there by design — the batch rides
+   * the result timer to its idempotent resend, which is the right outcome
+   * (the ops may well have landed), not `undeliverable`.
    */
   abortIfUnbound(): void
   detach(): void
@@ -118,7 +123,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
       if (attempt < SEND_RETRY_LIMIT) {
-        setTimeout(() => transmit(batch, attempt + 1), SEND_RETRY_INTERVAL_MS)
+        // Tracked in the same slot as the result timer (they never overlap:
+        // the result timer is armed only after a successful send) so
+        // settle()/detach() clear a pending retry too.
+        batch.timer = setTimeout(
+          () => transmit(batch, attempt + 1),
+          SEND_RETRY_INTERVAL_MS
+        )
       } else {
         settleUndeliverable(batch)
       }
