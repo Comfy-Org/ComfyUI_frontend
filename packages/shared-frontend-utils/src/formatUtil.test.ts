@@ -4,17 +4,19 @@ import {
   appendWorkflowJsonExt,
   downloadUrlToHfRepoUrl,
   ensureWorkflowSuffix,
+  escapeI18nMessage,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
+  generateUUID,
   getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
-  escapeI18nMessage,
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
+  isValidUuid,
   joinFilePath,
   truncateFilename
 } from './formatUtil'
@@ -121,6 +123,7 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('music.ogg')).toBe('audio')
         expect(getMediaTypeFromFilename('audio.flac')).toBe('audio')
         expect(getMediaTypeFromFilename('music.opus')).toBe('audio')
+        expect(getMediaTypeFromFilename('voice.m4a')).toBe('audio')
       })
     })
 
@@ -201,75 +204,74 @@ describe('formatUtil', () => {
   })
 
   describe('highlightQuery', () => {
-    it('should sanitize text when query is empty', () => {
-      expect(highlightQuery('<img src=x onerror=alert(1)>Hello', '')).toBe(
-        '&#60;img src=x onerror=alert(1)&#62;Hello'
-      )
+    it('should return one plain-text part when query is empty', () => {
+      expect(highlightQuery('Hello World', '')).toEqual([
+        { text: 'Hello World', highlighted: false }
+      ])
     })
 
-    it('should wrap matching text in highlight span', () => {
-      const result = highlightQuery('Hello World', 'World')
-      expect(result).toBe('Hello <span class="highlight">World</span>')
+    it('should mark matching text for highlighting', () => {
+      expect(highlightQuery('Hello World', 'World')).toEqual([
+        { text: 'Hello ', highlighted: false },
+        { text: 'World', highlighted: true }
+      ])
     })
 
     it('should be case-insensitive', () => {
-      const result = highlightQuery('Hello World', 'hello')
-      expect(result).toBe('<span class="highlight">Hello</span> World')
+      expect(highlightQuery('Hello World', 'hello')).toEqual([
+        { text: 'Hello', highlighted: true },
+        { text: ' World', highlighted: false }
+      ])
     })
 
-    it('should sanitize text by default', () => {
-      const result = highlightQuery('<script>alert("xss")</script>', 'alert')
-      expect(result).not.toContain('<script>')
-    })
-
-    it('should escape markup while preserving highlights', () => {
-      const result = highlightQuery(
-        '<img src=x onerror=alert(1)>Script <b>name</b>',
-        'script'
-      )
-      expect(result).toContain('<span class="highlight">Script</span>')
-      expect(result).not.toContain('<img')
-      expect(result).not.toContain('<b>')
-      expect(result).toContain('img src=x onerror=alert(1)')
-    })
-
-    it('should skip sanitization when sanitize is false', () => {
-      const result = highlightQuery('<b>bold</b>', 'bold', false)
-      expect(result).toContain('<b>')
+    it('should preserve markup as text parts', () => {
+      expect(highlightQuery('<script>alert("xss")</script>', 'alert')).toEqual([
+        { text: '<script>', highlighted: false },
+        { text: 'alert', highlighted: true },
+        { text: '("xss")</script>', highlighted: false }
+      ])
     })
 
     it('should escape special regex characters in query', () => {
-      const result = highlightQuery('price is $10.00', '$10')
-      expect(result).toContain('<span class="highlight">$10</span>')
+      expect(highlightQuery('price is $10.00', '$10')).toEqual([
+        { text: 'price is ', highlighted: false },
+        { text: '$10', highlighted: true },
+        { text: '.00', highlighted: false }
+      ])
     })
 
     it('should highlight multiple occurrences', () => {
-      const result = highlightQuery('foo bar foo', 'foo')
-      expect(result).toBe(
-        '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
-      )
+      expect(highlightQuery('foo bar foo', 'foo')).toEqual([
+        { text: 'foo', highlighted: true },
+        { text: ' bar ', highlighted: false },
+        { text: 'foo', highlighted: true }
+      ])
     })
 
     it('should highlight cross-word matches', () => {
-      const result = highlightQuery('convert image to mask', 'geto', false)
-      expect(result).toBe(
-        'convert ima<span class="highlight">ge to</span> mask'
-      )
+      expect(highlightQuery('convert image to mask', 'geto')).toEqual([
+        { text: 'convert ima', highlighted: false },
+        { text: 'ge to', highlighted: true },
+        { text: ' mask', highlighted: false }
+      ])
     })
 
     it('should not match across line breaks', () => {
-      const result = highlightQuery('ge\nto', 'geto', false)
-      expect(result).toBe('ge\nto')
+      expect(highlightQuery('ge\nto', 'geto')).toEqual([
+        { text: 'ge\nto', highlighted: false }
+      ])
     })
 
     it('should not match across tabs', () => {
-      const result = highlightQuery('ge\tto', 'geto', false)
-      expect(result).toBe('ge\tto')
+      expect(highlightQuery('ge\tto', 'geto')).toEqual([
+        { text: 'ge\tto', highlighted: false }
+      ])
     })
 
     it('should not match across multiple spaces', () => {
-      const result = highlightQuery('ge  to', 'geto', false)
-      expect(result).toBe('ge  to')
+      expect(highlightQuery('ge  to', 'geto')).toEqual([
+        { text: 'ge  to', highlighted: false }
+      ])
     })
   })
 
@@ -512,6 +514,32 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('isValidUuid', () => {
+    it.for([
+      ['lowercase', '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['uppercase', '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F'],
+      ['nil', '00000000-0000-0000-0000-000000000000'],
+      ['arbitrary version and variant', 'ffffffff-ffff-7fff-ffff-ffffffffffff'],
+      ['generated', generateUUID()]
+    ])('accepts a %s UUID', ([, value]) => {
+      expect(isValidUuid(value)).toBe(true)
+    })
+
+    it.for([
+      ['legacy slug', 'video-point-prompt-example'],
+      ['missing value', undefined],
+      ['null', null],
+      ['empty string', ''],
+      ['non-string', 123],
+      ['wrong length', '9cea40bb-b0cf-4b40-a758-8935cfe8d52'],
+      ['missing separators', '9cea40bbb0cf4b40a7588935cfe8d52f'],
+      ['surrounding whitespace', ' 9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['non-hex character', 'gcea40bb-b0cf-4b40-a758-8935cfe8d52f']
+    ])('rejects a %s', ([, value]) => {
+      expect(isValidUuid(value)).toBe(false)
     })
   })
 

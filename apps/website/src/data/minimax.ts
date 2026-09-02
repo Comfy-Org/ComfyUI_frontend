@@ -1,18 +1,59 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchMedia,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { externalLinks } from '../config/routes'
 
 // MiniMax H3 renders, encoded to the site's web video profile and served from
-// media.comfy.org.
+// media.comfy.org. Each poster is the clip's own first frame, so it registers
+// exactly with the video that replaces it.
 const media = {
-  hero: 'https://media.comfy.org/website/minimax/hero.mp4',
-  iceRider: 'https://media.comfy.org/website/minimax/ice-rider.webm',
-  sunkenTemple: 'https://media.comfy.org/website/minimax/sunken-temple.webm',
-  nightAscent: 'https://media.comfy.org/website/minimax/night-ascent.webm',
-  fluid: 'https://media.comfy.org/website/minimax/fluid.webm',
-  superhero: 'https://media.comfy.org/website/minimax/superhero.webm',
-  comfyCan: 'https://media.comfy.org/website/minimax/comfy-can.webm'
-} as const
+  hero: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/hero-sizzle.mp4',
+    posterSrc: 'https://media.comfy.org/website/minimax/hero-poster.webp'
+  },
+  iceRider: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/ice-rider.webm',
+    posterSrc: 'https://media.comfy.org/website/minimax/ice-rider-poster.webp'
+  },
+  sunkenTemple: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/sunken-temple.webm',
+    posterSrc:
+      'https://media.comfy.org/website/minimax/sunken-temple-poster.webp'
+  },
+  nightAscent: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/night-ascent.webm',
+    posterSrc:
+      'https://media.comfy.org/website/minimax/night-ascent-poster.webp'
+  },
+  fluid: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/fluid.webm',
+    posterSrc: 'https://media.comfy.org/website/minimax/fluid-poster.webp'
+  },
+  superhero: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/superhero.webm',
+    posterSrc: 'https://media.comfy.org/website/minimax/superhero-poster.webp'
+  },
+  comfyCan: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/minimax/comfy-can.webm',
+    posterSrc: 'https://media.comfy.org/website/minimax/comfy-can-poster.webp'
+  }
+} as const satisfies Record<string, ModelLaunchMedia>
+
+// Not part of `media` above: it is a plain still, not a `ModelLaunchMedia`
+// video/image the gallery renders, so keeping it out of that record avoids
+// widening the `satisfies` shape for a value only the hero's mobile branch
+// consumes.
+const heroFallbackSrc =
+  'https://media.comfy.org/website/minimax/hero-fallback.jpg'
 
 export const minimaxLinks = {
   cloudRun: 'https://cloud.comfy.org/?share=a781503cf508',
@@ -24,13 +65,15 @@ export const minimaxLinks = {
   blog: 'https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui'
 } as const
 
-export const minimaxPage: ModelLaunchPage = {
+export const minimaxPage = {
   metaTitleKey: 'minimax.meta.title',
   metaDescriptionKey: 'minimax.meta.description',
   breadcrumbLabelKey: 'minimax.breadcrumb.model',
   breadcrumbUpdatedKey: 'minimax.breadcrumb.updated',
   hero: {
-    videoSrc: media.hero,
+    videoSrc: media.hero.src,
+    posterSrc: media.hero.posterSrc,
+    mobileFallbackImageSrc: heroFallbackSrc,
     logoSrc: '/icons/ai-models/minimax.svg',
     titleKey: 'minimax.hero.titleModel',
     titleRestKey: 'minimax.hero.titleRest',
@@ -42,11 +85,10 @@ export const minimaxPage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'minimax.hero.secondaryCta',
-      href: minimaxLinks.textToVideo,
+      href: minimaxLinks.imageToVideo,
       target: '_blank'
     },
-    badgeKeys: ['minimax.hero.tagOpenWeights', 'minimax.hero.tagPartnerNodes'],
-    footnoteKey: 'minimax.hero.footnote'
+    badgeKeys: ['minimax.hero.tagOpenWeights', 'minimax.hero.tagPartnerNodes']
   },
   gallery: {
     headingKey: 'minimax.models.heading',
@@ -61,7 +103,7 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN':
             '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
         },
-        mediaSrc: media.fluid,
+        media: media.fluid,
         href: minimaxLinks.textToVideo
       },
       {
@@ -73,7 +115,7 @@ export const minimaxPage: ModelLaunchPage = {
           en: 'God-rays drift through a flooded temple of carved gold, holding light and depth steady across the whole shot.',
           'zh-CN': '光束穿过被水淹没的黄金浮雕神殿，全程保持光影与景深的稳定。'
         },
-        mediaSrc: media.sunkenTemple,
+        media: media.sunkenTemple,
         href: minimaxLinks.textToVideo
       },
       {
@@ -86,7 +128,7 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN':
             '头灯登山者攀上月光沙丘，近乎全黑的画面中颗粒与运动依旧干净。'
         },
-        mediaSrc: media.nightAscent,
+        media: media.nightAscent,
         href: minimaxLinks.textToVideo
       },
       {
@@ -98,7 +140,7 @@ export const minimaxPage: ModelLaunchPage = {
           en: 'A lone rider crosses a glacial canyon in one continuous move, camera and native audio straight out of H3.',
           'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。'
         },
-        mediaSrc: media.iceRider,
+        media: media.iceRider,
         href: minimaxLinks.iceRider
       },
       {
@@ -111,7 +153,7 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN':
             '小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。'
         },
-        mediaSrc: media.superhero,
+        media: media.superhero,
         href: minimaxLinks.referenceToVideo
       },
       {
@@ -124,7 +166,7 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN':
             '一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。'
         },
-        mediaSrc: media.comfyCan,
+        media: media.comfyCan,
         href: minimaxLinks.referenceToVideo
       }
     ]
@@ -163,9 +205,9 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': 'MiniMax H3 每次生成需要多少费用？'
         },
         answer: {
-          en: 'You can try MiniMax H3 for free on Comfy Cloud. After that, each generation spends credits, which come with a subscription or can be bought as you go.',
+          en: 'It runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render.',
           'zh-CN':
-            '你可以在 Comfy Cloud 上免费试用 MiniMax H3。之后每次生成都会消耗积分，积分包含在订阅中，也可按需单独购买。'
+            '它采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一个镜头，只在最终渲染时消耗积分。'
         }
       },
       {
@@ -198,9 +240,9 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': 'MiniMax H3 提供开源权重吗？'
         },
         answer: {
-          en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud.',
+          en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud. To use what you make locally for commercial work, [get an H3 commercial license through Comfy](https://comfy.org/minimax/license).',
           'zh-CN':
-            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。'
+            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。如需将本地产出用于商业创作，请[通过 Comfy 获取 H3 商业许可](https://comfy.org/zh-CN/minimax/license)。'
         }
       },
       {
@@ -225,7 +267,7 @@ export const minimaxPage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'minimax.cta.secondaryCta',
-      href: minimaxLinks.textToVideo,
+      href: minimaxLinks.imageToVideo,
       target: '_blank'
     }
   },
@@ -239,7 +281,8 @@ export const minimaxPage: ModelLaunchPage = {
     highlight: {
       titleKey: 'minimax.reviews.highlightTitle',
       descriptionKey: 'minimax.reviews.highlightDescription',
-      ctaKey: 'minimax.reviews.highlightCta'
+      ctaKey: 'minimax.reviews.highlightCta',
+      route: 'minimaxLicense'
     }
   }
-}
+} satisfies ModelLaunchPage

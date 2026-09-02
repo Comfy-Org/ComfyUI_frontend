@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -37,7 +37,8 @@ const baseProps = {
   backLabel: 'Back',
   countedStepIdx: 0,
   countedStepsTotal: 1,
-  waitingForTarget: false
+  waitingForTarget: false,
+  stepSettled: true
 }
 
 function renderSpotlight(
@@ -51,10 +52,7 @@ function renderSpotlight(
 
 describe('TourSpotlight', () => {
   afterEach(() => {
-    cleanup()
     clearCoachmarks()
-    document.body.replaceChildren()
-    vi.useRealTimers()
   })
 
   it('renders the spotlight and card for a step', () => {

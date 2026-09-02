@@ -62,6 +62,9 @@ coverage/
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/local/
+browser_tests/tests/_recording-session.spec.ts
+browser_tests/tests/_recorded-code.txt
+browser_tests/**/*.raw.spec.ts
 
 .env
 
@@ -99,3 +102,12 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+# Registry census working tree (scripts/registry-census) - corpus, lockfile, results
+.census/
+# Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs
+src/__ecs_matrix__/
+# Per-pack result rows written by a local detection-proof run
+matrix-proof/
+
+# Agent telemetry working files
+/telemetry/

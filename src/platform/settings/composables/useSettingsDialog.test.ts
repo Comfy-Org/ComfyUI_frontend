@@ -37,7 +37,6 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 
 describe('useSettingsDialog', () => {
   beforeEach(() => {
-    showDialog.mockReset()
     isCloudRef.value = false
   })
 

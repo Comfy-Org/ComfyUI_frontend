@@ -149,7 +149,7 @@ async function onSubmit() {
       tabindex="-1"
       :class="
         status === 'success'
-          ? 'bg-transparency-white-t4 text-primary-warm-gray flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold wrap-break-word focus:outline-none'
+          ? 'bg-transparency-white-t4 flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold wrap-break-word text-primary-warm-gray focus:outline-none'
           : undefined
       "
     >

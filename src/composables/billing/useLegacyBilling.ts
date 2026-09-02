@@ -35,6 +35,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
     subscribe: legacySubscribe,
+    subscribeDirect: legacySubscribeDirect,
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
 
@@ -63,7 +64,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
-      endDate: legacySubscriptionStatus.value?.end_date ?? null,
+      endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
       hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }
@@ -85,9 +86,13 @@ export function useLegacyBilling(): BillingState & BillingActions {
     }
   })
 
-  // Legacy has no coarse billing_status concept (workspace-only).
-  const billingStatus = computed<BillingStatus | null>(() => null)
+  const billingStatus = computed<BillingStatus | null>(
+    () => legacySubscriptionStatus.value?.billing_status ?? null
+  )
   const subscriptionStatus = computed<BillingSubscriptionStatus | null>(() => {
+    if (legacySubscriptionStatus.value?.subscription_status) {
+      return legacySubscriptionStatus.value.subscription_status
+    }
     if (isCancelled.value) return 'canceled'
     if (legacyCanAccessSubscriptionFeatures.value) return 'active'
     return null
@@ -101,7 +106,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const plans = computed(() => [])
   const currentPlanSlug = computed(() => null)
   const teamCreditStops = computed(() => null)
-  const currentTeamCreditStop = computed(() => null)
+  const currentTeamCreditStop = computed(
+    () => legacySubscriptionStatus.value?.team_credit_stop ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -176,9 +183,18 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacyManageSubscription()
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
     // Legacy has no resubscribe endpoint; resubscribing is a fresh checkout.
-    await legacySubscribe()
+    // Unwrapped so failures propagate to resubscribe telemetry instead of being swallowed.
+    // Tag the attempt as a resubscribe so the pending-checkout recovery in
+    // useSubscription.ts can later emit the canonical resubscribe terminal
+    // instead of leaving it indistinguishable from a plain subscribe.
+    await legacySubscribeDirect({
+      operation: 'resubscribe',
+      source: options?.source
+    })
   }
 
   async function topup(amountCents: number): Promise<void> {

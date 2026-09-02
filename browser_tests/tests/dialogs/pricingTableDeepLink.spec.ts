@@ -23,6 +23,7 @@ import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -42,8 +43,7 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  consolidated_billing_enabled: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
@@ -85,8 +85,6 @@ const STANDARD_ANNUAL_PLAN = {
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
-  max_seats: 50,
-  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'TEAM',
   subscription_duration: 'ANNUAL',
@@ -98,13 +96,13 @@ const ACTIVE_TEAM_STATUS = {
     id: 'team_700',
     credits_monthly: 147_700,
     stop_usd: 700
-  }
+  },
+  max_seats: 5,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
-  max_seats: 1,
-  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   subscription_duration: 'ANNUAL',
@@ -112,7 +110,9 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null
+  team_credit_stop: null,
+  max_seats: 1,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_CREATOR_STATUS = {
@@ -342,7 +342,10 @@ async function setupCloudApp(
     settings: BOOT_SETTINGS
   })
   await mockGraphBootExtras(page)
-  await mockBilling(page)
+  await mockBilling(page, {
+    workspaceId: ws.id,
+    billingCapabilities: createWorkspaceBillingCapabilities(ws)
+  })
   await mockWorkspace(page, ws, members)
   await bootCloud(page)
 }
@@ -645,7 +648,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     await expect(backButton).toBeDisabled()
 
-    await page.clock.fastForward(5 * 60_000 + 1)
+    await page.clock.fastForward(23 * 60 * 60_000 + 1)
 
     await expect(backButton).toBeEnabled()
     await expect(
@@ -848,9 +851,9 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
       await expect(
         successView.getByText('Creator', { exact: true })
       ).toBeVisible()
-      await expect(successView.getByText('$28', { exact: true })).toBeVisible()
+      await expect(successView.getByText('$336', { exact: true })).toBeVisible()
       await expect(
-        successView.getByText('7,400 / month', { exact: true })
+        successView.getByText('88,800 / year', { exact: true })
       ).toBeVisible()
       await expect(
         successView.getByRole('button', { name: 'Close' })

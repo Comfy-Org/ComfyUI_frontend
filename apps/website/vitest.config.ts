@@ -10,8 +10,30 @@ export default defineConfig({
     }
   },
   test: {
+    mockReset: true,
+    restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
+    fakeTimers: { shouldAdvanceTime: true },
     environment: 'node',
-    include: ['src/**/*.{test,spec}.ts'],
-    globals: false
+    include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
+    globals: false,
+    setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+      // Include untested files so patch coverage counts them as 0%.
+      include: ['src/**/*.{ts,vue}'],
+      exclude: [
+        'src/**/*.{test,spec}.ts',
+        'src/**/*.stories.ts',
+        'src/**/*.d.ts',
+        'src/test/**',
+        'src/content/**',
+        'src/i18n/**',
+        'src/content.config.ts'
+      ]
+    }
   }
 })

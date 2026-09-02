@@ -10,6 +10,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
@@ -63,19 +64,52 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
   has_funds: true
 }
 
-async function mockCloudBoot(page: Page, billingControlEnabled = true) {
+const freeBillingStatus: BillingStatusResponse = {
+  is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
+  subscription_tier: 'FREE',
+  has_funds: true
+}
+
+const endedPersonalBillingStatus: BillingStatusResponse = {
+  is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
+  subscription_status: 'ended',
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  plan_slug: 'pro-monthly',
+  billing_status: 'inactive',
+  has_funds: true
+}
+
+const pastDueBillingStatus: BillingStatusResponse = {
+  ...mockBillingStatus,
+  is_active: false,
+  plan_slug: 'pro-monthly',
+  billing_status: 'payment_failed'
+}
+
+async function mockCloudBoot(
+  page: Page,
+  billingControlEnabled = true,
+  billingStatus = mockBillingStatus
+) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
   // `/api/features` is the remote-config source for the billing UX rollout.
   await page.route('**/api/features', (r) =>
     r.fulfill(
       jsonRoute({
-        consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)
     )
@@ -127,18 +161,6 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
     )
   )
 
-  // Legacy billing (flag-off path, api.comfy.org/customers/*).
-  await page.route('**/customers/cloud-subscription-status', (r) =>
-    r.fulfill(
-      jsonRoute({
-        is_active: true,
-        subscription_tier: 'PRO',
-        subscription_duration: 'MONTHLY',
-        renewal_date: '2099-02-20T12:00:00Z',
-        end_date: null
-      })
-    )
-  )
   await page.route('**/customers/balance', (r) =>
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
   )
@@ -146,7 +168,10 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Workspace billing (flag-on path) — a personal workspace now routes through
   // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(mockBillingStatus))
+    r.fulfill(jsonRoute(billingStatus))
+  )
+  await page.route('**/api/billing/payment-portal', (r) =>
+    r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
   )
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
@@ -154,6 +179,14 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute(
+        createWorkspaceBillingCapabilities(workspace('personal', 'owner'))
+      )
+    )
+  })
 }
 
 async function mockBalance(
@@ -207,7 +240,85 @@ async function openPlanAndCredits(page: Page) {
 }
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
-  test('keeps the legacy Workspace UX when billing controls are disabled', async ({
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.open = (url) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        return window
+      }
+    })
+  })
+
+  test('opens Billing & invoices for a paid owner without a duplicate invoice link', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page)
+
+    const content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Invoice history' })
+    ).toHaveCount(0)
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://billing.example/portal')
+  })
+
+  test('opens Billing & invoices for a Free owner without a subscription', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, freeBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(content.getByRole('heading', { name: 'Free' })).toBeVisible()
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://billing.example/portal')
+  })
+
+  test('keeps Billing & invoices available after a Personal subscription ends', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, endedPersonalBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(content.getByText('Your subscription has ended')).toBeVisible()
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://billing.example/portal')
+  })
+
+  test('keeps billing management available for a past-due subscription', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, pastDueBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Change plan' })
+    ).toHaveCount(0)
+
+    await content.getByRole('button', { name: 'More Options' }).click()
+    await expect(page.getByText('Cancel plan', { exact: true })).toBeVisible()
+  })
+
+  test('keeps V1 workspace navigation when billing controls are disabled', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -218,23 +329,21 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await expect(
       nav.getByRole('button', { name: 'Workspace', exact: true })
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       nav.getByRole('button', { name: 'Plan & Credits', exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
     await expect(
       nav.getByRole('button', { name: 'Members', exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Workspace', exact: true }).click()
+    await nav
+      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .click()
     const content = dialog.getByRole('main')
     await expect(
-      content.getByRole('tab', { name: 'Plan & Credits' })
+      content.getByRole('button', { name: 'Activity', exact: true })
     ).toBeVisible()
-    await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
-    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
-      0
-    )
   })
 
   test('renders the unified tile with breakdown and add-credits', async ({

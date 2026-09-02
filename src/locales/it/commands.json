@@ -1,1 +1,364 @@
-{}
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Verifica aggiornamenti"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Apri cartella Custom Nodes"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Apri cartella Inputs"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Apri cartella Log"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Apri extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Apri cartella Modelli"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Apri cartella Outputs"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Apri DevTools"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Guida utente Desktop"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Esci"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Reinstalla"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Riavvia"
+  },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Apri 3D Viewer (Beta) per il nodo selezionato"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Sperimentale: Sfoglia risorse modello"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "Sfoglia template"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Copia"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Elimina elementi selezionati"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "Adatta vista ai nodi selezionati"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Blocca canvas"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Sposta nodi selezionati in basso"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Sposta nodi selezionati a sinistra"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Sposta nodi selezionati a destra"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Sposta nodi selezionati in alto"
+  },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Incolla"
+  },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Incolla con collegamento"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "Reimposta vista"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Ridimensiona nodi selezionati"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Seleziona tutto"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "Canvas: mostra/nascondi collegamenti"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "Canvas: blocca/sblocca"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas: mostra/nascondi minimappa"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "Bypass/Annulla bypass nodi selezionati"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "Comprimi/Espandi nodi selezionati"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "Silenzia/Attiva nodi selezionati"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "Fissa/Sblocca nodi selezionati"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Fissa/Sblocca elementi selezionati"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Sblocca canvas"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "Zoom avanti"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "Zoom indietro"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "Cancella attività in sospeso"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "Cancella workflow"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Contatta il supporto"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Mostra selettore modello (Dev)"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Duplica workflow corrente"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "Esporta workflow"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "Esporta workflow (formato API)"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Converti selezione in Subgraph"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Modifica widget del Subgraph"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Esci dal Subgraph"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "Adatta gruppo al contenuto"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "Raggruppa nodi selezionati"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Attiva/disattiva promozione del widget selezionato"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Scarta il Subgraph selezionato"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Apri Informazioni su ComfyUI"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Apri Discord di Comfy-Org"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "Apri documentazione ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Apri forum ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "Apri segnalazioni ComfyUI"
+  },
+  "Comfy_Interrupt": {
+    "label": "Interrompi"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Apri l'Editor dei Livelli per il Nodo Selezionato"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "Carica workflow predefinito"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Gestore nodi personalizzati"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Nodi personalizzati (Legacy)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Menu Gestore (Legacy)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Installa nodi personalizzati mancanti"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Verifica aggiornamenti nodi personalizzati"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Riduci dimensione pennello in MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Aumenta dimensione pennello in MaskEditor"
+  },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Apri selettore colore in MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Specchia orizzontalmente in MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Specchia verticalmente in MaskEditor"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Apri Mask Editor per il nodo selezionato"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Ruota a sinistra in MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Ruota a destra in MaskEditor"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Scarica modelli"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Scarica modelli e cache di esecuzione"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "Nuovo workflow vuoto"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "Clipspace"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "Gestore"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "Apri workflow"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Pubblica Subgraph"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "Accoda prompt"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "Accoda prompt (Inizio)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Accoda nodi di output selezionati"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Attiva/disattiva cronologia lavori"
+  },
+  "Comfy_Redo": {
+    "label": "Ripeti"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "Aggiorna definizioni dei nodi"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Rinomina workflow"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "Salva workflow"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "Salva workflow come"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "Mostra finestra impostazioni"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Imposta descrizione Subgraph"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Imposta alias di ricerca subgraph"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Sperimentale: Abilita AssetAPI"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Prestazioni canvas"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Centro assistenza"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "Cambia modalità app"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Cambia Queue Panel V2"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "Cambia tema (Scuro/Chiaro)"
+  },
+  "Comfy_Undo": {
+    "label": "Annulla"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Apri finestra di accesso"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Disconnetti"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Sperimentale: Abilita Nodes 2.0"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "Chiudi workflow corrente"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "Prossimo workflow aperto"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "Workflow aperto precedente"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "Mostra/Nascondi barra di ricerca"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "Mostra/Nascondi pannello inferiore"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Mostra/Nascondi terminale pannello inferiore"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Mostra/Nascondi log pannello inferiore"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Mostra/Nascondi essenziali pannello inferiore"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Mostra/Nascondi controlli vista pannello inferiore"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Mostra finestra scorciatoie"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "Cambia modalità focus"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Mostra/Nascondi barra laterale app",
+    "tooltip": "App"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Mostra/Nascondi barra laterale asset",
+    "tooltip": "Asset"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "Mostra/Nascondi barra laterale libreria modelli",
+    "tooltip": "Libreria modelli"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "Mostra/Nascondi barra laterale libreria nodi",
+    "tooltip": "Libreria nodi"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "Mostra/Nascondi barra laterale workflow",
+    "tooltip": "Workflow"
+  }
+}

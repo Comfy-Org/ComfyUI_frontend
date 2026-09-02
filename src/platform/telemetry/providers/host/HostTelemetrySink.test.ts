@@ -10,7 +10,6 @@ const state = vi.hoisted(() => ({
 
 describe('HostTelemetrySink', () => {
   beforeEach(() => {
-    state.capture.mockClear()
     window.__comfyDesktop2 = {
       isRemote: () => false,
       Telemetry: {
@@ -200,6 +199,23 @@ describe('HostTelemetrySink', () => {
         outcome: 'failure',
         billing_op_id: 'op-2',
         failure_category: 'provider_decline'
+      }
+    )
+  })
+
+  it('forwards link dedup drops to the host bridge', () => {
+    new HostTelemetrySink().trackLinkDedupDrop({
+      droppedLinkId: 7,
+      survivorLinkId: 3,
+      target: '12:0'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.LINK_DEDUP_DROP,
+      {
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
       }
     )
   })

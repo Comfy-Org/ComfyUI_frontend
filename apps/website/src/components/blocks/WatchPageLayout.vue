@@ -53,7 +53,7 @@ useResizeObserver(descriptionEl, updateClamped)
   <section :class="cn('max-w-9xl mx-auto px-6 pt-8 pb-16 lg:pb-24', className)">
     <nav v-if="breadcrumbs.length" :aria-label="breadcrumbsLabel" class="mb-6">
       <ol
-        class="text-primary-warm-gray flex flex-wrap items-center gap-2 text-sm font-light"
+        class="flex flex-wrap items-center gap-2 text-sm font-light text-primary-warm-gray"
       >
         <li
           v-for="(crumb, index) in breadcrumbs"
@@ -103,7 +103,7 @@ useResizeObserver(descriptionEl, updateClamped)
             ref="descriptionEl"
             :class="
               cn(
-                'text-primary-warm-gray text-lg/relaxed font-light',
+                'text-lg/relaxed font-light text-primary-warm-gray',
                 !expanded && 'line-clamp-4'
               )
             "
@@ -115,7 +115,7 @@ useResizeObserver(descriptionEl, updateClamped)
             type="button"
             :aria-expanded="expanded"
             :aria-controls="descriptionId"
-            class="text-primary-warm-white mt-2 cursor-pointer text-lg font-light hover:underline"
+            class="mt-2 cursor-pointer text-lg font-light text-primary-warm-white hover:underline"
             @click="expanded = !expanded"
           >
             {{ expanded ? (readLessLabel ?? readMoreLabel) : readMoreLabel }}

@@ -1,14 +1,16 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
+import ModelLaunchAudioGallerySection from './ModelLaunchAudioGallerySection.vue'
 import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
 import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
+import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
 import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
-import type { ModelLaunchPage } from './types'
+import { DEFAULT_SECTION_ORDER, type ModelLaunchPage } from './types'
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import { faqAnswerPlainText } from '../../utils/faqAnswer'
@@ -46,11 +48,13 @@ const faqPage = page.faq
   ? faqPageNode(
       url,
       page.faq.items.map((item) => ({
-        question: item.question[locale],
-        answer: faqAnswerPlainText(item.answer[locale]),
+        question: item.question[locale] || item.question.en,
+        answer: faqAnswerPlainText(item.answer[locale] || item.answer.en),
       })),
     )
   : undefined
+
+const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
 ---
 
 <BaseLayout
@@ -66,32 +70,62 @@ const faqPage = page.faq
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {
-    page.gallery && (
-      <ModelLaunchGallerySection
-        client:visible
-        gallery={page.gallery}
-        locale={locale}
-      />
-    )
-  }
-  {
-    page.pricing && (
-      <ModelLaunchPricingSection
-        client:load
-        pricing={page.pricing}
-        locale={locale}
-      />
-    )
-  }
-  {
-    page.faq && (
-      <ModelLaunchFaqSection client:visible faq={page.faq} locale={locale} />
-    )
-  }
-  {
-    page.closingCta && (
-      <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
-    )
+    sectionOrder.map((section) => {
+      switch (section) {
+        case 'gallery':
+          return (
+            page.gallery && (
+              <ModelLaunchGallerySection
+                client:visible
+                gallery={page.gallery}
+                locale={locale}
+              />
+            )
+          )
+        case 'audioGallery':
+          return (
+            page.audioGallery && (
+              <ModelLaunchAudioGallerySection
+                client:visible
+                audioGallery={page.audioGallery}
+                locale={locale}
+              />
+            )
+          )
+        case 'steps':
+          return (
+            page.steps && (
+              <ModelLaunchStepsSection steps={page.steps} locale={locale} />
+            )
+          )
+        case 'pricing':
+          return (
+            page.pricing && (
+              <ModelLaunchPricingSection
+                client:load
+                pricing={page.pricing}
+                locale={locale}
+              />
+            )
+          )
+        case 'faq':
+          return (
+            page.faq && (
+              <ModelLaunchFaqSection
+                client:visible
+                faq={page.faq}
+                locale={locale}
+              />
+            )
+          )
+        case 'closingCta':
+          return (
+            page.closingCta && (
+              <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
+            )
+          )
+      }
+    })
   }
   <ModelLaunchRunOptionsSection runOptions={page.runOptions} locale={locale} />
   <ModelLaunchReviewsSection

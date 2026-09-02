@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@/types/nodeId'
@@ -24,14 +22,22 @@ describe('useWidgetValueStore', () => {
   const seedA = widgetId(graphA, toNodeId('node-1'), 'seed')
   const seedB = widgetId(graphB, toNodeId('node-1'), 'seed')
 
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('widgetState.value access', () => {
     it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
       expect(store.getWidget(seedA)).toBeUndefined()
+    })
+
+    it('does not create state while reading missing widgets', () => {
+      const store = useWidgetValueStore()
+      const onMutation = vi.fn()
+      store.$subscribe(onMutation, { flush: 'sync' })
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+
+      expect(onMutation).not.toHaveBeenCalled()
     })
 
     it('widgetState.value can be read and written directly', () => {
@@ -102,14 +108,24 @@ describe('useWidgetValueStore', () => {
       expect(registered.y).toBe(42)
     })
 
-    it('registerWidget is idempotent and does not overwrite existing state', () => {
+    it('refreshes metadata without overwriting the current value', () => {
       const store = useWidgetValueStore()
       const first = store.registerWidget(seedA, state('number', 11))!
       first.value = 99
 
-      const second = store.registerWidget(seedA, state('number', 11))!
+      const second = store.registerWidget(
+        seedA,
+        state('number', 11, {
+          label: 'Updated seed',
+          options: { min: 4 },
+          disabled: true
+        })
+      )!
       expect(second).toBe(first)
       expect(second.value).toBe(99)
+      expect(second.label).toBe('Updated seed')
+      expect(second.options).toEqual({ min: 4 })
+      expect(second.disabled).toBe(true)
     })
 
     it('replaces a stale entry when the widget type changes', () => {
@@ -125,6 +141,30 @@ describe('useWidgetValueStore', () => {
       expect(reconciled.type).toBe('string')
       expect(reconciled.value).toBe('hello')
       expect(store.getWidget(seedA)?.type).toBe('string')
+    })
+
+    it('does not accept caller-owned identity during re-registration', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5))
+      const stale = state('number', 10, { name: 'wrong' })
+      Object.assign(stale, { nodeId: toNodeId('wrong') })
+
+      const registered = store.registerWidget(seedA, stale)!
+
+      expect(registered.nodeId).toBe(toNodeId('node-1'))
+      expect(registered.name).toBe('wrong')
+    })
+
+    it('clears omitted render state when a widget id is recycled', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5), {
+        advanced: true,
+        tooltip: 'old'
+      })
+
+      store.registerWidget(seedA, state('string', 'new'))
+
+      expect(store.getWidgetRenderState(seedA)).toEqual({})
     })
 
     it('registers a widget with all properties', () => {
@@ -157,7 +197,7 @@ describe('useWidgetValueStore', () => {
       expect(registered?.value).toBe(100)
     })
 
-    it('getNodeWidgets returns all widgets for a node', () => {
+    it('getNodeWidgets returns widgets in registration order', () => {
       const store = useWidgetValueStore()
       store.registerWidget(
         widgetId(graphA, toNodeId('node-1'), 'seed'),
@@ -173,8 +213,112 @@ describe('useWidgetValueStore', () => {
       )
 
       const widgets = store.getNodeWidgets(graphA, toNodeId('node-1'))
-      expect(widgets).toHaveLength(2)
-      expect(widgets.map((w) => w.name).sort()).toEqual(['seed', 'steps'])
+      expect(widgets.map((w) => w.name)).toEqual(['seed', 'steps'])
+    })
+
+    it('getNodeWidgetIds returns the explicit node widget order', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      const cfg = widgetId(graphA, toNodeId('node-1'), 'cfg')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.registerWidget(cfg, state('number', 7))
+
+      store.setNodeWidgetOrder(graphA, toNodeId('node-1'), [cfg, seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        cfg,
+        seed,
+        steps
+      ])
+      expect(
+        store.getNodeWidgets(graphA, toNodeId('node-1')).map((w) => w.name)
+      ).toEqual(['cfg', 'seed', 'steps'])
+    })
+
+    it('ignores widget IDs from other nodes when setting order', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const other = widgetId(graphA, toNodeId('node-2'), 'cfg')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(other, state('number', 7))
+
+      store.setNodeWidgetOrder(graphA, toNodeId('node-1'), [other, seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
+    })
+
+    it('replaces order using retained widget state', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.removeNodeWidgetOrder(seed)
+
+      store.replaceNodeWidgetOrder(graphA, toNodeId('node-1'), [seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
+      expect(store.getWidget(steps)?.value).toBe(20)
+    })
+  })
+
+  describe('widget rename', () => {
+    it('rejects an occupied destination without changing either widget', () => {
+      const store = useWidgetValueStore()
+      const nodeId = toNodeId('node-1')
+      const steps = widgetId(graphA, nodeId, 'steps')
+      const seedState = store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
+      const stepsState = store.registerWidget(steps, state('number', 20), {
+        tooltip: 'steps'
+      })
+      const seedRenderState = store.getWidgetRenderState(seedA)
+      const stepsRenderState = store.getWidgetRenderState(steps)
+
+      expect(store.renameWidget(seedA, steps)).toBeUndefined()
+      expect(store.getWidget(seedA)).toBe(seedState)
+      expect(store.getWidget(steps)).toBe(stepsState)
+      expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
+      expect(store.getWidgetRenderState(steps)).toBe(stepsRenderState)
+      expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA, steps])
+    })
+
+    it.for([
+      {
+        name: 'an invalid destination',
+        oldId: seedA,
+        newId: widgetId('', toNodeId('node-1'), 'renamed')
+      },
+      {
+        name: 'a destination in another graph',
+        oldId: seedA,
+        newId: widgetId(graphB, toNodeId('node-1'), 'renamed')
+      },
+      {
+        name: 'a destination on another node',
+        oldId: seedA,
+        newId: widgetId(graphA, toNodeId('node-2'), 'renamed')
+      },
+      {
+        name: 'a missing source',
+        oldId: widgetId(graphA, toNodeId('node-1'), 'missing'),
+        newId: widgetId(graphA, toNodeId('node-1'), 'renamed')
+      }
+    ])('leaves sibling state unchanged for $name', ({ oldId, newId }) => {
+      const store = useWidgetValueStore()
+      const nodeId = toNodeId('node-1')
+      const seedState = store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
+      const seedRenderState = store.getWidgetRenderState(seedA)
+
+      expect(store.renameWidget(oldId, newId)).toBeUndefined()
+      expect(store.getWidget(seedA)).toBe(seedState)
+      expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
+      expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA])
     })
   })
 
@@ -190,13 +334,50 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
-    it('deleteWidget removes registered widgets', () => {
+    it('updateOptions preserves existing options and reports missing widgets', () => {
       const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { min: 0, max: 10 } })
+      )
+
+      expect(store.updateOptions(seedA, { advanced: true })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({
+        min: 0,
+        max: 10,
+        advanced: true
+      })
+      expect(
+        store.updateOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
+    it('deleteWidget removes registered widgets from node order', () => {
+      const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
       store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
 
       expect(store.deleteWidget(seedA)).toBe(true)
       expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
       expect(store.deleteWidget(seedA)).toBe(false)
+    })
+
+    it('removeNodeWidgetOrder drops the id from order but keeps its value', () => {
+      const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
+
+      store.removeNodeWidgetOrder(seedA)
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
+      expect(store.getWidget(seedA)?.value).toBe(100)
     })
   })
 
@@ -241,6 +422,20 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
     })
+
+    it('clearNode removes only the target node values, render state, and order', () => {
+      const store = useWidgetValueStore()
+      const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
+      store.registerWidget(seedA, state('number', 1), { advanced: true })
+      store.registerWidget(sibling, state('number', 2))
+
+      store.clearNode(graphA, toNodeId('node-1'))
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+      expect(store.getWidget(sibling)?.value).toBe(2)
+    })
   })
 
   describe('un-keyable widget ids', () => {
@@ -266,10 +461,11 @@ describe('useWidgetValueStore', () => {
       }
     })
 
-    it('getWidget / setValue / deleteWidget tolerate un-keyable ids', () => {
+    it('read, update, and delete operations tolerate un-keyable ids', () => {
       const store = useWidgetValueStore()
       for (const id of malformedIds) {
         expect(store.getWidget(id)).toBeUndefined()
+        expect(store.getWidgetRenderState(id)).toBeUndefined()
         expect(store.setValue(id, 1)).toBe(false)
         expect(store.deleteWidget(id)).toBe(false)
       }

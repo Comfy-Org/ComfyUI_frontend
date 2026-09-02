@@ -18,6 +18,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -196,8 +197,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-    localStorage.clear()
     mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
   })
@@ -259,6 +258,26 @@ describe('TopMenuSection', () => {
     createWrapper()
 
     expect(screen.queryByTestId('active-jobs-indicator')).toBeNull()
+  })
+
+  it('keeps action bars mounted while hiding the error overlay in node selection mode', () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+
+    createWrapper({
+      pinia,
+      stubs: {
+        ErrorOverlay: {
+          template: '<div data-testid="error-overlay" />'
+        }
+      }
+    })
+
+    expect(screen.getByTestId('top-menu-actionbars')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.queryByTestId('error-overlay')).toBeNull()
   })
 
   it('tracks right side panel opens', async () => {

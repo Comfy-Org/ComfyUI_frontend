@@ -22,6 +22,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     name: 'sd_xl_base_1.0.safetensors',
     size: 1024,
     created_at: '2025-10-01T00:00:00Z',
+    updated_at: '2025-10-01T00:00:00Z',
     tags: ['models', 'checkpoints'],
     user_metadata: { filename: 'sd_xl_base_1.0.safetensors' },
     ...overrides
@@ -30,7 +31,6 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 describe('startModelNodeDragFromAsset', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 

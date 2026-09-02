@@ -7,8 +7,10 @@ on:
   issue_comment:
     types: [created]
 
+# github.ref is the default branch for issue_comment events. Both triggers use
+# the PR number because they push snapshots to the same branch.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,6 +30,7 @@ jobs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
+      container-image: ${{ steps.container-image.outputs.image }}
     steps:
       - name: Get PR info
         id: pr-info
@@ -56,9 +59,58 @@ jobs:
           reactions: eyes
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
+
+      # issue_comment loads this workflow from the default branch. Resolve the
+      # image from the checked-out PR so regenerated snapshots match its CI.
+      - name: Resolve CI container image from PR branch
+        id: container-image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          e2e_workflow='.github/workflows/ci-tests-e2e.yaml'
+          if [ ! -f "$e2e_workflow" ]; then
+            echo "::error::${e2e_workflow} not found on this PR branch; cannot resolve the CI container image"
+            exit 1
+          fi
+
+          # Require every E2E container to use the same static image.
+          mapfile -t images < <(
+            grep -oE "^[[:space:]]*image:[[:space:]]*['\"]?ghcr\.io/comfy-org/comfyui-ci-container:[A-Za-z0-9._-]+" "$e2e_workflow" |
+              grep -oE 'ghcr\.io/comfy-org/comfyui-ci-container:[A-Za-z0-9._-]+' |
+              sort -u
+          )
+          if [ "${#images[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one comfyui-ci-container image across the container jobs in ${e2e_workflow}, found ${#images[@]}: ${images[*]:-none}"
+            exit 1
+          fi
+
+          echo "Regenerating snapshots with ${images[0]} (resolved from the PR branch)"
+          echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
+
+      # Other workflow changes still come from the default branch on this path.
+      - name: Warn when this workflow differs from the default branch
+        if: github.event_name == 'issue_comment'
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
+
+          if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
+            echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
+            exit 0
+          fi
+
+          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
+            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
+          fi
+
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -81,7 +133,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      image: ${{ needs.setup.outputs.container-image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -94,11 +146,11 @@ jobs:
         shard: [1, 2, 3, 4, cloud]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.setup.outputs.branch }}
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.shard == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
@@ -109,10 +161,12 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # Run tests with snapshot updates (browsers pre-installed in container)
+      # Snapshot rewrites fail the test command, so validate its JSON report.
       - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: /tmp/playwright-results.json
+        run: pnpm exec playwright test --update-snapshots --reporter=json,html --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
       - name: Stage changed snapshot files
@@ -150,6 +204,63 @@ jobs:
             cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
           done <<< "$changed_files"
 
+      # Reject test failures that produced no rewritten snapshots.
+      - name: Verify shard did the work it claims
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+          HAS_CHANGES: ${{ steps.changed-snapshots.outputs.has-changes }}
+        run: |
+          set -uo pipefail
+
+          results='/tmp/playwright-results.json'
+
+          # Playwright still writes a report when zero tests match.
+          if [ ! -f "$results" ]; then
+            echo "::error::Shard ${SHARD}: Playwright wrote no JSON report, so it never completed a run. Refusing to report success."
+            exit 1
+          fi
+
+          # Node is available in the CI container; jq may not be.
+          if ! summary=$(node -e '
+            const fs = require("fs");
+            const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const s = r.stats;
+            if (!s) throw new Error("no stats in report");
+            const n = (v) => (typeof v === "number" ? v : 0);
+            const notPassing = n(s.unexpected) + n(s.flaky);
+            const ran = n(s.expected) + notPassing;
+            const errs = Array.isArray(r.errors) ? r.errors.length : 0;
+            console.log(ran + " " + notPassing + " " + errs);
+            console.log(JSON.stringify(s));
+          ' "$results" 2>&1); then
+            echo "::error::Shard ${SHARD}: Playwright JSON report is unreadable or has no stats. Refusing to report success."
+            echo "$summary"
+            exit 1
+          fi
+
+          read -r ran not_passing error_count <<< "$(printf '%s\n' "$summary" | head -1)"
+          echo "Shard ${SHARD} stats: $(printf '%s\n' "$summary" | tail -1)"
+
+          # An empty grep result is valid despite Playwright's non-zero exit.
+          if [ "$ran" -eq 0 ]; then
+            echo "::notice::Shard ${SHARD}: no tests matched this shard's filters; nothing to regenerate."
+            exit 0
+          fi
+
+          if [ "$error_count" -gt 0 ]; then
+            echo "::error::Shard ${SHARD}: Playwright reported ${error_count} top-level error(s); the regenerated baselines may be incomplete."
+            exit 1
+          fi
+
+          # Snapshot rewrites appear as unexpected or flaky tests.
+          if [ "$not_passing" -gt 0 ] && [ "${HAS_CHANGES:-false}" != 'true' ]; then
+            echo "::error::Shard ${SHARD}: ${not_passing} test(s) did not pass yet no snapshot was rewritten. That is a broken run, not an absence of drift. Refusing to report success."
+            exit 1
+          fi
+
+          echo "Shard ${SHARD}: ${ran} test(s) ran, ${not_passing} not passing, snapshot changes=${HAS_CHANGES:-false}"
+
       # Upload ONLY the changed files from this shard
       - name: Upload changed snapshots
         uses: actions/upload-artifact@v6
@@ -173,14 +284,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
       # Download all changed snapshot files from shards
       - name: Download snapshot artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: snapshots-shard-*
           path: ./downloaded-snapshots
@@ -270,8 +381,86 @@ jobs:
             echo "$CHANGES" | wc -l
           fi
 
+      # Flag small rewrites that are likely text-rasterization noise rather than
+      # intentional visual changes.
+      - name: Report snapshot diff magnitudes
+        id: diff-report
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          report='/tmp/diff-report.md'
+          : > "$report"
+
+          mapfile -t changed < <(
+            git status --porcelain=v1 --untracked-files=all -- browser_tests/ |
+              sed -e 's/^...//' -e 's/^"//' -e 's/"$//'
+          )
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "No snapshot changes to measure"
+            exit 0
+          fi
+
+          if command -v compare >/dev/null 2>&1; then
+            echo "Measuring ${#changed[@]} rewritten snapshot(s) with ImageMagick"
+          else
+            echo "::warning::ImageMagick 'compare' unavailable; falling back to byte sizes, which cannot distinguish a real visual change from rasterization noise."
+          fi
+
+          small=0
+          {
+            echo "| snapshot | status | changed pixels |"
+            echo "| --- | --- | --- |"
+          } >> "$report"
+
+          tmp_old="$(mktemp)"
+          for f in "${changed[@]}"; do
+            [ -f "$f" ] || continue
+            name="${f#browser_tests/}"
+
+            if ! git show "HEAD:$f" > "$tmp_old" 2>/dev/null; then
+              echo "| \`${name}\` | new | n/a |" >> "$report"
+              continue
+            fi
+
+            px=''
+            if command -v compare >/dev/null 2>&1; then
+              px=$(compare -metric AE "$tmp_old" "$f" null: 2>&1 >/dev/null)
+              # Non-numeric means differing geometry or a decode failure.
+              case "$px" in
+                ''|*[!0-9]*) px='' ;;
+              esac
+            fi
+
+            if [ -n "$px" ]; then
+              echo "| \`${name}\` | modified | ${px} |" >> "$report"
+              # The threshold is advisory because small changes can be valid.
+              if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
+                small=$((small + 1))
+              fi
+            else
+              old_b=$(wc -c < "$tmp_old" | tr -d ' ')
+              new_b=$(wc -c < "$f" | tr -d ' ')
+              echo "| \`${name}\` | modified | ${old_b}B -> ${new_b}B |" >> "$report"
+            fi
+          done
+          rm -f "$tmp_old"
+
+          if [ "$small" -gt 0 ]; then
+            echo "::warning::${small} rewritten baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each rewrite corresponds to a test you expected to change before merging."
+          fi
+
+          cat "$report"
+          {
+            echo "### Rewritten snapshots (${#changed[@]})"
+            echo
+            cat "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit updated expectations
         id: commit
+        env:
+          TARGET_BRANCH: ${{ needs.setup.outputs.branch }}
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
@@ -289,10 +478,24 @@ jobs:
           echo "has-changes=true" >> $GITHUB_OUTPUT
 
           git add browser_tests/
-          git commit -m "[automated] Update test expectations"
 
-          echo "Pushing to ${{ needs.setup.outputs.branch }}..."
-          git push origin ${{ needs.setup.outputs.branch }}
+          # Use cat so backticks and file names remain literal.
+          {
+            echo '[automated] Update test expectations'
+            if [ -s /tmp/diff-report.md ]; then
+              echo
+              cat /tmp/diff-report.md
+              echo
+              echo 'Screenshot capture is not bit-deterministic; small pixel'
+              echo 'deltas are usually text rasterization noise. Confirm each'
+              echo 'rewrite corresponds to a test expected to change.'
+            fi
+          } > /tmp/commit-msg.txt
+
+          git commit -F /tmp/commit-msg.txt
+
+          echo "Pushing to $TARGET_BRANCH..."
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
 
           echo "✓ Commit and push successful"
 

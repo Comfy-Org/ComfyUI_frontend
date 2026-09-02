@@ -1,4 +1,8 @@
 import type { Page } from '@playwright/test'
+import type {
+  BillingCapabilitiesResponse,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
@@ -13,13 +17,6 @@ import { mockWorkspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 export const APP_URL =
   process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
-
-// consolidated_billing_enabled routes personal workspaces to the unified
-// billing surfaces the cloud specs assert; without it they fall back to the
-// legacy variants.
-const DEFAULT_FEATURES = {
-  consolidated_billing_enabled: true
-} satisfies RemoteConfig
 
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
@@ -51,6 +48,11 @@ interface CloudAppSetupOptions {
   members?: Member[]
   /** Merged over the default boot features. */
   features?: RemoteConfig
+  billingStatus?: BillingStatusResponse
+  billingCapabilities?:
+    | BillingCapabilitiesResponse
+    | Promise<BillingCapabilitiesResponse>
+  billingCapabilitiesStatus?: number
 }
 
 /**
@@ -60,14 +62,26 @@ interface CloudAppSetupOptions {
  */
 export async function setupCloudApp(
   page: Page,
-  { workspace, members = [], features }: CloudAppSetupOptions
+  {
+    workspace,
+    members = [],
+    features,
+    billingStatus,
+    billingCapabilities,
+    billingCapabilitiesStatus
+  }: CloudAppSetupOptions
 ) {
   await mockCloudBoot(page, {
-    features: { ...DEFAULT_FEATURES, ...features },
+    features: features ?? {},
     settings: DEFAULT_SETTINGS
   })
   await mockGraphBootExtras(page)
-  await mockBilling(page)
+  await mockBilling(page, {
+    workspaceId: workspace.id,
+    billingStatus,
+    billingCapabilities,
+    billingCapabilitiesStatus
+  })
   await mockWorkspace(page, workspace, members)
   await bootCloud(page)
 }

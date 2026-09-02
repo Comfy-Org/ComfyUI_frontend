@@ -8,6 +8,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -88,13 +89,7 @@ function installNodeHooks(node: LGraphNode): void {
       if (isConnected) {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
-      // Linking hands value ownership to the upstream node and unlinking hands
-      // it back, so the media error surface follows the same way it follows
-      // promotion.
       queueMicrotask(() => {
-        // LGraphNode.configure fires this for every input slot while a
-        // workflow loads, so a load would prune candidates against a graph
-        // that is still being wired.
         if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
@@ -184,11 +179,10 @@ function scanNodeErrorTargets(
 function getActiveExecutionId(node: LGraphNode): string | null {
   if (!app.rootGraph) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
-  // verify each node's own mode; entering a bypassed subgraph (via
-  // useGraphNodeManager replaying onNodeAdded for existing interior
-  // nodes) reaches this point without the ancestor check. A null
-  // execId means the node has no current graph (e.g. detached mid
-  // lifecycle) — also skip, since we cannot verify its scope.
+  // verify each node's own mode, so an active node added inside a
+  // bypassed subgraph reaches this point without the ancestor check.
+  // A null execId means the node has no current graph (e.g. detached
+  // mid lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
   if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId
@@ -205,7 +199,11 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   scanSingleNodeMedia(node)
 }
 
-function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
+function scanSingleNodeModelsAndTypes(
+  node: LGraphNode,
+  pendingVerifications?: Promise<void>[],
+  signal?: AbortSignal
+): void {
   if (!app.rootGraph) return
   const execId = getActiveExecutionId(node)
   if (!execId) return
@@ -228,7 +226,9 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   // add/un-bypass paths would silently drop those candidates.
   const pendingModels = modelCandidates.filter((c) => c.isMissing === undefined)
   if (pendingModels.length) {
-    void verifyAndAddPendingModels(pendingModels)
+    const verification = verifyAndAddPendingModels(pendingModels, signal)
+    if (pendingVerifications) pendingVerifications.push(verification)
+    else void verification
   }
 
   if (node.isSubgraphNode?.()) return
@@ -252,7 +252,11 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   }
 }
 
-function scanSingleNodeMedia(node: LGraphNode): void {
+function scanSingleNodeMedia(
+  node: LGraphNode,
+  pendingVerifications?: Promise<void>[],
+  signal?: AbortSignal
+): void {
   if (!app.rootGraph) return
   if (!getActiveExecutionId(node)) return
 
@@ -265,7 +269,9 @@ function scanSingleNodeMedia(node: LGraphNode): void {
   // return pending for generated output media.
   const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
   if (pendingMedia.length) {
-    void verifyAndAddPendingMedia(pendingMedia)
+    const verification = verifyAndAddPendingMedia(pendingMedia, signal)
+    if (pendingVerifications) pendingVerifications.push(verification)
+    else void verification
   }
 }
 
@@ -275,24 +281,64 @@ function scanSingleNodeMedia(node: LGraphNode): void {
  * have been bypassed, deleted, or belong to a workflow that is no
  * longer current — any of which would reintroduce stale errors.
  */
-function isModelCandidateStillActive(
+function isModelCandidateStillMissingAndActive(
   candidate: MissingModelCandidate
 ): boolean {
-  return isMissingCandidateActive(app.rootGraph, candidate)
+  const rootGraph = app.rootGraph
+  if (!isMissingCandidateActive(rootGraph, candidate)) return false
+  if (!rootGraph || candidate.nodeId == null) return true
+
+  const node = getNodeByExecutionId(rootGraph, String(candidate.nodeId))
+  const widget = node?.widgets?.find(
+    (candidateWidget) => candidateWidget.name === candidate.widgetName
+  )
+  if (!node || !widget || widget.value !== candidate.name) return false
+  if (node.getSlotFromWidget(widget)?.link != null) return false
+  if (!node.isSubgraphNode?.()) return true
+
+  return (
+    resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceExecutionId ===
+    candidate.sourceExecutionId
+  )
+}
+
+function hasSameNodeOwner(
+  rootGraph: LGraph,
+  candidate: { nodeId?: string | number | null },
+  ownerAtScan: LGraphNode | null | undefined
+): boolean {
+  return (
+    candidate.nodeId == null ||
+    ownerAtScan === getNodeByExecutionId(rootGraph, String(candidate.nodeId))
+  )
 }
 
 async function verifyAndAddPendingModels(
-  pending: MissingModelCandidate[]
+  pending: MissingModelCandidate[],
+  signal?: AbortSignal
 ): Promise<void> {
   // Capture rootGraph at scan time so a late verification for workflow
   // A cannot leak into workflow B after a switch — execution IDs (esp.
   // root-level like "1") collide across workflows.
   const rootGraphAtScan = app.rootGraph
+  const ownersAtScan = new Map(
+    pending.map((candidate) => [
+      candidate,
+      candidate.nodeId == null || !rootGraphAtScan
+        ? null
+        : getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))
+    ])
+  )
   try {
-    await verifyAssetSupportedCandidates(pending)
-    if (app.rootGraph !== rootGraphAtScan) return
+    await verifyAssetSupportedCandidates(pending, signal)
+    if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isModelCandidateStillActive(c)
+      (candidate) =>
+        hasSameNodeOwner(
+          rootGraphAtScan,
+          candidate,
+          ownersAtScan.get(candidate)
+        ) && isModelCandidateStillMissingAndActive(candidate)
     )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
@@ -301,14 +347,28 @@ async function verifyAndAddPendingModels(
 }
 
 async function verifyAndAddPendingMedia(
-  pending: MissingMediaCandidate[]
+  pending: MissingMediaCandidate[],
+  signal?: AbortSignal
 ): Promise<void> {
   const rootGraphAtScan = app.rootGraph
+  const ownersAtScan = new Map(
+    pending.map((candidate) => [
+      candidate,
+      rootGraphAtScan
+        ? getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))
+        : null
+    ])
+  )
   try {
-    await verifyMediaCandidates(pending, { isCloud })
-    if (app.rootGraph !== rootGraphAtScan) return
-    const verified = pending.filter((candidate) =>
-      isMissingMediaCandidateActive(rootGraphAtScan, candidate)
+    await verifyMediaCandidates(pending, { isCloud, signal })
+    if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
+    const verified = pending.filter(
+      (candidate) =>
+        hasSameNodeOwner(
+          rootGraphAtScan,
+          candidate,
+          ownersAtScan.get(candidate)
+        ) && isMissingMediaCandidateActive(rootGraphAtScan, candidate)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -317,22 +377,86 @@ async function verifyAndAddPendingMedia(
 }
 
 function scanAddedNode(
+  rootGraph: LGraph,
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (app.rootGraph !== rootGraph || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
 }
 
-function scheduleAddedNodeScan(node: LGraphNode): void {
-  queueMicrotask(() => {
-    scanAddedNode(node, scanSingleNodeModelsAndTypes)
-    // Paste/drop upload handlers run immediately after graph.add and must set
-    // node.isUploading synchronously before their first await. This second
-    // microtask lets that upload state settle before media widgets are scanned.
-    queueMicrotask(() => scanAddedNode(node, scanSingleNodeMedia))
-  })
+async function runAddedNodeScan(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  signal: AbortSignal
+): Promise<void> {
+  const pendingVerifications: Promise<void>[] = []
+
+  try {
+    await Promise.resolve()
+    if (signal.aborted || app.rootGraph !== rootGraph) return
+    scanAddedNode(rootGraph, node, (target) =>
+      scanSingleNodeModelsAndTypes(target, pendingVerifications, signal)
+    )
+
+    // Paste/drop handlers need another microtask to mark upload state before
+    // media detection reads the widget value.
+    await Promise.resolve()
+    if (signal.aborted || app.rootGraph !== rootGraph) return
+    scanAddedNode(rootGraph, node, (target) =>
+      scanSingleNodeMedia(target, pendingVerifications, signal)
+    )
+  } finally {
+    await Promise.allSettled(pendingVerifications)
+  }
+}
+
+interface PendingScanControl {
+  cancel: () => void
+  finish: () => void
+}
+
+function scheduleAddedNodeScan(
+  node: LGraphNode,
+  pendingScans: Map<LGraphNode, Set<PendingScanControl>>
+): void {
+  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (isNodeInactive(node.mode)) return
+
+  const rootGraph = app.rootGraph
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return
+
+  const finishPendingScan = useExecutionErrorStore().beginAddedNodeErrorScan(
+    rootGraph,
+    executionId
+  )
+  const abortController = new AbortController()
+  const existingScans = pendingScans.get(node)
+  const scansForNode = existingScans ?? new Set<PendingScanControl>()
+  if (!existingScans) {
+    pendingScans.set(node, scansForNode)
+  }
+
+  function finish() {
+    finishPendingScan()
+    scansForNode.delete(control)
+    if (scansForNode.size === 0) pendingScans.delete(node)
+  }
+
+  function cancel() {
+    abortController.abort()
+    finish()
+  }
+
+  const control = { cancel, finish }
+  scansForNode.add(control)
+  void runAddedNodeScan(rootGraph, node, abortController.signal)
+    .catch((error: unknown) => {
+      console.warn('[useErrorClearingHooks] added-node scan failed:', error)
+    })
+    .finally(finish)
 }
 
 function handleNodeModeChange(
@@ -358,15 +482,13 @@ function handleNodeModeChange(
 
   if (isNowInactive) {
     removeNodeErrors(node, execId)
+    dropOutOfScopeMissingMedia()
   } else {
     scanAndAddNodeErrors(node)
     scanAncestorSubgraphHosts(execId)
-    if (
-      useMissingModelStore().hasMissingModels ||
-      useMissingMediaStore().hasMissingMedia ||
-      useMissingNodesErrorStore().hasMissingNodes
-    ) {
-      useExecutionErrorStore().showErrorOverlay()
+    const executionErrorStore = useExecutionErrorStore()
+    if (executionErrorStore.hasMissingError) {
+      executionErrorStore.showErrorOverlay()
     }
   }
 }
@@ -401,13 +523,10 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     mediaStore.removeMissingMediaByPrefix(prefix)
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
-
-  dropOutOfScopeMissingMedia()
 }
 
+/** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
-  // No root graph means every candidate reads out of scope, which would empty
-  // the store rather than no-op.
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
 
   const mediaStore = useMissingMediaStore()
@@ -421,8 +540,26 @@ function dropOutOfScopeMissingMedia(): void {
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
+  const pendingScans = new Map<LGraphNode, Set<PendingScanControl>>()
+  let disposed = false
+  let pendingOutOfScopeDrop = false
+
+  /**
+   * Coalesces `dropOutOfScopeMissingMedia` across a burst of removals, which
+   * would otherwise re-walk every candidate's topology once per removed node.
+   */
+  const scheduleDropOutOfScopeMissingMedia = (): void => {
+    if (pendingOutOfScopeDrop) return
+    pendingOutOfScopeDrop = true
+    queueMicrotask(() => {
+      pendingOutOfScopeDrop = false
+      if (disposed) return
+      dropOutOfScopeMissingMedia()
+    })
+  }
+
   const promotionErrors = createPromotionErrorReconciler({
-    pruneOutOfScope: dropOutOfScopeMissingMedia,
+    dropOutOfScope: dropOutOfScopeMissingMedia,
     rescanHost: (subgraphNode) =>
       scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
     removeHostWidgetCandidate: (subgraphNode, widgetName) => {
@@ -439,42 +576,39 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     promotionErrors.attachNode(node)
   }
 
-  const originalOnNodeAdded = graph.onNodeAdded
-  graph.onNodeAdded = function (node: LGraphNode) {
+  const onNodeAdded = ({ detail: { node } }: NodeLifecycleEvent) => {
+    if (disposed) return
     installNodeHooksRecursive(node)
     promotionErrors.attachNode(node)
-
-    // Scan pasted/duplicated nodes for missing models/media.
-    // Skip during loadGraphData (undo/redo/tab switch) — those are
-    // handled by the full pipeline or cache restore.
-    // Model and node scans use the original one-microtask deferral so pasted
-    // missing-model errors appear before selection-scoped tabs recalculate.
-    // Media gets one extra microtask so drag/drop upload handlers can mark
-    // transient upload state before media detection reads the widget value.
-    if (!ChangeTracker.isLoadingGraph) {
-      scheduleAddedNodeScan(node)
-    }
-
-    originalOnNodeAdded?.call(this, node)
+    scheduleAddedNodeScan(node, pendingScans)
   }
 
-  const originalOnNodeRemoved = graph.onNodeRemoved
-  graph.onNodeRemoved = function (node: LGraphNode) {
-    // node.graph is already null by the time onNodeRemoved fires, so
-    // derive the execution ID from the graph the hook is installed on
-    // plus node.id. For subgraph interior nodes this yields the full
-    // "parentId:...:nodeId" path that matches how missing asset errors
-    // are keyed; without this, removal falls back to the local ID and
-    // misses subgraph entries.
+  // `node:before-removed` covers both single removals and graph.clear();
+  // `node:removed` fires only from LGraph.remove.
+  const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
+    if (disposed) return
+    for (const scan of pendingScans.get(node) ?? []) scan.cancel()
+    // Derive the execution ID from the graph the hook is installed on plus
+    // node.id. For subgraph interior nodes this yields the full
+    // "parentId:...:nodeId" path that matches how missing asset errors are
+    // keyed; without this, removal falls back to the local ID and misses
+    // subgraph entries.
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
+    scheduleDropOutOfScopeMissingMedia()
     restoreNodeHooksRecursive(node)
     promotionErrors.detachNode(node)
-    originalOnNodeRemoved?.call(this, node)
   }
+
+  graph.events.addEventListener('node:added', onNodeAdded)
+  graph.events.addEventListener('node:before-removed', onNodeRemoved)
 
   const originalOnTrigger = graph.onTrigger
   graph.onTrigger = (event: LGraphTriggerEvent) => {
+    if (disposed) {
+      originalOnTrigger?.(event)
+      return
+    }
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
         graph,
@@ -487,11 +621,16 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   }
 
   return () => {
+    if (disposed) return
+    disposed = true
+    for (const scans of pendingScans.values()) {
+      for (const scan of scans) scan.finish()
+    }
     for (const node of graph._nodes ?? []) {
       restoreNodeHooksRecursive(node)
     }
-    graph.onNodeAdded = originalOnNodeAdded || undefined
-    graph.onNodeRemoved = originalOnNodeRemoved || undefined
+    graph.events.removeEventListener('node:added', onNodeAdded)
+    graph.events.removeEventListener('node:before-removed', onNodeRemoved)
     graph.onTrigger = originalOnTrigger || undefined
     promotionErrors.dispose()
   }

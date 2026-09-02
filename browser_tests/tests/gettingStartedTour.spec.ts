@@ -8,15 +8,19 @@ import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/rol
 import type { PromptResponse } from '@comfyorg/ingest-types'
 
 import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { onboardingFixture } from '@e2e/fixtures/tourFixture'
+import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
+const test = mergeTests(comfyPageFixture, onboardingFixture)
 const wstest = mergeTests(test, webSocketFixture)
 
 const { firstRun } = enMessages.onboardingCoachmarks
@@ -43,10 +47,25 @@ const TOUR_FEATURE_FLAGS: RemoteConfig = {
   subscription_required: true
 }
 
-const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
+const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: true,
-  subscription_id: 'sub_first_run_tour',
-  renewal_date: '2099-01-01'
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  renewal_date: '2099-01-01',
+  has_funds: true
+}
+
+const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
+  is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
+  subscription_tier: 'FREE',
+  subscription_duration: 'MONTHLY',
+  has_funds: false
 }
 
 const NO_ASSETS: AssetResponse = {
@@ -104,6 +123,82 @@ async function firstPinnedTemplateOnScreen(
   return templateId!
 }
 
+const DRAG_BY = { x: 120, y: 80 }
+
+/** The node the spotlight is framing, by the id on its Vue element. */
+async function spotlitNodeId(page: Page, spotlight: Locator): Promise<string> {
+  let nodeId: string | null = null
+
+  await expect
+    .poll(
+      async () => {
+        const box = await spotlight.boundingBox()
+        if (!box) return null
+
+        nodeId = await page.evaluate(
+          ({ x, y }) =>
+            document
+              .elementsFromPoint(x, y)
+              .map((element) => element.closest('[data-node-id]'))
+              .find(Boolean)
+              ?.getAttribute('data-node-id') ?? null,
+          { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+        )
+        return nodeId
+      },
+      { message: 'the spotlight never framed a Vue node' }
+    )
+    .not.toBeNull()
+
+  return nodeId!
+}
+
+/** Waits until an element's position stops changing between frames. */
+async function settled(element: Locator) {
+  let previous: number | null = null
+
+  await expect
+    .poll(
+      async () => {
+        const box = await element.boundingBox()
+        const stable = box !== null && box.x === previous
+        previous = box?.x ?? null
+        return stable
+      },
+      { message: 'the node never stopped moving' }
+    )
+    .toBe(true)
+}
+
+/** Where the spotlight sits relative to the node it frames. */
+async function framing(node: Locator, spotlight: Locator) {
+  let seen: { node: Position; offset: Position } | null = null
+
+  await expect
+    .poll(
+      async () => {
+        const [nodeBox, spotlightBox] = await Promise.all([
+          node.boundingBox(),
+          spotlight.boundingBox()
+        ])
+        if (!nodeBox || !spotlightBox) return null
+
+        seen = {
+          node: { x: nodeBox.x, y: nodeBox.y },
+          offset: {
+            x: spotlightBox.x - nodeBox.x,
+            y: spotlightBox.y - nodeBox.y
+          }
+        }
+        return seen
+      },
+      { message: 'the node and its spotlight never both had layout' }
+    )
+    .not.toBeNull()
+
+  return seen!
+}
+
 /**
  * The walk the review asked for: a fresh user reaches Getting Started, picks a
  * template, and the tour guides them through to a result.
@@ -122,7 +217,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
     )
-    await page.route('**/customers/cloud-subscription-status', (route) =>
+    await page.route('**/api/billing/status', (route) =>
       route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
     )
     await page.route('**/api/assets**', (route) =>
@@ -139,6 +234,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   async function tourToRunStep(page: Page) {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     const spotlight = page.getByTestId('coach-spotlight')
+    const workflowTabs = page.getByTestId('topbar-workflow-tabs')
     const card = page.getByTestId('coach-card')
 
     await page.route('**/api/prompt', (route) =>
@@ -162,6 +258,23 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
     for (let step = 1; step < totalSteps; step++) {
       await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
+      await expect(card).toHaveAttribute('aria-busy', 'false')
+      await expect
+        .poll(
+          async () => {
+            const [spotlightBox, tabsBox] = await Promise.all([
+              spotlight.boundingBox(),
+              workflowTabs.boundingBox()
+            ])
+            return (
+              !!spotlightBox &&
+              !!tabsBox &&
+              spotlightBox.y >= tabsBox.y + tabsBox.height
+            )
+          },
+          { message: 'the workflow tabs must not cover the spotlight' }
+        )
+        .toBe(true)
       if (await runTitle.isVisible()) break
       await next.click()
     }
@@ -237,6 +350,9 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('without a subscription', () => {
     test.beforeEach(async ({ page }) => {
       await mockBilling(page)
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))
+      )
     })
 
     test('leaves the nudge until the upgrade dialog closes', async ({
@@ -298,6 +414,73 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       ).toBeHidden()
       await expect(page.getByTestId('coach-spotlight')).toBeVisible()
       await expect(page.getByTestId('coach-card')).toContainText('Step 1 of')
+    })
+
+    /**
+     * The tour holds a node's layout ref for the whole tour, while the node's
+     * own component holds the same ref only while it is mounted. Whatever
+     * unmounts the node -- here a renderer toggle -- must not leave the
+     * spotlight watching a ref the store has stopped notifying, or the
+     * highlight sits on empty canvas while the user drags the node it is
+     * meant to be pointing at.
+     */
+    test('keeps the spotlight on its node after the node remounts', async ({
+      comfyPage,
+      comfyMouse,
+      onboarding
+    }) => {
+      const { page } = comfyPage
+      await expect(onboarding.spotlight).toBeVisible()
+
+      const nodeId = await spotlitNodeId(page, onboarding.spotlight)
+      const node = new VueNodeFixture(comfyPage.vueNodes.getNodeLocator(nodeId))
+
+      // A pan moves every node, so a second node tells a drag from a pan.
+      const otherId = (
+        await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-node-id') ?? '')
+        )
+      ).find((id) => id && id !== nodeId)
+      expect(
+        otherId,
+        'a tour pins a source and a sink, so its graph has more than one node'
+      ).toBeDefined()
+      const other = comfyPage.vueNodes.getNodeLocator(otherId!)
+
+      // The node component unmounts and comes back; the tour never let go.
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
+      await expect(onboarding.spotlight).toBeVisible()
+      await settled(node.root)
+
+      const before = await framing(node.root, onboarding.spotlight)
+      const otherBefore = await framing(other, onboarding.spotlight)
+
+      await comfyMouse.dragElementBy(node.header, DRAG_BY)
+
+      await expect
+        .poll(async () => (await node.root.boundingBox())?.x, {
+          message: 'the drag never moved the node, so it proves nothing'
+        })
+        .not.toBe(before.node.x)
+
+      const after = await framing(node.root, onboarding.spotlight)
+      const otherAfter = await framing(other, onboarding.spotlight)
+
+      expect(
+        otherAfter.node,
+        'the untouched node moved too, so this panned the canvas'
+      ).toEqual(otherBefore.node)
+      expect(
+        after.offset.x,
+        'the spotlight stopped following its node horizontally'
+      ).toBeCloseTo(before.offset.x, 0)
+      expect(
+        after.offset.y,
+        'the spotlight stopped following its node vertically'
+      ).toBeCloseTo(before.offset.y, 0)
     })
   })
 

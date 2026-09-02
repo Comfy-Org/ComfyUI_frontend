@@ -54,7 +54,7 @@ export class LinkConnectorAdapter {
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
 
     if (opts?.moveExisting) {
-      this.linkConnector.moveOutputLink(this.network, output)
+      this.linkConnector.moveOutputLink(this.network, node, output)
     } else {
       this.linkConnector.dragNewFromOutput(
         this.network,
@@ -90,7 +90,9 @@ export class LinkConnectorAdapter {
       const startPoint: Point | undefined = opts.layout
         ? [opts.layout.position.x, opts.layout.position.y]
         : undefined
-      this.linkConnector.moveInputLink(this.network, input, { startPoint })
+      this.linkConnector.moveInputLink(this.network, node, input, {
+        startPoint
+      })
     } else {
       this.linkConnector.dragNewFromInput(
         this.network,

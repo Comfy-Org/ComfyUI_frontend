@@ -4,6 +4,15 @@
   >
     <div class="flex gap-2">
       <Button
+        v-if="showUsageActivity"
+        variant="muted-textonly"
+        class="text-xs text-text-secondary"
+        @click="handleFullUsageActivity"
+      >
+        <i class="pi pi-external-link text-xs text-text-secondary" />
+        {{ $t('subscription.fullUsageActivity') }}
+      </Button>
+      <Button
         variant="muted-textonly"
         class="text-xs text-text-secondary"
         @click="handleLearnMoreClick"
@@ -31,7 +40,7 @@
     </div>
 
     <Button
-      v-if="showInvoiceHistory"
+      v-if="!isCloud && showInvoiceHistory"
       variant="muted-textonly"
       class="text-xs text-text-secondary"
       @click="handleInvoiceHistory"
@@ -46,10 +55,13 @@
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
 
-const { showInvoiceHistory = true } = defineProps<{
+const { showInvoiceHistory = true, showUsageActivity = true } = defineProps<{
   showInvoiceHistory?: boolean
+  showUsageActivity?: boolean
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
@@ -62,6 +74,14 @@ const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
 async function handleInvoiceHistory() {
   if (!showInvoiceHistory) return
   await manageSubscription()
+}
+
+function handleFullUsageActivity() {
+  window.open(
+    `${getComfyPlatformBaseUrl()}/profile/usage`,
+    '_blank',
+    'noopener'
+  )
 }
 
 function handleOpenPartnerNodesInfo() {

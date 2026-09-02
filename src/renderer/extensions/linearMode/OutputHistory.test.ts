@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { RenderResult } from '@testing-library/vue'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -5,13 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import type { PagedList } from '@/utils/pagedList'
 
 import OutputHistory from './OutputHistory.vue'
 
@@ -54,15 +56,13 @@ vi.mock('@/lib/litegraph/src/CanvasPointer', () => ({
 vi.mock('@/renderer/extensions/linearMode/useOutputHistory', () => ({
   useOutputHistory: () => ({
     outputs: {
-      media: mediaRef,
       hasMore: hasMoreRef,
+      invalidate: vi.fn(),
+      isLoading: ref(false),
+      items: mediaRef,
       loadMore: loadMoreFn,
-      isLoadingMore: ref(false),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn(),
-      refresh: vi.fn()
-    } satisfies IAssetsProvider,
+      loadNew: vi.fn()
+    } satisfies PagedList<AssetItem>,
     allOutputs: allOutputsFn,
     selectFirstHistory: selectFirstHistoryFn,
     mayBeActiveWorkflowPending:
@@ -143,7 +143,7 @@ vi.mock('@/renderer/extensions/linearMode/OutputPreviewItem.vue', () => ({
 }))
 
 function makeAsset(id: string): AssetItem {
-  return { id, name: `${id}.png`, tags: [], user_metadata: {} }
+  return fromPartial({ id, name: `${id}.png`, tags: [], user_metadata: {} })
 }
 
 function makeResult(filename: string): ResultItemImpl {
@@ -191,7 +191,6 @@ function historyItems(): HTMLElement[] {
 
 describe('OutputHistory', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mediaRef.value = []
     hasMoreRef.value = false
     selectedIdRef.value = null

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -21,9 +19,7 @@ describe('keybindingService - registerUserKeybindings', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     settings.values = {}
-    setActivePinia(createTestingPinia({ stubActions: false }))
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 

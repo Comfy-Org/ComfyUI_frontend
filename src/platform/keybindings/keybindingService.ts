@@ -51,6 +51,10 @@ export function useKeybindingService() {
         }
       }
       if (isModalOpen(dialogStore.dialogStack.length)) {
+        // Bare keys still have to reach inputs inside the dialog.
+        if (keyCombo.ctrl) {
+          event.preventDefault()
+        }
         return
       }
 

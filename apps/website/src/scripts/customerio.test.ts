@@ -3,9 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => ({
   sdkImported: vi.fn(),
-  mockIdentify: vi.fn().mockResolvedValue(undefined),
-  mockTrack: vi.fn().mockResolvedValue(undefined),
-  mockLoad: vi.fn()
+  mockIdentify: vi.fn(async () => undefined),
+  mockTrack: vi.fn(async () => undefined),
+  mockLoad: vi.fn(() =>
+    Promise.resolve([
+      { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
+      {}
+    ])
+  )
 }))
 
 vi.mock('@customerio/cdp-analytics-browser', () => {
@@ -13,12 +18,7 @@ vi.mock('@customerio/cdp-analytics-browser', () => {
   // AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context]
   return {
     AnalyticsBrowser: {
-      load: hoisted.mockLoad.mockReturnValue(
-        Promise.resolve([
-          { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
-          {}
-        ])
-      )
+      load: hoisted.mockLoad
     }
   }
 })
@@ -30,9 +30,7 @@ async function importModule(writeKey: string) {
 
 describe('customerio', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
-    vi.unstubAllEnvs()
   })
 
   it('is disabled and never loads the SDK when the write key is empty', async () => {
@@ -64,6 +62,20 @@ describe('customerio', () => {
     })
     expect(hoisted.mockIdentify.mock.invocationCallOrder[0]).toBeLessThan(
       hoisted.mockTrack.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('identifies by email then tracks the waitlist signup under the caller event', async () => {
+    const { joinWaitlist } = await importModule('test-key')
+
+    await joinWaitlist('someone@example.com', 'agent_beta_waitlist_joined')
+
+    expect(hoisted.mockIdentify).toHaveBeenCalledWith('someone@example.com', {
+      email: 'someone@example.com'
+    })
+    expect(hoisted.mockTrack).toHaveBeenCalledWith(
+      'agent_beta_waitlist_joined',
+      { page: window.location.pathname }
     )
   })
 

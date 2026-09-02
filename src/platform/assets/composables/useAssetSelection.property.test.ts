@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import * as fc from 'fast-check'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +10,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal()
@@ -31,13 +35,14 @@ function arbAssets(minLength = 1, maxLength = 20): fc.Arbitrary<AssetItem[]> {
   return fc
     .uniqueArray(arbAssetId, { minLength, maxLength })
     .map((ids) =>
-      ids.map((id) => ({ id, name: `${id}.png`, tags: [] }) satisfies AssetItem)
+      ids.map((id) =>
+        fromPartial<AssetItem>({ id, name: `${id}.png`, tags: [] })
+      )
     )
 }
 
 describe('useAssetSelection properties', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShiftKey.value = false
     mockCtrlKey.value = false
     mockMetaKey.value = false
@@ -140,21 +145,23 @@ describe('useAssetSelection properties', () => {
 
   describe('getOutputCount / getTotalOutputCount', () => {
     it('getOutputCount always returns >= 1', () => {
-      const arbAssetWithMeta: fc.Arbitrary<AssetItem> = fc.record({
-        id: fc.uuid(),
-        name: fc.string({ minLength: 1, maxLength: 10 }),
-        tags: fc.constant([] as string[]),
-        user_metadata: fc.option(
-          fc.record({
-            outputCount: fc.oneof(
-              fc.integer(),
-              fc.constant(undefined),
-              fc.constant(null)
-            )
-          }),
-          { nil: undefined }
-        )
-      })
+      const arbAssetWithMeta: fc.Arbitrary<AssetItem> = fc
+        .record({
+          id: fc.uuid(),
+          name: fc.string({ minLength: 1, maxLength: 10 }),
+          tags: fc.constant<string[]>([]),
+          user_metadata: fc.option(
+            fc.record({
+              outputCount: fc.oneof(
+                fc.integer(),
+                fc.constant(undefined),
+                fc.constant(null)
+              )
+            }),
+            { nil: undefined }
+          )
+        })
+        .map((r) => fromPartial<AssetItem>(r))
 
       fc.assert(
         fc.property(arbAssetWithMeta, (asset) => {
@@ -166,20 +173,22 @@ describe('useAssetSelection properties', () => {
     })
 
     it('getTotalOutputCount >= number of assets', () => {
-      const arbAssetWithMeta: fc.Arbitrary<AssetItem> = fc.record({
-        id: fc.uuid(),
-        name: fc.string({ minLength: 1, maxLength: 10 }),
-        tags: fc.constant([] as string[]),
-        user_metadata: fc.option(
-          fc.record({
-            outputCount: fc.oneof(
-              fc.integer({ min: 1, max: 100 }),
-              fc.constant(undefined)
-            )
-          }),
-          { nil: undefined }
-        )
-      })
+      const arbAssetWithMeta: fc.Arbitrary<AssetItem> = fc
+        .record({
+          id: fc.uuid(),
+          name: fc.string({ minLength: 1, maxLength: 10 }),
+          tags: fc.constant<string[]>([]),
+          user_metadata: fc.option(
+            fc.record({
+              outputCount: fc.oneof(
+                fc.integer({ min: 1, max: 100 }),
+                fc.constant(undefined)
+              )
+            }),
+            { nil: undefined }
+          )
+        })
+        .map((r) => fromPartial<AssetItem>(r))
 
       fc.assert(
         fc.property(fc.array(arbAssetWithMeta, { maxLength: 20 }), (assets) => {

@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { getSurveyCompletedStatus } from './auth'
 
@@ -13,7 +13,10 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@sentry/vue', () => ({
   addBreadcrumb: vi.fn(),
-  captureException: vi.fn()
+  captureException: vi.fn(),
+  // reportError() probes this; without it the probe throws, reportError
+  // swallows it, and the report silently never happens.
+  isEnabled: vi.fn(() => false)
 }))
 
 function mockResponse({
@@ -34,10 +37,6 @@ function mockResponse({
 }
 
 describe('getSurveyCompletedStatus', () => {
-  beforeEach(() => {
-    fetchApi.mockReset()
-  })
-
   test('200 with non-empty value → true', async () => {
     fetchApi.mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: { q1: 'a' } } })

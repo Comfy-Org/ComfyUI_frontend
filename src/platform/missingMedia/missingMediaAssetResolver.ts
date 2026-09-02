@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -14,8 +15,8 @@ interface MediaPathDetectionOptions {
 }
 
 export interface MissingMediaAssetSources {
-  inputAssets: AssetItem[]
-  generatedAssets: AssetItem[]
+  inputAssets: readonly AssetItem[]
+  generatedAssets: readonly AssetItem[]
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
@@ -52,8 +53,10 @@ export async function resolveMissingMediaAssetSources({
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
       abortSiblingsOnFailure(
-        isCloud
-          ? assetService.getInputAssetsIncludingPublic(controller.signal)
+        useFeatureFlags().flags.assetsEnabled
+          ? assetService.getAllAssetsByTag('input', true, {
+              signal: controller.signal
+            })
           : Promise.resolve<AssetItem[]>([]),
         controller
       ),
@@ -307,12 +310,15 @@ function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
   const output = job.preview_output
   if (job.status !== 'completed' || !output?.filename) return null
 
+  const createdAt = new Date(job.create_time).toISOString()
+
   return {
     id: `${job.id}-${output.filename}`,
     name: output.filename,
     display_name: output.display_name,
-    mime_type: null,
     tags: ['output'],
+    created_at: createdAt,
+    updated_at: createdAt,
     user_metadata: {
       subfolder: output.subfolder
     }

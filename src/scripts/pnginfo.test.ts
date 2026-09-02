@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -17,7 +17,8 @@ import {
   importA1111
 } from './pnginfo'
 
-vi.mock('./api', () => ({
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api')>()),
   api: {
     getEmbeddings: vi.fn()
   }
@@ -32,8 +33,6 @@ vi.mock('./metadata/flac', () => ({
 vi.mock('./metadata/avif', () => ({
   getFromAvifFile: vi.fn()
 }))
-
-afterEach(() => vi.restoreAllMocks())
 
 const fixturesDir = path.resolve(__dirname, 'metadata/__fixtures__')
 
@@ -248,19 +247,36 @@ describe('format-specific metadata wrappers', () => {
 describe('importA1111', () => {
   const parameters =
     'positive\nNegative prompt: negative\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
+  const parametersWithoutNegativePrompt =
+    'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
+
+  function mockAvailableCoreNodes(graph: LGraph) {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(graph, 'arrange').mockImplementation(() => {})
+    vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
+      const node = new LGraphNode(type, type)
+      if (type === 'CLIPTextEncode') {
+        node.addWidget('text', 'text', '', () => {})
+      }
+      vi.spyOn(node, 'connect').mockReturnValue(null)
+      return node
+    })
+  }
 
   it.each([
     ['has no steps', 'positive'],
-    ['has no options', 'positive\nNegative prompt: negative\nSteps:'],
-    ['has no negative prompt', 'positive\nSteps: 20']
-  ])('returns not-a1111 when parameters %s', async (_case, input) => {
+    ['has no options', 'positive\nNegative prompt: negative\nSteps:']
+  ])('does not load embeddings when parameters %s', async (_case, input) => {
     const graph = new LGraph()
     const beforeGraphClear = vi.fn()
-    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    vi.mocked(api.getEmbeddings).mockRejectedValue(
+      new TypeError('Failed to fetch')
+    )
 
     const imported = await importA1111(graph, input, beforeGraphClear)
 
     expect(imported).toBe('not-a1111')
+    expect(api.getEmbeddings).not.toHaveBeenCalled()
     expect(beforeGraphClear).not.toHaveBeenCalled()
   })
 
@@ -268,36 +284,105 @@ describe('importA1111', () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
-    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    vi.mocked(api.getEmbeddings).mockRejectedValue(
+      new TypeError('Failed to fetch')
+    )
     vi.spyOn(LiteGraph, 'createNode').mockReturnValue(null)
 
     const imported = await importA1111(graph, parameters, beforeGraphClear)
 
     expect(imported).toBe('core-nodes-unavailable')
+    expect(api.getEmbeddings).not.toHaveBeenCalled()
     expect(beforeGraphClear).not.toHaveBeenCalled()
     expect(clear).not.toHaveBeenCalled()
   })
 
-  it('runs the lifecycle callback immediately before clearing the graph', async () => {
+  it('imports without embedding substitution when loading embeddings fails', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    const beforeGraphClear = vi.fn()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(api.getEmbeddings).mockRejectedValue(
+      new TypeError('Failed to fetch')
+    )
+    mockAvailableCoreNodes(graph)
+
+    const imported = await importA1111(graph, parameters, beforeGraphClear)
+
+    expect(imported).toBe('imported-without-embeddings')
+    expect(beforeGraphClear).toHaveBeenCalledOnce()
+    expect(clear).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to load embeddings for A1111 import:',
+      expect.any(TypeError)
+    )
+  })
+
+  it('awaits the pre-clear hook before mutating the graph', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    mockAvailableCoreNodes(graph)
+    let release: (() => void) | undefined
+    const beforeGraphClear = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        })
+    )
+
+    const imported = importA1111(graph, parameters, beforeGraphClear)
+    await vi.waitFor(() => expect(beforeGraphClear).toHaveBeenCalledOnce())
+    expect(clear).not.toHaveBeenCalled()
+
+    release?.()
+    await expect(imported).resolves.toBe('imported')
+    expect(clear).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ['with a negative prompt', parameters, 'negative'],
+    ['without a negative prompt', parametersWithoutNegativePrompt, '']
+  ])('imports parameters %s', async (_case, input, expectedNegativePrompt) => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
     vi.mocked(api.getEmbeddings).mockResolvedValue([])
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.spyOn(graph, 'arrange').mockImplementation(() => {})
-    vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
-      const node = new LGraphNode(type)
-      node.type = type
-      vi.spyOn(node, 'connect').mockReturnValue(null)
-      return node
-    })
+    mockAvailableCoreNodes(graph)
 
-    const imported = await importA1111(graph, parameters, beforeGraphClear)
+    const imported = await importA1111(graph, input, beforeGraphClear)
 
     expect(imported).toBe('imported')
     expect(beforeGraphClear).toHaveBeenCalledOnce()
     expect(beforeGraphClear.mock.invocationCallOrder[0]).toBeLessThan(
       clear.mock.invocationCallOrder[0]
     )
+    expect(
+      vi
+        .mocked(LiteGraph.createNode)
+        .mock.results.map(({ value }) => value)
+        .filter((node) => node?.type === 'CLIPTextEncode')
+        .map((node) => node?.widgets?.[0].value)
+    ).toEqual(['positive', expectedNegativePrompt])
+  })
+
+  it('prefixes known embedding names in prompts', async () => {
+    const graph = new LGraph()
+    vi.mocked(api.getEmbeddings).mockResolvedValue(['easynegative'])
+    mockAvailableCoreNodes(graph)
+
+    const imported = await importA1111(
+      graph,
+      'masterpiece\nNegative prompt: EasyNegative, blurry\nSteps: 20'
+    )
+
+    expect(imported).toBe('imported')
+    expect(
+      vi
+        .mocked(LiteGraph.createNode)
+        .mock.results.map(({ value }) => value)
+        .filter((node) => node?.type === 'CLIPTextEncode')
+        .map((node) => node?.widgets?.[0].value)
+    ).toEqual(['masterpiece', 'embedding:EasyNegative, blurry'])
   })
 })

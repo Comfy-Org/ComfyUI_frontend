@@ -180,20 +180,35 @@ interface LoraEntry {
   weight: number
 }
 
+const A1111_NEGATIVE_PROMPT_PREFIX = '\nNegative prompt:'
+
+function normalizeA1111Parameters(parameters: string): string {
+  const stepsIndex = parameters.lastIndexOf('\nSteps:')
+  if (
+    stepsIndex === -1 ||
+    parameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, stepsIndex) > -1
+  ) {
+    return parameters
+  }
+
+  return `${parameters.slice(0, stepsIndex)}${A1111_NEGATIVE_PROMPT_PREFIX}${parameters.slice(stepsIndex)}`
+}
+
 export type A1111ImportOutcome =
   | 'imported'
+  | 'imported-without-embeddings'
   | 'not-a1111'
   | 'core-nodes-unavailable'
 
 export async function importA1111(
   graph: LGraph,
   parameters: string,
-  beforeGraphClear?: () => void
+  beforeGraphClear?: () => void | Promise<void>
 ): Promise<A1111ImportOutcome> {
-  const p = parameters.lastIndexOf('\nSteps:')
+  const normalizedParameters = normalizeA1111Parameters(parameters)
+  const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    const embeddings = await api.getEmbeddings()
-    const matchResult = parameters
+    const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
       .match(
@@ -212,10 +227,12 @@ export async function importA1111(
       },
       {}
     )
-    const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
+    const p2 = normalizedParameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, p)
     if (p2 > -1) {
-      let positive = parameters.substr(0, p2).trim()
-      let negative = parameters.substring(p2 + 18, p).trim()
+      let positive = normalizedParameters.substr(0, p2).trim()
+      let negative = normalizedParameters
+        .substring(p2 + A1111_NEGATIVE_PROMPT_PREFIX.length, p)
+        .trim()
 
       const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
       const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')
@@ -337,7 +354,15 @@ export async function importA1111(
         return v
       }
 
-      beforeGraphClear?.()
+      const { embeddings, embeddingsLoaded } = await api
+        .getEmbeddings()
+        .then((embeddings) => ({ embeddings, embeddingsLoaded: true }))
+        .catch((error: unknown) => {
+          console.error('Failed to load embeddings for A1111 import:', error)
+          return { embeddings: [], embeddingsLoaded: false }
+        })
+
+      await beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)
@@ -560,7 +585,7 @@ export async function importA1111(
       if (Object.keys(opts).length) {
         console.warn('Unhandled parameters:', opts)
       }
-      return 'imported'
+      return embeddingsLoaded ? 'imported' : 'imported-without-embeddings'
     }
   }
   return 'not-a1111'

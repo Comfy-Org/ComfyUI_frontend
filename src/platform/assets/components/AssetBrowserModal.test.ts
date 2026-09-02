@@ -59,21 +59,6 @@ vi.mock('@/platform/assets/composables/useModelTypes', () => ({
   })
 }))
 
-vi.mock('@/components/common/SearchBox.vue', () => ({
-  default: {
-    name: 'SearchBox',
-    props: ['modelValue', 'size', 'placeholder', 'class'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        :value="modelValue"
-        @input="$emit('update:modelValue', $event.target.value)"
-        data-testid="search-box"
-      />
-    `
-  }
-}))
-
 vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
   default: {
     name: 'BaseModalLayout',
@@ -231,7 +216,6 @@ describe('AssetBrowserModal', () => {
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
     mockSupportsModelTypeTags.value = false

@@ -80,7 +80,6 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
 
 describe('useCanvasHistory', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     let rafCallCount = 0
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
       (cb: FrameRequestCallback) => {

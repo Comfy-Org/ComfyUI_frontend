@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -248,7 +248,7 @@
           <span class="underline">
             {{ t('subscription.videoEstimateTryTemplate') }}
           </span>
-          <span class="no-underline" v-html="'&rarr;'"></span>
+          <span class="no-underline">→</span>
         </a>
       </div>
     </Popover>
@@ -270,10 +270,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -318,7 +318,7 @@ interface BillingCycleOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -396,7 +396,7 @@ const hasPaidSubscription = computed(
 )
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
+  subscriptionTier.value ? toTierKey(subscriptionTier.value) : null
 )
 
 const currentPlanDescriptor = computed(() => {
@@ -528,25 +528,10 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        try {
-          await performSubscriptionCheckout(
-            tierKey,
-            currentBillingCycle.value,
-            { paymentIntentSource: reason }
-          )
-        } catch (error) {
-          telemetry?.trackBillingEvent({
-            operation: 'subscription_checkout',
-            stage: 'failed',
-            outcome: 'failure',
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
-            checkout_type: 'new',
-            payment_intent_source: reason,
-            failure_category: 'unknown'
-          })
-          throw error
-        }
+        // Failure telemetry now lives in performSubscriptionCheckout itself.
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

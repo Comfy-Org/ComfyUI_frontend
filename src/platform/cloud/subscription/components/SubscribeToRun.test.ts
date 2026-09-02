@@ -73,7 +73,6 @@ function renderButton() {
 
 describe('SubscribeToRun', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanManageSubscription.value = true
     mockIsMdOrLarger.value = true
   })

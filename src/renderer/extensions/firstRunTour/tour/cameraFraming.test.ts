@@ -8,7 +8,8 @@ import type { NodeId } from '@/types/nodeId'
 import {
   CARD_GLIDE_MS,
   CARD_WIDTH,
-  CURSOR_GAP
+  CURSOR_GAP,
+  topSafeInset
 } from '@/platform/onboarding/coachmarkLayout'
 
 import { MAX_FOCUS_SCALE, focusFill, frameNode } from './cameraFraming'
@@ -63,6 +64,19 @@ function setReducedMotion(reduce: boolean) {
 }
 
 describe('focusFill', () => {
+  const TOP_BAR_HEIGHT = 40
+
+  beforeEach(() => {
+    document.documentElement.style.setProperty(
+      '--comfy-topbar-height',
+      `${TOP_BAR_HEIGHT}px`
+    )
+  })
+
+  afterEach(() => {
+    document.documentElement.style.removeProperty('--comfy-topbar-height')
+  })
+
   it('frames a small node without magnifying it past legibility', () => {
     const bounds: ReadOnlyRect = [0, 0, 120, 80]
 
@@ -94,6 +108,28 @@ describe('focusFill', () => {
       'reserving both columns anyway solves a negative width, and zooms the camera inside out'
     ).toBeGreaterThan(0)
   })
+
+  it('keeps a tall node clear of the bar the canvas runs under', () => {
+    const bounds: ReadOnlyRect = [0, 0, 300, 4000]
+
+    const framedHeight =
+      bounds[3] * scaleFor(bounds, focusFill(bounds, VIEWPORT))
+    const freePerEnd = (VIEWPORT.height - framedHeight) / 2
+
+    expect(
+      freePerEnd,
+      'the fit centres the node, so a node fitted to the whole viewport wears the workflow tabs across its title bar — the part the step points at, and the only part it can be dragged by'
+    ).toBeGreaterThanOrEqual(TOP_BAR_HEIGHT)
+  })
+
+  it('still frames something on a viewport shorter than the room it reserves', () => {
+    const short = { width: 1280, height: topSafeInset() * 2 }
+
+    expect(
+      focusFill([0, 0, 120, 80], short),
+      'reserving both ends anyway leaves nothing to fit the node into, and collapses the camera onto a zoom of zero'
+    ).toBeGreaterThan(0)
+  })
 })
 
 describe('frameNode', () => {
@@ -112,15 +148,12 @@ describe('frameNode', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     setReducedMotion(false)
     canvasRect = new DOMRect(0, 0, VIEWPORT.width, VIEWPORT.height)
   })
 
   afterEach(() => {
     endRunningSteps()
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
     camera.animateToBounds.mockClear()
     camera.ds.fitToBounds.mockClear()
     camera.ds.offset = [0, 0]

@@ -1,9 +1,11 @@
-import { captureException } from '@sentry/vue'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -50,11 +52,11 @@ function resumeModeFor(
       // callable toString/valueOf, and throwing out of the branch that exists
       // to absorb a bad value would abort recovery entirely. The value came
       // from a parsed response, so it cannot be circular.
-      captureException(
+      reportError(
         new Error(
           `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
         ),
-        { tags: { error_type: 'billing_unknown_resume_mode' } }
+        { errorType: 'billing_unknown_resume_mode' }
       )
       // Reachable only against a newer server. Dropping recovery strands a
       // customer who cannot reach the payment page; a wrong panel clears on
@@ -107,6 +109,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const telemetry = useTelemetry()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -137,8 +140,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
-      scheduledPlanSlug: status.scheduled_plan_slug ?? null,
-      changeAt: status.change_at ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
@@ -385,11 +386,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    const attemptStartedAt = Date.now()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'cancel'
+    })
+    // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
+    let billingOpId: string | undefined
     try {
       const response = await workspaceApi.cancelSubscription()
+      billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
-        response.billing_op_id,
-        'cancel'
+        billingOpId,
+        'cancel',
+        { attemptStartedAt }
       )
 
       if (operation.status !== 'succeeded') {
@@ -403,7 +415,24 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          operation_type: 'cancel',
+          duration_ms: Date.now() - attemptStartedAt
+        })
         return
+      }
+      if (billingOpId === undefined) {
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'cancel',
+          failure_category: categorizeBillingApiError(err),
+          duration_ms: Date.now() - attemptStartedAt
+        })
       }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
@@ -413,12 +442,32 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(_options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
+    // Workspace's resubscribe() call is itself the terminal reactivation, so
+    // the click-time source isn't needed here the way the legacy adapter
+    // needs it for its pending-checkout-recovery terminal event.
     isLoading.value = true
     error.value = null
     try {
-      await workspaceApi.resubscribe()
+      const response = await workspaceApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
+      // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
+      // yet: wait for the tracked billing op to actually resolve instead of
+      // reporting success the instant the request was accepted. fetchStatus
+      // above may have already started tracking this op via
+      // pending_billing_op_id; startOperation dedupes by opId either way.
+      if (response.status === 'pending') {
+        const operation = await billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription'
+        )
+        if (operation.status !== 'succeeded') {
+          throw new Error(operation.errorMessage ?? 'Failed to resubscribe')
+        }
+        await Promise.allSettled([fetchStatus(), fetchBalance()])
+      }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,

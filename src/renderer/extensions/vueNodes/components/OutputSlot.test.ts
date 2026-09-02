@@ -28,11 +28,6 @@ vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
 }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ useSlotElementTracking: vi.fn() })
-)
-
-vi.mock(
   '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction',
   () => ({
     useSlotLinkInteraction: () => ({ onPointerDown: vi.fn() })

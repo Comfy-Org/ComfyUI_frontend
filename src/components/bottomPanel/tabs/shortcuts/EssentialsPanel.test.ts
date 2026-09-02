@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
@@ -50,10 +49,6 @@ vi.mock('@/stores/commandStore', () => ({
 }))
 
 describe('EssentialsPanel', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('should render ShortcutsList with essentials commands', async () => {
     const { default: EssentialsPanel } =
       await import('@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue')

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import BrandButton from '../common/BrandButton.vue'
 import GlassCard from '../common/GlassCard.vue'
+import Button from '../ui/button/Button.vue'
+import { resolveRel } from '../../utils/cta'
 
-type Benefit = { id: string; description: string }
+type Benefit = { id: string; title?: string; description: string }
 type Cta = {
   label: string
   href: string
@@ -12,7 +13,9 @@ type Cta = {
 defineProps<{
   heading: string
   benefits: readonly Benefit[]
+  footnote?: string
   primaryCta?: Cta
+  secondaryCta?: Cta
 }>()
 </script>
 
@@ -36,8 +39,18 @@ defineProps<{
           >
             {{ String(index + 1).padStart(2, '0') }}
           </span>
+          <h3
+            v-if="benefit.title"
+            class="text-2xl font-normal text-primary-warm-white"
+          >
+            {{ benefit.title }}
+          </h3>
           <p
-            class="text-base/relaxed font-medium text-primary-comfy-canvas lg:text-xl"
+            :class="
+              benefit.title
+                ? 'text-base/relaxed font-light text-primary-comfy-canvas'
+                : 'text-base/relaxed font-medium text-primary-comfy-canvas lg:text-xl'
+            "
           >
             {{ benefit.description }}
           </p>
@@ -45,16 +58,40 @@ defineProps<{
       </div>
     </GlassCard>
 
-    <div v-if="primaryCta" class="mt-10 flex justify-center lg:mt-12">
-      <BrandButton
+    <p
+      v-if="footnote"
+      class="mt-10 text-center text-sm font-light text-primary-comfy-canvas lg:mt-12"
+    >
+      {{ footnote }}
+    </p>
+
+    <div
+      v-if="primaryCta"
+      class="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:mt-12"
+    >
+      <Button
+        as="a"
         :href="primaryCta.href"
         :target="primaryCta.target"
-        size="lg"
-        class="px-20 py-4 text-base uppercase"
+        :rel="resolveRel(primaryCta)"
         variant="outline"
+        size="lg"
+        class="px-20"
       >
         {{ primaryCta.label }}
-      </BrandButton>
+      </Button>
+      <Button
+        v-if="secondaryCta"
+        as="a"
+        :href="secondaryCta.href"
+        :target="secondaryCta.target"
+        :rel="resolveRel(secondaryCta)"
+        variant="default"
+        size="lg"
+        class="px-20"
+      >
+        {{ secondaryCta.label }}
+      </Button>
     </div>
   </section>
 </template>

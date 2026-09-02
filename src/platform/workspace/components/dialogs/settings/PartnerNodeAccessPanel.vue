@@ -3,65 +3,70 @@
     class="flex min-h-0 grow flex-col gap-6 overflow-auto"
     aria-labelledby="partner-node-access-title"
   >
+    <h2 id="partner-node-access-title" class="sr-only">
+      {{ $t('workspacePanel.partnerNodes.title') }}
+    </h2>
+
     <div
-      class="flex min-h-20 items-center justify-between gap-2 rounded-2xl bg-secondary-background px-4 py-3 font-inter"
+      class="flex items-start gap-4 rounded-2xl border border-interface-stroke p-4 font-inter"
     >
+      <span class="shrink-0" @click.prevent="requestAccessModeToggle">
+        <ToggleSwitch
+          :model-value="!isRestricted"
+          readonly
+          :disabled="!isGated && (!canEditPolicy || isSaving)"
+          :aria-label="$t('workspacePanel.partnerNodes.accessMode')"
+          :class="
+            cn('transition-transform active:scale-90', isGated && 'opacity-60')
+          "
+        />
+      </span>
       <div class="min-w-0 flex-1">
-        <h2
-          id="partner-node-access-title"
-          class="m-0 truncate text-sm leading-[normal] font-normal text-base-foreground"
-        >
-          {{ $t('workspacePanel.partnerNodes.title') }}
-        </h2>
+        <div class="flex h-6 items-center gap-2">
+          <p
+            class="m-0 text-sm leading-[normal] font-normal text-base-foreground"
+          >
+            {{ $t('workspacePanel.partnerNodes.allowAll') }}
+          </p>
+          <span
+            v-if="isGated"
+            class="rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+          >
+            {{ $t('workspacePanel.partnerNodes.enterpriseBadge') }}
+          </span>
+        </div>
         <p
-          v-if="isPolicyLoaded"
-          class="m-0 mt-2 truncate text-sm leading-[normal] font-normal text-muted-foreground"
+          v-if="isGated"
+          class="m-0 mt-1 text-sm leading-[normal] font-normal text-muted-foreground"
         >
-          {{
-            $t(
-              isRestricted
-                ? 'workspacePanel.partnerNodes.restrictedDescription'
-                : 'workspacePanel.partnerNodes.unrestrictedDescription'
-            )
-          }}
+          {{ $t('workspacePanel.partnerNodes.gatedHint') }}
+        </p>
+        <p
+          v-else-if="isPolicyLoaded && !isRestricted"
+          class="m-0 mt-1 text-sm leading-[normal] font-normal text-muted-foreground"
+        >
+          {{ $t('workspacePanel.partnerNodes.allowAllOnHint') }}
+        </p>
+        <p
+          v-else-if="isPolicyLoaded"
+          class="m-0 mt-1 flex items-center gap-2 text-sm/4 font-normal text-muted-foreground"
+        >
+          <i
+            class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+            aria-hidden="true"
+          />
+          <span>{{ $t('workspacePanel.partnerNodes.allowAllOffHint') }}</span>
         </p>
       </div>
-      <RadioGroupRoot
-        v-if="isPolicyLoaded"
-        :model-value="isRestricted ? 'restricted' : 'unrestricted'"
-        orientation="horizontal"
-        :disabled="isSaving || !canEditPolicy"
-        :aria-label="$t('workspacePanel.partnerNodes.accessMode')"
-        class="flex w-48 gap-1 rounded-lg bg-secondary-background-hover p-1"
-        @update:model-value="requestEnforcementMode($event === 'restricted')"
+      <Button
+        v-if="isGated"
+        variant="inverted"
+        size="lg"
+        class="shrink-0 self-center"
+        @click="openEnterprisePage"
       >
-        <RadioGroupItem
-          value="unrestricted"
-          :class="
-            cn(
-              buttonVariants({ variant: 'textonly' }),
-              'flex-1 px-2 leading-[normal] font-normal',
-              !isRestricted &&
-                'bg-base-foreground text-base-background hover:bg-base-foreground'
-            )
-          "
-        >
-          {{ $t('workspacePanel.partnerNodes.unrestricted') }}
-        </RadioGroupItem>
-        <RadioGroupItem
-          value="restricted"
-          :class="
-            cn(
-              buttonVariants({ variant: 'textonly' }),
-              'flex-1 px-2 leading-[normal] font-normal',
-              isRestricted &&
-                'bg-base-foreground text-base-background hover:bg-base-foreground'
-            )
-          "
-        >
-          {{ $t('workspacePanel.partnerNodes.restricted') }}
-        </RadioGroupItem>
-      </RadioGroupRoot>
+        {{ $t('workspacePanel.partnerNodes.contactUs') }}
+      </Button>
     </div>
 
     <p v-if="isReadOnly" class="text-sm text-muted-foreground">
@@ -91,7 +96,7 @@
     </div>
 
     <div
-      v-else-if="status === 'ineligible' || status === 'inactive'"
+      v-else-if="(status === 'ineligible' && !isGated) || status === 'inactive'"
       role="status"
       class="flex min-h-48 items-center justify-center rounded-2xl border border-interface-stroke p-6 text-center"
     >
@@ -113,25 +118,25 @@
             class="w-full"
           />
         </label>
-        <div class="flex items-center gap-2">
-          <Button
-            v-if="isRestricted"
-            variant="textonly"
-            size="lg"
-            :disabled="isSaving || !canEditPolicy"
-            @click="handleEnableAll"
-          >
-            {{ $t('workspacePanel.partnerNodes.enableAll') }}
-          </Button>
-          <Button
-            variant="textonly"
-            size="lg"
-            :disabled="!isRestricted || isSaving || !canEditPolicy"
-            @click="confirmDisableAll"
-          >
-            {{ $t('workspacePanel.partnerNodes.disableAll') }}
-          </Button>
-        </div>
+        <DropdownMenu
+          v-if="isRestricted"
+          :entries="bulkMenuEntries"
+          :modal="false"
+        >
+          <template #button>
+            <Button
+              variant="secondary"
+              size="lg"
+              :disabled="isSaving || !canEditPolicy"
+            >
+              {{ $t('workspacePanel.partnerNodes.disableAll') }}
+              <i
+                class="icon-[lucide--chevron-down] size-4"
+                aria-hidden="true"
+              />
+            </Button>
+          </template>
+        </DropdownMenu>
       </div>
 
       <p
@@ -145,170 +150,206 @@
       <div
         role="table"
         :aria-label="$t('workspacePanel.partnerNodes.tableLabel')"
-        :aria-disabled="!isRestricted"
-        :inert="!isRestricted"
-        :class="
-          cn(
-            'min-h-0 overflow-auto rounded-2xl border border-interface-stroke px-4 py-3',
-            !isRestricted && 'pointer-events-none opacity-50'
-          )
-        "
+        class="flex min-h-0 grow flex-col rounded-2xl border border-interface-stroke px-4 py-3"
       >
-        <div
-          role="row"
-          class="grid h-10 grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2 px-2 text-sm text-muted-foreground lg:grid-cols-[minmax(0,1fr)_12rem_2.5rem]"
-        >
-          <span
-            role="columnheader"
-            :aria-sort="sortField === 'provider' ? sortDirection : 'none'"
-          >
-            <Button
-              variant="textonly"
-              size="unset"
-              class="gap-2 p-0 text-sm font-normal text-muted-foreground"
-              @click="sortBy('provider')"
-            >
-              {{ $t('workspacePanel.partnerNodes.columns.provider') }}
-              <i
-                :class="
-                  cn(
-                    'size-4 transition-transform',
-                    sortField === 'provider'
-                      ? 'icon-[lucide--arrow-down]'
-                      : 'icon-[lucide--arrow-up-down]',
-                    sortField === 'provider' &&
-                      sortDirection === 'descending' &&
-                      'rotate-180'
-                  )
-                "
-                aria-hidden="true"
-              />
-            </Button>
-          </span>
-          <span
-            role="columnheader"
-            :aria-sort="sortField === 'nodes' ? sortDirection : 'none'"
-            class="hidden lg:block"
-          >
-            <Button
-              variant="textonly"
-              size="unset"
-              class="gap-2 p-0 text-sm font-normal text-muted-foreground"
-              @click="sortBy('nodes')"
-            >
-              {{ $t('workspacePanel.partnerNodes.columns.nodes') }}
-              <i
-                :class="
-                  cn(
-                    'size-4 transition-transform',
-                    sortField === 'nodes'
-                      ? 'icon-[lucide--arrow-down]'
-                      : 'icon-[lucide--arrow-up-down]',
-                    sortField === 'nodes' &&
-                      sortDirection === 'descending' &&
-                      'rotate-180'
-                  )
-                "
-                aria-hidden="true"
-              />
-            </Button>
-          </span>
-          <span role="columnheader" />
-        </div>
-
-        <div aria-hidden="true" class="my-2 border-t border-border-default" />
-
-        <template v-for="provider in sortedProviders" :key="provider.id">
+        <div class="min-h-0 grow scrollbar-gutter-stable overflow-y-auto">
           <div
             role="row"
-            class="grid h-10 grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40 lg:grid-cols-[minmax(0,1fr)_12rem_2.5rem]"
+            :class="
+              cn(
+                'sticky -top-px z-10 grid h-10 items-center gap-2 border-b border-border-default bg-base-background px-2 text-sm text-muted-foreground',
+                rowGridClass
+              )
+            "
           >
-            <div role="cell" class="min-w-0">
+            <span
+              role="columnheader"
+              :aria-sort="sortField === 'provider' ? sortDirection : 'none'"
+            >
               <Button
                 variant="textonly"
                 size="unset"
-                class="h-10 w-full justify-start gap-2 p-0 text-left font-normal hover:bg-transparent"
-                :aria-expanded="isProviderExpanded(provider.id)"
-                @click="toggleExpanded(provider.id)"
+                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                @click="sortBy('provider')"
               >
+                {{ $t('workspacePanel.partnerNodes.columns.provider') }}
                 <i
                   :class="
-                    cn(
-                      'size-4 shrink-0 transition-transform',
-                      'icon-[lucide--chevron-down]',
-                      !isProviderExpanded(provider.id) && '-rotate-90'
-                    )
+                    cn('size-4 transition-transform', sortIcon('provider'))
                   "
                   aria-hidden="true"
                 />
-                <span
-                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-interface-panel-hover-surface"
+              </Button>
+            </span>
+            <span
+              role="columnheader"
+              :aria-sort="sortField === 'models' ? sortDirection : 'none'"
+              class="hidden lg:block"
+            >
+              <Button
+                variant="textonly"
+                size="unset"
+                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                @click="sortBy('models')"
+              >
+                {{ $t('workspacePanel.partnerNodes.columns.models') }}
+                <i
+                  :class="cn('size-4 transition-transform', sortIcon('models'))"
                   aria-hidden="true"
+                />
+              </Button>
+            </span>
+            <span
+              role="columnheader"
+              :aria-sort="sortField === 'state' ? sortDirection : 'none'"
+              class="hidden lg:flex lg:justify-end"
+            >
+              <Button
+                v-if="isRestricted"
+                variant="textonly"
+                size="unset"
+                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                @click="sortBy('state')"
+              >
+                {{ $t('workspacePanel.partnerNodes.columns.state') }}
+                <i
+                  :class="cn('size-4 transition-transform', sortIcon('state'))"
+                  aria-hidden="true"
+                />
+              </Button>
+            </span>
+          </div>
+
+          <template v-for="provider in sortedProviders" :key="provider.id">
+            <div
+              role="row"
+              :class="
+                cn(
+                  'grid h-10 items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40',
+                  rowGridClass
+                )
+              "
+            >
+              <div role="cell" class="min-w-0">
+                <Button
+                  variant="textonly"
+                  size="unset"
+                  class="h-10 w-full justify-start gap-2 p-0 text-left font-normal hover:bg-transparent"
+                  :aria-expanded="isProviderExpanded(provider)"
+                  @click="toggleExpanded(provider.id)"
                 >
                   <i
                     :class="
                       cn(
-                        getProviderIcon(
-                          provider.nodeCategories[0] ?? provider.displayName
-                        ),
-                        'size-3'
+                        'size-4 shrink-0 text-muted-foreground transition-transform',
+                        'icon-[lucide--chevron-down]',
+                        !isProviderExpanded(provider) && '-rotate-90'
                       )
                     "
+                    aria-hidden="true"
                   />
-                </span>
-                <span class="truncate">{{ provider.displayName }}</span>
-              </Button>
+                  <span
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-interface-panel-hover-surface"
+                    aria-hidden="true"
+                  >
+                    <i
+                      :class="
+                        cn(
+                          getProviderIcon(
+                            provider.nodeCategories[0] ?? provider.displayName
+                          ),
+                          'size-3'
+                        )
+                      "
+                    />
+                  </span>
+                  <span class="truncate">{{ provider.displayName }}</span>
+                </Button>
+              </div>
+              <span
+                role="cell"
+                class="hidden text-sm text-muted-foreground lg:block"
+              >
+                {{
+                  provider.totalModelCount !== undefined &&
+                  provider.nodes.length < provider.totalModelCount
+                    ? $t(
+                        'workspacePanel.partnerNodes.matchedModelCount',
+                        {
+                          matched: provider.nodes.length,
+                          total: provider.totalModelCount
+                        },
+                        provider.nodes.length
+                      )
+                    : $t(
+                        'workspacePanel.partnerNodes.modelCount',
+                        provider.nodes.length
+                      )
+                }}
+              </span>
+              <div
+                role="cell"
+                class="flex h-8 items-center justify-end justify-self-end"
+              >
+                <ToggleSwitch
+                  v-if="isRestricted"
+                  :model-value="provider.enabled"
+                  :disabled="isSaving || !canEditPolicy"
+                  :aria-label="
+                    $t('workspacePanel.partnerNodes.toggleProvider', {
+                      provider: provider.displayName
+                    })
+                  "
+                  class="transition-transform active:scale-90"
+                  @update:model-value="saveProviderChange(provider.id, $event)"
+                />
+              </div>
             </div>
-            <span
-              role="cell"
-              class="hidden text-sm text-muted-foreground lg:block"
-            >
-              {{
-                $t(
-                  'workspacePanel.partnerNodes.nodeCount',
-                  provider.enabled ? provider.nodes.length : 0
-                )
-              }}
-            </span>
+
             <div
-              role="cell"
-              class="flex h-8 w-10 items-center justify-end justify-self-end"
+              v-for="node in isProviderExpanded(provider) ? provider.nodes : []"
+              :key="node.id"
+              role="row"
+              :class="
+                cn(
+                  'grid h-10 items-center gap-2 border-b border-secondary-background px-2 text-sm last:border-b-0',
+                  rowGridClass
+                )
+              "
             >
-              <ToggleSwitch
-                :model-value="provider.enabled"
-                :disabled="!isRestricted || isSaving || !canEditPolicy"
-                :aria-label="
-                  $t('workspacePanel.partnerNodes.toggleProvider', {
-                    provider: provider.displayName
-                  })
-                "
-                class="transition-transform active:scale-90"
-                @update:model-value="saveProviderChange(provider.id, $event)"
-              />
+              <span role="cell" class="truncate pl-17 text-muted-foreground">
+                {{ node.name }}
+              </span>
+              <span role="cell" class="hidden lg:block" />
+              <span role="cell" />
             </div>
-          </div>
+          </template>
 
           <div
-            v-for="node in isProviderExpanded(provider.id)
-              ? provider.nodes
-              : []"
-            :key="node.id"
-            role="row"
-            class="grid h-10 grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2 border-b border-secondary-background bg-secondary-background/40 px-2 text-sm last:border-b-0 lg:grid-cols-[minmax(0,1fr)_12rem_2.5rem]"
+            v-if="sortedProviders.length === 0"
+            class="flex min-h-40 items-center justify-center p-6 text-sm text-muted-foreground"
           >
-            <span role="cell" class="truncate pl-17 text-muted-foreground">
-              {{ node.name }}
-            </span>
-            <span role="cell" class="hidden lg:block" />
-            <span role="cell" />
+            {{ $t('workspacePanel.partnerNodes.noResults') }}
           </div>
-        </template>
+        </div>
 
         <div
-          v-if="sortedProviders.length === 0"
-          class="flex min-h-40 items-center justify-center p-6 text-sm text-muted-foreground"
+          v-if="sortedProviders.length > 0"
+          class="mt-2 flex shrink-0 justify-end border-t border-border-default px-2 pt-3 text-sm text-base-foreground"
         >
-          {{ $t('workspacePanel.partnerNodes.noResults') }}
+          <i18n-t
+            keypath="workspacePanel.partnerNodes.allowedSummary"
+            tag="span"
+            scope="global"
+          >
+            <template #count>
+              <span class="font-bold">{{
+                isRestricted
+                  ? enabledModelCount
+                  : $t('workspacePanel.partnerNodes.allowedSummaryAll')
+              }}</span>
+            </template>
+          </i18n-t>
         </div>
       </div>
     </template>
@@ -320,12 +361,12 @@ import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MenuItem } from 'primevue/menuitem'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { buttonVariants } from '@/components/ui/button/button.variants'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -343,7 +384,8 @@ const {
   loadPolicy,
   setAllProvidersEnabled,
   setEnforcementEnabled,
-  setProviderEnabled
+  setProviderEnabled,
+  setProvidersEnabled
 } = governanceStore
 const nodeDefStore = useNodeDefStore()
 const { nodeDefsByName } = storeToRefs(nodeDefStore)
@@ -352,10 +394,11 @@ const { workspaceRole } = useWorkspaceUI()
 const { t } = useI18n()
 
 const searchQuery = ref('')
+const isSearching = computed(() => searchQuery.value.trim().length > 0)
 const expandedProviderIds = ref(new Set<string>())
 const saveError = ref(false)
 type SortDirection = 'ascending' | 'descending'
-type SortField = 'provider' | 'nodes'
+type SortField = 'provider' | 'models' | 'state'
 
 const sortField = ref<SortField>('provider')
 const sortDirection = ref<SortDirection>('ascending')
@@ -364,8 +407,14 @@ const isRestricted = computed(() => policy.value?.enforcementEnabled === true)
 const isPolicyLoaded = computed(
   () => status.value === 'configured' || status.value === 'unconfigured'
 )
+const isGated = computed(
+  () => status.value === 'ineligible' && providers.value.length > 0
+)
 const isReadOnly = computed(() => workspaceRole.value !== 'owner')
 const canEditPolicy = computed(() => !isReadOnly.value && isPolicyLoaded.value)
+
+const rowGridClass =
+  'grid-cols-[minmax(0,1fr)_2.5rem] lg:grid-cols-[minmax(0,1fr)_12rem_5rem]'
 
 const providerRows = computed(() =>
   providers.value
@@ -391,20 +440,57 @@ const providerRows = computed(() =>
     })
 )
 
-const filteredProviders = computed(() => {
+const enabledModelCount = computed(() =>
+  providerRows.value.reduce(
+    (total, { enabled, nodes }) => total + (enabled ? nodes.length : 0),
+    0
+  )
+)
+
+type FilteredProvider = (typeof providerRows)['value'][number] & {
+  totalModelCount?: number
+}
+
+const filteredProviders = computed<FilteredProvider[]>(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase()
   if (!query) return providerRows.value
 
-  return providerRows.value.flatMap((provider) => {
+  return providerRows.value.flatMap((provider): FilteredProvider[] => {
     if (provider.displayName.toLocaleLowerCase().includes(query)) {
-      return provider
+      return [provider]
     }
 
     const nodes = provider.nodes.filter(({ name }) =>
       name.toLocaleLowerCase().includes(query)
     )
-    return nodes.length > 0 ? [{ ...provider, nodes }] : []
+    return nodes.length > 0
+      ? [{ ...provider, nodes, totalModelCount: provider.nodes.length }]
+      : []
   })
+})
+
+const bulkMenuEntries = computed<MenuItem[]>(() => {
+  const rows = filteredProviders.value
+  const providerIds = rows.map(({ id }) => id)
+  const locked = isSaving.value || !canEditPolicy.value || rows.length === 0
+
+  return [
+    {
+      label: isSearching.value
+        ? t('workspacePanel.partnerNodes.disableMatchingCount', rows.length)
+        : t('workspacePanel.partnerNodes.disableAllCount', rows.length),
+      disabled: locked || rows.every(({ enabled }) => !enabled),
+      command: () => handleBulkDisable(providerIds)
+    },
+    {
+      label: isSearching.value
+        ? t('workspacePanel.partnerNodes.enableMatchingCount', rows.length)
+        : t('workspacePanel.partnerNodes.enableAllCount', rows.length),
+      disabled: locked || rows.every(({ enabled }) => enabled),
+      command: () =>
+        void performSave(() => setProvidersEnabled(providerIds, true))
+    }
+  ]
 })
 
 const sortedProviders = computed(() =>
@@ -412,8 +498,9 @@ const sortedProviders = computed(() =>
     const result =
       sortField.value === 'provider'
         ? a.displayName.localeCompare(b.displayName)
-        : Number(a.enabled) * a.nodes.length -
-          Number(b.enabled) * b.nodes.length
+        : sortField.value === 'models'
+          ? a.nodes.length - b.nodes.length
+          : Number(a.enabled) - Number(b.enabled)
     const directedResult =
       sortDirection.value === 'ascending' ? result : -result
     return directedResult || a.displayName.localeCompare(b.displayName)
@@ -431,6 +518,17 @@ function sortBy(field: SortField) {
   sortDirection.value = field === 'provider' ? 'ascending' : 'descending'
 }
 
+function sortIcon(field: SortField) {
+  return cn(
+    sortField.value === field
+      ? 'icon-[lucide--arrow-down]'
+      : 'icon-[lucide--arrow-up-down]',
+    sortField.value === field &&
+      sortDirection.value === 'descending' &&
+      'rotate-180'
+  )
+}
+
 function toggleExpanded(providerId: string) {
   const nextIds = new Set(expandedProviderIds.value)
   if (nextIds.has(providerId)) nextIds.delete(providerId)
@@ -438,11 +536,8 @@ function toggleExpanded(providerId: string) {
   expandedProviderIds.value = nextIds
 }
 
-function isProviderExpanded(providerId: string) {
-  return (
-    searchQuery.value.trim().length > 0 ||
-    expandedProviderIds.value.has(providerId)
-  )
+function isProviderExpanded(provider: { id: string }) {
+  return expandedProviderIds.value.has(provider.id)
 }
 
 async function performSave(action: () => Promise<void>) {
@@ -458,8 +553,12 @@ function saveProviderChange(providerId: string, enabled: boolean) {
   void performSave(() => setProviderEnabled(providerId, enabled))
 }
 
-async function handleEnableAll() {
-  await performSave(() => setAllProvidersEnabled(true))
+function handleBulkDisable(providerIds: string[]) {
+  if (isSearching.value) {
+    void performSave(() => setProvidersEnabled(providerIds, false))
+    return
+  }
+  confirmDisableAll()
 }
 
 function createPolicyConfirmationGuard() {
@@ -497,10 +596,40 @@ function confirmDisableAll() {
   })
 }
 
-function requestEnforcementMode(enabled: boolean) {
-  if (enabled === isRestricted.value) return
+function requestAccessModeToggle() {
+  if (isGated.value) {
+    confirmEnterpriseUpsell()
+    return
+  }
+  if (!canEditPolicy.value || isSaving.value) return
 
+  const enabled = !isRestricted.value
   confirmAccessModeChange(enabled, () => setEnforcementEnabled(enabled))
+}
+
+function openEnterprisePage() {
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
+}
+
+function confirmEnterpriseUpsell() {
+  const dialog = showConfirmDialog({
+    headerProps: {
+      title: t('workspacePanel.partnerNodes.gatedDialogTitle')
+    },
+    props: {
+      promptText: t('workspacePanel.partnerNodes.gatedDialogMessage')
+    },
+    footerProps: {
+      cancelText: t('workspacePanel.partnerNodes.notNow'),
+      confirmText: t('workspacePanel.partnerNodes.contactUs'),
+      confirmVariant: 'inverted',
+      onCancel: () => dialogStore.closeDialog(dialog),
+      onConfirm: () => {
+        openEnterprisePage()
+        dialogStore.closeDialog(dialog)
+      }
+    }
+  })
 }
 
 function confirmAccessModeChange(
@@ -522,7 +651,7 @@ function confirmAccessModeChange(
     },
     footerProps: {
       confirmText: t('g.confirm'),
-      confirmVariant: 'primary',
+      confirmVariant: 'secondary',
       optionsDisabled: isSaving,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {

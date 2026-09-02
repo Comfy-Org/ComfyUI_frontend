@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
@@ -75,10 +77,6 @@ function uniqueId(prefix: string): string {
 }
 
 describe('jobOutputCache', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('findActiveIndex', () => {
     it('returns index of matching URL', () => {
       const items = [

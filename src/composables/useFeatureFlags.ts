@@ -4,13 +4,14 @@ import type { Ref } from 'vue'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedConsolidatedBillingEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 /**
  * Known server feature flags (top-level, not extensions)
@@ -20,11 +21,13 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
+  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
   ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
+  PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -33,8 +36,9 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
+  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -44,13 +48,17 @@ export enum ServerFeatureFlag {
 }
 
 /**
- * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
+ * Resolves a feature flag value with session override > dev override >
+ * remoteConfig > serverFeature priority.
  */
 function resolveFlag<T>(
   flagKey: string,
   remoteConfigValue: T | undefined,
   defaultValue: T
 ): T {
+  const sessionOverride = getSessionOverride<T>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
   const override = getDevOverride<T>(flagKey)
   if (override !== undefined) return override
   return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
@@ -67,6 +75,9 @@ function resolveAuthGatedFlag(
   remoteConfigValue: boolean | undefined,
   cachedValue: Ref<boolean | undefined>
 ): boolean {
+  const sessionOverride = getSessionOverride<boolean>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
   const override = getDevOverride<boolean>(flagKey)
   if (override !== undefined) return override
 
@@ -74,6 +85,14 @@ function resolveAuthGatedFlag(
   if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
+}
+
+function resolveFailClosedBooleanFlag(flagKey: string): boolean {
+  try {
+    return api.getServerFeature<unknown>(flagKey, false) === true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -94,6 +113,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
         remoteConfig.value.model_upload_button_enabled,
+        false
+      )
+    },
+    get assetDeletionEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_DELETION_ENABLED,
+        undefined,
         false
       )
     },
@@ -119,12 +145,10 @@ export function useFeatureFlags() {
       )
     },
     get linearToggleEnabled() {
-      if (isNightly) return true
-
       return resolveFlag(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
         remoteConfig.value.linear_toggle_enabled,
-        false
+        isNightly
       )
     },
     get partnerNodeGovernanceEnabled() {
@@ -132,6 +156,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         remoteConfig.value.partner_node_governance_enabled,
         false
+      )
+    },
+    get partnerRunGateEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
+        remoteConfig.value.partner_run_gate_enabled,
+        true
       )
     },
     get userSecretsEnabled() {
@@ -145,14 +176,10 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get nodeLibraryEssentialsEnabled() {
-      if (isNightly || import.meta.env.DEV) return true
-
-      return (
-        remoteConfig.value.node_library_essentials_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-          false
-        )
+      return resolveFlag(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        remoteConfig.value.node_library_essentials_enabled,
+        isNightly || import.meta.env.DEV
       )
     },
     get workflowSharingEnabled() {
@@ -185,17 +212,12 @@ export function useFeatureFlags() {
       )
     },
     get unifiedCloudAuthEnabled() {
+      if (!isCloud) return false
+
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
         false
-      )
-    },
-    get consolidatedBillingEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
-        remoteConfig.value.consolidated_billing_enabled,
-        cachedConsolidatedBillingEnabled
       )
     },
     get billingControlEnabled() {
@@ -203,6 +225,18 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get legacyBillingMigrationEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
+        remoteConfig.value.legacy_billing_migration_enabled,
+        cachedLegacyBillingMigrationEnabled
+      )
+    },
+    get embeddedCheckoutEnabled() {
+      return resolveFailClosedBooleanFlag(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED
       )
     },
     get v1PaymentRecovery() {
@@ -250,6 +284,9 @@ export function useFeatureFlags() {
         remoteConfig.value.onboarding_tour_enabled,
         false
       )
+    },
+    get assetsEnabled() {
+      return isCloud || resolveFlag('assets', undefined, false)
     }
   })
 

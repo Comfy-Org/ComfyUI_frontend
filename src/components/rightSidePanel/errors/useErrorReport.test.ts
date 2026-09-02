@@ -115,10 +115,6 @@ describe('useErrorReport', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(async () => {
-    mocks.getLogs.mockReset()
-    mocks.serialize.mockReset()
-    mocks.refetchSystemStats.mockReset()
-    mocks.generateErrorReport.mockReset()
     storeState.systemStats = null
     storeState.isLoading = false
     const store = await getStore()

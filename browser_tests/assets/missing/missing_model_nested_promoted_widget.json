@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": 3,
-      "type": "outer-subgraph-with-promoted-missing-model",
+      "type": "4e7c1a2b-3d5f-4a6b-8c9d-0e1f2a3b4c5d",
       "pos": [10, 250],
       "size": [400, 200],
       "flags": {},
@@ -20,7 +20,7 @@
     },
     {
       "id": 4,
-      "type": "outer-subgraph-with-promoted-missing-model",
+      "type": "4e7c1a2b-3d5f-4a6b-8c9d-0e1f2a3b4c5d",
       "pos": [450, 250],
       "size": [400, 200],
       "flags": {},
@@ -38,7 +38,7 @@
   "definitions": {
     "subgraphs": [
       {
-        "id": "outer-subgraph-with-promoted-missing-model",
+        "id": "4e7c1a2b-3d5f-4a6b-8c9d-0e1f2a3b4c5d",
         "version": 1,
         "state": {
           "lastGroupId": 0,
@@ -71,7 +71,7 @@
         "nodes": [
           {
             "id": 2,
-            "type": "inner-subgraph-with-promoted-missing-model",
+            "type": "5f8d2b3c-4e6a-4b7c-9d0e-1f2a3b4c5d6e",
             "pos": [250, 180],
             "size": [400, 200],
             "flags": {},
@@ -105,7 +105,7 @@
         ]
       },
       {
-        "id": "inner-subgraph-with-promoted-missing-model",
+        "id": "5f8d2b3c-4e6a-4b7c-9d0e-1f2a3b4c5d6e",
         "version": 1,
         "state": {
           "lastGroupId": 0,

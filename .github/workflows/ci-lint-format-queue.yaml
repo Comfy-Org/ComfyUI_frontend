@@ -32,7 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          # Blobless full history: pnpm locale:check (lint-format-verify)
+          # fetches the English source blobs recorded in
+          # src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend

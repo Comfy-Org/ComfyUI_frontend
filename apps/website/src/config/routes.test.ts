@@ -19,16 +19,95 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
+    expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
+      '/enterprise/managed-builds'
+    )
+  })
+
+  it('only localizes the Japanese homepage', () => {
+    expect(localizeHref('/', 'ja')).toBe('/ja/')
+    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+  })
+})
+
+describe('getRoutes models', () => {
+  it('serves the models catalog at its canonical path for zh-CN', () => {
+    expect(getRoutes('zh-CN').models).toBe('/p/supported-models')
+  })
+})
+
+describe('getRoutes modelsShowcase', () => {
+  it('serves the models showcase page at its canonical path for en', () => {
+    expect(getRoutes('en').modelsShowcase).toBe('/models')
+  })
+
+  it('serves a localized models showcase path for zh-CN', () => {
+    expect(getRoutes('zh-CN').modelsShowcase).toBe('/zh-CN/models')
+  })
+})
+
+describe('getRoutes seedance', () => {
+  it('serves the seedance page at its canonical path for en', () => {
+    expect(getRoutes('en').seedance).toBe('/seedance-2.5')
+  })
+
+  it('serves a localized seedance path for zh-CN', () => {
+    expect(getRoutes('zh-CN').seedance).toBe('/zh-CN/seedance-2.5')
+  })
+})
+
+describe('getRoutes ltx', () => {
+  it('serves the ltx page at its canonical path for en', () => {
+    expect(getRoutes('en').ltx).toBe('/ltx-2.5')
+  })
+
+  it('serves a localized ltx path for zh-CN', () => {
+    expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
+describe('getRoutes minimaxLicenseProfessionalRequest', () => {
+  it('serves the license request page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+
+  it('never prefixes the English-only license request page for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+})
+
+describe('getRoutes geminiOmni', () => {
+  it('serves the gemini omni page at its canonical path for en', () => {
+    expect(getRoutes('en').geminiOmni).toBe('/gemini-omni')
+  })
+
+  it('serves a localized gemini omni path for zh-CN', () => {
+    expect(getRoutes('zh-CN').geminiOmni).toBe('/zh-CN/gemini-omni')
+  })
+})
+
+describe('getRoutes minimaxMusic3', () => {
+  it('serves the minimax music 3 page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxMusic3).toBe('/minimax-music-3')
+  })
+
+  it('serves a localized minimax music 3 path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxMusic3).toBe('/zh-CN/minimax-music-3')
   })
 })
 
 describe('getRoutes minimax', () => {
   it('serves the minimax page at its canonical path for en', () => {
-    expect(getRoutes('en').minimax).toBe('/minimax')
+    expect(getRoutes('en').minimax).toBe('/minimax-h3')
   })
 
   it('serves a localized minimax path for zh-CN', () => {
-    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax')
+    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax-h3')
   })
 })
 
@@ -39,5 +118,35 @@ describe('getRoutes flux3', () => {
 
   it('serves a localized flux 3 path for zh-CN', () => {
     expect(getRoutes('zh-CN').flux3).toBe('/zh-CN/flux-3')
+  })
+})
+
+describe('getRoutes agent', () => {
+  it('serves the agent page at its canonical path for en', () => {
+    expect(getRoutes('en').agent).toBe('/agent')
+  })
+
+  it('serves the English-only agent page at its canonical path for zh-CN', () => {
+    expect(getRoutes('zh-CN').agent).toBe('/agent')
+  })
+})
+
+describe('getRoutes fdct', () => {
+  it('serves the fdct page at its canonical path for en', () => {
+    expect(getRoutes('en').fdct).toBe('/forward-deployed-creatives')
+  })
+
+  it('serves a localized fdct path for zh-CN', () => {
+    expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/forward-deployed-creatives')
+  })
+})
+
+describe('getRoutes minimaxLicense', () => {
+  it('serves the MiniMax license page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicense).toBe('/minimax/license')
+  })
+
+  it('serves a localized MiniMax license path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
   })
 })

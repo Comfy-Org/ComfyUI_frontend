@@ -1,4 +1,3 @@
-import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -64,18 +63,16 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (character) => {
-    return `&#${character.charCodeAt(0)};`
-  })
+interface HighlightQueryPart {
+  text: string
+  highlighted: boolean
 }
 
 export function highlightQuery(
   text: string,
-  query: string,
-  sanitize: boolean = true
-) {
-  if (!query) return sanitize ? escapeHtml(text) : text
+  query: string
+): HighlightQueryPart[] {
+  if (!query) return [{ text, highlighted: false }]
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
@@ -84,24 +81,26 @@ export function highlightQuery(
     .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('[ ]?')
 
-  const regex = new RegExp(`(${pattern})`, 'gi')
-  if (!sanitize) {
-    return text.replace(regex, '<span class="highlight">$1</span>')
-  }
-
-  const parts: string[] = []
+  const regex = new RegExp(pattern, 'gi')
+  const parts: HighlightQueryPart[] = []
   let lastIndex = 0
+
   for (const match of text.matchAll(regex)) {
-    parts.push(escapeHtml(text.slice(lastIndex, match.index)))
-    parts.push(`<span class="highlight">${escapeHtml(match[0])}</span>`)
+    if (match.index > lastIndex) {
+      parts.push({
+        text: text.slice(lastIndex, match.index),
+        highlighted: false
+      })
+    }
+    parts.push({ text: match[0], highlighted: true })
     lastIndex = match.index + match[0].length
   }
-  parts.push(escapeHtml(text.slice(lastIndex)))
 
-  return DOMPurify.sanitize(parts.join(''), {
-    ALLOWED_TAGS: ['span'],
-    ALLOWED_ATTR: ['class']
-  })
+  if (lastIndex < text.length || parts.length === 0) {
+    parts.push({ text: text.slice(lastIndex), highlighted: false })
+  }
+
+  return parts
 }
 
 export function formatNumberWithSuffix(
@@ -404,6 +403,13 @@ export const paramsToCacheKey = (params: unknown): string => {
   return String(params)
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Accepts canonical UUIDs of any version or variant for legacy compatibility. */
+export const isValidUuid = (value: unknown): value is string =>
+  typeof value === 'string' && UUID_PATTERN.test(value)
+
 /**
  * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
  * @returns A properly formatted UUID string
@@ -636,7 +642,7 @@ const IMAGE_EXTENSIONS = [
   'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const
 const THREE_D_EXTENSIONS = [
   'obj',
   'fbx',

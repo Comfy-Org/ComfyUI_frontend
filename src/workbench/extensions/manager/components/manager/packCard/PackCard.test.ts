@@ -78,7 +78,6 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 describe('PackCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     storageMap.clear()
   })
 

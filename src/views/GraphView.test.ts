@@ -1,8 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -11,6 +10,7 @@ import type * as DistTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
 const apiMock = vi.hoisted(() => new EventTarget())
+const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock('@/scripts/api', () => ({ api: apiMock }))
 
@@ -65,7 +65,13 @@ vi.mock('@/i18n', async (importOriginal) => {
 })
 vi.mock('@/platform/distribution/types', async (importOriginal) => {
   const actual = await importOriginal<typeof DistTypes>()
-  return { ...actual, isCloud: false, isDesktop: false }
+  return {
+    ...actual,
+    get isCloud() {
+      return distribution.isCloud
+    },
+    isDesktop: false
+  }
 })
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: vi.fn(() => undefined), set: vi.fn() })
@@ -162,6 +168,9 @@ vi.mock('@/utils/envUtil', () => ({
 
 // Module-mock heavy child components so we don't pay their import cost.
 const stubModule = { default: { template: '<div />' } }
+vi.mock('@/components/actionbar/PartnerNodesEducationCard.vue', () => ({
+  default: { template: '<div data-testid="education-card-stub" />' }
+}))
 vi.mock('@/components/graph/GraphCanvas.vue', () => stubModule)
 vi.mock('@/views/LinearView.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderToolbar.vue', () => stubModule)
@@ -200,14 +209,11 @@ vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 // loaded worker pool while it passed in isolation (#14666).
 const { default: GraphView } = await import('./GraphView.vue')
 
-describe('GraphView - reconnect wiring', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
+describe('GraphView - reconnect wiring', () => {
   it('wires the reconnected event to the toast and queue refresh', () => {
-    render(GraphView)
+    render(GraphView, { global: { plugins: [i18n] } })
 
     apiMock.dispatchEvent(new Event('reconnected'))
 
@@ -218,5 +224,25 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('GraphView - partner nodes education card', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it('mounts the card on local builds', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.getByTestId('education-card-stub')).toBeInTheDocument()
+  })
+
+  it('never mounts the card on cloud', () => {
+    distribution.isCloud = true
+
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
   })
 })

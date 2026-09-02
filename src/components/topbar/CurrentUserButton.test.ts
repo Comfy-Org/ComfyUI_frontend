@@ -115,7 +115,6 @@ vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockTeamWorkspaceStore.workspaceName.value = ''
     mockTeamWorkspaceStore.initState.value = 'idle'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
@@ -217,5 +216,26 @@ describe('CurrentUserButton', () => {
     renderComponent()
     expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
     expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it('shows WorkspaceProfilePic for an active local team workspace', () => {
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
+    mockTeamWorkspaceStore.workspaceName.value = 'My Team'
+
+    renderComponent()
+
+    expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
+    expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it('shows workspace actions after local workspace initialization', async () => {
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    const { user } = renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+    expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+    expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
   })
 })

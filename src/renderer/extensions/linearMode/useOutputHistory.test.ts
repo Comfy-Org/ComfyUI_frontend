@@ -1,6 +1,7 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, toValue, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
@@ -24,16 +25,24 @@ const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
 const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => ({
-    media: mediaRef,
-    loading: ref(false),
-    error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
-    loadMore: vi.fn(),
-    hasMore: ref(false),
-    isLoadingMore: ref(false)
+vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+  getAssetType: (tags?: string[]) =>
+    tags?.[0] === 'output' ? 'output' : 'input',
+  mapInputFileToAssetItem: vi.fn(),
+  mapTaskOutputToAssetItem: vi.fn(),
+  unflattenOutputAssets: vi.fn()
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    outputAssets: {
+      hasMore: ref(false),
+      invalidate: vi.fn(),
+      isLoading: ref(false),
+      items: mediaRef,
+      loadMore: vi.fn(),
+      loadNew: vi.fn()
+    }
   })
 }))
 
@@ -99,29 +108,12 @@ vi.mock('@/services/jobOutputCache', () => ({
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
 }))
 
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
-}))
-
 function makeAsset(
   id: string,
   jobId: string,
   opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
 ): AssetItem {
-  return {
+  return fromPartial({
     id,
     name: `${id}.png`,
     tags: [],
@@ -135,7 +127,7 @@ function makeAsset(
         ? { outputCount: opts.outputCount }
         : {})
     }
-  }
+  })
 }
 
 function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
@@ -150,7 +142,6 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mediaRef.value = []
     pendingResolveRef.value = new Set()
     inProgressItemsRef.value = []
@@ -163,8 +154,6 @@ describe(useOutputHistory, () => {
     pendingTasksRef.value = []
     resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
-    selectAsLatestFn.mockReset()
-    resolveIfReadyFn.mockReset()
   })
 
   describe('sessionMedia filtering', () => {
@@ -177,8 +166,8 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a1')
     })
 
     it('returns empty when no workflow is active', () => {
@@ -188,7 +177,7 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(0)
+      expect(toValue(outputs.items)).toHaveLength(0)
     })
 
     it('updates when active workflow changes', async () => {
@@ -201,14 +190,14 @@ describe(useOutputHistory, () => {
       activeWorkflowPathRef.value = 'workflows/a.json'
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a1')
 
       activeWorkflowPathRef.value = 'workflows/b.json'
       await nextTick()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a2')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a2')
     })
   })
 

@@ -78,10 +78,9 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
       .locator('button[role="combobox"]')
     await expect(presetTrigger).toContainText('test-preset')
 
-    // Wait for toast to auto-dismiss, then close settings via Escape
+    // Wait for toast to auto-dismiss
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
-    await page.keyboard.press('Escape')
-    await comfyPage.settingDialog.waitForHidden()
+    await comfyPage.settingDialog.close()
 
     // Load workflow again, use new keybind Ctrl+Shift+A
     await comfyPage.workflow.loadWorkflow('default')
@@ -109,8 +108,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
 
     await expect(presetTrigger).toContainText('Default Preset')
 
-    await page.keyboard.press('Escape')
-    await comfyPage.settingDialog.waitForHidden()
+    await comfyPage.settingDialog.close()
   })
 
   test('Can export a preset and re-import it', async ({ comfyPage }) => {
@@ -143,8 +141,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     expect(download.suggestedFilename()).toContain('test-preset')
 
     // Close settings
-    await page.keyboard.press('Escape')
-    await comfyPage.settingDialog.waitForHidden()
+    await comfyPage.settingDialog.close()
 
     // Verify the downloaded file is valid JSON with correct structure
     const downloadPath = await download.path()
@@ -195,8 +192,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await expect(presetTrigger).toContainText('Default Preset')
 
     // Close settings
-    await page.keyboard.press('Escape')
-    await comfyPage.settingDialog.waitForHidden()
+    await comfyPage.settingDialog.close()
   })
 
   test('Can save modifications as a new preset', async ({ comfyPage }) => {
@@ -235,8 +231,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await expect(presetTrigger).toContainText('my-custom-preset')
 
     // Close settings
-    await page.keyboard.press('Escape')
-    await comfyPage.settingDialog.waitForHidden()
+    await comfyPage.settingDialog.close()
 
     // Cleanup: delete the my-custom-preset file
     await comfyPage.request.fetch(

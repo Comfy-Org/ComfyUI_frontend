@@ -39,6 +39,18 @@ const CLOUD_UNKNOWN_MODEL_NAME = 'cloud_unknown_model.safetensors'
 const CLOUD_IMPORTED_CANONICAL_MODEL_NAME =
   'models/checkpoints/cloud_importable_model.safetensors'
 
+const FAKE_MODEL_ASSET: Asset = {
+  id: 'test-fake-checkpoint',
+  name: FAKE_MODEL_NAME,
+  size: 1_024,
+  mime_type: 'application/octet-stream',
+  tags: ['models', 'checkpoints'],
+  created_at: '2026-05-05T00:00:00Z',
+  updated_at: '2026-05-05T00:00:00Z',
+  last_access_time: '2026-05-05T00:00:00Z',
+  user_metadata: { filename: FAKE_MODEL_NAME }
+}
+
 const LOTUS_DIFFUSION_MODEL: Asset & { hash?: string } = {
   id: 'test-lotus-depth-d-v1-1',
   name: LOTUS_MODEL_NAME,
@@ -163,24 +175,76 @@ test.describe(
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       await expect(errorOverlay).toBeHidden()
 
-      const requestCountBeforeRootReturn = countAssetRequestsByTag(
-        cloudAssetRequests,
-        'diffusion_models'
-      )
-
+      // Returning to the root must not resurface the installed model as
+      // missing. No re-scan runs on graph switch, and none is needed — the
+      // contract is the absence of the error, not the presence of a re-scan.
       await comfyPage.subgraph.exitViaBreadcrumb()
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect(
+        comfyPage.vueNodes.getNodeLocator(OUTER_SUBGRAPH_NODE_ID)
+      ).toBeVisible()
+
       await panel.open(comfyPage.actionbar.propertiesButton)
-
-      await expect
-        .poll(
-          () =>
-            countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models') >
-            requestCountBeforeRootReturn,
-          { timeout: 10_000 }
-        )
-        .toBe(true)
-
+      await expect(errorOverlay).toBeHidden()
       await expect(errorsTab).toBeHidden()
+    })
+
+    test('keeps Errors active through pasted-node verification and falls back when resolved', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const missingModelsGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      let visibleAssets: Asset[] = []
+      let markVerificationStarted: () => void = () => undefined
+      const verificationStarted = new Promise<void>((resolve) => {
+        markVerificationStarted = resolve
+      })
+      let releaseVerification: () => void = () => undefined
+      const verificationGate = new Promise<void>((resolve) => {
+        releaseVerification = resolve
+      })
+      await comfyPage.page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+        markVerificationStarted()
+        await verificationGate
+        const response: ListAssetsResponse = {
+          assets: visibleAssets,
+          total: visibleAssets.length,
+          has_more: false
+        }
+        await route.fulfill({ json: response })
+      })
+
+      const source = await comfyPage.nodeOps.getNodeRefById('1')
+      await source.click('title')
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+      await verificationStarted
+
+      await expect(panel.errorsTab).toHaveAttribute('aria-selected', 'true')
+      releaseVerification()
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+      await expect(
+        missingModelsGroup.getByTestId(
+          TestIds.dialogs.missingModelReferenceCount
+        )
+      ).toHaveText('2')
+      await expect(panel.errorsTab).toHaveAttribute('aria-selected', 'true')
+
+      visibleAssets = [FAKE_MODEL_ASSET]
+      await source.click('title')
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(3)
+      await expect(missingModelsGroup).toBeHidden()
+      await expect(panel.errorsTab).toBeHidden()
+      await expect(panel.getTab('Parameters')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
     })
 
     test('separates importable cloud models from unsupported rows', async ({

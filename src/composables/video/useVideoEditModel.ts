@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { clamp } from 'es-toolkit'
@@ -18,6 +18,35 @@ interface UseVideoEditModelOptions {
   height: Ref<number>
 }
 
+function finiteOrZero(value: number | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function sanitizeTrim(
+  trim: VideoEditTrim | undefined
+): VideoEditTrim | undefined {
+  if (!trim) return undefined
+  const startTime = Math.max(finiteOrZero(trim.start_time), 0)
+  const trimDuration = Math.max(finiteOrZero(trim.duration), 0)
+  return trim.start_time === startTime && trim.duration === trimDuration
+    ? trim
+    : { start_time: startTime, duration: trimDuration }
+}
+
+function sanitizeCrop(crop: Bounds | undefined): Bounds | undefined {
+  if (!crop) return undefined
+  const usable =
+    [crop.x, crop.y, crop.width, crop.height].every(Number.isFinite) &&
+    crop.x >= 0 &&
+    crop.y >= 0 &&
+    crop.width > 0 &&
+    crop.height > 0
+  if (usable) return crop
+  const isNoOp =
+    crop.x === 0 && crop.y === 0 && crop.width === 0 && crop.height === 0
+  return isNoOp ? crop : { x: 0, y: 0, width: 0, height: 0 }
+}
+
 export function useVideoEditModel(
   modelValue: Ref<VideoEditValue>,
   options: UseVideoEditModelOptions
@@ -31,8 +60,24 @@ export function useVideoEditModel(
   const toFrame = (time: number) =>
     timeToFrame(time, duration.value, totalFrames.value, fps.value)
 
+  watch(
+    modelValue,
+    (value) => {
+      const trim = sanitizeTrim(value.trim)
+      const crop = sanitizeCrop(value.crop)
+      if (trim !== value.trim || crop !== value.crop) {
+        modelValue.value = {
+          ...value,
+          ...(trim && { trim }),
+          ...(crop && { crop })
+        }
+      }
+    },
+    { immediate: true }
+  )
+
   const trimSection = computed(
-    () => modelValue.value.trim ?? { start_time: 0, duration: 0 }
+    () => sanitizeTrim(modelValue.value.trim) ?? { start_time: 0, duration: 0 }
   )
 
   const trimsToVideoEnd = computed(() => trimSection.value.duration === 0)
@@ -89,9 +134,19 @@ export function useVideoEditModel(
 
   const cropBounds = computed<Bounds>({
     get: () => {
-      const crop = modelValue.value.crop
+      const crop = sanitizeCrop(modelValue.value.crop)
       if (!crop || crop.width <= 0 || crop.height <= 0) {
         return { x: 0, y: 0, width: width.value, height: height.value }
+      }
+      if (width.value > 0 && height.value > 0) {
+        const x = Math.min(crop.x, width.value - 1)
+        const y = Math.min(crop.y, height.value - 1)
+        return {
+          x,
+          y,
+          width: Math.min(crop.width, width.value - x),
+          height: Math.min(crop.height, height.value - y)
+        }
       }
       return { ...crop }
     },
@@ -122,46 +177,5 @@ export function useVideoEditModel(
     }
   })
 
-  const hasActiveTrim = () => {
-    const trim = modelValue.value.trim
-    return !!trim && (trim.start_time > 0 || trim.duration > 0)
-  }
-
-  const hasActiveCrop = () => {
-    const crop = modelValue.value.crop
-    return !!crop && crop.width > 0 && crop.height > 0
-  }
-
-  const trimEnabledState = ref(hasActiveTrim())
-  const cropEnabledState = ref(hasActiveCrop())
-
-  const trimEnabled = computed({
-    get: () => trimEnabledState.value,
-    set: (enabled) => {
-      trimEnabledState.value = enabled
-      if (!enabled) setTrim({ start_time: 0, duration: 0 })
-    }
-  })
-
-  const cropEnabled = computed({
-    get: () => cropEnabledState.value,
-    set: (enabled) => {
-      cropEnabledState.value = enabled
-      if (!enabled) {
-        modelValue.value = {
-          ...modelValue.value,
-          crop: { x: 0, y: 0, width: 0, height: 0 }
-        }
-      }
-    }
-  })
-
-  watch(hasActiveTrim, (active) => {
-    if (active) trimEnabledState.value = true
-  })
-  watch(hasActiveCrop, (active) => {
-    if (active) cropEnabledState.value = true
-  })
-
-  return { startFrame, endFrame, cropBounds, trimEnabled, cropEnabled }
+  return { startFrame, endFrame, cropBounds }
 }

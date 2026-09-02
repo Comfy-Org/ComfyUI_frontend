@@ -172,7 +172,6 @@ const mockNode = fromPartial<ComfyNodeDefImpl>({
 
 describe('NodeLibrarySidebarTab', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     resetRoot()
   })
 

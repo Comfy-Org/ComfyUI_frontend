@@ -11,9 +11,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-export const CLOUD_REMOTE_CONFIG: RemoteConfig = {
-  consolidated_billing_enabled: true
-}
+export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 
 export const LEGACY_PERSONAL_BILLING_STATUS = {
   billing_rail: 'legacy_stripe',
@@ -45,6 +43,11 @@ export const TEAM_WORKSPACE: WorkspaceWithRole = {
   joined_at: '2025-01-02T00:00:00Z',
   role: 'owner',
   subscription_tier: 'PRO'
+}
+
+export const TEAM_MEMBER_WORKSPACE: WorkspaceWithRole = {
+  ...TEAM_WORKSPACE,
+  role: 'member'
 }
 
 export const CREATOR: Member = {
@@ -96,8 +99,6 @@ const TEAM_PLAN_SLUG = 'team-pro-monthly'
 
 export const TEAM_BILLING_STATUS = {
   is_active: true,
-  max_seats: 30,
-  occupied_seats: DEFAULT_TEAM_MEMBERS.length,
   subscription_status: 'active',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -105,7 +106,9 @@ export const TEAM_BILLING_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null
+  team_credit_stop: null,
+  max_seats: 30,
+  occupied_seats: DEFAULT_TEAM_MEMBERS.length
 } satisfies IngestBillingStatusResponse
 
 export const ENDED_STANDARD_BILLING_STATUS = {
@@ -113,14 +116,22 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,
-  max_seats: 30,
-  occupied_seats: DEFAULT_TEAM_MEMBERS.length,
   plan_slug: 'standard-monthly',
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
   subscription_tier: 'STANDARD',
-  team_credit_stop: null
+  team_credit_stop: null,
+  max_seats: 1,
+  occupied_seats: 1
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
+
+export const INACTIVE_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  billing_status: 'inactive',
+  is_active: false,
+  subscription_status: 'canceled',
+  subscription_tier: 'TEAM'
+} satisfies IngestBillingStatusResponse
 
 export const TEAM_PRO_PLAN: Plan = {
   slug: TEAM_PLAN_SLUG,

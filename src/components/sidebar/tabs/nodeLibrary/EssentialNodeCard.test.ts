@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -74,8 +73,6 @@ const UNRESOLVED_TILE: EssentialTile = {
 
 describe('EssentialNodeCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
     useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage')])
   })
 
