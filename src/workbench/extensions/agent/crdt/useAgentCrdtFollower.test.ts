@@ -274,7 +274,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('clears only for an explicit reset and rebinds after replacement', () => {
-    const { unmount } = mountFollower('wf-1')
+    const { unmount, status } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
 
     dispatchFrame('doc_reset', {
@@ -288,7 +288,21 @@ describe('useAgentCrdtFollower', () => {
       opId: 'doc-reset:43'
     })
 
-    dispatchFrame('follower_replaced', { seq: 43 })
+    bridge().follower.updatesApplied = 3
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
+    expect(status().updatesApplied).toBe(3)
+
+    dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
+    expect(status().updatesApplied).toBe(3)
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+    expect(status().updatesApplied).toBe(0)
+    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'agent-lineage',
+      opId: 'follower-replaced:wf-1'
+    })
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',

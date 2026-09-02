@@ -436,14 +436,28 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  const onFollowerReplaced: EventListener = () => {
-    const workflowId = bridge.subscribedWorkflowId
+  const onFollowerReplaced: EventListener = (event) => {
+    // Gate on this composable's own INTENT, not the bridge's send REALITY
+    // (`bridge.subscribedWorkflowId`): a doc replacement while the socket is
+    // down leaves reality null, but the adapter must still be rebound to the
+    // new doc — otherwise it keeps observing the destroyed one and goes deaf
+    // when the socket recovers and updates land in the replacement.
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    const workflowId = detail?.workflowId
     if (
       isTargetActive.value &&
-      workflowId !== null &&
+      typeof workflowId === 'string' &&
       workflowId === subscribedWorkflowId.value
-    )
+    ) {
+      updatesApplied.value = 0
+      adapter.clearForReset(workflowId, {
+        source: 'agent-remote',
+        actor: 'agent-lineage',
+        opId: `follower-replaced:${workflowId}`
+      })
       adapter.bind(workflowId, bridge.follower)
+    }
   }
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so

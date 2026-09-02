@@ -3201,6 +3201,7 @@
     "scail": "scail",
     "schedulers": "scheduler",
     "scheduling": "pianificazione",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigma",
     "sound": "suono",
@@ -5038,8 +5039,10 @@
       "failedCount": "Impossibile inviare {count} invito. Riprova. | Impossibile inviare {count} inviti. Riprova.",
       "invalidEmailCount": "{count} indirizzo email non valido | {count} indirizzi email non validi",
       "invitedMessage": "Un invito è stato inviato a {emails} | Inviti sono stati inviati a {emails}",
+      "pendingInviteCount": "{count} di queste persone hanno già un invito in sospeso. Verranno ignorate.",
+      "pendingInviteSingle": "Questa persona ha già un invito in sospeso",
       "placeholder": "Inserisci email separate da virgole",
-      "seatLimitReached": "Puoi invitare fino a {count} membro. | Puoi invitare fino a {count} membri.",
+      "seatLimitExceeded": "Questo spazio di lavoro è limitato a {max} membri. Rimuovi {overage} membri per continuare.",
       "title": "Invita membri a questo workspace"
     },
     "inviteUpsellDialog": {
