@@ -67,6 +67,16 @@ export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
+  /**
+   * Eager abort seam (FE #16637 residual): settle the in-flight batch
+   * undeliverable NOW if its mint-time workflow no longer matches
+   * `deps.workflowId()`, instead of waiting out the 10 s result-silence
+   * window before the next transmit re-reads it. A caller with an earlier
+   * signal that the subscription is gone (e.g. `doc_subscribed {ok:false}`)
+   * should call this immediately; a no-op otherwise (still bound, or the
+   * unbind already resolved through the normal transmit-time check).
+   */
+  abortIfUnbound(): void
   detach(): void
 }
 
@@ -193,6 +203,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
+    },
+    abortIfUnbound() {
+      if (inFlight && deps.workflowId() !== inFlight.workflowId) {
+        settleUndeliverable(inFlight)
+      }
     },
     detach() {
       detached = true

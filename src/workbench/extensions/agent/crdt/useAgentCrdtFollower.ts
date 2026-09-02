@@ -318,6 +318,10 @@ export function useAgentCrdtFollower(
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
+      // FE #16637 residual: a refusal is the earliest signal the sender can
+      // get that its in-flight batch's doc is gone — don't make it wait out
+      // the 10 s result-silence window to notice on its own.
+      sender.abortIfUnbound()
     }
   }
   const onUpdate: EventListener = (event) => {

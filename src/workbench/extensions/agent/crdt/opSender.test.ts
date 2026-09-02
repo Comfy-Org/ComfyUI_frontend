@@ -160,6 +160,46 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('abortIfUnbound settles an in-flight batch immediately, without waiting the 10s silence window', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(settled).toEqual([
+      { state: 'undeliverable', ops: expect.any(Array) }
+    ])
+    // No resend was burned reaching this outcome.
+    expect(sent).toHaveLength(1)
+  })
+
+  it('abortIfUnbound frees the queue for the next bound batch immediately', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(1)
+
+    sender.abortIfUnbound()
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(settled[0].state).toBe('undeliverable')
+  })
+
+  it('abortIfUnbound is a no-op while the in-flight batch is still addressed to the bound workflow', () => {
+    sender.enqueue([addNode(1)])
+
+    sender.abortIfUnbound()
+
+    expect(settled).toHaveLength(0)
+    expect(sent).toHaveLength(1)
+  })
+
+  it('abortIfUnbound is a no-op with no batch in flight', () => {
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(0)
+  })
+
   it('an unbound workflow at the resend frees the queue for the next bound batch without a retry burn', () => {
     sender.enqueue([addNode(1)])
     boundWorkflow = 'wf-2'

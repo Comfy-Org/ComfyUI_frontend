@@ -553,6 +553,44 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a refused subscription settles the in-flight batch undeliverable immediately, without waiting the resend (residual of #16637)', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    // Mirror the real bridge's onDocSubscribed: it clears send reality
+    // BEFORE dispatching the event (layoutFollowerBridge.ts), so the
+    // composable's onSubscribed handler observes the clear synchronously.
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-1' })
+
+    // No timer advance: the refusal itself is the abort signal.
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const settledStates = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as { state: string }).state)
+    expect(settledStates).toEqual(['undeliverable'])
+    unmount()
+  })
+
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
