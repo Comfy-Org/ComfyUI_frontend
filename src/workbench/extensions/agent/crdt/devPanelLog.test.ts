@@ -96,6 +96,100 @@ describe('devPanelLog', () => {
     })
   })
 
+  it('removes sensitive fields before storing an event', () => {
+    recordDevEvent('ws_out', {
+      delivered: true,
+      authorization: 'Bearer secret-auth',
+      frame: {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          tab: 'tab-1',
+          access_token: 'secret-token',
+          ops: [
+            {
+              op: 'set_widget',
+              op_id: 'op-123',
+              node_id: 42,
+              name: 'seed',
+              value: 'secret-op-value',
+              old: 'secret-old-value',
+              outcome: 'applied'
+            },
+            {
+              op: 'add_node',
+              op_id: 'op-456',
+              class_type: 'CLIPTextEncode',
+              node: { id: 43, widgets_values: ['secret-widget', 12] }
+            }
+          ]
+        }
+      },
+      binary: new Uint8Array([1, 2, 3])
+    })
+
+    expect(devEvents.value[0]).toMatchObject({
+      kind: 'ws_out',
+      detail: {
+        delivered: true,
+        authorization: '[REDACTED]',
+        frame: {
+          type: 'doc_ops',
+          data: {
+            v: 1,
+            workflow_id: 'wf-1',
+            tab: 'tab-1',
+            access_token: '[REDACTED]',
+            ops: [
+              {
+                op: 'set_widget',
+                op_id: 'op-123',
+                node_id: 42,
+                name: 'seed',
+                value: '[REDACTED]',
+                old: '[REDACTED]',
+                outcome: 'applied'
+              },
+              {
+                op: 'add_node',
+                op_id: 'op-456',
+                class_type: 'CLIPTextEncode',
+                node: '[REDACTED]'
+              }
+            ]
+          }
+        },
+        binary: 'Uint8Array(3)'
+      }
+    })
+    expect(JSON.stringify(devEvents.value)).not.toMatch(
+      /secret-(auth|token|op-value|old-value|widget)/
+    )
+  })
+
+  it('redacts common key formats without hiding structural metadata', () => {
+    recordDevEvent('doc_subscribed', {
+      accessToken: 'secret-camel',
+      'x-api-key': 'secret-header',
+      message: 'secret-message',
+      token_count: 3,
+      context: 'kept-context',
+      prompt_id: 'kept-prompt-id',
+      class_type: 'kept-class'
+    })
+
+    expect(devEvents.value[0]?.detail).toEqual({
+      accessToken: '[REDACTED]',
+      'x-api-key': '[REDACTED]',
+      message: '[REDACTED]',
+      token_count: 3,
+      context: 'kept-context',
+      prompt_id: 'kept-prompt-id',
+      class_type: 'kept-class'
+    })
+  })
+
   it('keeps a value referenced twice from sibling positions', () => {
     const shared = { id: 'node-7' }
     recordDevEvent('doc_update', { added: shared, removed: shared })
