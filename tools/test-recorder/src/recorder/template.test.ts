@@ -1,5 +1,6 @@
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -480,6 +481,19 @@ describe('recording template', () => {
 
       // Covers the guard's equal-path branch: removeLegacyCustomStorageState
       // must not delete the very file it was asked to load.
+      expect(existsSync(legacyStateFile)).toBe(true)
+    })
+
+    it('does not fail when the legacy storage state cannot be removed', () => {
+      const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
+      mkdirSync(legacyStateFile)
+      writeFileSync(join(legacyStateFile, 'locked'), '')
+
+      expect(() =>
+        removeLegacyCustomStorageState(
+          join(browserTestsDir, 'storage-state.custom-0123456789abcdef.json')
+        )
+      ).not.toThrow()
       expect(existsSync(legacyStateFile)).toBe(true)
     })
 
