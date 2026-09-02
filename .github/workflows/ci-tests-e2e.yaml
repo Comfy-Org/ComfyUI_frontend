@@ -231,12 +231,17 @@ jobs:
     steps:
       - name: Check E2E results
         env:
+          CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
           VIDEO: ${{ needs.playwright-video-new-tests.result }}
         run: |
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED browsers=$BROWSERS video=$VIDEO"
+          [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$SHARDED" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
@@ -278,8 +283,16 @@ jobs:
         id: detect
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          NEW_FILES=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- browser_tests/tests | grep '\.spec\.ts$' || true)
+          # HEAD is refs/pull/N/merge, so its first parent is the base tip the PR was merged
+          # onto. pull_request.base.sha is recorded when the PR opens and does not follow the
+          # base branch, so diffing against it attributes every spec the base gained since
+          # then to this PR.
+          if [[ "$(git rev-parse --verify --quiet HEAD^2)" == "${{ github.event.pull_request.head.sha }}" ]]; then
+            DIFF_RANGE="$(git rev-parse HEAD^1)..HEAD"
+          else
+            DIFF_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          fi
+          NEW_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests | grep '\.spec\.ts$' || true)
 
           if [ -z "$NEW_FILES" ]; then
             echo "has-new-tests=false" >> "$GITHUB_OUTPUT"

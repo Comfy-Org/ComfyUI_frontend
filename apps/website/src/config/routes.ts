@@ -63,9 +63,6 @@ type Routes = Readonly<Record<RouteKey, string>>
 // Customer Agreement template), same reasoning. See the comment header
 // in src/pages/enterprise-msa.astro.
 //
-// agent: launch page is English-only for now; keep any route references on the
-// canonical path until a localized page exists.
-//
 // models: the supported-models catalog only exists at /p/supported-models;
 // there is no /<locale>/p/supported-models page, so a prefixed link 404s.
 //
@@ -73,7 +70,6 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
-  'agent',
   'affiliates',
   'affiliateTerms',
   'termsOfService',
