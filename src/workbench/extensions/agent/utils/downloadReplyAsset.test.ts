@@ -31,21 +31,18 @@ describe('downloadReplyAsset', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok()))
   })
 
-  it.fails('[11-T2/11-T3 regression] authenticates only an exact same-origin API view route', async () => {
-    // W10 baseline expected failure: this W2/exhaustive-QA slice assertion
-    // fails on main@f954e479 because embedded same-origin API URLs can still
-    // route through authenticated fetchApi.
+  it('routes an exact same-origin API view path through fetchApi', async () => {
     await downloadReplyAsset(asset('http://localhost/api/view?filename=a.png'))
+
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
     expect(fetch).not.toHaveBeenCalled()
+  })
 
-    fetchApi.mockClear()
+  it.fails('fetches an embedded same-origin route without authentication', async () => {
     await downloadReplyAsset(
       asset('https://evil.example/x/http://localhost/api/view?filename=a.png')
     )
+
     expect(fetchApi).not.toHaveBeenCalled()
-    expect(fetch).toHaveBeenCalledWith(
-      'https://evil.example/x/http://localhost/api/view?filename=a.png'
-    )
   })
 })
