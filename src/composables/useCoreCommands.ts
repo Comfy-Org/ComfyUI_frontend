@@ -299,7 +299,6 @@ export function useCoreCommands(): ComfyCommand[] {
           confirm('Clear workflow?')
         ) {
           if (app.canvas.subgraph) {
-            app.clean()
             // `clear` is not implemented on subgraphs and the parent class's
             // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
             // just clear the nodes but preserve input/output nodes and structure

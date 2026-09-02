@@ -383,7 +383,7 @@ describe('useCoreCommands', () => {
       // Execute the command
       await clearCommand.function()
 
-      expect(app.clean).toHaveBeenCalled()
+      expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
