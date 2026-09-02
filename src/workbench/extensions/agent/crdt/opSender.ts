@@ -51,6 +51,17 @@ export interface OpSenderDeps {
    * budget or no doc was bound.
    */
   onBatchSettled(outcome: BatchOutcome): void
+  /**
+   * Wire identity exists: called once per `enqueue` with the minted ops,
+   * BEFORE any send attempt or the no-doc 'undeliverable' settle, so a
+   * pending ledger can register every id it will later be told about.
+   */
+  onBatchMinted?(ops: Op[]): void
+  /**
+   * The transport accepted a batch. Fires for the first send AND for the
+   * silent-result resend of the same ops, so callers can count attempts.
+   */
+  onBatchTransmitted?(ops: Op[]): void
 }
 
 export type BatchOutcome =
@@ -103,6 +114,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
+    deps.onBatchTransmitted?.(batch.ops)
     armResultTimeout(batch)
   }
 
@@ -172,6 +184,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         actor: deps.actor(),
         baseVersion: deps.baseVersion()
       })
+      deps.onBatchMinted?.(minted)
       const workflowId = deps.workflowId()
       if (workflowId === null) {
         deps.onBatchSettled({ state: 'undeliverable', ops: minted })

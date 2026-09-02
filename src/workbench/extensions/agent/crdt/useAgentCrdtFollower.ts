@@ -14,6 +14,7 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { createPendingOpTracker } from './pendingOpTracker'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
@@ -123,6 +124,11 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
+  // s3-opt-6: every minted human op is registered here before it flies and
+  // leaves only on its authoritative doc_update effect or on revert.
+  const pendingOps = createPendingOpTracker({
+    onEvent: (event) => recordDevEvent('pending_ops', event)
+  })
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -145,7 +151,12 @@ export function useAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchMinted: (ops) => pendingOps.onBatchMinted(ops),
+    onBatchTransmitted: (ops) => pendingOps.onBatchTransmitted(ops),
+    onBatchSettled: (outcome) => {
+      recordDevEvent('human_ops_settled', outcome)
+      pendingOps.onBatchSettled(outcome)
+    }
   })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -257,6 +268,8 @@ export function useAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     adapter.applyFrame(update)
+    // KEEP-ALIVE #9: the doc_update effect, not the ack, retires a shadow.
+    if (update.opIds) pendingOps.onDocEffect(update.opIds)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -303,6 +316,7 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
+    pendingOps.reset()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -329,6 +343,7 @@ export function useAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       adapter.bind(workflowId, bridge.follower)
+      pendingOps.reset()
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -453,6 +468,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
       sender.detach()
+      pendingOps.reset()
       adapter.destroy()
       bridge.destroy()
     } finally {
@@ -471,6 +487,8 @@ export function useAgentCrdtFollower(
   return {
     status: readonly(status),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      sender.enqueue(operations),
+    /** Pending-op styling surface for canvas renderers (s3-opt-6). */
+    pendingShadows: pendingOps.shadow
   }
 }
