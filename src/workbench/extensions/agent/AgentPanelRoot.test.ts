@@ -36,7 +36,7 @@ import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -703,12 +703,12 @@ describe('AgentPanelRoot session notices', () => {
       )
     )
     renderWithSelectedTarget()
-    const toast = useToastStore()
+    const toast = useToast()
 
     ws.emit('agent_message_done', {})
     await nextTick()
 
-    expect(toast.messagesToAdd).toHaveLength(0)
+    expect(toast.toasts).toHaveLength(0)
     expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed',
@@ -1097,10 +1097,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'movie.mp4 is larger than 24MB'
+        kind: 'warning',
+        title: 'movie.mp4 is larger than 24MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
@@ -1117,10 +1117,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'huge.png is larger than 20MB'
+        kind: 'warning',
+        title: 'huge.png is larger than 20MB'
       })
     )
   })
@@ -1225,10 +1225,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'big.mp3 is larger than 20MB'
+        kind: 'warning',
+        title: 'big.mp3 is larger than 20MB'
       })
     )
   })
@@ -1672,10 +1672,10 @@ describe('AgentPanelRoot attach flow', () => {
     // A rejected file is the user's to fix; raising the server-error overlay
     // told them the agent had broken instead.
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'cat.png could not be uploaded'
+        kind: 'warning',
+        title: 'cat.png could not be uploaded'
       })
     )
     revoke.mockRestore()

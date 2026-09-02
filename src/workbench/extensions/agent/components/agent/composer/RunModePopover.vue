@@ -9,9 +9,9 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { useToast } from '@/components/ui/toast'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
 import {
@@ -21,7 +21,7 @@ import {
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
-const toast = useToastStore()
+const toast = useToast()
 
 const open = ref(false)
 const saving = ref(false)
@@ -46,7 +46,7 @@ async function saveChanges(): Promise<void> {
     open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
-    toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
+    toast.error(t('agent.runModeSaveFailed'))
   } finally {
     saving.value = false
   }
