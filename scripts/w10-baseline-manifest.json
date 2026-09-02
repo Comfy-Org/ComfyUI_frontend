@@ -1,6 +1,6 @@
 {
   "source": {
-    "programInventory": "reports/reorientation/w10-test-inventory.md",
+    "programInventory": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/16338",
     "targetMain": "f954e479a37b168a9596aa05a1ce1dec1e9a93b4",
     "branch": "christian-byrne/w10-test-port-batch1"
   },
@@ -47,5 +47,5 @@
     "src/workbench/extensions/agent/composables/agent/useComposer.test.ts",
     "src/workbench/extensions/agent/utils/attachableFiles.test.ts"
   ],
-  "semanticTransplantQueue": "reports/reorientation/w10-semantic-transplant-queue.md"
+  "semanticTransplantQueue": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/16338"
 }
