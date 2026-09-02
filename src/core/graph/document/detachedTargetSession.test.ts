@@ -286,6 +286,7 @@ describe('createDetachedTargetSession', () => {
     const snapshot = session.snapshot()
     expect(snapshot.lineage).not.toBe(oldSnapshot.lineage)
     expect(snapshot.committedSeq).toBe(10)
+    expect(snapshot.revision).toBe(oldSnapshot.revision + 1)
     expect(snapshot.queuedFrames).toBe(0)
     expect(snapshot.lastCommitId).toBeNull()
     expect(session.isCommitted(oldCommitId)).toBe(false)
@@ -301,6 +302,18 @@ describe('createDetachedTargetSession', () => {
     expect(session.commitNext(acceptAll).status).toBe('committed')
     expect(session.snapshot().lastCommitId).toBe(`${snapshot.lineage}:11`)
     freshHost.destroy()
+  })
+
+  it('destroy clears queued frames', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+
+    session.destroy()
+
+    expect(session.snapshot().queuedFrames).toBe(0)
   })
 
   it('rejects frames addressed to another target loudly', () => {
