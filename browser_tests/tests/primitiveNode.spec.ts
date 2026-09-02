@@ -60,7 +60,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     )
   })
 
-  test('Preserves combo options after refreshing node definitions', async ({
+  test('Preserves combo options with a stale slot locator after refreshing node definitions', async ({
     comfyPage
   }) => {
     async function getPrimitiveComboState() {
@@ -93,7 +93,16 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const before = await getPrimitiveComboState()
     expect(before.length).toBeGreaterThan(0)
 
-    await comfyPage.page.evaluate(() => window.app!.refreshComboInNodes())
+    await comfyPage.page.evaluate(async () => {
+      const primitive = window.app!.graph!.nodes.find(
+        (node) => node.type === 'PrimitiveNode'
+      )
+      const output = primitive?.outputs?.[0]
+      if (!output?.widget) throw new Error('Expected primitive output widget')
+
+      output.widget = { name: output.widget.name }
+      await window.app!.refreshComboInNodes()
+    })
 
     const after = await getPrimitiveComboState()
     expect(after).toMatchObject({
