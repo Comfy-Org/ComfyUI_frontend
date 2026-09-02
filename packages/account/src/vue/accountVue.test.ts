@@ -45,6 +45,16 @@ describe('TP-4 Vue contract', () => {
     ).toThrow(MissingAccountProviderError)
   })
 
+  it('regression: CreditsDisplay marks errors as alerts', () => {
+    render(CreditsDisplay, {
+      props: {
+        source: 'props',
+        state: { phase: 'error', error: new Error('offline') }
+      }
+    })
+    expect(screen.getByRole('alert').textContent).toBe('Error')
+  })
+
   it('TP-4: useCredits returns readonly ref and disposes subscription', () => {
     const client = billing({ phase: 'value', value: { balance: 7 } })
     const Child = defineComponent({

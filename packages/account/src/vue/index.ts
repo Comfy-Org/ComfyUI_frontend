@@ -44,6 +44,10 @@ function renderState(state: Loadable<BillingBalanceResponse>) {
   return 'Loading'
 }
 
+function stateAttributes(state: Loadable<BillingBalanceResponse>) {
+  return state.phase === 'error' ? { role: 'alert' } : undefined
+}
+
 export const CreditsDisplay = defineComponent({
   name: 'CreditsDisplay',
   props: {
@@ -57,10 +61,14 @@ export const CreditsDisplay = defineComponent({
   setup(props) {
     if (props.source === 'props') {
       if (!props.state) throw new MissingAccountProviderError()
-      return () => h('span', renderState(props.state ?? { phase: 'empty' }))
+      return () => {
+        const state = props.state ?? { phase: 'empty' }
+        return h('span', stateAttributes(state), renderState(state))
+      }
     }
     const state = useCredits(props.provider)
-    return () => h('span', renderState(state.value))
+    return () =>
+      h('span', stateAttributes(state.value), renderState(state.value))
   }
 })
 

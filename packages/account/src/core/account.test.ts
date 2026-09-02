@@ -237,6 +237,48 @@ it('TP-2b: idempotent 401 replays once; unsafe and second 401 do not loop', asyn
   expect(calls).toBe(1)
 })
 
+it('regression: balance 401 refreshes the session and replays with the new credential', async () => {
+  const fake = adapter()
+  let exchanges = 0
+  let balanceCalls = 0
+  fake.host.operations.balance.makeRequest = ({ credential }, signal) => ({
+    method: 'GET',
+    path: '/billing/balance',
+    headers: { authorization: credential.token },
+    signal
+  })
+  fake.host.transport = async (request) => {
+    fake.trace.push(request)
+    if (request.path.includes('auth')) {
+      exchanges++
+      return {
+        status: 200,
+        body: {
+          ...credential('A', 600_000 + exchanges),
+          token: `token-${exchanges}`
+        }
+      }
+    }
+    balanceCalls++
+    return balanceCalls === 1
+      ? { status: 401, body: {} }
+      : { status: 200, body: { balance: 7 } }
+  }
+  const session = createSessionClient(fake.host)
+  await session.establishSession()
+  const billing = createBillingClient(session, fake.host)
+
+  await billing.refreshCredits()
+
+  expect(balanceCalls).toBe(2)
+  expect(exchanges).toBe(2)
+  expect(fake.trace.at(-1)?.headers.authorization).toBe('token-2')
+  expect(billing.getCreditsState()).toEqual({
+    phase: 'value',
+    value: { balance: 7 }
+  })
+})
+
 it('TP-4 PM-3: credits preserve 7, 0, -2 and reject malformed payloads', async () => {
   const fake = adapter()
   const session = createSessionClient(fake.host)
@@ -251,8 +293,11 @@ it('TP-4 PM-3: credits preserve 7, 0, -2 and reject malformed payloads', async (
     })
   }
   fake.setBalance({ balance: 'bad' })
+  const observed: string[] = []
+  billing.subscribeCredits((state) => observed.push(state.phase))
   await billing.refreshCredits()
   expect(billing.getCreditsState().phase).toBe('error')
+  expect(observed).toEqual(['loading', 'error'])
 })
 
 it('TP-4 PM-2: a late workspace A balance cannot replace B', async () => {

@@ -147,15 +147,18 @@ async function runOperation<I, B, O>(
   adapter: AccountHostAdapter,
   operation: TransportOperation<I, B, O>,
   input: I,
-  signal: AccountAbortSignal
+  signal: AccountAbortSignal,
+  remint?: () => Promise<I>
 ): Promise<O> {
-  const request = operation.makeRequest(input, signal)
+  let currentInput = input
   for (let attempt = 0; attempt < 2; attempt++) {
+    const request = operation.makeRequest(currentInput, signal)
     const response = await adapter.transport(request)
     if (response.status >= 200 && response.status < 300)
       return operation.response.decode(response.body)
     if (response.status !== 401 || !operation.idempotent || attempt === 1)
       throw operation.mapError(response.status, response.body)
+    if (remint) currentInput = await remint()
   }
   throw new AccountError('Unreachable operation state')
 }
@@ -204,8 +207,8 @@ export function createSessionClient(
       void refresh().catch(() => undefined)
     }, delay)
   }
-  async function identityAndKey(workspaceId?: string) {
-    const identity = await adapter.acquireIdentity()
+  async function identityAndKey(workspaceId?: string, forceRefresh = false) {
+    const identity = await adapter.acquireIdentity({ forceRefresh })
     const workspace = workspaceId ?? adapter.getActiveWorkspace()
     if (!identity || !workspace) throw new AccountError('No active account')
     return {
@@ -218,10 +221,14 @@ export function createSessionClient(
     }
   }
   async function establishSession(
-    workspaceId?: string
+    workspaceId?: string,
+    forceIdentityRefresh = false
   ): Promise<WorkspaceCredential> {
     const ownGeneration = generation
-    const { identity, key } = await identityAndKey(workspaceId)
+    const { identity, key } = await identityAndKey(
+      workspaceId,
+      forceIdentityRefresh
+    )
     const credential = await runOperation(
       adapter,
       adapter.operations.exchange,
@@ -240,7 +247,9 @@ export function createSessionClient(
     schedule(credential)
     return credential
   }
-  async function refresh(): Promise<WorkspaceCredential> {
+  async function refresh(options?: {
+    forceIdentityRefresh?: boolean
+  }): Promise<WorkspaceCredential> {
     const previous =
       state.phase === 'authenticated' || state.phase === 'refreshing'
         ? state.credential
@@ -248,7 +257,10 @@ export function createSessionClient(
     if (!previous) throw new AccountError('Not authenticated')
     publish({ phase: 'refreshing', credential: previous, generation })
     try {
-      return await establishSession(previous.workspaceId)
+      return await establishSession(
+        previous.workspaceId,
+        options?.forceIdentityRefresh
+      )
     } catch (error) {
       const accountError =
         error instanceof AccountError
@@ -361,7 +373,10 @@ export function createBillingClient(
           adapter,
           adapter.operations.balance,
           { credential: current.credential },
-          signal
+          signal,
+          async () => ({
+            credential: await session.refresh({ forceIdentityRefresh: true })
+          })
         )
         if (!signal.aborted && startGeneration === session.getGeneration())
           publish({ phase: 'value', value })
