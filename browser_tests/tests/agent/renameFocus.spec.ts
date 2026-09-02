@@ -79,7 +79,10 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
     const row = page.getByText(SEEDED_TITLE)
     await expect(row).toBeVisible()
 
-    await page.getByRole('button', { name: CHAT_OPTIONS_LABEL }).click()
+    const optionsTrigger = page.getByRole('button', {
+      name: CHAT_OPTIONS_LABEL
+    })
+    await optionsTrigger.click()
     const renameItem = page.getByRole('menuitem', { name: RENAME_LABEL })
     await expect(renameItem).toBeVisible()
     await renameItem.click()
@@ -100,6 +103,7 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
 
     // (2) focus is on the editor, not the trigger it was restored to.
     await expect(editor).toBeFocused()
+    await expect(optionsTrigger).not.toBeFocused()
 
     // (3) the editor is actually usable, not merely present: typing lands in
     // it and Enter commits. Guards a "fix" that keeps the input mounted but
