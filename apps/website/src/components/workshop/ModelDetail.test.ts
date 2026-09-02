@@ -4,7 +4,10 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import { useMockSession,EXISTING_CREDITS } from '../../composables/useMockSession'
+import {
+  useMockSession,
+  EXISTING_CREDITS
+} from '../../composables/useMockSession'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import ModelDetail from './ModelDetail.vue'
 
