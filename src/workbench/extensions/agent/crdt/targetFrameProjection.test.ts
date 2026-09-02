@@ -10,7 +10,7 @@ type RecordedCall =
   | { kind: 'reconcileNode'; id: unknown; type: unknown }
   | { kind: 'connect'; id: unknown }
 
-function recordingMutations(): {
+function recordingMutations(batchResult = true): {
   mutations: GraphMutations
   calls: RecordedCall[]
   contexts: unknown[]
@@ -37,7 +37,7 @@ function recordingMutations(): {
         deleteNode: fail,
         clearSemanticGraph: () => calls.push({ kind: 'clearSemanticGraph' })
       })
-      return true
+      return batchResult
     },
     addNode: fail,
     setWidget: fail,
@@ -92,6 +92,30 @@ describe('createTargetFrameApplyPort', () => {
         opIds: ['op-1', 'op-2']
       }
     ])
+  })
+
+  it('uses replay defaults when frame stamps are absent', () => {
+    const doc = new Y.Doc()
+    setNode(doc, '1', { type: 'Source' })
+    const { mutations, contexts } = recordingMutations()
+
+    const applied = createTargetFrameApplyPort(mutations).apply(
+      { workflowId: frame.workflowId, seq: frame.seq, update: frame.update },
+      doc
+    )
+
+    expect(applied).toBe(true)
+    expect(contexts).toEqual([
+      { source: 'agent-remote', actor: 'agent-replay', opId: 'replay' }
+    ])
+  })
+
+  it('propagates a rejected mutation batch', () => {
+    const doc = new Y.Doc()
+    setNode(doc, '1', { type: 'Source' })
+    const { mutations } = recordingMutations(false)
+
+    expect(createTargetFrameApplyPort(mutations).apply(frame, doc)).toBe(false)
   })
 
   it('rejects the frame without mutating when a node is malformed', () => {
