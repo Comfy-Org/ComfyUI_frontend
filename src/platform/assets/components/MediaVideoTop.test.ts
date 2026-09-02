@@ -63,13 +63,11 @@ describe('MediaVideoTop', () => {
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    const wrapper = container.firstElementChild!
 
     await fireEvent.play(video)
     expect(video.controls).toBe(false)
 
-    await user.hover(wrapper)
+    await user.hover(video)
     expect(video.controls).toBe(true)
 
     await fireEvent.pause(video)
@@ -78,7 +76,7 @@ describe('MediaVideoTop', () => {
     await fireEvent.play(video)
     expect(video.controls).toBe(true)
 
-    await user.unhover(wrapper)
+    await user.unhover(video)
     expect(video.controls).toBe(false)
   })
 
@@ -158,8 +156,7 @@ describe('MediaVideoTop', () => {
     })
 
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
+    await user.hover(video)
     expect(video.controls).toBe(false)
 
     await user.click(video)
