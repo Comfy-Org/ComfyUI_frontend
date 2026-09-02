@@ -404,6 +404,50 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('TEL-10/TEL-9: a socket drop followed by refusals reports every attempt', () => {
+    // Both disconnect signals can fire in one recovery: the socket drop
+    // resubscribes immediately, the server refuses it, and the refusal retry
+    // is what finally lands. The success report must count both legs, and
+    // TEL-9's live counter must survive the snapshot the report takes.
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 7 })
+    bridge().lastSequence = 7
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ attempt: 1 })
+    )
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalled()
+    dispatchFrame('doc_subscribed', { ok: true, seq: 9 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 9,
+      update: new Uint8Array(6)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 2,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 6,
+      from_version: 7,
+      to_version: 9
+    })
+
+    // The report snapshot must not have consumed TEL-9's counter: the next
+    // socket drop is attempt 1 again because the confirm above reset it.
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ attempt: 1 })
+    )
+    unmount()
+  })
+
   it('TEL-10: a workflow switch mid-reconnect does not report on the next bind', async () => {
     vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
     vi.setSystemTime(1_000)
