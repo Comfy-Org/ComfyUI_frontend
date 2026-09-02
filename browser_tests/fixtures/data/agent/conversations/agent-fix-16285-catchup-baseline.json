@@ -1,0 +1,69 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-fix-16285-catchup-baseline",
+    "response_side": "synthesized",
+    "note": "Regression fixture for PR #16285 (apply CRDT catch-up at acknowledged sequence). The host sends doc_subscribed(seq=N) and then the catch-up doc_update(seq=N); pre-fix the bridge recorded N as the applied baseline and dropped the catch-up as stale, leaving a fresh follower empty. The conversation only binds; the seeded graph projecting at all IS the regression surface. Response synthesized: no model output is asserted."
+  },
+  "workflow": {
+    "id": "b7e2d4f6-1a3c-4e5b-9d80-2f4a6c8e0b1d",
+    "name": "Catch-up baseline",
+    "catalog": {
+      "types": {
+        "LoadImage": { "widget_order": ["image", "upload"] },
+        "PreviewImage": { "widget_order": [] }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 1,
+          "type": "LoadImage",
+          "pos": [0, 0],
+          "size": [315, 314],
+          "inputs": [],
+          "outputs": [
+            { "name": "IMAGE", "type": "IMAGE", "links": [1] },
+            { "name": "MASK", "type": "MASK", "links": [] }
+          ],
+          "widgets_values": ["example.png", "image"]
+        },
+        {
+          "id": 2,
+          "type": "PreviewImage",
+          "pos": [400, 0],
+          "size": [210, 246],
+          "inputs": [{ "name": "images", "type": "IMAGE", "link": 1 }],
+          "outputs": [],
+          "widgets_values": []
+        }
+      ],
+      "links": [[1, 1, 0, 2, 0, "IMAGE"]]
+    }
+  },
+  "request": {
+    "content": "Take a look at this workflow."
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "workflow_id": "b7e2d4f6-1a3c-4e5b-9d80-2f4a6c8e0b1d",
+          "name": "Catch-up baseline"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": { "delta": "I can see the workflow." }
+      }
+    },
+    { "kind": "event", "event": { "type": "agent_message_done", "data": {} } }
+  ]
+}
