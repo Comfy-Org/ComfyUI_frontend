@@ -413,6 +413,7 @@ export function useAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           adapter.unbind(boundWorkflowId)
           boundWorkflowId = null
+          pendingOps.reset()
         }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
@@ -424,7 +425,10 @@ export function useAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+            if (boundWorkflowId !== null) {
+              adapter.unbind(boundWorkflowId)
+              pendingOps.reset()
+            }
             adapter.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
@@ -436,6 +440,7 @@ export function useAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           adapter.unbind(boundWorkflowId)
           boundWorkflowId = null
+          pendingOps.reset()
         }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
@@ -443,7 +448,10 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+        if (boundWorkflowId !== null) {
+          adapter.unbind(boundWorkflowId)
+          pendingOps.reset()
+        }
         adapter.bind(next, bridge.follower)
         boundWorkflowId = next
       }
