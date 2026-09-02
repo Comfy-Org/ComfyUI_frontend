@@ -265,40 +265,13 @@ export function splitTask(
   return input && output && output !== 'all' ? { input, output } : undefined
 }
 
-// The catalog is organised around what people want to make, not around
-// model modality: generating a video from text and animating a still are
-// different jobs even though both end in a video.
-export const USE_CASES = [
-  'generate-images',
-  'edit-images',
-  'generate-videos',
-  'animate-images',
-  'edit-videos',
-  '3d',
-  'audio',
-  'text'
-] as const
+// The catalog is organised by what a model produces. Models with an unknown
+// modality only show up under "All".
+export const USE_CASES = ['image', 'video', '3d', 'audio', 'text'] as const
 export type UseCase = (typeof USE_CASES)[number]
 
-// Models the taxonomy cannot place only show up under "All".
 export function useCaseFor(model: WorkshopModel): UseCase | undefined {
-  const parts = model.task ? splitTask(model.task) : undefined
-  const input = parts?.input ?? 'text'
-  switch (parts?.output ?? model.modality) {
-    case 'image':
-      return input === 'image' ? 'edit-images' : 'generate-images'
-    case 'video':
-      if (input === 'video') return 'edit-videos'
-      return input === 'image' ? 'animate-images' : 'generate-videos'
-    case '3d':
-      return '3d'
-    case 'audio':
-      return 'audio'
-    case 'text':
-      return 'text'
-    default:
-      return undefined
-  }
+  return USE_CASES.find((value) => value === model.modality)
 }
 
 // Example tags that say what a model can do beyond its use case. Tags that

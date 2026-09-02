@@ -52,11 +52,8 @@ onMounted(() => {
 
 const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   all: 'workshop.useCase.all',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
+  image: 'workshop.useCase.image',
+  video: 'workshop.useCase.video',
   '3d': 'workshop.useCase.3d',
   audio: 'workshop.useCase.audio',
   text: 'workshop.useCase.text'
@@ -112,7 +109,7 @@ function clearFilters() {
 
 const tabClass = (current: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 pb-3 text-xs font-bold tracking-wide whitespace-nowrap uppercase transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
     current
       ? 'border-primary-comfy-yellow text-primary-warm-white'
       : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
@@ -125,7 +122,7 @@ const menuItemClass =
 <template>
   <section>
     <nav
-      class="mb-8 flex gap-6 overflow-x-auto border-b border-transparency-white-t8"
+      class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8"
       :aria-label="t('workshop.useCase.label', locale)"
       data-testid="workshop-use-cases"
     >
@@ -139,9 +136,7 @@ const menuItemClass =
         @click="useCase = value"
       >
         {{ t(useCaseLabelKey[value], locale) }}
-        <span
-          class="text-[11px] font-medium text-primary-warm-gray tabular-nums"
-        >
+        <span class="text-xs text-primary-warm-gray tabular-nums">
           {{ counts[value] }}
         </span>
       </button>

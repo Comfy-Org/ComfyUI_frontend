@@ -21,8 +21,8 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
-    await page.getByTestId('use-case-animate-images').click()
-    await expect(cards).toHaveCount(9)
+    await page.getByTestId('use-case-video').click()
+    await expect(cards).toHaveCount(22)
     await expect(cards.first()).toContainText('Video')
     await page.getByTestId('use-case-all').click()
 

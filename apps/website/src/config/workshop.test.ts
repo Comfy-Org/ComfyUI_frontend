@@ -79,14 +79,14 @@ describe('filterWorkshopModels', () => {
   })
 
   it('also matches the use case in words', () => {
-    expect(filterWorkshopModels(fixture, { query: 'generate videos' })).toEqual(
-      [fixture[0]]
-    )
+    expect(filterWorkshopModels(fixture, { query: 'video' })).toEqual([
+      fixture[0]
+    ])
   })
 
   it('filters by use case and lists unplaced models only under all', () => {
     expect(
-      filterWorkshopModels(fixture, { query: '', useCase: 'generate-videos' })
+      filterWorkshopModels(fixture, { query: '', useCase: 'video' })
     ).toEqual([fixture[0]])
     expect(
       filterWorkshopModels(fixture, { query: '', useCase: 'all' })
@@ -102,7 +102,7 @@ describe('filterWorkshopModels', () => {
     expect(
       filterWorkshopModels(fixture, {
         query: 'flux',
-        useCase: 'generate-videos'
+        useCase: 'video'
       })
     ).toEqual([])
   })
@@ -122,7 +122,7 @@ describe('filterWorkshopModels facets', () => {
     expect(
       filterWorkshopModels(fixture, {
         query: '',
-        useCase: 'generate-videos',
+        useCase: 'video',
         capabilities: ['Upscale']
       })
     ).toEqual([])
@@ -201,29 +201,10 @@ describe('taskFor', () => {
 })
 
 describe('useCaseFor', () => {
-  const withTask = (task: WorkshopModel['task']): WorkshopModel => ({
-    ...fixture[2],
-    task
-  })
-
-  it('names the job by what goes in and what comes out', () => {
-    expect(useCaseFor(withTask('text-to-image'))).toBe('generate-images')
-    expect(useCaseFor(withTask('image-to-image'))).toBe('edit-images')
-    expect(useCaseFor(withTask('text-to-video'))).toBe('generate-videos')
-    expect(useCaseFor(withTask('image-to-video'))).toBe('animate-images')
-    expect(useCaseFor(withTask('video-to-video'))).toBe('edit-videos')
-    expect(useCaseFor(withTask('image-to-3d'))).toBe('3d')
-    expect(useCaseFor(withTask('video-to-audio'))).toBe('audio')
-    expect(useCaseFor(withTask('text-to-text'))).toBe('text')
-  })
-
-  it('falls back to the modality and leaves unknown models unplaced', () => {
-    expect(useCaseFor({ ...fixture[2], modality: 'audio' })).toBe('audio')
-    expect(useCaseFor({ ...fixture[2], modality: 'video' })).toBe(
-      'generate-videos'
-    )
+  it('places a model by what it produces and leaves unknown ones unplaced', () => {
+    expect(useCaseFor({ ...fixture[2], modality: 'video' })).toBe('video')
+    expect(useCaseFor({ ...fixture[2], modality: '3d' })).toBe('3d')
     expect(useCaseFor(fixture[2])).toBeUndefined()
-    expect(useCaseFor(withTask('text-to-other'))).toBeUndefined()
   })
 })
 
@@ -251,11 +232,8 @@ describe('countByUseCase', () => {
   it('counts every use case including all and other', () => {
     expect(countByUseCase(fixture)).toEqual({
       all: 3,
-      'generate-images': 0,
-      'edit-images': 1,
-      'generate-videos': 1,
-      'animate-images': 0,
-      'edit-videos': 0,
+      image: 1,
+      video: 1,
       '3d': 0,
       audio: 0,
       text: 0
@@ -350,13 +328,13 @@ describe('decodeGeneratedModels', () => {
 describe('catalog deep links', () => {
   it('round-trips a filter through the query string', () => {
     const search = catalogSearch({
-      useCase: 'edit-images',
+      useCase: 'image',
       capabilities: ['Upscale', 'Image editing'],
       providers: ['Kling']
     })
     expect(parseCatalogSearch(search)).toEqual({
       query: '',
-      useCase: 'edit-images',
+      useCase: 'image',
       capabilities: ['Upscale', 'Image editing'],
       providers: ['Kling']
     })

@@ -8255,25 +8255,13 @@ Enterprise`
     'zh-CN':
       '选择想要创作的内容，直接通过 Comfy Router 运行最合适的合作伙伴模型。无需安装配置：设置输入、点击运行。每次运行前都会显示价格。'
   },
-  'workshop.useCase.label': { en: 'Browse by use case', 'zh-CN': '按用途浏览' },
+  'workshop.useCase.label': { en: 'Browse by type', 'zh-CN': '按类型浏览' },
   'workshop.useCase.all': { en: 'All', 'zh-CN': '全部' },
-  'workshop.useCase.generateImages': {
-    en: 'Generate images',
-    'zh-CN': '生成图像'
-  },
-  'workshop.useCase.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
-  'workshop.useCase.generateVideos': {
-    en: 'Generate videos',
-    'zh-CN': '生成视频'
-  },
-  'workshop.useCase.animateImages': {
-    en: 'Animate images',
-    'zh-CN': '让图像动起来'
-  },
-  'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
+  'workshop.useCase.image': { en: 'Images', 'zh-CN': '图像' },
+  'workshop.useCase.video': { en: 'Videos', 'zh-CN': '视频' },
   'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
-  'workshop.useCase.audio': { en: 'Audio & voice', 'zh-CN': '音频与语音' },
-  'workshop.useCase.text': { en: 'Chat & text', 'zh-CN': '对话与文本' },
+  'workshop.useCase.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.useCase.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.search.label': {
     en: 'Search by model, task, category and more',
     'zh-CN': '按模型、任务、类别等搜索'
