@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
+    "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
