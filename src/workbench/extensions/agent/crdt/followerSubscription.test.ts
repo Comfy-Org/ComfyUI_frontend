@@ -615,3 +615,118 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 })
+
+describe('FEB-5 — switching workflows is a lineage break, never a fold', () => {
+  it('replaces the doc and subscribes from an EMPTY state vector on switch', () => {
+    const { transport, bridge } = wire()
+    const replaced: unknown[] = []
+    const switchEvents: string[] = []
+    const send = transport.send.bind(transport)
+    vi.spyOn(transport, 'send').mockImplementation((frame) => {
+      const { type, data } = JSON.parse(frame) as {
+        type: string
+        data?: { workflow_id?: string }
+      }
+      if (type === 'doc_subscribe' && data?.workflow_id === 'wf-2')
+        switchEvents.push('subscribe')
+      return send(frame)
+    })
+    bridge.addEventListener('follower_replaced', (event) => {
+      if (event instanceof CustomEvent) {
+        replaced.push(event.detail)
+        switchEvents.push('replaced')
+      }
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+    expect(oldDoc.updatesApplied).toBe(1)
+
+    bridge.subscribe('wf-2')
+
+    // The old lineage is dropped wholesale — wf-2's history is never folded
+    // into wf-1's doc, which would put both workflows' nodes on one canvas.
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
+    expect(replaced).toEqual([{ workflowId: 'wf-2' }])
+    expect(switchEvents).toEqual(['replaced', 'subscribe'])
+
+    // The old subscription is released, and the new subscribe carries the
+    // FRESH doc's state vector — the empty one — never wf-1's, which the host
+    // would use to compute a nonsense delta against wf-2's history.
+    expect(transport.framesOfType('doc_unsubscribe')).toHaveLength(1)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.workflow_id).toBe('wf-2')
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    // The next wf-2 update lands on the fresh lineage.
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-2'))
+    expect(bridge.follower.updatesApplied).toBe(1)
+  })
+
+  it('re-subscribing to the SAME workflow keeps the doc (same-lineage catch-up)', () => {
+    const { transport, bridge } = wire()
+    const replaced: unknown[] = []
+    bridge.addEventListener('follower_replaced', (event) => {
+      replaced.push(event)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+
+    expect(bridge.follower).toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(replaced).toEqual([])
+  })
+
+  it('a detach then a switch still breaks lineage: unsubscribe does not empty the doc', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    bridge.unsubscribe()
+    bridge.subscribe('wf-2')
+
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+  })
+
+  it('a switch on a dead socket still replaces the doc and announces it', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { transport, bridge } = wire()
+    const replaced: unknown[] = []
+    bridge.addEventListener('follower_replaced', (event) => {
+      if (event instanceof CustomEvent) replaced.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    transport.open = false
+    bridge.subscribe('wf-2')
+
+    // The lineage break is honoured even though the subscribe cannot leave,
+    // and consumers are told to rebind — the old doc is destroyed.
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(replaced).toEqual([{ workflowId: 'wf-2' }])
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+
+    transport.open = true
+    bridge.reconcile()
+    expect(bridge.subscribedWorkflowId).toBe('wf-2')
+  })
+})

@@ -36,11 +36,21 @@ function trySend(send: () => boolean): boolean {
  */
 export class LayoutFollowerBridge extends EventTarget {
   /**
-   * Reassigned only by {@link onDocReset}: a lineage break replaces the doc
-   * wholesale, because folding a re-minted document into the old one merges
-   * two unrelated histories and duplicates every node on the canvas.
+   * Reassigned only on a lineage break — an explicit `doc_reset`
+   * ({@link onDocReset}) or a subscribe to a DIFFERENT workflow
+   * ({@link subscribe}) — because folding one document's history into another
+   * merges two unrelated lineages: the next subscribe would carry the old
+   * doc's state vector, the host would compute a nonsense delta against it,
+   * and both workflows' nodes would land on one canvas (FEB-5).
    */
   private followerDoc = new FollowerDoc()
+  /**
+   * The workflow whose lineage {@link followerDoc} holds — the id passed to
+   * the most recent {@link subscribe}. Unlike {@link desiredWorkflowId} it
+   * survives {@link unsubscribe}, because detaching does not empty the doc:
+   * a later subscribe to a DIFFERENT workflow must still re-mint it.
+   */
+  private lineageWorkflowId: string | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -104,8 +114,28 @@ export class LayoutFollowerBridge extends EventTarget {
     )
   }
 
+  /**
+   * Follow a workflow. Subscribing to a DIFFERENT workflow than the one this
+   * bridge's doc holds is a lineage break (FEB-5): the doc is re-minted so
+   * the subscribe carries an empty state vector, and `follower_replaced` is
+   * dispatched — unconditionally, even when the send could not leave a closed
+   * socket — so consumers rebind their observers to the new doc rather than
+   * staying attached to the destroyed one. Re-subscribing to the SAME
+   * workflow keeps the doc: that is the same-lineage catch-up path
+   * (ADR-0024), where the state vector makes the delta cheap.
+   */
   subscribe(workflowId: string): void {
+    const lineage = this.lineageWorkflowId
+    this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
+    if (lineage !== null && lineage !== workflowId) {
+      this.dropDocForNewLineage()
+      this.dispatchEvent(
+        new CustomEvent('follower_replaced', { detail: { workflowId } })
+      )
+      this.reconcile()
+      return
+    }
     this.reconcile()
   }
 
