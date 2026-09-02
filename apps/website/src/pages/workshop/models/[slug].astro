@@ -106,6 +106,7 @@ const tags = [
           >
             {model.provider ?? t('workshop.card.partnerNode')}
           </p>
+          <span class={pillClass} data-testid="model-kind">{t('workshop.hub.tag.partnerNodes')}</span>
           {model.modality && <span class={pillClass}>{modalityLabel[model.modality]}</span>}
           <ModelStatus status={model.status} variant="pill" client:load />
         </div>

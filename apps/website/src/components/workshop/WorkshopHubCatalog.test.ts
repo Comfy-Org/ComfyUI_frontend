@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/workshop'
 import WorkshopHubCatalog from './WorkshopHubCatalog.vue'
@@ -34,6 +35,16 @@ const models: WorkshopModel[] = [
 ]
 
 describe('WorkshopHubCatalog', () => {
+  it('preselects the kind named in the URL', async () => {
+    vi.stubGlobal('location', { search: '?kind=model' })
+    render(WorkshopHubCatalog, { props: { models } })
+    await nextTick()
+    expect(
+      screen.getByTestId('hub-kind-model').getAttribute('aria-selected')
+    ).toBe('true')
+    expect(screen.queryByTestId('hub-card-graph')).toBeNull()
+  })
+
   it('mixes partner models with community items and links models to their page', () => {
     render(WorkshopHubCatalog, { props: { models } })
     const modelCards = screen.getAllByTestId('hub-card-model')

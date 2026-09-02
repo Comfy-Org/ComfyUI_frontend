@@ -6,7 +6,7 @@ import {
   ListFilter,
   Search
 } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -104,6 +104,15 @@ const workflowItems: readonly HubItem[] = hubWorkflows.map((workflow) => ({
 
 const query = ref('')
 const kind = ref<KindFilter>('all')
+
+function isKind(value: string | null): value is KindFilter {
+  return KINDS.some((option) => option === value)
+}
+
+onMounted(() => {
+  const requested = new URLSearchParams(location.search).get('kind')
+  if (isKind(requested)) kind.value = requested
+})
 
 const items = computed(() => {
   const modelItems = models.map(modelItem)

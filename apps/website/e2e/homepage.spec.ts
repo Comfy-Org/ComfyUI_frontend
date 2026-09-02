@@ -56,7 +56,7 @@ test.describe('Homepage @smoke', () => {
     ).toHaveAttribute('href', '/workshop/models/seedance-2/')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
-    ).toHaveAttribute('href', '/workshop')
+    ).toHaveAttribute('href', '/workshop?kind=model')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {

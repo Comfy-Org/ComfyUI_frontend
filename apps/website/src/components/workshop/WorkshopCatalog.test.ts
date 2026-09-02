@@ -9,18 +9,18 @@ import WorkshopCatalog from './WorkshopCatalog.vue'
 const { entry } = usePrototypeTweaks()
 
 afterEach(() => {
-  entry.value = 'workshop'
+  entry.value = 'hub'
 })
 
 describe('WorkshopCatalog', () => {
-  it('swaps the models catalog for the Hub-style entry when the tweak asks', async () => {
+  it('starts on the Hub-style entry and swaps to the models catalog when the tweak asks', async () => {
     render(WorkshopCatalog, { props: { models: [] } })
-    expect(screen.getByTestId('workshop-hero')).toBeTruthy()
-    expect(screen.queryByTestId('workshop-hub')).toBeNull()
-
-    entry.value = 'hub'
-    await nextTick()
     expect(screen.getByTestId('workshop-hub')).toBeTruthy()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
+
+    entry.value = 'workshop'
+    await nextTick()
+    expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+    expect(screen.queryByTestId('workshop-hub')).toBeNull()
   })
 })

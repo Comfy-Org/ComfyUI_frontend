@@ -22,7 +22,7 @@ describe('ModelDiscoverySection', () => {
     expect(screen.getByRole('link', { name: /Kling O3/ })).toBeTruthy()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })
-    expect(browse.getAttribute('href')).toBe('/workshop')
+    expect(browse.getAttribute('href')).toBe('/workshop?kind=model')
   })
 
   it('hides the looping copy of the row from assistive tech', () => {
@@ -52,6 +52,6 @@ describe('ModelDiscoverySection', () => {
     render(ModelDiscoverySection, { props: { locale: 'zh-CN' } })
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
-    expect(browse.getAttribute('href')).toBe('/workshop')
+    expect(browse.getAttribute('href')).toBe('/workshop?kind=model')
   })
 })

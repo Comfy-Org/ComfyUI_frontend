@@ -94,7 +94,11 @@ const cardClass =
     </div>
 
     <div class="mt-12 flex justify-center px-6 lg:mt-16">
-      <BrandButton :href="routes.workshop" variant="outline" size="xs">
+      <BrandButton
+        :href="`${routes.workshop}?kind=model`"
+        variant="outline"
+        size="xs"
+      >
         {{ t('modelDiscovery.browse', locale) }}
       </BrandButton>
     </div>
