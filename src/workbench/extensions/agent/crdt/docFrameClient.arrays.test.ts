@@ -1,46 +1,67 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  docOpsResultFrame,
+  docUpdateFrame
+} from './__fixtures__/docFrameClient'
 import { parseServerDocFrame } from './docFrameClient'
 
-const resultFrame = (data: Record<string, unknown>) =>
-  parseServerDocFrame({
-    type: 'doc_ops_result',
-    data: {
-      v: 1,
-      workflow_id: 'wf-1',
-      ...data
+function resultFrame(data: Record<string, unknown>) {
+  return parseServerDocFrame(docOpsResultFrame(data))
+}
+
+const invalidResultFrames: [string, Record<string, unknown>][] = [
+  ['a non-string applied item', { ok: true, seq: 1, applied: ['op-1', 2] }],
+  ['a non-string skipped item', { ok: true, seq: 1, skipped: ['op-1', 2] }],
+  [
+    'a failure without an index',
+    {
+      ok: true,
+      seq: 1,
+      failed: {
+        op_id: 'op-1',
+        code: 'invalid_op',
+        message: 'invalid operation'
+      }
     }
-  })
+  ],
+  [
+    'a non-string failure op_id',
+    {
+      ok: true,
+      seq: 1,
+      failed: {
+        index: 0,
+        op_id: 1,
+        code: 'invalid_op',
+        message: 'invalid operation'
+      }
+    }
+  ],
+  ['a non-array applied value', { ok: true, seq: 1, applied: 'op-1' }],
+  ['a non-string error code', { ok: false, code: 1 }],
+  ['a non-numeric sequence', { ok: true, seq: '1' }],
+  ['an oversized operation identity', { ok: true, applied: ['x'.repeat(129)] }],
+  ['an oversized error code', { ok: false, code: 'x'.repeat(129) }],
+  [
+    'an oversized error message',
+    { ok: false, message: 'x'.repeat((8 << 10) + 1) }
+  ],
+  [
+    'too many operation identities',
+    { ok: true, applied: Array.from({ length: 257 }, () => 'x') }
+  ]
+]
 
 describe('document frame result arrays and acknowledgements', () => {
   it('rejects a doc_update with a non-string op id', () => {
     expect(
-      parseServerDocFrame({
-        type: 'doc_update',
-        data: {
-          v: 1,
-          workflow_id: 'wf-1',
-          seq: 1,
-          update_b64: 'AQ==',
-          op_ids: ['op-1', 2]
-        }
-      })
+      parseServerDocFrame(docUpdateFrame({ op_ids: ['op-1', 2] }))
     ).toBeNull()
   })
 
   it('treats null doc_update op ids as absent', () => {
-    expect(
-      parseServerDocFrame({
-        type: 'doc_update',
-        data: {
-          v: 1,
-          workflow_id: 'wf-1',
-          seq: 1,
-          update_b64: 'AQ==',
-          op_ids: null
-        }
-      })
-    ).toEqual({
+    expect(parseServerDocFrame(docUpdateFrame({ op_ids: null }))).toEqual({
       type: 'doc_update',
       data: {
         workflowId: 'wf-1',
@@ -50,26 +71,8 @@ describe('document frame result arrays and acknowledgements', () => {
     })
   })
 
-  it('rejects a non-string element in applied', () => {
-    expect(resultFrame({ ok: true, seq: 1, applied: ['op-1', 2] })).toBeNull()
-  })
-
-  it('rejects a non-string element in skipped', () => {
-    expect(resultFrame({ ok: true, seq: 1, skipped: ['op-1', 2] })).toBeNull()
-  })
-
-  it('rejects a failure with a missing index', () => {
-    expect(
-      resultFrame({
-        ok: true,
-        seq: 1,
-        failed: {
-          op_id: 'op-1',
-          code: 'invalid_op',
-          message: 'invalid operation'
-        }
-      })
-    ).toBeNull()
+  it.for(invalidResultFrames)('rejects %s', ([_name, data]) => {
+    expect(resultFrame(data)).toBeNull()
   })
 
   it('accepts a failure without an op_id (relay omits it when unmapped)', () => {
@@ -92,21 +95,6 @@ describe('document frame result arrays and acknowledgements', () => {
         failed: { index: 0, code: 'invalid_op', message: 'invalid operation' }
       }
     })
-  })
-
-  it('rejects a failure with a non-string op_id', () => {
-    expect(
-      resultFrame({
-        ok: true,
-        seq: 1,
-        failed: {
-          index: 0,
-          op_id: 1,
-          code: 'invalid_op',
-          message: 'invalid operation'
-        }
-      })
-    ).toBeNull()
   })
 
   it('accepts a successful acknowledgement without a sequence', () => {
@@ -177,10 +165,6 @@ describe('document frame result arrays and acknowledgements', () => {
         skipped: ['op-1']
       }
     })
-  })
-
-  it('rejects present but malformed applied and skipped', () => {
-    expect(resultFrame({ ok: true, seq: 1, applied: 'op-1' })).toBeNull()
   })
 
   it('treats null result arrays as absent', () => {
@@ -264,16 +248,5 @@ describe('document frame result arrays and acknowledgements', () => {
         }
       })?.data
     ).not.toHaveProperty('failed.private_context')
-  })
-
-  it('rejects oversized operation identities and diagnostics', () => {
-    expect(resultFrame({ ok: true, applied: ['x'.repeat(129)] })).toBeNull()
-    expect(resultFrame({ ok: false, code: 'x'.repeat(129) })).toBeNull()
-    expect(
-      resultFrame({ ok: false, message: 'x'.repeat((8 << 10) + 1) })
-    ).toBeNull()
-    expect(
-      resultFrame({ ok: true, applied: Array.from({ length: 257 }, () => 'x') })
-    ).toBeNull()
   })
 })

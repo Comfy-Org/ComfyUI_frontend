@@ -3,6 +3,7 @@ import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docUpdateFrame } from './__fixtures__/docFrameClient'
 import type { DocFrameTransport } from './docFrameClient'
 import {
   DocFrameClient,
@@ -336,12 +337,7 @@ describe('doc frame client', () => {
     const listener = vi.fn()
     client.addEventListener('doc_update', listener)
 
-    const invalidUpdate = {
-      v: 1,
-      workflow_id: 'wf-1',
-      seq: 1,
-      update_b64: 'not-base64'
-    }
+    const invalidUpdate = docUpdateFrame({ update_b64: 'not-base64' }).data
     transport.receive('doc_update', invalidUpdate)
     transport.receive('doc_update', invalidUpdate)
     transport.receive('awareness', {})
@@ -360,103 +356,7 @@ describe('doc frame client', () => {
     })
   })
 
-  const invalidDocUpdateCases: [string, Record<string, unknown>][] = [
-    ['invalid base64 characters', { seq: 1, update_b64: '!!!=' }],
-    ['partial base64', { seq: 1, update_b64: 'AQ' }],
-    ['empty base64', { seq: 1, update_b64: '' }],
-    ['negative sequence', { seq: -1, update_b64: 'AQ==' }],
-    ['fractional sequence', { seq: 1.5, update_b64: 'AQ==' }],
-    ['mixed op ids', { seq: 1, update_b64: 'AQ==', op_ids: ['ok', 1] }]
-  ]
-  it.for(invalidDocUpdateCases)(
-    'rejects %s in doc_update without throwing',
-    ([_name, fields]) => {
-      expect(() =>
-        parseServerDocFrame({
-          type: 'doc_update',
-          data: { v: 1, workflow_id: 'wf-1', ...fields }
-        })
-      ).not.toThrow()
-      expect(
-        parseServerDocFrame({
-          type: 'doc_update',
-          data: { v: 1, workflow_id: 'wf-1', ...fields }
-        })
-      ).toBeNull()
-    }
-  )
-
-  it('rejects an oversized decoded update before decoding', () => {
-    expect(
-      parseServerDocFrame({
-        type: 'doc_update',
-        data: {
-          v: 1,
-          workflow_id: 'wf-1',
-          seq: 1,
-          update_b64: 'AAAA'.repeat(((8 << 20) + 1) / 3)
-        }
-      })
-    ).toBeNull()
-  })
-
-  it.for(['', 'wf bad', 'wf:bad', 'x'.repeat(129)])(
-    'rejects invalid workflow id %j',
-    (workflowId) => {
-      expect(
-        parseServerDocFrame({
-          type: 'doc_subscribed',
-          data: { v: 1, workflow_id: workflowId, ok: true, seq: 1 }
-        })
-      ).toBeNull()
-    }
-  )
-
-  it('rejects malformed result arrays, failures, and acknowledgements', () => {
-    const result = (data: Record<string, unknown>) =>
-      parseServerDocFrame({
-        type: 'doc_ops_result',
-        data: { v: 1, workflow_id: 'wf-1', applied: [], skipped: [], ...data }
-      })
-
-    expect(result({ ok: true, applied: ['op-1', 2], seq: 1 })).toBeNull()
-    expect(
-      result({
-        ok: true,
-        seq: 1,
-        failed: { op_id: 'op-1', code: 'x', message: 'x' }
-      })
-    ).toBeNull()
-    expect(result({ ok: false, code: 1 })).toBeNull()
-    expect(
-      result({
-        ok: false,
-        code: 'rejected',
-        message: 'bad op',
-        failed: { index: 0, op_id: 'op-1', code: 'bad', message: 'bad op' }
-      })
-    ).toMatchObject({ type: 'doc_ops_result' })
-    expect(result({ ok: true, seq: '1' })).toBeNull()
-  })
-
-  it('rejects malformed or oversized awareness state', () => {
-    const awareness = (state: unknown, expiresAt: unknown = 1) =>
-      parseServerDocFrame({
-        type: 'awareness',
-        data: {
-          v: 1,
-          workflow_id: 'wf-1',
-          actor: 'human:user:tab',
-          state,
-          expires_at: expiresAt
-        }
-      })
-
-    expect(awareness([])).toBeNull()
-    expect(awareness({ value: 'x'.repeat((8 << 10) + 1) })).toBeNull()
-    expect(awareness({}, -1)).toBeNull()
-    expect(awareness({}, Number.POSITIVE_INFINITY)).toBeNull()
-    expect(awareness({ value: 1n })).toBeNull()
-    expect(awareness({ cursor: [1, 2] })).toMatchObject({ type: 'awareness' })
+  it.for([-1, 1.5])('rejects invalid sequence %s in doc_update', (seq) => {
+    expect(parseServerDocFrame(docUpdateFrame({ seq }))).toBeNull()
   })
 })

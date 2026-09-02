@@ -1,40 +1,35 @@
 import { describe, expect, it } from 'vitest'
 
+import { awarenessFrame } from './__fixtures__/docFrameClient'
 import { parseServerDocFrame } from './docFrameClient'
 
-function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
-  return {
-    type: 'awareness',
-    data: {
-      v: 1,
-      workflow_id: 'wf-1',
-      actor: 'human:user:tab-a',
-      state,
-      expires_at: expiresAt
-    }
-  }
-}
+const invalidAwarenessFrames: [string, unknown, unknown][] = [
+  ['an oversized state', { value: 'x'.repeat(8 * 1024) }, 123],
+  ['an array state', ['cursor', 10, 20], 123],
+  ['a negative expiry', {}, -1],
+  ['an infinite expiry', {}, Number.POSITIVE_INFINITY],
+  ['a NaN expiry', {}, Number.NaN],
+  ['a fractional expiry', {}, 1.5],
+  ['an unsafe expiry', {}, Number.MAX_SAFE_INTEGER + 1],
+  ['an extremely large expiry', {}, 1e300],
+  ['an unserializable state', { value: 1n }, 123]
+]
 
 describe('awareness frame validation', () => {
-  it('rejects state whose JSON encoding exceeds 8 KiB', () => {
+  it.for(invalidAwarenessFrames)('rejects %s', ([_name, state, expiresAt]) => {
     expect(
-      parseServerDocFrame(awarenessFrame({ value: 'x'.repeat(8 * 1024) }))
+      parseServerDocFrame(awarenessFrame({ state, expires_at: expiresAt }))
     ).toBeNull()
   })
 
   it('accepts state whose JSON encoding is exactly 8 KiB', () => {
-    // `{"value":"x…"}` wraps the string in 12 bytes of JSON syntax.
     const state = { value: 'x'.repeat(8 * 1024 - 12) }
     expect(new TextEncoder().encode(JSON.stringify(state)).byteLength).toBe(
       8 * 1024
     )
-    expect(parseServerDocFrame(awarenessFrame(state))).toMatchObject({
+    expect(parseServerDocFrame(awarenessFrame({ state }))).toMatchObject({
       data: { state }
     })
-  })
-
-  it('rejects array-shaped state', () => {
-    expect(parseServerDocFrame(awarenessFrame(['cursor', 10, 20]))).toBeNull()
   })
 
   it('treats a null state as absent rather than rejecting the frame', () => {
@@ -42,7 +37,9 @@ describe('awareness frame validation', () => {
     // actually emits `state: null`, but this is defence in depth: null
     // should fold into "no state", not discard the whole frame (and with
     // it actor/expires_at). discussion_r3911665011.
-    expect(parseServerDocFrame(awarenessFrame(null, 456))).toEqual({
+    expect(
+      parseServerDocFrame(awarenessFrame({ state: null, expires_at: 456 }))
+    ).toEqual({
       type: 'awareness',
       data: {
         workflowId: 'wf-1',
@@ -52,30 +49,10 @@ describe('awareness frame validation', () => {
     })
   })
 
-  it('rejects negative expires_at', () => {
-    expect(parseServerDocFrame(awarenessFrame({}, -1))).toBeNull()
-  })
-
-  it('rejects non-finite expires_at', () => {
-    expect(
-      parseServerDocFrame(awarenessFrame({}, Number.POSITIVE_INFINITY))
-    ).toBeNull()
-    expect(parseServerDocFrame(awarenessFrame({}, Number.NaN))).toBeNull()
-  })
-
-  it('rejects fractional expires_at', () => {
-    expect(parseServerDocFrame(awarenessFrame({}, 1.5))).toBeNull()
-  })
-
-  it('rejects expires_at beyond the safe integer range', () => {
-    expect(
-      parseServerDocFrame(awarenessFrame({}, Number.MAX_SAFE_INTEGER + 1))
-    ).toBeNull()
-    expect(parseServerDocFrame(awarenessFrame({}, 1e300))).toBeNull()
-  })
-
   it('accepts a zero expires_at', () => {
-    expect(parseServerDocFrame(awarenessFrame({}, 0))).toMatchObject({
+    expect(
+      parseServerDocFrame(awarenessFrame({ expires_at: 0 }))
+    ).toMatchObject({
       data: { expiresAt: 0 }
     })
   })
@@ -83,7 +60,10 @@ describe('awareness frame validation', () => {
   it('accepts a valid awareness frame', () => {
     expect(
       parseServerDocFrame(
-        awarenessFrame({ cursor: [10, 20], selection: 'node-1' }, 456)
+        awarenessFrame({
+          state: { cursor: [10, 20], selection: 'node-1' },
+          expires_at: 456
+        })
       )
     ).toEqual({
       type: 'awareness',
