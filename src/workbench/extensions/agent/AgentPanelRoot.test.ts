@@ -473,6 +473,7 @@ function setupNodeSelectionCanvas() {
   appMock.graph.nodes = nodes
   const canvas = {
     graph,
+    subgraph: undefined as unknown,
     selectedItems,
     selectItems,
     deselect,
@@ -520,12 +521,14 @@ function showRootGraph(
   nodes: SelectionTestNode[] = []
 ) {
   const graph = {
+    isRootGraph: true,
     nodes,
     getNodeById: (id: string | number) =>
       nodes.find((node) => String(node.id) === String(id)) ?? null
   }
   state.canvas.graph = graph
   hostStores.canvas.currentGraph = graph
+  return graph
 }
 
 function renderCanvasNodeButtons(
@@ -2970,18 +2973,15 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('navigates and frames a retained subgraph node through the real focus composable', async () => {
+    vi.stubGlobal('devicePixelRatio', 1)
     makeTab()
     const state = setupNodeSelectionCanvas()
     nestSelectionCanvasInSubgraph(state)
     const subgraph = state.canvas.graph
     const referencedNode = state.nodes[1]
     referencedNode.graph = subgraph
+    referencedNode.boundingRect = [1, 2, 3, 4]
 
-    const rootGraph = {
-      isRootGraph: true,
-      nodes: [],
-      getNodeById: () => null
-    }
     const setGraph = vi.fn((graph: typeof subgraph) => {
       state.canvas.graph = graph
     })
@@ -2993,8 +2993,14 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     hostStores.canvas.canvas = markRaw(state.canvas)
     focusNodeMode.useRealImplementation = true
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
-      callback(0)
+    let rafHandle = 0
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      (callback: FrameRequestCallback): number => {
+        rafHandle += 1
+        setTimeout(() => callback(0), 0)
+        return rafHandle
+      }
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -3003,17 +3009,19 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
-    state.canvas.graph = rootGraph
-    hostStores.canvas.currentGraph = rootGraph
+    const rootGraph = showRootGraph(state)
     await nextTick()
     await userEvent.click(
       screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
     )
 
     expect(setGraph).toHaveBeenCalledWith(subgraph)
+    expect(state.canvas.graph).toBe(subgraph)
+    expect(state.canvas.subgraph).toBe(subgraph)
     expect(animateToBounds).toHaveBeenCalledWith(referencedNode.boundingRect, {
       viewport: [0, 0, 1000 - useAgentPanelStore().width, 600]
     })
+    expect(rootGraph.isRootGraph).toBe(true)
   })
 
   it('uses graph-scoped identity for focus, removal, and picker exclusion', async () => {
