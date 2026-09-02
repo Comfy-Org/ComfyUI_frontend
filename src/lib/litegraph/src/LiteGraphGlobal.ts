@@ -437,10 +437,7 @@ export class LiteGraphGlobal {
     if (prev) this.onNodeTypeReplaced?.(type, base_class, prev)
 
     // warnings
-    if (
-      (base_class.prototype as unknown as Record<string, unknown>)
-        .onPropertyChange
-    )
+    if (Reflect.get(base_class.prototype, 'onPropertyChange'))
       console.warn(
         `LiteGraph node class ${type} has onPropertyChange method, it must be called onPropertyChanged with d at the end`
       )
