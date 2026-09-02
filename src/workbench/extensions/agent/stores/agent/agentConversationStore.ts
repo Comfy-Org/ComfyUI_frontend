@@ -239,7 +239,18 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) entry.transport.settle()
+      const retained = new Set(
+        [...userAttachments.value.values()].flatMap((attachments) =>
+          attachments.map(({ previewUrl }) => previewUrl)
+        )
+      )
+      for (const entry of backgroundTurns.values()) {
+        entry.transport.settle()
+        for (const { previewUrl } of entry.attachments ?? []) {
+          if (previewUrl?.startsWith('blob:') && !retained.has(previewUrl))
+            URL.revokeObjectURL(previewUrl)
+        }
+      }
       backgroundTurns.clear()
     }
 

@@ -378,6 +378,24 @@ describe('useAgentConversationStore', () => {
     revoke.mockRestore()
   })
 
+  it('revokes only unreferenced blob previews when dropping background turns', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    store.recordUser(T1, 'displayed', [
+      { name: 'shared.png', previewUrl: 'blob:shared' }
+    ])
+    store.startBackgroundTurn('background', T2, 'background', [
+      { name: 'discarded.png', previewUrl: 'blob:discarded' },
+      { name: 'shared.png', previewUrl: 'blob:shared' }
+    ])
+
+    store.dropBackgroundTurns()
+
+    expect(revoke).toHaveBeenCalledTimes(1)
+    expect(revoke).toHaveBeenCalledWith('blob:discarded')
+    revoke.mockRestore()
+  })
+
   it('keeps a stashed background turn across reset so returning to the thread resumes it', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
