@@ -545,7 +545,7 @@ describe('useMediaAssetActions', () => {
   })
 
   describe('downloadAssets', () => {
-    it('downloads the injected media asset when called without explicit assets', () => {
+    it('downloads the injected media asset when called without explicit assets', async () => {
       const mediaAsset = createMockMediaAsset({
         id: 'context-asset',
         name: 'context-name.png',
@@ -564,6 +564,11 @@ describe('useMediaAssetActions', () => {
       expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(useToast().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+      })
 
       unmount()
     })
@@ -580,7 +585,7 @@ describe('useMediaAssetActions', () => {
       unmount()
     })
 
-    it('keeps single explicit assets on the direct download path in cloud', () => {
+    it('keeps single explicit assets on the direct download path in cloud', async () => {
       mockIsCloud.value = true
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
@@ -606,6 +611,30 @@ describe('useMediaAssetActions', () => {
       expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(useToast().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+      })
+    })
+
+    it('shows an error toast when a direct download fails', async () => {
+      mockDownloadFileAsync.mockRejectedValueOnce(new Error('Network error'))
+      const actions = useMediaAssetActions()
+
+      actions.downloadAssets([
+        createMockAsset({
+          id: 'failed-download',
+          name: 'failed.png',
+          preview_url: 'https://example.com/failed.png'
+        })
+      ])
+
+      await vi.waitFor(() => {
+        expect(useToast().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      })
     })
 
     it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
