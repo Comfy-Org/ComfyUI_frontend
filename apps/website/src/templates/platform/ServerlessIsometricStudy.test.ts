@@ -8,6 +8,10 @@ import { nextTick } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { t } from '../../i18n/translations'
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '../../test/fakeIntersectionObserver'
 import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
 
 vi.mock('../../composables/useReducedMotion', () => ({
@@ -28,7 +32,6 @@ function setDocumentVisibility(state: DocumentVisibilityState) {
 }
 
 beforeEach(() => {
-  prefersReducedMotionMock.mockReturnValue(false)
   rafCallbacks = []
   cancelledIds = []
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -38,31 +41,15 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', (id: number) => {
     cancelledIds.push(id)
   })
-  vi.stubGlobal(
-    'IntersectionObserver',
-    class {
-      constructor(private readonly callback: IntersectionObserverCallback) {}
-
-      observe(target: Element) {
-        this.callback(
-          [
-            {
-              isIntersecting: true,
-              target,
-              time: 1
-            } as IntersectionObserverEntry
-          ],
-          this as unknown as IntersectionObserver
-        )
-      }
-
-      unobserve() {}
-
-      disconnect() {}
-    }
-  )
+  stubIntersectionObserver()
   setDocumentVisibility('visible')
 })
+
+async function renderOnScreen() {
+  const view = render(ServerlessIsometricStudy, { props: { locale: 'en' } })
+  await setAllIntersecting(true)
+  return view
+}
 
 describe('ServerlessIsometricStudy', () => {
   it('describes the diagram for assistive tech', () => {
@@ -75,33 +62,49 @@ describe('ServerlessIsometricStudy', () => {
     ).toBeTruthy()
   })
 
-  it('paints every face from a vector gradient, never a raster pattern', () => {
+  it('paints faces with flat colours, never a paint server', () => {
     prefersReducedMotionMock.mockReturnValue(true)
     const { container } = render(ServerlessIsometricStudy, {
       props: { locale: 'en' }
     })
 
+    expect(container.querySelector('defs')).toBeNull()
     expect(container.querySelector('pattern')).toBeNull()
     expect(container.querySelector('image')).toBeNull()
 
-    const gradientIds = [...container.querySelectorAll('linearGradient')].map(
-      (gradient) => gradient.id
+    const fills = [...container.querySelectorAll('polygon')].map((polygon) =>
+      polygon.getAttribute('fill')
     )
-    expect(gradientIds).toHaveLength(3)
+    const surfaceFills = fills.filter((fill) =>
+      fill?.startsWith('color-mix(in srgb, #')
+    )
 
-    const paintReferences = [...container.querySelectorAll('polygon')]
-      .map((polygon) => polygon.getAttribute('fill'))
-      .filter((fill) => fill?.startsWith('url('))
-
-    expect(paintReferences.length).toBeGreaterThan(0)
-    for (const id of gradientIds) {
-      expect(paintReferences).toContain(`url(#${id})`)
-    }
+    expect(fills.every((fill) => !fill?.includes('url('))).toBe(true)
+    expect(surfaceFills.length).toBeGreaterThan(0)
+    expect(new Set(surfaceFills).size).toBeGreaterThan(1)
   })
 
-  it('stops animating while the page is hidden', async () => {
-    render(ServerlessIsometricStudy, { props: { locale: 'en' } })
-    await nextTick()
+  it('never schedules a frame when reduced motion is preferred', async () => {
+    prefersReducedMotionMock.mockReturnValue(true)
+    await renderOnScreen()
+
+    expect(rafCallbacks).toHaveLength(0)
+  })
+
+  it('only animates while it is on screen', async () => {
+    await renderOnScreen()
+    expect(rafCallbacks.length).toBeGreaterThan(0)
+
+    const scheduled = rafCallbacks.length
+    await setAllIntersecting(false)
+
+    expect(cancelledIds.length).toBeGreaterThan(0)
+    rafCallbacks[scheduled - 1]!(16)
+    expect(rafCallbacks).toHaveLength(scheduled)
+  })
+
+  it('stops animating while the page is hidden and resumes with it', async () => {
+    await renderOnScreen()
 
     expect(rafCallbacks.length).toBeGreaterThan(0)
     const scheduled = rafCallbacks.length
@@ -112,5 +115,29 @@ describe('ServerlessIsometricStudy', () => {
     expect(cancelledIds.length).toBeGreaterThan(0)
     rafCallbacks[scheduled - 1]!(16)
     expect(rafCallbacks).toHaveLength(scheduled)
+
+    setDocumentVisibility('visible')
+    await nextTick()
+
+    expect(rafCallbacks.length).toBeGreaterThan(scheduled)
+  })
+
+  it('advances the animation no more often than the frame budget', async () => {
+    await renderOnScreen()
+
+    const stage = screen.getByRole('img', {
+      name: t('platform.serverlessVisual.ariaLabel', 'en')
+    })
+    const resting = stage.getAttribute('data-reset-indicator-height')
+
+    rafCallbacks[0]!(100)
+    await nextTick()
+    rafCallbacks[1]!(116)
+    await nextTick()
+    expect(stage.getAttribute('data-reset-indicator-height')).toBe(resting)
+
+    rafCallbacks[2]!(140)
+    await nextTick()
+    expect(stage.getAttribute('data-reset-indicator-height')).not.toBe(resting)
   })
 })

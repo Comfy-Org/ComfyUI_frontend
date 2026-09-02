@@ -4,15 +4,13 @@ import {
   useElementVisibility,
   useRafFn
 } from '@vueuse/core'
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const surfaceId = useId()
 
 const COLS = 20
 const ROWS = 7
@@ -34,20 +32,23 @@ const CYCLE_DURATION = BUILD_DURATION + HOLD_DURATION + RESET_DURATION
 const BUILD_STAGGER = 0.62
 const MAX_FACE_SHADE_OPACITY = 0.62
 const CONTRIBUTION_HEIGHTS = [0, 14, 26, 40, 56, 72] as const
-const ANIMATION_FPS = 30
-const SURFACE_SWEEP = [
-  '#cbd0e8',
-  '#e3d8ea',
-  '#f2dcd8',
-  '#eae9c8',
-  '#bcd3ef',
-  '#ddd8e6'
-] as const
-const FACE_TINTS = {
-  top: null,
-  left: { token: '--color-primary-comfy-ink', percentage: 12 },
-  right: { token: '--color-primary-comfy-plum', percentage: 6 }
-} as const
+const STAGE_WIDTH = 760
+const STAGE_HEIGHT = 360
+const INK_TOKEN = '--color-primary-comfy-ink'
+const PLUM_TOKEN = '--color-primary-comfy-plum'
+const INDICATOR_STAGE_CENTER = [87, 256] as const
+
+// A 30 fps cap lands exactly on the 60 Hz vsync interval, so jitter defers most
+// frames by a whole extra vsync and the cadence collapses to ~22 fps.
+const ANIMATION_FPS = 40
+
+// The retired holographic texture, resampled onto the stage as a 7x4 grid.
+const SURFACE_FIELD = [
+  ['#d7d5e1', '#bcc6e6', '#d5d4e1', '#cbd1e4', '#dbe4f4', '#dee4e9', '#e8eac5'],
+  ['#e7dfd5', '#edcacd', '#e5cac5', '#cccfdc', '#d3d2dd', '#e2dae1', '#eee2e6'],
+  ['#e4d7d5', '#e8ded7', '#d8d2e1', '#a0c5ee', '#dcd8d2', '#e3d7cf', '#ebe0df'],
+  ['#dbdfeb', '#d7d5d9', '#ded7cf', '#cbd0cb', '#b2cddc', '#bcb8dd', '#eddfde']
+]
 
 interface Tile {
   id: number
@@ -56,16 +57,19 @@ interface Tile {
   revealOrder: number
   x: number
   y: number
+  leftFill: string
+  rightFill: string
 }
 
 interface VisualTile extends Tile {
   height: number
+  silhouette: string
+  rightFace: string
   faceShadeOpacity: number
   topFill: string
 }
 
 type Point = readonly [number, number]
-type Face = keyof typeof FACE_TINTS
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(stageRef)
@@ -76,19 +80,47 @@ function mixedColor(token: string, percentage: number) {
   return `color-mix(in srgb, var(${token}) ${percentage}%, var(--color-primary-comfy-ink))`
 }
 
-const surfaceGradients = Object.entries(FACE_TINTS).map(([face, tint]) => ({
-  id: `${surfaceId}-${face}`,
-  stops: SURFACE_SWEEP.map((color, index) => ({
-    offset: `${(index * 100) / (SURFACE_SWEEP.length - 1)}%`,
-    color: tint
-      ? `color-mix(in srgb, ${color} ${100 - tint.percentage}%, var(${tint.token}))`
-      : color
-  }))
-}))
-
-function faceFill(face: Face) {
-  return `url(#${surfaceId}-${face})`
+function tintedSurface(surface: string, token: string, percentage: number) {
+  return `color-mix(in srgb, ${surface} ${100 - percentage}%, var(${token}))`
 }
+
+function channels(color: string) {
+  return [1, 3, 5].map((offset) =>
+    parseInt(color.slice(offset, offset + 2), 16)
+  )
+}
+
+function surfaceColor(x: number, y: number) {
+  const lastColumn = SURFACE_FIELD[0].length - 1
+  const lastRow = SURFACE_FIELD.length - 1
+  const u = clamp(x / STAGE_WIDTH) * lastColumn
+  const v = clamp(y / STAGE_HEIGHT) * lastRow
+  const column = Math.min(Math.floor(u), lastColumn - 1)
+  const row = Math.min(Math.floor(v), lastRow - 1)
+  const alongX = u - column
+  const alongY = v - row
+  const corners = [
+    channels(SURFACE_FIELD[row][column]),
+    channels(SURFACE_FIELD[row][column + 1]),
+    channels(SURFACE_FIELD[row + 1][column]),
+    channels(SURFACE_FIELD[row + 1][column + 1])
+  ]
+
+  const blended = corners[0].map((_, channel) =>
+    Math.round(
+      (corners[0][channel] * (1 - alongX) + corners[1][channel] * alongX) *
+        (1 - alongY) +
+        (corners[2][channel] * (1 - alongX) + corners[3][channel] * alongX) *
+          alongY
+    )
+  )
+
+  return `#${blended.map((value) => value.toString(16).padStart(2, '0')).join('')}`
+}
+
+const indicatorSurface = surfaceColor(...INDICATOR_STAGE_CENTER)
+const indicatorLeftFill = tintedSurface(indicatorSurface, INK_TOKEN, 16)
+const indicatorRightFill = tintedSurface(indicatorSurface, PLUM_TOKEN, 8)
 
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value))
@@ -110,6 +142,9 @@ function seededUnit(seed: number) {
 const tiles: Tile[] = Array.from({ length: COLS * ROWS }, (_, id) => {
   const column = id % COLS
   const row = Math.floor(id / COLS)
+  const x = ORIGIN_X + (column - row) * GRID_STEP_X
+  const y = ORIGIN_Y + (column + row) * GRID_STEP_Y
+  const surface = surfaceColor(x, y)
 
   return {
     id,
@@ -117,8 +152,10 @@ const tiles: Tile[] = Array.from({ length: COLS * ROWS }, (_, id) => {
     row,
     revealOrder:
       (column / (COLS - 1)) * 0.64 + ((ROWS - 1 - row) / (ROWS - 1)) * 0.36,
-    x: ORIGIN_X + (column - row) * GRID_STEP_X,
-    y: ORIGIN_Y + (column + row) * GRID_STEP_Y
+    x,
+    y,
+    leftFill: tintedSurface(surface, INK_TOKEN, 12),
+    rightFill: tintedSurface(surface, PLUM_TOKEN, 6)
   }
 }).sort((a, b) => a.y - b.y || a.x - b.x)
 
@@ -213,10 +250,13 @@ const visualTiles = computed<VisualTile[]>(() =>
           : 1 - easeInCubic(resetProgress.value)
     const height = targetHeight * visibleProgress
     const level = targetHeight / MAX_HEIGHT
+    const raised = height > 0.5
 
     return {
       ...tile,
       height,
+      silhouette: raised ? tileSilhouette(tile, height) : '',
+      rightFace: raised ? tileRightFace(tile, height) : '',
       faceShadeOpacity:
         (1 - clamp(height / MAX_HEIGHT)) * MAX_FACE_SHADE_OPACITY,
       topFill:
@@ -234,7 +274,7 @@ function tileTransform(tile: VisualTile) {
   return `matrix(${ISO_X} ${-ISO_Y} ${ISO_X} ${ISO_Y} ${tile.x} ${tile.y - tile.height})`
 }
 
-function tileCorners(tile: VisualTile, elevation: number): readonly Point[] {
+function tileCorners(tile: Tile, elevation: number): readonly Point[] {
   const topY = tile.y - elevation
   const halfWidth = TILE_WIDTH / 2
   const halfHeight = TILE_HEIGHT / 2
@@ -251,29 +291,18 @@ function polygonPoints(points: readonly Point[]) {
   return points.map(([x, y]) => `${x},${y}`).join(' ')
 }
 
-function leftFace(tile: VisualTile) {
-  const top = tileCorners(tile, tile.height)
-  const base = tileCorners(tile, 0)
-
-  return polygonPoints([top[0], top[3], base[3], base[0]])
-}
-
-function rightFace(tile: VisualTile) {
-  const top = tileCorners(tile, tile.height)
-  const base = tileCorners(tile, 0)
-
-  return polygonPoints([top[3], top[2], base[2], base[3]])
-}
-
-function topFace(tile: VisualTile) {
-  return polygonPoints(tileCorners(tile, tile.height))
-}
-
-function tileSilhouette(tile: VisualTile) {
-  const top = tileCorners(tile, tile.height)
+function tileSilhouette(tile: Tile, height: number) {
+  const top = tileCorners(tile, height)
   const base = tileCorners(tile, 0)
 
   return polygonPoints([top[0], top[1], top[2], base[2], base[3], base[0]])
+}
+
+function tileRightFace(tile: Tile, height: number) {
+  const top = tileCorners(tile, height)
+  const base = tileCorners(tile, 0)
+
+  return polygonPoints([top[3], top[2], base[2], base[3]])
 }
 
 const { pause, resume } = useRafFn(
@@ -311,26 +340,6 @@ watch(
       class="absolute inset-0 size-full"
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient
-          v-for="gradient in surfaceGradients"
-          :id="gradient.id"
-          :key="gradient.id"
-          x1="0"
-          y1="0"
-          x2="760"
-          y2="360"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop
-            v-for="stop in gradient.stops"
-            :key="stop.offset"
-            :offset="stop.offset"
-            :stop-color="stop.color"
-          />
-        </linearGradient>
-      </defs>
-
       <g transform="translate(-23 136) scale(0.275)">
         <path
           d="M400 285.274C414.877 285.274 429.684 288.556 440.919 295.042L638.843 409.313C650.085 415.804 655.411 424.129 655.411 432.187C655.411 440.246 650.085 448.571 638.843 455.062L440.919 569.333C429.684 575.819 414.877 579.1 400 579.1C385.123 579.1 370.316 575.819 359.081 569.333L161.156 455.062C149.914 448.571 144.588 440.246 144.588 432.188C144.588 424.129 149.914 415.804 161.156 409.313L359.081 295.042C370.316 288.556 385.123 285.274 400 285.274Z"
@@ -339,10 +348,10 @@ watch(
           stroke-width="2.6"
         />
         <template v-if="resetIndicatorHeight > 0.5">
-          <polygon :points="resetIndicatorLeftFace" :fill="faceFill('left')" />
+          <polygon :points="resetIndicatorLeftFace" :fill="indicatorLeftFill" />
           <polygon
             :points="resetIndicatorRightFace"
-            :fill="faceFill('right')"
+            :fill="indicatorRightFill"
           />
         </template>
         <path
@@ -354,11 +363,10 @@ watch(
 
       <g v-for="tile in visualTiles" :key="tile.id">
         <template v-if="tile.height > 0.5">
-          <polygon :points="leftFace(tile)" :fill="faceFill('left')" />
-          <polygon :points="rightFace(tile)" :fill="faceFill('right')" />
-          <polygon :points="topFace(tile)" :fill="faceFill('top')" />
+          <polygon :points="tile.silhouette" :fill="tile.leftFill" />
+          <polygon :points="tile.rightFace" :fill="tile.rightFill" />
           <polygon
-            :points="tileSilhouette(tile)"
+            :points="tile.silhouette"
             fill="var(--color-primary-comfy-ink)"
             :fill-opacity="tile.faceShadeOpacity"
           />
