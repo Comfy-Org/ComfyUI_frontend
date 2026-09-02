@@ -174,11 +174,11 @@ describe('badge renderer parity (I2)', () => {
     })
   })
 
-  // Known gap, tracked as BE-11449: the Comfy Cloud mark is a Nodes 2.0
-  // affordance. The legacy canvas has no logo badge — a core node's source is
-  // the fox as text — so it cannot tell a Comfy Cloud node from any other
-  // partner node. Delete this once the legacy renderer carries the mark.
-  describe('Comfy Cloud mark is Vue-only', () => {
+  // The one place the two renderers are deliberately allowed to disagree. The
+  // legacy canvas has no logo badge — a core node's source is the fox as text —
+  // so it cannot tell a Comfy Cloud node from any other partner node. These two
+  // are expected to fail when BE-11449 lands; delete them then.
+  describe('Comfy Cloud mark is Vue-only until BE-11449', () => {
     const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
     const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
 

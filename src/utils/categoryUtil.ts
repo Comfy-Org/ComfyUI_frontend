@@ -107,9 +107,8 @@ export function getProviderName(category: string): string {
 }
 
 /**
- * Whether a provider is Comfy Cloud, which runs curated workflows on Comfy
- * Cloud GPUs rather than proxying a third-party API. It is branded as Comfy
- * rather than as an outside partner.
+ * Whether a provider is Comfy Cloud, which carries Comfy's own brand rather
+ * than an outside partner's.
  */
 export function isComfyCloudProvider(providerName: string): boolean {
   return providerName.toLowerCase().replaceAll(/\s+/g, '-') === 'comfy-cloud'

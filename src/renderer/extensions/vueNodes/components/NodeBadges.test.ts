@@ -31,7 +31,7 @@ describe('NodeBadges', () => {
       }
     })
 
-    expect(screen.getByTestId('comfy-badge-icon').className).toContain(
+    expect(screen.getByTestId('comfy-badge-icon')).toHaveClass(
       'text-brand-yellow'
     )
   })
@@ -46,7 +46,7 @@ describe('NodeBadges', () => {
       }
     })
 
-    expect(screen.getByTestId('comfy-badge-icon').className).not.toContain(
+    expect(screen.getByTestId('comfy-badge-icon')).not.toHaveClass(
       'text-brand-yellow'
     )
   })

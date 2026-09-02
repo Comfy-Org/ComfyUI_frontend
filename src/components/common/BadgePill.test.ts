@@ -101,21 +101,36 @@ describe('BadgePill', () => {
 
   it('paints a solid pill in the border colour with ink content', () => {
     render(BadgePill, {
-      props: { text: 'Comfy Cloud', borderStyle: '#F0FF41', solid: true }
+      props: { text: 'Comfy Cloud', borderStyle: '#f0ff41', solid: true }
     })
 
-    const pill = screen.getByTestId('badge-pill')
-    expect(pill.getAttribute('style')).toContain('background-color')
-    expect(pill.className).toContain('text-primary-comfy-ink')
+    const pill = screen.getByTestId('badge-pill') as HTMLElement
+    expect(pill.style.borderColor).toBe('#f0ff41')
+    expect(pill.style.backgroundColor).toBe('#f0ff41')
+    expect(pill).toHaveClass('text-primary-comfy-ink')
   })
 
-  it('does not paint a solid pill without a border colour', () => {
+  it('keeps the gradient border when solid is set on a dual-colour provider', () => {
+    render(BadgePill, {
+      props: {
+        text: 'Gradient',
+        borderStyle: 'linear-gradient(90deg, #3186FF, #FABC12)',
+        solid: true
+      }
+    })
+
+    const pill = screen.getByTestId('badge-pill') as HTMLElement
+    expect(pill.style.borderColor).toBe('transparent')
+    expect(pill.style.backgroundColor).toBe('')
+  })
+
+  it('leaves a solid pill unpainted without a border colour', () => {
     render(BadgePill, {
       props: { text: 'Plain', solid: true }
     })
 
-    expect(screen.getByTestId('badge-pill').className).toContain(
-      'text-foreground'
-    )
+    const pill = screen.getByTestId('badge-pill') as HTMLElement
+    expect(pill.style.backgroundColor).toBe('')
+    expect(pill).toHaveClass('text-foreground')
   })
 })
