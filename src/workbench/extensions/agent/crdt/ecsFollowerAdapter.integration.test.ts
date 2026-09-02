@@ -948,6 +948,7 @@ describe('EcsFollowerAdapter integration', () => {
     ]
 
     const runScenario = (deliverAsSingleFrame: boolean) => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
       const host = mint({ nodes: [], links: [] }, catalog)
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
