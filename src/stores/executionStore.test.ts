@@ -1105,8 +1105,6 @@ describe('rewriteSessionWorkflowPaths', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
