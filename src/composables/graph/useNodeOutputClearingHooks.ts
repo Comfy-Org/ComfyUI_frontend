@@ -5,6 +5,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { getExecutionIdForNodeInGraph } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -27,8 +28,9 @@ function clearInteriorOutputs(
   if (!subgraph) return
 
   const store = useNodeOutputStore()
+  const { nodeIdToNodeLocatorId } = useWorkflowStore()
   for (const interior of subgraph.nodes) {
-    store.removeOutputsByLocatorId(`${subgraph.id}:${interior.id}`)
+    store.removeOutputsByLocatorId(nodeIdToNodeLocatorId(interior.id, subgraph))
     const interiorExecId = `${execIdPrefix}:${interior.id}`
     dropTrackerCacheEntry(interiorExecId)
     if (interior.isSubgraphNode()) {
@@ -46,11 +48,12 @@ export function installNodeOutputClearingHooks(graph: LGraph): () => void {
       const { nodeIdToNodeLocatorId } = useWorkflowStore()
       const locatorId = isSubgraph(graph)
         ? nodeIdToNodeLocatorId(node.id, graph)
-        : String(node.id)
+        : createNodeLocatorId(null, node.id)
       store.removeOutputsByLocatorId(locatorId)
 
       const execId = app.rootGraph
-        ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
+        ? (getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id) ??
+          String(node.id))
         : String(node.id)
       dropTrackerCacheEntry(execId)
 
