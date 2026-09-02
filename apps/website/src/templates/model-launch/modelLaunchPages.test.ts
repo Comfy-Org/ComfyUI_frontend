@@ -117,10 +117,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     }
     for (const column of page.comparison?.columns ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(
-          column.label[locale] || column.label.en,
-          `${column.id} column label`
-        ).not.toBe('')
+        expect(column.label[locale], `${column.id} column label`).not.toBe('')
       }
     }
     for (const row of page.comparison?.rows ?? []) {
@@ -129,13 +126,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
         page.comparison?.columns.length
       )
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(row.label[locale] || row.label.en, `${row.id} label`).not.toBe(
-          ''
-        )
+        expect(row.label[locale], `${row.id} label`).not.toBe('')
         for (const [index, cell] of row.cells.entries()) {
-          expect(cell[locale] || cell.en, `${row.id} cell ${index}`).not.toBe(
-            ''
-          )
+          expect(cell[locale], `${row.id} cell ${index}`).not.toBe('')
         }
       }
     }

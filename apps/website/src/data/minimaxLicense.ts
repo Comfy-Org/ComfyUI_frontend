@@ -20,8 +20,8 @@ const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 
 // Rows and figures come from the tier table supplied for this page
 // (2026-09-02); the pricing numbers live only here, so a deal change means
-// editing this table. /pricing renders these same rows in its resource-costs
-// band (MinimaxLicenseCostBand), which is why it is a named export.
+// editing this table. /pricing renders these same rows in
+// MinimaxLicensePricingSection, which is why it is a named export.
 export const minimaxLicenseComparison: ModelLaunchComparison = {
   headingKey: 'minimaxLicense.comparison.heading',
   columns: [
