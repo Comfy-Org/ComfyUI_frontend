@@ -398,17 +398,25 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.getByText('op-reconcile-123')).toBeTruthy()
   })
 
-  it('does not render a back action on the payment confirmation', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { tierKey: 'creator', isLoading: true },
-      global: globalOptions
+  it('owns a back action whether or not the payment element is embedded', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator' },
+      global: {
+        ...globalOptions,
+        stubs: {
+          ...globalOptions.stubs,
+          Button: {
+            props: ['ariaLabel'],
+            template:
+              '<button :aria-label="ariaLabel" @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
     })
 
-    expect(
-      screen.queryByRole('button', {
-        name: 'subscription.preview.backToAllPlans'
-      })
-    ).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'g.back' }))
+
+    expect(emitted().back).toBeTruthy()
   })
 
   it('omits the total row entirely when no quote is available to price it', () => {
