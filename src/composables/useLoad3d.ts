@@ -834,7 +834,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       )
 
       loadingMessage.value = t('load3d.loadingModel')
-      await load3d.loadModel(modelUrl)
+      const outcome = await load3d.loadModel(modelUrl)
+      // A cancelled/failed/empty load never reached setupModel, so committing
+      // the widget here would point the node at a model that isn't showing.
+      if (outcome !== 'loaded') return
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 

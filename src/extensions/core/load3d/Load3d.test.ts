@@ -954,7 +954,7 @@ describe('Load3d', () => {
       }))
       const setCameraState = vi.fn()
       const getCurrentCameraType = vi.fn(() => 'perspective' as const)
-      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      const loaderLoadModel = vi.fn().mockResolvedValue('loaded')
       Object.assign(ctx.load3d, {
         cameraManager: {
           ...ctx.cameraManager,
