@@ -625,6 +625,63 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
   })
 
+  it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        // Mirrors the real deps: honor an explicit originTabPath (resolved
+        // post-prepare) and fall back to whatever tab is active right now
+        // when called with no argument (the pre-await identity capture).
+        current: (originTabPath) => {
+          const path = originTabPath ?? activePath
+          return { id: idForPath(path), tabPath: path }
+        },
+        adopted,
+        prepare,
+        tabs: (originTabPath) => {
+          const path = originTabPath ?? activePath
+          return {
+            open_tabs: [{ workflow_id: idForPath(path), name: path }],
+            current_tab: idForPath(path)
+          }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // Simulate the user switching tabs while prepare() is still in flight.
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    expect(adopted).toHaveBeenCalledWith('wf-1', {
+      id: 'wf-a',
+      tabPath: 'tab-a'
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      tabs: { current_tab: 'wf-a' }
+    })
+  })
+
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
