@@ -16,7 +16,7 @@ const routes = getRoutes(locale)
 const cards = [
   { product: 'local', href: routes.download, bg: 'bg-primary-warm-gray' },
   { product: 'cloud', href: routes.cloud, bg: 'bg-secondary-mauve' },
-  { product: 'api', href: routes.api, bg: 'bg-primary-comfy-plum' },
+  { product: 'platform', href: routes.platform, bg: 'bg-primary-comfy-plum' },
   {
     product: 'enterprise',
     href: routes.enterprise,

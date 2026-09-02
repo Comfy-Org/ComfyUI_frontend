@@ -851,8 +851,8 @@ describe('AgentPanelRoot attach flow', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
     const refresh = vi
-      .spyOn(useAssetsStore(), 'updateInputs')
-      .mockResolvedValue(undefined as never)
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
 
     dispatchDrag(screen.getByRole('textbox'), 'drop', {
       files: [new File(['x'], 'cat.png', { type: 'image/png' })]
@@ -1687,9 +1687,9 @@ describe('AgentPanelRoot transcript copy', () => {
       zAgentWsEventForTest({
         type: 'agent_tool_call',
         data: {
+          tool_call_id: 'call-add-node',
           tool_name: 'add_node',
-          status: 'ok',
-          args: [],
+          status: 'success',
           message_id: 'turn-1',
           thread_id: 'th-1'
         }

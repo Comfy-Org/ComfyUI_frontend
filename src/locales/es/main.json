@@ -3201,6 +3201,7 @@
     "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "sonido",
@@ -5038,8 +5039,10 @@
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
       "invalidEmailCount": "{count} dirección de correo electrónico no válida | {count} direcciones de correo electrónico no válidas",
       "invitedMessage": "Se envió una invitación a {emails} | Se enviaron invitaciones a {emails}",
+      "pendingInviteCount": "{count} de estas personas ya tienen una invitación pendiente. Se omitirán.",
+      "pendingInviteSingle": "Esta persona ya tiene una invitación pendiente",
       "placeholder": "Introduce el correo electrónico de la persona",
-      "seatLimitReached": "Puedes invitar hasta {count} compañero de equipo. | Puedes invitar hasta {count} compañeros de equipo.",
+      "seatLimitExceeded": "Este espacio de trabajo tiene un límite de {max} miembros. Elimina {overage} para continuar.",
       "title": "Invitar a una persona a este espacio de trabajo"
     },
     "inviteUpsellDialog": {
