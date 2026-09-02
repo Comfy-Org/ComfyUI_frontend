@@ -372,6 +372,25 @@ describe('useAuthStore', () => {
       expect(await pending).toBeNull()
       expect(store.balance).toBeNull()
     })
+
+    it('preserves the HTTP status when a non-404 balance response fails', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers/balance')) {
+          return Promise.resolve({
+            ok: false,
+            status: 403,
+            statusText: 'Forbidden',
+            text: () => Promise.resolve('')
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        status: 403
+      })
+    })
   })
 
   describe('user-scoped billing endpoints with API-key sessions', () => {

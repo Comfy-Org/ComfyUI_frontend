@@ -19,7 +19,10 @@ import type {
   ResubscribeClickMetadata
 } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
@@ -394,7 +397,8 @@ function useSubscriptionInternal() {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
           error: error instanceof Error ? error.message : String(error)
-        })
+        }),
+        error instanceof WorkspaceApiError ? error.status : undefined
       )
     }
     if (

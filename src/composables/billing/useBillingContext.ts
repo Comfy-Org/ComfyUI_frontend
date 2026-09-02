@@ -12,6 +12,8 @@ import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@/platform/telemetry/reportError'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -31,6 +33,7 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 // new sub is never misrouted even before its credit stop is populated.
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
 const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
+const INITIALIZATION_RETRY_DELAYS_MS = [500, 2_000]
 
 function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
   const normalizedSlug = planSlug?.toLowerCase()
@@ -243,15 +246,10 @@ function useBillingContextInternal(): BillingContext {
   // Reset and reinitialize when the active workspace or billing backend changes.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
-    async ([newWorkspaceId]) => {
+    ([newWorkspaceId]) => {
       resetBillingState()
       if (!newWorkspaceId) return
-
-      try {
-        await initialize()
-      } catch (err) {
-        console.error('Failed to initialize billing context:', err)
-      }
+      void initialize().catch(() => {})
     },
     { immediate: true }
   )
@@ -263,13 +261,33 @@ function useBillingContextInternal(): BillingContext {
     isLoading.value = true
     error.value = null
     try {
-      await adapter.initialize()
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await adapter.initialize()
+          break
+        } catch (err) {
+          if (activeContext.value !== adapter) return
+          const retryDelay = INITIALIZATION_RETRY_DELAYS_MS[attempt]
+          if (
+            retryDelay === undefined ||
+            categorizeBillingApiError(err) !== 'network'
+          ) {
+            throw err
+          }
+          await new Promise((resolve) => setTimeout(resolve, retryDelay))
+          if (activeContext.value !== adapter) return
+        }
+      }
       if (activeContext.value !== adapter) return
       isInitialized.value = true
     } catch (err) {
       if (activeContext.value !== adapter) return
       error.value =
         err instanceof Error ? err.message : 'Failed to initialize billing'
+      reportError(err, {
+        errorType: 'billing_context_initialization_failure',
+        tags: { billing_backend: type.value }
+      })
       throw err
     } finally {
       if (activeContext.value === adapter) isLoading.value = false
