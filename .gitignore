@@ -40,6 +40,10 @@ CLAUDE.local.md
 !.vscode/custom-css.json
 !.vscode/settings.json.default
 !.vscode/launch.json.default
+apps/cms/.vscode/*
+!apps/cms/.vscode/extensions.json
+!apps/cms/.vscode/settings.json.default
+!apps/cms/.vscode/launch.json.default
 .idea
 .DS_Store
 *.suo

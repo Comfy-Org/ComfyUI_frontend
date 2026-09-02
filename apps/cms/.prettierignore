@@ -1,0 +1,5 @@
+.next/
+
+# Payload codegen output (regenerated on schema change; not hand-edited)
+src/payload-types.ts
+src/app/(payload)/admin/importMap.js

@@ -6,6 +6,7 @@
   "trailingComma": "none",
   "printWidth": 80,
   "ignorePatterns": [
+    "apps/cms/**",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
     "scripts/registry-census/corpus.pins.json",
