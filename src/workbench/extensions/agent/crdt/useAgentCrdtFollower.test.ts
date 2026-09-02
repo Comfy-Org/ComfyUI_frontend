@@ -49,7 +49,8 @@ const clientState = vi.hoisted(() => ({
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
+  applyFrame: vi.fn(),
+  retryPending: vi.fn(),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -845,7 +846,8 @@ describe('useAgentCrdtFollower', () => {
     bridge().follower.updatesApplied = 3
     adapterState.applyFrame.mockReturnValueOnce({
       status: 'failed',
-      sequence: 42
+      sequence: 42,
+      reason: 'rejected'
     })
 
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })

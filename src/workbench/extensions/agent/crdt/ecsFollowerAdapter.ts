@@ -25,8 +25,16 @@ export type MutationsForTarget =
 export type FrameProjectionResult =
   | { status: 'projected'; sequence: number }
   | { status: 'queued' }
+  | { status: 'idle' }
   | { status: 'unbound' }
-  | { status: 'failed'; sequence: number }
+  | { status: 'retrying'; sequence: number; attempt: number }
+  | {
+      status: 'failed'
+      sequence: number
+      reason: 'rejected' | 'exception' | 'blocked'
+    }
+
+const PROJECTION_RETRY_MAX_ATTEMPTS = 3
 
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -125,6 +133,7 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  projectionBlocked: boolean
 }
 
 interface PendingProjection {
@@ -134,6 +143,7 @@ interface PendingProjection {
   readonly replacedWidgetMaps: Set<string>
   readonly changedLinks: Set<string>
   readonly reconcile: boolean
+  attempts: number
 }
 
 /**
@@ -167,19 +177,60 @@ export class EcsFollowerAdapter {
   applyFrame(update: DocUpdate): FrameProjectionResult {
     const session = this.targets.get(update.workflowId)
     if (!session) return { status: 'unbound' }
+    if (session.projectionBlocked)
+      return { status: 'failed', sequence: update.seq, reason: 'blocked' }
 
     session.frameQueue.push(this.captureSessionPending(session, update))
     if (session.applying) return { status: 'queued' }
+    return this.drainSession(session)
+  }
+
+  retryPending(workflowId: string): FrameProjectionResult {
+    const session = this.targets.get(workflowId)
+    if (!session) return { status: 'unbound' }
+    if (session.projectionBlocked) {
+      const sequence = session.frameQueue[0]?.update.seq ?? 0
+      return { status: 'failed', sequence, reason: 'blocked' }
+    }
+    if (session.frameQueue.length === 0) return { status: 'idle' }
+    if (session.applying) return { status: 'queued' }
+    return this.drainSession(session)
+  }
+
+  private drainSession(session: TargetSession): FrameProjectionResult {
     session.applying = true
-    let projectedSequence = update.seq
+    let projectedSequence = session.frameQueue[0]?.update.seq ?? 0
     try {
       while (session.frameQueue.length > 0) {
         const pending = session.frameQueue.shift()
-        if (pending && !this.applyQueuedFrame(session, pending)) {
-          session.frameQueue.unshift(pending)
-          return { status: 'failed', sequence: pending.update.seq }
+        if (!pending) continue
+        const result = this.applyQueuedFrame(session, pending)
+        if (result === 'rejected') {
+          pending.attempts += 1
+          if (pending.attempts < PROJECTION_RETRY_MAX_ATTEMPTS) {
+            session.frameQueue.unshift(pending)
+            return {
+              status: 'retrying',
+              sequence: pending.update.seq,
+              attempt: pending.attempts
+            }
+          }
+          this.blockProjection(session)
+          return {
+            status: 'failed',
+            sequence: pending.update.seq,
+            reason: 'rejected'
+          }
         }
-        if (pending) projectedSequence = pending.update.seq
+        if (result === 'exception') {
+          this.blockProjection(session)
+          return {
+            status: 'failed',
+            sequence: pending.update.seq,
+            reason: 'exception'
+          }
+        }
+        projectedSequence = pending.update.seq
       }
     } finally {
       session.applying = false
@@ -191,6 +242,8 @@ export class EcsFollowerAdapter {
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
     if (!session) return false
+    session.projectionBlocked = false
+    session.frameQueue.length = 0
     this.discardSessionPending(session)
     return session.mutations.clearSemanticGraph(context)
   }
@@ -224,6 +277,7 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
+      projectionBlocked: false,
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -245,7 +299,8 @@ export class EcsFollowerAdapter {
       ),
       replacedWidgetMaps: new Set(session.replacedWidgetMaps),
       changedLinks: new Set(session.changedLinks),
-      reconcile: session.reconcileNextFrame
+      reconcile: session.reconcileNextFrame,
+      attempts: 0
     }
     session.reconcileNextFrame = false
     this.discardSessionPending(session)
@@ -255,7 +310,7 @@ export class EcsFollowerAdapter {
   private applyQueuedFrame(
     session: TargetSession,
     pending: PendingProjection
-  ): boolean {
+  ): 'projected' | 'rejected' | 'exception' {
     const {
       update,
       nodeActions,
@@ -340,13 +395,19 @@ export class EcsFollowerAdapter {
           if (link) batch.connect(link)
         }
       })
-      return committed
+      return committed ? 'projected' : 'rejected'
     } catch (error) {
       reportError(error, {
         errorType: 'agent_crdt_projection_failure'
       })
-      return false
+      return 'exception'
     }
+  }
+
+  private blockProjection(session: TargetSession): void {
+    session.projectionBlocked = true
+    session.frameQueue.length = 0
+    this.discardSessionPending(session)
   }
 
   private discardSessionPending(session: TargetSession): void {

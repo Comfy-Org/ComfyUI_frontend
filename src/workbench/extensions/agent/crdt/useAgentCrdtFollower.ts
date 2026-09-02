@@ -408,11 +408,21 @@ export function useAgentCrdtFollower(
     const projection = adapter.applyFrame(update)
     switch (projection.status) {
       case 'queued':
+      case 'idle':
       case 'unbound':
         outcomes.value = {
           ...outcomes.value,
           skipped: outcomes.value.skipped + 1
         }
+        return
+      case 'retrying':
+        lastFrameType.value = 'projection_retry'
+        recordDevEvent('projection_error', {
+          workflowId: update.workflowId,
+          seq: projection.sequence,
+          actor: update.actor,
+          attempt: projection.attempt
+        })
         return
       case 'failed':
         outcomes.value = {
@@ -425,7 +435,8 @@ export function useAgentCrdtFollower(
         recordDevEvent('projection_error', {
           workflowId: update.workflowId,
           seq: projection.sequence,
-          actor: update.actor
+          actor: update.actor,
+          reason: projection.reason
         })
         return
       case 'projected':

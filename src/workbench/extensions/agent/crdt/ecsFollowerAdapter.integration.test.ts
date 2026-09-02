@@ -523,7 +523,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['node-1']
       })
-    ).toEqual({ status: 'failed', sequence: 1 })
+    ).toEqual({ status: 'retrying', sequence: 1, attempt: 1 })
     expect(projectedNodes).toEqual([])
 
     expect(
@@ -542,6 +542,61 @@ describe('EcsFollowerAdapter integration', () => {
       'node-2',
       'retry-drain'
     ])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('bounds deterministic projection retries and blocks until reset', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let batchAttempts = 0
+    const mutations: GraphMutations = {
+      batch: () => {
+        batchAttempts += 1
+        return false
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+    expect(adapter.retryPending('wf')).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 2
+    })
+    expect(adapter.retryPending('wf')).toEqual({
+      status: 'failed',
+      sequence: 1,
+      reason: 'rejected'
+    })
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toEqual({
+      status: 'failed',
+      sequence: 2,
+      reason: 'blocked'
+    })
+    expect(batchAttempts).toBe(3)
 
     adapter.destroy()
     follower.destroy()
