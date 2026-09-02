@@ -4,6 +4,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
+import { buildModelLlmsLinks } from '../../../config/model-llms'
 import { t } from '../../../i18n/translations'
 import {
   absoluteUrl,
@@ -28,6 +29,9 @@ if (model.canonicalSlug) {
 }
 
 const { displayName } = model
+
+// fal-style LLMs surface: markdown twin + agent handoff links.
+const llms = buildModelLlmsLinks(model.slug, displayName, Astro.site)
 
 const pageTitle = `${displayName} in ComfyUI`
 const pageDescription = getPageDescription(model)
@@ -66,6 +70,56 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
   ]}
   extraJsonLd={[software, faqPage]}
 >
+
+  <div class="mx-auto flex max-w-7xl justify-end px-6 pt-6 lg:px-8">
+    <div class="relative" id="llms-wrap" data-md={llms.mdPath}>
+      <button
+        id="llms-btn"
+        aria-haspopup="true"
+        aria-expanded="false"
+        class="cursor-pointer rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-extrabold tracking-widest text-primary-comfy-canvas hover:bg-white/10"
+      >
+        {t('models.llms.button')} ▾
+      </button>
+      <div
+        id="llms-menu"
+        class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-white/15 bg-primary-comfy-ink py-1.5 shadow-2xl"
+      >
+        <button
+          id="llms-copy"
+          class="block w-full cursor-pointer px-4 py-2.5 text-left text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.copy')}<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span>
+        </button>
+        <a href={llms.mdPath} class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5">
+          {t('models.llms.view')}
+        </a>
+        <a
+          href="/p/supported-models/llms.txt"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.catalog')}
+        </a>
+        <div class="my-1 border-t border-white/10"></div>
+        <a
+          href={llms.claudeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.openClaude')} ↗
+        </a>
+        <a
+          href={llms.chatgptUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.openChatgpt')} ↗
+        </a>
+      </div>
+    </div>
+  </div>
 
   <ModelHeroSection
     displayName={displayName}
@@ -110,3 +164,48 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
     client:visible
   />
 </BaseLayout>
+
+<script>
+  // One delegated document listener: it queries elements at event time, so it
+  // survives ClientRouter DOM swaps without rebinding and never piles up.
+  function setLlmsMenuOpen(open: boolean) {
+    const btn = document.getElementById('llms-btn')
+    const menu = document.getElementById('llms-menu')
+    if (!btn || !menu) return
+    menu.classList.toggle('hidden', !open)
+    btn.setAttribute('aria-expanded', String(open))
+  }
+
+  async function copyLlmsMarkdown() {
+    const wrap = document.getElementById('llms-wrap')
+    const mdUrl = wrap instanceof HTMLElement ? wrap.dataset.md : undefined
+    if (!mdUrl) return
+    try {
+      const md = await (await fetch(mdUrl)).text()
+      await navigator.clipboard.writeText(md)
+      const check = document.getElementById('llms-copied')
+      check?.classList.remove('hidden')
+      window.setTimeout(() => {
+        check?.classList.add('hidden')
+        setLlmsMenuOpen(false)
+      }, 1200)
+    } catch {
+      /* fetch or clipboard unavailable */
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target instanceof Element ? e.target : null
+    if (!target) return
+    if (target.closest('#llms-btn')) {
+      const menu = document.getElementById('llms-menu')
+      setLlmsMenuOpen(menu?.classList.contains('hidden') ?? false)
+      return
+    }
+    if (target.closest('#llms-copy')) {
+      void copyLlmsMarkdown()
+      return
+    }
+    if (!target.closest('#llms-wrap')) setLlmsMenuOpen(false)
+  })
+</script>

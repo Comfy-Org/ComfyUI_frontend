@@ -10,6 +10,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const mocks = vi.hoisted(() => ({
+  reportError: vi.fn(),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -71,6 +72,9 @@ vi.mock(
   '@/platform/cloud/subscription/composables/useSubscriptionDialog',
   () => ({ useSubscriptionDialog: mocks.useSubscriptionDialog })
 )
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mocks.reportError
+}))
 
 describe('useUrlActionLoaders', () => {
   beforeEach(() => {
@@ -142,13 +146,30 @@ describe('useUrlActionLoaders', () => {
     ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
   })
 
-  it('isolates a checkout-recovery failure so it does not abort the boot chain', async () => {
-    mocks.resumePendingPricingFlow.mockRejectedValueOnce(new Error('boom'))
+  it('resolves without waiting for checkout recovery to settle', async () => {
+    mocks.resumePendingPricingFlow.mockImplementationOnce(
+      () => new Promise<undefined>(() => {})
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await expect(runUrlActionLoaders()).resolves.toBeUndefined()
+
+    expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
+  })
+
+  it('reports a checkout-recovery failure instead of rejecting unhandled', async () => {
+    const failure = new Error('boom')
+    mocks.resumePendingPricingFlow.mockRejectedValueOnce(failure)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    await vi.waitFor(() => {
+      expect(mocks.reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'billing_pending_checkout_resume_failure'
+      })
+    })
   })
 
   it('isolates a pricing-loader failure so it does not abort the boot chain', async () => {

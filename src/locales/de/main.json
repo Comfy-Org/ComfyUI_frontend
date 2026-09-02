@@ -8,10 +8,123 @@
     "share": "Teilen",
     "shareTooltip": "Workflow teilen"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Kosten pro Ausführung",
-    "title": "API-Node(s)",
-    "totalCost": "Gesamtkosten"
+  "agent": {
+    "addFromAssets": "Aus dem Assets-Panel hinzufügen",
+    "addNodesFromGraph": "Nodes aus dem Graphen hinzufügen",
+    "addPromptToSend": "Prompt zum Senden hinzufügen",
+    "addToPrompt": "Zum Prompt hinzufügen",
+    "alpha": "ALPHA",
+    "askComfyAgent": "Comfy Agent fragen",
+    "assetNotAttachable": "Bilder, Videos, Audio, 3D-Modelle und Textdateien können angehängt werden",
+    "attach": "Datei anhängen",
+    "attachFiles": "Bilder oder Dateien anhängen",
+    "attachmentTooLarge": "{name} ist größer als {limit}",
+    "attachmentUploadFailed": "{name} konnte nicht hochgeladen werden",
+    "backToPreviousChat": "Zum vorherigen Chat zurück",
+    "caption": "Der KI-Agent kann Fehler machen",
+    "captionExpanded": "Der KI-Agent kann Fehler machen. Überprüfen Sie die Antwort noch einmal.",
+    "changeWorkflowForChat": "Workflow für diesen Chat ändern",
+    "chatOptions": "Chatoptionen",
+    "chooseWorkflow": "Workflow auswählen",
+    "chooseWorkflowForChat": "Workflow für diesen Chat auswählen",
+    "close": "Schließen",
+    "coachBody": "Bitten Sie ihn, Graphen zu erstellen oder zu bearbeiten.",
+    "coachTitle": "Lernen Sie den Agenten kennen",
+    "copied": "Kopiert!",
+    "copy": "Kopieren",
+    "copyMarkdown": "Als Markdown kopieren",
+    "copyUnavailable": "In dieser Version kann nur die aktuelle Unterhaltung kopiert werden",
+    "crdtConnected": "verbunden",
+    "crdtDisconnected": "getrennt",
+    "crdtNoDocument": "kein Dokument",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} Aktualisierungen · {frame}",
+    "credits": "Credits",
+    "delete": "Löschen",
+    "dismiss": "Verwerfen",
+    "dontWorkInWorkflow": "Nicht in einem Workflow arbeiten",
+    "downloadAssets": "Assets herunterladen",
+    "dragAndDropAssets": "Assets hierher ziehen und ablegen",
+    "focusNode": "Auf Canvas anzeigen",
+    "focusNodeLabel": "{node} auf Canvas anzeigen",
+    "friend": "da",
+    "gotIt": "Verstanden",
+    "greeting": "Hallo {name},",
+    "greetingQuestion": "Was möchten Sie erstellen?",
+    "helpful": "Hilfreich",
+    "history": "Chatverlauf",
+    "historyCurrent": "Aktuell",
+    "historyEarlier": "Früher",
+    "historyEmpty": "Noch keine Unterhaltungen",
+    "historyToday": "Heute",
+    "historyYesterday": "Gestern",
+    "latest": "Neueste",
+    "loadFailed": "Das Agent-Panel konnte nicht geladen werden.",
+    "malformedEvent": "Der Agent hat ein Ereignis gesendet, das dieses Panel nicht lesen konnte.",
+    "maximize": "Panel maximieren",
+    "mention": "Einen Node erwähnen",
+    "minimize": "Panel minimieren",
+    "modelAuto": "Automatisch",
+    "newChat": "Neuer Chat",
+    "newChatTitle": "Ohne Titel",
+    "noNodesToMention": "Keine Nodes in diesem Workflow",
+    "nodeSelection": {
+      "bannerSubtitle": "Wählen Sie einen oder mehrere Nodes als Referenz aus",
+      "bannerTitle": "Nodes aus dem Graphen hinzufügen",
+      "exit": "Modus verlassen",
+      "selectNode": "Node auswählen"
+    },
+    "notHelpful": "Nicht hilfreich",
+    "openWorkflowTab": "{name} öffnen",
+    "placeholder": "Beschreiben Sie Ideen, {'@'} zum Referenzieren,\nfügen Sie Nodes aus dem Graphen hinzu oder ziehen Sie Assets herein",
+    "ranToolCalls": "Hat {count} Tool-Aufruf ausgeführt | Hat {count} Tool-Aufrufe ausgeführt",
+    "ranToolCallsTimed": "Hat {count} Tool-Aufruf {seconds} Sekunden lang ausgeführt | Hat {count} Tool-Aufrufe {seconds} Sekunden lang ausgeführt",
+    "remove": "Entfernen",
+    "removeNodeLabel": "Referenz zu {node} entfernen",
+    "runModeAsk": "Vor dem Ausführen eines Workflows nachfragen",
+    "runModeAskDescription": "Comfy fragt vor jeder Workflow-Ausführung nach Ihrer Zustimmung",
+    "runModeAuto": "Ohne Zustimmung automatisch ausführen",
+    "runModeAutoDescription": "Comfy führt Workflows aus, ohne um Erlaubnis zu fragen",
+    "runModeLimit": "Automatisch mit Limits ausführen",
+    "runModeLimitDescription": "Comfy fragt nur nach Bestätigung, wenn eine Workflow-Ausführung Ihr Kreditlimit überschreitet",
+    "runModeTriggerAsk": "Nachfragen",
+    "runModeTriggerAskTooltip": "Um Erlaubnis fragen",
+    "runModeTriggerAuto": "Automatisch",
+    "runModeTriggerAutoLimit": "Automatisch (begrenzt)",
+    "runModeTriggerAutoLimitTooltip": "Fragen, wenn das Kreditlimit erreicht ist",
+    "runModeTriggerAutoTooltip": "Workflow ohne Erlaubnis ausführen",
+    "runNotice": "Der Agent kann den Graphen ändern. Sie müssen auf „Ausführen“ klicken, um den Workflow auszuführen.",
+    "runNoticeExpanded": "Der Agent kann Ihren Workflow ändern. Sie müssen auf „Ausführen“ klicken, um ihn auszuführen.",
+    "runPermissions": "Ausführungsfreigaben",
+    "runPermissionsDescription": "Legen Sie fest, wann der Agent Ihre Zustimmung benötigt",
+    "saveChanges": "Änderungen speichern",
+    "searchWorkflows": "Workflows durchsuchen",
+    "selectWorkflowToGenerate": "Workflow zum Generieren auswählen",
+    "send": "Senden",
+    "sendBusy": "Eine Nachricht wird bereits gesendet",
+    "sendFailed": "Nachricht konnte nicht gesendet werden",
+    "showChatHistory": "Chatverlauf anzeigen",
+    "showLess": "Weniger anzeigen",
+    "showMore": "Mehr anzeigen",
+    "skip": "Überspringen",
+    "stop": "Stopp",
+    "suggestedPrompts": [
+      "Erstellen Sie eine gelbe Ente mit einer Hockeymaske",
+      "Meine gespeicherten Workflows auflisten",
+      "Den besten Workflow für Haut-Upscaling finden",
+      "Den ausgewählten Node erklären",
+      "Einen Workflow für Bild-zu-Video mit 3 Modellen erstellen"
+    ],
+    "switchWorkflow": "Workflow wechseln",
+    "thinking": "Denkt nach...",
+    "thought": "Gedanke",
+    "thoughtTimed": "Dachte {seconds} Sekunden lang",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Eine Einstellung vergessen",
+    "toolOpenedNewTab": "Einen neuen Tab geöffnet",
+    "toolSavedPreference": "Eine Einstellung gespeichert",
+    "toolSwitchedTabs": "Tabs gewechselt",
+    "untitledChat": "Ohne Titel",
+    "uploading": "Wird hochgeladen"
   },
   "apiNodesSignInDialog": {
     "message": "Dieser Workflow enthält API-Nodes, für deren Ausführung Sie bei Ihrem Konto angemeldet sein müssen.",
@@ -977,6 +1090,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -1073,6 +1187,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Bei Comfy Agent ist ein Serverfehler aufgetreten.",
+        "title": "Comfy Agent-Fehler"
+      },
+      "apply_failed": {
+        "desc": "Eine Agent-Bearbeitung konnte nicht auf das Workflow-Dokument angewendet werden.",
+        "title": "Agent-Bearbeitung fehlgeschlagen"
+      },
+      "guard_trip": {
+        "desc": "Eine eingehende Agent-Aktualisierung entsprach nicht der erwarteten Struktur des Workflow-Dokuments und wurde blockiert.",
+        "title": "Agent-Aktualisierung blockiert"
+      },
       "missing_node_type": {
         "desc": "Ein Node-Typ fehlt oder ist nicht verfügbar. Der Workflow ist möglicherweise beschädigt oder benötigt einen benutzerdefinierten Node.",
         "title": "Fehlender Node-Typ"
@@ -1080,6 +1206,14 @@
       "no_prompt": {
         "desc": "Die an den Server gesendeten Workflow-Daten sind leer. Dies könnte ein unerwarteter Systemfehler sein.",
         "title": "Workflow-Daten sind leer"
+      },
+      "op_rejected": {
+        "desc": "Das Workflow-Dokument hat eine Agent-Bearbeitung abgelehnt. Canvas und das freigegebene Dokument können bis zur nächsten Aktualisierung kurzzeitig voneinander abweichen.",
+        "title": "Agent-Bearbeitung abgelehnt"
+      },
+      "prefix_abort": {
+        "desc": "Ein Batch von Agent-Bearbeitungen wurde mittendrin angehalten. Die verbleibenden Bearbeitungen werden automatisch erneut versucht.",
+        "title": "Agent-Bearbeitungen teilweise angewendet"
       },
       "prompt_no_outputs": {
         "desc": "Der Workflow enthält keine Ausgabe-Nodes (z. B. Save Image, Preview Image), die ein Ergebnis erzeugen.",
@@ -1497,6 +1631,8 @@
     "addNewKeybinding": "Neue Tastenkombination hinzufügen",
     "addNode": "Node hinzufügen...",
     "addNodeFilterCondition": "Node-Filterbedingung hinzufügen",
+    "agentModified": "Agent hat diesen Workflow aktualisiert",
+    "agentWorking": "Agent arbeitet an diesem Workflow",
     "all": "Alle",
     "allKeybindingsReset": "Alle Tastenkombinationen auf Standard zurückgesetzt",
     "amount": "Menge",
@@ -1715,6 +1851,7 @@
     "moreWorkflows": "Weitere Workflows",
     "mostRelevant": "Am relevantesten",
     "multiSelectDropdown": "Dropdown-Menü für Mehrfachauswahl",
+    "mute": "Stummschalten",
     "nMoreKeybindings": "+ {count} weitere",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Name",
@@ -1870,6 +2007,7 @@
     "triggerPhrase": "Auslösephrase",
     "unknownError": "Unbekannter Fehler",
     "unknownFile": "Unbekannte Datei",
+    "unmute": "Stummschaltung aufheben",
     "untitled": "Ohne Titel",
     "update": "Aktualisieren",
     "updateAvailable": "Update verfügbar",
@@ -2409,8 +2547,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Core-Nodes ab Version {version}:",
-    "outdatedVersion": "Dieser Workflow wurde mit einer neueren Version von ComfyUI ({version}) erstellt. Einige Nodes funktionieren möglicherweise nicht korrekt.",
-    "outdatedVersionGeneric": "Dieser Workflow wurde mit einer neueren Version von ComfyUI erstellt. Einige Nodes funktionieren möglicherweise nicht korrekt.",
+    "newerVersionRequired": "Einige Nodes erfordern eine neuere Version von ComfyUI (aktuell: {version}). Bitte aktualisieren Sie, um alle Nodes zu verwenden.",
+    "newerVersionRequiredGeneric": "Einige Nodes erfordern eine neuere Version von ComfyUI. Bitte aktualisieren Sie, um alle Nodes zu verwenden.",
     "unknownVersion": "unbekannt"
   },
   "logsTerminal": {
@@ -3058,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "Scheduler",
     "scheduling": "Planung",
+    "sensenova": "sensenova",
     "shader": "Shader",
     "sigmas": "Sigmas",
     "sound": "Ton",
@@ -3221,26 +3360,15 @@
     "done": "Fertig",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "Bild zu Video · 5 s",
-          "title": "Animieren"
-        },
-        "body": "Jede beginnt mit dem Bild, das Sie gerade erstellt haben.",
-        "explore": "Alle Vorlagen durchsuchen",
-        "fallback": {
+        "dismiss": "Nicht jetzt",
+        "explore": "Vorlagen erkunden",
+        "noTour": {
           "body": "Durchsuchen Sie die Vorlagen und wählen Sie etwas zum Erstellen aus.",
           "title": "Hunderte weitere warten auf Sie"
         },
-        "loadFailed": "Diese Vorlage konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
-        "restyle": {
-          "detail": "Partnermodell · Jeder kostenpflichtige Tarif",
-          "title": "Mit Nano Banana neu gestalten"
-        },
-        "title": "Ihr erstes Ergebnis. So geht es weiter.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "Dasselbe Bild, mehr Details",
-          "title": "Hochskalieren"
+        "ran": {
+          "body": "Sie haben gerade Ihr erstes erstellt. Entdecken Sie, was Sie noch alles erstellen können.",
+          "title": "Das war eines von Hunderten"
         }
       },
       "prompt": {
@@ -4906,8 +5034,10 @@
       "failedCount": "{count} Einladung konnte nicht gesendet werden. Versuchen Sie es erneut. | {count} Einladungen konnten nicht gesendet werden. Versuchen Sie es erneut.",
       "invalidEmailCount": "{count} ungültige E-Mail-Adresse | {count} ungültige E-Mail-Adressen",
       "invitedMessage": "Eine Einladung wurde an {emails} gesendet | Einladungen wurden an {emails} gesendet",
+      "pendingInviteCount": "{count} dieser Personen haben bereits eine ausstehende Einladung. Sie werden übersprungen.",
+      "pendingInviteSingle": "Für diese Person liegt bereits eine Einladung aus",
       "placeholder": "Durch Kommas getrennte E-Mail-Adressen eingeben",
-      "seatLimitReached": "Sie können bis zu {count} Teammitglied einladen. | Sie können bis zu {count} Teammitglieder einladen.",
+      "seatLimitExceeded": "Dieser Workspace ist auf {max} Mitglieder begrenzt. Entfernen Sie {overage}, um fortzufahren.",
       "title": "Mitglieder in diesen Workspace einladen"
     },
     "inviteUpsellDialog": {

@@ -560,10 +560,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     for (const input of this.inputs) {
-      delete input.widget
-      delete input.pos
-      delete input.widgetId
-      this._clearPromotedWidget(input)
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
       this._resolveInputWidget(subgraphInput, input)
@@ -711,7 +707,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onAdded(_graph: LGraph): void {
-    this.rebuildInputWidgetBindings()
+    const store = useWidgetValueStore()
+    for (const input of this.inputs) {
+      const previousId = input.widgetId
+      if (!previousId) continue
+      const nextId = widgetId(this.rootGraph.id, this.id, input.name)
+      if (nextId === previousId) continue
+
+      const state = store.getWidget(previousId)
+      if (!state) continue
+      const renderState = store.getWidgetRenderState(previousId)
+      const migrated = store.registerWidget(
+        nextId,
+        { ...state },
+        { ...renderState }
+      )
+      if (!migrated) continue
+      store.setValue(nextId, state.value)
+      store.deleteWidget(previousId)
+      input.widgetId = nextId
+      this._clearPromotedWidget(input)
+      if (input._subgraphSlot) {
+        this._resolveInputWidget(input._subgraphSlot, input)
+      }
+      input._widget ??= this._projectPromotedWidget(input)
+    }
   }
 
   /**

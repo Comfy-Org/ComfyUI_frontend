@@ -101,7 +101,7 @@ const copiedLabel = t('ui.copied', locale)
         >
           {{ t('mcp.setup.requirementPrefix', locale)
           }}<a
-            :href="getRoutes(locale).cloudPricing"
+            :href="getRoutes(locale).pricing"
             class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
             >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
           >{{ t('mcp.setup.requirementSuffix', locale)

@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "“speed”速度更快；“precision”可生成更高质量的唇形同步，但价格翻倍。"
+        "tooltip": "'speed' 速度更快；'precision' 可生成质量更高的口型同步效果，但价格更高。"
       },
       "output_language": {
         "name": "目标语言",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "为条件添加 1-10 张参考图像，一张用于编辑指令，多张用于主体个性化。",
+    "description": "将按顺序排列的参考图像连接到正向和负向条件输入。",
     "display_name": "HiDream-O1 参考图像",
     "inputs": {
       "images": {
         "name": "参考图像",
-        "tooltip": "参考图像。1 张 = 指令编辑；2-10 张 = 多参考。"
+        "tooltip": "参考图像按数字插槽顺序使用。"
       },
       "negative": {
         "name": "负向"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "将 MiniMax H3 Fun ControlNet 作为模型补丁应用于文生视频模型。",
+    "display_name": "应用 MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 表示需要重新生成的区域。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "mask 后方的视频；仅在提供 mask 时读取。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "设置 SenseNova 流偏移。",
+    "display_name": "SenseNova 采样选项",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "设置CLIP约束",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "裁剪视频",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "以像素为单位的裁剪区域。宽度或高度为零时保留完整帧。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "使用多种策略从视频中采样固定数量的帧。",
     "display_name": "采样视频帧",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪视频（高级）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "如果为 True，且无法满足指定时长，将引发错误。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "使用起始/结束帧修剪窗口。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

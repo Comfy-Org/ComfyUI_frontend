@@ -8,10 +8,123 @@
     "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "هزینه هر اجرا",
-    "title": "API Node(ها)",
-    "totalCost": "هزینه کل"
+  "agent": {
+    "addFromAssets": "افزودن از پنل دارایی‌ها",
+    "addNodesFromGraph": "افزودن گره‌ها از گراف",
+    "addPromptToSend": "افزودن یک prompt برای ارسال",
+    "addToPrompt": "افزودن به پرامپت",
+    "alpha": "آلفا",
+    "askComfyAgent": "از Comfy Agent بپرسید",
+    "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
+    "attach": "پیوست کردن فایل",
+    "attachFiles": "پیوست کردن تصویر یا فایل",
+    "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
+    "attachmentUploadFailed": "{name} بارگذاری نشد",
+    "backToPreviousChat": "بازگشت به گفتگوی قبلی",
+    "caption": "عامل هوش مصنوعی ممکن است اشتباه کند",
+    "captionExpanded": "عامل هوش مصنوعی ممکن است اشتباه کند. پاسخ خود را دوباره بررسی کنید.",
+    "changeWorkflowForChat": "تغییر workflow برای این گفتگو",
+    "chatOptions": "گزینه‌های گفتگو",
+    "chooseWorkflow": "انتخاب یک workflow",
+    "chooseWorkflowForChat": "انتخاب یک workflow برای این گفت‌وگو",
+    "close": "بستن",
+    "coachBody": "از آن بخواهید گراف‌ها را بسازد یا ویرایش کند.",
+    "coachTitle": "با عامل آشنا شوید",
+    "copied": "کپی شد!",
+    "copy": "کپی",
+    "copyMarkdown": "کپی به‌صورت مارک‌داون",
+    "copyUnavailable": "در این نسخه فقط گفت‌وگوی فعلی قابل کپی است",
+    "crdtConnected": "متصل",
+    "crdtDisconnected": "قطع‌شده",
+    "crdtNoDocument": "بدون سند",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} به‌روزرسانی · {frame}",
+    "credits": "اعتبار",
+    "delete": "حذف",
+    "dismiss": "بستن",
+    "dontWorkInWorkflow": "در یک workflow کار نکنید",
+    "downloadAssets": "دانلود دارایی‌ها",
+    "dragAndDropAssets": "دارایی‌ها را اینجا بکشید و رها کنید",
+    "focusNode": "نمایش روی بوم",
+    "focusNodeLabel": "نمایش {node} روی بوم",
+    "friend": "دوست عزیز",
+    "gotIt": "متوجه شدم",
+    "greeting": "سلام {name}،",
+    "greetingQuestion": "می‌خواهید چه چیزی بسازید؟",
+    "helpful": "مفید",
+    "history": "تاریخچهٔ گفتگو",
+    "historyCurrent": "فعلی",
+    "historyEarlier": "قدیمی‌تر",
+    "historyEmpty": "هنوز گفتگویی وجود ندارد",
+    "historyToday": "امروز",
+    "historyYesterday": "دیروز",
+    "latest": "جدیدترین",
+    "loadFailed": "بارگیری پنل عامل ناموفق بود.",
+    "malformedEvent": "عامل رویدادی ارسال کرد که این پنل نتوانست آن را بخواند",
+    "maximize": "بیشینه‌سازی پنل",
+    "mention": "ارجاع به یک گره",
+    "minimize": "کمینه‌سازی پنل",
+    "modelAuto": "خودکار",
+    "newChat": "گفت‌وگوی جدید",
+    "newChatTitle": "بدون عنوان",
+    "noNodesToMention": "هیچ nodeی در این workflow نیست",
+    "nodeSelection": {
+      "bannerSubtitle": "برای افزودن به‌عنوان مرجع، یک یا چند گره را انتخاب کنید",
+      "bannerTitle": "افزودن گره‌ها از گراف",
+      "exit": "خروج از حالت",
+      "selectNode": "انتخاب گره"
+    },
+    "notHelpful": "غیرمفید",
+    "openWorkflowTab": "باز کردن {name}",
+    "placeholder": "ایده‌ها را شرح دهید، {'@'} برای ارجاع،\nگره‌ها را از گراف اضافه کنید یا دارایی‌ها را بکشید و رها کنید",
+    "ranToolCalls": "{count} فراخوانی ابزار اجرا شد | {count} فراخوانی ابزار اجرا شد",
+    "ranToolCallsTimed": "{count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد | {count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد",
+    "remove": "حذف",
+    "removeNodeLabel": "حذف ارجاع {node}",
+    "runModeAsk": "پیش از اجرای workflow بپرس",
+    "runModeAskDescription": "Comfy پیش از هر اجرای workflow تأیید شما را درخواست می‌کند",
+    "runModeAuto": "اجرای خودکار بدون تأیید",
+    "runModeAutoDescription": "Comfy workflowها را بدون درخواست اجازه اجرا می‌کند",
+    "runModeLimit": "اجرای خودکار با محدودیت",
+    "runModeLimitDescription": "Comfy فقط زمانی تأیید می‌گیرد که اجرای workflow از سقف اعتبار شما فراتر رود",
+    "runModeTriggerAsk": "پرسیدن",
+    "runModeTriggerAskTooltip": "درخواست اجازه",
+    "runModeTriggerAuto": "خودکار",
+    "runModeTriggerAutoLimit": "خودکار (محدود)",
+    "runModeTriggerAutoLimitTooltip": "هنگام رسیدن به سقف اعتبار پرسیده شود",
+    "runModeTriggerAutoTooltip": "اجرای workflow بدون اجازه",
+    "runNotice": "عامل می‌تواند graph را تغییر دهد. برای اجرای workflow باید روی اجرا کلیک کنید.",
+    "runNoticeExpanded": "عامل می‌تواند workflow شما را تغییر دهد. برای اجرا باید روی اجرا کلیک کنید.",
+    "runPermissions": "مجوزهای اجرا",
+    "runPermissionsDescription": "زمان نیاز agent به رضایت شما را انتخاب کنید",
+    "saveChanges": "ذخیره تغییرات",
+    "searchWorkflows": "جست‌وجوی workflowها",
+    "selectWorkflowToGenerate": "یک workflow برای تولید انتخاب کنید",
+    "send": "ارسال",
+    "sendBusy": "پیامی در حال ارسال است",
+    "sendFailed": "ارسال پیام ناموفق بود",
+    "showChatHistory": "نمایش تاریخچهٔ گفتگو",
+    "showLess": "نمایش کمتر",
+    "showMore": "نمایش بیشتر",
+    "skip": "رد کردن",
+    "stop": "توقف",
+    "suggestedPrompts": [
+      "یک اردک زرد با ماسک هاکی تولید کن",
+      "workflowهای ذخیره‌شدهٔ من را فهرست کن",
+      "بهترین workflow برای ارتقای کیفیت پوست را پیدا کن",
+      "گره انتخاب‌شده را توضیح بده",
+      "یک workflow برای تبدیل تصویر به ویدیو با ۳ مدل بساز"
+    ],
+    "switchWorkflow": "تغییر workflow",
+    "thinking": "در حال فکر کردن...",
+    "thought": "تفکر",
+    "thoughtTimed": "تفکر به‌مدت {seconds} ثانیه",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "یک ترجیح فراموش شد",
+    "toolOpenedNewTab": "یک زبانهٔ جدید باز شد",
+    "toolSavedPreference": "یک ترجیح ذخیره شد",
+    "toolSwitchedTabs": "زبانه‌ها جابه‌جا شدند",
+    "untitledChat": "بدون عنوان",
+    "uploading": "در حال بارگذاری"
   },
   "apiNodesSignInDialog": {
     "message": "این workflow شامل API Node است که برای اجرا نیاز به ورود به حساب کاربری دارد.",
@@ -977,6 +1090,7 @@
     "UPSCALE_MODEL": "مدل بزرگ‌نمایی",
     "VAE": "vae",
     "VIDEO": "ویدیو",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "وُکسل",
     "WAN_CAMERA_EMBEDDING": "جاسازی دوربین WAN",
     "WEBCAM": "وب‌کم"
@@ -1073,6 +1187,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent با خطای سرور مواجه شد.",
+        "title": "خطای Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "یک ویرایش عامل نتوانست روی سند workflow اعمال شود.",
+        "title": "ویرایش عامل ناموفق بود"
+      },
+      "guard_trip": {
+        "desc": "یک به‌روزرسانی ورودی از عامل با ساختار مورد انتظار سند workflow مطابقت نداشت و مسدود شد.",
+        "title": "به‌روزرسانی عامل مسدود شد"
+      },
       "missing_node_type": {
         "desc": "یک نوع node وجود ندارد یا در دسترس نیست. ممکن است workflow خراب شده باشد یا به node سفارشی نیاز داشته باشد.",
         "title": "نوع node وجود ندارد"
@@ -1080,6 +1206,14 @@
       "no_prompt": {
         "desc": "داده‌های ورک‌فلو ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد.",
         "title": "داده‌های workflow خالی است"
+      },
+      "op_rejected": {
+        "desc": "سند workflow یک ویرایش عامل را نپذیرفت. ممکن است بوم و سند مشترک تا به‌روزرسانی بعدی، برای مدت کوتاهی متفاوت باشند.",
+        "title": "ویرایش عامل رد شد"
+      },
+      "prefix_abort": {
+        "desc": "یک دسته از ویرایش‌های عامل در میانه متوقف شد. ویرایش‌های باقی‌مانده به‌طور خودکار دوباره تلاش می‌شوند.",
+        "title": "ویرایش‌های عامل به‌طور جزئی اعمال شدند"
       },
       "prompt_no_outputs": {
         "desc": "در این ورک‌فلو هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه وجود ندارد.",
@@ -1497,6 +1631,8 @@
     "addNewKeybinding": "افزودن کلید میانبر جدید",
     "addNode": "افزودن node...",
     "addNodeFilterCondition": "افزودن شرط فیلتر node",
+    "agentModified": "عامل این workflow را به‌روزرسانی کرد",
+    "agentWorking": "عامل در حال کار روی این workflow است",
     "all": "همه",
     "allKeybindingsReset": "همه کلیدهای میانبر به پیش‌فرض بازنشانی شدند",
     "amount": "مقدار",
@@ -1715,6 +1851,7 @@
     "moreWorkflows": "workflowهای بیشتر",
     "mostRelevant": "مرتبط‌ترین",
     "multiSelectDropdown": "لیست کشویی چندانتخابی",
+    "mute": "بی‌صدا کردن",
     "nMoreKeybindings": "+ {count} بیشتر",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "نام",
@@ -1870,6 +2007,7 @@
     "triggerPhrase": "عبارت trigger",
     "unknownError": "خطای ناشناخته",
     "unknownFile": "فایل ناشناخته",
+    "unmute": "لغو بی‌صدا کردن",
     "untitled": "بدون عنوان",
     "update": "به‌روزرسانی",
     "updateAvailable": "به‌روزرسانی موجود است",
@@ -2409,8 +2547,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "nodeهای اصلی از نسخه {version}:",
-    "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
-    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
+    "newerVersionRequired": "برخی nodeها به نسخه جدیدتری از ComfyUI نیاز دارند (فعلی: {version}). برای استفاده از همه nodeها، لطفاً به‌روزرسانی کنید.",
+    "newerVersionRequiredGeneric": "برخی nodeها به نسخه جدیدتری از ComfyUI نیاز دارند. برای استفاده از همه nodeها، لطفاً به‌روزرسانی کنید.",
     "unknownVersion": "نامشخص"
   },
   "logsTerminal": {
@@ -3058,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سیگماها",
     "sound": "صدا",
@@ -3221,26 +3360,15 @@
     "done": "پایان",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "تصویر به ویدیو · ۵ثانیه",
-          "title": "متحرک‌سازی"
-        },
-        "body": "هرکدام از تصویری که همین حالا ساختید شروع می‌شوند.",
-        "explore": "مرور همه قالب‌ها",
-        "fallback": {
+        "dismiss": "اکنون نه",
+        "explore": "کاوش قالب‌ها",
+        "noTour": {
           "body": "قالب‌ها را مرور کنید و چیزی برای ساختن انتخاب کنید.",
-          "title": "صدها مورد دیگر از همین نوع"
+          "title": "صدها مورد دیگر از همین دست وجود دارد"
         },
-        "loadFailed": "آن قالب بارگیری نشد. لطفاً دوباره تلاش کنید.",
-        "restyle": {
-          "detail": "مدل شریک · هر طرح پولی",
-          "title": "بازسبک‌سازی با Nano Banana"
-        },
-        "title": "اولین خروجی شما. مرحله بعدی این است.",
-        "upscale": {
-          "badge": "۴×",
-          "detail": "همان تصویر، جزئیات بیشتر",
-          "title": "افزایش وضوح"
+        "ran": {
+          "body": "تازه اولین موردتان را ساختید. ببینید چه چیزهای دیگری می‌توانید بسازید.",
+          "title": "این یکی از صدها مورد بود"
         }
       },
       "prompt": {
@@ -4906,8 +5034,10 @@
       "failedCount": "ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید. | ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید.",
       "invalidEmailCount": "{count} آدرس ایمیل نامعتبر | {count} آدرس ایمیل نامعتبر",
       "invitedMessage": "دعوت‌نامه به {emails} ارسال شد | دعوت‌نامه‌ها به {emails} ارسال شدند",
+      "pendingInviteCount": "{count} نفر از این افراد از پیش دعوت‌نامه‌ای در انتظار دارند. از آن‌ها صرف‌نظر می‌شود.",
+      "pendingInviteSingle": "این شخص از پیش یک دعوت‌نامه در انتظار دارد",
       "placeholder": "ایمیل شخص را وارد کنید",
-      "seatLimitReached": "شما می‌توانید تا {count} همکار دعوت کنید. | شما می‌توانید تا {count} همکار دعوت کنید.",
+      "seatLimitExceeded": "این فضای کاری حداکثر {max} عضو دارد. برای ادامه، {overage} نفر را حذف کنید.",
       "title": "دعوت یک نفر به این فضای کاری"
     },
     "inviteUpsellDialog": {
