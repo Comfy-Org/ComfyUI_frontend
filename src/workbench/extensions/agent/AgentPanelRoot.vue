@@ -963,7 +963,7 @@ function onPanelDrop(event: DragEvent): void {
       @change="onFilesPicked"
     />
     <div
-      v-if="crdtStatus.enabled"
+      v-if="isCrdtDevPanelEnabled && crdtStatus.enabled"
       class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
       data-testid="agent-crdt-status"
     >

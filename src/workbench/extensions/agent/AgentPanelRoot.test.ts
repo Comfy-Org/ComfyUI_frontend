@@ -1830,6 +1830,21 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(activity.$state.editingTabPath).toBeNull()
     expect(activity.$state.creatingTab).toBe(false)
   })
+
+  it('gates the CRDT debug status strip behind the same DEV check as CrdtDevPanel (CRDT-RM-7)', () => {
+    // Regression guard: this strip previously rendered for every user
+    // whenever `crdtStatus.enabled` was true (which is unconditional), so it
+    // shipped as always-on production telemetry regardless of DEV/prod. It
+    // must stay gated behind the same `isCrdtDevPanelEnabled`
+    // (import.meta.env.DEV) check as the CrdtDevPanel it sits above, so the
+    // two mount/unmount together rather than the strip alone surviving a
+    // build where the dev panel does not.
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const strip = screen.queryByTestId('agent-crdt-status')
+    const devPanel = screen.queryByTestId('crdt-dev-panel-chip')
+    expect(strip === null).toBe(devPanel === null)
+  })
 })
 
 describe('AgentPanelRoot greeting', () => {
