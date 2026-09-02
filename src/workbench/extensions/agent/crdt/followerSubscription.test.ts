@@ -25,6 +25,7 @@ import * as Y from 'yjs'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
+import { FollowerApplyError } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -100,13 +101,17 @@ function wire() {
   const bridge = new LayoutFollowerBridge(client)
   const projected: DocUpdate[] = []
   const schemaErrors: unknown[] = []
+  const applyErrors: unknown[] = []
   bridge.addEventListener('doc_update', (event) => {
     if (event instanceof CustomEvent) projected.push(event.detail as DocUpdate)
   })
   bridge.addEventListener('schema_error', (event) => {
     if (event instanceof CustomEvent) schemaErrors.push(event.detail)
   })
-  return { transport, client, bridge, projected, schemaErrors }
+  bridge.addEventListener('apply_error', (event) => {
+    if (event instanceof CustomEvent) applyErrors.push(event.detail)
+  })
+  return { transport, client, bridge, projected, schemaErrors, applyErrors }
 }
 
 describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers', () => {
@@ -890,6 +895,40 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       assertReadableSchema(doc)
     }).toThrow(/KA-11/)
     error.mockRestore()
+  })
+})
+
+describe('FEC-2 — a malformed doc_update fails closed instead of throwing uncaught', () => {
+  it('drops one frame and keeps the doc/subscription intact on malformed bytes', () => {
+    const { transport, bridge, projected, applyErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    // Not a valid Yjs update at all — this is exactly what previously reached
+    // `Y.applyUpdate` unguarded and threw out of the `doc_update` listener.
+    const garbage = new Uint8Array([1, 2, 3, 4, 5])
+    expect(() => {
+      transport.deliver('doc_update', docUpdateFrame(garbage))
+    }).not.toThrow()
+
+    expect(projected).toHaveLength(0)
+    expect(applyErrors).toEqual([
+      {
+        workflowId: WORKFLOW_ID,
+        seq: 1,
+        error: expect.any(FollowerApplyError)
+      }
+    ])
+
+    // The doc was never mutated by the rejected bytes, so a later valid frame
+    // at the same seq baseline still applies cleanly through the SAME doc —
+    // this is not a lineage break, just one dropped frame.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    expect(projected).toHaveLength(1)
+    expect(bridge.follower.updatesApplied).toBe(1)
   })
 })
 

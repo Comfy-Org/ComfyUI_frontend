@@ -5,7 +5,7 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
-import { FollowerDoc } from './followerDoc'
+import { FollowerApplyError, FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 /**
@@ -275,10 +275,36 @@ export class LayoutFollowerBridge extends EventTarget {
       this.resubscribe()
       return
     }
+
+    // FEC-2: `Y.applyUpdate` throws on malformed/corrupt bytes. Contained here
+    // so a bad frame from the wire cannot abort this listener uncaught (the
+    // failure mode this seam had before this guard existed) — it is reported
+    // and the frame is dropped instead, same shape as the KA-11 schema gate
+    // immediately below.
+    //
+    // `lastSeq`/`catchUpPending` are only advanced AFTER a successful apply
+    // (Ryan review, fe#16372): if they were latched before this call and the
+    // apply then threw, the frame's sequence would already be consumed, and
+    // the next frame would land as an ordinary in-sequence update instead of
+    // a gap — silently skipping authoritative recovery for the bytes that
+    // were lost. Leaving `lastSeq`/`ackSeq` at their pre-frame values means
+    // the NEXT frame reads as a jump past `baseline + 1`, which routes
+    // through the resubscribe branch above and forces a state-vector
+    // catch-up instead of silently moving on.
+    try {
+      this.follower.applyRemoteUpdate(update.update)
+    } catch (error) {
+      if (!(error instanceof FollowerApplyError)) throw error
+      this.dispatchEvent(
+        new CustomEvent('apply_error', {
+          detail: { workflowId: update.workflowId, seq: update.seq, error }
+        })
+      )
+      return
+    }
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
-    this.follower.applyRemoteUpdate(update.update)
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose

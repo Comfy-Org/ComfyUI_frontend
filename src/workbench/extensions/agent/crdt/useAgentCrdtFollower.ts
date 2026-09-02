@@ -549,6 +549,32 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  const onApplyError: EventListener = (event) => {
+    // FEC-2 fail-closed: `Y.applyUpdate` rejected the bytes, so the bridge
+    // never merged or dispatched this frame — nothing was applied or
+    // projected. Report it (this is the uncaught-throw path FEC-2 closes) and
+    // surface the same way a schema failure does, since both are read-path
+    // gates that drop one frame without tearing down the subscription.
+    connected.value = false
+    lastFrameType.value = event.type
+    clearStaleProbe()
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as {
+            workflowId?: string
+            seq?: number
+            error?: unknown
+          } | null)
+        : null
+    reportError(detail?.error ?? new Error('agent CRDT apply_error'), {
+      errorType: 'agent_crdt_apply_update_failure',
+      context: { workflowId: detail?.workflowId, seq: detail?.seq }
+    })
+    recordDevEvent('apply_error', {
+      workflowId: detail?.workflowId,
+      seq: detail?.seq
+    })
+  }
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
@@ -580,6 +606,7 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('schema_error', onSchemaError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
+  bridge.addEventListener('apply_error', onApplyError)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -665,6 +692,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('schema_error', onSchemaError)
       bridge.removeEventListener('doc_gap', onGap)
       bridge.removeEventListener('doc_stale', onStale)
+      bridge.removeEventListener('apply_error', onApplyError)
       sender.detach()
       adapter.destroy()
       bridge.destroy()
