@@ -202,12 +202,21 @@ export function useAgentCrdtFollower(
   })
   const reducedMotion = usePreferredReducedMotion()
   const replayState = ref<GraphReplayState>('idle')
+  // mm3-21: pending node ids, mirrored into a ref so a canvas veil can render
+  // reactively. Read fresh from the queue after every mutation rather than
+  // computed from the step/state payloads, since a step only reports what
+  // changed, not the remaining pending set.
+  const pendingReplayNodeIds = ref<ReadonlySet<string>>(new Set())
   const replayQueue = new GraphReplayQueue({
     nodeExists: (id) => currentDocNodeIds().has(id),
-    onStep: (step) => recordDevEvent('replay_step', step),
+    onStep: (step) => {
+      recordDevEvent('replay_step', step)
+      pendingReplayNodeIds.value = replayQueue.pendingNodeIds
+    },
     onStateChange: (state) => {
       replayState.value = state
       recordDevEvent('replay_state', { state })
+      pendingReplayNodeIds.value = replayQueue.pendingNodeIds
     }
   })
   const settleReplay = () => {
@@ -535,6 +544,9 @@ export function useAgentCrdtFollower(
   return {
     status: readonly(status),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      sender.enqueue(operations),
+    // mm3-21: presentation-only, for a canvas veil over not-yet-revealed
+    // nodes. Empty whenever the replay gate is off (queue never enqueues).
+    pendingReplayNodeIds: readonly(pendingReplayNodeIds)
   }
 }
