@@ -225,7 +225,7 @@
         v-if="showCanceledNotice"
         class="mx-auto mb-2 rounded-lg bg-secondary-background px-4 py-2 text-xs text-muted-foreground"
       >
-        {{ $t('subscription.preview.paymentCanceledNotice') }}
+        {{ $t('billingOperation.paymentCanceledNotice') }}
       </div>
 
       <!-- Pending 3DS verification is the only actionable step, so it takes
@@ -364,14 +364,14 @@
         v-if="actionUrl && cancelUnavailable"
         class="m-0 py-2 text-center text-xs text-muted-foreground"
       >
-        {{ $t('subscription.preview.cancelUnavailable') }}
+        {{ $t('billingOperation.cancelUnavailable') }}
       </p>
       <template v-else-if="actionUrl">
         <p
           v-if="cancelUnreachable"
           class="m-0 pt-2 text-center text-xs text-muted-foreground"
         >
-          {{ $t('subscription.preview.cancelUnreachable') }}
+          {{ $t('billingOperation.cancelUnreachable') }}
         </p>
         <Button
           variant="muted-textonly"
@@ -380,7 +380,7 @@
           :loading="isCanceling"
           @click="$emit('cancelPayment')"
         >
-          {{ $t('subscription.preview.cancelPayment') }}
+          {{ $t('billingOperation.cancelPayment') }}
         </Button>
       </template>
 
