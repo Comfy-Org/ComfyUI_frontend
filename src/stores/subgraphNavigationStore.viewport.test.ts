@@ -10,13 +10,10 @@ import {
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
 
-const { mockSetDirty, mockFitView, mockRequestSlotSyncAll } = vi.hoisted(
-  () => ({
-    mockSetDirty: vi.fn(),
-    mockFitView: vi.fn(),
-    mockRequestSlotSyncAll: vi.fn()
-  })
-)
+const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
+  mockSetDirty: vi.fn(),
+  mockFitView: vi.fn()
+}))
 
 vi.mock('@/scripts/app', () => {
   const mockCanvasElement = {
@@ -84,13 +81,6 @@ vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
 }))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({
-    requestSlotLayoutSyncForAllNodes: mockRequestSlotSyncAll
-  })
-)
 
 vi.mock('@/renderer/core/canvas/useCanvasScheduler', () => ({
   useCanvasScheduler: () => ({

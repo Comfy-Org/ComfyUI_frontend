@@ -34,7 +34,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import { setDevAssertReporter } from '@/base/common/devAssert'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -174,7 +173,7 @@ setDevAssertReporter((message) => {
     useToastStore().addAlert(message)
   }
   if (isCloud || __DISTRIBUTION__ === 'desktop') {
-    Sentry.captureMessage(message, 'warning')
+    captureMessage(message, { level: 'warning' })
   }
 })
 

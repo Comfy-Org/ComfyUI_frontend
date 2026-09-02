@@ -15,7 +15,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -152,12 +151,6 @@ export const useSubgraphNavigationStore = defineStore(
         if (getActiveGraphId() !== graphId) return
         if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
-        // Defer slot sync to the next frame so the browser paints the
-        // new scale/offset from fitView before slot geometry is measured.
-        requestAnimationFrame(() => {
-          if (getActiveGraphId() !== graphId) return
-          requestSlotLayoutSyncForAllNodes()
-        })
       })
     }
 
