@@ -8,6 +8,8 @@
  */
 import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   GraphMutationTarget,
   TargetedGraphOperations
@@ -118,9 +120,18 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     change: LayoutChangeView
   ): boolean {
     if (change.operation.graphId === target.rootGraphId) return true
-    console.error(
-      `[agent-crdt] ${change.operation.type} for a graph the bound doc does not own`,
-      `${change.operation.graphId} != ${target.rootGraphId}`
+    reportError(
+      new Error(
+        `${change.operation.type} for a graph the bound doc does not own`
+      ),
+      {
+        errorType: 'agent_crdt_layout_mint_graph_ownership_mismatch',
+        context: {
+          operationType: change.operation.type,
+          operationGraphId: change.operation.graphId,
+          targetRootGraphId: target.rootGraphId
+        }
+      }
     )
     return false
   }
@@ -133,7 +144,10 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     if (deps.enqueue(batch)) return
     // A dropped human mint is a local-graph-vs-doc divergence; it must be
     // observable, never silent (the surfacing-honesty principle).
-    console.error(`[agent-crdt] ${what} mint rejected by the sender`, id)
+    reportError(new Error(`${what} mint rejected by the sender`), {
+      errorType: 'agent_crdt_layout_mint_rejected_by_sender',
+      context: { what, id: String(id) }
+    })
   }
 
   function onChange(

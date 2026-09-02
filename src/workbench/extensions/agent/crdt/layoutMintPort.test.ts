@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
@@ -110,13 +116,15 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('surfaces a mint the sender rejected', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     enqueueAccepts = false
 
     deliver(createNodeChange('1'))
 
-    expect(error).toHaveBeenCalledOnce()
-    error.mockRestore()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_layout_mint_rejected_by_sender',
+      context: { what: 'add_node', id: '1' }
+    })
   })
 
   it('never mints an agent-remote echo (KA-6 sender half)', () => {
@@ -157,29 +165,31 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('surfaces a delayed layout event after the active target changes', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     deliver(createNodeChange('1'), {
       workflowId: 'wf-b',
       rootGraphId: 'other-root'
     })
 
     expect(minted).toEqual([])
-    expect(error).toHaveBeenCalledOnce()
-    error.mockRestore()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_layout_mint_graph_ownership_mismatch',
+      context: {
+        operationType: 'createNode',
+        operationGraphId: ROOT,
+        targetRootGraphId: 'other-root'
+      }
+    })
   })
 
   it('does not surface a foreign-graph change that was never local anyway', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     deliver(createNodeChange('1', AGENT_REMOTE_ACTOR), {
       workflowId: 'wf-b',
       rootGraphId: 'other-root'
     })
 
     expect(minted).toEqual([])
-    expect(error).not.toHaveBeenCalled()
-    error.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('never mints inside a graph-teardown bracket', () => {
