@@ -8700,6 +8700,13 @@ Enterprise`
     'zh-CN': '原型控制 · 模拟数据'
   },
   'workshop.proto.scope': { en: 'Scope', 'zh-CN': '范围' },
+  'workshop.proto.share': { en: 'Share this setup', 'zh-CN': '分享此配置' },
+  'workshop.proto.shareCopy': { en: 'Copy link', 'zh-CN': '复制链接' },
+  'workshop.proto.shareCopied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.proto.shareHint': {
+    en: 'Opens this page with the controls above already applied.',
+    'zh-CN': '打开此页面时会自动应用上面的控制项。'
+  },
   'workshop.proto.entry': { en: 'Entry point', 'zh-CN': '入口' },
   'workshop.proto.entry.workshop': {
     en: 'V1 · Models catalog',

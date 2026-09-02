@@ -100,16 +100,11 @@ const tags = [
         class="relative flex min-h-52 flex-col justify-center gap-6 p-8 lg:min-h-60 lg:p-10"
       >
         <div class="flex max-w-2xl flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <p
-            class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
-          >
-            {model.provider ?? t('workshop.card.partnerNode')}
-          </p>
-          <span class={pillClass} data-testid="model-kind">{t('workshop.hub.tag.partnerNodes')}</span>
-          {model.modality && <span class={pillClass}>{modalityLabel[model.modality]}</span>}
-          <ModelStatus status={model.status} variant="pill" client:load />
-        </div>
+        <p
+          class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
+        >
+          {model.provider ?? t('workshop.card.partnerNode')}
+        </p>
 
         <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
           {model.name}
@@ -142,22 +137,29 @@ const tags = [
           client:load
         />
 
-        {
-          tags.length > 0 && (
-            <ul class="mt-2 flex flex-wrap gap-2" data-testid="model-tags">
-              {tags.map((tag) => (
-                <li>
-                  <a
-                    href={`${routes.workshop}${tag.search}`}
-                    class="rounded-2xl border border-transparency-white-t20 px-3 py-1 text-xs text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
-                  >
-                    {tag.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )
-        }
+        <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="model-tags">
+          <li>
+            <span class={pillClass} data-testid="model-kind">{t('workshop.hub.tag.partnerNodes')}</span>
+          </li>
+          {model.modality && (
+            <li>
+              <span class={pillClass}>{modalityLabel[model.modality]}</span>
+            </li>
+          )}
+          <li class="contents">
+            <ModelStatus status={model.status} variant="pill" client:load />
+          </li>
+          {tags.map((tag) => (
+            <li>
+              <a
+                href={`${routes.workshop}${tag.search}`}
+                class="inline-flex h-6 items-center rounded-2xl border border-transparency-white-t20 px-3 text-xs text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
+              >
+                {tag.label}
+              </a>
+            </li>
+          ))}
+        </ul>
         </div>
       </div>
     </header>

@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { Settings2 } from '@lucide/vue'
+import { Check, Link, Settings2 } from '@lucide/vue'
 import {
   PopoverContent,
   PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AccountKind } from '../../composables/useMockSession'
 import {
   EXISTING_CREDITS,
   LOW_CREDITS,
@@ -31,6 +30,11 @@ import {
   SCOPES,
   usePrototypeTweaks
 } from '../../composables/usePrototypeTweaks'
+import type { SessionChoice, ShareState } from '../../config/workshop-share'
+import {
+  decodeShareSearch,
+  encodeShareSearch
+} from '../../config/workshop-share'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -44,7 +48,6 @@ const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
 const { outcome, modelState, scope, entry, showStatuses, outputCount } =
   usePrototypeTweaks()
 
-type SessionChoice = 'signedOut' | AccountKind
 const SESSION_CHOICES: readonly SessionChoice[] = [
   'signedOut',
   'new',
@@ -69,6 +72,59 @@ const sessionChoice = computed<SessionChoice>(() =>
 const zeroBalance = computed(() => account.value?.credits === 0)
 const lowBalance = computed(() => account.value?.credits === LOW_CREDITS)
 const isMember = computed(() => account.value?.role === 'member')
+
+// A link from the panel reproduces its setup: the query wins over what the
+// browser remembered.
+onMounted(() => {
+  const shared = decodeShareSearch(location.search)
+  if (shared.scope) scope.value = shared.scope
+  if (shared.entry) entry.value = shared.entry
+  if (shared.showStatuses !== undefined)
+    showStatuses.value = shared.showStatuses
+  if (shared.outcome) outcome.value = shared.outcome
+  if (shared.modelState) modelState.value = shared.modelState
+  if (shared.outputCount) outputCount.value = shared.outputCount
+  if (shared.session === 'signedOut') signOut()
+  else if (shared.session) signIn(shared.session)
+  if (shared.subscribed !== undefined) setSubscribed(shared.subscribed)
+  if (shared.balance === 'zero') setCredits(0)
+  else if (shared.balance === 'low') setCredits(LOW_CREDITS)
+  if (shared.member) setRole('member')
+  pageUrl.value = `${location.origin}${location.pathname}`
+  pageSearch.value = location.search
+})
+
+const pageUrl = ref('')
+const pageSearch = ref('')
+const shareState = computed<ShareState>(() => ({
+  scope: scope.value,
+  entry: entry.value,
+  showStatuses: showStatuses.value,
+  session: sessionChoice.value,
+  subscribed: account.value?.subscribed ?? true,
+  balance: zeroBalance.value ? 'zero' : lowBalance.value ? 'low' : 'normal',
+  member: isMember.value,
+  outcome: outcome.value,
+  modelState: modelState.value,
+  outputCount: outputCount.value
+}))
+const shareUrl = computed(
+  () =>
+    `${pageUrl.value}${encodeShareSearch(shareState.value, pageSearch.value)}`
+)
+const copied = ref(false)
+
+async function copyShareUrl() {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
+  } catch {
+    /* clipboard unavailable: the field below stays selectable */
+  }
+}
 
 function onSessionChange(event: Event) {
   const choice = (event.target as HTMLSelectElement).value as SessionChoice
@@ -375,6 +431,47 @@ const selectClass =
               </select>
             </label>
           </template>
+
+          <div
+            class="flex flex-col gap-2 border-t border-transparency-white-t8 pt-3"
+          >
+            <span class="text-primary-warm-gray">
+              {{ t('workshop.proto.share', locale) }}
+            </span>
+            <div class="flex items-center gap-2">
+              <input
+                :value="shareUrl"
+                readonly
+                data-testid="tweak-share-url"
+                :class="cn(selectClass, 'min-w-0 flex-1 truncate')"
+                @focus="($event.target as HTMLInputElement).select()"
+              />
+              <button
+                type="button"
+                data-testid="tweak-share-copy"
+                :class="
+                  cn(
+                    'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-3 text-[11px] font-bold tracking-wider uppercase transition-colors',
+                    copied
+                      ? 'bg-primary-comfy-yellow/20 text-primary-comfy-yellow'
+                      : 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
+                  )
+                "
+                @click="copyShareUrl"
+              >
+                <Check v-if="copied" class="size-3.5" aria-hidden="true" />
+                <Link v-else class="size-3.5" aria-hidden="true" />
+                {{
+                  copied
+                    ? t('workshop.proto.shareCopied', locale)
+                    : t('workshop.proto.shareCopy', locale)
+                }}
+              </button>
+            </div>
+            <p class="text-[10px] text-primary-warm-gray">
+              {{ t('workshop.proto.shareHint', locale) }}
+            </p>
+          </div>
         </div>
       </PopoverContent>
     </PopoverPortal>
