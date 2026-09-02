@@ -735,8 +735,10 @@ watch(
   }
 )
 
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
+
 watch(
-  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }

@@ -43,7 +43,7 @@ const clientState = vi.hoisted(() => ({
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
+  applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -464,6 +464,155 @@ describe('useAgentCrdtFollower', () => {
     expect(status().lastFrameType).toBe('doc_update')
     expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
     unmount()
+  })
+
+  describe('s5-metrics-1: per-outcome counters', () => {
+    it('counts received and applied for a frame that passes the filter', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+      expect(status().outcomes).toEqual({
+        received: 1,
+        applied: 1,
+        skipped: 0,
+        errored: 0,
+        gap: 0,
+        reset: 0,
+        dropped: 0
+      })
+      unmount()
+    })
+
+    it('counts received and skipped for a frame from an unsubscribed workflow, without applying it', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-other', seq: 7 })
+
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      expect(adapterState.applyFrame).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('counts skipped, not applied, while the target is inactive', () => {
+      const { unmount, status } = mountFollower('wf-a', false)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 7 })
+
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+      expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('counts errored on a schema_error and does not touch applied/received', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+      expect(status().outcomes.errored).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      unmount()
+    })
+
+    it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
+
+      expect(status().outcomes.gap).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('counts dropped on the bridge doc_stale signal, which never becomes a doc_update', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_stale', { workflowId: 'wf-1', seq: 2 })
+
+      expect(status().outcomes.dropped).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      unmount()
+    })
+
+    it('counts reset on an explicit doc_reset for the bound workflow', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(status().outcomes.reset).toBe(1)
+      unmount()
+    })
+
+    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+      const { unmount, status } = mountFollower('wf-a', false)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-a',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(status().outcomes.reset).toBe(1)
+      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('does not double-count reset on the follower_replaced that follows a doc_reset', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+      dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+      expect(status().outcomes.reset).toBe(1)
+      unmount()
+    })
+
+    it('accumulates received/applied/skipped across mixed frames without resetting on unrelated activity', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+      dispatchFrame('doc_update', { workflowId: 'wf-other', seq: 2 })
+      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 2, received: 4 })
+      dispatchFrame('doc_stale', { workflowId: 'wf-1', seq: 1 })
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
+
+      expect(status().outcomes).toEqual({
+        received: 3,
+        applied: 2,
+        skipped: 1,
+        errored: 1,
+        gap: 1,
+        reset: 0,
+        dropped: 1
+      })
+      unmount()
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {
