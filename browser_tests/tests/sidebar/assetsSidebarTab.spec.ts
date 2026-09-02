@@ -13,6 +13,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
 import type {
   JobDetail,
   RawJobListItem
@@ -153,22 +154,27 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
 
 async function mockAssetApiFiles(page: Page) {
   await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
-    await route.fulfill({
-      json: {
-        assets: generatedJobs.map((job, index) => ({
-          id: job.id,
-          name: job.preview_output!.filename,
+    const response = {
+      assets: generatedJobs.map((job, index) => {
+        const filename = job.preview_output?.filename
+        if (!filename) throw new Error(`Missing preview filename for ${job.id}`)
+
+        return {
+          id: `00000000-0000-4000-a000-${String(index + 1).padStart(12, '0')}`,
+          name: filename,
           job_id: `00000000-0000-4000-a000-${String(index + 1).padStart(12, '0')}`,
           mime_type: 'image/png',
           tags: ['output'],
-          preview_url: `/api/view?filename=${job.preview_output!.filename}&type=output`,
+          preview_url: `/api/view?filename=${filename}&type=output`,
           created_at: new Date(job.create_time).toISOString(),
           updated_at: new Date(job.create_time).toISOString()
-        })),
-        total: generatedJobs.length,
-        has_more: false
-      }
-    })
+        }
+      }),
+      total: generatedJobs.length,
+      has_more: false
+    } satisfies AssetResponse
+
+    await route.fulfill({ json: response })
   })
 }
 async function verifyMobileTouchActions(comfyPage: ComfyPage) {
