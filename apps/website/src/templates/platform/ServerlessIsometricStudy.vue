@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { useElementVisibility, useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useElementVisibility,
+  useRafFn
+} from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
@@ -8,7 +12,7 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const textureId = useId()
+const surfaceId = useId()
 
 const COLS = 20
 const ROWS = 7
@@ -28,8 +32,22 @@ const HOLD_DURATION = 3000
 const RESET_DURATION = 650
 const CYCLE_DURATION = BUILD_DURATION + HOLD_DURATION + RESET_DURATION
 const BUILD_STAGGER = 0.62
-const MAX_TEXTURE_SHADE_OPACITY = 0.62
+const MAX_FACE_SHADE_OPACITY = 0.62
 const CONTRIBUTION_HEIGHTS = [0, 14, 26, 40, 56, 72] as const
+const ANIMATION_FPS = 30
+const SURFACE_SWEEP = [
+  '#cbd0e8',
+  '#e3d8ea',
+  '#f2dcd8',
+  '#eae9c8',
+  '#bcd3ef',
+  '#ddd8e6'
+] as const
+const FACE_TINTS = {
+  top: null,
+  left: { token: '--color-primary-comfy-ink', percentage: 12 },
+  right: { token: '--color-primary-comfy-plum', percentage: 6 }
+} as const
 
 interface Tile {
   id: number
@@ -42,11 +60,12 @@ interface Tile {
 
 interface VisualTile extends Tile {
   height: number
-  textureShadeOpacity: number
+  faceShadeOpacity: number
   topFill: string
 }
 
 type Point = readonly [number, number]
+type Face = keyof typeof FACE_TINTS
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(stageRef)
@@ -55,6 +74,20 @@ const reducedMotion = prefersReducedMotion()
 
 function mixedColor(token: string, percentage: number) {
   return `color-mix(in srgb, var(${token}) ${percentage}%, var(--color-primary-comfy-ink))`
+}
+
+const surfaceGradients = Object.entries(FACE_TINTS).map(([face, tint]) => ({
+  id: `${surfaceId}-${face}`,
+  stops: SURFACE_SWEEP.map((color, index) => ({
+    offset: `${(index * 100) / (SURFACE_SWEEP.length - 1)}%`,
+    color: tint
+      ? `color-mix(in srgb, ${color} ${100 - tint.percentage}%, var(${tint.token}))`
+      : color
+  }))
+}))
+
+function faceFill(face: Face) {
+  return `url(#${surfaceId}-${face})`
 }
 
 function clamp(value: number) {
@@ -184,8 +217,8 @@ const visualTiles = computed<VisualTile[]>(() =>
     return {
       ...tile,
       height,
-      textureShadeOpacity:
-        (1 - clamp(height / MAX_HEIGHT)) * MAX_TEXTURE_SHADE_OPACITY,
+      faceShadeOpacity:
+        (1 - clamp(height / MAX_HEIGHT)) * MAX_FACE_SHADE_OPACITY,
       topFill:
         height > 0.5
           ? mixedColor('--color-primary-comfy-yellow', 76 + level * 24)
@@ -232,17 +265,30 @@ function rightFace(tile: VisualTile) {
   return polygonPoints([top[3], top[2], base[2], base[3]])
 }
 
+function topFace(tile: VisualTile) {
+  return polygonPoints(tileCorners(tile, tile.height))
+}
+
+function tileSilhouette(tile: VisualTile) {
+  const top = tileCorners(tile, tile.height)
+  const base = tileCorners(tile, 0)
+
+  return polygonPoints([top[0], top[1], top[2], base[2], base[3], base[0]])
+}
+
 const { pause, resume } = useRafFn(
   ({ delta }) => {
     elapsed.value += delta
   },
-  { immediate: false }
+  { immediate: false, fpsLimit: ANIMATION_FPS }
 )
 
+const documentVisibility = useDocumentVisibility()
+
 watch(
-  onScreen,
-  (visible) => {
-    if (visible && !reducedMotion) resume()
+  [onScreen, documentVisibility],
+  ([visible, pageState]) => {
+    if (visible && pageState === 'visible' && !reducedMotion) resume()
     else pause()
   },
   { immediate: true }
@@ -266,20 +312,23 @@ watch(
       aria-hidden="true"
     >
       <defs>
-        <pattern
-          :id="textureId"
-          width="760"
-          height="360"
-          patternUnits="userSpaceOnUse"
-          patternContentUnits="userSpaceOnUse"
+        <linearGradient
+          v-for="gradient in surfaceGradients"
+          :id="gradient.id"
+          :key="gradient.id"
+          x1="0"
+          y1="0"
+          x2="760"
+          y2="360"
+          gradientUnits="userSpaceOnUse"
         >
-          <image
-            href="/assets/platform/serverless/isometric-texture.webp"
-            width="760"
-            height="360"
-            preserveAspectRatio="xMidYMid slice"
+          <stop
+            v-for="stop in gradient.stops"
+            :key="stop.offset"
+            :offset="stop.offset"
+            :stop-color="stop.color"
           />
-        </pattern>
+        </linearGradient>
       </defs>
 
       <g transform="translate(-23 136) scale(0.275)">
@@ -290,23 +339,10 @@ watch(
           stroke-width="2.6"
         />
         <template v-if="resetIndicatorHeight > 0.5">
-          <polygon
-            :points="resetIndicatorLeftFace"
-            :fill="`url(#${textureId})`"
-          />
+          <polygon :points="resetIndicatorLeftFace" :fill="faceFill('left')" />
           <polygon
             :points="resetIndicatorRightFace"
-            :fill="`url(#${textureId})`"
-          />
-          <polygon
-            :points="resetIndicatorLeftFace"
-            fill="var(--color-primary-comfy-ink)"
-            fill-opacity="0.16"
-          />
-          <polygon
-            :points="resetIndicatorRightFace"
-            fill="var(--color-primary-comfy-plum)"
-            fill-opacity="0.08"
+            :fill="faceFill('right')"
           />
         </template>
         <path
@@ -318,39 +354,13 @@ watch(
 
       <g v-for="tile in visualTiles" :key="tile.id">
         <template v-if="tile.height > 0.5">
-          <polygon :points="leftFace(tile)" :fill="`url(#${textureId})`" />
-          <polygon :points="rightFace(tile)" :fill="`url(#${textureId})`" />
-          <g
-            :opacity="tile.textureShadeOpacity"
-            :data-texture-shade="tile.textureShadeOpacity"
-          >
-            <polygon
-              :points="leftFace(tile)"
-              fill="var(--color-primary-comfy-ink)"
-            />
-            <polygon
-              :points="rightFace(tile)"
-              fill="var(--color-primary-comfy-ink)"
-            />
-          </g>
+          <polygon :points="leftFace(tile)" :fill="faceFill('left')" />
+          <polygon :points="rightFace(tile)" :fill="faceFill('right')" />
+          <polygon :points="topFace(tile)" :fill="faceFill('top')" />
           <polygon
-            :points="leftFace(tile)"
+            :points="tileSilhouette(tile)"
             fill="var(--color-primary-comfy-ink)"
-            fill-opacity="0.12"
-          />
-          <polygon
-            :points="rightFace(tile)"
-            fill="var(--color-primary-comfy-plum)"
-            fill-opacity="0.06"
-          />
-          <polygon
-            :points="polygonPoints(tileCorners(tile, tile.height))"
-            :fill="`url(#${textureId})`"
-          />
-          <polygon
-            :points="polygonPoints(tileCorners(tile, tile.height))"
-            fill="var(--color-primary-comfy-ink)"
-            :fill-opacity="tile.textureShadeOpacity"
+            :fill-opacity="tile.faceShadeOpacity"
           />
         </template>
         <rect
