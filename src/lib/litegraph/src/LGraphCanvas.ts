@@ -3488,6 +3488,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                   highlightPos = pos
                   // XXX CHECK THIS
                   highlightInput = node.inputs[inputId]
+                } else if (inputId != -1) {
+                  const result = node.findInputByType(firstLink.fromSlot.type)
+                  if (result && result.slot.link == null) {
+                    highlightInput = result.slot
+                    highlightPos = LiteGraph.vueNodesMode
+                      ? getSlotPosition(node, result.index, true)
+                      : node.getInputSlotPos(result.slot)
+                  }
                 }
 
                 if (highlightInput && !LiteGraph.vueNodesMode) {
