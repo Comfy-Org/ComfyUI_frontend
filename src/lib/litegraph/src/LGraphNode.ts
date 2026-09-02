@@ -62,7 +62,10 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
-import { createInputSlotView } from './node/slotDescriptorView'
+import {
+  createInputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
 import {
   extensionConfigureView,
@@ -1132,29 +1135,57 @@ export class LGraphNode
     }
     const namedValues = getNamedValues()
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
-      positional: positionalValues,
-      named: namedValues ? { ...namedValues } : undefined,
-      restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
-    })
+    const shouldRestoreNamed =
+      LiteGraph.namedValuesRestore ||
+      this.constructor.nodeData?.fallbackWidgetsValuesNames
+    try {
+      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
+        positional: positionalValues,
+        named: namedValues ? { ...namedValues } : undefined,
+        restoreNamed: Boolean(namedValues && shouldRestoreNamed)
+      })
 
-    if (this.widgets) {
-      for (const w of this.widgets) {
-        if (!w) continue
+      if (this.widgets) {
+        for (const w of this.widgets) {
+          if (!w) continue
 
-        const input = this.inputs.find((i) => i.widget?.name === w.name)
-        if (input?.label) w.label = input.label
+          const input = this.inputs.find((i) => i.widget?.name === w.name)
+          if (input?.label) w.label = input.label
 
-        if (
-          w.options?.property &&
-          this.properties[w.options.property] != undefined
-        )
-          w.value = JSON.parse(
-            JSON.stringify(this.properties[w.options.property])
+          if (
+            w.options?.property &&
+            this.properties[w.options.property] != undefined
           )
+            w.value = JSON.parse(
+              JSON.stringify(this.properties[w.options.property])
+            )
+        }
+
+        let positionalIndex = 0
+        for (const widget of this.widgets) {
+          if (widget.serialize === false) continue
+          const restored = useWidgetValueStore().getRestoredWidgetValue(
+            graphId,
+            this.id,
+            widget.name,
+            positionalIndex++
+          )
+          if (restored) widget.value = restored.value
+        }
+      }
+      // Sync the state of this.resizable.
+      if (this.pinned) this.resizable = false
+
+      if (this.widgets_up) {
+        console.warn(
+          `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+            'This property is unsupported and will be removed. ' +
+            'Use "widgets_start_y" or a custom arrange() override instead.'
+        )
       }
 
-      if (namedValues) {
+      this.onConfigure?.(extensionConfigureView(this, info))
+      if (this.widgets && namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(
           this.widgets,
           info.widgets_values
@@ -1165,32 +1196,9 @@ export class LGraphNode
           Boolean(info.widgets_values_named)
         )
       }
-
-      let positionalIndex = 0
-      for (const widget of this.widgets) {
-        if (widget.serialize === false) continue
-        const restored = useWidgetValueStore().getRestoredWidgetValue(
-          graphId,
-          this.id,
-          widget.name,
-          positionalIndex++
-        )
-        if (restored) widget.value = restored.value
-      }
+    } finally {
+      useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
-
-    // Sync the state of this.resizable.
-    if (this.pinned) this.resizable = false
-
-    if (this.widgets_up) {
-      console.warn(
-        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
-          'This property is unsupported and will be removed. ' +
-          'Use "widgets_start_y" or a custom arrange() override instead.'
-      )
-    }
-
-    this.onConfigure?.(extensionConfigureView(this, info))
   }
 
   /**
@@ -3373,7 +3381,8 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return false
 
-    if (this.graph) {
+    let removedFloating = false
+    if (!target_node && this.graph) {
       for (const link of slotFloatingLinks(
         this.graph,
         'output',
@@ -3381,24 +3390,27 @@ export class LGraphNode
         slot
       )) {
         this.graph.removeFloatingLink(link)
+        removedFloating = true
       }
     }
 
     const graph = this.graph
     if (!graph) return false
-    if (!outputHasLinks(graph, this.id, slot)) return false
+    if (!outputHasLinks(graph, this.id, slot) && !removedFloating) return false
 
     const onlyTarget =
       typeof target_node === 'number'
         ? graph.getNodeById(target_node)
         : target_node
     if (target_node && !onlyTarget) throw 'Target Node not found'
-    if (output instanceof NodeOutputSlot) {
-      output._setLegacyLinksPresent(Boolean(onlyTarget))
-    }
-
+    let disconnected = false
     for (const link_info of outputLinks(graph, this.id, slot)) {
       if (onlyTarget && link_info.target_id != onlyTarget.id) continue
+
+      if (!disconnected && output instanceof NodeOutputSlot) {
+        output._setLegacyLinksPresent(Boolean(onlyTarget))
+      }
+      disconnected = true
 
       if (
         link_info.target_id === SUBGRAPH_OUTPUT_ID &&
@@ -3437,6 +3449,8 @@ export class LGraphNode
 
       if (onlyTarget) break
     }
+
+    if (!disconnected && !removedFloating) return false
 
     this.setDirtyCanvas(false, true)
     return true
@@ -3482,7 +3496,11 @@ export class LGraphNode
     // Break floating links, except the one whose reroute chain is being
     // reconnected (its reroute would be pruned before the new link is added).
     for (const link of slotFloatingLinks(graph, 'input', this.id, slot)) {
-      if (link.parentId === keepFloatingReroute) continue
+      if (
+        keepFloatingReroute !== undefined &&
+        link.parentId === keepFloatingReroute
+      )
+        continue
       graph.removeFloatingLink(link)
     }
 
@@ -3650,7 +3668,10 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    return calculateInputSlotPosFromSlot(this._getSlotPositionContext(), input)
+    return calculateInputSlotPosFromSlot(
+      this._getSlotPositionContext(),
+      resolveInputSlotView(this.inputs, input)
+    )
   }
 
   /**

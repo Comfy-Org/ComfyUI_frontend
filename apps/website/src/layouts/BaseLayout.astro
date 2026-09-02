@@ -7,6 +7,8 @@ import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { isNoindexPathname } from '../config/indexing'
+import { hreflangAlternates } from '../lib/hreflang'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
@@ -52,6 +54,9 @@ const { siteUrl, locale, url } = pageContext(
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const alternates = shouldNoindex
+  ? []
+  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -110,6 +115,24 @@ const structuredData = shouldNoindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {
+      !shouldNoindex && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={markdownTwinPath(canonicalURL.pathname)}
+        />
+      )
+    }
+    {
+      alternates.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={alternate.hreflang}
+          href={alternate.href}
+        />
+      ))
+    }
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
@@ -177,7 +200,7 @@ const structuredData = shouldNoindex
       >
         try {
           const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-          if (dismissed[bannerVersion]) {
+          if (dismissed && dismissed[bannerVersion] === true) {
             document.documentElement.setAttribute(dismissAttr, '')
           }
         } catch (e) {}

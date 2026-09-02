@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
@@ -101,11 +102,17 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
       survivorByDuplicateId.set(fields.id, survivor.id)
     }
     if (!isExactDuplicate) {
+      const targetNodeId = toNodeId(fields.target_id)
       console.warn('Dropping competing link to an occupied input', {
         droppedLinkId,
         survivorLinkId,
-        targetNodeId: toNodeId(fields.target_id),
+        targetNodeId,
         targetSlot: fields.target_slot
+      })
+      useTelemetry()?.trackLinkDedupDrop({
+        droppedLinkId,
+        survivorLinkId,
+        target: `${targetNodeId}:${fields.target_slot}`
       })
     }
   }
@@ -147,7 +154,7 @@ export function detachSerialisedLinks(
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<readonly [NodeId, ISerialisedNode]>
+  nodesData: Iterable<readonly [NodeId, Pick<ISerialisedNode, 'id' | 'inputs'>]>
 ): void {
   for (const [nodeId, nodeData] of nodesData) {
     const node = graph.getNodeById(nodeId)

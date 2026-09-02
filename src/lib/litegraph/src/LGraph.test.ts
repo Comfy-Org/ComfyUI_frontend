@@ -18,9 +18,9 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { serialiseMutableGraphParts } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
+  ISerialisedGraph,
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
@@ -38,7 +38,7 @@ import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, compareNodeIds, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createNestedSubgraphs,
@@ -59,7 +59,16 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  LiteGraph.registerNodeType('dummy', DummyNode)
+  mockReportError.mockClear()
+})
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -181,7 +190,6 @@ describe('LGraph', () => {
   })
 
   it('should serialize deterministic node order', async () => {
-    LiteGraph.registerNodeType('dummy', DummyNode)
     const node1 = new DummyNode()
     const node2 = new DummyNode()
     const graph = createGraph(node1, node2)
@@ -360,6 +368,74 @@ describe('LGraph', () => {
       graph.add(node2)
     }).not.toThrow()
     expect(graph.nodes).toHaveLength(2)
+  })
+
+  describe('cross-graph remove invariants', () => {
+    function createGraphsSharingANodeId() {
+      const ownerGraph = new LGraph()
+      const node = new LGraphNode('owned')
+      Reflect.set(node, 'id', 1)
+      ownerGraph.add(node)
+
+      const otherGraph = new LGraph()
+      const impostor = new LGraphNode('impostor')
+      Reflect.set(impostor, 'id', 1)
+      otherGraph.add(impostor)
+
+      return { ownerGraph, node, otherGraph, impostor }
+    }
+
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('rejects removing a node that belongs to another graph', () => {
+      vi.stubEnv('DEV', true)
+      try {
+        const { ownerGraph, node, otherGraph, impostor } =
+          createGraphsSharingANodeId()
+
+        expect(() => otherGraph.remove(node)).toThrow(
+          'LGraph.remove: node does not belong to this graph'
+        )
+        expect(otherGraph.nodes).toEqual([impostor])
+        expect(ownerGraph.nodes).toEqual([node])
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+
+    it('leaves both graphs intact outside DEV', () => {
+      vi.stubEnv('DEV', false)
+      try {
+        const { ownerGraph, node, otherGraph, impostor } =
+          createGraphsSharingANodeId()
+
+        otherGraph.remove(node)
+
+        expect(otherGraph.nodes).toEqual([impostor])
+        expect(otherGraph.getNodeById(toNodeId(1))).toBe(impostor)
+        expect(ownerGraph.nodes).toEqual([node])
+        expect(node.graph).toBe(ownerGraph)
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+  })
+
+  it('renumbers a distinct node instance that collides on id', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    Reflect.set(first, 'id', 3)
+    graph.add(first)
+
+    const collidingDuplicate = new LGraphNode('second')
+    Reflect.set(collidingDuplicate, 'id', 3)
+
+    expect(() => graph.add(collidingDuplicate)).not.toThrow()
+    expect(collidingDuplicate.id).not.toBe(first.id)
+    expect(graph.getNodeById(toNodeId(3))).toBe(first)
+    expect(graph.getNodeById(collidingDuplicate.id)).toBe(collidingDuplicate)
   })
 
   test('can be instantiated', ({ expect }) => {
@@ -750,7 +826,24 @@ describe('Store-driven serialization parity', () => {
       new LGraph(floatingLinkGraph)
     ]) {
       const stored = graph.asSerialisable({ sortNodes: true })
-      const mutable = serialiseMutableGraphParts(graph, true)
+      const nodes = [...graph._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      const mutable = {
+        nodes: nodes.map((node) => node.serialize()),
+        groups: graph._groups.map((group) => group.serialize()),
+        links: graph.links.size
+          ? [...graph.links.values()].map((link) => link.asSerialisable())
+          : undefined,
+        floatingLinks: graph.floatingLinks.size
+          ? [...graph.floatingLinks.values()].map((link) =>
+              link.asSerialisable()
+            )
+          : undefined,
+        reroutes: graph.reroutes.size
+          ? [...graph.reroutes.values()].map((reroute) =>
+              reroute.asSerialisable()
+            )
+          : undefined
+      }
       const normalizedStored = {
         nodes: stored.nodes,
         groups: stored.groups,
@@ -769,13 +862,19 @@ describe('Store-driven serialization parity', () => {
   }) => {
     const graph = createGraph(new DummyNode())
     graph._nodes = []
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(graph.asSerialisable().nodes).toEqual([])
-    expect(error).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /Cannot serialize graph .* from store: node .* has no live adapter; using live graph nodes/
-      )
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+        }
+      }
     )
   })
 
@@ -1035,6 +1134,56 @@ describe('node:before-removed event', () => {
       'before-removed(graph=set)',
       'onRemoved(graph=set)',
       'onNodeRemoved(graph=null)'
+    ])
+  })
+
+  it('orders connection and lifecycle callbacks during node removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('output', '*')
+    const target = new LGraphNode('target')
+    target.addInput('input', '*')
+    graph.add(source)
+    graph.add(target)
+    source.connect(0, target, 0)
+    const order: string[] = []
+
+    graph.events.addEventListener('node:before-removed', () => {
+      order.push('before-removed')
+    })
+    target.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('target-connection-change')
+    }
+    source.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('source-connection-change')
+    }
+    source.onRemoved = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('onRemoved')
+    }
+    graph.onNodeRemoved = () => {
+      order.push(
+        `onNodeRemoved(graph=${source.graph === null ? 'null' : 'set'})`
+      )
+    }
+    graph.events.addEventListener('node:removed', () => {
+      order.push(`removed(graph=${source.graph === null ? 'null' : 'set'})`)
+    })
+
+    graph.remove(source)
+
+    expect(order).toEqual([
+      'before-removed',
+      'target-connection-change',
+      'source-connection-change',
+      'onRemoved',
+      'onNodeRemoved(graph=null)',
+      'removed(graph=null)'
     ])
   })
 
@@ -1308,6 +1457,7 @@ describe('Subgraph Definition Garbage Collection', () => {
     const innerNode = innerNodes[0]
     const id = widgetId(rootGraph.id, innerNode.id, 'value')
     const locator = createNodeLocatorId(subgraph.id, innerNode.id)
+    if (locator === null) throw new Error('Expected an inner-node locator')
     useWidgetValueStore().registerWidget(id, {
       type: 'number',
       value: 1,
@@ -1600,12 +1750,11 @@ describe('persisted duplicate links', () => {
     }
   }
 
-  function registerTestNodes() {
+  beforeEach(() => {
     LiteGraph.registerNodeType('test/DupTestNode', TestNode)
-  }
+  })
 
   it('rejects persisted duplicate links via root graph configure()', () => {
-    registerTestNodes()
     const graph = new LGraph()
     graph.configure(duplicateLinksRoot)
 
@@ -1618,7 +1767,6 @@ describe('persisted duplicate links', () => {
   })
 
   it('normalizes duplicate aliases before callbacks without mutating input', () => {
-    registerTestNodes()
     const graph = new LGraph()
     const data = structuredClone(duplicateLinksRoot)
     data.nodes![0].outputs![0].links = [2]
@@ -1637,7 +1785,6 @@ describe('persisted duplicate links', () => {
   })
 
   it('preserves link integrity after configure() with slot-shifted duplicates', () => {
-    registerTestNodes()
     const graph = new LGraph()
     graph.configure(duplicateLinksSlotShift)
 
@@ -1674,16 +1821,15 @@ describe('Subgraph Unpacking', () => {
     }
   }
 
-  function registerTestNodes() {
+  beforeEach(() => {
     LiteGraph.registerNodeType('test/TestNode', TestNode)
-  }
+  })
 
   function createSubgraphOnGraph(rootGraph: LGraph) {
     return rootGraph.createSubgraph(createTestSubgraphData())
   }
 
   it('clears subgraph geometry only for the owning root graph', () => {
-    registerTestNodes()
     const firstRoot = new LGraph()
     const secondRoot = new LGraph()
     firstRoot.id = createUuidv4()
@@ -1731,7 +1877,6 @@ describe('Subgraph Unpacking', () => {
   })
 
   it('offsets unpacked group geometry in the layout store too', () => {
-    registerTestNodes()
     const rootGraph = new LGraph()
     const subgraph = createSubgraphOnGraph(rootGraph)
 
@@ -1792,11 +1937,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SUBGRAPH_A = '11111111-1111-4111-8111-111111111111' as UUID
   const SUBGRAPH_B = '22222222-2222-4222-8222-222222222222' as UUID
   const SHARED_NODE_IDS = [3, 8, 37]
-
-  beforeEach(() => {
-    LiteGraph.registerNodeType('dummy', DummyNode)
-  })
-
   function loadFixture(): SerialisableGraph {
     return structuredClone(duplicateSubgraphNodeIds)
   }
@@ -2025,47 +2165,56 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     }
   })
 
-  it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
-    const subgraph = createTestSubgraph()
-    const sourceHost = createTestSubgraphNode(subgraph)
-    sourceHost.graph!.add(sourceHost)
-    sourceHost.properties.proxyWidgets = [['9999', 'seed']]
-    const serialized = sourceHost.rootGraph.serialize()
-    const instanceData = sourceHost.serialize()
+  describe('legacy proxyWidget warning', () => {
+    let subgraph: Subgraph
+    let serialized: ISerialisedGraph
+    let instanceData: ReturnType<SubgraphNode['serialize']>
 
-    const previous = LGraph.proxyWidgetMigrationFlush
-    LGraph.proxyWidgetMigrationFlush = undefined
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    LiteGraph.registerNodeType(
-      subgraph.id,
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(new LGraph(), subgraph, instanceData)
+    beforeEach(() => {
+      subgraph = createTestSubgraph()
+      const sourceHost = createTestSubgraphNode(subgraph)
+      sourceHost.graph!.add(sourceHost)
+      sourceHost.properties.proxyWidgets = [['9999', 'seed']]
+      serialized = sourceHost.rootGraph.serialize()
+      instanceData = sourceHost.serialize()
+      LiteGraph.registerNodeType(
+        subgraph.id,
+        class TestSubgraphNode extends SubgraphNode {
+          constructor() {
+            super(new LGraph(), subgraph, instanceData)
+          }
         }
-      }
-    )
-    try {
-      const graph = new LGraph()
-      serialized.id = graph.id
-      graph.configure(serialized)
+      )
+    })
 
-      const migrationCall = warn.mock.calls.find(
-        (call) =>
-          typeof call[0] === 'string' &&
-          call[0].includes('Legacy proxyWidgets were not migrated')
-      )
-      expect(migrationCall).toBeDefined()
-      expect(migrationCall![1]).toEqual(
-        expect.objectContaining({
-          hostNodeId: expect.any(String),
-          proxyWidgets: expect.anything()
-        })
-      )
-    } finally {
-      LGraph.proxyWidgetMigrationFlush = previous
-      LiteGraph.unregisterNodeType(subgraph.id)
-      warn.mockRestore()
-    }
+    it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
+      const previous = LGraph.proxyWidgetMigrationFlush
+      LGraph.proxyWidgetMigrationFlush = undefined
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const graph = new LGraph()
+        serialized.id = graph.id
+        graph.configure(serialized)
+
+        const migrationCall = warn.mock.calls.find(
+          (call) =>
+            typeof call[0] === 'string' &&
+            call[0].includes('Legacy proxyWidgets were not migrated')
+        )
+        expect(migrationCall).toBeDefined()
+        if (!migrationCall)
+          throw new Error('Expected proxy widget migration warning')
+        expect(migrationCall[1]).toEqual(
+          expect.objectContaining({
+            hostNodeId: expect.any(String),
+            proxyWidgets: expect.anything()
+          })
+        )
+      } finally {
+        LGraph.proxyWidgetMigrationFlush = previous
+        warn.mockRestore()
+      }
+    })
   })
 
   it('throws when node ID space is exhausted', () => {

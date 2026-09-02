@@ -155,6 +155,29 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it("lets the server's person_profiles win over the client default", async () => {
+      hoisted.refs.remoteConfig.value = {
+        posthog_config: { person_profiles: 'always' }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'always' })
+      )
+    })
+
+    it('defaults person_profiles to identified_only when the server omits it', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'identified_only' })
+      )
+    })
+
     it('registers onUserResolved callback after init', async () => {
       createProvider()
       await vi.dynamicImportSettled()
@@ -378,6 +401,22 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google', share_id: 'share-1' }
+      )
+    })
+
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
       )
     })
 
@@ -1242,12 +1281,11 @@ describe('PostHogTelemetryProvider', () => {
       expect(result.$set_once).toHaveProperty('plan', 'free')
     })
 
-    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+    it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
       hoisted.refs.remoteConfig.value = {
         posthog_config: {
-          before_send: remoteBefore_send,
-          person_profiles: 'always'
+          before_send: remoteBefore_send
         }
       }
 
@@ -1257,7 +1295,6 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
-      expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
 })

@@ -750,6 +750,23 @@ class LayoutStoreImpl {
   }
 
   /**
+   * Runs `fn` with every actor-less operation stamped as `actor` instead of
+   * this session's actor. The per-mutation command source remote appliers and
+   * provenance-aware listeners key on: stamping happens synchronously at
+   * apply time, so deferred change delivery still carries the scoped actor on
+   * `change.operation.actor`.
+   */
+  withActor<T>(actor: string, fn: () => T): T {
+    const previous = this.currentActor
+    this.currentActor = actor
+    try {
+      return fn()
+    } finally {
+      this.currentActor = previous
+    }
+  }
+
+  /**
    * Apply operation within a transaction.
    * @returns Whether the operation changed store state.
    */
