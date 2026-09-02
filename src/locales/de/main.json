@@ -3201,6 +3201,7 @@
     "scail": "scail",
     "schedulers": "Scheduler",
     "scheduling": "Planung",
+    "sensenova": "sensenova",
     "shader": "Shader",
     "sigmas": "Sigmas",
     "sound": "Ton",
@@ -5038,8 +5039,10 @@
       "failedCount": "{count} Einladung konnte nicht gesendet werden. Versuchen Sie es erneut. | {count} Einladungen konnten nicht gesendet werden. Versuchen Sie es erneut.",
       "invalidEmailCount": "{count} ungültige E-Mail-Adresse | {count} ungültige E-Mail-Adressen",
       "invitedMessage": "Eine Einladung wurde an {emails} gesendet | Einladungen wurden an {emails} gesendet",
+      "pendingInviteCount": "{count} dieser Personen haben bereits eine ausstehende Einladung. Sie werden übersprungen.",
+      "pendingInviteSingle": "Für diese Person liegt bereits eine Einladung aus",
       "placeholder": "Durch Kommas getrennte E-Mail-Adressen eingeben",
-      "seatLimitReached": "Sie können bis zu {count} Teammitglied einladen. | Sie können bis zu {count} Teammitglieder einladen.",
+      "seatLimitExceeded": "Dieser Workspace ist auf {max} Mitglieder begrenzt. Entfernen Sie {overage}, um fortzufahren.",
       "title": "Mitglieder in diesen Workspace einladen"
     },
     "inviteUpsellDialog": {

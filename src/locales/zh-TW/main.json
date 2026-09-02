@@ -3201,6 +3201,7 @@
     "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
+    "sensenova": "sensenova",
     "shader": "著色器",
     "sigmas": "西格瑪值",
     "sound": "聲音",
@@ -5038,8 +5039,10 @@
       "failedCount": "無法發送 {count} 封邀請，請再試一次。",
       "invalidEmailCount": "{count} 個無效的電子郵件地址",
       "invitedMessage": "已將邀請發送至 {emails}",
+      "pendingInviteCount": "這些人中有 {count} 位已有待處理的邀請，將略過。",
+      "pendingInviteSingle": "此人已有待處理的邀請",
       "placeholder": "輸入對方的電子郵件",
-      "seatLimitReached": "您最多可邀請 {count} 位團隊成員。",
+      "seatLimitExceeded": "此工作區最多容納 {max} 位成員。請移除 {overage} 位成員後再繼續。",
       "title": "邀請他人加入此工作區"
     },
     "inviteUpsellDialog": {

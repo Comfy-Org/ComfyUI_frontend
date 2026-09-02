@@ -39,7 +39,7 @@ describe('registerWorkflowTabActivityTracker', () => {
     stop()
   })
 
-  it('clears the unseen dot when its tab becomes active, with no panel mounted', async () => {
+  it('T-13 / PM-671 / FE-1306 clears tab activity when its workflow becomes active with no panel mounted', async () => {
     const activity = useWorkflowTabActivityStore()
     activity.markModified('workflows/a.json')
 
