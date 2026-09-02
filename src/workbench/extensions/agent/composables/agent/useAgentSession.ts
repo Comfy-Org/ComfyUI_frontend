@@ -221,13 +221,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
           : input
       )
     }
+    // The ack does not say whether the server minted a workflow or echoed
+    // the thread's existing one; an unbound tab may only adopt an id the
+    // session was not already bound to before this turn.
+    const priorWorkflowId = boundWorkflowId.value
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
         bindWorkflow(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+        const echoedToUnboundTab =
+          wfContext?.id === undefined && ack.workflow_id === priorWorkflowId
+        if (!echoedToUnboundTab) workflow?.adopted(ack.workflow_id, wfContext)
       }
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
