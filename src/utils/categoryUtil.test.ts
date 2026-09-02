@@ -53,7 +53,6 @@ describe('getProviderBorderStyle', () => {
     expect(getProviderBorderStyle('OpenAI')).toBe('#B6B6B6')
     expect(getProviderBorderStyle('Bria')).toBe('#B6B6B6')
     expect(getProviderBorderStyle('Anthropic')).toBe('#D97757')
-    expect(getProviderBorderStyle('Comfy Cloud')).toBe('#F0FF41')
   })
 
   it('returns gradient for dual-color providers', () => {

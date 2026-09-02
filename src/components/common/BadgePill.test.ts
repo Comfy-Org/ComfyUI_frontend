@@ -98,24 +98,4 @@ describe('BadgePill', () => {
     })
     expect(screen.getByText('Slot Content')).toBeInTheDocument()
   })
-
-  it('paints a solid pill in the border colour with ink content', () => {
-    render(BadgePill, {
-      props: { text: 'Comfy Cloud', borderStyle: '#F0FF41', solid: true }
-    })
-
-    const pill = screen.getByTestId('badge-pill')
-    expect(pill.getAttribute('style')).toContain('background-color')
-    expect(pill.className).toContain('text-primary-comfy-ink')
-  })
-
-  it('does not paint a solid pill without a border colour', () => {
-    render(BadgePill, {
-      props: { text: 'Plain', solid: true }
-    })
-
-    expect(screen.getByTestId('badge-pill').className).toContain(
-      'text-foreground'
-    )
-  })
 })

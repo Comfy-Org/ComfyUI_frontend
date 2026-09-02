@@ -59,7 +59,6 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
   anthropic: '#D97757',
   bfl: '#ffffff',
   bria: '#B6B6B6',
-  'comfy-cloud': '#F0FF41',
   elevenlabs: '#B6B6B6',
   bytedance: ['#00C8D2', '#325AB4'],
   gemini: ['#3186FF', '#FABC12'],
@@ -92,27 +91,11 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
 }
 
 /**
- * The flat single-colour Comfy mark. Contexts that paint their own background,
- * like the solid provider pill, want this rather than the full logo, whose ink
- * backing plate turns into a dark blob at pill size.
- */
-export const COMFY_MARK_ICON = 'icon-[comfy--comfy-c]'
-
-/**
  * Extracts the provider name from a node category path.
  * e.g. "api/image/BFL" -> "BFL"
  */
 export function getProviderName(category: string): string {
   return category.split('/').at(-1) ?? ''
-}
-
-/**
- * Whether a provider is Comfy Cloud, which runs curated workflows on Comfy
- * Cloud GPUs rather than proxying a third-party API. It is branded as Comfy
- * rather than as an outside partner.
- */
-export function isComfyCloudProvider(providerName: string): boolean {
-  return providerName.toLowerCase().replaceAll(/\s+/g, '-') === 'comfy-cloud'
 }
 
 /**
