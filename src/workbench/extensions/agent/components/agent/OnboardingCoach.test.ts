@@ -80,7 +80,7 @@ describe('OnboardingCoach', () => {
     ).toBeInTheDocument()
   })
 
-  it('offers a single Got it action and no Skip', async () => {
+  it('shows one Got it action, no Skip action, and dismisses onboarding', async () => {
     mountWithTarget({ left: 700, top: 100 })
 
     expect(

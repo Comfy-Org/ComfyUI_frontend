@@ -18,7 +18,8 @@
     "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
     "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
     "generate:models": "tsx ./scripts/generate-models.ts",
-    "validate:jsonld": "tsx ./scripts/validate-jsonld.ts"
+    "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
+    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
@@ -37,6 +38,7 @@
     "lottie-web": "catalog:",
     "posthog-js": "catalog:",
     "reka-ui": "catalog:",
+    "shaders": "catalog:",
     "shiki": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",

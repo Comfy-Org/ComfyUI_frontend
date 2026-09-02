@@ -1,4 +1,9 @@
 {
+  "src/base/assert.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
   "src/base/common/downloadUtil.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
@@ -142,11 +147,6 @@
   "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/assets/composables/useMediaAssetActions.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/platform/assets/services/assetService.ts": {

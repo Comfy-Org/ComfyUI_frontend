@@ -1,6 +1,6 @@
 import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
-import { ASSERTION_FAILURE_PREFIX, hasAssertReporter } from '@/base/assert'
+import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 const RUM_NOISE_HOSTS = [
   'facebook.com',
@@ -36,13 +36,12 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
 }
 
 /**
- * RUM instruments `console.error`, which `assert()` calls before handing the
- * failure to `reportError`. Dropping the console copy keeps the tagged one —
- * but only once a reporter exists to produce that tagged copy.
+ * RUM collects `console.error` on its own, so a reported assertion arrives
+ * twice — untagged from the console, and tagged.
  */
 function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   return (
-    hasAssertReporter() &&
+    hasRumAssertReporter() &&
     event.error.source === 'console' &&
     event.error.message.startsWith(ASSERTION_FAILURE_PREFIX)
   )

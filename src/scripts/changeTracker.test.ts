@@ -277,8 +277,7 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          expect.stringContaining('captureCanvasState'),
-          expect.objectContaining({ workflowPath: expect.any(String) })
+          'ChangeTracker.captureCanvasState() called on inactive tracker'
         )
       })
     })
@@ -1211,8 +1210,7 @@ describe('ChangeTracker', () => {
       expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        expect.stringContaining('deactivate'),
-        expect.objectContaining({ workflowPath: expect.any(String) })
+        'ChangeTracker.deactivate() called on inactive tracker'
       )
     })
   })

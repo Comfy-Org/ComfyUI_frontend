@@ -4,6 +4,13 @@ const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
+const mockIsCloud = { value: false }
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 vi.mock('@sentry/vue', () => ({
   captureException: (...args: unknown[]) => captureException(...args),
@@ -28,6 +35,7 @@ const datadogLive = (live: boolean) =>
 
 describe('reportError', () => {
   beforeEach(() => {
+    mockIsCloud.value = false
     sentryLive(true)
     datadogLive(true)
   })
@@ -94,6 +102,26 @@ describe('reportError', () => {
     flushErrorReports()
     flushErrorReports()
 
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('retains the Datadog delivery when Sentry starts first on cloud', async () => {
+    mockIsCloud.value = true
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+    const error = new Error('early assertion')
+
+    reportError(error, { errorType: 'invariant_assert' })
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).not.toHaveBeenCalled()
+
+    datadogLive(true)
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledOnce()
     expect(addError).toHaveBeenCalledOnce()
   })
 

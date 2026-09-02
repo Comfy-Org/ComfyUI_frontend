@@ -33,6 +33,7 @@ export interface NoticePart {
 export interface TabLinkPart {
   type: 'tabLink'
   workflowId: string
+  locatorId?: string
   name?: string
 }
 
@@ -60,5 +61,5 @@ export function createAssistantMessage(id: TurnId): AssistantMessage {
 }
 
 export function snapshotMessage(message: AssistantMessage): AssistantMessage {
-  return { ...message, parts: [...message.parts] }
+  return { ...message, parts: message.parts.map((part) => ({ ...part })) }
 }

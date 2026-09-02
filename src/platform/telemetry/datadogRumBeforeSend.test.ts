@@ -19,7 +19,7 @@ function createErrorEvent(
 
 describe('rumBeforeSend', () => {
   beforeEach(() => {
-    setAssertReporter(vi.fn())
+    setAssertReporter(vi.fn(), { forwardsToRum: true })
   })
 
   afterEach(() => {
@@ -34,7 +34,7 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
-  it('drops the console echo of an assertion already reported with its tags', () => {
+  it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
       undefined,
@@ -54,10 +54,27 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
+  it('keeps ordinary console errors that are not assertion failures', () => {
+    const event = createErrorEvent('Application failed', undefined, 'console')
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps the console copy while no reporter exists to replace it', () => {
     setAssertReporter(null)
     const event = createErrorEvent(
       '[Assertion failed]: fired before boot finished',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps the console copy when the installed reporter does not forward to RUM', () => {
+    setAssertReporter(vi.fn())
+    const event = createErrorEvent(
+      '[Assertion failed]: handled by another telemetry sink',
       undefined,
       'console'
     )

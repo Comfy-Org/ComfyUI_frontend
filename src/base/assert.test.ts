@@ -50,63 +50,19 @@ describe('assert', () => {
     setAssertReporter(reporter)
     assert(false, 'reporter message')
     expect(reporter).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: '[Assertion failed]: reporter message'
-      }),
+      '[Assertion failed]: reporter message',
       undefined
     )
   })
 
-  it('reports an Error whose stack includes the failing call site', () => {
-    vi.stubEnv('DEV', false)
-    const reporter = vi.fn()
-    setAssertReporter(reporter)
-
-    function violatesAnInvariant() {
-      assert(false, 'stack origin')
-    }
-    violatesAnInvariant()
-
-    expect(reporter).toHaveBeenCalledOnce()
-    const [failure] = reporter.mock.calls[0] as [Error]
-    expect(failure).toBeInstanceOf(Error)
-    expect(failure.stack).toContain('violatesAnInvariant')
-  })
-
-  it('forwards structured context to the reporter and the error cause', () => {
+  it('forwards structured context without adding it to the message', () => {
     vi.stubEnv('DEV', false)
     const reporter = vi.fn()
     setAssertReporter(reporter)
 
     assert(false, 'tracker is inactive', { workflowPath: 'a/b.json' })
 
-    expect(reporter).toHaveBeenCalledWith(expect.any(Error), {
-      workflowPath: 'a/b.json'
-    })
-    const [failure] = reporter.mock.calls[0] as [Error]
-    expect(failure.cause).toEqual({ workflowPath: 'a/b.json' })
-  })
-
-  it('keeps context out of the console line outside DEV', () => {
-    vi.stubEnv('DEV', false)
-    setAssertReporter(vi.fn())
-
-    assert(false, 'tracker is inactive', { workflowPath: 'a/b.json' })
-
-    expect(consoleErrorSpy).toHaveBeenCalledOnce()
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Assertion failed]: tracker is inactive'
-    )
-  })
-
-  it('logs context alongside the message in DEV', () => {
-    vi.stubEnv('DEV', true)
-
-    expect(() =>
-      assert(false, 'tracker is inactive', { workflowPath: 'a/b.json' })
-    ).toThrow()
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    expect(reporter).toHaveBeenCalledWith(
       '[Assertion failed]: tracker is inactive',
       { workflowPath: 'a/b.json' }
     )

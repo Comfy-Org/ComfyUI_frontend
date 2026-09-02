@@ -59,12 +59,16 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
+  mockReportError.mockClear()
 })
-
-afterEach(() => LiteGraph.unregisterNodeType('dummy'))
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -750,13 +754,19 @@ describe('Store-driven serialization parity', () => {
   }) => {
     const graph = createGraph(new DummyNode())
     graph._nodes = []
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(graph.asSerialisable().nodes).toEqual([])
-    expect(error).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /Cannot serialize graph .* from store: node .* has no live adapter; using live graph nodes/
-      )
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+        }
+      }
     )
   })
 
@@ -1016,6 +1026,56 @@ describe('node:before-removed event', () => {
       'before-removed(graph=set)',
       'onRemoved(graph=set)',
       'onNodeRemoved(graph=null)'
+    ])
+  })
+
+  it('orders connection and lifecycle callbacks during node removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('output', '*')
+    const target = new LGraphNode('target')
+    target.addInput('input', '*')
+    graph.add(source)
+    graph.add(target)
+    source.connect(0, target, 0)
+    const order: string[] = []
+
+    graph.events.addEventListener('node:before-removed', () => {
+      order.push('before-removed')
+    })
+    target.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('target-connection-change')
+    }
+    source.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('source-connection-change')
+    }
+    source.onRemoved = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('onRemoved')
+    }
+    graph.onNodeRemoved = () => {
+      order.push(
+        `onNodeRemoved(graph=${source.graph === null ? 'null' : 'set'})`
+      )
+    }
+    graph.events.addEventListener('node:removed', () => {
+      order.push(`removed(graph=${source.graph === null ? 'null' : 'set'})`)
+    })
+
+    graph.remove(source)
+
+    expect(order).toEqual([
+      'before-removed',
+      'target-connection-change',
+      'source-connection-change',
+      'onRemoved',
+      'onNodeRemoved(graph=null)',
+      'removed(graph=null)'
     ])
   })
 
@@ -1586,8 +1646,6 @@ describe('persisted duplicate links', () => {
     LiteGraph.registerNodeType('test/DupTestNode', TestNode)
   })
 
-  afterEach(() => LiteGraph.unregisterNodeType('test/DupTestNode'))
-
   it('rejects persisted duplicate links via root graph configure()', () => {
     const graph = new LGraph()
     graph.configure(duplicateLinksRoot)
@@ -1658,8 +1716,6 @@ describe('Subgraph Unpacking', () => {
   beforeEach(() => {
     LiteGraph.registerNodeType('test/TestNode', TestNode)
   })
-
-  afterEach(() => LiteGraph.unregisterNodeType('test/TestNode'))
 
   function createSubgraphOnGraph(rootGraph: LGraph) {
     return rootGraph.createSubgraph(createTestSubgraphData())
@@ -2022,8 +2078,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
         }
       )
     })
-
-    afterEach(() => LiteGraph.unregisterNodeType(subgraph.id))
 
     it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
       const previous = LGraph.proxyWidgetMigrationFlush

@@ -246,7 +246,7 @@ describe('WorkflowTab - agent activity indicators', () => {
     mockWorkflowStatus.value = new Map()
   })
 
-  it('shows the agent spinner even on the active tab', async () => {
+  it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setEditing('/workflows/test.json')
     await nextTick()
