@@ -20,7 +20,6 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LinkId } from '@/types/linkId'
 
 describe('idAllocation', () => {
   it('mints increasing ids for each entity kind', () => {
@@ -102,7 +101,7 @@ describe('idAllocation', () => {
     const state = createLGraphState()
 
     observeNodeId(state, toNodeId(MINT_ID_MIN - 1))
-    observeLinkId(state, String(MINT_ID_MIN - 1) as unknown as LinkId)
+    observeLinkId(state, toLinkId(MINT_ID_MIN - 1))
 
     expect(state.lastNodeId).toBe(MINT_ID_MIN - 1)
     expect(state.lastLinkId).toBe(MINT_ID_MIN - 1)
@@ -135,9 +134,9 @@ describe('idAllocation', () => {
     graph.state.lastNodeId = 7
 
     graph.last_node_id = null as unknown as number
-    graph.last_link_id = [] as unknown as LinkId
+    Reflect.set(graph, 'last_link_id', [])
     graph.last_node_id = -1
-    graph.last_link_id = -1 as LinkId
+    Reflect.set(graph, 'last_link_id', -1)
 
     expect(mintNodeId(graph.state)).toBe('8')
     expect(mintLinkId(graph.state)).toBe(1)
