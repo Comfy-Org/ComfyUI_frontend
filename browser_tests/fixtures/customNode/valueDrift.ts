@@ -37,12 +37,10 @@ export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH: Record<
   Record<string, string>
 > = {}
 
-export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
-  'ComfyUI-VideoHelperSuite': {
-    VHS_VAEDecodeBatched: 'per_batch',
-    VHS_VAEEncodeBatched: 'per_batch'
-  }
-}
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE: Record<
+  string,
+  Record<string, string>
+> = {}
 
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }

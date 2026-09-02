@@ -130,12 +130,6 @@ const WIDGET_SET_ALLOWLIST_BY_IDENTITY: Record<
 }
 
 const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
-  'ComfyUI-VideoHelperSuite': {
-    VHS_VAEDecodeBatched:
-      'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate',
-    VHS_VAEEncodeBatched:
-      'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor:
       'the sparse-track editor regenerates its derived integer coordinates from the preserved source points on configure'
