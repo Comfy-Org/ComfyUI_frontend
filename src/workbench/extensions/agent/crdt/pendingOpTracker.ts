@@ -15,17 +15,22 @@
  *   drew silence (`unacknowledged`). The shadow is reverted and the entry
  *   dropped, so the optimistic styling disappears instead of lingering.
  *
- * `skipped` (op id already present host-side) is a duplicate: its effect is
- * already in doc state, and a fully duplicate batch produces no new
- * broadcast, so waiting for a `doc_update` carrying the id could wait
- * forever. It is still never cleared on the ack itself (s3-opt-2): removal
- * happens on an authoritative PROJECTION transition. A skipped entry clears
- * when the follower has projected doc state at or beyond the ack's `seq` —
+ * `skipped` covers two host outcomes that share one property: the op will
+ * never produce an effect frame of its own. Either the op id already existed
+ * host-side (a re-delivery; a fully duplicate batch produces no broadcast at
+ * all) or the applier dropped it under last-writer-wins, in which case its
+ * effect is specifically NOT in the doc — a competing write is. What settles
+ * a skipped entry is therefore not "its effect landed" but "the doc state at
+ * or beyond the ack's `seq` is authoritative for whatever it touched", so
+ * it must never be re-shown as the op's own optimistic value. It is still
+ * never cleared on the ack itself (s3-opt-2): removal happens on an
+ * authoritative PROJECTION transition. A skipped entry clears when the
+ * follower has projected doc state at or beyond the ack's `seq` —
  * immediately at ack time when the projected seq already covers it,
  * otherwise on the first later projected `doc_update` whose seq covers it.
  * When the ack carries no seq, the next projected authoritative transition
- * of any seq clears it (the duplicate pre-existed the ack, so any later
- * authoritative state contains it). A `doc_update` that happens to carry the
+ * of any seq clears it (the outcome pre-existed the ack, so any later
+ * authoritative state reflects it). A `doc_update` that happens to carry the
  * id still clears it through the EFFECT path first.
  *
  * Nothing here touches the canvas; it only maintains the two data
@@ -82,6 +87,10 @@ export interface PendingOpTracker {
    * The follower projected authoritative doc state at `seq` (null when the
    * update carried no usable seq). Resolves every awaiting skipped duplicate
    * whose ack seq is covered — this, not the ack, is its removal trigger.
+   * `DocUpdate.seq` is a required number, so the follower never passes null
+   * today; the null contract is kept for callers whose transition has no
+   * seq, where it can satisfy an unnumbered requirement but never a numbered
+   * one.
    */
   onAuthoritativeState(seq: number | null): void
   /** Doc lineage broke (reset / replacement / teardown): nothing is pending. */

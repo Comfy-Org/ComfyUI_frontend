@@ -128,9 +128,13 @@ export function useAgentCrdtFollower(
   // leaves only on its authoritative doc_update effect, on revert, or — for
   // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
   const pendingOps = createPendingOpTracker({
-    // The last applied update's seq (the subscribe ack's seq before any
-    // update lands for the current subscribe).
-    currentSeq: () => bridge.lastSequence,
+    // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
+    // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
+    // state, so a skipped result must park there rather than clear on the ack.
+    // An already-current follower (ack, no catch-up) therefore parks a skipped
+    // id until its next applied frame; a still-pending skipped entry means the
+    // effect frame never reached this follower, so one is coming.
+    currentSeq: () => bridge.lastAppliedSequence ?? 0,
     onEvent: (event) => recordDevEvent('pending_ops', event)
   })
   const sender = createOpSender({
