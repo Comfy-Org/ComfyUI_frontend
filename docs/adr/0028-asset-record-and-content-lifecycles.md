@@ -100,9 +100,9 @@ legacy history-backed panel.
 
 ## References
 
-- [Asset deletion intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/index.md)
-- [Asset deletion logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/logical.md)
-- [Asset deletion scenario: a user deletes a generation](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/scenarios.md#a-user-deletes-a-generation)
+- [Asset deletion intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/index.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
+- [Asset deletion logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/logical.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
+- [Asset deletion scenario: a user deletes a generation](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/scenarios.md#a-user-deletes-a-generation) (private `Comfy-Org/ideation-sharing` repo — requires org access)
 - [Current frontend output deletion path](../../src/platform/assets/composables/useMediaAssetActions.ts)
 - [Current history-derived asset store](../../src/stores/assetsStore.ts)
 - Assets PR meta-review meeting, 2026-08-27 (Christian, Simon, Austin, Alex):
