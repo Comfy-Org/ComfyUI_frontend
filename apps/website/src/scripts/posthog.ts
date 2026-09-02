@@ -22,6 +22,16 @@ const ANALYTICS_EVENT = {
   mcpClientTabClicked: 'website:mcp_client_tab_clicked'
 } as const
 
+export type CliClientId =
+  | 'claude-code'
+  | 'codex'
+  | 'cursor'
+  | 'gemini-cli'
+  | 'openclaw'
+  | 'hermes'
+  | 'terminal'
+  | 'ci'
+
 type AnalyticsEvent =
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
   | {
@@ -35,9 +45,11 @@ type AnalyticsEvent =
       properties: { connection: ConnectionId }
     }
   | {
-      name:
-        | typeof ANALYTICS_EVENT.cliClientTabClicked
-        | typeof ANALYTICS_EVENT.mcpClientTabClicked
+      name: typeof ANALYTICS_EVENT.cliClientTabClicked
+      properties: { client: CliClientId }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.mcpClientTabClicked
       properties: { client: McpClientId }
     }
 
@@ -88,7 +100,7 @@ export function captureCliConnectionTabClick(connection: ConnectionId): void {
   })
 }
 
-export function captureCliClientTabClick(client: McpClientId): void {
+export function captureCliClientTabClick(client: CliClientId): void {
   captureEvent({
     name: ANALYTICS_EVENT.cliClientTabClicked,
     properties: { client }
