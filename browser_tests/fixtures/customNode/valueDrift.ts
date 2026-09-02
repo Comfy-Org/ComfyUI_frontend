@@ -32,14 +32,10 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   }
 }
 
-const VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH = {
-  VHS_VAEDecodeBatched: 'per_batch',
-  VHS_VAEEncodeBatched: 'per_batch'
-}
-
-export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH
-}
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH: Record<
+  string,
+  Record<string, string>
+> = {}
 
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
   'ComfyUI-VideoHelperSuite': {
