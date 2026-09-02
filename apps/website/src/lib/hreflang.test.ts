@@ -73,6 +73,14 @@ describe('sitemapAlternates', () => {
     ])
   })
 
+  it('emits nothing for Japanese, from either locale prefix', () => {
+    // /ja/ has no twin rule yet, so a cluster here would advertise
+    // /zh-CN/ja/, which 404s. The prefixed form must be suppressed too, or a
+    // locale-prefixed request slips past a check that only reads the raw path.
+    expect(hreflangAlternates('/ja/', ORIGIN)).toEqual([])
+    expect(hreflangAlternates('/zh-CN/ja/', ORIGIN)).toEqual([])
+  })
+
   it('leaves English-only entries without links', () => {
     expect(sitemapAlternates('https://comfy.org/affiliates/')).toBeUndefined()
   })
@@ -82,6 +90,9 @@ describe('og locale', () => {
   it('uses OG underscored identifiers rather than the BCP 47 tag', () => {
     expect(ogLocale('en')).toBe('en_US')
     expect(ogLocale('zh-CN')).toBe('zh_CN')
+    // A locale absent from the map falls back to English, so a Japanese page
+    // would declare itself en_US. It shipped that way until this test existed.
+    expect(ogLocale('ja')).toBe('ja_JP')
   })
 
   it('names the other language only when the page has a twin', () => {
