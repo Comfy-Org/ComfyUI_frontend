@@ -57,13 +57,21 @@ const model: WorkshopModelDetail = {
   ]
 }
 
-function mountDetail() {
+function mountDetail(options?: {
+  clone?: { credits: number; href: string; author: string }
+  details?: () => ReturnType<typeof h>
+}) {
   let api!: ReturnType<typeof useMockSession>
   render(
     defineComponent({
       setup() {
         api = useMockSession()
-        return () => h(ModelDetail, { model })
+        return () =>
+          h(
+            ModelDetail,
+            { model, clone: options?.clone },
+            options?.details ? { details: options.details } : undefined
+          )
       }
     })
   )
@@ -140,6 +148,54 @@ describe('ModelDetail', () => {
     await nextTick()
     expect(screen.queryByTestId('run-credits-used')).toBeNull()
     expect(credits(api)).toBe(EXISTING_CREDITS)
+  })
+
+  it('sells credits in place when the balance is short, then runs', async () => {
+    const api = await signedInDetail()
+    api.setCredits(3)
+    await nextTick()
+    const run = screen.getByTestId('run-button')
+    expect(run.getAttribute('data-gate')).toBe('noCredits')
+    expect(screen.getByTestId('gate-note').textContent).toContain('3 credits')
+
+    await user().click(run)
+    await user().click(await screen.findByTestId('buy-credits-confirm'))
+    vi.advanceTimersByTime(2000)
+    await nextTick()
+    expect(credits(api)).toBe(2003)
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+  })
+
+  it('sends a team member without credits to the owner or their own workspace', async () => {
+    const api = await signedInDetail()
+    api.setRole('member')
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'memberNoCredits'
+    )
+    await user().click(screen.getByTestId('switch-personal'))
+    expect(credits(api)).toBe(EXISTING_CREDITS)
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+  })
+
+  it('shows a Details tab and the clone button when given workflow details', async () => {
+    const api = mountDetail({
+      clone: { credits: 2900, href: '/x.json', author: '@studioX' },
+      details: () => h('p', 'About this workflow')
+    })
+    api.signIn('existing')
+    await nextTick()
+    expect(screen.queryByTestId('tab-examples')).toBeNull()
+    expect(screen.getByTestId('clone-button').textContent).toContain('2,900')
+    expect(screen.getByTestId('clone-note').textContent).toContain('@studioX')
+    await user().click(screen.getByTestId('tab-details'))
+    expect(screen.getByTestId('details-tab').textContent).toContain(
+      'About this workflow'
+    )
   })
 
   it('swaps the form to the example template and back', async () => {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { ModelStatus } from '../../config/workshop'
 import type { Locale } from '../../i18n/translations'
@@ -16,18 +18,25 @@ const {
   locale?: Locale
 }>()
 
-const { showStatuses } = usePrototypeTweaks()
+const { showStatuses, modelState } = usePrototypeTweaks()
+const shown = computed(() =>
+  modelState.value === 'deprecated' || modelState.value === 'degraded'
+    ? modelState.value
+    : showStatuses.value
+      ? status
+      : undefined
+)
 </script>
 
 <template>
-  <template v-if="showStatuses && status">
+  <template v-if="shown">
     <span
       v-if="variant === 'pill'"
       class="border-primary-comfy-orange/50 text-primary-comfy-orange rounded-2xl border px-3 py-1 text-[11px] font-bold tracking-wider uppercase"
       data-testid="model-status"
     >
       {{
-        status === 'deprecated'
+        shown === 'deprecated'
           ? t('workshop.model.deprecated', locale)
           : t('workshop.model.degraded', locale)
       }}
@@ -37,7 +46,7 @@ const { showStatuses } = usePrototypeTweaks()
       class="border-primary-comfy-orange/40 bg-primary-comfy-orange/10 rounded-2xl border px-4 py-3 text-sm text-primary-warm-white"
       data-testid="model-status-banner"
     >
-      <template v-if="status === 'deprecated'">
+      <template v-if="shown === 'deprecated'">
         {{ t('workshop.model.deprecatedBody', locale) }}
         <a
           v-if="successor"

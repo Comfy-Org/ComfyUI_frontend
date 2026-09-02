@@ -2,6 +2,8 @@
 import { Search } from '@lucide/vue'
 import { computed, onMounted, onUnmounted } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { useHubStore } from '../../composables/useHubStore'
 import type { WorkshopModel } from '../../config/workshop'
 import { workshopModels } from '../../config/workshop'
@@ -16,7 +18,10 @@ import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', embedded = false } = defineProps<{
+  locale?: Locale
+  embedded?: boolean
+}>()
 
 const templates = hubTemplates as HubTemplate[]
 const store = useHubStore()
@@ -122,8 +127,30 @@ const filteredTemplates = computed(() => {
 </script>
 
 <template>
-  <section class="pb-32" data-testid="workshop-hub">
-    <div class="bg-page sticky top-0 z-40 pt-2 pb-6 lg:pb-8">
+  <section
+    :class="cn(!embedded && 'mx-auto max-w-304 pb-32')"
+    data-testid="workshop-hub"
+  >
+    <div
+      v-if="!embedded"
+      class="mb-6 flex flex-col gap-2 lg:mb-8"
+      data-testid="hub-heading"
+    >
+      <h1
+        class="text-content-bright text-3xl font-medium tracking-tight lg:text-5xl"
+      >
+        {{ t('workshop.hub.title', locale) }}
+      </h1>
+      <p class="text-content-secondary text-base lg:text-lg">
+        {{
+          t('workshop.hub.subtitle', locale).replace(
+            '{n}',
+            String(templates.length)
+          )
+        }}
+      </p>
+    </div>
+    <div v-if="!embedded" class="bg-page sticky top-0 z-40 pt-2 pb-6 lg:pb-8">
       <label class="relative block">
         <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
         <Search

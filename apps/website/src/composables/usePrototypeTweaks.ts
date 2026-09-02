@@ -3,13 +3,21 @@ import { onMounted, ref, watch } from 'vue'
 export const RUN_OUTCOMES = [
   'success',
   'nsfw',
+  'expired',
   'validation',
   'provider',
-  'rateLimit'
+  'rateLimit',
+  'timeout'
 ] as const
 export type RunOutcome = (typeof RUN_OUTCOMES)[number]
 
-export const MODEL_STATES = ['none', 'policy', 'unavailable'] as const
+export const MODEL_STATES = [
+  'none',
+  'degraded',
+  'deprecated',
+  'policy',
+  'unavailable'
+] as const
 export type ModelState = (typeof MODEL_STATES)[number]
 
 // V1 is the models playground (11 Sep); V2 adds workflows and Deploy (GA 30 Sep).

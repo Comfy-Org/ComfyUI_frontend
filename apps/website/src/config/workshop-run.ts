@@ -10,6 +10,7 @@ export type RunFailure =
   | 'policy'
   | 'noCredits'
   | 'unavailable'
+  | 'timeout'
 
 export interface RunOutput {
   readonly kind: Modality | 'other'
@@ -46,6 +47,7 @@ export type RunEvent =
       readonly output: RunOutput
       readonly creditsUsed: number
       readonly nsfw: boolean
+      readonly ttlMs?: number
     }
   | {
       readonly type: 'fail'
@@ -71,7 +73,7 @@ export function transition(state: RunState, event: RunEvent): RunState {
             output: event.output,
             creditsUsed: event.creditsUsed,
             completedAt: event.at,
-            expiresAt: event.at + OUTPUT_TTL_MS,
+            expiresAt: event.at + (event.ttlMs ?? OUTPUT_TTL_MS),
             nsfw: event.nsfw
           }
         : state
@@ -91,6 +93,7 @@ export function transition(state: RunState, event: RunEvent): RunState {
 export type RunGate =
   | 'signedOut'
   | 'noCredits'
+  | 'memberNoCredits'
   | 'policy'
   | 'unavailable'
   | 'ready'
@@ -102,17 +105,26 @@ export interface GateInput {
   readonly modelStatus?: ModelStatus
   readonly policyDisabled: boolean
   readonly unavailable: boolean
+  readonly role?: 'owner' | 'member'
 }
 
 // Order matters: sign-in is asked before anything the account could fix,
 // and a workspace policy block wins over credits because buying would not
 // unblock the run.
 export function runGate(input: GateInput): RunGate {
-  if (input.unavailable) return 'unavailable'
+  if (input.unavailable || input.modelStatus === 'deprecated') {
+    return 'unavailable'
+  }
   if (!input.signedIn) return 'signedOut'
   if (input.policyDisabled) return 'policy'
-  if (input.credits < input.creditsPerRun) return 'noCredits'
+  if (input.credits < input.creditsPerRun) {
+    return input.role === 'member' ? 'memberNoCredits' : 'noCredits'
+  }
   return 'ready'
+}
+
+export function isExpired(state: RunState, now: number): boolean {
+  return state.status === 'succeeded' && now >= state.expiresAt
 }
 
 export function formatElapsed(ms: number): string {

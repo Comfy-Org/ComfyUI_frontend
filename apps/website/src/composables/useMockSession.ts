@@ -6,6 +6,7 @@ export interface MockAccount {
   readonly workspace: string
   readonly credits: number
   readonly subscribed: boolean
+  readonly role: 'owner' | 'member'
 }
 
 export type MockSession =
@@ -21,18 +22,23 @@ export type MockSessionEvent =
   | { type: 'addCredits'; credits: number }
   | { type: 'setSubscribed'; subscribed: boolean }
   | { type: 'switchWorkspace'; workspace: string }
+  | { type: 'setRole'; role: 'owner' | 'member' }
 
 // Nothing is free: a new account starts empty and buys credits to run;
 // existing ones carry whatever they bought.
 export const WELCOME_CREDITS = 0
 export const EXISTING_CREDITS = 5840
+export const LOW_CREDITS = 3
 
 export const WORKSPACES = ["Ada's Studio", 'Comfy team', 'Client demos']
+export const PERSONAL_WORKSPACE = WORKSPACES[0]
+const TEAM_WORKSPACE = WORKSPACES[1]
 
 const BASE_ACCOUNT = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
-  workspace: WORKSPACES[0]
+  workspace: WORKSPACES[0],
+  role: 'owner' as const
 }
 
 export function accountFor(kind: AccountKind): MockAccount {
@@ -53,11 +59,44 @@ export function transition(
       return { status: 'signedIn', account: accountFor(event.kind) }
     case 'signOut':
       return SIGNED_OUT
+    case 'setRole':
+      // A member browses the team workspace on someone else's balance.
+      return session.status === 'signedIn'
+        ? {
+            status: 'signedIn',
+            account:
+              event.role === 'member'
+                ? {
+                    ...session.account,
+                    role: 'member',
+                    workspace: TEAM_WORKSPACE,
+                    credits: 0
+                  }
+                : {
+                    ...session.account,
+                    role: 'owner',
+                    workspace: PERSONAL_WORKSPACE,
+                    credits: EXISTING_CREDITS
+                  }
+          }
+        : session
     case 'switchWorkspace':
       return session.status === 'signedIn'
         ? {
             status: 'signedIn',
-            account: { ...session.account, workspace: event.workspace }
+            account: {
+              ...session.account,
+              workspace: event.workspace,
+              ...(event.workspace === PERSONAL_WORKSPACE
+                ? {
+                    role: 'owner' as const,
+                    credits:
+                      session.account.role === 'member'
+                        ? EXISTING_CREDITS
+                        : session.account.credits
+                  }
+                : {})
+            }
           }
         : session
     case 'setCredits':
@@ -148,6 +187,7 @@ export function useMockSession() {
     setCredits: (credits: number) => dispatch({ type: 'setCredits', credits }),
     addCredits: (credits: number) => dispatch({ type: 'addCredits', credits }),
     setSubscribed: (subscribed: boolean) =>
-      dispatch({ type: 'setSubscribed', subscribed })
+      dispatch({ type: 'setSubscribed', subscribed }),
+    setRole: (role: 'owner' | 'member') => dispatch({ type: 'setRole', role })
   }
 }

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
-import HubWorkflowCard from '../../../components/hub/HubWorkflowCard.vue'
+import HubBrowse from '../../../components/hub/HubBrowse.vue'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
 import StaticFrame from '../../../components/workshop/StaticFrame.vue'
@@ -10,7 +10,6 @@ import { hubWorkflowUrl } from '../../../lib/hub/routes'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
 import {
   getHubWorkflowPage,
-  hubWorkflowPath,
   listHubWorkflows
 } from '../../../lib/hub/workflow-detail'
 import { t } from '../../../i18n/translations'
@@ -25,9 +24,9 @@ const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
 if (!page) return Astro.redirect('/workshop/')
 
-const { template, mediaType, details, model, stats, inputs, outputs, related } =
-  page
+const { template, mediaType, details, model, stats, inputs, outputs } = page
 const routes = getRoutes()
+const author = template.username || 'ComfyUI'
 const isPartner = template.tags.includes('API')
 const kindLabel = template.isApp
   ? t('workshop.workflow.comfyApp')
@@ -49,6 +48,7 @@ const statsLine = t('workshop.workflow.stats')
   .replace('{credits}', String(stats.creditsPerRun))
   .replace('{clone}', stats.cloneCredits.toLocaleString('en-US'))
 const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${template.name}.json`
+const clone = { credits: stats.cloneCredits, href: downloadUrl, author: `@${author}` }
 const comments = [
   { author: '@midframe', stars: 5, text: t('workshop.workflow.comment1') },
   { author: '@rui.v', stars: 4, text: t('workshop.workflow.comment2') }
@@ -61,7 +61,25 @@ const comments = [
   ogImage={template.thumbnails[0]}
   noindex
 >
-  <div class="mx-auto max-w-8xl px-6 py-12 lg:px-8 lg:py-16">
+  <div class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
+    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray">
+      <ol class="flex flex-wrap items-center gap-2">
+        <li>
+          <a href={routes.home} class="hover:text-primary-warm-white">
+            {t('breadcrumb.home')}
+          </a>
+        </li>
+        <li aria-hidden="true">›</li>
+        <li>
+          <a href={routes.workshop} class="hover:text-primary-warm-white">
+            {t('workshop.workflow.crumb')}
+          </a>
+        </li>
+        <li aria-hidden="true">›</li>
+        <li class="text-primary-warm-white" aria-current="page">{template.title}</li>
+      </ol>
+    </nav>
+
     <header
       class="relative mb-12 overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light"
       data-testid="workflow-hero"
@@ -79,30 +97,12 @@ const comments = [
         class="absolute inset-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/75 to-primary-comfy-ink/10"
       />
       <div
-        class="relative flex min-h-52 flex-col justify-between gap-6 p-8 lg:min-h-60 lg:p-10"
+        class="relative flex min-h-52 flex-col justify-center gap-6 p-8 lg:min-h-60 lg:p-10"
       >
-        <nav aria-label="Breadcrumb" class="text-xs text-primary-warm-gray">
-          <ol class="flex flex-wrap items-center gap-2">
-            <li>
-              <a href={routes.workshop} class="hover:text-primary-warm-white">
-                {t('workshop.title')}
-              </a>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li>
-              <a href={routes.workshop} class="hover:text-primary-warm-white">
-                {t('workshop.workflow.crumb')}
-              </a>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li class="text-primary-warm-white" aria-current="page">{template.title}</li>
-          </ol>
-        </nav>
-
         <div class="flex max-w-2xl flex-col gap-3">
           <div class="flex flex-wrap items-center gap-2">
             <p class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase">
-              {t('workshop.workflow.by').replace('{author}', template.username || 'ComfyUI')}
+              {t('workshop.workflow.by').replace('{author}', author)}
             </p>
             <span class={pillClass}>{kindLabel}</span>
             {mediaLabel[mediaType] && <span class={pillClass}>{mediaLabel[mediaType]}</span>}
@@ -151,136 +151,117 @@ const comments = [
     </header>
 
     <div class="px-8 lg:px-10">
-      <ModelDetail model={model} client:load />
-
-      <section class="mt-16 grid gap-8 lg:grid-cols-12" data-testid="workflow-about">
-        <div class="lg:col-span-7">
-          <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
-            {t('workshop.workflow.about')}
-          </h2>
-          <p class="mt-4 text-base leading-relaxed text-primary-comfy-canvas/80">
-            {details.description ?? ''}
-          </p>
-          {
-            details.requiresCustomNodes && details.requiresCustomNodes.length > 0 && (
-              <p class="mt-4 text-sm text-primary-warm-gray">
-                {t('workshop.workflow.customNodes')}: {details.requiresCustomNodes.join(', ')}
-              </p>
-            )
-          }
-        </div>
-        <div
-          class="bg-transparency-white-t4 rounded-2xl border border-transparency-white-t8 p-5 lg:col-span-5"
-          data-testid="workflow-io"
-        >
-          <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
-            {t('workshop.workflow.io')}
-          </h2>
-          <div class="mt-4 grid gap-6 sm:grid-cols-2">
-            {
-              [
-                { title: t('workshop.workflow.inputs'), rows: inputs },
-                { title: t('workshop.workflow.outputs'), rows: outputs }
-              ].map((group) => (
-                <div>
-                  <h3 class="text-sm font-semibold text-primary-warm-white">{group.title}</h3>
-                  <dl class="mt-2 flex flex-col">
-                    {group.rows.map((row) => (
-                      <div class="flex items-center justify-between gap-3 border-b border-dashed border-transparency-white-t8 py-1.5 text-xs">
-                        <dt class="text-primary-comfy-canvas">{row.name}</dt>
-                        <dd class="font-mono text-primary-comfy-yellow">{row.type}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="bg-transparency-white-t4 mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 p-5"
-        data-testid="workflow-graph"
-      >
-        <div>
-          <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
-            {t('workshop.workflow.graph')}
-          </h2>
-          <p class="mt-2 max-w-xl text-sm text-primary-comfy-canvas/70">
-            {t('workshop.workflow.graphNote')}
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <a
-            href={hubWorkflowUrl(template.name)}
-            target="_blank"
-            rel="noopener"
-            class="inline-flex h-10 items-center rounded-2xl border border-primary-comfy-yellow px-5 text-sm font-semibold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
-          >
-            {t('workshop.workflow.openComfy')}
-          </a>
-          <a
-            href={downloadUrl}
-            download
-            class="inline-flex h-10 items-center rounded-2xl bg-primary-comfy-yellow px-5 text-sm font-semibold tracking-wider text-primary-comfy-ink uppercase transition-opacity hover:opacity-90"
-          >
-            {t('workshop.workflow.download')}
-          </a>
-        </div>
-      </section>
-
-      <section class="mt-8" data-testid="workflow-comments">
-        <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
-          {t('workshop.workflow.ratings')}
-        </h2>
-        <ul class="mt-4 flex flex-col divide-y divide-transparency-white-t8">
-          {
-            comments.map((comment) => (
-              <li class="flex gap-3 py-4">
-                <span class="grid size-8 shrink-0 place-items-center rounded-full bg-primary-comfy-plum text-xs font-bold text-white">
-                  {comment.author.charAt(1).toUpperCase()}
-                </span>
-                <div>
-                  <p class="text-sm font-semibold text-primary-warm-white">
-                    {comment.author}
-                    <span class="ml-2 text-primary-comfy-yellow">{'★'.repeat(comment.stars)}</span>
-                  </p>
-                  <p class="mt-1 text-sm text-primary-comfy-canvas/80">{comment.text}</p>
-                </div>
-              </li>
-            ))
-          }
-        </ul>
-      </section>
-
-      {
-        related.length > 0 && (
-          <section class="mt-24 border-t border-transparency-white-t8 pt-12" data-testid="related-workflows">
-            <div class="mb-6 flex items-end justify-between gap-4">
-              <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-                {t('workshop.workflow.related')}
+      <ModelDetail model={model} clone={clone} client:load>
+        <div slot="details" class="flex flex-col gap-8">
+          <section class="grid gap-8 lg:grid-cols-12" data-testid="workflow-about">
+            <div class="lg:col-span-7">
+              <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
+                {t('workshop.workflow.about')}
               </h2>
-              <a
-                href={routes.workshop}
-                class="text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
-              >
-                {t('workshop.model.browseAll')}
-              </a>
+              <p class="mt-4 text-base leading-relaxed text-primary-comfy-canvas/80">
+                {details.description ?? ''}
+              </p>
+              {
+                details.requiresCustomNodes && details.requiresCustomNodes.length > 0 && (
+                  <p class="mt-4 text-sm text-primary-warm-gray">
+                    {t('workshop.workflow.customNodes')}: {details.requiresCustomNodes.join(', ')}
+                  </p>
+                )
+              }
             </div>
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {related.map((other) => (
-                <HubWorkflowCard
-                  template={other}
-                  href={hubWorkflowPath(other.name)}
-                  tryNowLabel={t('workshop.hub.tryNow')}
-                  client:visible
-                />
-              ))}
+            <div
+              class="bg-transparency-white-t4 rounded-2xl border border-transparency-white-t8 p-5 lg:col-span-5"
+              data-testid="workflow-io"
+            >
+              <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
+                {t('workshop.workflow.io')}
+              </h2>
+              <div class="mt-4 grid gap-6 sm:grid-cols-2">
+                {
+                  [
+                    { title: t('workshop.workflow.inputs'), rows: inputs },
+                    { title: t('workshop.workflow.outputs'), rows: outputs }
+                  ].map((group) => (
+                    <div>
+                      <h3 class="text-sm font-semibold text-primary-warm-white">{group.title}</h3>
+                      <dl class="mt-2 flex flex-col">
+                        {group.rows.map((row) => (
+                          <div class="flex items-center justify-between gap-3 border-b border-dashed border-transparency-white-t8 py-1.5 text-xs">
+                            <dt class="text-primary-comfy-canvas">{row.name}</dt>
+                            <dd class="font-mono text-primary-comfy-yellow">{row.type}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ))
+                }
+              </div>
             </div>
           </section>
-        )
-      }
+
+          <section
+            class="bg-transparency-white-t4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 p-5"
+            data-testid="workflow-graph"
+          >
+            <div>
+              <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
+                {t('workshop.workflow.graph')}
+              </h2>
+              <p class="mt-2 max-w-xl text-sm text-primary-comfy-canvas/70">
+                {t('workshop.workflow.graphNote')}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <a
+                href={hubWorkflowUrl(template.name)}
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-10 items-center rounded-2xl border border-primary-comfy-yellow px-5 text-sm font-semibold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
+              >
+                {t('workshop.workflow.openComfy')}
+              </a>
+              <a
+                href={downloadUrl}
+                download
+                class="inline-flex h-10 items-center rounded-2xl bg-primary-comfy-yellow px-5 text-sm font-semibold tracking-wider text-primary-comfy-ink uppercase transition-opacity hover:opacity-90"
+              >
+                {t('workshop.workflow.download')}
+              </a>
+            </div>
+          </section>
+
+          <section data-testid="workflow-comments">
+            <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
+              {t('workshop.workflow.ratings')}
+            </h2>
+            <ul class="mt-4 flex flex-col divide-y divide-transparency-white-t8">
+              {
+                comments.map((comment) => (
+                  <li class="flex gap-3 py-4">
+                    <span class="grid size-8 shrink-0 place-items-center rounded-full bg-primary-comfy-plum text-xs font-bold text-white">
+                      {comment.author.charAt(1).toUpperCase()}
+                    </span>
+                    <div>
+                      <p class="text-sm font-semibold text-primary-warm-white">
+                        {comment.author}
+                        <span class="ml-2 text-primary-comfy-yellow">{'★'.repeat(comment.stars)}</span>
+                      </p>
+                      <p class="mt-1 text-sm text-primary-comfy-canvas/80">{comment.text}</p>
+                    </div>
+                  </li>
+                ))
+              }
+            </ul>
+          </section>
+        </div>
+      </ModelDetail>
+
+      <section class="mt-24 border-t border-transparency-white-t8 pt-12" data-testid="related-workflows">
+        <h2 class="mb-8 text-3xl font-medium tracking-tight text-primary-comfy-canvas">
+          {t('workshop.workflow.related')}
+        </h2>
+        <HubBrowse embedded client:only="vue" />
+      </section>
     </div>
   </div>
   <PrototypeTweaks show-run-controls client:load />

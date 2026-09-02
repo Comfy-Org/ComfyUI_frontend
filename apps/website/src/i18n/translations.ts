@@ -8412,6 +8412,7 @@ Enterprise`
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
   'workshop.model.tabs.examples': { en: 'Examples', 'zh-CN': '示例' },
+  'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
   'workshop.model.related': {
     en: 'More from the Workshop',
     'zh-CN': '工作坊的更多内容'
@@ -8551,6 +8552,84 @@ Enterprise`
     'zh-CN': '请检查高亮的字段。'
   },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
+  'workshop.error.timeout': {
+    en: 'The provider took too long to answer. You were not charged.',
+    'zh-CN': '提供方响应超时。未扣费。'
+  },
+  'workshop.error.lowCredits': {
+    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    'zh-CN':
+      '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
+  },
+  'workshop.error.memberNoCredits': {
+    en: '{workspace} has no credits left. Only the workspace owner can buy more; you can run this on your personal workspace instead.',
+    'zh-CN':
+      '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
+  },
+  'workshop.run.memberNoCredits': {
+    en: 'Ask the owner for credits',
+    'zh-CN': '请所有者购买积分'
+  },
+  'workshop.run.switchPersonal': {
+    en: 'Switch to personal workspace',
+    'zh-CN': '切换到个人工作区'
+  },
+  'workshop.run.degraded': {
+    en: 'This model is degraded right now: runs may be slower or fail more often.',
+    'zh-CN': '该模型当前性能下降：运行可能更慢或更容易失败。'
+  },
+  'workshop.output.expired': {
+    en: 'This output has expired.',
+    'zh-CN': '该输出已过期。'
+  },
+  'workshop.output.expiredHint': {
+    en: 'Results are not stored. Links live for 24 hours after the run; download an output to keep it.',
+    'zh-CN': '结果不会被保存。链接在运行后 24 小时内有效；请下载以保留。'
+  },
+  'workshop.buy.title': { en: 'Add credits', 'zh-CN': '添加积分' },
+  'workshop.buy.body': {
+    en: 'Credits are shared across Comfy Cloud, the API and the Workshop.',
+    'zh-CN': '积分在 Comfy Cloud、API 和 Workshop 之间通用。'
+  },
+  'workshop.buy.needed': {
+    en: 'This run needs {n} credits. Pick a pack and you come straight back to it.',
+    'zh-CN': '本次运行需要 {n} 积分。选择一个套餐后会直接回到这里。'
+  },
+  'workshop.buy.checkout': {
+    en: 'Continue to checkout',
+    'zh-CN': '前往结账'
+  },
+  'workshop.buy.paying': { en: 'Processing…', 'zh-CN': '处理中…' },
+  'workshop.buy.note': {
+    en: 'Prototype: checkout is simulated and credits are added to the mock account.',
+    'zh-CN': '原型：结账为模拟，积分会加到模拟账户。'
+  },
+  'workshop.buy.close': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.proto.lowBalance': { en: 'Low balance', 'zh-CN': '余额不足' },
+  'workshop.proto.member': {
+    en: 'Team member (not owner)',
+    'zh-CN': '团队成员（非所有者）'
+  },
+  'workshop.proto.outcome.expired': {
+    en: 'Success, output already expired',
+    'zh-CN': '成功，输出已过期'
+  },
+  'workshop.proto.outcome.timeout': {
+    en: 'Timeout (504)',
+    'zh-CN': '超时 (504)'
+  },
+  'workshop.proto.outcomeHint': {
+    en: 'Running and cancelled come from the Run and Cancel buttons.',
+    'zh-CN': '“运行中”和“已取消”通过运行和取消按钮触发。'
+  },
+  'workshop.proto.gate.degraded': {
+    en: 'Model degraded (runs, with warning)',
+    'zh-CN': '模型性能下降（可运行，带警告）'
+  },
+  'workshop.proto.gate.deprecated': {
+    en: 'Model deprecated (cannot run)',
+    'zh-CN': '模型已弃用（无法运行）'
+  },
 
   // Workshop – API tab
   'workshop.api.heading': {
@@ -8611,6 +8690,11 @@ Enterprise`
   'workshop.proto.entry.hub': {
     en: 'Comfy Workflows (comfy.org/workflows)',
     'zh-CN': 'Comfy 工作流（comfy.org/workflows）'
+  },
+  'workshop.hub.title': { en: 'Browse Workflows', 'zh-CN': '浏览工作流' },
+  'workshop.hub.subtitle': {
+    en: '{n}+ workflows across every model and category',
+    'zh-CN': '{n}+ 个工作流，覆盖每个模型与分类'
   },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',
@@ -8677,8 +8761,21 @@ Enterprise`
     'zh-CN': '身份保持是我用过最好的。希望轮廓光能加一个强度滑块。'
   },
   'workshop.workflow.related': {
-    en: 'More like this',
-    'zh-CN': '更多类似工作流'
+    en: 'View all workflows',
+    'zh-CN': '查看全部工作流'
+  },
+  'workshop.workflow.clone': {
+    en: 'Clone to your machine — {credits} credits',
+    'zh-CN': '克隆到本机 — {credits} 积分'
+  },
+  'workshop.workflow.cloneNote': {
+    en: 'Runs on Comfy Cloud · signed in as {user} · 20% of run credits accrue to {author}',
+    'zh-CN':
+      '在 Comfy Cloud 上运行 · 已登录为 {user} · 每次运行积分的 20% 归 {author}'
+  },
+  'workshop.workflow.cloneNoteSignedOut': {
+    en: 'Runs on Comfy Cloud · 20% of run credits accrue to {author}',
+    'zh-CN': '在 Comfy Cloud 上运行 · 每次运行积分的 20% 归 {author}'
   },
   'workshop.hub.sort.popular': { en: 'Most Popular', 'zh-CN': '最受欢迎' },
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },

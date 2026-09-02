@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { Coins, Play, X } from '@lucide/vue'
+import { Coins, Copy, Play, X } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useMockSession } from '../../composables/useMockSession'
+import {
+  PERSONAL_WORKSPACE,
+  useMockSession
+} from '../../composables/useMockSession'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { externalLinks, getRoutes } from '../../config/routes'
+import { getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
   FieldErrors,
@@ -29,20 +32,33 @@ import { IDLE, runGate, transition } from '../../config/workshop-run'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ApiTab from './ApiTab.vue'
+import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
-const { model, locale = 'en' } = defineProps<{
+const {
+  model,
+  locale = 'en',
+  clone
+} = defineProps<{
   model: WorkshopModelDetail
   locale?: Locale
+  clone?: { credits: number; href: string; author: string }
 }>()
 
-type Section = 'playground' | 'examples' | 'api'
-const SECTIONS: readonly Section[] = ['playground', 'examples', 'api']
+const slots = useSlots()
+
+type Section = 'playground' | 'examples' | 'details' | 'api'
+const sections = computed<readonly Section[]>(() =>
+  slots.details
+    ? ['playground', 'details', 'api']
+    : ['playground', 'examples', 'api']
+)
 const sectionLabel: Record<Section, TranslationKey> = {
   playground: 'workshop.model.tabs.playground',
   examples: 'workshop.model.tabs.examples',
+  details: 'workshop.model.tabs.details',
   api: 'workshop.model.tabs.api'
 }
 
@@ -60,7 +76,8 @@ const values = ref<FormValues>(defaultValues(schema.value, model.defaults))
 const runState = ref<RunState>(IDLE)
 const revealed = ref(false)
 
-const { session, setCredits } = useMockSession()
+const { session, setCredits, switchWorkspace } = useMockSession()
+const buyOpen = ref(false)
 const {
   outcome: simOutcome,
   modelState: simGate,
@@ -79,15 +96,38 @@ const subscribed = computed(
 const creditsPerRun = computed(() =>
   estimateCredits(model.creditsPerRun ?? 0, values.value)
 )
+const modelStatus = computed(() =>
+  simGate.value === 'deprecated' || simGate.value === 'degraded'
+    ? simGate.value
+    : showStatuses.value
+      ? model.status
+      : undefined
+)
 const gate = computed(() =>
   runGate({
     signedIn: session.value.status === 'signedIn',
     credits: credits.value,
     creditsPerRun: creditsPerRun.value,
-    modelStatus: showStatuses.value ? model.status : undefined,
+    modelStatus: modelStatus.value,
     policyDisabled: simGate.value === 'policy',
-    unavailable: simGate.value === 'unavailable'
+    unavailable: simGate.value === 'unavailable',
+    role:
+      session.value.status === 'signedIn'
+        ? session.value.account.role
+        : undefined
   })
+)
+const cloneNote = computed(() =>
+  clone
+    ? session.value.status === 'signedIn'
+      ? t('workshop.workflow.cloneNote', locale)
+          .replace('{user}', session.value.account.name)
+          .replace('{author}', clone.author)
+      : t('workshop.workflow.cloneNoteSignedOut', locale).replace(
+          '{author}',
+          clone.author
+        )
+    : ''
 )
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
@@ -168,13 +208,16 @@ function finishRun() {
   switch (simOutcome.value) {
     case 'success':
     case 'nsfw':
+    case 'expired':
       dispatch({
         type: 'complete',
         at,
         output: sampleOutput(),
         creditsUsed: creditsPerRun.value,
-        nsfw: simOutcome.value === 'nsfw'
+        nsfw: simOutcome.value === 'nsfw',
+        ...(simOutcome.value === 'expired' ? { ttlMs: 0 } : {})
       })
+      now.value = at
       setCredits(credits.value - creditsPerRun.value)
       break
     case 'validation':
@@ -186,6 +229,7 @@ function finishRun() {
       break
     case 'provider':
     case 'rateLimit':
+    case 'timeout':
       dispatch({ type: 'fail', reason: simOutcome.value })
   }
 }
@@ -239,7 +283,7 @@ function useInCode() {
       data-testid="model-tabs"
     >
       <button
-        v-for="section in SECTIONS"
+        v-for="section in sections"
         :key="section"
         type="button"
         role="tab"
@@ -336,15 +380,34 @@ function useInCode() {
           </Button>
           <Button
             v-else-if="gate === 'noCredits' && subscribed"
-            as="a"
-            :href="externalLinks.platform"
             size="lg"
             class="w-full px-5"
             data-testid="run-button"
             data-gate="noCredits"
+            @click="buyOpen = true"
           >
             {{ t('workshop.run.buyCredits', locale) }}
           </Button>
+          <template v-else-if="gate === 'memberNoCredits'">
+            <Button
+              size="lg"
+              class="w-full px-5"
+              disabled
+              data-testid="run-button"
+              data-gate="memberNoCredits"
+            >
+              {{ t('workshop.run.memberNoCredits', locale) }}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              class="w-full px-5"
+              data-testid="switch-personal"
+              @click="switchWorkspace(PERSONAL_WORKSPACE)"
+            >
+              {{ t('workshop.run.switchPersonal', locale) }}
+            </Button>
+          </template>
           <Button
             v-else-if="gate === 'noCredits'"
             as="a"
@@ -392,9 +455,62 @@ function useInCode() {
                 : t('workshop.run.unavailable', locale)
             }}
           </Button>
-          <p v-if="gate === 'noCredits'" class="text-xs text-primary-warm-gray">
-            {{ t('workshop.error.noCredits', locale) }}
+          <p
+            v-if="gate === 'noCredits'"
+            class="text-xs text-primary-warm-gray"
+            data-testid="gate-note"
+          >
+            {{
+              credits > 0
+                ? t('workshop.error.lowCredits', locale)
+                    .replace('{credits}', String(credits))
+                    .replace('{n}', String(creditsPerRun))
+                : t('workshop.error.noCredits', locale)
+            }}
           </p>
+          <p
+            v-else-if="gate === 'memberNoCredits'"
+            class="text-xs text-primary-warm-gray"
+            data-testid="gate-note"
+          >
+            {{
+              t('workshop.error.memberNoCredits', locale).replace(
+                '{workspace}',
+                session.status === 'signedIn' ? session.account.workspace : ''
+              )
+            }}
+          </p>
+          <p
+            v-else-if="modelStatus === 'degraded'"
+            class="text-primary-comfy-orange text-xs"
+            data-testid="gate-note"
+          >
+            {{ t('workshop.run.degraded', locale) }}
+          </p>
+          <template v-if="clone">
+            <Button
+              as="a"
+              :href="clone.href"
+              download
+              variant="outline"
+              size="lg"
+              class="w-full px-5 text-sm tracking-normal normal-case"
+              data-testid="clone-button"
+            >
+              <template #prepend>
+                <Copy class="size-4" aria-hidden="true" />
+              </template>
+              {{
+                t('workshop.workflow.clone', locale).replace(
+                  '{credits}',
+                  clone.credits.toLocaleString('en-US')
+                )
+              }}
+            </Button>
+            <p class="text-xs text-primary-warm-gray" data-testid="clone-note">
+              {{ cloneNote }}
+            </p>
+          </template>
         </div>
       </div>
 
@@ -416,8 +532,13 @@ function useInCode() {
       <ExamplesTab :examples :locale @open="openExample" />
     </section>
 
+    <section v-if="activeSection === 'details'" data-testid="details-tab">
+      <slot name="details" />
+    </section>
+
     <section v-if="activeSection === 'api'">
       <ApiTab :router-id="model.routerId" :values :locale />
     </section>
+    <BuyCreditsDialog v-model:open="buyOpen" :needed="creditsPerRun" :locale />
   </div>
 </template>

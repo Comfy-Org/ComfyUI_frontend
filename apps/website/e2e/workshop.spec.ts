@@ -17,6 +17,7 @@ test.describe('Workshop entry', () => {
   }) => {
     await page.goto('/workshop/')
     const hub = page.getByTestId('workshop-hub')
+    await expect(hub.getByTestId('hub-heading')).toContainText('610+ workflows')
     await expect(hub.getByTestId('hub-card').first()).toBeVisible()
     await hub.getByTestId('hub-tab-comfyApps').click()
     await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(
@@ -39,17 +40,17 @@ test.describe('Workshop entry', () => {
     await page.goto('/workshop/?q=minimax%20h3')
     const hub = page.getByTestId('workshop-hub')
     await hub.getByTestId('hub-card-link').first().click()
-    await expect(page).toHaveURL(
-      /\/workshop\/workflows\/video_minimax_h3_i2v\/?$/
-    )
+    await page.waitForURL(/\/workshop\/workflows\/video_minimax_h3_i2v\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       'MiniMax H3'
     )
     await expect(page.getByTestId('playground-tab')).toBeVisible()
+    await expect(page.getByTestId('clone-button')).toContainText('credits')
+    await page.getByTestId('tab-details').click()
     await expect(page.getByTestId('workflow-io')).toContainText('image')
     await expect(
-      page.getByTestId('related-workflows').getByTestId('hub-card')
-    ).toHaveCount(3)
+      page.getByTestId('related-workflows').getByTestId('hub-showing')
+    ).toContainText('30 of 610')
   })
 })
 
@@ -224,7 +225,9 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('account-upgrade')).toBeVisible()
   })
 
-  test('an empty balance sends the run to Comfy Platform', async ({ page }) => {
+  test('an empty balance buys credits in place and comes back ready', async ({
+    page
+  }) => {
     await page.goto(MODEL_PATH)
     await useAccount(page, 'existing')
     await page.getByTestId('prototype-tweaks').click()
@@ -233,10 +236,12 @@ test.describe('Model playground', () => {
 
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
-    await expect(run).toHaveAttribute('href', /platform/)
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
     ).toHaveAttribute('href', /platform/)
+    await run.click()
+    await page.getByTestId('buy-credits-confirm').click()
+    await expect(run).toHaveAttribute('data-gate', 'ready')
   })
 
   test('API tab mirrors the form values', async ({ page }) => {

@@ -253,7 +253,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     ratings: Math.max(3, Math.round(template.usage / 200)),
     avgSeconds: (BASE_SECONDS[mediaType] ?? 6) + (seed % 7),
     creditsPerRun,
-    cloneCredits: creditsPerRun * 450
+    cloneCredits: 2500 + (seed % 9) * 50
   }
   const model: WorkshopModelDetail = {
     slug: template.name,

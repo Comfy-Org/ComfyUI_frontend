@@ -13,6 +13,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { AccountKind } from '../../composables/useMockSession'
 import {
   EXISTING_CREDITS,
+  LOW_CREDITS,
   WELCOME_CREDITS,
   useMockSession
 } from '../../composables/useMockSession'
@@ -38,7 +39,8 @@ const { locale = 'en', showRunControls = false } = defineProps<{
   showRunControls?: boolean
 }>()
 
-const { session, signIn, signOut, setCredits, setSubscribed } = useMockSession()
+const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
+  useMockSession()
 const { outcome, modelState, scope, entry, showStatuses, outputCount } =
   usePrototypeTweaks()
 
@@ -65,6 +67,8 @@ const sessionChoice = computed<SessionChoice>(() =>
       : 'existing'
 )
 const zeroBalance = computed(() => account.value?.credits === 0)
+const lowBalance = computed(() => account.value?.credits === LOW_CREDITS)
+const isMember = computed(() => account.value?.role === 'member')
 
 function onSessionChange(event: Event) {
   const choice = (event.target as HTMLSelectElement).value as SessionChoice
@@ -84,12 +88,16 @@ const entryLabel: Record<Entry, TranslationKey> = {
 const outcomeLabel: Record<RunOutcome, TranslationKey> = {
   success: 'workshop.proto.outcome.success',
   nsfw: 'workshop.proto.outcome.nsfw',
+  expired: 'workshop.proto.outcome.expired',
   validation: 'workshop.proto.outcome.validation',
   provider: 'workshop.proto.outcome.provider',
-  rateLimit: 'workshop.proto.outcome.rateLimit'
+  rateLimit: 'workshop.proto.outcome.rateLimit',
+  timeout: 'workshop.proto.outcome.timeout'
 }
 const modelStateLabel: Record<ModelState, TranslationKey> = {
   none: 'workshop.proto.gate.none',
+  degraded: 'workshop.proto.gate.degraded',
+  deprecated: 'workshop.proto.gate.deprecated',
   policy: 'workshop.proto.gate.policy',
   unavailable: 'workshop.proto.gate.unavailable'
 }
@@ -257,6 +265,54 @@ const selectClass =
             </button>
           </label>
 
+          <label class="flex items-center justify-between gap-3">
+            <span
+              :class="
+                cn(
+                  'text-primary-comfy-canvas',
+                  !account && 'text-primary-warm-gray'
+                )
+              "
+            >
+              {{ t('workshop.proto.lowBalance', locale) }}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="lowBalance"
+              :disabled="!account"
+              data-testid="tweak-low-balance"
+              :class="switchClass(lowBalance)"
+              @click="setCredits(lowBalance ? EXISTING_CREDITS : LOW_CREDITS)"
+            >
+              <span :class="knobClass(lowBalance)" />
+            </button>
+          </label>
+
+          <label class="flex items-center justify-between gap-3">
+            <span
+              :class="
+                cn(
+                  'text-primary-comfy-canvas',
+                  !account && 'text-primary-warm-gray'
+                )
+              "
+            >
+              {{ t('workshop.proto.member', locale) }}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="isMember"
+              :disabled="!account"
+              data-testid="tweak-member"
+              :class="switchClass(isMember)"
+              @click="setRole(isMember ? 'owner' : 'member')"
+            >
+              <span :class="knobClass(isMember)" />
+            </button>
+          </label>
+
           <template v-if="showRunControls">
             <label class="flex flex-col gap-1">
               <span class="text-primary-warm-gray">
@@ -277,6 +333,9 @@ const selectClass =
                 </option>
               </select>
             </label>
+            <p class="text-[10px] text-primary-warm-gray">
+              {{ t('workshop.proto.outcomeHint', locale) }}
+            </p>
             <label class="flex flex-col gap-1">
               <span class="text-primary-warm-gray">
                 {{ t('workshop.proto.gate', locale) }}

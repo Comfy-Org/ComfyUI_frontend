@@ -8,7 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { Modality } from '../../config/workshop'
 import { isVideoUrl } from '../../config/workshop-playground'
 import type { RunFailure, RunState } from '../../config/workshop-run'
-import { formatElapsed } from '../../config/workshop-run'
+import { formatElapsed, isExpired } from '../../config/workshop-run'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -42,7 +42,8 @@ const failureKey: Record<RunFailure, TranslationKey> = {
   rateLimit: 'workshop.error.rateLimit',
   policy: 'workshop.error.policy',
   noCredits: 'workshop.error.noCredits',
-  unavailable: 'workshop.error.unavailable'
+  unavailable: 'workshop.error.unavailable',
+  timeout: 'workshop.error.timeout'
 }
 
 const selected = ref(0)
@@ -134,6 +135,23 @@ const blurred = computed(
         @click="emit('cancel')"
       >
         {{ t('workshop.run.cancel', locale) }}
+      </Button>
+    </div>
+
+    <!-- Expired -->
+    <div
+      v-else-if="isExpired(state, now)"
+      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
+      data-testid="run-expired"
+    >
+      <p class="text-sm text-primary-comfy-canvas">
+        {{ t('workshop.output.expired', locale) }}
+      </p>
+      <p class="max-w-sm text-xs text-primary-warm-gray">
+        {{ t('workshop.output.expiredHint', locale) }}
+      </p>
+      <Button variant="outline" size="sm" @click="emit('retry')">
+        {{ t('workshop.output.runAgain', locale) }}
       </Button>
     </div>
 
