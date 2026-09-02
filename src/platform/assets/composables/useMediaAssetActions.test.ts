@@ -1251,7 +1251,6 @@ describe('useMediaAssetActions', () => {
   describe('deleteAssets - cancellation', () => {
     beforeEach(() => {
       mockIsCloud.value = true
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('output')
       mockShowDialog.mockImplementation(
         ({ props }: { props: { onCancel: () => void } }) => {
@@ -1279,42 +1278,28 @@ describe('useMediaAssetActions', () => {
       expect(api.deleteItem).not.toHaveBeenCalled()
       expect(mockSetAssetDeleting).not.toHaveBeenCalled()
       expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
-      expect(mockOutputLoadNew).not.toHaveBeenCalled()
-      expect(mockInputLoadNew).not.toHaveBeenCalled()
+      expect(mockUpdateHistory).not.toHaveBeenCalled()
+      expect(mockUpdateInputs).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
     })
 
-    it('shows every grouped output before cancelling a bulk deletion', async () => {
-      mockGetOutputAssetMetadata.mockReturnValue({
-        allOutputs: [
-          {
-            assetId: 'output-1',
-            display_name: 'First output',
-            filename: 'first.png'
-          },
-          {
-            assetId: 'output-2',
-            display_name: 'Second output',
-            filename: 'second.png'
-          }
-        ]
-      })
+    it('cancels a bulk deletion without mutating asset or graph state', async () => {
       const actions = useMediaAssetActions()
+      const assets = [
+        createMockAsset({ id: 'output-1', name: 'first.png' }),
+        createMockAsset({ id: 'output-2', name: 'second.png' })
+      ]
 
-      await expect(
-        actions.deleteAssets(
-          createMockAsset({ id: 'job-cover', name: 'cover.png' })
-        )
-      ).resolves.toBe(false)
+      await expect(actions.deleteAssets(assets)).resolves.toBe(false)
 
       const dialog = mockShowDialog.mock.calls[0][0]
       expect(dialog.title).toBe('mediaAsset.deleteSelectedTitle')
       expect(dialog.props).toMatchObject({
         message: 'mediaAsset.deleteSelectedDescription',
-        itemList: ['First output', 'Second output']
+        itemList: ['first.png', 'second.png']
       })
       expect(vi.mocked(useI18n().t)).toHaveBeenCalledWith(
         'mediaAsset.deleteSelectedDescription',
@@ -1324,10 +1309,126 @@ describe('useMediaAssetActions', () => {
       expect(api.deleteItem).not.toHaveBeenCalled()
       expect(mockSetAssetDeleting).not.toHaveBeenCalled()
       expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+      expect(mockUpdateHistory).not.toHaveBeenCalled()
+      expect(mockUpdateInputs).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('deleteAssets - failures', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('input')
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+      mockAppGraph.value = { _nodes: [] }
+    })
+
+    it('retains a failed asset and allows the deletion to be retried', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDeleteAsset
+        .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+        .mockResolvedValueOnce(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
+
+      await actions.deleteAssets(asset)
+
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        ['asset-503', true],
+        ['asset-503', false]
+      ])
+      // updateInputs is gated on asset type, not on success, so it still
+      // fires to refresh the list even though the delete itself failed.
+      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'mediaAsset.failedToDeleteAsset'
+      })
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+
+      await actions.deleteAssets(asset)
+
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(mockUpdateInputs).toHaveBeenCalledTimes(2)
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        ['asset-503', true],
+        ['asset-503', false],
+        ['asset-503', true],
+        ['asset-503', false]
+      ])
+    })
+
+    it('invalidates and cleans up only successful assets after a partial bulk deletion', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDeleteAsset.mockImplementation(async (id: string) => {
+        if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+      })
+      const actions = useMediaAssetActions()
+      const assets = [
+        createMockAsset({ id: 'asset-first', name: 'first.png' }),
+        createMockAsset({ id: 'asset-failed', name: 'failed.png' }),
+        createMockAsset({ id: 'asset-third', name: 'third.png' })
+      ]
+      const successfulValues = new Set([
+        'first.png',
+        'first.png [input]',
+        'third.png',
+        'third.png [input]'
+      ])
+
+      await actions.deleteAssets(assets)
+
+      expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual([
+        'asset-first',
+        'asset-failed',
+        'asset-third'
+      ])
+      // updateInputs reloads the whole input list; it's called once because
+      // failures don't stop the batch from asking for a fresh input page.
+      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        successfulValues
+      )
+      expect(mockClearNodePreviewCache).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        successfulValues,
+        expect.any(Function)
+      )
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        successfulValues
+      )
+      expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'g.warning',
+        detail: 'mediaAsset.selection.partialDeleteSuccess',
+        life: 3000
+      })
+      expect(vi.mocked(useI18n().t)).toHaveBeenCalledWith(
+        'mediaAsset.selection.partialDeleteSuccess',
+        { succeeded: 2, failed: 1 }
+      )
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        ['asset-first', true],
+        ['asset-failed', true],
+        ['asset-third', true],
+        ['asset-first', false],
+        ['asset-failed', false],
+        ['asset-third', false]
+      ])
     })
   })
 
