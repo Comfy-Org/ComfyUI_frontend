@@ -240,20 +240,17 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toBeUndefined()
   })
 
-  // Behaviour deliberately changed: blur used to discard the draft, which threw
-  // typed input away on an ordinary tab or window switch with no recovery. The
-  // sibling inline rename in LayerPanel.vue commits on blur; this now matches.
-  it('commits a history-row rename when focus leaves the input', async () => {
+  it('discards a partial rename when focus leaves the input', async () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen(groupsWithTitle('Original title'))
     const input = await openRename(user)
 
     await user.clear(input)
-    await user.type(input, 'Kept on blur')
+    await user.type(input, 'Partial title')
     await user.tab()
 
     expect(screen.queryByRole('textbox', { name: 'Rename' })).toBeNull()
-    expect(emitted().rename).toEqual([['thread-1', 'Kept on blur']])
+    expect(emitted().rename).toBeUndefined()
   })
 
   // The close-auto-focus fence is conditional: it must not eat the focus
@@ -330,7 +327,7 @@ describe('ChatHistoryScreen', () => {
     const { emitted } = renderScreen(groupsWithTitle('  Padded  '))
     const input = await openRename(user)
 
-    await user.tab()
+    await user.keyboard('{Enter}')
 
     expect(input.value).toBe('  Padded  ')
     expect(emitted().rename).toBeUndefined()

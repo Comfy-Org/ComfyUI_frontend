@@ -185,7 +185,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
               :maxlength="MAX_TITLE_LENGTH"
               class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
               @keydown="onRenameKeydown(session, $event)"
-              @blur="commitRename(session)"
+              @blur="cancelRename"
             />
           </div>
           <template v-else>
