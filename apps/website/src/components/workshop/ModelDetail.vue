@@ -3,6 +3,8 @@ import { X } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
 import { useSignInHref } from '../../composables/useSignInHref'
@@ -44,11 +46,7 @@ const sectionLabel: Record<Section, TranslationKey> = {
   api: 'workshop.model.tabs.api'
 }
 
-function scrollTo(section: Section) {
-  document
-    .getElementById(section)
-    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
+const activeSection = ref<Section>('playground')
 
 const examples = examplesForModel(model)
 const activeExample = ref<PlaygroundExample>()
@@ -218,7 +216,7 @@ function openExample(example: PlaygroundExample) {
   activeExample.value = example.fields ? example : undefined
   values.value = defaultValues(schema.value, example.values)
   reset()
-  scrollTo('playground')
+  activeSection.value = 'playground'
 }
 
 function clearExample() {
@@ -228,31 +226,42 @@ function clearExample() {
 }
 
 function useInCode() {
-  scrollTo('api')
+  activeSection.value = 'api'
 }
 </script>
 
 <template>
-  <div class="flex flex-col gap-16" data-testid="model-detail">
-    <nav
+  <div class="flex flex-col gap-10" data-testid="model-detail">
+    <div
+      role="tablist"
       :aria-label="t('workshop.title', locale)"
       class="flex gap-8 border-b border-transparency-white-t8"
       data-testid="model-tabs"
     >
-      <a
+      <button
         v-for="section in SECTIONS"
         :key="section"
-        :href="`#${section}`"
+        type="button"
+        role="tab"
+        :aria-selected="section === activeSection"
         :data-testid="`tab-${section}`"
-        class="hover:border-primary-comfy-yellow border-b-2 border-transparent pb-3 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white"
+        :class="
+          cn(
+            'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
+            section === activeSection
+              ? 'border-primary-comfy-yellow text-primary-warm-white'
+              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+          )
+        "
+        @click="activeSection = section"
       >
         {{ t(sectionLabel[section], locale) }}
-      </a>
-    </nav>
+      </button>
+    </div>
 
     <section
-      id="playground"
-      class="grid scroll-mt-28 gap-8 lg:grid-cols-12"
+      v-if="activeSection === 'playground'"
+      class="grid gap-8 lg:grid-cols-12"
       data-testid="playground-tab"
     >
       <div
@@ -406,11 +415,11 @@ function useInCode() {
       </div>
     </section>
 
-    <section id="examples" class="scroll-mt-28">
+    <section v-if="activeSection === 'examples'">
       <ExamplesTab :examples :locale @open="openExample" />
     </section>
 
-    <section id="api" class="scroll-mt-28">
+    <section v-if="activeSection === 'api'">
       <ApiTab :router-id="model.routerId" :values :locale />
     </section>
   </div>
