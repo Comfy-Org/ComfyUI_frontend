@@ -625,12 +625,19 @@ describe('LoaderManager', () => {
 
     it('rejects when the URL carries no filename and silent is set', async () => {
       const { lm } = makeLoaderManager()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
       await expect(
         lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
       ).rejects.toThrow(/No model was produced/)
       expect(addAlert).not.toHaveBeenCalled()
+      // The URL may carry credentials (e.g. a signed query string) — a
+      // silent load must never log it to the console on the caller's
+      // behalf, matching the "never embeds the requested URL" guarantee
+      // for the thrown-error path below.
+      expect(consoleError).not.toHaveBeenCalled()
     })
 
     it('never embeds the requested URL in a silent load error, only the file type', async () => {

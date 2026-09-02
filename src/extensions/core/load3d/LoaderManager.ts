@@ -146,7 +146,12 @@ export class LoaderManager implements LoaderManagerInterface {
         return 'empty'
       }
 
-      const result = await this.loadModelInternal(url, fileExtension, loadId)
+      const result = await this.loadModelInternal(
+        url,
+        fileExtension,
+        loadId,
+        options?.silent
+      )
 
       if (loadId !== this.currentLoadId) {
         // A newer loadModel has superseded us. createLoadContext gates on
@@ -253,7 +258,8 @@ export class LoaderManager implements LoaderManagerInterface {
   private async loadModelInternal(
     url: string,
     fileExtension: string,
-    loadId: number
+    loadId: number,
+    silent?: boolean
   ): Promise<{
     object: THREE.Object3D
     adapter: ModelAdapter
@@ -263,7 +269,10 @@ export class LoaderManager implements LoaderManagerInterface {
     const filename = params.get('filename')
 
     if (!filename) {
-      console.error('Missing filename in URL:', url)
+      // Silent loads may carry an untrusted, credential-bearing URL (see the
+      // redaction note in loadModel's catch block) — never log it here on
+      // the caller's behalf.
+      if (!silent) console.error('Missing filename in URL:', url)
       return null
     }
 
