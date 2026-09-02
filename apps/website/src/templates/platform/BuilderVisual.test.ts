@@ -13,19 +13,19 @@ import {
 import BuilderVisual from './BuilderVisual.vue'
 
 /** Every animation in the diagram, each of which costs main-thread work. */
-const ANIMATION_CLASSES = [
-  'animate-dash-flow',
-  'animate-platform-builder-float',
-  'animate-platform-builder-float-slow',
-  'animate-platform-builder-float-delayed',
-  'animate-platform-builder-pulse'
-]
+const ANIMATION_CLASS_COUNTS = {
+  'animate-dash-flow': 5,
+  'animate-platform-builder-float': 1,
+  'animate-platform-builder-float-slow': 1,
+  'animate-platform-builder-float-delayed': 1,
+  'animate-platform-builder-pulse': 1
+} as const
 
-function countAnimated(container: Element) {
-  return ANIMATION_CLASSES.reduce(
-    (total, cls) => total + container.querySelectorAll(`.${cls}`).length,
-    0
-  )
+function expectAnimationClasses(container: Element, animated: boolean) {
+  for (const [className, count] of Object.entries(ANIMATION_CLASS_COUNTS))
+    expect(container.querySelectorAll(`.${className}`)).toHaveLength(
+      animated ? count : 0
+    )
 }
 
 describe('BuilderVisual', () => {
@@ -42,7 +42,7 @@ describe('BuilderVisual', () => {
     const { container } = render(BuilderVisual)
     await setAllIntersecting(true)
 
-    expect(countAnimated(container)).toBe(9)
+    expectAnimationClasses(container, true)
   })
 
   it('parks every animation once scrolled out of view', async () => {
@@ -52,7 +52,7 @@ describe('BuilderVisual', () => {
 
     // None of these can be composited, so off-screen they would otherwise
     // keep doing main-thread work every frame.
-    expect(countAnimated(container)).toBe(0)
+    expectAnimationClasses(container, false)
     // The diagram itself still renders; only the motion stops.
     expect(container.querySelector('svg')).toBeTruthy()
   })
@@ -64,6 +64,6 @@ describe('BuilderVisual', () => {
     document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
 
-    expect(countAnimated(container)).toBe(0)
+    expectAnimationClasses(container, false)
   })
 })
