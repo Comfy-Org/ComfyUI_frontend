@@ -59,9 +59,15 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
+  mockReportError.mockClear()
 })
 
 afterEach(() => LiteGraph.unregisterNodeType('dummy'))
@@ -750,13 +756,19 @@ describe('Store-driven serialization parity', () => {
   }) => {
     const graph = createGraph(new DummyNode())
     graph._nodes = []
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(graph.asSerialisable().nodes).toEqual([])
-    expect(error).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /Cannot serialize graph .* from store: node .* has no live adapter; using live graph nodes/
-      )
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+        }
+      }
     )
   })
 

@@ -12,6 +12,7 @@ import {
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
@@ -26,6 +27,10 @@ vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
 
 const NODE_TYPE = 'test/NullContractNode'
 const DEFAULT_VALUE = 'default'
+
+const nullSlotTypeContract = [30, null, 12345] satisfies NonNullable<
+  ISerialisedNode['widgets_values']
+>
 
 function registerNullContractNode(): void {
   class NullContractNode extends LGraphNode {
@@ -109,6 +114,23 @@ describe('widget value null contract', () => {
   })
 
   describe('LGraphNode.configure (workflow read)', () => {
+    it('restores a typed null in the middle positional slot', () => {
+      LiteGraph.namedValuesRestore = false
+      const graph = new LGraph()
+      const node = new LGraphNode('Three widgets')
+      node.addWidget('number', 'first', 0, () => undefined)
+      node.addWidget('number', 'nullable', 0, () => undefined)
+      node.addWidget('number', 'third', 0, () => undefined)
+      graph.add(node)
+
+      node.configure({
+        ...node.serialize(),
+        widgets_values: nullSlotTypeContract
+      })
+
+      expect(node.widgets?.map(({ value }) => value)).toEqual([30, null, 12345])
+    })
+
     it('restores a null widget value through the indexed path', () => {
       LiteGraph.namedValuesRestore = false
       const { graph } = makeGraphWithWidget(null)
