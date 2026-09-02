@@ -112,6 +112,11 @@ export default buildConfig({
       enabled: Boolean(gcsBucket),
       bucket: gcsBucket || '',
       acl: 'Public',
+      // Nest the doc prefix under the collection prefix rather than letting it
+      // replace the collection prefix. `generateSignedURL` reads `docPrefix`
+      // from the request body, so non-composite keys let an admin mint a signed
+      // write url anywhere in a bucket that also holds hand-managed assets.
+      useCompositePrefixes: true,
       // The admin browser PUTs the file straight to a signed GCS url instead of
       // POSTing it through /api/media — Vercel rejects request bodies over
       // 4.5 MB at the edge, and the event videos run 5–25 MB. The plugin's
@@ -136,7 +141,7 @@ export default buildConfig({
           // Absolute CDN url, so the website's `new URL(doc.url, base)` uses it
           // verbatim (base ignored). Media has no imageSizes, so `size` is unused.
           generateFileURL: ({ filename, prefix }) => {
-            const key = [prefix ?? gcsMediaPrefix, filename].filter(Boolean).join('/')
+            const key = [gcsMediaPrefix, prefix, filename].filter(Boolean).join('/')
             return `${gcsPublicBase}/${key}`
           },
         },
