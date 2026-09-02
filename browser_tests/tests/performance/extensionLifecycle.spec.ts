@@ -149,24 +149,6 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     await fitToViewInstant(comfyPage)
 
-    const identity = {
-      fixture: 'comfy.clean-extension-compat.v1',
-      labelPatternSource:
-        'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
-      reroutePatternSource: 'rgthree-comfy@629c514a',
-      compatibilityPatternSource:
-        'ComfyUI-KJNodes@3f20054214fec9f9234fd3841ae6f1e4287948f6'
-    }
-
-    expect(identity).toEqual({
-      fixture: 'comfy.clean-extension-compat.v1',
-      labelPatternSource:
-        'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
-      reroutePatternSource: 'rgthree-comfy@629c514a',
-      compatibilityPatternSource:
-        'ComfyUI-KJNodes@3f20054214fec9f9234fd3841ae6f1e4287948f6'
-    })
-
     await installDrawInstrumentation(comfyPage, 'instance')
     await comfyPage.perf.startMeasuring()
     await runRedrawFrames(comfyPage)
@@ -182,20 +164,6 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     await fitToViewInstant(comfyPage)
-
-    const identity = {
-      fixture: 'comfy.rgthree-lifecycle-compat.v1',
-      labelPatternSource:
-        'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
-      reroutePatternSource: 'rgthree-comfy@629c514a'
-    }
-
-    expect(identity).toEqual({
-      fixture: 'comfy.rgthree-lifecycle-compat.v1',
-      labelPatternSource:
-        'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
-      reroutePatternSource: 'rgthree-comfy@629c514a'
-    })
 
     await installDrawInstrumentation(comfyPage, 'prototype')
     await comfyPage.perf.startMeasuring()
