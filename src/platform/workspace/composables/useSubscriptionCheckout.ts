@@ -69,6 +69,10 @@ interface SelectedTeamCheckout {
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
   embeddedCheckoutEnabled?: boolean
+  /** Whether the hosting dialog renders the verifying/outcome checkout steps.
+   *  The legacy workspace host doesn't — its outcomes stay toast-driven, so
+   *  the composable must never transition it into a step it cannot show. */
+  rendersRecoverySteps?: boolean
 }
 
 type SubscriptionPaymentOptions = Pick<
@@ -128,7 +132,8 @@ export function useSubscriptionCheckout(
   paymentIntentSource?: PaymentIntentSource,
   {
     tierPlanType = 'personal',
-    embeddedCheckoutEnabled = false
+    embeddedCheckoutEnabled = false,
+    rendersRecoverySteps = false
   }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
@@ -160,7 +165,8 @@ export function useSubscriptionCheckout(
   // controls both refuse. It keeps the pricing entry and its existing
   // reconciliation banner.
   const checkoutStep = ref<CheckoutStep>(
-    billingOperationStore.subscriptionActionOperation?.status === 'pending'
+    rendersRecoverySteps &&
+      billingOperationStore.subscriptionActionOperation?.status === 'pending'
       ? 'verifying'
       : 'pricing'
   )

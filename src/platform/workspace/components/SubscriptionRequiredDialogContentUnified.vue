@@ -351,7 +351,10 @@ const {
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
+} = useSubscriptionCheckout(emit, reason, {
+  embeddedCheckoutEnabled,
+  rendersRecoverySteps: true
+})
 
 const savedMethodsForConfirm = computed(() =>
   collectingNewPaymentMethod.value || !selectedSavedPaymentMethodId.value
