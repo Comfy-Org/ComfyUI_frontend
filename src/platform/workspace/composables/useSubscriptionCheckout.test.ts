@@ -2640,12 +2640,12 @@ describe('useSubscriptionCheckout', () => {
       return checkout
     }
 
-    it('reaches the declined step instead of returning to pricing', async () => {
+    it('returns to plan selection when the recovered charge fails', async () => {
       const checkout = await reentryOn('failed', {
         errorMessage: 'Insufficient funds'
       })
 
-      expect(checkout.checkoutStep.value).toBe('declined')
+      expect(checkout.checkoutStep.value).toBe('pricing')
     })
 
     it('closes on success when there is no plan selection to show', async () => {
