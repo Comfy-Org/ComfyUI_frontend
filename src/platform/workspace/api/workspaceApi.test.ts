@@ -100,6 +100,7 @@ describe('workspaceApi', () => {
 
     test.for([
       { status: 429, header: '30', expected: 30 },
+      { status: 429, header: '0', expected: undefined },
       { status: 429, header: '2.5', expected: undefined },
       { status: 429, header: '1e2', expected: undefined },
       { status: 429, header: '0x10', expected: undefined },
@@ -129,6 +130,24 @@ describe('workspaceApi', () => {
         })
       }
     )
+
+    it('exposes retryAfter=undefined for a 429 with no Retry-After header', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
+        isAxiosError: true,
+        response: {
+          status: 429,
+          data: { message: 'Request failed' },
+          headers: {}
+        },
+        message: 'Request failed'
+      })
+
+      await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 429,
+        retryAfter: undefined
+      })
+    })
 
     it('falls back to err.message when response data has no message', async () => {
       const axiosErr = {
