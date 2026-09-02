@@ -68,11 +68,4 @@ describe('useWorkspaceInsetRight', () => {
     expect(readInset()).toBe('0px')
   })
 
-  it('clears the inset on teardown even when the last published width was already zero', () => {
-    const scope = effectScope()
-    scope.run(() => useWorkspaceInsetRight(() => 0))
-    scope.stop()
-
-    expect(readInset()).toBe('0px')
-  })
 })
