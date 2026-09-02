@@ -146,6 +146,10 @@ describe('ManagerProgressToast', () => {
         /failedTabIndicatorTooltip:3/
       )
       expect(failedTabWithIndicator).toBeInTheDocument()
+      expect(failedTabWithIndicator).toHaveAttribute(
+        'title',
+        'manager.failedTabIndicatorTooltip:3'
+      )
     })
   })
 })
