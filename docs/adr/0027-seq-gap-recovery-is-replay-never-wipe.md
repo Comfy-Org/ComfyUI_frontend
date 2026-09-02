@@ -4,8 +4,7 @@ Date: 2026-08-28
 
 ## Status
 
-Proposed. ADR-019 is the freeze exit; it is provisional under the 48-hour
-auto-ratify rule and auto-ratifies on 2026-08-30.
+Accepted
 
 ## Context
 
