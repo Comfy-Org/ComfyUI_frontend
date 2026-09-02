@@ -3,6 +3,7 @@ import { describe, expect } from 'vitest'
 import { LLink } from '@/lib/litegraph/src/litegraph'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -37,10 +38,11 @@ describe('LLink', () => {
   })
 
   describe('getReroutes', () => {
-    test('returns the same empty array instance for links without reroutes', () => {
+    test('returns the same empty array for missing reroutes', () => {
       const network = { reroutes: new Map() }
       const link1 = new LLink(toLinkId(1), 'float', 4, 2, 5, 3)
       const link2 = new LLink(toLinkId(2), 'float', 4, 2, 5, 3)
+      link2.parentId = toRerouteId(999)
 
       const result1 = LLink.getReroutes(network, link1)
       const result2 = LLink.getReroutes(network, link2)
