@@ -930,6 +930,67 @@ describe('LGraphNode', () => {
       expect(n._slotsDirty).toBe(true)
     })
 
+    test('refreshes drawn slots after direct array mutations', () => {
+      const n = new LGraphNode('Test')
+      n.addInput('old input', 'number')
+      n.addOutput('old output', 'number')
+      n._setConcreteSlots()
+
+      const oldInput = n.inputs[0]
+      const oldOutput = n.outputs[0]
+      expect(oldInput).toBeInstanceOf(NodeInputSlot)
+      expect(oldOutput).toBeInstanceOf(NodeOutputSlot)
+      if (!(oldInput instanceof NodeInputSlot)) throw new Error('Invalid input')
+      if (!(oldOutput instanceof NodeOutputSlot))
+        throw new Error('Invalid output')
+      const oldInputDraw = vi.spyOn(oldInput, 'draw')
+      const oldOutputDraw = vi.spyOn(oldOutput, 'draw')
+
+      n.inputs.splice(
+        0,
+        1,
+        new NodeInputSlot({ name: 'new input', type: 'number', link: null }, n)
+      )
+      n.outputs.splice(
+        0,
+        1,
+        new NodeOutputSlot(
+          { name: 'new output', type: 'number', links: null },
+          n
+        )
+      )
+      expect(n._slotsDirty).toBe(true)
+
+      n._setConcreteSlots()
+      const newInput = n.inputs[0]
+      const newOutput = n.outputs[0]
+      expect(newInput).toBeInstanceOf(NodeInputSlot)
+      expect(newOutput).toBeInstanceOf(NodeOutputSlot)
+      if (!(newInput instanceof NodeInputSlot)) throw new Error('Invalid input')
+      if (!(newOutput instanceof NodeOutputSlot))
+        throw new Error('Invalid output')
+      const newInputDraw = vi
+        .spyOn(newInput, 'draw')
+        .mockImplementation(() => {})
+      const newOutputDraw = vi
+        .spyOn(newOutput, 'draw')
+        .mockImplementation(() => {})
+
+      n.drawSlots(createMockCanvasRenderingContext2D(), {
+        colorContext: {
+          getConnectedColor: () => '#fff',
+          getDisconnectedColor: () => '#fff'
+        },
+        editorAlpha: 1,
+        lowQuality: false
+      })
+
+      expect(oldInputDraw).not.toHaveBeenCalled()
+      expect(oldOutputDraw).not.toHaveBeenCalled()
+      expect(newInputDraw).toHaveBeenCalledOnce()
+      expect(newOutputDraw).toHaveBeenCalledOnce()
+    })
+
     test('is set by configure', () => {
       const n = new LGraphNode('Test')
       n._setConcreteSlots()

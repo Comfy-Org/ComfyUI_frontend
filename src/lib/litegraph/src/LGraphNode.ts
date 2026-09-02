@@ -63,6 +63,7 @@ import {
 } from './node/slotLinks'
 import {
   createInputSlotView,
+  createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
@@ -1013,7 +1014,7 @@ export class LGraphNode
     initializeWidgetsView(this)
     this._state = createNodeShellState(title, type, this.title_mode)
     this._inputs = createInputSlotView(this, this._state.inputs)
-    this._outputs = this._state.outputs
+    this._outputs = createOutputSlotView(this, this._state.outputs)
     for (const property of [
       'inputs',
       'outputs',
