@@ -310,7 +310,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
         '让静态图动起来：搭建图生视频工作流，用运动控制引导镜头表现，再通过放大以更高分辨率输出。'
     },
     poster:
-      'https://media.comfy.org/website/learning/image-to-video-motion-control-upscaling-thumb.jpg',
+      'https://media.comfy.org/website/learning/image-to-video-motion-control-upscaling-thumb.png',
     href: externalLinks.cloudCta('learning_basics_image_to_video'),
     newTab: true,
     ctaLabelKey: 'cta.tryForFree',
