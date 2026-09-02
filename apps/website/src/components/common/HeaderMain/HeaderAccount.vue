@@ -76,6 +76,7 @@ const itemClass =
     as="a"
     :href="signInHref"
     variant="outline"
+    size="sm"
     data-testid="header-sign-in"
   >
     {{ t('nav.signIn', locale) }}

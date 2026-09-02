@@ -40,6 +40,7 @@ test.describe('Desktop navigation @smoke', () => {
   test('NEW badge shows on Workshop, Products and Community only', async ({
     page
   }) => {
+    await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 

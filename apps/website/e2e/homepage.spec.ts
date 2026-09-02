@@ -41,7 +41,7 @@ test.describe('Homepage @smoke', () => {
     await expect(activeSlide.getByText('New Model Release')).toBeVisible()
     const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/seedance-2.5')
+    await expect(cta).toHaveAttribute('href', '/workshop/models/seedance-2/')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {

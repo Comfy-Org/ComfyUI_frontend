@@ -47,7 +47,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           >
             <span class="inline-flex items-center gap-1">
               <span class="ppformula-text-center">{{ navItem.label }}</span>
-              <span v-if="navItem.badge" class="hidden xl:inline-flex">
+              <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
                 <NewBadge :locale="locale" size="xxs" />
               </span>
             </span>
@@ -78,7 +78,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
         >
           <a :href="navItem.href">
             <span class="ppformula-text-center">{{ navItem.label }}</span>
-            <span v-if="navItem.badge" class="hidden xl:inline-flex">
+            <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
               <NewBadge :locale="locale" size="xxs" />
             </span>
           </a>
