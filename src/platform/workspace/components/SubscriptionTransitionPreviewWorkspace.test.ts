@@ -130,6 +130,25 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.getByText('$82.50')).toBeTruthy()
   })
 
+  it('shows the mapped failure notice without a retry action after a failed challenge', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        embeddedCheckoutEnabled: true,
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: true
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'billingOperation.challengeFailedRetry'
+    )
+    expect(
+      screen.queryByText('subscription.preview.completeVerification')
+    ).toBeNull()
+  })
+
   it('opens verification only from its button without exposing the URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
