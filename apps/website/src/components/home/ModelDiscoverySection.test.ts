@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -28,6 +29,15 @@ describe('ModelDiscoverySection', () => {
     expect(all).toHaveLength(2)
     expect(visible[0].getAttribute('tabindex')).toBeNull()
     expect(all[1].getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('loads a model preview only once its card is hovered', async () => {
+    const user = userEvent.setup()
+    render(ModelDiscoverySection)
+
+    expect(screen.queryByTestId('static-frame')).toBeNull()
+    await user.hover(screen.getByRole('link', { name: /Seedance 2/ }))
+    expect(screen.getAllByTestId('static-frame').length).toBeGreaterThan(0)
   })
 
   it('localizes copy while keeping the English-only Workshop route', () => {

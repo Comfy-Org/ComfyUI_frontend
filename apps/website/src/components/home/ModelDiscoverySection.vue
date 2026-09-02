@@ -1,15 +1,25 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import { getRoutes } from '../../config/routes'
 import { discoveryModels } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
+import StaticFrame from '../workshop/StaticFrame.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
 
+// Thumbnails are fetched the first time a card is hovered or focused, so the
+// looping row does not pull every preview on page load.
+const revealed = ref<Set<string>>(new Set())
+function reveal(slug: string) {
+  revealed.value = new Set(revealed.value).add(slug)
+}
+
 const cardClass =
-  'flex h-44 w-52 shrink-0 flex-col items-center justify-center gap-3 rounded-3xl bg-primary-warm-white px-5 text-center text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow focus-visible:bg-primary-comfy-yellow focus-visible:outline-none'
+  'group/card bg-transparency-white-t4 relative flex h-52 w-56 shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border border-transparency-white-t8 px-5 text-center text-primary-warm-white transition-colors hover:border-transparency-white-t20 focus-visible:border-primary-comfy-yellow focus-visible:outline-none'
 </script>
 
 <template>
@@ -48,29 +58,40 @@ const cardClass =
         :aria-hidden="copy === 2 ? 'true' : undefined"
       >
         <a
-          v-for="{ model, logo } in discoveryModels"
+          v-for="{ model, logo, mono } in discoveryModels"
           :key="model.slug"
           :href="model.href"
           :class="cardClass"
           :tabindex="copy === 2 ? -1 : undefined"
+          @pointerenter="reveal(model.slug)"
+          @focus="reveal(model.slug)"
         >
+          <template v-if="revealed.has(model.slug) && model.thumbnailUrl">
+            <StaticFrame
+              :src="model.thumbnailUrl"
+              class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+            />
+            <span
+              class="absolute inset-0 bg-black/40 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+              aria-hidden="true"
+            />
+          </template>
+          <span
+            v-if="mono"
+            class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
+            :style="{ maskImage: `url(${logo})` }"
+            aria-hidden="true"
+          />
           <img
-            v-if="logo"
+            v-else
             :src="logo"
             alt=""
-            class="size-9 object-contain"
+            class="relative size-9 object-contain"
             loading="lazy"
           />
-          <span
-            v-else
-            class="grid size-9 place-items-center rounded-xl bg-primary-comfy-ink/8 text-base font-bold"
-            aria-hidden="true"
-          >
-            {{ model.name[0] }}
-          </span>
-          <span class="flex flex-col gap-0.5">
+          <span class="relative flex flex-col gap-0.5">
             <span class="text-base/tight font-medium">{{ model.name }}</span>
-            <span class="text-xs text-primary-comfy-ink/60">
+            <span class="text-xs text-primary-warm-gray">
               {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
             </span>
           </span>
