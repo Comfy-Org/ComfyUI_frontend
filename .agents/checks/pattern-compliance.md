@@ -18,11 +18,11 @@ Steps:
 - No `any` types or `as any` assertions
 - No new `@ts-ignore` or `@ts-expect-error`, except tests whose behavior is the
   compiler error
-- Treat all new lint-disable directives as findings. Do not accept a directive
-  because its comment describes an inconvenience. Verify the diagnostic, trace
-  the value to its authoritative type or schema, search for an existing typed
-  pattern, and identify the external constraint before accepting a narrow
-  exception.
+- Treat all new `eslint-disable` and `oxlint-disable` directives as findings. Do
+  not accept a directive because its comment describes an inconvenience. Verify
+  the diagnostic, trace the value to its authoritative type or schema, search
+  for an existing typed pattern, and identify the external constraint before
+  accepting a narrow exception.
 - Flag double assertions and assertions that replace runtime narrowing at an
   external boundary
 - Separate type imports (`import type { ... }`)

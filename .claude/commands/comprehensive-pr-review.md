@@ -150,9 +150,9 @@ Look for:
 
 #### 3.2.1 Audit suppressions before approving
 
-Search added lines for `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, double
-assertions, and non-null assertions. Passing lint or typecheck is not evidence
-that these overrides are correct.
+Search added lines for `eslint-disable`, `oxlint-disable`, `@ts-ignore`,
+`@ts-expect-error`, double assertions, and non-null assertions. Passing lint or
+typecheck is not evidence that these overrides are correct.
 
 For each override:
 
