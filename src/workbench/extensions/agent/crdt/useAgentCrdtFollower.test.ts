@@ -114,6 +114,32 @@ import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
+const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
+
+function persistedRecord(): {
+  docId: string
+  nonce: string
+  expiresAt: number
+} | null {
+  const raw = sessionStorage.getItem(DOC_ID_KEY)
+  return raw ? JSON.parse(raw) : null
+}
+
+function writeRawRecord(overrides: {
+  docId: string
+  nonce?: string
+  expiresAt?: number
+}): void {
+  const base = persistedRecord()
+  sessionStorage.setItem(
+    DOC_ID_KEY,
+    JSON.stringify({
+      docId: overrides.docId,
+      nonce: overrides.nonce ?? base?.nonce ?? 'foreign-nonce',
+      expiresAt: overrides.expiresAt ?? Date.now() + 60_000
+    })
+  )
+}
 
 function mountFollower(
   initial: string | null = null,
@@ -228,35 +254,136 @@ describe('useAgentCrdtFollower', () => {
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
     const { unmount } = mountFollower('wf-1')
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBeNull()
+    expect(persistedRecord()).toBeNull()
 
     dispatchFrame('doc_subscribed', { ok: true })
 
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBe('wf-1')
+    expect(persistedRecord()?.docId).toBe('wf-1')
     unmount()
   })
 
   it('FE-1902: a remount with no in-memory binding rebinds from sessionStorage', () => {
-    sessionStorage.setItem('Comfy.Agent.CrdtDocId', 'wf-persisted')
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
 
     const { unmount, status } = mountFollower(null)
 
-    expect(bridge().subscribe).toHaveBeenCalledWith('wf-persisted')
-    expect(status().workflowId).toBe('wf-persisted')
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
     unmount()
   })
 
   it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
     const { unmount, workflowId } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBe('wf-1')
+    expect(persistedRecord()?.docId).toBe('wf-1')
 
     workflowId.value = null
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBeNull()
+    expect(persistedRecord()).toBeNull()
     expect(bridge().unsubscribe).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('FEC-5: refuses a record from a different page session (e.g. a duplicated tab)', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    // Simulate sessionStorage cloned into a fresh tab: same docId, foreign nonce.
+    writeRawRecord({ docId: 'wf-1', nonce: 'a-different-page-session' })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses an expired record', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    const record = persistedRecord()
+    writeRawRecord({
+      docId: 'wf-1',
+      nonce: record?.nonce,
+      expiresAt: Date.now() - 1
+    })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses a legacy bare-string record', () => {
+    sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: a refused legacy record is dropped by the first unbound mount', () => {
+    sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
+
+    const { unmount } = mountFollower(null)
+
+    expect(sessionStorage.getItem(DOC_ID_KEY)).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: live doc traffic slides the persisted expiry', () => {
+    vi.useFakeTimers()
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const stampedAt = persistedRecord()?.expiresAt
+    expect(stampedAt).toBeTypeOf('number')
+
+    // Six minutes of steady updates: past the 5-minute TTL, but the channel is
+    // healthy so the stale probe never fires and nothing resubscribes.
+    for (let seq = 1; seq <= 18; seq++) {
+      vi.advanceTimersByTime(20_000)
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq,
+        actor: 'agent',
+        update: new Uint8Array()
+      })
+    }
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+    setup.unmount()
+    bridgeState.current = null
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
+    unmount()
+  })
+
+  it('FEC-5: an idle doc still expires', () => {
+    vi.useFakeTimers()
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+
+    vi.advanceTimersByTime(5 * 60 * 1000)
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
     unmount()
   })
 
@@ -522,6 +649,43 @@ describe('useAgentCrdtFollower', () => {
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
+    unmount()
+  })
+
+  it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    // The real bridge clears its send reality on doc_subscribed{ok:false}
+    // (LayoutFollowerBridge.onDocSubscribed); FakeBridge does not, so mirror
+    // that effect by hand. The sender gates on this value alone.
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const settledStates = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as { state: string }).state)
+    expect(settledStates).toEqual(['undeliverable'])
     unmount()
   })
 

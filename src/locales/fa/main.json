@@ -126,11 +126,6 @@
     "untitledChat": "بدون عنوان",
     "uploading": "در حال بارگذاری"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "هزینه هر اجرا",
-    "title": "API Node(ها)",
-    "totalCost": "هزینه کل"
-  },
   "apiNodesSignInDialog": {
     "message": "این workflow شامل API Node است که برای اجرا نیاز به ورود به حساب کاربری دارد.",
     "title": "ورود برای استفاده از API Nodeها لازم است"

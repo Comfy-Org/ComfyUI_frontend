@@ -18,7 +18,8 @@ import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -249,7 +250,7 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
-  it('migrates promoted widget bindings when added to a graph', () => {
+  it('registers promoted widget bindings once added to a graph, not during construction (#16250)', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
     })
@@ -262,18 +263,22 @@ describe('SubgraphNode Synchronization', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: -1 })
     const promotedInput = subgraphNode.inputs[0]
-    const previousId = promotedInput.widgetId
-    if (!previousId) throw new Error('Missing transient widgetId')
-    useWidgetValueStore().setValue(previousId, 'edited')
+    // Registration is deferred while the node's id is still
+    // UNASSIGNED_NODE_ID: no widgetId is minted, so nothing keyed by the
+    // shared construction-time id can leak into an unrelated instance.
+    expect(promotedInput.widgetId).toBeUndefined()
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(subgraph.rootGraph.id, UNASSIGNED_NODE_ID, 'text')
+      )
+    ).toBeUndefined()
 
     subgraph.rootGraph.add(subgraphNode)
 
     const nextId = promotedInput.widgetId
     expect(nextId).toBeDefined()
-    expect(nextId).not.toBe(previousId)
     if (!nextId) throw new Error('Missing settled widgetId')
-    expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
-    expect(useWidgetValueStore().getWidget(nextId)?.value).toBe('edited')
+    expect(useWidgetValueStore().getWidget(nextId)?.value).toBe('initial')
     expect(promotedInput.widget).toMatchObject({ name: 'text' })
     expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBe(
       promotedInput._widget

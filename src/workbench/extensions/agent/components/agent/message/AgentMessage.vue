@@ -82,6 +82,7 @@ const hasTools = computed(() =>
           v-for="(link, linkIndex) in group.parts"
           :key="linkIndex"
           :workflow-id="link.workflowId"
+          :locator-id="link.locatorId"
           :name="link.name"
         />
       </div>

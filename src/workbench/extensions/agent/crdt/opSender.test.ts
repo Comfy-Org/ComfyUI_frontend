@@ -104,7 +104,6 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(1)])
     expect(sent).toHaveLength(0)
 
-    boundWorkflow = 'wf-2'
     transportUp = true
     vi.advanceTimersByTime(500)
 
@@ -120,14 +119,58 @@ describe('createOpSender', () => {
     ).toEqual(firstIds)
   })
 
-  it('keeps queued batches addressed to the workflow active when they were minted', () => {
+  it('never re-addresses a queued batch: an unbound mint-time workflow settles it undeliverable at once', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
     boundWorkflow = 'wf-2'
 
     ackInFlight()
 
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(settled[1].ops[0].op_id).not.toBe(settled[2].ops[0].op_id)
+  })
+
+  it('a bound workflow restored before the next send still carries the queued batch', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    boundWorkflow = null
+    boundWorkflow = WORKFLOW
+
+    ackInFlight()
+
+    expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe(WORKFLOW)
+  })
+
+  it('settles an in-flight batch undeliverable at the silence resend once its workflow is unbound', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toEqual([
+      { state: 'undeliverable', ops: expect.any(Array) }
+    ])
+  })
+
+  it('an unbound workflow at the resend frees the queue for the next bound batch without a retry burn', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(1)
+
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(settled[0].state).toBe('undeliverable')
   })
 
   it('settles undeliverable after the transport retry budget', () => {

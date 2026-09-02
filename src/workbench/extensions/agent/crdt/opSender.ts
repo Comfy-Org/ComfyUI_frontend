@@ -44,7 +44,12 @@ export interface OpSenderDeps {
   sendOps(workflowId: string, tab: string, ops: Op[]): boolean
   /** Subscribe to `doc_ops_result` frames; returns unsubscribe. */
   onOpsResult(listener: (result: OpsResultView) => void): () => void
-  /** The bound workflow id, or null when no doc is bound (drops the batch). */
+  /**
+   * The bound workflow id, or null when no doc is bound. Read at mint time to
+   * address the batch and re-read before EVERY send and resend: a batch whose
+   * workflow is no longer bound (subscription refused, tab moved to another
+   * doc) is never carried or re-addressed and settles 'undeliverable' at once.
+   */
   workflowId(): string | null
   tab: string
   /** `human:<user>:<tab>` (vocabulary §7). */
@@ -102,6 +107,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
+    // A lost subscription is not a transport that recovers in 500 ms: settle
+    // now rather than spend the retry budget while later batches wait behind.
+    if (deps.workflowId() !== batch.workflowId) {
+      settleUndeliverable(batch)
+      return
+    }
     if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
       if (attempt < SEND_RETRY_LIMIT) {
         setTimeout(() => transmit(batch, attempt + 1), SEND_RETRY_INTERVAL_MS)

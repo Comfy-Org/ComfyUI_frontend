@@ -157,7 +157,7 @@ export class EcsFollowerAdapter {
     try {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
-        if (frame && !this.applyQueuedFrame(session, frame)) return false
+        if (frame) this.applyQueuedFrame(session, frame)
       }
     } finally {
       session.applying = false
@@ -210,14 +210,13 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
+  private applyQueuedFrame(session: TargetSession, update: DocUpdate): void {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
     )
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
-    session.reconcileNextFrame = false
     this.discardSessionPending(session)
 
     const replacedNodeIds = new Set(
@@ -241,7 +240,25 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    return session.mutations.batch(frameContext(update), (batch) => {
+    const committed = session.mutations.batch(frameContext(update), (batch) => {
+      if (reconcile) {
+        const nodes = [...session.nodes.keys()].flatMap((id) => {
+          const payload = readSemanticNode(session.follower.doc, id)
+          return payload ? [payload] : []
+        })
+        const links = [...session.links.keys()].flatMap((id) => {
+          const link = readSemanticLink(session.follower.doc, id)
+          return link ? [link] : []
+        })
+        batch.removeMissing(
+          nodes.map(({ id }) => toNodeId(id)),
+          links.map(({ id }) => id)
+        )
+        for (const payload of nodes) batch.reconcileNode(payload)
+        for (const link of links) batch.connect(link)
+        return
+      }
+
       batch.removeLinks(removedLinkIds)
       for (const [id, action] of nodeActions) {
         if (action === 'delete' || action === 'update')
@@ -251,8 +268,7 @@ export class EcsFollowerAdapter {
         if (action === 'delete') continue
         const payload = readSemanticNode(session.follower.doc, id)
         if (!payload) continue
-        if (reconcile && action === 'add') batch.reconcileNode(payload)
-        else batch.addNode(payload)
+        batch.addNode(payload)
       }
       for (const [id, names] of changedWidgets) {
         if (nodeActions.has(id)) continue
@@ -269,6 +285,13 @@ export class EcsFollowerAdapter {
         if (link) batch.connect(link)
       }
     })
+
+    // Only clear the reconciliation flag once the batch actually commits.
+    // A rejected batch (no scope, or validation failure) must leave
+    // reconcileNextFrame set so the next frame retries authoritative
+    // cleanup instead of falling through to incremental handling with
+    // stale local-only graph state still present.
+    if (committed) session.reconcileNextFrame = false
   }
 
   private discardSessionPending(session: TargetSession): void {
