@@ -55,7 +55,9 @@ export function serializeDocumentScope(scope: GraphScope): Uint8Array {
         widgets: widgetStore
           .getNodeWidgets(scope.rootGraphId, semantic.id)
           .map(({ name, type, value }) => ({ name, type, value }))
-          .sort((left, right) => left.name.localeCompare(right.name))
+          .sort((left, right) =>
+            left.name < right.name ? -1 : left.name > right.name ? 1 : 0
+          )
       })
     )
 
