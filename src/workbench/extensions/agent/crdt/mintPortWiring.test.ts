@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -176,6 +176,28 @@ describe('attachMintPortWiring', () => {
     >[1])
 
     widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
+  it('mints a widget value written through a real widget', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
+
+    widget.value = 42
 
     expect(minted).toEqual([
       {
