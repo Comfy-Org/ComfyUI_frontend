@@ -14,6 +14,8 @@ describe('ServerlessHowItWorksSection', () => {
         name: t('platform.serverlessDeploy.heading', 'en')
       })
     ).toBeTruthy()
+    expect(screen.getByRole('list')).toBeTruthy()
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getAllByRole('article')).toHaveLength(3)
     expect(screen.queryByText('1')).toBeNull()
     expect(screen.queryByText('2')).toBeNull()

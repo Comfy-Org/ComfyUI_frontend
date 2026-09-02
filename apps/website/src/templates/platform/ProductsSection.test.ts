@@ -28,6 +28,9 @@ describe('ProductsSection', () => {
     expect(
       screen.getByText(t('platform.products.models.learnMore', 'en'))
     ).toBeTruthy()
+    expect(
+      screen.getAllByText(t('platform.hero.getStarted', 'en'))
+    ).toHaveLength(2)
   })
 
   it('uses one link per product card', () => {
