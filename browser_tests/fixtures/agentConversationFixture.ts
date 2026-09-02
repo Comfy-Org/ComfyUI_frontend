@@ -143,7 +143,7 @@ interface GraphNodeSnapshot {
  * chat frames plus doc-host `doc_update` frames the CRDT follower applies to
  * the canvas.
  */
-export class AgentConversationHarness {
+class AgentConversationHarness {
   readonly postedMessages: string[] = []
   readonly panel: Locator
   readonly ack: AgentTurnAccepted
