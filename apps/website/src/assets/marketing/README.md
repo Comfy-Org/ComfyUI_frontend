@@ -6,22 +6,18 @@ as multiple formats (AVIF, WebP) at multiple widths (640w, 960w, 1280w, 1920w).
 ## Usage
 
 Drop a high-resolution source image (PNG or JPG) here, then render it with
-Astro's built-in `<Picture>` component plus the shared defaults:
+Astro's built-in `<Picture>` component:
 
 ```astro
 ---
 import { Picture } from 'astro:assets'
-import {
-  MARKETING_FORMATS,
-  MARKETING_WIDTHS
-} from '../utils/marketingImage'
 import hero from '../assets/marketing/hero.png'
 ---
 <Picture
   src={hero}
   alt="ComfyUI workflow preview"
-  formats={[...MARKETING_FORMATS]}
-  widths={[...MARKETING_WIDTHS]}
+  formats={['avif', 'webp']}
+  widths={[640, 960, 1280, 1920]}
   sizes="(max-width: 768px) 100vw, 50vw"
 />
 ```
@@ -33,8 +29,7 @@ and WebP, plus an `<img>` fallback. Output files are hashed and emitted under
 A custom Astro wrapper component is intentionally not provided: Astro's
 discriminated union `LocalImageProps | RemoteImageProps` for `<Picture>` makes
 a thin wrapper that mutates `widths` / `formats` impractical to type safely
-without `as` casts. The shared constants give us the same consistency benefit
-without that cost.
+without `as` casts. Inline the same formats and widths at each call site.
 
 ## When to use this vs. `media.comfy.org`
 
