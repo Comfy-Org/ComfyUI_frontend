@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { NavGroupData } from '@/types/navTypes'
@@ -8,7 +8,12 @@ import type { NavGroupData } from '@/types/navTypes'
 import SettingDialog from './SettingDialog.vue'
 
 const settingUiMocks = vi.hoisted(() => ({
-  navGroups: null as unknown as Ref<NavGroupData[]>
+  navGroups: null as unknown as Ref<NavGroupData[]>,
+  defaultCategory: null as unknown as Ref<{
+    key: string
+    label: string
+    children: never[]
+  }>
 }))
 const searchMocks = vi.hoisted(() => ({
   inSearch: null as unknown as Ref<boolean>,
@@ -20,13 +25,7 @@ const mockFetchBalance = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/settings/composables/useSettingUI', () => ({
   useSettingUI: () => ({
-    defaultCategory: {
-      value: {
-        key: 'workspace-allowlist',
-        label: 'Allowlist',
-        children: []
-      }
-    },
+    defaultCategory: settingUiMocks.defaultCategory,
     settingCategories: { value: [] },
     navGroups: settingUiMocks.navGroups,
     findCategoryByKey: (key: string) =>
@@ -66,7 +65,16 @@ vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
   useSearchQueryTracking: vi.fn()
 }))
 
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => reactive({ workspaceName: ref('Acme Team') })
+}))
+
 beforeEach(() => {
+  settingUiMocks.defaultCategory = ref({
+    key: 'workspace-allowlist',
+    label: 'Allowlist',
+    children: []
+  })
   settingUiMocks.navGroups = ref([
     {
       title: 'Workspace',
@@ -128,4 +136,60 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   expect(
     screen.queryByText('workspace-allowlist panel')
   ).not.toBeInTheDocument()
+})
+
+it('shows the workspace identity in the dialog header on workspace sections', async () => {
+  render(SettingDialog, {
+    props: { onClose: vi.fn() },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: {
+        BaseModalLayout: {
+          template: '<div><slot name="header" /><slot name="content" /></div>'
+        },
+        NavItem: { template: '<button><slot /></button>' },
+        NavTitle: true,
+        SearchInput: true,
+        WorkspaceProfilePic: { template: '<div data-testid="ws-pic" />' }
+      }
+    }
+  })
+
+  expect(
+    await screen.findByRole('heading', { name: 'Acme Team' })
+  ).toBeInTheDocument()
+  expect(screen.getByTestId('ws-pic')).toBeInTheDocument()
+})
+
+it('leaves the dialog header empty outside workspace sections', async () => {
+  settingUiMocks.defaultCategory.value = {
+    key: 'comfy',
+    label: 'Comfy',
+    children: []
+  }
+  settingUiMocks.navGroups.value = [
+    {
+      title: 'Comfy',
+      items: [{ id: 'comfy', label: 'Comfy', icon: 'icon-[lucide--cog]' }]
+    }
+  ]
+
+  render(SettingDialog, {
+    props: { onClose: vi.fn() },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: {
+        BaseModalLayout: {
+          template: '<div><slot name="header" /><slot name="content" /></div>'
+        },
+        NavItem: { template: '<button><slot /></button>' },
+        NavTitle: true,
+        SearchInput: true,
+        WorkspaceProfilePic: { template: '<div data-testid="ws-pic" />' }
+      }
+    }
+  })
+
+  await nextTick()
+  expect(screen.queryByTestId('ws-pic')).not.toBeInTheDocument()
 })

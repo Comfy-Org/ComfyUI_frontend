@@ -49,6 +49,15 @@
         id="keybinding-panel-header"
         class="flex-1"
       />
+      <div
+        v-else-if="isWorkspaceSection"
+        class="flex min-w-0 items-center gap-3"
+      >
+        <WorkspaceProfilePic :workspace-name="workspaceName" />
+        <h2 class="truncate text-lg font-semibold text-base-foreground">
+          {{ workspaceName }}
+        </h2>
+      </div>
     </template>
 
     <template #header-right-area>
@@ -84,6 +93,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -97,6 +107,8 @@ import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
   ISettingGroup,
@@ -177,6 +189,12 @@ const activePanel = computed(() => {
   if (!activeCategoryKey.value) return null
   return findPanelByKey(activeCategoryKey.value)
 })
+
+const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+
+const isWorkspaceSection = computed(
+  () => activeCategoryKey.value?.startsWith('workspace') ?? false
+)
 
 const getGroupSortOrder = (group: SettingTreeNode): number =>
   Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))

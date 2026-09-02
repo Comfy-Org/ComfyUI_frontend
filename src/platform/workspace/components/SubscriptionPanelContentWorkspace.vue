@@ -382,22 +382,11 @@
         </div>
       </div>
 
-      <!-- View More Details - Outside main content -->
-      <div v-if="canOpenPricingSurface" class="py-6">
-        <Button
-          variant="muted-textonly"
-          class="text-sm text-muted"
-          @click="handleViewMoreDetails"
-        >
-          {{ $t('subscription.viewMoreDetailsPlans') }}
-          <i class="pi pi-external-link text-muted" />
-        </Button>
-      </div>
-
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
         :show-invoice-history="permissions.canManageSubscription"
         :show-usage-activity="workspaceRole === 'owner'"
+        :show-plans="canOpenPricingSurface"
       />
     </template>
   </div>
@@ -565,10 +554,6 @@ function handleUpgrade() {
   if (isFreeTierPlan.value)
     showPricingTable({ reason: 'settings_billing_panel' })
   else showSubscriptionDialog({ reason: 'settings_billing_panel' })
-}
-
-function handleViewMoreDetails() {
-  window.open('https://comfy.org/cloud/pricing/', '_blank')
 }
 
 async function handleRetry() {

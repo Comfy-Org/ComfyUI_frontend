@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex items-center justify-between border-t border-interface-stroke pt-3"
-  >
+  <div class="flex items-center justify-between">
     <div class="flex gap-2">
       <Button
         v-if="showUsageActivity"
@@ -13,12 +11,13 @@
         {{ $t('subscription.fullUsageActivity') }}
       </Button>
       <Button
+        v-if="showPlans"
         variant="muted-textonly"
         class="text-xs text-text-secondary"
-        @click="handleLearnMoreClick"
+        @click="handlePlansAndPricing"
       >
-        <i class="pi pi-question-circle text-xs text-text-secondary" />
-        {{ $t('subscription.learnMore') }}
+        <i class="pi pi-external-link text-xs text-text-secondary" />
+        {{ $t('subscription.plansAndPricing') }}
       </Button>
       <Button
         variant="muted-textonly"
@@ -59,17 +58,27 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { isCloud } from '@/platform/distribution/types'
 
-const { showInvoiceHistory = true, showUsageActivity = true } = defineProps<{
+const {
+  showInvoiceHistory = true,
+  showUsageActivity = true,
+  showPlans = false
+} = defineProps<{
   showInvoiceHistory?: boolean
   showUsageActivity?: boolean
+  showPlans?: boolean
 }>()
+
+const PLANS_AND_PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { manageSubscription } = useBillingContext()
 
-const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
-  useSubscriptionActions()
+const { isLoadingSupport, handleMessageSupport } = useSubscriptionActions()
+
+function handlePlansAndPricing() {
+  window.open(PLANS_AND_PRICING_URL, '_blank', 'noopener')
+}
 
 async function handleInvoiceHistory() {
   if (!showInvoiceHistory) return

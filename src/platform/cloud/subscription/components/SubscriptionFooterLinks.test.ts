@@ -54,7 +54,7 @@ const i18n = createI18n({
   messages: {
     en: {
       subscription: {
-        learnMore: 'Learn more',
+        plansAndPricing: 'Plans & pricing',
         partnerNodesPricingTable: 'Partner Nodes pricing',
         messageSupport: 'Message support',
         invoiceHistory: 'Invoice history',
@@ -96,17 +96,14 @@ describe('SubscriptionFooterLinks', () => {
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Learn more' })
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: 'Plans & pricing' })
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Partner Nodes pricing' })
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Message support' })
     ).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Learn more' }))
-    expect(state.handleLearnMoreClick).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Message support' }))
     expect(state.handleMessageSupport).toHaveBeenCalledOnce()
@@ -117,6 +114,19 @@ describe('SubscriptionFooterLinks', () => {
     expect(openSpy).toHaveBeenCalledWith(
       'https://docs.comfy.org/partner-nodes',
       '_blank'
+    )
+  })
+
+  it('opens the pricing page from the folded-in plans link', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent({ showPlans: true })
+
+    await user.click(screen.getByRole('button', { name: 'Plans & pricing' }))
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://comfy.org/cloud/pricing/',
+      '_blank',
+      'noopener'
     )
   })
 
