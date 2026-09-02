@@ -113,7 +113,7 @@ jobs:
 
       - name: Download blob reports
         if: ${{ needs.website-e2e-shard.result != 'cancelled' }}
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           path: apps/website/all-blob-reports
           pattern: website-blob-report-*
