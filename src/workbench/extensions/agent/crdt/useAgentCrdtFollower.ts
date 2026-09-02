@@ -318,6 +318,10 @@ export function useAgentCrdtFollower(
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
+      // FE #16637 residual: a refusal is the earliest signal the sender can
+      // get that its in-flight batch's doc is gone — don't make it wait out
+      // the 10 s result-silence window to notice on its own.
+      sender.abortIfUnbound()
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -465,6 +469,15 @@ export function useAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // Drive the bridge's intent, then give the sender the same eager signal the
+  // refusal branch gets: `reconcile()` clears send reality synchronously when
+  // the desired doc changes, and a batch minted for the old doc would
+  // otherwise wait out the 10 s result-silence window before noticing.
+  const retarget = (next: string | null): void => {
+    if (next === null) bridge.unsubscribe()
+    else bridge.subscribe(next)
+    sender.abortIfUnbound()
+  }
   watch(
     [workflowId, isTargetActive],
     ([next, active]) => {
@@ -479,7 +492,7 @@ export function useAgentCrdtFollower(
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
-        bridge.unsubscribe()
+        retarget(null)
         return
       }
       if (next === null) {
@@ -493,7 +506,7 @@ export function useAgentCrdtFollower(
             boundWorkflowId = persisted
           }
           subscribedWorkflowId.value = persisted
-          bridge.subscribe(persisted)
+          retarget(persisted)
           return
         }
         clearPersistedDocId()
@@ -502,7 +515,7 @@ export function useAgentCrdtFollower(
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
-        bridge.unsubscribe()
+        retarget(null)
         return
       }
       initialBind = false
@@ -512,7 +525,7 @@ export function useAgentCrdtFollower(
         boundWorkflowId = next
       }
       subscribedWorkflowId.value = next
-      bridge.subscribe(next)
+      retarget(next)
     },
     { immediate: true }
   )
