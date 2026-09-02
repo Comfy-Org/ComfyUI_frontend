@@ -489,6 +489,32 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
   })
 
+  it('s5-metrics-1: dispatches doc_gap at the exact boundary a jump is detected', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    const gaps: unknown[] = []
+    bridge.addEventListener('doc_gap', (event) => {
+      gaps.push((event as CustomEvent).detail)
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+
+    expect(gaps).toEqual([
+      { workflowId: WORKFLOW_ID, expected: 2, received: 3 }
+    ])
+  })
+
   it('an update that beats the ack to the follower keeps its baseline when the ack lands', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
@@ -703,6 +729,29 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(projected).toHaveLength(1)
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('s5-metrics-1: dispatches doc_stale at the exact boundary a duplicate is discarded', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+
+    const stale: unknown[] = []
+    bridge.addEventListener('doc_stale', (event) => {
+      stale.push((event as CustomEvent).detail)
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+
+    expect(stale).toEqual([{ workflowId: WORKFLOW_ID, seq: 2 }])
   })
 
   it('clears send reality BEFORE re-dispatching the refusal, so listeners observe the unbind synchronously', () => {
