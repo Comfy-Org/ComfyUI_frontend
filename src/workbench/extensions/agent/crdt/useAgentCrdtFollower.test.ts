@@ -499,6 +499,52 @@ describe('useAgentCrdtFollower', () => {
       unmount()
       expect(follower.pendingShadows.size()).toBe(0)
     })
+
+    it('drops every pending shadow when the target deactivates', async () => {
+      const workflowId = ref<string | null>('wf-1')
+      const isTargetActive = ref(true)
+      let follower!: ReturnType<typeof useAgentCrdtFollower>
+      const host = defineComponent({
+        setup() {
+          follower = useAgentCrdtFollower(
+            workflowId,
+            graphMutations,
+            () => null,
+            isTargetActive
+          )
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      follower.enqueueHumanOperations([deleteNode1])
+      expect(follower.pendingShadows.size()).toBe(1)
+
+      isTargetActive.value = false
+      await nextTick()
+
+      expect(follower.pendingShadows.size()).toBe(0)
+      unmount()
+    })
+
+    it('drops every pending shadow when the watcher switches to a new workflow', async () => {
+      const workflowId = ref<string | null>('wf-1')
+      let follower!: ReturnType<typeof useAgentCrdtFollower>
+      const host = defineComponent({
+        setup() {
+          follower = useAgentCrdtFollower(workflowId, graphMutations)
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      follower.enqueueHumanOperations([deleteNode1])
+      expect(follower.pendingShadows.size()).toBe(1)
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(follower.pendingShadows.size()).toBe(0)
+      unmount()
+    })
   })
 
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
