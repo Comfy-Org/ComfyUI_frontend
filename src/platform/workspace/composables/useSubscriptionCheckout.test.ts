@@ -424,7 +424,8 @@ describe('useSubscriptionCheckout', () => {
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
     tierPlanType: 'personal' | 'team' = 'personal',
-    embeddedCheckoutEnabled = true
+    embeddedCheckoutEnabled = true,
+    rendersRecoverySteps = true
   ) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
@@ -433,7 +434,8 @@ describe('useSubscriptionCheckout', () => {
     return scope.run(() =>
       useSubscriptionCheckout(emit as never, paymentIntentSource, {
         tierPlanType,
-        embeddedCheckoutEnabled
+        embeddedCheckoutEnabled,
+        rendersRecoverySteps
       })
     )!
   }
@@ -2600,6 +2602,19 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(checkout.checkoutStep.value).toBe('success')
     })
+  })
+
+  it('leaves a pending charge on the pricing step for a host without recovery steps', async () => {
+    mockSubscriptionActionOperation.value = {
+      opId: 'op-legacy',
+      status: 'pending',
+      workspaceId: 'workspace-1',
+      actionUrl: 'https://verify.example/token'
+    } as never
+
+    const checkout = await setup(undefined, 'personal', true, false)
+
+    expect(checkout.checkoutStep.value).toBe('pricing')
   })
 
   describe('a charge recovered on re-entry', () => {
