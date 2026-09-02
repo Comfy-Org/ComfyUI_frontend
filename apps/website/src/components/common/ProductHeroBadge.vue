@@ -92,6 +92,7 @@ const {
 
     <img
       v-if="showLogo && showConnector"
+      data-testid="product-hero-badge-connector"
       src="/icons/node-union-2size.svg"
       alt=""
       :width="compact ? 30 : 62"

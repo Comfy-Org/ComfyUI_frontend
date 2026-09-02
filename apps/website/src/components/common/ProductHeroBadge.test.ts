@@ -12,6 +12,15 @@ describe('ProductHeroBadge', () => {
 
     expect(screen.getByAltText('Comfy')).toBeTruthy()
     expect(screen.getByText('API')).toBeTruthy()
+    expect(screen.queryByTestId('product-hero-badge-connector')).toBeNull()
+  })
+
+  it('renders the connector when enabled', () => {
+    render(ProductHeroBadge, {
+      props: { compact: true, text: 'API', showConnector: true }
+    })
+
+    expect(screen.getByTestId('product-hero-badge-connector')).toBeTruthy()
   })
 
   it('renders a text-only product lockup', () => {
