@@ -8,29 +8,23 @@ Accepted
 
 ## Context
 
-The in-app agent's CRDT follower (introduced on the `poc/fe-crdt-follower` lineage,
-building on the CRDT layout direction of [ADR-0003](0003-crdt-based-layout-system.md))
-integrates Yjs updates from a single authoritative doc-host. Frames carry sequence
-numbers; transport loss can produce a sequence gap on the follower side.
+The in-app agent's CRDT follower integrates Yjs updates from one authoritative
+doc host. Each frame has a sequence number, so transport loss can leave a gap.
 
-CRDTs exist so that reconnect and missed-frame recovery are cheap: a follower that
-detects a sequence gap can resubscribe presenting its existing Y.Doc **state vector**,
-and the host replays only the missing delta. Wiping the canvas (destroying or replacing
-the follower doc) on an ordinary seq gap throws away exactly the property CRDTs were
-adopted for, causes visible canvas flicker and state loss, and desynchronizes any
-projector (ECS/semantic) still holding a reference to the old doc instance.
+A follower can recover a missed frame by subscribing with its existing Y.Doc
+state vector and applying the returned delta. This preserves document identity
+and avoids canvas flicker, state loss, and stale references held by projectors.
 
-The misconception "seq gap → rebuild the doc" has appeared in review discussion and in
-follower code on in-flight branches. However, a gap alone cannot distinguish a missing
-ordinary update from a missing `doc_reset`. Yjs state vectors identify known structs,
-not the application-level lineage of a document. Replaying a vector against a newly
-minted host doc can therefore retain stale structs from the old lineage.
+A gap alone cannot distinguish a missed update from a missed `doc_reset`. Yjs
+state vectors identify known structs, not application-level document lineage.
+Replaying an old vector against a newly minted host document can retain stale
+structs from the previous lineage.
 
-The protocol must make lineage observable before delta replay is safe. Every document
-lineage has an immutable generation ID minted with the host Y.Doc. The host includes it
-in every `doc_update`, `doc_reset`, and `doc_subscribed` frame, while the follower stores
-it with its Y.Doc and includes it in subscription requests. Missing, unverifiable, or
-mismatched generation IDs are lineage breaks; state vectors must never cross them.
+Safe replay therefore requires an immutable generation ID for each host Y.Doc
+lineage. Every `doc_update`, `doc_reset`, and `doc_subscribed` frame must carry
+that ID. The follower stores it with its Y.Doc and sends it in subscription
+requests. A missing, unverifiable, or mismatched ID forces a lineage break; a
+state vector must never cross lineages.
 
 ## Decision
 
