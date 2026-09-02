@@ -10,6 +10,7 @@ import type { UUID } from '@/utils/uuid'
 
 import {
   attachNodeLayout,
+  detachGraphLayouts,
   detachNodeLayout,
   setNodePosition
 } from './graphLayoutAttachment'
@@ -79,6 +80,38 @@ describe('node layout attachment ownership', () => {
         ownerGraphId: interior.id,
         nodeId: node.id
       },
+      {
+        type: 'deleteNode',
+        graphId: root.id,
+        ownerGraphId: interior.id,
+        nodeId: node.id
+      }
+    ])
+  })
+
+  it('carries the direct owner graph when a released subgraph is bulk-detached', async () => {
+    const root = new LGraph()
+    const interior = {
+      id: 'interior-graph' as UUID,
+      rootGraph: root
+    }
+    const node = nodeFor(root, 'interior-node')
+    attachNodeLayout(interior, node)
+
+    const changes: LayoutChange[] = []
+    const detach = layoutStore.onChange((change) => changes.push(change))
+    detachGraphLayouts([
+      {
+        _nodes: [node],
+        _groups: [],
+        _subgraphs: new Map(),
+        reroutes: new Map()
+      }
+    ])
+    await Promise.resolve()
+    detach()
+
+    expect(changes.map(({ operation }) => operation)).toMatchObject([
       {
         type: 'deleteNode',
         graphId: root.id,

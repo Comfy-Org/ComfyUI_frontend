@@ -545,6 +545,7 @@ export function detachGraphLayouts(
           ...meta,
           graphId: attachment.graphId,
           nodeId: attachment.id,
+          ownerGraphId: attachment.ownerGraphId,
           type: 'deleteNode'
         })
       }
