@@ -87,3 +87,48 @@ describe('useAmbientSubgraphPreviews with a shared subgraph definition', () => {
     ])
   })
 })
+
+describe('useAmbientSubgraphPreviews for a host nested inside another subgraph', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('surfaces a live preview for its own interior node', () => {
+    const innerSubgraph = createTestSubgraph()
+    const interiorSampler = new LGraphNode('test')
+    interiorSampler.id = toNodeId(11)
+    interiorSampler.previewMediaType = 'image'
+    innerSubgraph.add(interiorSampler)
+
+    const outerSubgraph = createTestSubgraph()
+    const innerHost = createTestSubgraphNode(innerSubgraph, { id: 10 })
+    outerSubgraph.add(innerHost)
+
+    const rootGraph = outerSubgraph.rootGraph
+    const outerHost = createTestSubgraphNode(outerSubgraph, { id: 9 })
+    rootGraph.add(outerHost)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+
+    const nodeOutputStore = useNodeOutputStore()
+    // Mirrors production ancestor fan-out (`app.ts`'s `b_preview_with_metadata`
+    // handler), which writes the frame at every prefix of the full path.
+    for (const executionId of [
+      createNodeExecutionId([toNodeId(9)]),
+      createNodeExecutionId([toNodeId(9), toNodeId(10)]),
+      createNodeExecutionId([toNodeId(9), toNodeId(10), toNodeId(11)])
+    ]) {
+      nodeOutputStore.setNodePreviewsByExecutionId(executionId, ['blob:nested'])
+    }
+
+    const { ambientPreviews } = useAmbientSubgraphPreviews(() => innerHost)
+
+    expect(ambientPreviews.value).toEqual([
+      expect.objectContaining({
+        sourceNodeId: toNodeId(11),
+        urls: ['blob:nested']
+      })
+    ])
+  })
+})
