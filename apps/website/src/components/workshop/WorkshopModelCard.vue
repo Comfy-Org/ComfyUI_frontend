@@ -100,13 +100,13 @@ const pillClass =
     </div>
 
     <div class="absolute right-16 bottom-5 left-5">
+      <p class="mb-1 text-sm text-primary-comfy-canvas/80">
+        {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+      </p>
       <p
         class="text-2xl/tight font-light text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
       >
         {{ model.name }}
-      </p>
-      <p class="mt-1 text-sm text-primary-comfy-canvas/80">
-        {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
       </p>
     </div>
 
