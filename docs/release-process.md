@@ -147,6 +147,10 @@ rather than composing a body by hand. Save the following block as a script and
 run the saved file with Bash; do not paste it into an interactive shell, where
 queued input could satisfy its confirmation prompts:
 
+`EDITOR` must contain one executable path that blocks until the file closes.
+For an editor that needs arguments, such as `code -w`, create a blocking wrapper
+script and set `EDITOR` to that wrapper's path.
+
 ```bash
 set -euo pipefail
 umask 077
@@ -208,7 +212,7 @@ jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.original.json" \
   >"$WORK_DIR/schedule.put.original.json"
 cp "$WORK_DIR/schedule.put.original.json" \
   "$WORK_DIR/schedule.put.edited.json"
-"${EDITOR:?Set EDITOR before running this procedure}" \
+"${EDITOR:?Set EDITOR to one blocking executable path}" \
   "$WORK_DIR/schedule.put.edited.json"
 
 curl --fail-with-body -sS --config "$READ_CONFIG" \
