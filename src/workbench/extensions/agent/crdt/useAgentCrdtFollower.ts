@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -117,6 +118,8 @@ function clearPersistedDocId(): void {
  * workflow look identical passively, so expiry probes instead of alarming.
  */
 export const STALE_AFTER_MS = 30_000
+export const RECONNECT_STORM_WINDOW_MS = 60_000
+export const RECONNECT_STORM_THRESHOLD = 3
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -282,6 +285,24 @@ export function useAgentCrdtFollower(
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
 
+  const reportSubscribeFailure = (detail: unknown): void => {
+    const refusal =
+      detail && typeof detail === 'object'
+        ? (detail as { code?: unknown; message?: unknown })
+        : {}
+    const code = typeof refusal.code === 'string' ? refusal.code : 'unknown'
+    const message =
+      typeof refusal.message === 'string'
+        ? refusal.message
+        : 'CRDT document subscription was refused'
+    const isAuthRejection = /auth|forbidden|unauthorized|permission/i.test(code)
+    reportError(new Error(message), {
+      errorType: isAuthRejection ? 'crdt_auth_reject' : 'crdt_connect_failure',
+      tags: { code, attempts: subscribeRetryAttempt },
+      context: { workflow_id: subscribedWorkflowId.value }
+    })
+  }
+
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
@@ -332,9 +353,12 @@ export function useAgentCrdtFollower(
     subscribeRetryAttempt = 0
   }
 
-  const scheduleSubscribeRetry = (): void => {
+  const scheduleSubscribeRetry = (detail: unknown): void => {
     if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      reportSubscribeFailure(detail)
+      return
+    }
     const target = subscribedWorkflowId.value
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
@@ -367,7 +391,7 @@ export function useAgentCrdtFollower(
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
       clearStaleProbe()
-      scheduleSubscribeRetry()
+      scheduleSubscribeRetry(event.detail)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -395,7 +419,23 @@ export function useAgentCrdtFollower(
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = adapter.applyFrame(update)
+    let applied: boolean
+    try {
+      applied = adapter.applyFrame(update)
+      if (!applied) {
+        reportError(new Error('CRDT update has no bound projection target'), {
+          errorType: 'crdt_doc_divergence',
+          tags: { reason: 'missing_projection_target' },
+          context: { workflow_id: update.workflowId, seq: update.seq }
+        })
+      }
+    } catch (error) {
+      reportError(error, {
+        errorType: 'crdt_apply_error',
+        context: { workflow_id: update.workflowId, seq: update.seq }
+      })
+      throw error
+    }
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
@@ -494,6 +534,11 @@ export function useAgentCrdtFollower(
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
+    reportError(new Error('CRDT document schema is unreadable'), {
+      errorType: 'crdt_doc_divergence',
+      tags: { reason: 'schema_mismatch' },
+      context: { workflow_id: detail?.workflowId }
+    })
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -526,6 +571,34 @@ export function useAgentCrdtFollower(
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
+  const reconnects: number[] = []
+  const onSocketClosed: EventListener = (event) => {
+    if (!(event instanceof CustomEvent) || event.detail?.code !== 1006) return
+    reportError(new Error('CRDT WebSocket closed abnormally'), {
+      errorType: 'crdt_ws_1006',
+      context: { workflow_id: subscribedWorkflowId.value }
+    })
+  }
+  const onReconnecting: EventListener = () => {
+    const now = Date.now()
+    reconnects.push(now)
+    while (
+      reconnects.length > 0 &&
+      now - reconnects[0]! > RECONNECT_STORM_WINDOW_MS
+    )
+      reconnects.shift()
+
+    if (reconnects.length === RECONNECT_STORM_THRESHOLD) {
+      reportError(new Error('CRDT WebSocket is reconnecting repeatedly'), {
+        errorType: 'crdt_reconnect_storm',
+        tags: {
+          reconnect_count: reconnects.length,
+          window_ms: RECONNECT_STORM_WINDOW_MS
+        },
+        context: { workflow_id: subscribedWorkflowId.value }
+      })
+    }
+  }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
    *
@@ -551,6 +624,8 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('schema_error', onSchemaError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
+  api.addEventListener('socketClosed', onSocketClosed)
+  api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -626,6 +701,8 @@ export function useAgentCrdtFollower(
     try {
       clearSubscribeRetry()
       clearStaleProbe()
+      api.removeEventListener('socketClosed', onSocketClosed)
+      api.removeEventListener('reconnecting', onReconnecting)
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)

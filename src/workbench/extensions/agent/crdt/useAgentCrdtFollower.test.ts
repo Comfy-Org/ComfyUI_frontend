@@ -49,6 +49,8 @@ const adapterState = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
 const apiState = vi.hoisted(() => {
   const target = new EventTarget()
   return {
@@ -96,6 +98,10 @@ vi.mock('./ecsFollowerAdapter', () => ({
 
 vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
@@ -178,6 +184,8 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    reportErrorMock.mockClear()
+    adapterState.applyFrame.mockReturnValue(true)
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -214,6 +222,33 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_connect_failure' })
+    )
+    unmount()
+  })
+
+  it('classifies an exhausted auth refusal for alerting', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        code: 'unauthorized',
+        message: 'token rejected'
+      })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'token rejected' }),
+      expect.objectContaining({
+        errorType: 'crdt_auth_reject',
+        tags: expect.objectContaining({ code: 'unauthorized' })
+      })
+    )
     unmount()
   })
 
@@ -450,6 +485,51 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
     expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_doc_divergence' })
+    )
+    unmount()
+  })
+
+  it('reports projection failures without changing their throw behavior', () => {
+    const { unmount } = mountFollower('wf-1')
+    const failure = new Error('projection failed')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw failure
+    })
+
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+    ).toThrow(failure)
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({ errorType: 'crdt_apply_error' })
+    )
+    unmount()
+  })
+
+  it('reports abnormal closure and a reconnect storm', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    apiState.target.dispatchEvent(
+      new CustomEvent('socketClosed', {
+        detail: { code: 1006, reason: '', wasClean: false }
+      })
+    )
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_ws_1006' })
+    )
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_reconnect_storm' })
+    )
     unmount()
   })
 
@@ -867,6 +947,14 @@ describe('useAgentCrdtFollower', () => {
     expect(String(hookErrors[0])).toContain('half-dead bridge')
     expect(clientState.destroy).toHaveBeenCalled()
     expect(adapterState.destroy).toHaveBeenCalled()
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'socketClosed',
+      expect.any(Function)
+    )
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'reconnecting',
+      expect.any(Function)
+    )
     expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
       'reconnected',
       expect.any(Function)
