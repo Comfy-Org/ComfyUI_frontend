@@ -333,7 +333,8 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   reduceAllNodes: vi.fn(() => ({ nodeCount: 0 }))
 }))
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock('@/stores/queueStore', async (importOriginal) => ({
+  ...(await importOriginal()),
   useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 })),
   useQueueStore: vi.fn(() => ({})),
   useQueueUIStore: vi.fn(() => ({}))
