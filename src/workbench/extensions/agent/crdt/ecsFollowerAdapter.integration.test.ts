@@ -826,24 +826,22 @@ describe('EcsFollowerAdapter integration', () => {
     })
   })
 
-  it('lands an agent add_node in the ECS store with no corresponding LGraph adapter (qa-59)', () => {
-    // Regression test for qa-59 ("Cannot serialize graph ... has no live
-    // adapter"). This drives the real applier + follower + adapter chain
-    // (no LGraph involved, by design: `graphMutations.ts` is the pure,
-    // litegraph-free op layer per this repo's CRDT invariants) and confirms
-    // the observable symptom at this layer's boundary: after an agent
-    // `add_node`, the ECS node-data store has the node, but nothing in this
-    // chain ever touches an `LGraph`/`LGraphNode`. The consuming half of the
-    // defect — that `LGraph.serialize()` then silently drops this node
-    // because it never gets an adapter — is covered by the companion test
-    // `drops an agent-added node from serialize() ... (qa-59)` in
-    // `src/lib/litegraph/src/LGraph.test.ts`, which is able to construct a
-    // real `LGraph` without pulling litegraph into this pure-op-layer suite.
+  it('materializes an agent add_node into the ECS store and layout port only (qa-59 companion)', () => {
+    // Companion to `drops an agent-added node from serialize() ... (qa-59)`
+    // in `src/lib/litegraph/src/LGraph.test.ts`. This drives the real
+    // applier + follower + adapter chain and pins the two side effects this
+    // layer owns for a remote `add_node`: the node state is registered in
+    // the ECS node-data store and the injected layout port is asked to
+    // create exactly one layout entry. `graphMutations.ts` is the pure,
+    // litegraph-free op layer, so the layout port is the only outbound seam
+    // here; nothing on this chain can construct an `LGraphNode`, which is
+    // why the serialize-side symptom is asserted in the companion test.
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
+    const createNode = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: { createNode, deleteNodes: vi.fn() }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -885,10 +883,12 @@ describe('EcsFollowerAdapter integration', () => {
 
     const [stored] = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(stored).toMatchObject({ id: toNodeId(1), type: 'Source' })
-    // `stored` is a plain reactive NodeState, not an LGraphNode: this layer
-    // has no LGraph instance at all to check `_nodes` against. That absence
-    // is exactly the gap qa-59 identifies — nothing downstream of this chain
-    // ever constructs the adapter LGraph.serialize() requires.
+    expect(createNode).toHaveBeenCalledExactlyOnceWith(
+      scope,
+      toNodeId(1),
+      expect.objectContaining({ position: { x: 10, y: 20 } }),
+      expect.objectContaining({ source: 'agent-remote', opId: 'op-1' })
+    )
 
     adapter.destroy()
     follower.destroy()
