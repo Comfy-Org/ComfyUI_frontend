@@ -17,10 +17,11 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
-function createMockPopover(): InstanceType<typeof NodeSearchBoxPopover> {
-  return { showSearchBox: vi.fn() } as Partial<
-    InstanceType<typeof NodeSearchBoxPopover>
-  > as InstanceType<typeof NodeSearchBoxPopover>
+function createMockPopover(): Pick<
+  InstanceType<typeof NodeSearchBoxPopover>,
+  'showSearchBox'
+> {
+  return { showSearchBox: vi.fn() }
 }
 
 function createMockSettingStore(): ReturnType<typeof useSettingStore> {

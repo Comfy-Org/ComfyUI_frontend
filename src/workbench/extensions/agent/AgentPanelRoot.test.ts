@@ -172,7 +172,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
         filename: stem,
         isTemporary: true,
         isModified: false,
-        activeState: (data ?? null) as { id?: string } | null
+        activeState: data ?? null
       }
       tabs.set(tab.path, tab)
       return tab
@@ -190,8 +190,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const store = reactive({
     selectedItems: [] as unknown[],
     updateSelectedItems,
-    currentGraph: null as unknown | null,
-    canvas: undefined as unknown
+    currentGraph: null,
+    canvas: undefined
   })
   hostStores.canvas = store
   return { useCanvasStore: () => store }
@@ -316,7 +316,7 @@ beforeEach(() => {
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+  zAgentWsEvent.parse(raw)
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

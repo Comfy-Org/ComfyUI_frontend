@@ -13,34 +13,40 @@ const {
   mockSetDirty,
   mockLinkConnector,
   mockAdapter
-} = vi.hoisted(() => ({
-  capturedOnPan: { current: null as ((dx: number, dy: number) => void) | null },
-  capturedAutoPan: {
-    current: null as {
-      updatePointer: ReturnType<typeof vi.fn>
-      start: ReturnType<typeof vi.fn>
-      stop: ReturnType<typeof vi.fn>
-    } | null
-  },
-  capturedHandlers: {} as Record<string, (...args: unknown[]) => void>,
-  mockDs: { offset: [0, 0] as [number, number], scale: 1 },
-  mockSetDirty: vi.fn(),
-  mockLinkConnector: {
-    isConnecting: false,
-    state: { snapLinksPos: null as [number, number] | null },
-    events: {}
-  },
-  mockAdapter: {
-    beginFromOutput: vi.fn(),
-    beginFromInput: vi.fn(),
-    reset: vi.fn(),
-    renderLinks: [] as unknown[],
-    linkConnector: null as unknown,
-    isInputValidDrop: vi.fn(() => false),
-    isOutputValidDrop: vi.fn(() => false),
-    dropOnCanvas: vi.fn()
+} = vi.hoisted(() => {
+  const connector = (value: unknown) => value
+  const capturedHandlers: Record<string, (...args: unknown[]) => void> = {}
+  return {
+    capturedOnPan: {
+      current: null as ((dx: number, dy: number) => void) | null
+    },
+    capturedAutoPan: {
+      current: null as {
+        updatePointer: ReturnType<typeof vi.fn>
+        start: ReturnType<typeof vi.fn>
+        stop: ReturnType<typeof vi.fn>
+      } | null
+    },
+    capturedHandlers,
+    mockDs: { offset: [0, 0] as [number, number], scale: 1 },
+    mockSetDirty: vi.fn(),
+    mockLinkConnector: {
+      isConnecting: false,
+      state: { snapLinksPos: null as [number, number] | null },
+      events: {}
+    },
+    mockAdapter: {
+      beginFromOutput: vi.fn(),
+      beginFromInput: vi.fn(),
+      reset: vi.fn(),
+      renderLinks: [] as unknown[],
+      linkConnector: connector(null),
+      isInputValidDrop: vi.fn(() => false),
+      isOutputValidDrop: vi.fn(() => false),
+      dropOnCanvas: vi.fn()
+    }
   }
-}))
+})
 
 mockAdapter.linkConnector = mockLinkConnector
 

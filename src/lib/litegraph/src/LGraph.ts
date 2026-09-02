@@ -1242,7 +1242,7 @@ export class LGraph
       if (typeof method === 'function') {
         const args =
           params == null ? [] : Array.isArray(params) ? params : [params]
-        ;(method as (...args: unknown[]) => unknown).apply(c, args)
+        Reflect.apply(method, c, args)
       }
     }
   }

@@ -9,7 +9,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -216,7 +215,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const detachWidgetActions = widgetStore.$onAction(({ name, args, after }) => {
     if (name !== 'setValue') return
     if (isRemoteMutationContext(args[2])) return
-    const widgetId = args[0] as WidgetId
+    const widgetId = args[0]
     const old = widgetStore.getWidget(widgetId)?.value
     after((applied) => {
       if (!applied) return

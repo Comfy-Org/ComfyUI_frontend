@@ -3286,8 +3286,8 @@ export class LGraphNode
     if (!graph) throw new NullGraphError()
 
     // Assertion: It's either there or it isn't.
-    const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
-    const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
+    const inputIndex = this.inputs.indexOf(slot)
+    const outputIndex = this.outputs.indexOf(slot)
     if (inputIndex === -1 && outputIndex === -1) {
       console.error('Invalid slot')
       return

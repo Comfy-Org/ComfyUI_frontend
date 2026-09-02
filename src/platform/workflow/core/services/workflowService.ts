@@ -655,7 +655,7 @@ export const useWorkflowService = () => {
     }
 
     if (value === null || typeof value === 'string') {
-      const path = value as string | null
+      const path = value
 
       // Check if a persisted workflow with this path exists
       if (path) {

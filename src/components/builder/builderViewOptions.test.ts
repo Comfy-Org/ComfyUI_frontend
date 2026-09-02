@@ -23,7 +23,7 @@ describe('setWorkflowDefaultView', () => {
   beforeEach(async () => {
     const mod = await import('./builderViewOptions')
     setWorkflowDefaultView = mod.setWorkflowDefaultView
-    app = (await import('@/scripts/app')).app as typeof app
+    app = (await import('@/scripts/app')).app
     app.rootGraph.extra = {}
   })
 

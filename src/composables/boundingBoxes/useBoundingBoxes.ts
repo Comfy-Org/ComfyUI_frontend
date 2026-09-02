@@ -16,7 +16,6 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
@@ -713,11 +712,9 @@ export function useBoundingBoxes(
     if (!node) return
     const slot = node.findInputSlot('bboxes')
     if (slot < 0 || !node.isInputConnected(slot)) return
-    const outputs = nodeOutputStore.getNodeOutputs(node) as
-      | NodeOutputWith<{ input_bboxes?: BoundingBox[] }>
-      | undefined
+    const outputs = nodeOutputStore.getNodeOutputs(node)
     const incoming = outputs?.input_bboxes
-    if (!incoming?.length) return
+    if (!Array.isArray(incoming) || !incoming.length) return
     const applied = lastIncomingValue()
     if (isEqual(incoming, applied)) return
     if (!apply) {

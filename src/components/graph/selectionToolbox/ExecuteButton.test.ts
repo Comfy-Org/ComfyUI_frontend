@@ -57,7 +57,7 @@ describe('ExecuteButton', () => {
     const partialCanvas: Partial<LGraphCanvas> = {
       setDirty: vi.fn()
     }
-    mockCanvas = partialCanvas as Partial<LGraphCanvas> as LGraphCanvas
+    mockCanvas = partialCanvas as LGraphCanvas
 
     mockSelectedNodes = []
 

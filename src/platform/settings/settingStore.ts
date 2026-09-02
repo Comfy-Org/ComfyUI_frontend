@@ -226,10 +226,7 @@ export const useSettingStore = defineStore('setting', () => {
     const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
-      const applied = await applySettingLocally(
-        key,
-        settings[key] as Settings[typeof key]
-      )
+      const applied = await applySettingLocally(key, settings[key])
       if (applied !== undefined) {
         updatedSettings[key] = applied.newValue
         const event = settingChangedEvent(settingsById.value[key], key, applied)
@@ -289,7 +286,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const defaultValue = param.defaultValue
     return typeof defaultValue === 'function'
-      ? (defaultValue as () => Settings[K])()
+      ? Reflect.apply(defaultValue, undefined, [])
       : defaultValue
   }
 
@@ -402,7 +399,7 @@ export const useSettingStore = defineStore('setting', () => {
       settingValues.value[oldKey] !== undefined &&
       settingValues.value[newKey] === undefined
     ) {
-      const oldValue = settingValues.value[oldKey] as number
+      const oldValue = settingValues.value[oldKey]
 
       // Convert zoom threshold to equivalent font size to preserve exact behavior
       // The threshold formula is: threshold = font_size / (14 * sqrt(DPR))
