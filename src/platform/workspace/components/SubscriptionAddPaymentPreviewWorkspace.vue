@@ -194,6 +194,7 @@
             variant="link"
             size="lg"
             class="ml-auto px-0"
+            :disabled="Boolean(actionUrl)"
             @click="$emit('changePaymentMethod')"
           >
             {{ $t('subscription.preview.changePaymentMethod') }}
@@ -220,6 +221,13 @@
         )
       "
     >
+      <div
+        v-if="showCanceledNotice"
+        class="mx-auto mb-2 rounded-lg bg-secondary-background px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ $t('billingOperation.paymentCanceledNotice') }}
+      </div>
+
       <!-- Pending 3DS verification is the only actionable step, so it takes
            the top of the column; the pay button below it is demoted and
            disabled while it shows. -->
@@ -285,8 +293,13 @@
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
+        :aria-label="$t('subscription.preview.completeVerification')"
         @click="openVerification"
       >
+        <i
+          v-if="verificationOpened"
+          class="icon-[lucide--loader-circle] size-4 animate-spin"
+        />
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
 
@@ -334,7 +347,7 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length"
+        v-if="!usePaymentElement && !savedMethods?.length && !actionUrl"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -346,6 +359,30 @@
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
+
+      <p
+        v-if="actionUrl && cancelUnavailable"
+        class="m-0 py-2 text-center text-xs text-muted-foreground"
+      >
+        {{ $t('billingOperation.cancelUnavailable') }}
+      </p>
+      <template v-else-if="actionUrl">
+        <p
+          v-if="cancelUnreachable"
+          class="m-0 pt-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('billingOperation.cancelUnreachable') }}
+        </p>
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          class="w-full"
+          :loading="isCanceling"
+          @click="$emit('cancelPayment')"
+        >
+          {{ $t('billingOperation.cancelPayment') }}
+        </Button>
+      </template>
 
       <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
       <SubscriptionTermsNote class="mt-2" />
@@ -407,6 +444,10 @@ interface Props {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  cancelUnavailable?: boolean
+  cancelUnreachable?: boolean
+  isCanceling?: boolean
+  showCanceledNotice?: boolean
 }
 
 const {
@@ -425,7 +466,11 @@ const {
   savedMethods = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  cancelUnavailable = false,
+  cancelUnreachable = false,
+  isCanceling = false,
+  showCanceledNotice = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -436,6 +481,7 @@ const emit = defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
+  cancelPayment: []
 }>()
 
 const { locale, n, t } = useI18n()
@@ -514,9 +560,12 @@ function invalidateEditedPromotion() {
   }
 }
 
+const verificationOpened = ref(false)
+
 function openVerification() {
   if (!actionUrl) return
-  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  const opened = window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  if (opened) verificationOpened.value = true
 }
 
 function confirmPayment(confirmationToken: string) {

@@ -12,6 +12,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   BillingFailure,
   PaymentIntentSource,
@@ -19,7 +20,10 @@ import type {
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
   BillingDeclineReason
@@ -95,6 +99,20 @@ interface BillingOperation {
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
+
+/**
+ * Only a considered refusal earns the "already processing" verdict: 409 (the
+ * charge raced past the point of cancelling) or 422 (the operation's state
+ * disallows it). The rest of 4xx — an expired token, a rate limit, a missing
+ * route — says nothing about the charge, so the cancel affordance must stay
+ * live rather than assert a claim about money the server never made.
+ */
+function isCancelRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    (error.status === 409 || error.status === 422)
+  )
+}
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
@@ -1092,11 +1110,57 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function clearOperation(opId: string) {
     cleanup(opId)
+    // Settle before dropping: anything awaiting this operation's terminal
+    // promise would otherwise hang forever, leaving the checkout mutation
+    // locked after a successful cancel.
+    resolveTerminal(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
+  }
+
+  /**
+   * Void a pending charge before it settles. Canceled is not failed: the
+   * operation is removed outright — no toast, no failure state — so every
+   * surface watching it (dialog steps, the verify banner) clears at once.
+   * 'unavailable' means the service answered and refused: the charge is past
+   * the point of cancelling, so callers say so and keep polling.
+   * 'unreachable' means the request reached no verdict at all. The charge may
+   * still be cancellable, so callers must leave the cancel affordance live
+   * rather than tell the customer their payment is already processing.
+   */
+  async function cancelOperation(
+    opId: string
+  ): Promise<'canceled' | 'unavailable' | 'unreachable'> {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'pending') return 'unavailable'
+    try {
+      await workspaceApi.cancelBillingOp(opId)
+    } catch (error) {
+      if (isCancelRefusal(error)) return 'unavailable'
+      reportError(error, { errorType: 'billing_op_cancel_request_failure' })
+      return 'unreachable'
+    }
+    // A 2xx says the cancel was accepted, not that nothing was captured — and
+    // the notice shown for 'canceled' promises money. One status read settles
+    // it: a charge that won the race stays on the polling path instead of
+    // being erased under a false receipt. A read that fails or comes back
+    // gone is the operation ending as requested.
+    try {
+      const settled = await workspaceApi.getBillingOpStatus(opId)
+      if (
+        settled.status === 'succeeded' ||
+        settled.status === 'reconciliation_needed'
+      ) {
+        return 'unavailable'
+      }
+    } catch {
+      // ignored: the canceled operation has nothing left to report
+    }
+    clearOperation(opId)
+    return 'canceled'
   }
 
   return {
@@ -1110,6 +1174,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     startOperation,
     retryPaymentAuthentication,
     pollPendingOperations,
-    clearOperation
+    clearOperation,
+    cancelOperation
   }
 })

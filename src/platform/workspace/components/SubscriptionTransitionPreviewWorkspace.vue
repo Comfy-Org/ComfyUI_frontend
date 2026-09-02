@@ -273,6 +273,13 @@
         }}
       </Button>
 
+      <div
+        v-if="showCanceledNotice"
+        class="mx-auto mb-2 rounded-lg bg-secondary-background px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ $t('billingOperation.paymentCanceledNotice') }}
+      </div>
+
       <Button
         v-if="
           actionUrl &&
@@ -285,13 +292,19 @@
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
+        :aria-label="$t('subscription.preview.completeVerification')"
         @click="openVerification"
       >
+        <i
+          v-if="verificationOpened"
+          class="icon-[lucide--loader-circle] size-4 animate-spin"
+        />
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
 
       <Button
-        :variant="actionUrl ? 'tertiary' : 'inverted'"
+        v-if="!actionUrl"
+        variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
@@ -302,6 +315,30 @@
       >
         {{ confirmCta }}
       </Button>
+
+      <p
+        v-if="actionUrl && cancelUnavailable"
+        class="m-0 py-2 text-center text-xs text-muted-foreground"
+      >
+        {{ $t('billingOperation.cancelUnavailable') }}
+      </p>
+      <template v-else-if="actionUrl">
+        <p
+          v-if="cancelUnreachable"
+          class="m-0 pt-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('billingOperation.cancelUnreachable') }}
+        </p>
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          class="w-full"
+          :loading="isCanceling"
+          @click="$emit('cancelPayment')"
+        >
+          {{ $t('billingOperation.cancelPayment') }}
+        </Button>
+      </template>
 
       <SubscriptionTermsNote class="mt-2" />
     </div>
@@ -348,7 +385,11 @@ const {
   reconciliationOperationId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  cancelUnavailable = false,
+  cancelUnreachable = false,
+  isCanceling = false,
+  showCanceledNotice = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -367,6 +408,10 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  cancelUnavailable?: boolean
+  cancelUnreachable?: boolean
+  isCanceling?: boolean
+  showCanceledNotice?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -377,6 +422,7 @@ const emit = defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
+  cancelPayment: []
 }>()
 
 const { locale, n, t, te } = useI18n()
@@ -405,9 +451,12 @@ function invalidateEditedPromotion() {
   }
 }
 
+const verificationOpened = ref(false)
+
 function openVerification() {
   if (!actionUrl) return
-  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  const opened = window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  if (opened) verificationOpened.value = true
 }
 
 function formatTierName(tier: string): string {

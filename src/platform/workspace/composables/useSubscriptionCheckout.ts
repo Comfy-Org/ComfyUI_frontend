@@ -1,5 +1,5 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
@@ -33,12 +33,13 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
+  clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
-type CheckoutStep = 'pricing' | 'preview' | 'success'
+type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -62,6 +63,10 @@ interface SelectedTeamCheckout {
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
   embeddedCheckoutEnabled?: boolean
+  /** Whether the hosting dialog renders the verifying/outcome checkout steps.
+   *  The legacy workspace host doesn't — its outcomes stay toast-driven, so
+   *  the composable must never transition it into a step it cannot show. */
+  rendersRecoverySteps?: boolean
 }
 
 type SubscriptionPaymentOptions = Pick<
@@ -121,7 +126,8 @@ export function useSubscriptionCheckout(
   paymentIntentSource?: PaymentIntentSource,
   {
     tierPlanType = 'personal',
-    embeddedCheckoutEnabled = false
+    embeddedCheckoutEnabled = false,
+    rendersRecoverySteps = false
   }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
@@ -144,7 +150,25 @@ export function useSubscriptionCheckout(
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
 
-  const checkoutStep = ref<CheckoutStep>('pricing')
+  // Re-entry: a pending 3DS charge owns the dialog. Opening with one lands
+  // on the verifying step — the plan steps stay unreachable until the
+  // operation resolves, is canceled, or its 24h link expires.
+  // Only a still-pending charge owns the dialog. `reconciliation_needed` also
+  // matches subscriptionActionOperation, but it cannot be verified or canceled
+  // — landing it here would strand the customer on a step whose only two
+  // controls both refuse. It keeps the pricing entry and its existing
+  // reconciliation banner.
+  const checkoutStep = ref<CheckoutStep>(
+    rendersRecoverySteps &&
+      billingOperationStore.subscriptionActionOperation?.status === 'pending'
+      ? 'verifying'
+      : 'pricing'
+  )
+  const isCancelingPayment = ref(false)
+  const cancelUnavailable = ref(false)
+  const cancelUnreachable = ref(false)
+  const canceledNoticeVisible = ref(false)
+  let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
   const isSubscribing = ref(false)
@@ -184,6 +208,16 @@ export function useSubscriptionCheckout(
       ? operation
       : undefined
   })
+  // Re-entry adopts the recovered charge by id. The store's selector matches
+  // only pending and reconciliation_needed, so reading a succeeded or failed
+  // charge through it yields "no operation" — which the verifying watcher
+  // reads as an abandoned charge and answers by returning the customer to
+  // pricing, skipping the success and declined steps entirely.
+  if (billingOperationStore.subscriptionActionOperation?.status === 'pending') {
+    activeCheckoutOperationId.value =
+      billingOperationStore.subscriptionActionOperation.opId
+  }
+
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )
@@ -1335,6 +1369,84 @@ export function useSubscriptionCheckout(
     await billingOperationStore.retryPaymentAuthentication(opId)
   }
 
+  function showCanceledNotice() {
+    canceledNoticeVisible.value = true
+    if (canceledNoticeTimer) clearTimeout(canceledNoticeTimer)
+    canceledNoticeTimer = setTimeout(() => {
+      canceledNoticeVisible.value = false
+    }, 5000)
+  }
+
+  onScopeDispose(() => {
+    if (canceledNoticeTimer) clearTimeout(canceledNoticeTimer)
+  })
+
+  // Canceled is not failed: nothing persists, so from the in-flow pending
+  // states the dialog stays on confirm with intent intact plus an inline
+  // notice, while a re-entry cancel returns to plan selection (there is no
+  // preserved intent to land on). 'unavailable' is the cancel-raced-the-bank
+  // case — the cancel slot becomes a notice and polling finishes the story.
+  // 'unreachable' reached no verdict, so the charge is left exactly as it was
+  // and the cancel affordance stays live for another try.
+  async function handleCancelPendingPayment() {
+    const operation = activeCheckoutOperation.value
+    if (!operation || isCancelingPayment.value) return
+    isCancelingPayment.value = true
+    const result = await billingOperationStore.cancelOperation(operation.opId)
+    isCancelingPayment.value = false
+    if (result === 'unavailable') {
+      cancelUnreachable.value = false
+      cancelUnavailable.value = true
+      return
+    }
+    if (result === 'unreachable') {
+      cancelUnreachable.value = true
+      return
+    }
+    // A canceled operation never reaches a terminal status — it is removed
+    // outright — so the pending-checkout pointer must be cleared here or the
+    // next dialog open resumes the checkout the customer just canceled.
+    clearPendingSubscriptionCheckout(operation.opId)
+    activeCheckoutOperationId.value = null
+    cancelUnavailable.value = false
+    cancelUnreachable.value = false
+    if (checkoutStep.value === 'verifying') {
+      checkoutStep.value = 'pricing'
+      return
+    }
+    showCanceledNotice()
+  }
+
+  // The verifying step is only entered on re-entry, where no subscribe call
+  // is awaiting the operation — resolve it from here instead. Success with
+  // no plan selection has nothing to show on the success step, so the dialog
+  // closes and the store's success toast plus the refreshed plan UI carry
+  // the outcome.
+  watch(
+    () => [checkoutStep.value, activeCheckoutOperation.value?.status] as const,
+    ([step, status]) => {
+      if (step !== 'verifying') return
+      if (status === 'succeeded') {
+        if (selectedTierKey.value || isTeamCheckout.value) {
+          checkoutStep.value = 'success'
+        } else {
+          emit('close', true)
+        }
+        return
+      }
+      if (status === 'failed') {
+        // The declined outcome step arrives one PR up; until it does, the
+        // store's failure toast carries the verdict and the dialog returns
+        // to plan selection.
+        checkoutStep.value = 'pricing'
+        return
+      }
+      if (status === undefined) {
+        checkoutStep.value = 'pricing'
+      }
+    }
+  )
+
   async function handleTeamSubscription(
     confirmReactivation = false,
     confirmationToken?: string,
@@ -1552,6 +1664,11 @@ export function useSubscriptionCheckout(
     isPolling,
     isTeamCheckout,
     previewVariant,
+    isCancelingPayment,
+    cancelUnavailable,
+    cancelUnreachable,
+    canceledNoticeVisible,
+    handleCancelPendingPayment,
     handleSubscribeClick,
     handleSubscribeTeamClick,
     handleBackToPricing,

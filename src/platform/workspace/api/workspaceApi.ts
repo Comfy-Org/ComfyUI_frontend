@@ -39,6 +39,8 @@ import type {
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
+import { api } from '@/scripts/api'
+
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
@@ -703,6 +705,23 @@ export const workspaceApi = {
         { headers, timeout: 30_000 }
       )
       return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Void a pending billing operation before its charge settles.
+   * POST /api/billing/ops/:id/cancel
+   */
+  async cancelBillingOp(opId: string): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.post(
+        api.apiURL(`/billing/ops/${opId}/cancel`),
+        undefined,
+        { headers, timeout: 30_000 }
+      )
     } catch (err) {
       handleAxiosError(err)
     }
