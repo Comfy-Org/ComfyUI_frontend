@@ -83,6 +83,34 @@ describe('createDetachedTargetSession', () => {
     expect(snapshot.needsResync).toBe(false)
   })
 
+  it('stops draining when a frame is rejected', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+
+    expect(session.drainAll(rejectAll)).toEqual({
+      committed: 0,
+      stoppedBy: { status: 'failed', seq: 1 }
+    })
+  })
+
+  it('stops draining when the session requires resynchronization', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+    source.frame((doc) => setNode(doc, '1', { title: 'lost' }))
+    session.enqueue(source.frame((doc) => setNode(doc, '2', { type: 'Sink' })))
+
+    expect(session.drainAll(acceptAll)).toEqual({
+      committed: 0,
+      stoppedBy: { status: 'resync-required' }
+    })
+  })
+
   it('offers the projection port the frame stamps verbatim and the staged doc with the frame folded in', () => {
     const source = createFrameSource()
     const session = createDetachedTargetSession(WORKFLOW_ID)
