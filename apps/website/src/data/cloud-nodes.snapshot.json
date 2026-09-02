@@ -1,22 +1,23 @@
 {
-  "fetchedAt": "2026-05-22T00:08:02.826Z",
+  "fetchedAt": "2026-08-22T04:58:39.078Z",
   "packs": [
     {
       "id": "basic_data_handling",
       "registryId": "basic_data_handling",
       "displayName": "Basic data handling",
       "description": "Basic Python functions for manipulating data that every programmer is used to, lightweight with no additional dependencies.\n\nSupported data types:\n- ComfyUI native: BOOLEAN, FLOAT, INT, STRING, and data lists\n- Python types as custom data types: DICT, LIST, SET, DATETIME, TIMEDELTA\n- PyTorch: TENSOR\n\nFeature categories:\n- Boolean logic operations\n- Type casting/conversion between all supported data types\n- Comparison operations\n- Data container manipulation\n- Flow control (conditionals, branching, execution order)\n- Mathematical operations\n- Mathematical formula node in a safe implementation\n- String manipulation\n- File system path handling, including STRING, IMAGE and MASK load and save\n- SET operations\n- time and date handling\n- PyTorch Tensor manipulation (arithmetic, slicing, reshaping)",
+      "iconUrl": "https://raw.githubusercontent.com/StableLlama/ComfyUI-basic_data_handling/refs/heads/main/web/img/basic_data_handling_icon_400.png",
       "repoUrl": "https://github.com/StableLlama/ComfyUI-basic_data_handling",
       "publisher": {
         "id": "stablellama",
         "name": "StableLlama"
       },
-      "downloads": 175716,
-      "githubStars": 44,
-      "latestVersion": "1.5.1",
+      "downloads": 224009,
+      "githubStars": 47,
+      "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2026-05-07T18:00:19.201676Z",
-      "supportedOs": [],
+      "lastUpdated": "2026-07-17T09:05:58.654988Z",
+      "supportedOs": ["OS Independent"],
       "supportedAccelerators": [],
       "nodes": [
         {
@@ -1061,31 +1062,31 @@
           "name": "Basic data handling: DictPopItem",
           "displayName": "pop item",
           "category": "Basic/DICT",
-          "description": "Removes and returns an arbitrary key-value pair from a dictionary.\n\nThis node takes a dictionary as input, removes an arbitrary key-value pair,\nand returns the modified dictionary along with the removed key and value.\nIf the dictionary is empty, returns an error."
+          "description": "Removes and returns an arbitrary key-value pair from a dictionary.\n\nThis node takes a dictionary as input, removes an arbitrary key-value pair,\nand returns the modified dictionary along with the removed key and value.\nIf operation fails, no error is thrown, but the last argument is `False`,\nand the dictionary is returned intact."
         },
         {
           "name": "Basic data handling: DataListPopRandom",
           "displayName": "pop random",
           "category": "Basic/Data List",
-          "description": "Removes and returns a random element from a list.\n\nThis node takes a list as input and returns the list with the random element removed\nand the removed element itself. If the list is empty, it returns None for the element."
+          "description": "Removes and returns a random element from a list.\n\nThis node takes a list as input and returns the list with the random element removed\nand the removed element itself. If the list is empty, it returns None for the element.\nAn optional seed can be provided for reproducible selection."
         },
         {
           "name": "Basic data handling: DictPopRandom",
           "displayName": "pop random",
           "category": "Basic/DICT",
-          "description": "Removes and returns a random key-value pair from a dictionary.\n\nThis node takes a dictionary as input, removes a random key-value pair,\nand returns the modified dictionary along with the removed key and value.\nIf the dictionary is empty, it returns empty values."
+          "description": "Removes and returns a random key-value pair from a dictionary.\n\nThis node takes a dictionary as input, removes a random key-value pair,\nand returns the modified dictionary along with the removed key and value.\nIf the dictionary is empty, it returns empty values.\nAn optional seed can be provided for reproducible selection."
         },
         {
           "name": "Basic data handling: ListPopRandom",
           "displayName": "pop random",
           "category": "Basic/LIST",
-          "description": "Removes and returns a random element from a LIST.\n\nThis node takes a LIST as input and returns the LIST with the random element removed\nand the removed element itself. If the LIST is empty, it returns None for the element."
+          "description": "Removes and returns a random element from a LIST.\n\nThis node takes a LIST as input and returns the LIST with the random element removed\nand the removed element itself. If the LIST is empty, it returns None for the element.\nAn optional seed can be provided for reproducible selection."
         },
         {
           "name": "Basic data handling: SetPopRandom",
           "displayName": "pop random",
           "category": "Basic/SET",
-          "description": "Removes and returns a random element from a SET.\n\nThis node takes a SET as input and returns the SET with a random element removed\nand the removed element itself. If the SET is empty, it returns None for the element."
+          "description": "Removes and returns a random element from a SET.\n\nThis node takes a SET as input and returns the SET with a random element removed\nand the removed element itself. If the SET is empty, it returns None for the element.\nAn optional seed can be provided for reproducible selection."
         },
         {
           "name": "Basic data handling: FloatPower",
@@ -1751,8 +1752,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 2453897,
-      "githubStars": 1115,
+      "downloads": 2871923,
+      "githubStars": 1161,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-07T19:06:12.812021Z",
@@ -2205,8 +2206,8 @@
         "id": "ryuukeisyou",
         "name": "Ryuukeisyou"
       },
-      "downloads": 75248,
-      "githubStars": 192,
+      "downloads": 83433,
+      "githubStars": 194,
       "latestVersion": "1.0.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-02-04T15:58:27.82363Z",
@@ -2553,12 +2554,6 @@
           "category": "🏵️Fill Nodes/Utility"
         },
         {
-          "name": "FL_PathAnimator",
-          "displayName": "FL Path Animator",
-          "category": "🎨 FL Path Animator",
-          "description": "\nCreates animated shapes that follow user-drawn paths.\nOpen the path editor to draw trajectories on a reference image, then shapes will follow these paths over time.\nOutputs WAN ATI-compatible coordinate strings with proper 121-point resampling for stable video generation.\n"
-        },
-        {
           "name": "FL_PathTypeChecker",
           "displayName": "FL Path Type Checker",
           "category": "🏵️Fill Nodes/Utility"
@@ -2662,8 +2657,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 1255570,
-      "githubStars": 5958,
+      "downloads": 1472655,
+      "githubStars": 6106,
       "latestVersion": "2.0.0",
       "license": "GPL-3.0 license",
       "lastUpdated": "2024-06-05T06:57:13.485481Z",
@@ -2891,11 +2886,11 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 1722529,
-      "githubStars": 3026,
-      "latestVersion": "1.0.90",
+      "downloads": 2051122,
+      "githubStars": 3127,
+      "latestVersion": "2.0.40",
       "license": "{\"text\": \"MIT License\"}",
-      "lastUpdated": "2024-11-17T12:42:26.203455Z",
+      "lastUpdated": "2026-08-01T03:16:40.664133Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
@@ -3007,8 +3002,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 117373,
-      "githubStars": 657,
+      "downloads": 177132,
+      "githubStars": 700,
       "latestVersion": "2.0.38",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-04-08T04:28:28.060712Z",
@@ -3613,8 +3608,8 @@
         "id": "steudio",
         "name": ""
       },
-      "downloads": 59469,
-      "githubStars": 133,
+      "downloads": 72907,
+      "githubStars": 147,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE.txt\"}",
       "lastUpdated": "2025-05-22T23:05:40.260032Z",
@@ -3705,8 +3700,8 @@
         "id": "ssit",
         "name": "ssit"
       },
-      "downloads": 1500391,
-      "githubStars": 1509,
+      "downloads": 1749981,
+      "githubStars": 1539,
       "latestVersion": "1.7.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-28T03:04:53.321587Z",
@@ -3749,11 +3744,11 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 608242,
-      "githubStars": 970,
-      "latestVersion": "1.5.7",
+      "downloads": 690603,
+      "githubStars": 1001,
+      "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2026-03-30T01:40:06.836236Z",
+      "lastUpdated": "2026-07-28T11:39:49.072754Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
@@ -3779,8 +3774,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 511860,
-      "githubStars": 3453,
+      "downloads": 596060,
+      "githubStars": 3524,
       "latestVersion": "1.5.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-30T01:39:45.498846Z",
@@ -3856,11 +3851,11 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 122609,
-      "githubStars": 1546,
-      "latestVersion": "1.5.0",
+      "downloads": 133259,
+      "githubStars": 1549,
+      "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2024-11-19T17:21:34.402331Z",
+      "lastUpdated": "2025-01-14T12:40:17.490211Z",
       "nodes": [
         {
           "name": "CogVideoContextOptions",
@@ -3880,6 +3875,14 @@
           "name": "CogVideoDecode",
           "displayName": "CogVideoDecode",
           "category": "CogVideoWrapper",
+          "deprecated": false,
+          "experimental": false
+        },
+        {
+          "name": "CogVideoEnhanceAVideo",
+          "displayName": "CogVideoEnhanceAVideo",
+          "category": "CogVideoWrapper",
+          "description": "https://github.com/NUS-HPC-AI-Lab/Enhance-A-Video",
           "deprecated": false,
           "experimental": false
         },
@@ -3908,6 +3911,15 @@
           "name": "CogVideoLoraSelect",
           "displayName": "CogVideoLoraSelect",
           "category": "CogVideoWrapper",
+          "description": "Select a LoRA model from ComfyUI/models/CogVideo/loras",
+          "deprecated": false,
+          "experimental": false
+        },
+        {
+          "name": "CogVideoLoraSelectComfy",
+          "displayName": "CogVideoLoraSelectComfy",
+          "category": "CogVideoWrapper",
+          "description": "Select a LoRA model from ComfyUI/models/loras",
           "deprecated": false,
           "experimental": false
         },
@@ -4031,7 +4043,7 @@
           "name": "DownloadAndLoadDepthAnythingV2Model",
           "displayName": "DownloadAndLoadDepthAnythingV2Model",
           "category": "DepthAnythingV2",
-          "description": "\nModels autodownload to `ComfyUI\\models\\depthanything` from   \nhttps://huggingface.co/Kijai/DepthAnythingV2-safetensors/tree/main   \n   \nfp16 reduces quality by a LOT, not recommended.\n"
+          "description": "\nModels autodownload to `ComfyUI/models/depthanything` from   \nhttps://huggingface.co/Kijai/DepthAnythingV2-safetensors/tree/main   \n   \nfp16 reduces quality by a LOT, not recommended.\n"
         }
       ]
     },
@@ -4087,92 +4099,61 @@
         "id": "erosdiffusion",
         "name": "ErosDiffusion"
       },
-      "downloads": 125791,
-      "githubStars": 621,
-      "latestVersion": "4.0.1",
+      "downloads": 147665,
+      "githubStars": 634,
+      "latestVersion": "4.0.3",
       "license": "{\"text\": \"MIT License\"}",
-      "lastUpdated": "2025-11-16T23:35:17.778371Z",
+      "lastUpdated": "2026-07-15T20:30:49.389351Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
         {
           "name": "Compositor3",
-          "displayName": "Compositor3",
-          "category": "image",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "Compositor4",
-          "displayName": "Compositor4",
-          "category": "image",
-          "description": "Interactive compositor canvas for positioning, scaling, rotating, and arranging multiple images with real-time preview and mask support. Provides a visual editor with layers panel, alignment tools, and snap-to-grid functionality.",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "Compositor4MasksOutput",
-          "displayName": "Compositor4MasksOutput",
-          "category": "image",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "Compositor4TransformsOut",
-          "displayName": "Compositor4TransformsOut",
-          "category": "image",
-          "deprecated": false,
-          "experimental": false
+          "displayName": "💜 Compositor (V3)",
+          "category": "image"
         },
         {
           "name": "CompositorColorPicker",
-          "displayName": "CompositorColorPicker",
-          "category": "image/color",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "CompositorConfig3",
-          "displayName": "CompositorConfig3",
-          "category": "image",
-          "description": "\nThe compositor node\n- pass up to 8 images\n- optionally pass their masks (invert them)\n- masks are automatically applied and internally the compositor is passed an rgba\n- use the sizing controls to configure the compositor, it will be resized on run\n- set the flag to pause to allow yourself time to build your composition (pause acts on compositor, not the config node)\n",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "CompositorConfig4",
-          "displayName": "CompositorConfig4",
-          "category": "image",
-          "description": "Configuration node for the compositor system V4. Accepts up to 8 images with optional masks, applies masking to create RGBA composites, and provides canvas sizing controls. Masks are serialized to disk with fixed naming (cfg{node_id}-mask{index}.png). The 'onConfigChangedContinue' pause option allows time to build compositions before continuing execution. Outputs configuration objects used by compositor V4 nodes.",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "CompositorMasksOutputV3",
-          "displayName": "CompositorMasksOutputV3",
-          "category": "image",
-          "deprecated": false,
-          "experimental": false
+          "displayName": "💜 Compositor Color Picker",
+          "category": "image/color"
         },
         {
           "name": "CompositorTools3",
-          "displayName": "CompositorTools3",
+          "displayName": "💜 Compositor Tools (V3) Experimental",
           "category": "image",
-          "description": "\nexperimental node: frontend communication only with feature flag, needs page reload to fill controls\n",
-          "deprecated": false,
-          "experimental": false
+          "description": "\nexperimental node: frontend communication only with feature flag, needs page reload to fill controls\n"
         },
         {
           "name": "CompositorTransformsOutV3",
-          "displayName": "CompositorTransformsOutV3",
-          "category": "image",
-          "deprecated": false,
-          "experimental": false
-        },
+          "displayName": "💜 Compositor Transforms Output (V3)",
+          "category": "image"
+        }
+      ]
+    },
+    {
+      "id": "comfyui-fl-path-animator",
+      "registryId": "comfyui-fl-path-animator",
+      "displayName": "FL Path Animator",
+      "description": "Interactive path animator with visual editor for creating animated shapes that follow user-drawn paths. WAN ATI compatible for stable video generation.",
+      "iconUrl": "https://avatars.githubusercontent.com/u/55672949",
+      "repoUrl": "https://github.com/filliptm/ComfyUI_FL-Path-Animator.git",
+      "publisher": {
+        "id": "machinedelusions",
+        "name": "Machine Delusions"
+      },
+      "downloads": 8580,
+      "githubStars": 12,
+      "latestVersion": "1.0.7",
+      "license": "{\"file\": \"LICENSE.txt\"}",
+      "lastUpdated": "2026-04-25T22:42:44.490697Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
         {
-          "name": "ImageColorSampler",
-          "displayName": "ImageColorSampler",
-          "category": "image/color",
+          "name": "FL_PathAnimator",
+          "displayName": "FL_PathAnimator",
+          "category": "🎨 FL Path Animator",
+          "description": "\nCreates animated shapes that follow user-drawn paths.\nOpen the path editor to draw trajectories on a reference image, then shapes will follow these paths over time.\nOutputs WAN ATI-compatible coordinate strings with proper 121-point resampling for stable video generation.\n",
           "deprecated": false,
           "experimental": false
         }
@@ -4247,17 +4228,24 @@
         "id": "fannovel16",
         "name": "Fannovel16"
       },
-      "downloads": 1550122,
-      "githubStars": 1023,
-      "latestVersion": "1.0.7",
+      "downloads": 1805726,
+      "githubStars": 1065,
+      "latestVersion": "1.0.11",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2025-04-30T11:32:53.610548Z",
+      "lastUpdated": "2026-03-22T18:01:45.009428Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
         {
           "name": "AMT VFI",
           "displayName": "AMT VFI",
+          "category": "ComfyUI-Frame-Interpolation/VFI",
+          "deprecated": false,
+          "experimental": false
+        },
+        {
+          "name": "ATM VFI",
+          "displayName": "ATM VFI",
           "category": "ComfyUI-Frame-Interpolation/VFI",
           "deprecated": false,
           "experimental": false
@@ -4326,6 +4314,13 @@
           "experimental": false
         },
         {
+          "name": "MOMO VFI",
+          "displayName": "MOMO VFI",
+          "category": "ComfyUI-Frame-Interpolation/VFI",
+          "deprecated": false,
+          "experimental": false
+        },
+        {
           "name": "RIFE VFI",
           "displayName": "RIFE VFI",
           "category": "ComfyUI-Frame-Interpolation/VFI",
@@ -4386,8 +4381,8 @@
         "id": "drltdata",
         "name": "Dr.Lt.Data"
       },
-      "downloads": 2724273,
-      "githubStars": 3117,
+      "downloads": 3240548,
+      "githubStars": 3261,
       "latestVersion": "8.28.3",
       "license": "{\"file\": \"LICENSE.txt\"}",
       "lastUpdated": "2026-04-19T17:08:04.993918Z",
@@ -5785,8 +5780,8 @@
         "id": "makadi",
         "name": "Makadi"
       },
-      "downloads": 94742,
-      "githubStars": 226,
+      "downloads": 108942,
+      "githubStars": 237,
       "latestVersion": "0.6.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-10-10T14:25:31.328991Z",
@@ -6157,8 +6152,8 @@
         "id": "theupsider",
         "name": "theupsider"
       },
-      "downloads": 277708,
-      "githubStars": 227,
+      "downloads": 316300,
+      "githubStars": 234,
       "latestVersion": "1.0.0",
       "license": "MIT",
       "lastUpdated": "2024-07-01T09:22:45.758509Z",
@@ -6283,6 +6278,18 @@
           "description": "Defines the blocks to apply the STG to."
         },
         {
+          "name": "LTXVAudioOnlyEmptyVideoLatent",
+          "displayName": "🅛🅣🅧 LTXV Audio Only Empty Video Latent",
+          "category": "Lightricks/audio",
+          "description": "Fixed minimal placeholder video latent for audio-only (text-to-audio) generation - a single 64x64 frame. LTX-2 needs a video latent at input index 0, but with LTXV Audio Only Model it is never attended to, so the dimensions are fixed (and hidden) to avoid confusion. Join it with the audio latent via LTXVConcatAVLatent."
+        },
+        {
+          "name": "LTXVAudioOnlyModel",
+          "displayName": "🅛🅣🅧 LTXV Audio Only Model",
+          "category": "Lightricks/audio",
+          "description": "Run the LTX-2 audio/video model in audio-only mode for text-to-audio. Skips the video stream and disables the audio<->video cross-attention, so the generated audio does not depend on the video latent. The sampler still needs a minimal dummy video latent (EmptyLTXVLatentVideo at 64x64 length 1, joined with LTXVConcatAVLatent); it is never attended to. Remove or bypass this node to restore normal joint audio+video generation."
+        },
+        {
           "name": "LTXVBaseSampler",
           "displayName": "🅛🅣🅧 LTXV Base Sampler",
           "category": "sampling"
@@ -6329,8 +6336,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 311019,
-      "githubStars": 202,
+      "downloads": 407499,
+      "githubStars": 246,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-01-30T22:11:43.194459Z",
@@ -6355,17 +6362,49 @@
     },
     {
       "id": "comfyui-PlyPreview",
+      "registryId": "comfyui-PlyPreview",
       "displayName": "comfyui-PlyPreview",
+      "description": "Gaussian Splat PLY loader + preview nodes for ComfyUI. Forked from GeometryPack and repackaged to avoid upstream overwrites. Includes front-end viewer (gsplat.js) bundled locally.",
+      "repoUrl": "https://github.com/XuanYu-github/comfyui-PlyPreview",
+      "publisher": {
+        "id": "xuanyu",
+        "name": "XuanYu"
+      },
+      "downloads": 2690,
+      "githubStars": 6,
+      "latestVersion": "1.1.0",
+      "license": "{\"file\": \"LICENSE\"}",
+      "lastUpdated": "2025-12-29T07:08:15.434276Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
       "nodes": [
         {
+          "name": "PlyPreviewLoadGaussianPLYEnhance",
+          "displayName": "PlyPreviewLoadGaussianPLYEnhance",
+          "category": "PlyPreview",
+          "deprecated": false,
+          "experimental": false
+        },
+        {
+          "name": "PlyPreviewLoadGaussianPLYPathEnhance",
+          "displayName": "PlyPreviewLoadGaussianPLYPathEnhance",
+          "category": "PlyPreview",
+          "deprecated": false,
+          "experimental": false
+        },
+        {
           "name": "PlyPreviewPreviewGaussianEnhance",
-          "displayName": "Preview Gaussian Enhance",
-          "category": "PlyPreview/visualization"
+          "displayName": "PlyPreviewPreviewGaussianEnhance",
+          "category": "PlyPreview/visualization",
+          "deprecated": false,
+          "experimental": false
         },
         {
           "name": "PlyPreviewProcessGaussianPLYEnhance",
-          "displayName": "Process Gaussian PLY Enhance",
-          "category": "PlyPreview"
+          "displayName": "PlyPreviewProcessGaussianPLYEnhance",
+          "category": "PlyPreview",
+          "deprecated": false,
+          "experimental": false
         }
       ]
     },
@@ -6390,8 +6429,8 @@
         "id": "meet-ai",
         "name": "遇见AI"
       },
-      "downloads": 4115,
-      "githubStars": 6,
+      "downloads": 5171,
+      "githubStars": 5,
       "latestVersion": "1.0.4",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-09-23T03:12:33.89286Z",
@@ -6425,14 +6464,14 @@
       "id": "ComfyUI-QwenVL",
       "registryId": "ComfyUI-QwenVL",
       "displayName": "ComfyUI-QwenVL",
-      "description": "ComfyUI-QwenVL custom node: Integrates the Qwen-VL series, including Qwen2.5-VL and the latest Qwen3-VL, with GGUF support for advanced multimodal AI in text generation, image understanding, and video analysis.",
+      "description": "ComfyUI-QwenVL custom node: Integrates the Qwen-VL series, including Qwen2.5-VL, Qwen3-VL, Qwen3.5-VL, Qwen3.6-VL (MoE), and Qwen3.8-VL, with GGUF support for advanced multimodal AI in text generation, image understanding, and video analysis.",
       "repoUrl": "https://github.com/1038lab/ComfyUI-QwenVL",
       "publisher": {
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 296800,
-      "githubStars": 767,
+      "downloads": 405637,
+      "githubStars": 842,
       "latestVersion": "2.1.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-08T22:53:46.099968Z",
@@ -6486,313 +6525,79 @@
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 690554,
-      "githubStars": 1953,
-      "latestVersion": "3.0.0",
+      "downloads": 841986,
+      "githubStars": 2081,
+      "latestVersion": "3.1.0",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2026-01-18T05:51:20.708617Z",
+      "lastUpdated": "2026-07-21T22:33:58.273141Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
         {
-          "name": "AILab_ColorInput",
-          "displayName": "AILab_ColorInput",
-          "category": "🧪AILab/🛠️UTIL/🔄IO",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ColorToMask",
-          "displayName": "AILab_ColorToMask",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_CropObject",
-          "displayName": "AILab_CropObject",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_Florence2",
-          "displayName": "AILab_Florence2",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_Florence2ToCoordinates",
-          "displayName": "AILab_Florence2ToCoordinates",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ICLoRAConcat",
-          "displayName": "AILab_ICLoRAConcat",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageCombiner",
-          "displayName": "AILab_ImageCombiner",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageCompare",
-          "displayName": "AILab_ImageCompare",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageCrop",
-          "displayName": "AILab_ImageCrop",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageMaskConvert",
-          "displayName": "AILab_ImageMaskConvert",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageMaskToList",
-          "displayName": "AILab_ImageMaskToList",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImagePreview",
-          "displayName": "AILab_ImagePreview",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageResize",
-          "displayName": "AILab_ImageResize",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageStitch",
-          "displayName": "AILab_ImageStitch",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ImageToList",
-          "displayName": "AILab_ImageToList",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_LamaRemover",
-          "displayName": "AILab_LamaRemover",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_LoadImage",
-          "displayName": "AILab_LoadImage",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_LoadImageAdvanced",
-          "displayName": "AILab_LoadImageAdvanced",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_LoadImageBatch",
-          "displayName": "AILab_LoadImageBatch",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_LoadImageSimple",
-          "displayName": "AILab_LoadImageSimple",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_MaskCombiner",
-          "displayName": "AILab_MaskCombiner",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_MaskEnhancer",
-          "displayName": "AILab_MaskEnhancer",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_MaskExtractor",
-          "displayName": "AILab_MaskExtractor",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_MaskOverlay",
-          "displayName": "AILab_MaskOverlay",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_MaskPreview",
-          "displayName": "AILab_MaskPreview",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_MaskToList",
-          "displayName": "AILab_MaskToList",
-          "category": "🧪AILab/🦠MASK",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_Preview",
-          "displayName": "AILab_Preview",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_ReferenceLatentMask",
-          "displayName": "AILab_ReferenceLatentMask",
-          "category": "🧪AILab/🎭Inpaint",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_SDMatte",
-          "displayName": "AILab_SDMatte",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_UnbatchImages",
-          "displayName": "AILab_UnbatchImages",
-          "category": "🧪AILab/🖼️IMAGE",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_YoloV8",
-          "displayName": "AILab_YoloV8",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_YoloV8Adv",
-          "displayName": "AILab_YoloV8Adv",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "name": "FashionSegmentAccessories",
+          "displayName": "Accessories Segment (RMBG)",
+          "category": "🧪AILab/🧽RMBG"
         },
         {
           "name": "BiRefNetRMBG",
-          "displayName": "BiRefNetRMBG",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "displayName": "BiRefNet (RMBG)",
+          "category": "🧪AILab/🧽RMBG"
         },
         {
-          "name": "BodySegment",
-          "displayName": "BodySegment",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "name": "AILab_ICLoRAConcat",
+          "displayName": "IC LoRA Concat (RMBG) 🖼️🎭",
+          "category": "🧪AILab/🖼️IMAGE"
         },
         {
-          "name": "ClothesSegment",
-          "displayName": "ClothesSegment",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "name": "AILab_Preview",
+          "displayName": "Image/Mask Preview (RMBG) 🖼️🎭",
+          "category": "🧪AILab/🖼️IMAGE"
         },
         {
-          "name": "FaceSegment",
-          "displayName": "FaceSegment",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "name": "AILab_LamaRemover",
+          "displayName": "Lama Remover (RMBG)",
+          "category": "🧪AILab/🧽RMBG"
         },
         {
-          "name": "FashionSegmentAccessories",
-          "displayName": "FashionSegmentAccessories",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "name": "AILab_MaskEnhancer",
+          "displayName": "Mask Enhancer (RMBG) 🎭",
+          "category": "🧪AILab/🖼️IMAGE"
         },
         {
-          "name": "FashionSegmentClothing",
-          "displayName": "FashionSegmentClothing",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "name": "AILab_MaskOverlay",
+          "displayName": "Mask Overlay (RMBG) 🖼️🎭",
+          "category": "🧪AILab/🖼️IMAGE"
+        },
+        {
+          "name": "AILab_ReferenceLatentMask",
+          "displayName": "Reference Latent Mask (RMBG) 🖼️🎭",
+          "category": "🧪AILab/🎭Inpaint"
         },
         {
           "name": "RMBG",
-          "displayName": "RMBG",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "SAM2Segment",
-          "displayName": "SAM2Segment",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "Segment",
-          "displayName": "Segment",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "SegmentV2",
-          "displayName": "SegmentV2",
-          "category": "🧪AILab/🧽RMBG",
-          "deprecated": false,
-          "experimental": false
+          "displayName": "Remove Background (RMBG)",
+          "category": "🧪AILab/🧽RMBG"
         }
       ]
     },
     {
       "id": "comfyui-sam3",
-      "displayName": "comfyui-sam3",
+      "registryId": "comfyui-sam3",
+      "displayName": "SAM3",
+      "description": "Warning, uses experimental package `comfy-env` to attempt a one click isolated install. Will download and use pixi package manager. SAM 3 (Segment Anything Model 3) integration for ComfyUI. Image and video segmentation with text prompts, boxes, and points",
+      "iconUrl": "https://raw.githubusercontent.com/PozzettiAndrea/ComfyUI-SAM3/main/assets/icon.png",
+      "repoUrl": "https://github.com/PozzettiAndrea/ComfyUI-SAM3",
+      "publisher": {
+        "id": "pznodes",
+        "name": "pozzettiandrea"
+      },
+      "downloads": 67217,
+      "githubStars": 564,
+      "latestVersion": "0.1.21",
+      "license": "{\"file\": \"LICENSE\"}",
+      "lastUpdated": "2026-05-19T10:39:52.517642Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
       "nodes": [
         {
           "name": "LoadSAM3Model",
@@ -6876,8 +6681,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 58733,
-      "githubStars": 311,
+      "downloads": 81177,
+      "githubStars": 322,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-12-23T16:03:45.889071Z",
@@ -6983,7 +6788,7 @@
         "id": "systms-ai",
         "name": "systms"
       },
-      "downloads": 499,
+      "downloads": 1387,
       "githubStars": 0,
       "latestVersion": "1.0.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -7019,14 +6824,12 @@
         {
           "name": "LoadUpscalerTensorrtModel",
           "displayName": "Load Upscale Tensorrt Model",
-          "category": "tensorrt",
-          "description": "Load tensorrt models, they will be built automatically if not found."
+          "category": "tensorrt"
         },
         {
           "name": "UpscalerTensorrt",
           "displayName": "Upscaler Tensorrt ⚡",
-          "category": "tensorrt",
-          "description": "Upscale images with tensorrt"
+          "category": "tensorrt"
         }
       ]
     },
@@ -7186,8 +6989,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 2788011,
-      "githubStars": 1626,
+      "downloads": 3303697,
+      "githubStars": 1775,
       "latestVersion": "1.7.9",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-12-17T22:23:57.624918Z",
@@ -7526,11 +7329,11 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 192198,
-      "githubStars": 513,
-      "latestVersion": "1.0.2",
+      "downloads": 240839,
+      "githubStars": 544,
+      "latestVersion": "1.0.3",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2025-12-14T08:59:17.930972Z",
+      "lastUpdated": "2026-05-27T16:01:00.024325Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
@@ -7552,8 +7355,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 1684712,
-      "githubStars": 6435,
+      "downloads": 1914819,
+      "githubStars": 6667,
       "latestVersion": "1.4.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-01T23:44:07.720927Z",
@@ -7996,7 +7799,7 @@
         "id": "hellorob",
         "name": "hellorob"
       },
-      "downloads": 934,
+      "downloads": 1784,
       "githubStars": 1,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
@@ -8091,8 +7894,8 @@
         "id": "fxtdstudios",
         "name": "FXTD STUDIOS"
       },
-      "downloads": 3460,
-      "githubStars": 226,
+      "downloads": 6008,
+      "githubStars": 240,
       "latestVersion": "2.3.3",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-04-01T21:53:16.986121Z",
@@ -9134,6 +8937,44 @@
       ]
     },
     {
+      "id": "timeslice-nodes",
+      "registryId": "timeslice-nodes",
+      "displayName": "TimeSlice Nodes",
+      "description": "Temporal slit-scan / time-displacement effects for ComfyUI — angled, animated and dual-source slicing on a shared engine.",
+      "repoUrl": "https://github.com/systms-ai/TimeSlice-Nodes",
+      "publisher": {
+        "id": "systms-ai",
+        "name": "systms"
+      },
+      "downloads": 475,
+      "githubStars": 65,
+      "latestVersion": "1.0.0",
+      "license": "{\"file\": \"LICENSE\"}",
+      "lastUpdated": "2026-06-15T18:46:25.452477Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
+        {
+          "name": "TimeSliceDual",
+          "displayName": "TimeSlice Dual",
+          "category": "Systms/effects",
+          "description": "Dual-source angled slit-scan. Interleaves slices from two clips, each with its own time offset. Great for transitions and split-reality looks."
+        },
+        {
+          "name": "TimeSliceEffect",
+          "displayName": "TimeSlice Effect",
+          "category": "Systms/effects",
+          "description": "Angled temporal slit-scan. Splits frames into slices offset in time, with cascade shaping and start->end animation."
+        },
+        {
+          "name": "TimeSliceWave",
+          "displayName": "TimeSlice Wave",
+          "category": "Systms/effects",
+          "description": "Angled animated slit-scan with sinusoidal time displacement that ripples across the frame, creating an undulating temporal wave."
+        }
+      ]
+    },
+    {
       "id": "wanvaceadvanced",
       "registryId": "wanvaceadvanced",
       "displayName": "ComfyUI-WanVaceAdvanced",
@@ -9143,105 +8984,24 @@
         "id": "drozbay",
         "name": "drozbay"
       },
-      "downloads": 20594,
-      "githubStars": 84,
-      "latestVersion": "1.4.0",
+      "downloads": 27582,
+      "githubStars": 94,
+      "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2025-12-09T14:11:04.698353Z",
+      "lastUpdated": "2026-02-10T15:55:08.222036Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
         {
-          "name": "HuMoI2VPatch",
-          "displayName": "HuMoI2VPatch",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
           "name": "StringToFloatListRanged",
           "displayName": "StringToFloatListRanged",
           "category": "WanVaceAdvanced",
-          "description": "Converts a comma-separated string to a float list. Supports repeat notation using '#' (e.g., '3#5' repeats 3.0 five times). Mix regular numbers and repeats: '1, 2.5#3, 7' becomes [1.0, 2.5, 2.5, 2.5, 7.0].",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "VaceAdvancedModelPatch",
-          "displayName": "VaceAdvancedModelPatch",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "VaceStrengthTester",
-          "displayName": "VaceStrengthTester",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "WanVacePhantomDual",
-          "displayName": "WanVacePhantomDual",
-          "category": "WanVaceAdvanced",
-          "deprecated": true,
-          "experimental": false
-        },
-        {
-          "name": "WanVacePhantomDualV2",
-          "displayName": "WanVacePhantomDualV2",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "WanVacePhantomExperimental",
-          "displayName": "WanVacePhantomExperimental",
-          "category": "WanVaceAdvanced",
-          "deprecated": true,
-          "experimental": true
-        },
-        {
-          "name": "WanVacePhantomExperimentalV2",
-          "displayName": "WanVacePhantomExperimentalV2",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": true
-        },
-        {
-          "name": "WanVacePhantomSimple",
-          "displayName": "WanVacePhantomSimple",
-          "category": "WanVaceAdvanced",
-          "deprecated": true,
-          "experimental": false
-        },
-        {
-          "name": "WanVacePhantomSimpleV2",
-          "displayName": "WanVacePhantomSimpleV2",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "WanVaceToVideoLatent",
-          "displayName": "WanVaceToVideoLatent",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": true
+          "description": "Converts a comma-separated string to a float list. Supports repeat notation using '#' (e.g., '3#5' repeats 3.0 five times). Mix regular numbers and repeats: '1, 2.5#3, 7' becomes [1.0, 2.5, 2.5, 2.5, 7.0]."
         },
         {
           "name": "WVAOptionsNode",
-          "displayName": "WVAOptionsNode",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "WVAPipeSimple",
-          "displayName": "WVAPipeSimple",
-          "category": "WanVaceAdvanced",
-          "deprecated": false,
-          "experimental": false
+          "displayName": "WVAOptions",
+          "category": "WanVaceAdvanced"
         }
       ]
     },
@@ -9254,8 +9014,8 @@
         "id": "was",
         "name": "WAS"
       },
-      "downloads": 1002453,
-      "githubStars": 1786,
+      "downloads": 1115630,
+      "githubStars": 1814,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-01T05:28:23.655235Z",
@@ -10778,6 +10538,32 @@
           "category": "WAS Suite/Animation/Writer",
           "deprecated": false,
           "experimental": false
+        }
+      ]
+    },
+    {
+      "id": "WhatDreamsCost-ComfyUI",
+      "registryId": "WhatDreamsCost-ComfyUI",
+      "displayName": "WhatDreamsCost-ComfyUI",
+      "description": "LTX Director and a variety of other custom ComfyUI nodes and workflows",
+      "iconUrl": "https://raw.githubusercontent.com/WhatDreamsCost/MediaSyncer/refs/heads/main/Icon.png",
+      "repoUrl": "https://github.com/WhatDreamsCost/WhatDreamsCost-ComfyUI",
+      "publisher": {
+        "id": "whatdreamscost",
+        "name": "WhatDreamsCost"
+      },
+      "downloads": 81975,
+      "githubStars": 1980,
+      "latestVersion": "2.0.5",
+      "license": "{\"file\": \"LICENSE\"}",
+      "lastUpdated": "2026-07-13T01:47:52.785041Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
+        {
+          "name": "SpeechLengthCalculator",
+          "displayName": "Speech Length Calculator",
+          "category": "WhatDreamsCost"
         }
       ]
     }

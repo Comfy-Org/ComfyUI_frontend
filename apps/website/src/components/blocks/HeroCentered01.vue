@@ -4,11 +4,13 @@ import type { HTMLAttributes } from 'vue'
 
 const {
   eyebrow,
+  eyebrowClass,
   title,
   subtitle,
   class: className
 } = defineProps<{
   eyebrow?: string
+  eyebrowClass?: HTMLAttributes['class']
   title: string
   subtitle?: string
   class?: HTMLAttributes['class']
@@ -26,20 +28,25 @@ const {
   >
     <p
       v-if="eyebrow"
-      class="text-primary-comfy-yellow text-sm font-extrabold tracking-wider uppercase"
+      :class="
+        cn(
+          'text-primary-comfy-yellow text-sm font-extrabold tracking-wider uppercase',
+          eyebrowClass
+        )
+      "
     >
       {{ eyebrow }}
     </p>
 
     <h1
-      class="text-primary-warm-white mt-4 text-4xl/snug font-light tracking-tight text-pretty lg:text-6xl/snug"
+      class="mt-4 text-4xl/snug font-light tracking-tight text-pretty text-primary-warm-white lg:text-6xl/snug"
     >
       {{ title }}
     </h1>
 
     <p
       v-if="subtitle"
-      class="mt-6 text-base font-light text-primary-comfy-canvas lg:text-lg"
+      class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
     >
       {{ subtitle }}
     </p>

@@ -1,0 +1,38 @@
+name: Enforce Greatest-Semver-Wins Latest Release
+
+# Un-publishing the latest release rolls Latest back on purpose.
+
+on:
+  release:
+    types: [published, edited, unpublished, deleted]
+  workflow_dispatch: {}
+  workflow_call:
+    secrets:
+      PR_GH_TOKEN:
+        required: true
+  schedule:
+    - cron: '0 4 * * *'
+
+concurrency:
+  group: enforce-latest-release
+
+jobs:
+  enforce-latest:
+    runs-on: ubuntu-latest
+    # On workflow_call the actor is whoever merged the release PR, often a bot.
+    if: github.event_name != 'release' || github.triggering_actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    steps:
+      # workflow_call inherits the caller's refs/pull/N/merge, gone once it closes.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: scripts/cicd/reconcile-latest-release.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Reconcile Latest to the highest stable semver release
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: ./scripts/cicd/reconcile-latest-release.sh

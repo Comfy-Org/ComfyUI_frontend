@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EventManagerInterface } from './interfaces'
 import { RecordingManager } from './RecordingManager'
@@ -79,7 +79,6 @@ describe('RecordingManager', () => {
   let rafSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     MockMediaRecorder.instances = []
     vi.stubGlobal('MediaRecorder', MockMediaRecorder)
     vi.stubGlobal('URL', {
@@ -107,11 +106,6 @@ describe('RecordingManager', () => {
     sourceCanvas = makeSourceCanvas()
     events = makeMockEventManager()
     manager = new RecordingManager(scene, sourceCanvas, events)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
   })
 
   describe('construction', () => {

@@ -148,12 +148,12 @@ export function useCanvasInteractions() {
       return
     }
 
-    // Create new event with same properties
-    const EventConstructor = event.constructor as
-      | typeof MouseEvent
-      | typeof PointerEvent
-    const newEvent = new EventConstructor(event.type, event)
-    canvasEl.dispatchEvent(newEvent)
+    if (event instanceof PointerEvent) {
+      canvasEl.dispatchEvent(new PointerEvent(event.type, event))
+      return
+    }
+
+    canvasEl.dispatchEvent(new MouseEvent(event.type, event))
   }
 
   return {

@@ -25,11 +25,13 @@
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
+  <PartnerNodesEducationCard v-if="!isCloud" />
   <ManagerProgressToast />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
+  <FirstRunTour />
 </template>
 
 <script setup lang="ts">
@@ -50,7 +52,9 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -80,10 +84,10 @@ import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -241,7 +245,7 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
   if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
+    await assetsStore.outputAssets.loadNew()
   }
 }
 
@@ -250,7 +254,7 @@ const onExecutionSuccess = async () => {
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
   if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
+    await assetsStore.outputAssets.loadNew()
   }
 }
 

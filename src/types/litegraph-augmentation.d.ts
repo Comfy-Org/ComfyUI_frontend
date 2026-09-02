@@ -5,14 +5,19 @@ import type {
   LLink,
   Size
 } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 /** ComfyUI extensions of litegraph */
@@ -73,7 +78,8 @@ declare module '@/lib/litegraph/src/types/widgets' {
  */
 declare module '@/lib/litegraph/src/interfaces' {
   interface IWidgetLocator {
-    [key: symbol]: unknown
+    [CONFIG]?: InputSpec
+    [GET_CONFIG]?: () => InputSpec | undefined
   }
 }
 
@@ -117,7 +123,7 @@ declare module '@/lib/litegraph/src/litegraph' {
       subgraphs?: Set<LGraphNode>
     ): ExecutableLGraphNode[]
     recreate?(): Promise<LGraphNode>
-    refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
+    refreshComboInNode?(defs?: Record<string, ComfyNodeDef>): void
     /**
      * @deprecated primitive node.
      * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
@@ -195,6 +201,9 @@ declare module '@/lib/litegraph/src/litegraph' {
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
     pasteFiles?(files: File[]): void
+
+    /** Used internally for sizing the node during creation */
+    _initialMinSize?: { width: number; height: number }
   }
   /**
    * Only used by the Primitive node. Primitive node is using the widget property
@@ -202,7 +211,7 @@ declare module '@/lib/litegraph/src/litegraph' {
    * We should remove this hacky solution once we have a proper solution.
    */
   interface INodeOutputSlot {
-    widget?: { name: string; [key: symbol]: unknown }
+    widget?: IWidgetLocator
   }
 }
 

@@ -99,9 +99,9 @@ testWithMockedObjectInfo.describe(
           .first()
         await expect(result).toBeVisible()
 
-        // In search results with showDescription=true, the component icon is shown
+        // In search results with showDescription=true, the credits icon is shown
         // (not the pricing badge). Verify the API node indicator is present.
-        const apiIndicator = result.locator('i[class*="lucide--component"]')
+        const apiIndicator = result.locator('i[class*="lucide--coins"]')
         await expect(apiIndicator).toBeVisible()
       }
     )
@@ -130,14 +130,12 @@ testWithMockedObjectInfo.describe(
         )
         await expect(header).toBeVisible()
 
-        // CreditBadge uses icon-[lucide--component] for the credits icon
-        const creditsBadge = header.locator('i[class*="lucide--component"]')
+        // CreditBadge uses icon-[lucide--coins] for the credits icon
+        const creditsBadge = header.locator('i[class*="lucide--coins"]')
         await expect(creditsBadge).toBeVisible()
 
         // Verify the badge text contains expected credit amount (10.6 credits for $0.05)
-        const badgeContainer = header.locator(
-          'span:has(> i[class*="lucide--component"])'
-        )
+        const badgeContainer = header.getByTestId('credit-badge-required')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('10.6')
@@ -169,9 +167,7 @@ testWithMockedObjectInfo.describe(
         await expect(header).toBeVisible()
 
         // Verify range format (2.1-21.1 credits for $0.01-$0.10)
-        const badgeContainer = header.locator(
-          'span:has(> i[class*="lucide--component"])'
-        )
+        const badgeContainer = header.getByTestId('credit-badge-required')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('2.1-21.1')
@@ -203,9 +199,7 @@ testWithMockedObjectInfo.describe(
         await expect(header).toBeVisible()
 
         // Verify list format (4.2/10.6 credits for [$0.02, $0.05])
-        const badgeContainer = header.locator(
-          'span:has(> i[class*="lucide--component"])'
-        )
+        const badgeContainer = header.getByTestId('credit-badge-required')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('4.2/10.6')

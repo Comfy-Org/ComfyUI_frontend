@@ -17,13 +17,13 @@ const slides = computed<FeaturedSlide[]>(() =>
     media: {
       type: event.media.type,
       src: event.media.src,
-      alt: event.media.alt[locale],
+      alt: event.media.alt[locale] || event.media.alt.en,
       poster: event.media.type === 'video' ? event.media.poster : undefined
     },
-    eyebrow: event.eyebrow[locale],
-    title: event.title[locale],
+    eyebrow: event.eyebrow?.[locale] || event.eyebrow?.en,
+    title: event.title[locale] || event.title.en,
     showTitle: event.showTitle,
-    href: event.href?.[locale],
+    href: event.href?.[locale] || event.href?.en,
     newTab: event.newTab,
     autoplayMs: event.autoplayMs
   }))

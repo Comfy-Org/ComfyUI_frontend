@@ -51,6 +51,8 @@
   --color-gold-400: #fcbf64;
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
+  --color-gold-700: #c77700;
+  --color-gold-800: #8c6a38;
 
   --color-credit: #ddbd31;
 
@@ -67,6 +69,8 @@
 
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-canvas: #c2bfb9;
+  --color-primary-warm-white: #f0efed;
+  --color-primary-warm-gray: #7e7c78;
 
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
@@ -232,6 +236,8 @@
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
+  --warning-foreground: var(--color-gold-800);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
@@ -385,6 +391,8 @@
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
+  --warning-foreground: var(--color-gold-600);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
@@ -560,6 +568,8 @@
   --color-inverted-background-hover: var(--inverted-background-hover);
   --color-warning-background: var(--warning-background);
   --color-warning-background-hover: var(--warning-background-hover);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-on-background: var(--warning-on-background);
   --color-success-background: var(--success-background);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);
@@ -718,6 +728,32 @@ body {
   border: thin solid;
 }
 
+/* Heading rhythm shared by both markdown renderers; em-relative so margins scale with the heading, not the root font size. */
+.comfy-markdown .tiptap h1,
+.comfy-markdown .tiptap h2,
+.comfy-markdown .tiptap h3,
+.comfy-markdown .tiptap h4,
+.comfy-markdown .tiptap h5,
+.comfy-markdown .tiptap h6,
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  margin-block: 0.67em;
+}
+
+/* Tiptap headings already resolve to `normal`; only the parsed-HTML renderer needs its 1.6 body leading overridden. */
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  line-height: 1.2;
+}
+
 /* Shared markdown content styling for consistent rendering across components */
 .comfy-markdown-content {
   /* Typography */
@@ -730,47 +766,16 @@ body {
 .comfy-markdown-content h1 {
   font-size: calc(22 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h1:first-child {
-  margin-top: 0; /* first:mt-0 */
 }
 
 .comfy-markdown-content h2 {
   font-size: calc(18 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h2:first-child {
-  margin-top: 0; /* first:mt-0 */
 }
 
 .comfy-markdown-content h3 {
   font-size: calc(16 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h3:first-child {
-  margin-top: 0; /* first:mt-0 */
-}
-
-.comfy-markdown-content h4,
-.comfy-markdown-content h5,
-.comfy-markdown-content h6 {
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h4:first-child,
-.comfy-markdown-content h5:first-child,
-.comfy-markdown-content h6:first-child {
-  margin-top: 0; /* first:mt-0 */
 }
 
 /* Paragraphs */
@@ -1524,16 +1529,12 @@ audio.comfy-audio.empty-audio-widget {
   position: relative;
   transition: background-color 0.2s;
 }
-.maskEditor_toolPanelContainerSelected svg {
-  fill: var(--p-button-text-primary-color) !important;
-}
 .maskEditor_toolPanelContainerSelected .maskEditor_toolPanelIndicator {
   display: block;
 }
 .maskEditor_toolPanelContainer svg {
   width: 75%;
   aspect-ratio: 1/1;
-  fill: var(--p-button-text-secondary-color);
 }
 
 .maskEditor_toolPanelContainerDark:hover {
@@ -1550,7 +1551,7 @@ audio.comfy-audio.empty-audio-widget {
   width: 4px;
   position: absolute;
   left: 0;
-  background: var(--p-button-text-primary-color);
+  background: currentColor;
 }
 .maskEditor_sidePanelSeparator {
   width: 100%;

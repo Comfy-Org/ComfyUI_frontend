@@ -5,18 +5,17 @@ import { useI18n } from 'vue-i18n'
 
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  getWidgetName,
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { node } = defineProps<{
@@ -83,12 +82,10 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
         sourceNodeId: interiorNode.id,
-        sourceWidgetName: getWidgetName(widget)
+        sourceWidgetName: widget.name
       })
   )
 })
-
-const parents = computed<SubgraphNode[]>(() => [node])
 
 const searchedWidgetsList = shallowRef<NodeWidgetsList>(widgetsList.value)
 const isSearching = ref(false)
@@ -122,25 +119,17 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
-  >
-    <AsyncSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsList"
-      class="flex-1"
-    />
+  <PanelSearchHeader v-model="searchQuery" :searcher :update-key="widgetsList">
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="!isSearching && advancedInputsWidgets.length > 0"
     />
-  </div>
+  </PanelSearchHeader>
   <SectionWidgets
     :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
-    :parents
+    :host="node"
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
     :enable-empty-state="isSearching"
@@ -164,7 +153,7 @@ const label = computed(() => {
     ref="advancedInputsSectionRef"
     v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
-    :parents="parents"
+    :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
     class="border-b border-interface-stroke"

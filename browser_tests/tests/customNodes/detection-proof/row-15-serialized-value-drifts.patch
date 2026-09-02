@@ -1,0 +1,33 @@
+diff --git a/src/utils/executionUtil.ts b/src/utils/executionUtil.ts
+index 0b6ad40610..fffd6e6991 100644
+--- a/src/utils/executionUtil.ts
++++ b/src/utils/executionUtil.ts
+@@ -103,16 +103,22 @@ export const graphToPrompt = async (
+         const widgetValue = widget.serializeValue
+           ? await widget.serializeValue(node, i)
+           : widget.value
++        const drifted =
++          node.type === 'ImpactInt' &&
++          typeof widgetValue === 'number' &&
++          Number.isInteger(widgetValue)
++            ? widgetValue + 1
++            : widgetValue
+         // By default, Array values are reserved to represent node connections.
+         // We need to wrap the array as an object to avoid the misinterpretation
+         // of the array as a node connection.
+         // The backend automatically unwraps the object to an array during
+         // execution.
+-        inputs[widget.name] =
+-          widget.type === 'curve' && widgetValue != null
+-            ? { __type__: 'CURVE', __value__: widgetValue }
+-            : Array.isArray(widgetValue)
+-              ? { __value__: widgetValue }
+-              : widgetValue
++        inputs[widget.name] =
++          widget.type === 'curve' && drifted != null
++            ? { __type__: 'CURVE', __value__: drifted }
++            : Array.isArray(drifted)
++              ? { __value__: drifted }
++              : drifted
+       }
+     }

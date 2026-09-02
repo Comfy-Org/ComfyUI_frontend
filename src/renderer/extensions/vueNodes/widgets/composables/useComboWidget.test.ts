@@ -24,16 +24,22 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockUpdateInputs = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const mockLoadMore = vi.hoisted(() =>
+  vi.fn(() => {
+    mockAssetsStoreState.inputAssets.hasMore = false
+    return Promise.resolve()
+  })
+)
 const mockGetInputName = vi.hoisted(() => vi.fn((hash: string) => hash))
 const mockGetAssets = vi.hoisted(() => vi.fn(() => [] as AssetItem[]))
-const mockAssetsStoreState = vi.hoisted(() => {
-  const inputAssets: AssetItem[] = []
-  return {
-    inputAssets,
-    inputLoading: false
+const mockAssetsStoreState = vi.hoisted(() => ({
+  inputAssets: {
+    items: [] as AssetItem[],
+    isLoading: false,
+    hasMore: false,
+    loadMore: mockLoadMore
   }
-})
+}))
 
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
@@ -50,10 +56,6 @@ vi.mock('@/stores/assetsStore', () => ({
     get inputAssets() {
       return mockAssetsStoreState.inputAssets
     },
-    get inputLoading() {
-      return mockAssetsStoreState.inputLoading
-    },
-    updateInputs: mockUpdateInputs,
     getInputName: mockGetInputName,
     getAssets: mockGetAssets
   }))
@@ -138,15 +140,15 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
 
 describe('useComboWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSettingStoreGet.mockReturnValue(false)
     mockGetInputName.mockImplementation((hash: string) => hash)
     mockGetAssets.mockImplementation(() => [])
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
     vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
     mockDistributionState.isCloud = false
-    mockAssetsStoreState.inputAssets = []
-    mockAssetsStoreState.inputLoading = false
+    mockAssetsStoreState.inputAssets.items = []
+    mockAssetsStoreState.inputAssets.isLoading = false
+    mockAssetsStoreState.inputAssets.hasMore = false
   })
 
   it('should handle undefined spec', () => {
@@ -370,7 +372,7 @@ describe('useComboWidget', () => {
       inputAssets: AssetItem[] = []
     ) {
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = inputAssets
+      mockAssetsStoreState.inputAssets.items = inputAssets
 
       const constructor = useComboWidget()
       const mockNode = createMockNode(scenario.nodeClass)
@@ -743,8 +745,9 @@ describe('useComboWidget', () => {
     it('should trigger lazy load for cloud input nodes', () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = []
-      mockAssetsStoreState.inputLoading = false
+      mockAssetsStoreState.inputAssets.items = []
+      mockAssetsStoreState.inputAssets.isLoading = false
+      mockAssetsStoreState.inputAssets.hasMore = true
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({ type: 'combo' })
@@ -757,21 +760,23 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(mockLoadMore).toHaveBeenCalledTimes(1)
     })
 
     it('should keep empty cloud input value after lazy-loaded inputs resolve a default', async () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = []
-      mockAssetsStoreState.inputLoading = false
-      mockUpdateInputs.mockImplementationOnce(async () => {
-        mockAssetsStoreState.inputAssets = [
+      mockAssetsStoreState.inputAssets.items = []
+      mockAssetsStoreState.inputAssets.isLoading = false
+      mockAssetsStoreState.inputAssets.hasMore = true
+      mockLoadMore.mockImplementationOnce(async () => {
+        mockAssetsStoreState.inputAssets.items = [
           createMockAssetItem({
             name: scenario.assetName,
             hash: scenario.assetHash
           })
         ]
+        mockAssetsStoreState.inputAssets.hasMore = false
       })
 
       const constructor = useComboWidget()
@@ -783,47 +788,27 @@ describe('useComboWidget', () => {
 
       const widget = constructor(mockNode, inputSpec)
 
-      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(mockLoadMore).toHaveBeenCalledTimes(1)
       expect(getInputWidgetDefault(mockNode)).toBe('')
       expect(widget.value).toBe('')
 
-      await mockUpdateInputs.mock.results[0]?.value
+      await mockLoadMore.mock.results[0]?.value
 
       expect(getInputWidgetValues(mockNode)).toEqual([scenario.assetHash])
       expect(widget.value).toBe('')
     })
 
-    it('should not trigger lazy load if assets already loading', () => {
-      const scenario = cloudInputScenarios[0]
-      mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = []
-      mockAssetsStoreState.inputLoading = true
-
-      const constructor = useComboWidget()
-      const mockWidget = createMockWidget({ type: 'combo' })
-      const mockNode = createMockNode('LoadImage')
-      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
-      const inputSpec = createMockInputSpec({
-        name: 'image',
-        options: [scenario.assetHash]
-      })
-
-      constructor(mockNode, inputSpec)
-
-      expect(mockUpdateInputs).not.toHaveBeenCalled()
-    })
-
     it('should not trigger lazy load if assets already loaded', () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = [
+      mockAssetsStoreState.inputAssets.items = [
         createMockAssetItem({
           id: 'asset-123',
           name: scenario.assetName,
           hash: scenario.assetHash
         })
       ]
-      mockAssetsStoreState.inputLoading = false
+      mockAssetsStoreState.inputAssets.isLoading = false
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({ type: 'combo' })
@@ -836,7 +821,7 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(mockUpdateInputs).not.toHaveBeenCalled()
+      expect(mockLoadMore).not.toHaveBeenCalled()
     })
   })
 })

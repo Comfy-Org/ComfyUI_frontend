@@ -7,8 +7,7 @@ import type { ComfyDesktop2Bridge } from '@/types'
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
   'https://civitai.red/',
-  'https://huggingface.co/',
-  'http://localhost:'
+  'https://huggingface.co/'
 ] as const
 
 // Intentionally restrictive subset of model extensions permitted for download.
@@ -25,8 +24,16 @@ const ALLOWED_SUFFIXES = [
 const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
   'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
-  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
+  'http://localhost:8188/api/devtools/fake_model.safetensors'
 ])
+
+function isModelUrlAllowlisted(url: string): boolean {
+  return (
+    WHITE_LISTED_URLS.has(url) ||
+    ALLOWED_SOURCES.some((source) => url.startsWith(source))
+  )
+}
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
 
@@ -48,6 +55,17 @@ async function startDesktop2ModelDownload(
 }
 
 function openUrlInNewTab(url: string, downloadAs?: string): void {
+  try {
+    const protocol = new URL(url).protocol
+    if (protocol !== 'https:' && protocol !== 'http:') {
+      console.warn('[missingModelDownload] Blocked unsupported URL scheme')
+      return
+    }
+  } catch {
+    console.warn('[missingModelDownload] Blocked malformed download URL')
+    return
+  }
+
   const link = document.createElement('a')
   link.href = url
   if (downloadAs) link.download = downloadAs
@@ -93,9 +111,8 @@ export function toBrowsableUrl(url: string): string {
 }
 
 export function isModelDownloadable(model: ModelWithUrl): boolean {
+  if (!isModelUrlAllowlisted(model.url)) return false
   if (WHITE_LISTED_URLS.has(model.url)) return true
-  if (!ALLOWED_SOURCES.some((source) => model.url.startsWith(source)))
-    return false
   if (!ALLOWED_SUFFIXES.some((suffix) => model.name.endsWith(suffix)))
     return false
   return true
@@ -105,8 +122,12 @@ export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
 ): void {
+  if (!isModelDownloadable(model)) return
+
   const desktop2Bridge = window.__comfyDesktop2
-  if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
+  const isRemote =
+    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  if (desktop2Bridge?.downloadModel && !isRemote) {
     void startDesktop2ModelDownload(desktop2Bridge, model)
     return
   }
@@ -149,19 +170,34 @@ interface CivitaiModelVersionResponse {
 const metadataCache = new Map<string, ModelMetadata>()
 const inflight = new Map<string, Promise<ModelMetadata>>()
 
-async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
+export function clearMetadataCache(): void {
+  metadataCache.clear()
+  inflight.clear()
+}
+
+async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
   try {
     const pathname = new URL(url).pathname
     const versionIdMatch =
       pathname.match(/^\/api\/download\/models\/(\d+)$/) ??
       pathname.match(/^\/api\/v1\/models-versions\/(\d+)$/)
 
-    if (!versionIdMatch) return { fileSize: null, gatedRepoUrl: null }
+    if (!versionIdMatch) {
+      return {
+        metadata: { fileSize: null, gatedRepoUrl: null },
+        cacheable: false
+      }
+    }
 
     const [, modelVersionId] = versionIdMatch
     const apiUrl = `https://civitai.com/api/v1/model-versions/${modelVersionId}`
     const res = await fetch(apiUrl)
-    if (!res.ok) return { fileSize: null, gatedRepoUrl: null }
+    if (!res.ok) {
+      return {
+        metadata: { fileSize: null, gatedRepoUrl: null },
+        cacheable: false
+      }
+    }
 
     const data: CivitaiModelVersionResponse = await res.json()
     const matchingFile = data.files?.find((file) => {
@@ -173,9 +209,15 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
       )
     })
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
-    return { fileSize, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize, gatedRepoUrl: null },
+      cacheable: true
+    }
   } catch {
-    return { fileSize: null, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      cacheable: false
+    }
   }
 }
 
@@ -223,11 +265,11 @@ async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
   }
 }
 
-function isComplete(metadata: ModelMetadata): boolean {
-  return metadata.fileSize !== null || metadata.gatedRepoUrl !== null
-}
-
 export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+  if (!isModelUrlAllowlisted(url)) {
+    return { fileSize: null, gatedRepoUrl: null }
+  }
+
   const cached = metadataCache.get(url)
   if (cached !== undefined) return cached
 
@@ -235,15 +277,9 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
   if (existing) return existing
 
   const promise = (async () => {
-    if (isCivitaiModelUrl(url)) {
-      const metadata = await fetchCivitaiMetadata(url)
-      if (isComplete(metadata)) {
-        metadataCache.set(url, metadata)
-      }
-      return metadata
-    }
-
-    const result = await fetchHeadMetadata(url)
+    const result = isCivitaiModelUrl(url)
+      ? await fetchCivitaiMetadata(url)
+      : await fetchHeadMetadata(url)
     if (result.cacheable) {
       metadataCache.set(url, result.metadata)
     }

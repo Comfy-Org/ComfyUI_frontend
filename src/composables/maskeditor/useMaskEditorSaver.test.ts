@@ -1,9 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -120,9 +121,6 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
@@ -136,8 +134,15 @@ describe('useMaskEditorSaver', () => {
       ],
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: {
+        setDirtyCanvas: vi.fn(),
+        rootGraph: { id: 'maskeditor-saver-test' }
+      }
     })
+    useWidgetValueStore().registerWidget(
+      widgetId('maskeditor-saver-test', toNodeId(42), 'image'),
+      { type: 'string', value: 'original.png [input]', options: {} }
+    )
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -189,10 +194,6 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('registers node outputs in store after save for node without prior execution outputs', async () => {
     const store = useNodeOutputStore()
     const locatorId = String(mockNode.id)
@@ -209,6 +210,54 @@ describe('useMaskEditorSaver', () => {
     // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId('maskeditor-saver-test', toNodeId(42), 'image')
+      )?.value
+    ).toBe('clipspace-painted-masked-123.png [input]')
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png [input]'
+    )
+  })
+
+  it('replaces a stale clipspace image with the saved image', async () => {
+    mockNode.images = [
+      {
+        filename: 'pasted-before-edit.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ]
+
+    await useMaskEditorSaver().save()
+
+    expect(mockNode.images).toEqual([
+      {
+        filename: 'clipspace-painted-masked-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ])
+  })
+
+  it('does not write server references after the source node is detached', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      mockNode.graph = null
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: 'clipspace-painted-masked-123.png',
+            subfolder: 'clipspace',
+            type: 'input'
+          })
+      } as Response
+    })
+
+    await useMaskEditorSaver().save()
+
+    expect(useNodeOutputStore().nodeOutputs['42']).toBeUndefined()
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
   })
 
   it('omits subfolder from the upload FormData under the unified contract', async () => {

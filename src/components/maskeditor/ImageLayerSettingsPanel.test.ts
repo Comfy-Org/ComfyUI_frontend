@@ -77,7 +77,6 @@ const makeCanvas = (): HTMLCanvasElement => document.createElement('canvas')
 
 describe('ImageLayerSettingsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMock()
   })
 

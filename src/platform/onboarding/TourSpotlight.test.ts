@@ -1,7 +1,7 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -23,8 +23,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name: 'run', placement: 'right', ...overrides }
+function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
+  return { kind: 'spotlight', name: 'run', placement: 'right', ...overrides }
 }
 
 const baseProps = {
@@ -37,7 +37,8 @@ const baseProps = {
   backLabel: 'Back',
   countedStepIdx: 0,
   countedStepsTotal: 1,
-  waitingForTarget: false
+  waitingForTarget: false,
+  stepSettled: true
 }
 
 function renderSpotlight(
@@ -51,10 +52,7 @@ function renderSpotlight(
 
 describe('TourSpotlight', () => {
   afterEach(() => {
-    cleanup()
     clearCoachmarks()
-    document.body.replaceChildren()
-    vi.useRealTimers()
   })
 
   it('renders the spotlight and card for a step', () => {
@@ -92,8 +90,12 @@ describe('TourSpotlight', () => {
     await nextTick()
     expect(ZIndex.set).toHaveBeenCalled()
 
+    const clearedWhileMounted = vi.mocked(ZIndex.clear).mock.calls.length
     unmount()
-    expect(ZIndex.clear).toHaveBeenCalled()
+    expect(
+      vi.mocked(ZIndex.clear).mock.calls.length,
+      'an overlay that never releases its entry leaves the modal stack raised'
+    ).toBe(clearedWhileMounted + 1)
   })
 
   it('re-claims the modal stack per step without leaking entries', async () => {
@@ -114,6 +116,53 @@ describe('TourSpotlight', () => {
       vi.mocked(ZIndex.set).mock.calls.length + 1
     )
     expect(ZIndex.set).toHaveBeenCalled()
+  })
+
+  it('leaves focus, z-order and travel alone when a step renames itself', async () => {
+    vi.mocked(ZIndex.set).mockClear()
+    const runState = ref('generating')
+    const step: SpotlightStep = {
+      kind: 'spotlight',
+      placement: 'right',
+      get name() {
+        return runState.value === 'generating'
+          ? 'result.generating'
+          : 'result.image'
+      }
+    }
+    const { rerender } = renderSpotlight({
+      step,
+      title: 'Hang tight',
+      body: 'Your result lands here'
+    })
+    await nextTick()
+    await nextTick()
+
+    const skip = screen.getByRole('button', { name: 'Skip' })
+    skip.focus()
+    const raises = vi.mocked(ZIndex.set).mock.calls.length
+    const travel = screen.getByTestId('coach-card').className
+
+    runState.value = 'succeeded'
+    await nextTick()
+    await nextTick()
+    await rerender({ step, title: 'Your image is ready', body: 'Here it is' })
+    await nextTick()
+    await nextTick()
+
+    expect(step.name, 'the step really did rename itself').toBe('result.image')
+    expect(
+      skip,
+      'a step renaming itself mid-run must not pull focus off what the user selected'
+    ).toHaveFocus()
+    expect(
+      vi.mocked(ZIndex.set).mock.calls.length,
+      'a re-raise per rename leaks a z-index entry every time'
+    ).toBe(raises)
+    expect(
+      screen.getByTestId('coach-card').className,
+      'a rename is not a move, so the card must not re-arm its travel'
+    ).toBe(travel)
   })
 
   it('emits advance on the primary button and skip on the secondary', async () => {

@@ -94,6 +94,63 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test(
+          'Promoted advanced widget remains visible when global advanced widgets are disabled',
+          { tag: ['@node'] },
+          async ({ comfyPage }) => {
+            const subgraphNodeId =
+              await test.step('Convert a node with hidden advanced widgets to a subgraph', async () => {
+                await comfyPage.settings.setSetting(
+                  'Comfy.Node.AlwaysShowAdvancedWidgets',
+                  false
+                )
+                const modelSamplingNode = await comfyPage.nodeOps.addNode(
+                  'ModelSamplingFlux',
+                  {},
+                  { x: 500, y: 200 }
+                )
+                await comfyPage.nextFrame()
+                await expect(
+                  comfyPage.vueNodes.getNodeLocator(
+                    String(modelSamplingNode.id)
+                  )
+                ).toBeVisible()
+
+                await modelSamplingNode.click('title')
+                const subgraphNode = await modelSamplingNode.convertToSubgraph()
+                return String(subgraphNode.id)
+              })
+
+            await test.step('Promote an advanced interior widget', async () => {
+              await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+              const interiorNode =
+                comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
+              await expect(interiorNode).toBeVisible()
+              await interiorNode
+                .getByText('Show advanced inputs', { exact: true })
+                .click()
+              await expect(
+                interiorNode.getByLabel('max_shift', { exact: true })
+              ).toBeVisible()
+              await comfyPage.subgraph.promoteWidget(interiorNode, 'max_shift')
+              await comfyPage.subgraph.exitViaBreadcrumb()
+            })
+
+            await test.step('Keep the promoted widget visible on the host', async () => {
+              await expectPromotedWidgetNamesToContain(
+                comfyPage,
+                subgraphNodeId,
+                'max_shift'
+              )
+              await expect(
+                comfyPage.vueNodes
+                  .getNodeLocator(subgraphNodeId)
+                  .getByLabel('max_shift', { exact: true })
+              ).toBeVisible()
+            })
+          }
+        )
+
         test('Promoted text widget renders and enters the subgraph in Vue mode', async ({
           comfyPage
         }) => {
@@ -157,6 +214,43 @@ test.describe(
           ).toHaveValue(updatedInteriorContent)
         }
       )
+
+      // Open bug #14495 — drop `test.fail` when the fix lands.
+      test('Promoted STRING widget edit survives a rebind of the interior link', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.vueNodes.waitForNodes()
+
+        const hostValue = 'promoted-value-rebind-test'
+        const promotedTextarea = comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+        await promotedTextarea.fill(hostValue)
+        await expect(promotedTextarea).toHaveValue(hostValue)
+
+        await comfyPage.vueNodes.enterSubgraph('11')
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+
+        const interiorNodes = await comfyPage.nodeOps.getNodeRefsByType(
+          'CLIPTextEncode',
+          true
+        )
+        expect(
+          interiorNodes,
+          'Expected exactly one interior CLIPTextEncode'
+        ).toHaveLength(1)
+
+        await comfyPage.subgraph.rebindPromotedInput(interiorNodes[0], 'text')
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.vueNodes.waitForNodes()
+
+        test.fail()
+        await expect(promotedTextarea).toHaveValue(hostValue)
+      })
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {

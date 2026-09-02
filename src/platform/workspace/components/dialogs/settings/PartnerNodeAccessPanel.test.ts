@@ -25,6 +25,7 @@ const {
   mockSetAllProvidersEnabled,
   mockSetEnforcementEnabled,
   mockSetProviderEnabled,
+  mockSetProvidersEnabled,
   mockShowConfirmDialog,
   mockStatus,
   mockWorkspaceRole
@@ -43,6 +44,7 @@ const {
     mockSetAllProvidersEnabled: vi.fn(),
     mockSetEnforcementEnabled: vi.fn(),
     mockSetProviderEnabled: vi.fn(),
+    mockSetProvidersEnabled: vi.fn(),
     mockShowConfirmDialog: vi.fn(),
     mockStatus: ref('configured'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner')
@@ -68,7 +70,8 @@ vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
     loadPolicy: mockLoadPolicy,
     setAllProvidersEnabled: mockSetAllProvidersEnabled,
     setEnforcementEnabled: mockSetEnforcementEnabled,
-    setProviderEnabled: mockSetProviderEnabled
+    setProviderEnabled: mockSetProviderEnabled,
+    setProvidersEnabled: mockSetProvidersEnabled
   })
 }))
 
@@ -109,13 +112,26 @@ function nodeDef(
 
 function renderComponent() {
   return render(PartnerNodeAccessPanel, {
-    global: { plugins: [i18n] }
+    global: { plugins: [i18n], directives: { tooltip: {} } }
   })
+}
+
+function restrictPolicy(
+  entries: PartnerNodePolicy['providers'] = [
+    { providerId: 'openai', enabled: true }
+  ]
+) {
+  mockPolicy.value = { enforcementEnabled: true, providers: entries }
+}
+
+const allowAllSwitchName = 'Allow all partner models'
+
+async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Disable all' }))
 }
 
 describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGovernedWorkspaceId.value = 'workspace-one'
     mockStatus.value = 'configured'
     mockWorkspaceRole.value = 'owner'
@@ -141,6 +157,7 @@ describe('PartnerNodeAccessPanel', () => {
     mockSetAllProvidersEnabled.mockResolvedValue(undefined)
     mockSetEnforcementEnabled.mockResolvedValue(undefined)
     mockSetProviderEnabled.mockResolvedValue(undefined)
+    mockSetProvidersEnabled.mockResolvedValue(undefined)
     mockShowConfirmDialog.mockReturnValue({ key: 'disable-all-dialog' })
   })
 
@@ -149,7 +166,7 @@ describe('PartnerNodeAccessPanel', () => {
     renderComponent()
 
     expect(screen.getByText('OpenAI (inc. Sora)')).toBeTruthy()
-    expect(screen.getByText('2 enabled')).toBeTruthy()
+    expect(screen.getByText('2 models')).toBeTruthy()
     expect(screen.queryByText('Route only')).toBeNull()
     expect(screen.queryByText('Create image')).toBeNull()
 
@@ -161,13 +178,10 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('sorts providers from the Provider column header', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [
-        { providerId: 'openai', enabled: true },
-        { providerId: 'acme', enabled: true }
-      ]
-    }
+    restrictPolicy([
+      { providerId: 'openai', enabled: true },
+      { providerId: 'acme', enabled: true }
+    ])
     mockProviders.value = [
       ...mockProviders.value,
       {
@@ -179,7 +193,7 @@ describe('PartnerNodeAccessPanel', () => {
     renderComponent()
 
     const table = screen.getByRole('table', {
-      name: 'Partner node providers'
+      name: 'Partner model providers'
     })
     const providerHeader = within(table).getByRole('columnheader', {
       name: 'Provider'
@@ -195,15 +209,12 @@ describe('PartnerNodeAccessPanel', () => {
     )
   })
 
-  it('sorts providers by enabled node count', async () => {
+  it('sorts providers by model count', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [
-        { providerId: 'openai', enabled: true },
-        { providerId: 'acme', enabled: true }
-      ]
-    }
+    restrictPolicy([
+      { providerId: 'openai', enabled: true },
+      { providerId: 'acme', enabled: true }
+    ])
     mockProviders.value = [
       ...mockProviders.value,
       {
@@ -220,22 +231,95 @@ describe('PartnerNodeAccessPanel', () => {
     renderComponent()
 
     const table = screen.getByRole('table', {
-      name: 'Partner node providers'
+      name: 'Partner model providers'
     })
-    const nodesHeader = within(table).getByRole('columnheader', {
-      name: 'Nodes'
+    const modelsHeader = within(table).getByRole('columnheader', {
+      name: 'Models'
     })
-    expect(nodesHeader).toHaveAttribute('aria-sort', 'none')
+    expect(modelsHeader).toHaveAttribute('aria-sort', 'none')
 
-    await user.click(within(nodesHeader).getByRole('button'))
+    await user.click(within(modelsHeader).getByRole('button'))
 
-    expect(nodesHeader).toHaveAttribute('aria-sort', 'descending')
+    expect(modelsHeader).toHaveAttribute('aria-sort', 'descending')
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent(
       'OpenAI (inc. Sora)'
     )
   })
 
-  it('searches both provider and node names', async () => {
+  it('sorts providers from the State column header', async () => {
+    const user = userEvent.setup()
+    restrictPolicy([
+      { providerId: 'openai', enabled: false },
+      { providerId: 'acme', enabled: true }
+    ])
+    mockIsProviderEnabled.mockImplementation(
+      (providerId: string) => providerId !== 'openai'
+    )
+    mockProviders.value = [
+      ...mockProviders.value,
+      {
+        id: 'acme',
+        displayName: 'Acme',
+        nodeCategories: ['Acme']
+      }
+    ]
+    renderComponent()
+
+    const table = screen.getByRole('table', {
+      name: 'Partner model providers'
+    })
+    const stateHeader = within(table).getByRole('columnheader', {
+      name: 'State'
+    })
+
+    await user.click(within(stateHeader).getByRole('button'))
+
+    expect(stateHeader).toHaveAttribute('aria-sort', 'descending')
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Acme')
+  })
+
+  it('searches both provider and model names', async () => {
+    const user = userEvent.setup()
+    mockProviders.value = [
+      ...mockProviders.value,
+      {
+        id: 'acme',
+        displayName: 'Acme',
+        nodeCategories: ['Acme']
+      }
+    ]
+    mockNodeDefsByName.value.AcmeNode = nodeDef(
+      'AcmeNode',
+      'Enhance image',
+      'partner/image/Acme'
+    )
+    mockNodeDefsByName.value.AcmeResize = nodeDef(
+      'AcmeResize',
+      'Resize video',
+      'partner/video/Acme'
+    )
+    renderComponent()
+
+    await user.type(
+      screen.getByRole('combobox', {
+        name: 'Search providers and partner models...'
+      }),
+      'Enhance'
+    )
+
+    expect(screen.getByText('Acme')).toBeTruthy()
+    expect(screen.getByText('1 of 2 matches')).toBeTruthy()
+    expect(screen.queryByText('Enhance image')).toBeNull()
+    expect(screen.queryByText('OpenAI (inc. Sora)')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Acme' }))
+    expect(screen.getByText('Enhance image')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Acme' }))
+    expect(screen.queryByText('Enhance image')).toBeNull()
+  })
+
+  it('keeps provider-name matches collapsed while searching', async () => {
     const user = userEvent.setup()
     mockProviders.value = [
       ...mockProviders.value,
@@ -251,17 +335,16 @@ describe('PartnerNodeAccessPanel', () => {
       'partner/image/Acme'
     )
     renderComponent()
+    const search = screen.getByRole('combobox', {
+      name: 'Search providers and partner models...'
+    })
 
-    await user.type(
-      screen.getByRole('combobox', {
-        name: 'Search providers and partner nodes...'
-      }),
-      'Enhance'
-    )
+    await user.type(search, 'Acme')
+    expect(screen.queryByText('Enhance image')).toBeNull()
+    expect(screen.getByText('1 model')).toBeTruthy()
 
-    expect(screen.getByText('Acme')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Acme' }))
     expect(screen.getByText('Enhance image')).toBeTruthy()
-    expect(screen.queryByText('OpenAI (inc. Sora)')).toBeNull()
   })
 
   it('keeps name-matched providers without loaded nodes', async () => {
@@ -276,29 +359,33 @@ describe('PartnerNodeAccessPanel', () => {
     ]
     renderComponent()
     const search = screen.getByRole('combobox', {
-      name: 'Search providers and partner nodes...'
+      name: 'Search providers and partner models...'
     })
 
     await user.type(search, 'Acme')
 
     expect(screen.getByText('Acme')).toBeTruthy()
-    expect(screen.getByText('0 enabled')).toBeTruthy()
+    expect(screen.getByText('0 models')).toBeTruthy()
 
     await user.clear(search)
     await user.type(search, 'Missing')
 
-    expect(screen.getByText('No providers or partner nodes found')).toBeTruthy()
+    expect(
+      screen.getByText('No providers or partner models found')
+    ).toBeTruthy()
   })
 
   it('shows stored disabled state while restricted', () => {
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: false }]
-    }
+    restrictPolicy([{ providerId: 'openai', enabled: false }])
     mockIsProviderEnabled.mockReturnValue(false)
     renderComponent()
 
-    expect(screen.getByText('Restricted')).toBeTruthy()
+    expect(
+      screen
+        .getByRole('switch', { name: allowAllSwitchName })
+        .getAttribute('aria-checked')
+    ).toBe('false')
+    expect(screen.getByText('2 models')).toBeTruthy()
     expect(
       screen
         .getByRole('switch', { name: 'Set access for OpenAI (inc. Sora)' })
@@ -307,6 +394,7 @@ describe('PartnerNodeAccessPanel', () => {
   })
 
   it('uses checkbox-backed switches for provider access', () => {
+    restrictPolicy()
     renderComponent()
 
     expect(
@@ -316,7 +404,7 @@ describe('PartnerNodeAccessPanel', () => {
     ).toHaveAttribute('type', 'checkbox')
   })
 
-  it('explains stored provider settings while access is unrestricted', () => {
+  it('hides provider controls while access is unrestricted', () => {
     mockPolicy.value = {
       enforcementEnabled: false,
       providers: [{ providerId: 'openai', enabled: false }]
@@ -325,64 +413,109 @@ describe('PartnerNodeAccessPanel', () => {
     renderComponent()
 
     expect(
-      screen.getByText(
-        'Partner nodes from every provider are available to everyone. Disabling providers will set this to Restricted.'
-      )
+      screen.getByText('Turn off to choose which partner models users can run.')
     ).toBeTruthy()
+    expect(screen.getByText('2 models')).toBeTruthy()
     expect(
-      screen
-        .getByRole('switch', { name: 'Set access for OpenAI (inc. Sora)' })
-        .getAttribute('aria-checked')
-    ).toBe('false')
-    expect(
-      screen.queryByRole('button', { name: 'Enable all' })
-    ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Disable all' })).toBeDisabled()
-  })
-
-  it('disables provider controls while access is unrestricted', () => {
-    renderComponent()
-
-    expect(screen.getByRole('button', { name: 'Disable all' })).toBeDisabled()
-    expect(
-      screen.getByRole('switch', {
+      screen.queryByRole('switch', {
         name: 'Set access for OpenAI (inc. Sora)'
       })
-    ).toBeDisabled()
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Disable all' })
+    ).not.toBeInTheDocument()
   })
 
-  it('saves enable-all changes immediately', async () => {
+  it('summarizes allowed models under the table', async () => {
+    const summary = (expected: string) =>
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' && element.textContent === expected
+      )
+    renderComponent()
+
+    expect(summary('All partner models allowed')).toBeInTheDocument()
+
+    restrictPolicy([{ providerId: 'openai', enabled: true }])
+    await nextTick()
+
+    expect(summary('2 partner models allowed')).toBeInTheDocument()
+  })
+
+  it('warns about future partner models while restricted', () => {
+    restrictPolicy()
+    renderComponent()
+
+    expect(
+      screen.getByText(
+        'Users can only run the models allowed below. New models are disabled by default.'
+      )
+    ).toBeTruthy()
+  })
+
+  it('applies bulk enable to every provider from the menu', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: false }]
-    }
+    restrictPolicy([{ providerId: 'openai', enabled: false }])
     mockIsProviderEnabled.mockReturnValue(false)
     renderComponent()
 
-    expect(screen.getByRole('button', { name: 'Disable all' })).toBeEnabled()
-    await user.click(screen.getByRole('button', { name: 'Enable all' }))
+    await openBulkMenu(user)
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Enable all 1 provider' })
+    )
 
-    expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(true)
+    expect(mockSetProvidersEnabled).toHaveBeenCalledWith(['openai'], true)
   })
 
-  it('keeps both bulk actions visible while access is restricted', () => {
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+  it('disables no-op bulk actions in the menu', async () => {
+    const user = userEvent.setup()
+    restrictPolicy([{ providerId: 'openai', enabled: true }])
     renderComponent()
 
-    expect(screen.getByRole('button', { name: 'Enable all' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Disable all' })).toBeEnabled()
+    await openBulkMenu(user)
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Disable all 1 provider' })
+    ).not.toHaveAttribute('aria-disabled', 'true')
+    expect(
+      screen.getByRole('menuitem', { name: 'Enable all 1 provider' })
+    ).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('scopes bulk actions to matching providers while searching', async () => {
+    const user = userEvent.setup()
+    restrictPolicy([
+      { providerId: 'openai', enabled: true },
+      { providerId: 'acme', enabled: true }
+    ])
+    mockProviders.value = [
+      ...mockProviders.value,
+      {
+        id: 'acme',
+        displayName: 'Acme',
+        nodeCategories: ['Acme']
+      }
+    ]
+    renderComponent()
+
+    await user.type(
+      screen.getByRole('combobox', {
+        name: 'Search providers and partner models...'
+      }),
+      'Acme'
+    )
+    await openBulkMenu(user)
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Disable 1 matching provider' })
+    )
+
+    expect(mockShowConfirmDialog).not.toHaveBeenCalled()
+    expect(mockSetProvidersEnabled).toHaveBeenCalledWith(['acme'], false)
   })
 
   it('surfaces save failures', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+    restrictPolicy()
     mockSetProviderEnabled.mockRejectedValueOnce(new Error('Save failed'))
     renderComponent()
 
@@ -393,14 +526,18 @@ describe('PartnerNodeAccessPanel', () => {
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      "Partner node access couldn't be updated. Try again."
+      "Partner model access couldn't be updated. Try again."
     )
   })
 
   it('locks provider controls while saving', () => {
+    restrictPolicy()
     mockIsSaving.value = true
     renderComponent()
 
+    expect(
+      screen.getByRole('switch', { name: allowAllSwitchName })
+    ).toBeDisabled()
     expect(
       screen.getByRole('switch', {
         name: 'Set access for OpenAI (inc. Sora)'
@@ -410,17 +547,22 @@ describe('PartnerNodeAccessPanel', () => {
   })
 
   it('locks policy controls when the owner loses workspace access', async () => {
+    restrictPolicy()
     renderComponent()
 
-    expect(screen.getByRole('radio', { name: 'Unrestricted' })).toBeEnabled()
+    expect(
+      screen.getByRole('switch', { name: allowAllSwitchName })
+    ).toBeEnabled()
 
     mockWorkspaceRole.value = 'member'
     await nextTick()
 
     expect(
-      screen.getByText('Only workspace owners can update partner node access.')
+      screen.getByText('Only workspace owners can update partner model access.')
     ).toBeTruthy()
-    expect(screen.getByRole('radio', { name: 'Unrestricted' })).toBeDisabled()
+    expect(
+      screen.getByRole('switch', { name: allowAllSwitchName })
+    ).toBeDisabled()
     expect(
       screen.getByRole('switch', {
         name: 'Set access for OpenAI (inc. Sora)'
@@ -430,13 +572,13 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('confirms before disabling every provider', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+    restrictPolicy()
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+    await openBulkMenu(user)
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Disable all 1 provider' })
+    )
 
     expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
     const options = mockShowConfirmDialog.mock.calls[0][0]
@@ -448,13 +590,13 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('ignores a disable-all confirmation after the workspace changes', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+    restrictPolicy()
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+    await openBulkMenu(user)
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Disable all 1 provider' })
+    )
     const options = mockShowConfirmDialog.mock.calls[0][0]
     mockGovernedWorkspaceId.value = 'workspace-two'
     await options.footerProps.onConfirm()
@@ -465,13 +607,13 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('ignores a disable-all confirmation after the owner loses access', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+    restrictPolicy()
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+    await openBulkMenu(user)
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Disable all 1 provider' })
+    )
     const options = mockShowConfirmDialog.mock.calls[0][0]
     mockWorkspaceRole.value = 'member'
     await options.footerProps.onConfirm()
@@ -484,10 +626,10 @@ describe('PartnerNodeAccessPanel', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
 
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Restrict access to partner nodes?')
+    expect(options.headerProps.title).toBe('Restrict access to partner models?')
     await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(true)
   })
@@ -496,7 +638,7 @@ describe('PartnerNodeAccessPanel', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
     const options = mockShowConfirmDialog.mock.calls[0][0]
     mockGovernedWorkspaceId.value = 'workspace-two'
     await options.footerProps.onConfirm()
@@ -513,7 +655,7 @@ describe('PartnerNodeAccessPanel', () => {
     }
     renderComponent()
 
-    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
     const options = mockShowConfirmDialog.mock.calls[0][0]
     mockGovernedWorkspaceId.value = 'workspace-two'
     mockPolicy.value = {
@@ -527,29 +669,43 @@ describe('PartnerNodeAccessPanel', () => {
     expect(mockCloseDialog).toHaveBeenCalled()
   })
 
-  it('supports roving focus and keyboard selection', async () => {
+  it('keeps the access toggle in place until the change is confirmed', async () => {
     const user = userEvent.setup()
     renderComponent()
-    const unrestricted = screen.getByRole('radio', { name: 'Unrestricted' })
-    const restricted = screen.getByRole('radio', { name: 'Restricted' })
+    const toggle = screen.getByRole('switch', { name: allowAllSwitchName })
 
-    unrestricted.focus()
-    await user.keyboard('{ArrowRight}')
+    await user.click(toggle)
 
-    expect(restricted).toHaveFocus()
+    expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    options.footerProps.onCancel()
+    await nextTick()
+
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
+  })
+
+  it('toggles access mode from the keyboard', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    screen.getByRole('switch', { name: allowAllSwitchName }).focus()
     await user.keyboard(' ')
+
     await vi.waitFor(() => expect(mockShowConfirmDialog).toHaveBeenCalledOnce())
   })
 
   it.for(['loading', 'error'] as const)(
-    'does not expose access mode while policy status is %s',
+    'locks the access toggle while policy status is %s',
     (status) => {
       mockStatus.value = status
       renderComponent()
 
       expect(
-        screen.queryByRole('radio', { name: 'Restricted' })
-      ).not.toBeInTheDocument()
+        screen.getByRole('switch', { name: allowAllSwitchName })
+      ).toBeDisabled()
     }
   )
 
@@ -557,51 +713,96 @@ describe('PartnerNodeAccessPanel', () => {
     'shows an unavailable state while policy status is %s',
     (status) => {
       mockStatus.value = status
+      mockProviders.value = []
       renderComponent()
 
       expect(
         screen.getByText(
-          'Partner node access is unavailable for this workspace.'
+          'Partner model access is unavailable for this workspace.'
         )
       ).toBeInTheDocument()
     }
   )
 
+  it('offers the enterprise dialog when the gated toggle is clicked', async () => {
+    const user = userEvent.setup()
+    mockStatus.value = 'ineligible'
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    renderComponent()
+
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe(
+      'Restricting partner models is an Enterprise feature'
+    )
+    expect(options.footerProps.cancelText).toBe('Not now')
+    expect(options.footerProps.confirmText).toBe('Contact us')
+    await options.footerProps.onConfirm()
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://comfy.org/cloud/enterprise/',
+      '_blank'
+    )
+    expect(mockCloseDialog).toHaveBeenCalled()
+    openSpy.mockRestore()
+  })
+
+  it('shows the enterprise upsell when the catalog loads but policy access is forbidden', () => {
+    mockStatus.value = 'ineligible'
+    renderComponent()
+
+    expect(screen.getByText('Enterprise')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Restricting partner models is an Enterprise plan feature.'
+      )
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Contact us' })).toBeEnabled()
+    expect(screen.getByText('2 models')).toBeTruthy()
+
+    const toggle = screen.getByRole('switch', { name: allowAllSwitchName })
+    expect(toggle).not.toBeDisabled()
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    expect(
+      screen.queryByRole('button', { name: 'Disable all' })
+    ).not.toBeInTheDocument()
+  })
+
   it('confirms expanded access when a restricted provider is disabled', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: false }]
-    }
+    restrictPolicy([{ providerId: 'openai', enabled: false }])
     mockIsProviderEnabled.mockImplementation(
       (providerId: string) => providerId !== 'openai'
     )
     renderComponent()
 
-    await user.click(screen.getByRole('radio', { name: 'Unrestricted' }))
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
 
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Allow access to all partner nodes?')
+    expect(options.headerProps.title).toBe(
+      'Allow access to all partner models?'
+    )
     await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
   })
 
   it('confirms before returning to unrestricted when every provider is enabled', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: true,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+    restrictPolicy()
     renderComponent()
 
-    await user.click(screen.getByRole('radio', { name: 'Unrestricted' }))
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
 
     expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
     expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Allow access to all partner nodes?')
+    expect(options.headerProps.title).toBe(
+      'Allow access to all partner models?'
+    )
     expect(options.props.promptText).toBe(
-      'Partner nodes from every provider will become available to every workspace member. This can take up to 10 minutes to apply across your workspace.'
+      'Partner models from every provider will become available to every workspace member. This can take up to 10 minutes to apply across your workspace.'
     )
     await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
@@ -612,10 +813,9 @@ describe('PartnerNodeAccessPanel', () => {
     mockStatus.value = 'error'
     renderComponent()
 
-    expect(screen.queryByText('Unrestricted')).toBeNull()
     expect(
-      screen.queryByText('Partner nodes from every provider are available.')
-    ).toBeNull()
+      screen.getByText("Partner model access couldn't be loaded.")
+    ).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(mockLoadPolicy).toHaveBeenCalledOnce()

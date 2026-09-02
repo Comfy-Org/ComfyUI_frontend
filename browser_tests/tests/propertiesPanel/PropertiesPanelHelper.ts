@@ -9,6 +9,7 @@ export class PropertiesPanelHelper {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly closeButton: Locator
+  readonly errorsTab: Locator
   readonly titleEditor: TitleEditor
   readonly pinnedSwitch: Locator
 
@@ -17,6 +18,7 @@ export class PropertiesPanelHelper {
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.closeButton = this.root.locator('button[aria-pressed]')
+    this.errorsTab = this.root.getByTestId(TestIds.propertiesPanel.errorsTab)
     this.titleEditor = new TitleEditor(this.root)
     this.pinnedSwitch = this.root.getByRole('switch', { name: 'Pinned' })
   }
@@ -31,6 +33,10 @@ export class PropertiesPanelHelper {
 
   get titleEditIcon(): Locator {
     return this.panelTitle.locator('i[class*="lucide--pencil"]')
+  }
+
+  get sectionWidgetsList(): Locator {
+    return this.root.getByTestId('section-widgets-list').first()
   }
 
   getNodeStateButton(state: 'Normal' | 'Bypass' | 'Mute'): Locator {
@@ -51,10 +57,7 @@ export class PropertiesPanelHelper {
 
   /** Draggable widget rows of the first widgets section in the panel. */
   get sectionWidgetRows(): Locator {
-    return this.root
-      .getByTestId('section-widgets-list')
-      .first()
-      .locator('.widget-item')
+    return this.sectionWidgetsList.locator('.widget-item')
   }
 
   /**
@@ -67,22 +70,32 @@ export class PropertiesPanelHelper {
     fromIndex: number,
     toIndex: number
   ): Promise<void> {
+    await expect(this.sectionWidgetsList).toHaveAttribute(
+      'data-draggable-ready',
+      'true'
+    )
+
     const rows = this.sectionWidgetRows
     const from = await rows.nth(fromIndex).boundingBox()
     const to = await rows.nth(toIndex).boundingBox()
     if (!from || !to) throw new Error('widget row not visible')
 
     const { mouse } = this.page
-    await mouse.move(from.x + from.width / 2, from.y + 8)
+    const grabOffsetY = 8
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('page has no viewport')
+    const dropY = Math.min(to.y + to.height * 0.95, viewport.height - 1)
+
+    await mouse.move(from.x + from.width / 2, from.y + grabOffsetY)
     await mouse.down()
-    await mouse.move(to.x + to.width / 2, to.y + to.height * 0.95, {
+    await mouse.move(to.x + to.width / 2, dropY, {
       steps: 20
     })
     await mouse.up()
   }
 
   get errorsTabIcon(): Locator {
-    return this.root.locator('nav i[class*="lucide--octagon-alert"]')
+    return this.errorsTab.getByTestId('panel-tab-icon')
   }
 
   get viewAllSettingsButton(): Locator {

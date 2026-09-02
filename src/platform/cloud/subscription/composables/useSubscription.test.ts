@@ -15,11 +15,17 @@ const {
   mockUserId,
   mockIsCloud,
   mockAuthStoreInitialized,
+  mockGetBillingStatus,
+  mockActiveWorkspaceId,
+  mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
   mockAuthStoreInitialized: { value: true },
+  mockGetBillingStatus: vi.fn(),
+  mockActiveWorkspaceId: { value: 'workspace-123' as string | null },
+  mockSetWorkspaceBillingRail: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
@@ -33,7 +39,8 @@ const {
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackBillingEvent: vi.fn()
   },
   mockUserId: { value: 'user-123' },
   mockLocalStorage: (() => {
@@ -134,6 +141,21 @@ vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
   getCheckoutAttribution: mockGetCheckoutAttribution
 }))
 
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: {
+    getBillingStatus: mockGetBillingStatus
+  }
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    get activeWorkspaceId() {
+      return mockActiveWorkspaceId.value
+    },
+    setWorkspaceBillingRail: mockSetWorkspaceBillingRail
+  })
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => ({
     showSubscriptionRequiredDialog: mockShowSubscriptionRequiredDialog
@@ -142,7 +164,9 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
-    getAuthHeader: mockGetAuthHeader,
+    getFirebaseAuthHeader: mockGetAuthHeader,
+    fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+      fetch(input, init),
     get isInitialized() {
       return mockAuthStoreInitialized.value
     },
@@ -158,7 +182,6 @@ global.fetch = vi.fn()
 
 describe('useSubscription', () => {
   afterEach(() => {
-    vi.useRealTimers()
     scope?.stop()
     scope = undefined
     setDistribution('localhost')
@@ -170,17 +193,18 @@ describe('useSubscription', () => {
     scope = effectScope()
     setDistribution('cloud')
 
-    vi.clearAllMocks()
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
-    mockTelemetry.trackSubscription.mockReset()
-    mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
-    mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
     mockAuthStoreInitialized.value = true
+    mockActiveWorkspaceId.value = 'workspace-123'
+    mockGetBillingStatus.mockResolvedValue({
+      is_active: false,
+      has_funds: false,
+      team_credit_stop: null
+    })
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
@@ -195,49 +219,46 @@ describe('useSubscription', () => {
   })
 
   describe('computed properties', () => {
-    it('should compute isActiveSubscription correctly when subscription is active', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          renewal_date: '2025-11-16'
-        })
-      } as Response)
+    it('should compute canAccessSubscriptionFeatures correctly when subscription is active', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        renewal_date: '2025-11-16'
+      })
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
 
-    it('should compute isActiveSubscription as false when subscription is inactive', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: false,
-          subscription_id: 'sub_123',
-          renewal_date: '2025-11-16'
-        })
-      } as Response)
+    it('should compute canAccessSubscriptionFeatures as false when subscription is inactive', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        renewal_date: '2025-11-16'
+      })
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(false)
+      expect(canAccessSubscriptionFeatures.value).toBe(false)
     })
 
     it('should format renewal date correctly', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          renewal_date: '2025-11-16T12:00:00Z'
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
 
       mockIsLoggedIn.value = true
       const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
@@ -256,15 +277,12 @@ describe('useSubscription', () => {
     })
 
     it('should return subscription tier from status', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          renewal_date: '2025-11-16T12:00:00Z'
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'CREATOR',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
 
       mockIsLoggedIn.value = true
       const { subscriptionTier, fetchStatus } = useSubscriptionWithScope()
@@ -278,84 +296,152 @@ describe('useSubscription', () => {
 
       expect(subscriptionTier.value).toBeNull()
     })
+
+    it('derives cancellation state and end date from cancel_at', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        cancel_at: '2025-12-01T12:00:00Z'
+      })
+
+      const { isCancelled, formattedEndDate, fetchStatus } =
+        useSubscriptionWithScope()
+      await fetchStatus()
+
+      expect(isCancelled.value).toBe(true)
+      expect(formattedEndDate.value).toBe('Dec 1, 2025')
+    })
   })
 
   describe('fetchStatus', () => {
     it('should fetch subscription status successfully', async () => {
       const mockStatus = {
         is_active: true,
-        subscription_id: 'sub_123',
-        renewal_date: '2025-11-16'
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        team_credit_stop: null
       }
 
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => mockStatus
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue(mockStatus)
 
       mockIsLoggedIn.value = true
       const { fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/cloud-subscription-status'),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer test-token',
-            'Content-Type': 'application/json'
-          })
-        })
-      )
+      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
     })
 
     it('should handle fetch errors gracefully', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: false,
-        json: async () => ({ message: 'Subscription not found' })
-      } as Response)
+      mockGetBillingStatus.mockRejectedValue(
+        new Error('Subscription not found')
+      )
 
       const { fetchStatus } = useSubscriptionWithScope()
 
-      await expect(fetchStatus()).rejects.toThrow()
+      await expect(fetchStatus()).rejects.toThrow(
+        'Failed to fetch subscription status: Subscription not found'
+      )
+    })
+
+    it('updates the active workspace billing rail from status', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        billing_rail: 'stripe'
+      })
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      await fetchStatus()
+
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+        'workspace-123',
+        'stripe'
+      )
+    })
+
+    it('does not apply the previous account response after an identity switch', async () => {
+      let resolvePreviousAccount!: (value: {
+        is_active: boolean
+        has_funds: boolean
+        billing_rail: 'stripe'
+      }) => void
+      mockGetBillingStatus
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolvePreviousAccount = resolve
+          })
+        )
+        .mockResolvedValueOnce({
+          is_active: false,
+          has_funds: false,
+          billing_rail: 'legacy_stripe'
+        })
+
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+      const previousAccountRequest = fetchStatus()
+
+      mockUserId.value = 'user-456'
+      mockActiveWorkspaceId.value = 'workspace-456'
+      const currentAccountRequest = fetchStatus()
+      await currentAccountRequest
+
+      resolvePreviousAccount({
+        is_active: true,
+        has_funds: true,
+        billing_rail: 'stripe'
+      })
+      await previousAccountRequest
+
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value).toEqual({
+        is_active: false,
+        has_funds: false,
+        billing_rail: 'legacy_stripe'
+      })
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledOnce()
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+        'workspace-456',
+        'legacy_stripe'
+      )
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
-      let resolveFetch: (value: Response) => void = () => {}
-      vi.mocked(global.fetch).mockReturnValue(
-        new Promise<Response>((resolve) => {
-          resolveFetch = resolve
+      let resolveStatus: (value: {
+        is_active: boolean
+        has_funds: boolean
+      }) => void = () => {}
+      mockGetBillingStatus.mockReturnValue(
+        new Promise((resolve) => {
+          resolveStatus = resolve
         })
       )
       const { fetchStatus } = useSubscriptionWithScope()
 
       const first = fetchStatus()
       const second = fetchStatus()
-      resolveFetch({
-        ok: true,
-        json: async () => ({ is_active: true })
-      } as Response)
+      resolveStatus({ is_active: true, has_funds: true })
       await Promise.all([first, second])
 
-      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
     })
 
     it('does not downgrade known-good status on a failed fetch', async () => {
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ is_active: true, subscription_id: 'sub_1' })
-      } as Response)
-      const { fetchStatus, isActiveSubscription } = useSubscriptionWithScope()
+      mockGetBillingStatus.mockResolvedValueOnce({
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1
+      })
+      const { fetchStatus, canAccessSubscriptionFeatures } =
+        useSubscriptionWithScope()
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ message: 'Invalid token' })
-      } as Response)
+      mockGetBillingStatus.mockRejectedValueOnce(new Error('Invalid token'))
       await fetchStatus().catch(() => {})
 
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
   })
 
@@ -419,6 +505,64 @@ describe('useSubscription', () => {
     })
   })
 
+  describe('subscribeDirect', () => {
+    it('performs the same checkout as subscribe on success', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/direct'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await expect(subscribeDirect()).resolves.toBeUndefined()
+      expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('rejects on failure without going through the error-swallowing wrapper', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({})
+      } as Response)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await expect(subscribeDirect()).rejects.toThrow()
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
+    it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/direct'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await subscribeDirect({
+        operation: 'resubscribe',
+        source: 'settings_billing_panel'
+      })
+
+      const stored = JSON.parse(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ?? '{}'
+      )
+      expect(stored.operation).toBe('resubscribe')
+      expect(stored.resubscribe_source).toBe('settings_billing_panel')
+
+      windowOpenSpy.mockRestore()
+    })
+  })
+
   describe('pending checkout recovery', () => {
     it('emits subscription_success when a pending new subscription becomes active', async () => {
       localStorage.setItem(
@@ -432,16 +576,13 @@ describe('useSubscription', () => {
         })
       )
 
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          subscription_duration: 'ANNUAL',
-          renewal_date: '2025-11-16'
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'CREATOR',
+        subscription_duration: 'ANNUAL',
+        renewal_date: '2025-11-16'
+      })
 
       mockIsLoggedIn.value = true
       useSubscriptionWithScope()
@@ -480,16 +621,13 @@ describe('useSubscription', () => {
         })
       )
 
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'PRO',
-          subscription_duration: 'MONTHLY',
-          renewal_date: '2025-11-16'
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2025-11-16'
+      })
 
       mockIsLoggedIn.value = true
       useSubscriptionWithScope()
@@ -510,25 +648,92 @@ describe('useSubscription', () => {
       })
     })
 
+    it('emits the canonical resubscribe terminal when a resubscribe-tagged attempt becomes active', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-789',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          operation: 'resubscribe',
+          resubscribe_source: 'pricing_dialog'
+        })
+      )
+
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2025-11-16'
+      })
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog'
+        })
+      })
+    })
+
+    it('does not emit a resubscribe terminal for a plain (non-resubscribe) pending attempt', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-999',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2025-11-16'
+      })
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionSucceeded
+        ).toHaveBeenCalled()
+      })
+      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalled()
+    })
+
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
       mockIsLoggedIn.value = true
+      const visibilityStateSpy = vi
+        .spyOn(document, 'visibilityState', 'get')
+        .mockReturnValue('visible')
 
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: false,
-          subscription_id: '',
-          renewal_date: ''
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
 
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(1)
+        expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
       })
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
-      vi.mocked(global.fetch).mockClear()
+      mockGetBillingStatus.mockClear()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -543,7 +748,34 @@ describe('useSubscription', () => {
       document.dispatchEvent(new Event('visibilitychange'))
 
       await vi.waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(1)
+        expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
+      })
+      visibilityStateSpy.mockRestore()
+    })
+
+    it('rechecks pending checkout attempts on status refresh', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-refresh',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      await fetchStatus()
+
+      await vi.waitFor(() => {
+        expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
       })
     })
 
@@ -596,14 +828,11 @@ describe('useSubscription', () => {
 
   describe('requireActiveSubscription', () => {
     it('should not show dialog when subscription is active', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          renewal_date: '2025-11-16'
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16'
+      })
 
       const { requireActiveSubscription } = useSubscriptionWithScope()
 
@@ -613,14 +842,11 @@ describe('useSubscription', () => {
     })
 
     it('should show dialog when subscription is inactive', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: false,
-          subscription_id: 'sub_123',
-          renewal_date: '2025-11-16'
-        })
-      } as Response)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: true,
+        renewal_date: '2025-11-16'
+      })
 
       const { requireActiveSubscription } = useSubscriptionWithScope()
 
@@ -642,12 +868,22 @@ describe('useSubscription', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('should report isActiveSubscription as true when not on cloud', () => {
+    it('should report canAccessSubscriptionFeatures as true when not on cloud', () => {
       mockIsCloud.value = false
 
-      const { isActiveSubscription } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures } = useSubscriptionWithScope()
 
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
+    })
+
+    it('does not perform explicit subscription status reads outside Cloud', async () => {
+      mockIsCloud.value = false
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+
+      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(global.fetch).not.toHaveBeenCalled()
     })
   })
 
@@ -701,124 +937,92 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
       mockAccessBillingPortal.mockResolvedValueOnce(false)
 
-      const activeResponse = {
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_active',
-          renewal_date: '2025-11-16'
-        })
-      }
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16'
+      })
 
-      vi.mocked(global.fetch).mockResolvedValue(activeResponse as Response)
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      await fetchStatus()
+      mockGetBillingStatus.mockClear()
 
-        await fetchStatus()
-        vi.mocked(global.fetch).mockClear()
+      await manageSubscription()
+      await vi.advanceTimersByTimeAsync(5000)
 
-        await manageSubscription()
-        await vi.advanceTimersByTimeAsync(5000)
-
-        expect(global.fetch).not.toHaveBeenCalled()
-        expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
-        ).not.toHaveBeenCalled()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(
+        mockTelemetry.trackMonthlySubscriptionCancelled
+      ).not.toHaveBeenCalled()
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
-      const activeResponse = {
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_active',
-          renewal_date: '2025-11-16'
-        })
+      const activeStatus = {
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16'
       }
 
-      const cancelledResponse = {
-        ok: true,
-        json: async () => ({
-          is_active: false,
-          subscription_id: 'sub_cancelled',
-          renewal_date: '2025-11-16',
-          end_date: '2025-12-01'
-        })
+      const cancelledStatus = {
+        is_active: false,
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        cancel_at: '2025-12-01'
       }
 
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce(activeResponse as Response)
-        .mockResolvedValueOnce(cancelledResponse as Response)
+      mockGetBillingStatus
+        .mockResolvedValueOnce(activeStatus)
+        .mockResolvedValueOnce(cancelledStatus)
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        await manageSubscription()
+      await fetchStatus()
+      await manageSubscription()
 
-        await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(5000)
 
-        expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
-        ).toHaveBeenCalledTimes(1)
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        mockTelemetry.trackMonthlySubscriptionCancelled
+      ).toHaveBeenCalledTimes(1)
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
-      const activeResponse = {
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_active',
-          renewal_date: '2025-11-16'
-        })
+      const activeStatus = {
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16'
       }
 
-      const cancelledResponse = {
-        ok: true,
-        json: async () => ({
-          is_active: false,
-          subscription_id: 'sub_cancelled',
-          renewal_date: '2025-11-16',
-          end_date: '2025-12-01'
-        })
+      const cancelledStatus = {
+        is_active: false,
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        cancel_at: '2025-12-01'
       }
 
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce(activeResponse as Response)
-        .mockResolvedValueOnce(cancelledResponse as Response)
+      mockGetBillingStatus
+        .mockResolvedValueOnce(activeStatus)
+        .mockResolvedValueOnce(cancelledStatus)
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        await manageSubscription()
+      await fetchStatus()
+      await manageSubscription()
 
-        window.dispatchEvent(new Event('focus'))
-        await vi.waitFor(() => {
-          expect(
-            mockTelemetry.trackMonthlySubscriptionCancelled
-          ).toHaveBeenCalledTimes(1)
-        })
-      } finally {
-        vi.useRealTimers()
-      }
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionCancelled
+        ).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

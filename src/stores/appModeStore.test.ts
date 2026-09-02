@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
@@ -27,7 +25,10 @@ import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/managem
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createNodeState
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -157,7 +158,6 @@ describe('appModeStore', () => {
   let store: ReturnType<typeof useAppModeStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)
@@ -165,11 +165,6 @@ describe('appModeStore', () => {
     vi.mocked(app.rootGraph).nodes = [{ id: toNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('enterBuilder', () => {
@@ -1011,10 +1006,6 @@ describe('appModeStore', () => {
       })
     })
 
-    afterEach(() => {
-      vi.unstubAllGlobals()
-    })
-
     it('lags the view mode by two frames so the toggle can animate the switch', async () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()
@@ -1118,9 +1109,10 @@ describe('appModeStore', () => {
         sourceWidgetName,
         widgetId: `${rootGraphId}:${hostId}:Prompt` as WidgetId
       }
+      const hostState = createNodeState({ id: toNodeId(hostId) })
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
-        id: hostId,
-        inputs: [{ name: 'Prompt', _widget: hostWidget }],
+        _state: hostState,
+        _inputs: [{ name: 'Prompt', _widget: hostWidget }],
         widgets: [hostWidget],
         isSubgraphNode: () => true
       }) as SubgraphNode

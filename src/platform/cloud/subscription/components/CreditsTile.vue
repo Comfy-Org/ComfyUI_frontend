@@ -1,6 +1,11 @@
 <template>
   <div
-    class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
+    :class="
+      cn(
+        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
+        inactivePlan && 'text-muted'
+      )
+    "
   >
     <Button
       variant="muted-textonly"
@@ -19,7 +24,14 @@
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i class="icon-[lucide--component] size-4 self-center text-credit" />
+        <i
+          :class="
+            cn(
+              'icon-[lucide--coins] size-4 self-center',
+              !inactivePlan && 'text-credit'
+            )
+          "
+        />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -81,11 +93,11 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyBonusCredits,
+                  remaining: monthlyRemainingDisplay,
                   total: creditPoolTotalDisplay
                 })
               }}
@@ -134,7 +146,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -144,18 +156,39 @@
       </div>
     </template>
 
+    <template v-else-if="showsInactivePlanState">
+      <div class="h-px w-full bg-interface-stroke" />
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2 text-sm">
+          <span class="flex items-center gap-1">
+            {{ $t('subscription.additionalCredits') }}
+            <Button
+              v-tooltip="{
+                value: $t('subscription.additionalCreditsTooltip'),
+                showDelay: 300
+              }"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('subscription.additionalCreditsInfo')"
+              class="text-muted"
+            >
+              <i class="icon-[lucide--info] size-4" />
+            </Button>
+          </span>
+          <span class="flex items-center gap-1 font-bold">
+            <i class="icon-[lucide--coins] size-4" />
+            {{ displayPrepaid }}
+          </span>
+        </div>
+        <span class="text-sm">
+          {{ $t('subscription.reactivateToUseCredits') }}
+        </span>
+      </div>
+    </template>
+
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="isFreeTier"
-        variant="subscribe"
-        size="lg"
-        class="w-full font-normal"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else
+        v-if="canTopUp"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -168,6 +201,15 @@
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else
+        variant="subscribe"
+        size="lg"
+        class="w-full font-normal"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
     </div>
   </div>
@@ -188,18 +230,22 @@ import { useSubscriptionCredits } from '@/platform/cloud/subscription/composable
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
+  isSalesManagedTier,
+  toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false } = defineProps<{
+const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
+  inactivePlan?: boolean
 }>()
 
 const { locale, t } = useI18n()
@@ -207,41 +253,52 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
-  isActiveSubscription,
-  isFreeTier,
+  canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const {
-  monthlyBonusCredits,
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
   prepaidCreditsValue,
   isLoadingBalance
 } = useSubscriptionCredits()
-const { permissions } = useWorkspaceUI()
-const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { showPricingTable } = useSubscriptionDialog()
+const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
+const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
+  return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
 const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
-    getTierCredits(tierKey.value)
+    (isSalesManagedTier(subscription.value?.tier)
+      ? null
+      : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null
   return subscription.value?.duration === 'ANNUAL'
     ? monthlyCredits * 12
     : monthlyCredits
 })
+
+// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
+// it applies only where one exists. Tier decides that, as it does for the
+// credit pool above: can_top_up is a rollout-defaulted capability that also
+// fails open for owners on an unreadable snapshot, which would drop a lapsed
+// self-serve team out of this state during a capabilities outage.
+const showsInactivePlanState = computed(
+  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
+)
 
 const usage = computed(() =>
   computeMonthlyUsage(
@@ -280,20 +337,31 @@ const creditPoolTotalDisplay = computed(() => {
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
+const monthlyRemainingDisplay = computed(() =>
+  formatCreditCount(usage.value.remaining)
+)
 
 const compactNumber = computed(
   () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
 )
 const monthlyRemainingCompact = computed(() =>
-  compactNumber.value.format(monthlyBonusCreditsValue.value)
+  compactNumber.value.format(usage.value.remaining)
 )
 const creditPoolTotalCompact = computed(() => {
   const total = creditPoolTotalCredits.value
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
-const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
-const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
+const displayTotal = computed(() =>
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : totalCredits.value
+)
+const displayPrepaid = computed(() =>
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : prepaidCredits.value
+)
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
@@ -304,15 +372,26 @@ const monthlyUsageLabel = computed(() =>
   })
 )
 
-const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
+const showBreakdown = computed(
+  () =>
+    canAccessSubscriptionFeatures.value &&
+    !zeroState &&
+    !showsInactivePlanState.value
+)
+// The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
+// only the total and additional-credit balances.
 const showBar = computed(
   () =>
+    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
 const showActionButton = computed(
-  () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
+  () =>
+    (canTopUp.value || canSubscribeSelfServe.value) &&
+    !zeroState &&
+    !showsInactivePlanState.value
 )
 
 const isMonthlyDepleted = computed(
@@ -351,9 +430,57 @@ const emptyStateNotice = computed(() => {
   return null
 })
 
-const handleRefresh = wrapWithErrorHandlingAsync(async () => {
-  await Promise.all([fetchBalance(), fetchStatus()])
-})
+async function refreshCredits() {
+  const results = await Promise.allSettled([fetchBalance(), fetchStatus()])
+  for (const result of results) {
+    if (result.status === 'rejected') throw result.reason
+  }
+
+  if (!pendingTopupNeedsRefresh()) return
+
+  const response = await customerEventsService.getMyEvents({
+    page: 1,
+    limit: 10
+  })
+  if (!response) {
+    throw new Error(
+      customerEventsService.error.value ?? 'Fetching customer events failed'
+    )
+  }
+  if (isPendingTopupCompleted(response.events)) {
+    telemetry?.trackApiCreditTopupSucceeded()
+  }
+}
+
+let refreshRequested = false
+let activeRefresh: Promise<void> | null = null
+
+async function refreshLatestCredits() {
+  refreshRequested = true
+  if (activeRefresh) return activeRefresh
+
+  activeRefresh = (async () => {
+    let lastError: unknown
+    while (refreshRequested) {
+      refreshRequested = false
+      try {
+        await refreshCredits()
+        lastError = undefined
+      } catch (error) {
+        lastError = error
+      }
+    }
+    if (lastError) throw lastError
+  })()
+
+  try {
+    await activeRefresh
+  } finally {
+    activeRefresh = null
+  }
+}
+
+const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
@@ -365,7 +492,7 @@ function handleUpgradeToAddCredits() {
 }
 
 async function handleWindowFocus() {
-  if (consumePendingTopup()) {
+  if (pendingTopupNeedsRefresh()) {
     await handleRefresh()
   }
 }

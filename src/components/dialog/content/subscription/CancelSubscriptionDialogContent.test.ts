@@ -55,7 +55,9 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
 const mockTrackCancellation = vi.hoisted(() => vi.fn())
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
+const mockCanCancel = vi.hoisted(() => ({ value: true }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
@@ -69,6 +71,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/composables/billing/useBillingRouting', () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canCancel: mockCanCancel
   })
 }))
 
@@ -103,7 +113,9 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
-function renderComponent(props: { cancelAt?: string } = {}) {
+function renderComponent(
+  props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
+) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -126,23 +138,39 @@ function renderComponent(props: { cancelAt?: string } = {}) {
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
+    mockCanCancel.value = true
     mockCanManageSubscriptionLifecycle.value = true
+    mockDistributionTypes.isCloud = true
   })
 
   describe('cancellation telemetry', () => {
     it('tracks flow_opened with tier and end date when the dialog mounts', () => {
-      mockSubscription.value = { endDate: '2026-08-01T00:00:00.000Z' }
+      mockSubscription.value = {
+        duration: 'ANNUAL',
+        endDate: '2026-08-01T00:00:00.000Z'
+      }
 
       renderComponent()
 
       expect(mockTrackCancellation).toHaveBeenCalledWith('flow_opened', {
         source: 'cancel_plan_menu',
         current_tier: 'standard',
+        cycle: 'yearly',
         end_date: '2026-08-01T00:00:00.000Z'
       })
+    })
+
+    it('does not repeat flow_opened when continuing a fallback flow', () => {
+      mockSubscription.value = null
+
+      renderComponent({ flowAlreadyOpened: true })
+
+      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+        'flow_opened',
+        expect.anything()
+      )
     })
 
     it('tracks confirmed before the cancel request and no abandoned on success', async () => {
@@ -287,10 +315,10 @@ describe('CancelSubscriptionDialogContent', () => {
     it('does not cancel after the workspace role loses permission', async () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
-      mockCanManageSubscriptionLifecycle.value = true
+      mockCanCancel.value = true
 
       renderComponent()
-      mockCanManageSubscriptionLifecycle.value = false
+      mockCanCancel.value = false
       await userEvent.click(
         screen.getByRole('button', { name: /^cancel subscription$/i })
       )
@@ -302,6 +330,41 @@ describe('CancelSubscriptionDialogContent', () => {
       )
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockCloseDialog).not.toHaveBeenCalled()
+    })
+
+    it('cancels off Cloud on the workspace permission, ignoring the Cloud-only capability', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockDistributionTypes.isCloud = false
+      mockCanCancel.value = false
+      mockCanManageSubscriptionLifecycle.value = true
+      mockCancelSubscription.mockResolvedValueOnce(undefined)
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() => expect(mockCancelSubscription).toHaveBeenCalled())
+    })
+
+    it('blocks cancelling off Cloud when the workspace permission is missing', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockDistributionTypes.isCloud = false
+      mockCanCancel.value = true
+      mockCanManageSubscriptionLifecycle.value = false
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      expect(mockCancelSubscription).not.toHaveBeenCalled()
+      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+        'confirmed',
+        expect.anything()
+      )
     })
 
     it('does not track cancellation failure when status refresh fails after cancellation succeeds', async () => {

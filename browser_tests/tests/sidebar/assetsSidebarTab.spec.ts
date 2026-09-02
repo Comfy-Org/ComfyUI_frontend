@@ -1,30 +1,23 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
+  JobsRouteMocker,
   jobsRouteFixture,
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
-
-interface ViewFile {
-  body?: Buffer | string
-  contentType?: string
-}
-
-type ViewFilesByName = Readonly<Record<string, ViewFile>>
-
-const transparentPng = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
-  'base64'
-)
 
 const alphaJob = createRouteMockJob({
   id: 'alpha',
@@ -89,6 +82,51 @@ const multiOutputJobDetail: JobDetail = {
   }
 }
 
+const previewableCountJob = createRouteMockJob({
+  id: 'previewable-count-job',
+  create_time: routeMockJobTimestamp - 4_000,
+  execution_start_time: routeMockJobTimestamp - 4_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'previewable-count-a.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '4',
+    mediaType: 'images'
+  },
+  outputs_count: 3,
+  previewable_outputs_count: 2
+})
+
+// outputs_count (3) also counts the non-previewable "latents" file below;
+// previewable_outputs_count (2) counts only what the expanded view renders.
+const previewableCountJobDetail: JobDetail = {
+  ...previewableCountJob,
+  outputs: {
+    '4': {
+      images: [
+        {
+          filename: 'previewable-count-a.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'previewable-count-b.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ],
+      latents: [
+        {
+          filename: 'previewable-count.latent',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
 const generatedJobs: RawJobListItem[] = [alphaJob, betaJob]
 
 const viewFiles = {
@@ -96,7 +134,9 @@ const viewFiles = {
   'beta.png': {},
   'imported.png': {},
   'multi-output-a.png': {},
-  'multi-output-b.png': {}
+  'multi-output-b.png': {},
+  'previewable-count-a.png': {},
+  'previewable-count-b.png': {}
 }
 
 async function mockInputFiles(page: Page, files: readonly string[]) {
@@ -110,40 +150,26 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
-async function mockViewFiles(page: Page, filesByName: ViewFilesByName) {
-  await page.route('**/api/view**', async (route) => {
-    if (route.request().method().toUpperCase() !== 'GET') {
-      await route.fallback()
-      return
-    }
-
-    const url = new URL(route.request().url())
-    const filename = url.searchParams.get('filename')
-    if (!filename) {
-      await route.fulfill({
-        status: 400,
-        json: { error: 'Missing filename' } satisfies { error: string }
-      })
-      return
-    }
-
-    const file = filesByName[filename]
-    if (!file) {
-      await route.fulfill({
-        status: 404,
-        json: {
-          error: `Unknown filename: ${filename}`
-        } satisfies { error: string }
-      })
-      return
-    }
-
-    await route.fulfill({
-      body: file.body ?? transparentPng,
-      contentType: file.contentType ?? 'image/png'
-    })
-  })
+function isGeneratedAssetVerificationResponse(response: Response): boolean {
+  const url = new URL(response.url())
+  return (
+    response.request().method().toUpperCase() === 'GET' &&
+    response.status() === 200 &&
+    url.pathname.endsWith('/api/jobs') &&
+    url.searchParams.get('status')?.split(',').includes('completed') === true
+  )
 }
+
+const bulkInsertionTest = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    const jobsRoutes = new JobsRouteMocker(page)
+    await jobsRoutes.mockJobsQueue([])
+    await jobsRoutes.mockJobsHistory(generatedJobs)
+    await mockInputFiles(page, [])
+    await mockViewFiles(page, viewFiles)
+    await use(page)
+  }
+})
 
 test.describe('FE-130 assets sidebar route mocks', () => {
   test.beforeEach(async ({ jobsRoutes, page }) => {
@@ -258,13 +284,37 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     ).toHaveJSProperty('naturalWidth', 1)
   })
 
+  test('group badge shows previewable_outputs_count, matching the expanded drilldown', async ({
+    comfyPage,
+    jobsRoutes
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await jobsRoutes.mockJobsHistory([previewableCountJob])
+    await jobsRoutes.mockJobDetail(
+      'previewable-count-job',
+      previewableCountJobDetail
+    )
+
+    await comfyPage.setup()
+    await tab.open()
+
+    const badge = tab
+      .getAssetCardByName('previewable-count-a')
+      .getByRole('button', { name: 'See more outputs' })
+    await expect(badge).toHaveText('2')
+
+    await badge.click()
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(2)
+  })
+
   test('deletes a generated output asset through explicit history refresh', async ({
     comfyPage,
     jobsRoutes
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    await comfyPage.setup()
     await tab.open()
     await expect(tab.getAssetCardByName('alpha')).toBeVisible()
 
@@ -279,10 +329,72 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     expect(deleteRequests[0]).toEqual({ delete: ['alpha'] })
     await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
     await expect(comfyPage.toast.toastSuccesses).toContainText(
-      'Asset deleted successfully'
+      'Deletion successful'
     )
   })
 })
+
+bulkInsertionTest.describe(
+  'Assets sidebar - bulk insert as nodes',
+  { tag: ['@vue-nodes', '@ui', '@node', '@widget'] },
+  () => {
+    bulkInsertionTest.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true
+      }
+    })
+
+    bulkInsertionTest.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.toast.closeToasts()
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await panel.open(comfyPage.actionbar.propertiesButton)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+      await expect(panel.errorsTab).toBeHidden()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await expect(tab.assetCards).toHaveCount(2)
+    })
+
+    bulkInsertionTest(
+      'does not surface errors for inserted output assets',
+      async ({ comfyPage }) => {
+        const tab = comfyPage.menu.assetsTab
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await expect(panel.root).toBeVisible()
+
+        await tab.getAssetCardByName('alpha').click()
+        await comfyPage.page.keyboard.down('ControlOrMeta')
+        await tab.getAssetCardByName('beta').click()
+        await comfyPage.page.keyboard.up('ControlOrMeta')
+        await expect(tab.selectedCards).toHaveCount(2)
+
+        const generatedAssetVerificationResponse =
+          comfyPage.page.waitForResponse(isGeneratedAssetVerificationResponse)
+
+        await tab.getAssetCardByName('alpha').dispatchEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          button: 2
+        })
+        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await tab.contextMenuItem('Insert all assets as nodes').click()
+
+        await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
+
+        await expectNoErrorUiAfterVerification(
+          comfyPage,
+          panel,
+          generatedAssetVerificationResponse
+        )
+      }
+    )
+  }
+)
 
 test.describe('FE-910 marquee selection and select all', () => {
   test.beforeEach(async ({ jobsRoutes, page, comfyPage }) => {

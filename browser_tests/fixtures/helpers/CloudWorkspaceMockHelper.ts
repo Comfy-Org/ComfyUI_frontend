@@ -1,19 +1,26 @@
-import type { Page, Route } from '@playwright/test'
+import type { Locator, Page, Route } from '@playwright/test'
+import type {
+  BillingCapabilities,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type {
   Member,
+  Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
+  CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
   TEAM_BILLING_STATUS,
   TEAM_PRO_PLAN,
-  TEAM_WORKSPACE,
-  WORKSPACE_FEATURE_FLAG
+  TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
@@ -43,11 +50,42 @@ const jsonRoute = (body: unknown) => ({
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
+  async openPlanAndCreditsSettings(): Promise<Locator> {
+    await this.page.goto(
+      process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    )
+    await this.page.waitForFunction(
+      () => !!window.app?.extensionManager,
+      null,
+      {
+        timeout: 45_000
+      }
+    )
+    await this.page
+      .getByRole('button', { name: /^Settings/ })
+      .first()
+      .click()
+    const dialog = this.page.getByTestId(TestIds.dialogs.settings)
+    await dialog.waitFor({ state: 'visible' })
+    await dialog
+      .locator('nav')
+      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .click()
+    return dialog.getByRole('main')
+  }
+
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
-    activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE
+    activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE,
+    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS,
+    capabilityOverrides: Partial<BillingCapabilities> = {}
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members, activeWorkspace)
+    const state = await this.mockBoot(
+      members,
+      activeWorkspace,
+      billingStatus,
+      capabilityOverrides
+    )
     await new CloudAuthHelper(this.page).mockAuth()
     await this.page.addInitScript((workspaceId) => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
@@ -58,7 +96,9 @@ export class CloudWorkspaceMockHelper {
 
   private async mockBoot(
     members: Member[],
-    activeWorkspace: WorkspaceWithRole
+    activeWorkspace: WorkspaceWithRole,
+    billingStatus: BillingStatusResponse,
+    capabilityOverrides: Partial<BillingCapabilities> = {}
   ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
@@ -67,7 +107,7 @@ export class CloudWorkspaceMockHelper {
     const { page } = this
 
     await page.route('**/api/features', (r) =>
-      r.fulfill(jsonRoute(WORKSPACE_FEATURE_FLAG))
+      r.fulfill(jsonRoute(CLOUD_REMOTE_CONFIG))
     )
     await page.route('**/api/system_stats', (r) =>
       r.fulfill(jsonRoute(mockSystemStats))
@@ -132,7 +172,21 @@ export class CloudWorkspaceMockHelper {
     )
 
     await page.route('**/api/billing/status', (r) =>
-      r.fulfill(jsonRoute(TEAM_BILLING_STATUS))
+      r.fulfill(jsonRoute(billingStatus))
+    )
+    await page.route('**/api/billing/capabilities', (r) => {
+      if (r.request().method() !== 'GET') return r.fallback()
+      return r.fulfill(
+        jsonRoute(
+          createWorkspaceBillingCapabilities(
+            activeWorkspace,
+            capabilityOverrides
+          )
+        )
+      )
+    })
+    await page.route('**/api/billing/payment-portal', (r) =>
+      r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
     )
     await page.route('**/api/billing/balance', (r) =>
       r.fulfill(
@@ -145,11 +199,24 @@ export class CloudWorkspaceMockHelper {
         })
       )
     )
+    const currentPlan: Plan =
+      billingStatus.plan_slug && billingStatus.plan_slug !== TEAM_PRO_PLAN.slug
+        ? {
+            ...TEAM_PRO_PLAN,
+            slug: billingStatus.plan_slug,
+            tier:
+              billingStatus.subscription_tier === 'TEAM'
+                ? TEAM_PRO_PLAN.tier
+                : (billingStatus.subscription_tier ?? TEAM_PRO_PLAN.tier),
+            duration:
+              billingStatus.subscription_duration ?? TEAM_PRO_PLAN.duration
+          }
+        : TEAM_PRO_PLAN
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(
         jsonRoute({
-          current_plan_slug: TEAM_PRO_PLAN.slug,
-          plans: [TEAM_PRO_PLAN]
+          current_plan_slug: currentPlan.slug,
+          plans: [currentPlan]
         })
       )
     )

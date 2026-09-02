@@ -7,10 +7,120 @@ import type {
 import {
   consolidateConflictsByPackage,
   createBannedConflict,
-  createPendingConflict
+  createPendingConflict,
+  evaluateCompatibility
 } from '@/workbench/extensions/manager/utils/conflictUtils'
 
 describe('conflictUtils', () => {
+  describe('evaluateCompatibility', () => {
+    const incompatibleEnv = {
+      comfyui_version: '0.3.0',
+      frontend_version: '1.0.0',
+      os: 'darwin',
+      accelerator: 'mps'
+    }
+
+    it('emits conflicts in canonical order when all six checks fail', () => {
+      const conflicts = evaluateCompatibility(
+        {
+          supported_comfyui_version: '>=1.0.0',
+          supported_comfyui_frontend_version: '>=2.0.0',
+          supported_os: ['Linux'],
+          supported_accelerators: ['CUDA'],
+          isBanned: true,
+          isPending: true
+        },
+        incompatibleEnv
+      )
+
+      expect(conflicts.map((conflict) => conflict.type)).toEqual([
+        'comfyui_version',
+        'frontend_version',
+        'os',
+        'accelerator',
+        'banned',
+        'pending'
+      ])
+    })
+
+    it('adds a banned conflict only when isBanned is true', () => {
+      const compatibleInput = {
+        supported_comfyui_version: undefined,
+        supported_comfyui_frontend_version: undefined,
+        supported_os: undefined,
+        supported_accelerators: undefined,
+        isPending: false
+      }
+
+      const withoutBan = evaluateCompatibility(
+        { ...compatibleInput, isBanned: false },
+        incompatibleEnv
+      )
+      expect(withoutBan).toEqual([])
+
+      const withBan = evaluateCompatibility(
+        { ...compatibleInput, isBanned: true },
+        incompatibleEnv
+      )
+      expect(withBan).toEqual([
+        {
+          type: 'banned',
+          current_value: 'installed',
+          required_value: 'not_banned'
+        }
+      ])
+    })
+
+    it('reports no conflicts for an unconstrained package when the system environment has not loaded yet', () => {
+      // Version checks treat a nil current version as compatible; OS/accelerator
+      // checks treat a nil supported list as "all supported". Together these mean
+      // a package with no declared constraints never conflicts, even before
+      // systemEnvironment has loaded.
+      const conflicts = evaluateCompatibility(
+        {
+          supported_comfyui_version: undefined,
+          supported_comfyui_frontend_version: undefined,
+          supported_os: undefined,
+          supported_accelerators: undefined,
+          isBanned: false,
+          isPending: false
+        },
+        {
+          comfyui_version: undefined,
+          frontend_version: undefined,
+          os: undefined,
+          accelerator: undefined
+        }
+      )
+
+      expect(conflicts).toEqual([])
+    })
+
+    it('reports OS/accelerator conflicts when a package declares constraints but the environment has not loaded yet', () => {
+      // An unknown current OS/accelerator does NOT satisfy a declared
+      // supported list, so a package with real constraints appears
+      // incompatible (not compatible) before systemEnvironment has loaded.
+      const conflicts = evaluateCompatibility(
+        {
+          supported_comfyui_version: undefined,
+          supported_comfyui_frontend_version: undefined,
+          supported_os: ['Linux'],
+          supported_accelerators: ['CUDA'],
+          isBanned: false,
+          isPending: false
+        },
+        {
+          comfyui_version: undefined,
+          frontend_version: undefined,
+          os: undefined,
+          accelerator: undefined
+        }
+      )
+
+      expect(conflicts.map((c) => c.type)).toEqual(['os', 'accelerator'])
+    })
+  })
+
   describe('createBannedConflict', () => {
     it('should return banned conflict when isBanned is true', () => {
       const result = createBannedConflict(true)

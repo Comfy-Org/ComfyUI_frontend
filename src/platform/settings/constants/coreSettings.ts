@@ -5,6 +5,7 @@ import {
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
+import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -165,6 +166,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
+  {
     id: 'Comfy.Canvas.NavigationMode',
     category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
     name: 'Navigation Mode',
@@ -181,22 +189,11 @@ export const CORE_SETTINGS: SettingParams[] = [
       '1.25.0': 'legacy'
     },
     onChange: async (val: unknown, old?: unknown) => {
-      const newValue = val as string
-      const oldValue = old as string | undefined
-      if (!oldValue) return
-      const settingStore = useSettingStore()
+      if (!old || typeof val !== 'string') return
+      const preset = CANVAS_NAVIGATION_PRESETS[val]
+      if (!preset) return
 
-      if (newValue === 'standard') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
-          'Comfy.Canvas.MouseWheelScroll': 'panning'
-        })
-      } else if (newValue === 'legacy') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
-          'Comfy.Canvas.MouseWheelScroll': 'zoom'
-        })
-      }
+      await useSettingStore().setMany(preset)
     }
   },
   {
@@ -1300,9 +1297,9 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.RightSidePanel.ShowErrorsTab',
     category: ['Comfy', 'Error System'],
-    name: 'Show errors tab in side panel',
+    name: 'Show issues tab in side panel',
     tooltip:
-      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+      'When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup.',
     type: 'boolean',
     defaultValue: true,
     experimental: true,

@@ -8,9 +8,11 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
-import { st } from '@/i18n'
 import { app } from '@/scripts/app'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import {
+  getActiveGraphNodeIds,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -39,6 +41,7 @@ import {
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
+import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -122,7 +125,10 @@ function handleTabChange(newTab: RightSidePanelTab) {
 type RightSidePanelTabList = Array<{
   label: () => string
   value: RightSidePanelTab
-  icon?: string
+  icon?: {
+    className: string
+    label: () => string
+  }
 }>
 
 const hasDirectNodeError = computed(() =>
@@ -174,17 +180,50 @@ const hasRelevantErrors = computed(() => {
   )
 })
 
+const hasPendingErrorScanSelected = computed(() => {
+  const nodes = selectedNodes.value
+  if (!app.isGraphReady) return false
+  const rootGraph = app.rootGraph
+  return nodes.some((node) => {
+    const executionId = getExecutionIdByNode(rootGraph, node)
+    return (
+      executionId !== null &&
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
+    )
+  })
+})
+
+const hasBlockingError = useHasBlockingError()
+
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-    hasRelevantErrors.value
+    (hasRelevantErrors.value ||
+      (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+      // No icon while the tab is only retained by a pending scan: with both
+      // severities absent there is no state for it to describe.
+      icon: hasRelevantErrors.value
+        ? {
+            className: cn(
+              'ml-1',
+              hasBlockingError.value
+                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
+                : 'icon-[lucide--triangle-alert] bg-warning-foreground'
+            ),
+            label: () =>
+              t(
+                hasBlockingError.value
+                  ? 'rightSidePanel.severityErrorLabel'
+                  : 'rightSidePanel.severitySetupLabel'
+              )
+          }
+        : undefined
     })
   }
 
@@ -223,12 +262,15 @@ const tabs = computed<RightSidePanelTabList>(() => {
   return list
 })
 
-// Use global state for activeTab and ensure it's valid
+function isActiveTabAvailable() {
+  return (
+    tabs.value.some((tab) => tab.value === activeTab.value) ||
+    (activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
+  )
+}
+
 watchEffect(() => {
-  if (
-    !tabs.value.some((tab) => tab.value === activeTab.value) &&
-    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
-  ) {
+  if (!isActiveTabAvailable()) {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
@@ -249,8 +291,7 @@ function resolveTitle() {
       const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
       return resolveNodeDisplayName(nodes[0], {
         emptyLabel: fallbackNodeTitle,
-        untitledLabel: fallbackNodeTitle,
-        st
+        untitledLabel: fallbackNodeTitle
       })
     }
   }
@@ -364,8 +405,10 @@ function handleTitleCancel() {
             {{ tab.label() }}
             <i
               v-if="tab.icon"
-              aria-hidden="true"
-              :class="cn(tab.icon, 'size-4')"
+              role="img"
+              :aria-label="tab.icon.label()"
+              data-testid="panel-tab-icon"
+              :class="cn(tab.icon.className, 'size-4')"
             />
           </Tab>
         </TabList>

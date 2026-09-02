@@ -173,7 +173,7 @@ export async function runMissingModelPipeline({
             severity: 'warn',
             summary: st(
               'toastMessages.missingModelVerificationFailed',
-              'Failed to verify missing models. Some models may not be shown in the Errors tab.'
+              'Failed to verify missing models. Some models may not be shown in the Issues tab.'
             ),
             life: 5000
           })
@@ -204,18 +204,16 @@ export async function runMissingModelPipeline({
           cacheModelCandidates(activeWf, confirmedCandidates)
         })
 
-      const missingModelDownload =
-        import('@/platform/missingModel/missingModelDownload')
+      const missingModelMetadata =
+        import('@/platform/missingModel/missingModelMetadata')
       void Promise.allSettled(
         downloadableCandidates.map(async (c) => {
-          const { fetchModelMetadata } = await missingModelDownload
-          const metadata = await fetchModelMetadata(c.url)
-          if (!controller.signal.aborted && metadata.fileSize !== null) {
-            missingModelStore.setFileSize(c.url, metadata.fileSize)
-          }
-          if (!controller.signal.aborted && metadata.gatedRepoUrl) {
-            missingModelStore.setGatedRepoUrl(c.url, metadata.gatedRepoUrl)
-          }
+          const { fetchAndStoreModelMetadata } = await missingModelMetadata
+          await fetchAndStoreModelMetadata(
+            c.url,
+            missingModelStore,
+            controller.signal
+          )
         })
       )
     }

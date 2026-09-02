@@ -12,8 +12,18 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
+  ImageLoadFailureMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
   DefaultViewSetMetadata,
@@ -26,6 +36,9 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -137,7 +150,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       { immediate: true }
     )
 
-    const apiKey = window.__CONFIG__?.posthog_project_token
+    const apiKey =
+      window.__CONFIG__?.posthog_project_token ??
+      import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
@@ -153,8 +168,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              ...serverConfig,
               person_profiles: 'identified_only',
+              ...serverConfig,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
@@ -374,6 +389,28 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
   trackUserLoggedIn(): void {
@@ -629,8 +666,62 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentAttachButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, {})
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.trackEvent(TelemetryEvents.LINK_DEDUP_DROP, metadata)
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

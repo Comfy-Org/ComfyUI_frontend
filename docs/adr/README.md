@@ -4,77 +4,47 @@ This directory contains Architecture Decision Records (ADRs) for the ComfyUI Fro
 
 ## What is an ADR?
 
-An Architecture Decision Record captures an important architectural decision made along with its context and consequences. ADRs help future developers understand why certain decisions were made and provide a historical record of the project's evolution.
+An Architecture Decision Record captures an important technical decision made along with its context and consequences. ADRs help future developers understand why decisions were made and provide a historical record of the project's evolution.
 
 ## ADR Index
 
-| ADR                                                         | Title                                       | Status   | Date       |
-| ----------------------------------------------------------- | ------------------------------------------- | -------- | ---------- |
-| [0001](0001-merge-litegraph-into-frontend.md)               | Merge LiteGraph.js into ComfyUI Frontend    | Accepted | 2025-08-05 |
-| [0002](0002-monorepo-conversion.md)                         | Restructure as a Monorepo                   | Accepted | 2025-08-25 |
-| [0003](0003-crdt-based-layout-system.md)                    | Centralized Layout Management with CRDT     | Proposed | 2025-08-27 |
-| [0004](0004-fork-primevue-ui-library.md)                    | Fork PrimeVue UI Library                    | Rejected | 2025-08-27 |
-| [0005](0005-remove-importmap-for-vue-extensions.md)         | Remove Import Map for Vue Extensions        | Accepted | 2025-12-13 |
-| [0006](0006-primitive-node-copy-paste-lifecycle.md)         | PrimitiveNode Copy/Paste Lifecycle          | Proposed | 2026-02-22 |
-| [0007](0007-node-execution-output-passthrough-schema.md)    | NodeExecutionOutput Passthrough Schema      | Accepted | 2026-03-11 |
-| [0008](0008-entity-component-system.md)                     | Entity Component System                     | Proposed | 2026-03-23 |
-| [0009](0009-subgraph-promoted-widgets-use-linked-inputs.md) | Subgraph Promoted Widgets Use Linked Inputs | Proposed | 2026-05-05 |
-| [0010](0010-remove-nx-orchestration.md)                     | Remove Nx Orchestration                     | Accepted | 2026-05-19 |
-| [0011](0011-derived-credential-lifecycle.md)                | Derived Credential Lifecycle for Cloud Auth | Proposed | 2026-07-09 |
-| [0012](0012-cloud-release-notes-use-comfyui-version.md)     | Cloud Release Notes Use the ComfyUI Version | Accepted | 2026-07-13 |
+| ADR                                                                         | Title                                                           | Status   | Date       |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------- | -------- | ---------- |
+| [0001](0001-merge-litegraph-into-frontend.md)                               | Merge LiteGraph.js into ComfyUI Frontend                        | Accepted | 2025-08-05 |
+| [0002](0002-monorepo-conversion.md)                                         | Restructure as a Monorepo                                       | Accepted | 2025-08-25 |
+| [0003](0003-crdt-based-layout-system.md)                                    | Centralized Layout Management with CRDT                         | Proposed | 2025-08-27 |
+| [0004](0004-fork-primevue-ui-library.md)                                    | Fork PrimeVue UI Library                                        | Rejected | 2025-08-27 |
+| [0005](0005-remove-importmap-for-vue-extensions.md)                         | Remove Import Map for Vue Extensions                            | Accepted | 2025-12-13 |
+| [0006](0006-primitive-node-copy-paste-lifecycle.md)                         | PrimitiveNode Copy/Paste Lifecycle                              | Proposed | 2026-02-22 |
+| [0007](0007-node-execution-output-passthrough-schema.md)                    | NodeExecutionOutput Passthrough Schema                          | Accepted | 2026-03-11 |
+| [0008](0008-entity-component-system.md)                                     | Entity Component System                                         | Proposed | 2026-03-23 |
+| [0009](0009-subgraph-promoted-widgets-use-linked-inputs.md)                 | Subgraph Promoted Widgets Use Linked Inputs                     | Proposed | 2026-05-05 |
+| [0010](0010-remove-nx-orchestration.md)                                     | Remove Nx Orchestration                                         | Accepted | 2026-05-19 |
+| [0011](0011-derived-credential-lifecycle.md)                                | Derived Credential Lifecycle for Cloud Auth                     | Proposed | 2026-07-09 |
+| [0012](0012-cloud-release-notes-use-comfyui-version.md)                     | Cloud Release Notes Use the ComfyUI Version                     | Accepted | 2026-07-13 |
+| [0013](0013-telemetry-service-selection.md)                                 | Telemetry Service Selection                                     | Accepted | 2026-07-28 |
+| [0014](0014-billing-telemetry-attempt-correlation-and-workspace-scoping.md) | Billing Telemetry Attempt Correlation and Workspace Scoping     | Proposed | 2026-07-28 |
+| [0015](0015-adopt-fallow.md)                                                | Adopt Fallow                                                    | Proposed | 2026-06-29 |
+| [0016](0016-entity-registration-collision-and-recovery-boundaries.md)       | Entity Registration Collision and Recovery Boundaries           | Proposed | 2026-08-24 |
+| [0017](0017-id-based-slot-records-are-the-slot-destination.md)              | ID-Based Slot Records Own Slot State                            | Accepted | 2026-08-24 |
+| [0018](0018-node-id-reminting-at-the-merge-boundary.md)                     | Node-ID Reminting at the Merge Boundary                         | Proposed | 2026-08-25 |
+| [0019](0019-unified-recoverable-diagnostics.md)                             | Unified Recoverable Diagnostics                                 | Proposed | 2026-08-25 |
+| [0020](0020-bound-renderer-reactivity.md)                                   | Bound Renderer Reactivity                                       | Proposed | 2026-08-26 |
+| [0021](0021-classify-and-coalesce-canvas-invalidation.md)                   | Classify and Coalesce Canvas Invalidation                       | Proposed | 2026-08-26 |
+| [0022](0022-performance-measurement-and-ci-policy.md)                       | Performance Measurement and CI Policy                           | Proposed | 2026-08-26 |
+| [0023](0023-widget-entities-and-legacy-behavior-boundary.md)                | Widget Entities and Legacy Behavior Boundary                    | Proposed | 2026-08-26 |
+| [0024](0024-in-app-agent-offscreen-graphs.md)                               | Graph Activation and Document Objects for In-App Agent Targets  | Proposed | 2026-08-28 |
+| [0025](0025-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
+| [0026](0026-frontend-document-model.md)                                     | Frontend Document Model                                         | Proposed | 2026-08-31 |
+| [0027](0027-defer-promoted-widget-registration-to-onadded.md)               | Defer Promoted-Widget Registration to `onAdded()`               | Accepted | 2026-09-01 |
 
 ## Creating a New ADR
 
-1. Copy the template below
+1. Copy the structure of an existing ADR, including Context, Decision, Consequences, and Status
 2. Name it with the next number in sequence: `NNNN-descriptive-title.md`
 3. Fill in all sections
 4. Update this index
 5. Submit as part of your PR
-
-## ADR Template
-
-```markdown
-# N. Title
-
-Date: YYYY-MM-DD
-
-## Status
-
-[Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)]
-
-## Context
-
-Describe the issue that motivated this decision and any context that influences or constrains the decision.
-
-- What is the problem?
-- Why does it need to be solved?
-- What forces are at play (technical, business, team)?
-
-## Decision
-
-Describe the decision that was made and the key points that led to it.
-
-- What are we going to do?
-- How will we do it?
-- What alternatives were considered?
-
-## Consequences
-
-### Positive
-
-- What becomes easier or better?
-- What opportunities does this create?
-
-### Negative
-
-- What becomes harder or worse?
-- What risks are we accepting?
-- What technical debt might we incur?
-
-## Notes
-
-Optional section for additional information, references, or clarifications.
-```
 
 ## ADR Status Values
 

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -20,8 +18,11 @@ import {
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -32,7 +33,6 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
   LGraph.proxyWidgetMigrationFlush = undefined
 })
@@ -78,8 +78,7 @@ function addPrimitiveWithTargets(
 ): { primitive: LGraphNode; targets: LGraphNode[] } {
   const outputType = args.outputType ?? 'INT'
   const targetSlotType = args.targetSlotType ?? outputType
-  const primitive = new LGraphNode('PrimitiveNode')
-  primitive.type = 'PrimitiveNode'
+  const primitive = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
   primitive.addOutput('value', outputType)
   primitive.addWidget('number', 'value', args.primitiveValue ?? 42, () => {})
   host.subgraph.add(primitive)
@@ -200,6 +199,28 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       expect(getPromotedInputValue(host, 'seed')).toBe(7)
+    })
+
+    it('alreadyLinked: applies a null host value instead of treating it as a hole', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      host.graph!.add(host)
+      const inner = addInnerNode(host, 'Inner', (n) => {
+        const slot = n.addInput('seed', 'INT')
+        const innerWidget = n.addWidget('number', 'seed', 7, () => {})
+        slot.widget = { name: innerWidget.name }
+      })
+      subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+
+      host.properties.proxyWidgets = [[String(inner.id), 'seed']]
+      flushProxyWidgetMigration({
+        hostNode: host,
+        hostWidgetValues: [null]
+      })
+
+      expect(getPromotedInputValue(host, 'seed')).toBeNull()
     })
 
     it('createSubgraphInput: creates exactly one new SubgraphInput linked to the source widget', () => {
@@ -330,8 +351,7 @@ describe('flushProxyWidgetMigration', () => {
 
     it('quarantines an unlinked primitive node with no fan-out', () => {
       const host = buildHost()
-      const primitive = new LGraphNode('Primitive')
-      primitive.type = 'PrimitiveNode'
+      const primitive = new LGraphNode('Primitive', 'PrimitiveNode')
       primitive.addOutput('value', '*')
       host.subgraph.add(primitive)
 
@@ -372,10 +392,16 @@ describe('flushProxyWidgetMigration', () => {
 
       const danglingLinkId = toLinkId(999_999)
       expect(host.subgraph.links.has(danglingLinkId)).toBe(false)
-      primitive.outputs[0].links = [
-        ...(primitive.outputs[0].links ?? []),
-        danglingLinkId
-      ]
+      const hostScope = graphScopeOf(host.subgraph)
+      useLinkStore().registerLink(hostScope, {
+        id: danglingLinkId,
+        graphId: hostScope.owningGraphId,
+        originNodeId: primitive.id,
+        originSlot: 0,
+        targetNodeId: toNodeId(999_999),
+        targetSlot: 0,
+        type: '*'
+      })
 
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
       flushProxyWidgetMigration({ hostNode: host })
@@ -395,8 +421,7 @@ describe('flushProxyWidgetMigration', () => {
       hostA.graph!.add(hostA)
       hostB.graph!.add(hostB)
 
-      const primitive = new LGraphNode('PrimitiveNode')
-      primitive.type = 'PrimitiveNode'
+      const primitive = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
       primitive.addOutput('value', 'INT')
       primitive.addWidget('number', 'value', 0, () => {})
       subgraph.add(primitive)
@@ -722,6 +747,7 @@ describe('flushProxyWidgetMigration', () => {
         })
 
       const reloadedGraph = new LGraph()
+      serialized.id = reloadedGraph.id
       const subgraph = host.subgraph
       const instanceData = host.serialize()
       LiteGraph.registerNodeType(
@@ -732,17 +758,13 @@ describe('flushProxyWidgetMigration', () => {
           }
         }
       )
-      try {
-        reloadedGraph.configure(serialized)
-      } finally {
-        LiteGraph.unregisterNodeType(subgraph.id)
-      }
+      reloadedGraph.configure(serialized)
 
       const reloadedHost = reloadedGraph.getNodeById(host.id)
       expect(reloadedHost?.properties.proxyWidgets).toBeUndefined()
       expect(
         usePreviewExposureStore().getExposures(
-          host.rootGraph.id,
+          reloadedGraph.id,
           String(host.id)
         )
       ).toEqual([

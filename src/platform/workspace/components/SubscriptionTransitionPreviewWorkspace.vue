@@ -1,11 +1,25 @@
 <template>
-  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
-    {{ confirmTitle }}
-  </h2>
   <div
-    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
+    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div>
+      <div class="mb-8 flex items-center gap-3">
+        <Button
+          size="icon"
+          variant="muted-textonly"
+          class="shrink-0 rounded-full"
+          :aria-label="$t('g.back')"
+          :disabled="interactionLocked"
+          @click="$emit('back')"
+        >
+          <i class="pi pi-arrow-left text-base" />
+        </Button>
+        <h2
+          class="m-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ confirmTitle }}
+        </h2>
+      </div>
       <div
         v-if="isReactivating"
         class="mb-6 flex gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
@@ -62,10 +76,12 @@
           {{ newTierName }}
         </span>
         <div class="flex items-baseline gap-2">
-          <span class="text-4xl font-semibold text-base-foreground">
+          <span
+            class="text-2xl font-semibold text-base-foreground tabular-nums"
+          >
             ${{ heroPrice }}
           </span>
-          <span class="text-xl text-base-foreground">
+          <span class="text-base text-base-foreground">
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
@@ -90,34 +106,13 @@
         </span>
       </div>
 
-      <!-- Proration Line Items (immediate changes) -->
-      <div v-if="isImmediate" class="flex flex-col gap-2 pt-10">
-        <div class="flex items-center justify-between text-muted-foreground">
-          <span>{{ subscriptionLineLabel }}</span>
-          <span>{{ money(newPlanPriceUsd) }}</span>
-        </div>
-        <div
-          v-if="prorationCreditUsd > 0"
-          class="flex items-center justify-between text-muted-foreground"
-        >
-          <span>
-            {{
-              $t('subscription.preview.creditFromCurrent', {
-                plan: creditFromPlanLabel
-              })
-            }}
-          </span>
-          <span>− {{ money(prorationCreditUsd) }}</span>
-        </div>
-      </div>
-
       <!-- Credits Refill (immediate changes) -->
       <div v-if="isImmediate" class="flex flex-col gap-2 pt-10">
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">{{ refillLabel }}</span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground">{{
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            <span class="font-bold text-base-foreground tabular-nums">{{
               refillCredits
             }}</span>
           </div>
@@ -136,45 +131,158 @@
         </span>
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">
-            {{ $t('subscription.preview.creditsRefillMonthlyTo') }}
+            {{
+              $t(
+                newIsYearly
+                  ? 'subscription.preview.eachYearCreditsRefill'
+                  : 'subscription.preview.creditsRefillMonthlyTo'
+              )
+            }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground">{{
-              monthlyRefillCredits
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            <span class="font-bold text-base-foreground tabular-nums">{{
+              refillCredits
             }}</span>
           </div>
         </div>
         <span class="text-sm text-muted-foreground">
           {{
-            $t('subscription.preview.billedEachMonth', {
-              amount: moneyShort(newMonthlyChargeUsd)
-            })
+            newIsYearly
+              ? $t('subscription.billedYearly', {
+                  total: annualTotalFormatted
+                })
+              : $t('subscription.preview.billedEachMonth', {
+                  amount: moneyShort(newMonthlyChargeUsd)
+                })
           }}
         </span>
       </div>
 
-      <!-- Total Due -->
-      <div class="mt-10 flex flex-col gap-2 border-t border-border-subtle pt-8">
+      <!-- Total Due (immediate changes carry their addends: one sum under
+           one divider, per Figma 5344-35724) -->
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-2 border-t border-border-subtle pt-6',
+            !isImmediate && 'mt-10'
+          )
+        "
+      >
+        <template v-if="isImmediate && previewData.discounts?.length">
+          <div class="flex items-center justify-between text-muted-foreground">
+            <span>{{ $t('subscription.preview.discountComposition') }}</span>
+          </div>
+          <div
+            v-for="discount in previewData.discounts"
+            :key="`${discount.kind}:${discount.code}`"
+            class="flex items-center justify-between text-muted-foreground"
+          >
+            <span>{{
+              $t(`subscription.preview.discount.${discount.kind}`)
+            }}</span>
+            <span class="text-base-foreground">
+              {{ discount.name || discount.code
+              }}<template v-if="discount.amount_off_cents">
+                · −${{
+                  formatUsdFromCents({ cents: discount.amount_off_cents })
+                }}</template
+              >
+            </span>
+          </div>
+        </template>
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
-          <span class="font-bold text-base-foreground">
-            {{ money(totalDueTodayUsd) }}
+          <span class="font-bold text-base-foreground tabular-nums">
+            {{ amountDueToday }}
           </span>
         </div>
-        <span class="text-sm text-muted-foreground">{{ totalNote }}</span>
+        <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
+      </div>
+      <div v-if="embeddedCheckoutEnabled" class="flex gap-2 pt-6">
+        <input
+          v-model="promotionCode"
+          :aria-label="$t('subscription.preview.promoCodePlaceholder')"
+          :disabled="interactionLocked"
+          class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
+          :placeholder="$t('subscription.preview.promoCodePlaceholder')"
+          @input="invalidateEditedPromotion"
+        />
+        <Button
+          variant="secondary"
+          size="lg"
+          :disabled="interactionLocked"
+          @click="$emit('applyPromotionCode', promotionCode)"
+        >
+          {{ $t('subscription.preview.applyPromoCode') }}
+        </Button>
       </div>
     </div>
 
     <!-- Footer -->
-    <div class="flex flex-col gap-2 pt-8">
-      <SubscriptionTermsNote />
+    <div class="flex flex-col gap-2 pt-8 pb-4">
+      <div
+        v-if="embeddedCheckoutEnabled && reconciliationOperationId"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
+      >
+        <p class="m-0 font-semibold text-base-foreground">
+          {{ $t('billingOperation.reconciliationTitle') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{ $t('billingOperation.reconciliationDetail') }}
+          <span class="font-mono">{{ reconciliationOperationId }}</span>
+        </p>
+      </div>
+
+      <div
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        {{
+          authenticationError ||
+          (canRetryAuthentication
+            ? $t('billingOperation.authenticationFailedDetail')
+            : $t('billingOperation.authenticationManagerRequired'))
+        }}
+      </div>
 
       <Button
-        v-if="actionUrl"
-        variant="primary"
+        v-if="
+          embeddedCheckoutEnabled &&
+          (authenticationState === 'failed_retryable' ||
+            authenticationState === 'requires_action') &&
+          canRetryAuthentication
+        "
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        :loading="isAuthenticating"
+        @click="$emit('retryAuthentication')"
+      >
+        {{
+          $t(
+            authenticationState === 'failed_retryable'
+              ? 'billingOperation.retryVerification'
+              : 'subscription.preview.completeVerification'
+          )
+        }}
+      </Button>
+
+      <Button
+        v-if="
+          actionUrl &&
+          !(
+            (authenticationState === 'failed_retryable' ||
+              authenticationState === 'requires_action') &&
+            canRetryAuthentication
+          )
+        "
+        variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         @click="openVerification"
@@ -183,24 +291,19 @@
       </Button>
 
       <Button
-        variant="tertiary"
+        :variant="actionUrl ? 'tertiary' : 'inverted'"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="confirmDisabled"
+        :disabled="
+          confirmDisabled || !quoteIsUsable || verificationRecoveryActive
+        "
         @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
       </Button>
 
-      <Button
-        variant="textonly"
-        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
-        :disabled="isLoading"
-        @click="$emit('back')"
-      >
-        {{ $t('subscription.preview.backToAllPlans') }}
-      </Button>
+      <SubscriptionTermsNote class="mt-2" />
     </div>
   </div>
 </template>
@@ -214,19 +317,38 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  getTierCredits,
+  toTierKey
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import {
+  formatAmountDueToday,
+  formatRenewalAmount,
+  resolveRenewalDate
+} from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import type {
+  BillingAuthenticationState,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
-
-type PersonalTierKey = 'standard' | 'creator' | 'pro'
 
 const {
   previewData,
   isLoading = false,
   teamPlan = null,
-  actionUrl = null
+  actionUrl = null,
+  forceReactivation = false,
+  authenticationState = null,
+  authenticationError = null,
+  canRetryAuthentication = false,
+  isAuthenticating = false,
+  reconciliationOperationId = null,
+  quoteIsCurrent = false,
+  isApplyingPromotionCode = false,
+  embeddedCheckoutEnabled = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -234,17 +356,54 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  /** Server-authoritative fallback for legacy status reads that omit a
+   * scheduled cancellation until subscribe enforces the consent gate. */
+  forceReactivation?: boolean
+  authenticationState?: BillingAuthenticationState | null
+  authenticationError?: string | null
+  canRetryAuthentication?: boolean
+  isAuthenticating?: boolean
+  reconciliationOperationId?: string | null
+  quoteIsCurrent?: boolean
+  isApplyingPromotionCode?: boolean
+  embeddedCheckoutEnabled?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   /** True only once the reactivation banner was shown and confirmed (checkbox
    *  ticked above the charge threshold, since confirmDisabled gates the button). */
   confirm: [confirmReactivation: boolean]
   back: []
+  applyPromotionCode: [code: string]
+  invalidateQuote: []
+  retryAuthentication: []
 }>()
 
-const { t, n } = useI18n()
+const { locale, n, t, te } = useI18n()
+const verificationRecoveryActive = computed(
+  () =>
+    embeddedCheckoutEnabled &&
+    (authenticationState === 'requires_action' ||
+      authenticationState === 'failed_retryable' ||
+      Boolean(reconciliationOperationId))
+)
+const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
+const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)
+
 const { subscription } = useBillingContext()
+const promotionCode = ref(previewData.promotion_code ?? '')
+watch(
+  () => previewData.promotion_code,
+  (code) => {
+    promotionCode.value = code ?? ''
+  }
+)
+
+function invalidateEditedPromotion() {
+  if (promotionCode.value !== (previewData.promotion_code ?? '')) {
+    emit('invalidateQuote')
+  }
+}
 
 function openVerification() {
   if (!actionUrl) return
@@ -252,7 +411,18 @@ function openVerification() {
 }
 
 function formatTierName(tier: string): string {
-  return t(`subscription.tiers.${tier.toLowerCase()}.name`)
+  const nameKey = `subscription.tiers.${tier.toLowerCase()}.name`
+  if (te(nameKey)) return t(nameKey)
+  return tier
+    .toLowerCase()
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+function isTeamTier(tier: string): boolean {
+  return tier.toUpperCase() === 'TEAM'
 }
 
 function formatDate(date: string | Date): string {
@@ -264,19 +434,15 @@ function formatDate(date: string | Date): string {
   }).format(typeof date === 'string' ? new Date(date) : date)
 }
 
-function money(usd: number): string {
-  return `$${usd.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`
-}
-
 function moneyShort(usd: number): string {
   return `$${n(usd)}`
 }
 
+// Lowercasing the tier is not a catalog lookup: FOUNDERS_EDITION keys as
+// 'founder', and TEAM/ENTERPRISE/unrecognized tiers key as nothing at all.
 function tierMonthlyCredits(tier: string): number {
-  return getTierCredits(tier.toLowerCase() as PersonalTierKey) ?? 0
+  const tierKey = toTierKey(tier as IngestSubscriptionTier)
+  return tierKey ? (getTierCredits(tierKey) ?? 0) : 0
 }
 
 const isImmediate = computed(() => previewData.is_immediate)
@@ -286,27 +452,24 @@ const newIsYearly = computed(() =>
 const currentIsYearly = computed(() =>
   isAnnualDuration(previewData.current_plan?.duration)
 )
-const isCadenceChange = computed(
-  () =>
-    !!previewData.current_plan &&
-    previewData.current_plan.duration !== previewData.new_plan.duration
-)
-
 const newTierName = computed(() =>
   teamPlan
     ? t('subscription.teamPlan.name')
     : formatTierName(previewData.new_plan.tier)
 )
-const currentTierName = computed(() =>
-  previewData.current_plan ? formatTierName(previewData.current_plan.tier) : ''
-)
-const currentPlanLabel = computed(() =>
-  currentIsYearly.value
-    ? t('subscription.tierNameYearly', { name: currentTierName.value })
-    : currentTierName.value
-)
+const currentTierName = computed(() => {
+  const tier = previewData.current_plan?.tier
+  if (!tier) return ''
+  return isTeamTier(tier)
+    ? t('subscription.teamPlan.name')
+    : formatTierName(tier)
+})
 
-const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const isCancelled = computed(
+  () =>
+    forceReactivation ||
+    (!embeddedCheckoutEnabled && (subscription.value?.isCancelled ?? false))
+)
 
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
@@ -326,16 +489,20 @@ const reactivationVariant = computed<
 // Requires the data the banner and threshold math actually read
 // (subscription.endDate, previewData.current_plan) — without it the banner
 // would render broken copy or force the checkbox on a bogus $0 threshold.
+const cancelAt = computed(
+  () => subscription.value?.endDate ?? previewData.current_plan?.period_end
+)
+
 const isReactivating = computed(
   () =>
     isCancelled.value &&
     reactivationVariant.value !== null &&
-    !!subscription.value?.endDate &&
+    !!cancelAt.value &&
     !!previewData.current_plan
 )
 
 const cancelDate = computed(() =>
-  subscription.value?.endDate ? formatDate(subscription.value.endDate) : ''
+  cancelAt.value ? formatDate(cancelAt.value) : ''
 )
 
 // seat_summary.total_cost_cents is the whole-subscription price; price_cents
@@ -348,7 +515,9 @@ const currentMonthlyPriceCents = computed(() => {
   const totalCents = plan.seat_summary.total_cost_cents
   return currentIsYearly.value ? totalCents / 12 : totalCents
 })
-const chargeCents = computed(() => previewData.cost_today_cents)
+const chargeCents = computed(
+  () => previewData.amount_due_cents ?? previewData.cost_today_cents
+)
 // The downgrade variant's copy always says "you won't be charged today" with
 // no amount shown, so it never gets the checkbox even if cost_today_cents is
 // unexpectedly positive.
@@ -363,11 +532,14 @@ const chargeDisplay = computed(
 )
 
 const reactivationConfirmed = ref(false)
-// A checked box is consent to *this* charge; a later charge change (e.g. a
-// different preview loads) must not carry that consent forward.
-watch(chargeCents, () => {
-  reactivationConfirmed.value = false
-})
+// A checked box is consent to this exact preview. A replacement preview must
+// not inherit that consent, even when its displayed charge is unchanged.
+watch(
+  () => previewData,
+  () => {
+    reactivationConfirmed.value = false
+  }
+)
 
 // isInitialized is aggregate (status + balance + plans); a balance or plans
 // failure must not permanently disable an otherwise-valid, already-loaded
@@ -414,25 +586,7 @@ const annualTotalFormatted = computed(
   () => `$${n(previewData.new_plan.price_cents / 100)}`
 )
 
-const newPlanPriceUsd = computed(() => previewData.new_plan.price_cents / 100)
-const prorationCreditUsd = computed(() => {
-  const credit = previewData.new_plan.price_cents - previewData.cost_today_cents
-  return credit > 0 ? credit / 100 : 0
-})
-const totalDueTodayUsd = computed(() => previewData.cost_today_cents / 100)
 const newMonthlyChargeUsd = computed(() => newMonthlyUsd.value)
-
-const subscriptionLineLabel = computed(() =>
-  newIsYearly.value
-    ? t('subscription.preview.yearlySubscription')
-    : t('subscription.preview.newMonthlySubscription')
-)
-const creditFromPlanLabel = computed(() => {
-  if (teamPlan) return t('subscription.preview.commitment')
-  return isCadenceChange.value
-    ? t('subscription.preview.currentMonthly')
-    : currentTierName.value
-})
 
 const refillCredits = computed(() => {
   const monthly = teamPlan
@@ -440,9 +594,6 @@ const refillCredits = computed(() => {
     : tierMonthlyCredits(previewData.new_plan.tier)
   return n(newIsYearly.value ? monthly * 12 : monthly)
 })
-const monthlyRefillCredits = computed(() =>
-  n(teamPlan ? teamPlan.credits : tierMonthlyCredits(previewData.new_plan.tier))
-)
 const refillLabel = computed(() =>
   newIsYearly.value
     ? t('subscription.preview.creditsYoullGetToday')
@@ -480,12 +631,6 @@ const nextPaymentDate = computed(() => {
   )
   return formatDate(fallback)
 })
-const currentPeriodEnd = computed(() =>
-  previewData.current_plan?.period_end
-    ? formatDate(previewData.current_plan.period_end)
-    : effectiveDateLabel.value
-)
-
 const confirmTitle = computed(() =>
   isImmediate.value
     ? t('subscription.preview.confirmUpgradeTitle')
@@ -507,12 +652,19 @@ const confirmCta = computed(() => {
     amount: chargeDisplay.value
   })
 })
-const totalNote = computed(() =>
-  isImmediate.value
-    ? t('subscription.preview.nextPaymentDue', { date: nextPaymentDate.value })
-    : t('subscription.preview.stayOnUntil', {
-        plan: currentPlanLabel.value,
-        date: currentPeriodEnd.value
-      })
+const amountDueToday = computed(
+  () =>
+    formatAmountDueToday(previewData, locale.value) ||
+    t('subscription.preview.quoteUnavailable')
 )
+const renewalTerms = computed(() => {
+  const amount = formatRenewalAmount(previewData, locale.value)
+  if (!amount) return t('subscription.preview.quoteUnavailable')
+  const renewsAt = resolveRenewalDate(previewData)
+  if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
+  return t('subscription.preview.renewsAt', {
+    amount,
+    date: formatDate(renewsAt)
+  })
+})
 </script>

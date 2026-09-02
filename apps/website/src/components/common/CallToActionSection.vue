@@ -2,22 +2,27 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
-import BrandButton from './BrandButton.vue'
+import { resolveRel } from '../../utils/cta'
+import Button from '../ui/button/Button.vue'
 
 const {
   locale = 'en',
   headingKey,
   primaryLabelKey,
   primaryHref,
+  primaryTarget,
   secondaryLabelKey,
-  secondaryHref
+  secondaryHref,
+  secondaryTarget
 } = defineProps<{
   locale?: Locale
   headingKey: TranslationKey
   primaryLabelKey: TranslationKey
   primaryHref?: string
+  primaryTarget?: string
   secondaryLabelKey?: TranslationKey
   secondaryHref?: string
+  secondaryTarget?: string
 }>()
 </script>
 
@@ -30,23 +35,23 @@ const {
         {{ t(headingKey, locale) }}
       </h2>
       <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
-        <BrandButton
+        <Button
           :href="primaryHref"
-          variant="solid"
-          size="xs"
-          class="uppercase"
+          :target="primaryTarget"
+          :rel="resolveRel({ target: primaryTarget })"
+          variant="default"
         >
           {{ t(primaryLabelKey, locale) }}
-        </BrandButton>
-        <BrandButton
+        </Button>
+        <Button
           v-if="secondaryLabelKey"
           :href="secondaryHref"
+          :target="secondaryTarget"
+          :rel="resolveRel({ target: secondaryTarget })"
           variant="outline"
-          size="xs"
-          class="uppercase"
         >
           {{ t(secondaryLabelKey, locale) }}
-        </BrandButton>
+        </Button>
       </div>
     </div>
   </section>

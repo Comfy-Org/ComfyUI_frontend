@@ -37,6 +37,7 @@ const i18n = createI18n({
           standard: { name: 'Standard' },
           creator: { name: 'Creator' }
         },
+        teamPlan: { name: 'Team Plan' },
         preview: {
           switchesToday: 'Switches today',
           startsOn: 'Starts {date}',
@@ -86,7 +87,7 @@ const i18n = createI18n({
 function makePreview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
-  return {
+  const result: PreviewSubscribeResponse = {
     allowed: true,
     transition_type: 'upgrade',
     effective_at: '2026-08-01T00:00:00Z',
@@ -122,11 +123,25 @@ function makePreview(
     },
     ...overrides
   }
+  return {
+    ...result,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: result.cost_today_cents,
+    currency: 'usd',
+    renewal_amount_cents: result.new_plan.price_cents,
+    renewal_at: result.new_plan.period_end ?? '2026-09-01T00:00:00Z',
+    ...overrides
+  }
 }
 
-function renderComponent(previewData: PreviewSubscribeResponse) {
+function renderComponent(
+  previewData: PreviewSubscribeResponse,
+  forceReactivation = false,
+  quoteIsCurrent = true
+) {
   return render(SubscriptionTransitionPreviewWorkspace, {
-    props: { previewData },
+    props: { previewData, forceReactivation, quoteIsCurrent },
     global: { plugins: [i18n] }
   })
 }
@@ -149,6 +164,34 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(
         screen.queryByText('Reactivating your subscription')
       ).not.toBeInTheDocument()
+    })
+
+    it('uses a server-authoritative reactivation requirement when status omits the cancellation', () => {
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      const preview = makePreview({
+        transition_type: 'upgrade',
+        cost_today_cents: 2500
+      })
+      preview.current_plan!.tier = 'TEAM'
+      preview.current_plan!.period_end = '2026-08-29T00:00:00Z'
+
+      const { container } = renderComponent(preview, true)
+
+      expect(
+        screen.getByText('Reactivating your subscription')
+      ).toBeInTheDocument()
+      expect(container.textContent).toContain(
+        i18n.global.t('subscription.teamPlan.name')
+      )
+      expect(container.textContent).toContain('Aug 29, 2026')
+      expect(container.textContent).not.toContain(
+        'subscription.tiers.team.name'
+      )
+      expect(
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $25.00 today'
+        })
+      ).toBeDisabled()
     })
   })
 
@@ -502,6 +545,46 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm gating on load state', () => {
+    it('prices a preview that carries no exact quote from the legacy costs', () => {
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      renderComponent(
+        makePreview({
+          quote_id: undefined,
+          quote_version: undefined,
+          amount_due_cents: undefined,
+          currency: undefined,
+          renewal_amount_cents: undefined,
+          renewal_at: undefined
+        })
+      )
+
+      expect(screen.getByText('$15.00')).toBeInTheDocument()
+      expect(
+        screen.queryByText('subscription.preview.quoteUnavailable')
+      ).toBeNull()
+    })
+
+    it('does not confirm without a current quote', async () => {
+      const user = userEvent.setup()
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      const { emitted } = render(SubscriptionTransitionPreviewWorkspace, {
+        props: {
+          previewData: makePreview({}),
+          forceReactivation: false,
+          quoteIsCurrent: false,
+          embeddedCheckoutEnabled: true
+        },
+        global: { plugins: [i18n] }
+      })
+      const confirmButton = screen.getByRole('button', {
+        name: 'Confirm upgrade'
+      })
+
+      expect(confirmButton).toBeDisabled()
+      await user.click(confirmButton)
+      expect(emitted().confirm).toBeUndefined()
+    })
+
     it('disables confirm while subscription status has not loaded yet, even below the charge threshold', () => {
       mockSubscription.value = null
       renderComponent(
@@ -566,7 +649,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('reactivation consent lifetime', () => {
-    it('resets a ticked checkbox when the charge amount changes', async () => {
+    it('resets a ticked checkbox when a replacement preview keeps the same charge', async () => {
       const user = userEvent.setup()
       mockSubscription.value = {
         isCancelled: true,
@@ -598,22 +681,24 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         })
       ).toBeEnabled()
 
-      // A different preview loads (e.g. user went back and re-previewed) with
-      // a higher charge; the earlier tick must not carry over as consent.
+      // A fresh quote can carry materially different billing state while
+      // displaying the same charge; the earlier tick must not carry over.
       await rerender({
         previewData: makePreview({
           transition_type: 'duration_change',
-          cost_today_cents: 50_000,
+          cost_today_cents: 33_600,
+          credits_next_period_cents: 1_000,
+          proration_at: '2026-08-01T00:01:00Z',
           new_plan: {
             slug: 'standard-annual',
             tier: 'STANDARD',
             duration: 'ANNUAL',
-            price_cents: 50_000,
+            price_cents: 33_600,
             credits_cents: 0,
             period_end: '2027-08-15T00:00:00Z',
             seat_summary: {
               seat_count: 1,
-              total_cost_cents: 50_000,
+              total_cost_cents: 33_600,
               total_credits_cents: 0
             }
           }
@@ -623,7 +708,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(screen.getByRole('checkbox')).not.toBeChecked()
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $500.00 today'
+          name: 'Confirm & reactivate — $336.00 today'
         })
       ).toBeDisabled()
     })

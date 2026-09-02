@@ -2,11 +2,13 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
-import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
+import { isNoindexPathname } from '../config/indexing'
+import { hreflangAlternates } from '../lib/hreflang'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
@@ -51,6 +53,10 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale,
 )
 const canonicalURL = new URL(url)
+const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const alternates = shouldNoindex
+  ? []
+  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -70,7 +76,7 @@ const bannerVersion = createBannerVersion(bannerData, locale)
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const structuredData = noindex
+const structuredData = shouldNoindex
   ? undefined
   : buildPageGraph(
       { siteUrl, locale },
@@ -88,13 +94,18 @@ const structuredData = noindex
 ---
 
 <!doctype html>
-<html lang={locale} class="overflow-x-clip">
+{
+  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+     dialog scroll lock) only propagates to the viewport when the root is
+     visible. The horizontal clip lives on <body>. */
+}
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
@@ -104,6 +115,24 @@ const structuredData = noindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {
+      !shouldNoindex && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={markdownTwinPath(canonicalURL.pathname)}
+        />
+      )
+    }
+    {
+      alternates.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={alternate.hreflang}
+          href={alternate.href}
+        />
+      ))
+    }
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
@@ -147,6 +176,18 @@ const structuredData = noindex
 
     <ClientRouter />
 
+    <!-- Chrome initializes a video's muted state from the `muted` attribute
+         only during document parsing, not for the DOMParser-built pages the
+         ClientRouter swaps in — re-assert it before paint or autoplaying
+         videos come back with sound. -->
+    <script>
+      document.addEventListener('astro:after-swap', () => {
+        document.querySelectorAll('video').forEach((video) => {
+          if (video.hasAttribute('muted')) video.muted = true
+        })
+      })
+    </script>
+
     <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
     {bannerVisible && (
       <script
@@ -159,7 +200,7 @@ const structuredData = noindex
       >
         try {
           const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-          if (dismissed[bannerVersion]) {
+          if (dismissed && dismissed[bannerVersion] === true) {
             document.documentElement.setAttribute(dismissAttr, '')
           }
         } catch (e) {}
@@ -187,7 +228,12 @@ const structuredData = noindex
       />
     )}
     <HeaderMain locale={locale} github-stars={githubStars} client:load />
-    <main>
+    <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
+         visible for reka-ui's dialog scroll lock). <body>'s clip does not
+         contain overflow once <html> is visible, because the root propagates
+         body overflow to the viewport; clipping <main> keeps the page from
+         exceeding the viewport width. -->
+    <main class="overflow-x-clip">
       <slot />
     </main>
     <SiteFooter locale={locale} client:load />
@@ -198,6 +244,7 @@ const structuredData = noindex
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
       import { ScrollTrigger } from '../scripts/gsapSetup'
       import { initPostHog, capturePageview } from '../scripts/posthog'
+      import { reifyMediaElements } from '../scripts/reifyMediaElements'
 
       initSmoothScroll()
 
@@ -212,6 +259,11 @@ const structuredData = noindex
 
       document.addEventListener('astro:before-preparation', () => {
         cancelScroll()
+      })
+
+      // Synchronous, so it runs before island hydration touches the DOM.
+      document.addEventListener('astro:after-swap', () => {
+        reifyMediaElements(document.body)
       })
     </script>
   </body>

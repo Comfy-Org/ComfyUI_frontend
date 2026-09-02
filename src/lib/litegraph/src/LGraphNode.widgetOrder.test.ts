@@ -1,20 +1,26 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     node = new LGraphNode('TestNode')
   })
 
   describe('configure with widgets_values', () => {
+    beforeEach(() => {
+      LiteGraph.namedValuesRestore = false
+    })
     it('should apply widget values in correct order when widgets order matches input_order', () => {
       // Create node with widgets
       node.addWidget('number', 'steps', 20, null, {})
@@ -96,6 +102,215 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![0].value).toBe(30) // steps
       expect(node.widgets![1].value).toBe('Click') // button unchanged
       expect(node.widgets![2].value).toBe(12345) // seed
+    })
+
+    it('round trips compact positional values around non-serializable widgets', () => {
+      node.serialize_widgets = true
+      node.addWidget('number', 'steps', 30, null, {})
+      node.addWidget('button', 'action', 'Click', null, {}).serialize = false
+      node.addWidget('number', 'seed', 12345, null, {})
+
+      const serialized = node.serialize()
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('number', 'steps', 0, null, {})
+      restored.addWidget('button', 'action', 'Click', null, {}).serialize =
+        false
+      restored.addWidget('number', 'seed', 0, null, {})
+      restored.configure(serialized)
+
+      expect(serialized.widgets_values).toEqual([30, 12345])
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        30,
+        'Click',
+        12345
+      ])
+    })
+
+    it('does not retain positional restoration after configure', () => {
+      node.configure({
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: [30, 12345]
+      })
+
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([0, 0])
+    })
+  })
+
+  describe('configure with widgets_values_named', () => {
+    function mockNode(
+      values?: TWidgetValue[],
+      named_values?: Record<string, TWidgetValue>
+    ): ISerialisedNode {
+      return {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: values,
+        widgets_values_named: named_values
+      }
+    }
+
+    beforeEach(() => {
+      LiteGraph.namedValuesRestore = true
+    })
+
+    it('should apply widget values from widgets_values_named', () => {
+      // Create node with widgets
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      node.addWidget('text', 'prompt', '', null, {})
+
+      const named_values = { steps: 15, prompt: 'prompt', seed: 54321 }
+      node.configure(mockNode([30, 12345, 'test prompt'], named_values))
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([
+        15,
+        54321,
+        'prompt'
+      ])
+    })
+
+    it('should skip widgets with serialize: false', () => {
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('button', 'action', 'Click', null, {})
+      node.widgets![1].serialize = false // button should not serialize
+      node.addWidget('number', 'seed', 0, null, {})
+      node.configure(mockNode([30, 12345], { steps: 30, seed: 12345 }))
+
+      const expected = [30, 'Click', 12345]
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual(expected)
+    })
+
+    it('should restore widgets which are dynamically added', () => {
+      addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+
+      node.configure(
+        mockNode(undefined, { '0': 1, '0.0.0.0': 5, '0.0.0.1': 'test' })
+      )
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])
+    })
+
+    it('does not restore delayed widgets by name', () => {
+      node.configure(mockNode([30, 12345], { steps: 30, seed: 12345 }))
+
+      node.addWidget('number', 'seed', 0, null, {})
+      node.addWidget('number', 'steps', 0, null, {})
+      node.serialize_widgets = true
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([0, 0])
+      expect(node.serialize()).toMatchObject({
+        widgets_values: [0, 0],
+        widgets_values_named: { seed: 0, steps: 0 }
+      })
+    })
+
+    it('clears restoration when onConfigure throws', () => {
+      node.onConfigure = () => {
+        throw new Error('configure failed')
+      }
+
+      expect(() =>
+        node.configure(mockNode(undefined, { seed: 12345 }))
+      ).toThrow('configure failed')
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets![0].value).toBe(0)
+    })
+
+    it('clears restoration when widget assignment throws', () => {
+      const widget = node.addWidget('number', 'seed', 0, null, {})
+      Object.defineProperty(widget, 'value', {
+        configurable: true,
+        set() {
+          throw new Error('restore failed')
+        }
+      })
+
+      expect(() => node.configure(mockNode([12345]))).toThrow('restore failed')
+      node.widgets = []
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets[0].value).toBe(0)
+    })
+
+    it('should support restoration even when order has changed', () => {
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 5, null, {})
+      node.serialize_widgets = true
+
+      const node2 = new LGraphNode('TestNode2')
+      node2.addWidget('number', 'seed', 0, null, {})
+      node2.addWidget('number', 'steps', 0, null, {})
+
+      node2.configure(node.serialize())
+
+      expect(node2.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('should support specifying order for legacy workflows', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = fromPartial({
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      })
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+      node.configure(mockNode([20, 5]))
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('supports fallback names for non-iterable array-like values', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = fromPartial({
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      })
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+
+      const info = mockNode()
+      info.widgets_values = [20, 5]
+      Object.defineProperties(info.widgets_values, {
+        [Symbol.iterator]: { value: undefined },
+        flatMap: { value: undefined }
+      })
+      node.configure(info)
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([5, 20])
+    })
+
+    it('does not restore dynamically added non-serializable widgets', () => {
+      node.onConfigure = function () {
+        this.addCustomWidget(
+          fromPartial<IBaseWidget>({
+            type: 'button',
+            name: 'action',
+            value: 'Click',
+            serialize: false
+          })
+        )
+        this.addWidget('number', 'seed', 0, null, {})
+      }
+
+      node.configure(mockNode([12345], { action: 'Restored', seed: 12345 }))
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
+        'Click',
+        12345
+      ])
     })
   })
 })

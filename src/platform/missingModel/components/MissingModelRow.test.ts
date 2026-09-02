@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -16,6 +16,7 @@ import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 const mockShowUploadDialog = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockDownloadModel = vi.hoisted(() => vi.fn())
@@ -54,7 +55,8 @@ vi.mock('@/scripts/api', () => ({
       }
     ),
     apiURL: vi.fn((path: string) => path),
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
@@ -72,6 +74,9 @@ vi.mock('@/utils/graphTraversalUtil', async () => {
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
+  },
+  get isDesktop() {
+    return mockIsDesktop.value
   }
 }))
 
@@ -116,6 +121,7 @@ import MissingModelRow from './MissingModelRow.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: { en: enMessages },
   missingWarn: false,
   fallbackWarn: false
@@ -176,12 +182,12 @@ function renderRow(
 
 describe('MissingModelRow', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    i18n.global.setLocaleMessage('en', enMessages)
     delete window.__comfyDesktop2
     mockIsCloud.value = true
+    mockIsDesktop.value = false
     mockRootGraph.value = null
     mockApiListeners.clear()
-    mockGetNodeByExecutionId.mockReset()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
     mockFetchModelMetadata.mockResolvedValue({
@@ -190,8 +196,38 @@ describe('MissingModelRow', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it('does not offer or probe arbitrary localhost URLs outside cloud', () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url = 'http://localhost:6379/model.safetensors'
+
+    renderRow(model)
+
+    expect(screen.queryByTestId('missing-model-download')).toBeNull()
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
+  it('does not prefetch metadata in cloud', () => {
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model)
+
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
+  it('prefetches metadata for allowlisted URLs outside cloud', () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model)
+
+    expect(mockFetchModelMetadata).toHaveBeenCalledWith(
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    )
   })
 
   it('opens the model import dialog from the cloud row', async () => {
@@ -410,7 +446,7 @@ describe('MissingModelRow', () => {
     )
   })
 
-  it('shows a gated HuggingFace access action without replacing download', async () => {
+  it('exposes gated browser access as a focus-described link', async () => {
     mockIsCloud.value = false
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
     model.representative.url =
@@ -430,25 +466,73 @@ describe('MissingModelRow', () => {
     })
 
     const gatedModelTooltip =
-      'This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.'
+      'This model is gated. Sign in to Hugging Face and accept its license agreement to access it.'
     const gatedModelDownloadTooltip =
-      'Download may require signing in to Hugging Face first.'
-    expect(screen.getByTestId('missing-model-gated-access')).toHaveAttribute(
-      'title',
+      'To download this gated model, sign in to Hugging Face and accept its license agreement.'
+    const gatedAccess = screen.getByRole('link', {
+      name: 'Open Hugging Face repository for model.safetensors in a new tab'
+    })
+    expect(gatedAccess).toHaveAttribute(
+      'href',
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(gatedAccess).toHaveAttribute('target', '_blank')
+    expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
+
+    gatedAccess.focus()
+    expect(await screen.findByTestId('disclosure-tooltip')).toHaveTextContent(
       gatedModelTooltip
     )
-    expect(screen.getByTestId('missing-model-download')).toHaveAttribute(
-      'title',
-      gatedModelDownloadTooltip
-    )
-    expect(
-      screen.getByTestId('missing-model-download')
-    ).toHaveAccessibleDescription(gatedModelDownloadTooltip)
+    expect(gatedAccess).toHaveAccessibleDescription(gatedModelTooltip)
+
+    const download = screen.getByTestId('missing-model-download')
+    expect(download).not.toHaveAttribute('title')
+    expect(download).toHaveAccessibleDescription(gatedModelDownloadTooltip)
   })
 
-  it('opens gated repo action separately from the download action', async () => {
+  it('uses parameterized accessible labels for gated model actions', async () => {
     mockIsCloud.value = false
-    const user = userEvent.setup()
+    i18n.global.setLocaleMessage('en', {
+      ...enMessages,
+      g: {
+        ...enMessages.g,
+        download: 'Visible download'
+      },
+      rightSidePanel: {
+        ...enMessages.rightSidePanel,
+        missingModels: {
+          ...enMessages.rightSidePanel.missingModels,
+          downloadModel: '{model} download action',
+          openHuggingFaceRepoNewTab: '{model} repository action in a new tab'
+        }
+      }
+    })
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.name = 'SD1.5/v1-5-pruned-emaonly.safetensors'
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    const store = useMissingModelStore()
+    store.setGatedRepoUrl(
+      model.representative.url,
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    await nextTick()
+
+    expect(screen.getByTestId('missing-model-download')).toHaveAccessibleName(
+      'SD1.5/v1-5-pruned-emaonly.safetensors download action'
+    )
+    expect(
+      screen.getByTestId('missing-model-gated-access')
+    ).toHaveAccessibleName(
+      'SD1.5/v1-5-pruned-emaonly.safetensors repository action in a new tab'
+    )
+  })
+
+  it('exposes legacy Electron gated access as a link', async () => {
+    mockIsCloud.value = false
+    mockIsDesktop.value = true
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
     model.representative.url =
       'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
@@ -461,19 +545,73 @@ describe('MissingModelRow', () => {
     )
     await nextTick()
 
-    await user.click(screen.getByTestId('missing-model-gated-access'))
-    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+    const gatedAccess = screen.getByRole('link', {
+      name: 'Open Hugging Face repository for model.safetensors in a new tab'
+    })
+    expect(gatedAccess).toHaveAttribute(
+      'href',
       'https://huggingface.co/bfl/FLUX.1'
     )
+    expect(gatedAccess).toHaveAttribute('target', '_blank')
+    expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(
+      screen.queryByRole('button', {
+        name: /Open Hugging Face repository for model.safetensors/
+      })
+    ).not.toBeInTheDocument()
+    expect(mockOpenGatedRepoPage).not.toHaveBeenCalled()
+  })
 
-    await user.click(screen.getByTestId('missing-model-download'))
-    expect(mockDownloadModel).toHaveBeenCalledWith(
-      {
-        name: 'model.safetensors',
-        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors',
-        directory: 'checkpoints'
-      },
-      {}
+  it('ignores an untrusted gated repository URL from the store', async () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    useMissingModelStore().setGatedRepoUrl(
+      model.representative.url,
+      'https://example.com/untrusted'
+    )
+    await nextTick()
+
+    expect(
+      screen.queryByTestId('missing-model-gated-access')
+    ).not.toBeInTheDocument()
+    const download = screen.getByTestId('missing-model-download')
+    expect(download).not.toHaveAttribute('aria-describedby')
+    expect(download).not.toHaveAccessibleDescription()
+  })
+
+  it('falls back from Desktop2 gated access while keeping button semantics', async () => {
+    mockIsCloud.value = false
+    const openModelAccessPage = vi.fn().mockResolvedValue(false)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      openModelAccessPage
+    }
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    useMissingModelStore().setGatedRepoUrl(
+      model.representative.url,
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Open Hugging Face repository for model.safetensors in the desktop app; may open in a new tab'
+      })
+    )
+
+    expect(openModelAccessPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
     )
   })
 
@@ -522,7 +660,11 @@ describe('MissingModelRow', () => {
 
     renderRow(model, vi.fn(), false)
 
-    await user.click(screen.getByTestId('missing-model-download'))
+    const download = screen.getByTestId('missing-model-download')
+    expect(download).not.toHaveAttribute('aria-describedby')
+    expect(download).not.toHaveAccessibleDescription()
+
+    await user.click(download)
 
     expect(mockDownloadModel).toHaveBeenCalledWith(
       {
