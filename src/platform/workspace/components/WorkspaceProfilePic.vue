@@ -1,6 +1,12 @@
 <template>
   <div
-    class="flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white"
+    v-bind="attrsWithoutClass"
+    :class="
+      cn(
+        'flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white',
+        attrsClass
+      )
+    "
     :style="{
       background: gradient,
       textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
@@ -11,7 +17,14 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
+
+import { useAttrsClass } from '@/composables/useAttrsClass'
+
+defineOptions({ inheritAttrs: false })
+
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const { workspaceName } = defineProps<{
   workspaceName: string

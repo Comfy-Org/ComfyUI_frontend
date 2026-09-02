@@ -386,7 +386,8 @@
         class="mt-auto pt-6"
         :show-invoice-history="permissions.canManageSubscription"
         :show-usage-activity="workspaceRole === 'owner'"
-        :show-plans="canOpenPricingSurface"
+        :show-plans-link="canOpenPricingSurface"
+        @view-plans="handleViewPlansAndPricing"
       />
     </template>
   </div>
@@ -411,6 +412,7 @@ import {
   isSalesManagedTier,
   isUnknownTier
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { PLANS_AND_PRICING_URL } from '@/platform/cloud/subscription/constants/pricingUrl'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
@@ -554,6 +556,10 @@ function handleUpgrade() {
   if (isFreeTierPlan.value)
     showPricingTable({ reason: 'settings_billing_panel' })
   else showSubscriptionDialog({ reason: 'settings_billing_panel' })
+}
+
+function handleViewPlansAndPricing() {
+  window.open(PLANS_AND_PRICING_URL, '_blank', 'noopener')
 }
 
 async function handleRetry() {

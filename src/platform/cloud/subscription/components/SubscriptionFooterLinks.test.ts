@@ -117,17 +117,12 @@ describe('SubscriptionFooterLinks', () => {
     )
   })
 
-  it('opens the pricing page from the folded-in plans link', async () => {
+  it('emits viewPlans from the folded-in plans link', async () => {
     const user = userEvent.setup()
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
-    renderComponent({ showPlans: true })
+    const { emitted } = renderComponent({ showPlansLink: true })
 
     await user.click(screen.getByRole('button', { name: 'Plans & pricing' }))
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://comfy.org/cloud/pricing/',
-      '_blank',
-      'noopener'
-    )
+    expect(emitted('viewPlans')).toHaveLength(1)
   })
 
   it('keeps Invoice history working outside the cloud distribution', async () => {

@@ -11,10 +11,10 @@
         {{ $t('subscription.fullUsageActivity') }}
       </Button>
       <Button
-        v-if="showPlans"
+        v-if="showPlansLink"
         variant="muted-textonly"
         class="text-xs text-text-secondary"
-        @click="handlePlansAndPricing"
+        @click="$emit('viewPlans')"
       >
         <i class="pi pi-external-link text-xs text-text-secondary" />
         {{ $t('subscription.plansAndPricing') }}
@@ -61,24 +61,20 @@ import { isCloud } from '@/platform/distribution/types'
 const {
   showInvoiceHistory = true,
   showUsageActivity = true,
-  showPlans = false
+  showPlansLink = false
 } = defineProps<{
   showInvoiceHistory?: boolean
   showUsageActivity?: boolean
-  showPlans?: boolean
+  showPlansLink?: boolean
 }>()
 
-const PLANS_AND_PRICING_URL = 'https://comfy.org/cloud/pricing/'
+defineEmits<{ viewPlans: [] }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { manageSubscription } = useBillingContext()
 
 const { isLoadingSupport, handleMessageSupport } = useSubscriptionActions()
-
-function handlePlansAndPricing() {
-  window.open(PLANS_AND_PRICING_URL, '_blank', 'noopener')
-}
 
 async function handleInvoiceHistory() {
   if (!showInvoiceHistory) return

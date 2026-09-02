@@ -393,7 +393,7 @@
       </template>
       <template #clickHere>
         <a
-          :href="PRICING_URL"
+          :href="PLANS_AND_PRICING_URL"
           target="_blank"
           rel="noopener noreferrer"
           class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
@@ -432,6 +432,7 @@ import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { PLANS_AND_PRICING_URL } from '@/platform/cloud/subscription/constants/pricingUrl'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
@@ -496,7 +497,6 @@ const VIDEO_TEMPLATE_URL =
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
 const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
-const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */

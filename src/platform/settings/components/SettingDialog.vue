@@ -50,13 +50,16 @@
         class="flex-1"
       />
       <div
-        v-else-if="isWorkspaceSection"
+        v-else-if="isWorkspaceSection && workspaceName"
         class="flex min-w-0 items-center gap-3"
       >
-        <WorkspaceProfilePic :workspace-name="workspaceName" />
-        <h2 class="truncate text-lg font-semibold text-base-foreground">
+        <WorkspaceProfilePic
+          class="size-11 text-2xl"
+          :workspace-name="workspaceName"
+        />
+        <h1 class="truncate text-2xl font-semibold text-base-foreground">
           {{ workspaceName }}
-        </h2>
+        </h1>
       </div>
     </template>
 
