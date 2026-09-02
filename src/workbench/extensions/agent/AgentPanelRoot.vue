@@ -363,7 +363,14 @@ function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined
 ): void {
-  if (sent !== undefined && (sent.id === undefined || sent.id === workflowId)) {
+  if (sent === undefined) return
+  // An unbound tab adopts a workflow only when it was minted for this turn:
+  // an id that already resolves to an open tab belongs to that tab.
+  const adoptable =
+    sent.id === undefined
+      ? boundTabFor(workflowId) === null
+      : sent.id === workflowId
+  if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
   }

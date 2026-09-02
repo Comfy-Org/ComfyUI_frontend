@@ -2857,6 +2857,56 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).not.toHaveProperty('current_tab')
   })
 
+  it('keeps an existing thread workflow on its own tab when sending from an unsaved tab', async () => {
+    const origin = makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('first message')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    const scratch = addTab('workflows/Scratch.json', { isTemporary: true })
+    hostStores.workflow.activeWorkflow = scratch
+    await nextTick()
+    socketSend.mockClear()
+
+    await sendFromComposer('second message')
+
+    expect(bodies[1]).not.toHaveProperty('workflow_id')
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+      origin.path
+    )
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(scratch.path)
+    ).toBeUndefined()
+    expect(
+      socketSend.mock.calls.some(([frame]) =>
+        String(frame).includes('doc_subscribe')
+      )
+    ).toBe(false)
+  })
+
+  it('does not bind an unsaved tab to a workflow that already has an open tab', async () => {
+    addTab('workflows/current.json')
+    const scratch = addTab('workflows/Scratch.json', { isTemporary: true })
+    hostStores.workflow.activeWorkflow = scratch
+    mockMessagesEndpoint('wf-42', [{ id: 'wf-42', name: 'current' }])
+
+    await renderAndSend('first message')
+
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(scratch.path)
+    ).toBeUndefined()
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-42')
+    ).toBeUndefined()
+    expect(
+      socketSend.mock.calls.some(([frame]) =>
+        String(frame).includes('doc_subscribe')
+      )
+    ).toBe(false)
+  })
+
   it('stages a mention pick once and reports the tag gesture', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
