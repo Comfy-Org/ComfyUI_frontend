@@ -1,7 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/compat'
-import type { Ref } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -15,10 +15,10 @@ import { getPackUpdateStatus } from '@/workbench/extensions/manager/utils/packUp
 type NodePack = components['schemas']['Node']
 
 export function useManagerDisplayPacks(
-  selectedTabId: Ref<string | null>,
-  searchResults: Ref<NodePack[]>,
-  searchQuery: Ref<string>,
-  sortField: Ref<string>
+  selectedTabId: MaybeRefOrGetter<string | null>,
+  searchResults: MaybeRefOrGetter<NodePack[]>,
+  searchQuery: MaybeRefOrGetter<string>,
+  sortField: MaybeRefOrGetter<string>
 ) {
   const comfyManagerStore = useComfyManagerStore()
   const conflictDetectionStore = useConflictDetectionStore()
@@ -40,22 +40,20 @@ export function useManagerDisplayPacks(
     isReady: workflowPacksReady
   } = useWorkflowPacks()
 
-  const tabType = computed(() => selectedTabId.value as ManagerTab | null)
-  const isEmptySearch = computed(() => searchQuery.value === '')
+  const tabType = computed(() => toValue(selectedTabId) as ManagerTab | null)
+  const isEmptySearch = computed(() => toValue(searchQuery) === '')
 
-  // Sorting function for packs not from searchResults
+  // Sorting is only valid on fully-fetched lists (installed/workflow); paged
+  // search results are ordered by the API, never re-sorted client-side.
   const sortPacks = (packs: NodePack[]) => {
-    if (!sortField.value || packs.length === 0) return packs
+    const field = toValue(sortField)
+    if (!field || packs.length === 0) return packs
 
     const sortableFields = getSortableFields()
-    const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
+    const fieldConfig = sortableFields.find((f) => f.id === field)
     const direction = fieldConfig?.direction || 'desc'
 
-    return orderBy(
-      packs,
-      [(pack) => getSortValue(pack, sortField.value)],
-      [direction]
-    )
+    return orderBy(packs, [(pack) => getSortValue(pack, field)], [direction])
   }
 
   // Filter functions
@@ -120,55 +118,45 @@ export function useManagerDisplayPacks(
   const displayPacks = computed(() => {
     const tab = tabType.value
     const hasSearch = !isEmptySearch.value
+    const results = toValue(searchResults)
 
     switch (tab) {
       case ManagerTab.All:
-        return searchResults.value
+        return results
 
       case ManagerTab.NotInstalled:
-        return filterNotInstalled(searchResults.value)
+        return filterNotInstalled(results)
 
       case ManagerTab.AllInstalled:
         return hasSearch
-          ? filterInstalledPack(searchResults.value)
+          ? filterInstalledPack(results)
           : sortPacks(installedPacks.value)
 
       case ManagerTab.UpdateAvailable:
-        return sortPacks(
-          filterOutdated(
-            hasSearch
-              ? filterInstalledPack(searchResults.value)
-              : installedPacks.value
-          )
-        )
+        return hasSearch
+          ? filterOutdated(filterInstalledPack(results))
+          : sortPacks(filterOutdated(installedPacks.value))
 
       case ManagerTab.Conflicting:
-        return sortPacks(
-          filterConflicting(
-            hasSearch
-              ? filterInstalledPack(searchResults.value)
-              : installedPacks.value
-          )
-        )
-
-      case ManagerTab.Workflow: {
         return hasSearch
-          ? filterWorkflowPack(searchResults.value)
-          : sortPacks(workflowPacks.value)
-      }
+          ? filterConflicting(filterInstalledPack(results))
+          : sortPacks(filterConflicting(installedPacks.value))
 
-      case ManagerTab.Missing: {
-        const base = hasSearch
-          ? filterWorkflowPack(searchResults.value)
-          : workflowPacks.value
-        return sortPacks(filterNotInstalled(base))
-      }
+      case ManagerTab.Workflow:
+        return hasSearch
+          ? filterWorkflowPack(results)
+          : sortPacks(workflowPacks.value)
+
+      case ManagerTab.Missing:
+        return hasSearch
+          ? filterNotInstalled(filterWorkflowPack(results))
+          : sortPacks(filterNotInstalled(workflowPacks.value))
 
       case ManagerTab.Unresolved:
         return []
 
       default:
-        return searchResults.value
+        return results
     }
   })
 

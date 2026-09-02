@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, whenever } from '@vueuse/core'
+import { refDebounced, until, whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import {
   computed,
@@ -157,6 +157,7 @@ import {
   onUnmounted,
   provide,
   ref,
+  toValue,
   watch,
   watchEffect
 } from 'vue'
@@ -172,10 +173,11 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import type { QuerySuggestion } from '@/types/searchServiceTypes'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
@@ -341,28 +343,30 @@ watch(navItems, (items) => {
   }
 })
 
-const {
-  searchQuery,
-  pageNumber,
-  isLoading: isSearchLoading,
-  hasMore: hasMorePacks,
-  searchResults,
-  searchMode,
-  sortField,
-  suggestions,
-  sortOptions
-} = useRegistrySearch({
-  initialSortField: initialState.sortField,
-  initialSearchMode:
-    initialPackId && initialTabId !== ManagerTab.Missing
-      ? 'packs'
-      : initialState.searchMode,
-  initialSearchQuery:
-    initialTabId === ManagerTab.Missing
-      ? ''
-      : (initialPackId ?? initialState.searchQuery)
+const SEARCH_DEBOUNCE_MS = 320
+
+const searchQuery = ref(
+  initialTabId === ManagerTab.Missing
+    ? ''
+    : (initialPackId ?? initialState.searchQuery)
+)
+const searchMode = ref<SearchMode>(
+  initialPackId && initialTabId !== ManagerTab.Missing
+    ? 'packs'
+    : initialState.searchMode
+)
+const sortField = ref<string>(initialState.sortField)
+
+const { getSortableFields } = useRegistrySearchGateway()
+const packs = useRegistrySearch({
+  query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
+  searchMode
 })
-pageNumber.value = 0
+const searchResults = computed(() => [...toValue(packs.items)])
+const isSearchLoading = computed(() => toValue(packs.isLoading))
+const hasMorePacks = computed(() => toValue(packs.hasMore))
+const suggestions = computed(() => toValue(packs.suggestions))
+const sortOptions = computed(() => getSortableFields())
 
 const { isLegacyManagerSearch } = useLegacySearchTip(
   searchQuery,
@@ -386,9 +390,7 @@ const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
 }
 
-const loadMorePacks = () => {
-  pageNumber.value++
-}
+const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value
 )
@@ -603,7 +605,6 @@ onMounted(() => {
 watch([searchQuery, selectedNavId], () => {
   gridContainer ??= document.getElementById('results-grid')
   if (gridContainer) {
-    pageNumber.value = 0
     gridContainer.scrollTop = 0
   }
   unSelectItems()

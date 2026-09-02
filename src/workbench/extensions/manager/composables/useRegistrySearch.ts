@@ -1,125 +1,78 @@
-import { watchDebounced } from '@vueuse/core'
-import { orderBy } from 'es-toolkit/compat'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchAttribute } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { usePreemptableQueue } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 type RegistryNodePack = components['schemas']['Node']
 
-const SEARCH_DEBOUNCE_TIME = 320
-const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
-
 /**
- * Composable for managing UI state of Comfy Node Registry search.
+ * Offset-paged registry search as a {@link PagedList}. Query inputs are reactive
+ * so a change resets and reloads from the first page. A relevance-ranked index
+ * has no head cursor and no per-item staleness, so `loadNew`/`invalidate` both
+ * reduce to reloading from the first page.
  */
-export function useRegistrySearch(
-  options: {
-    initialSortField?: string
-    initialSearchMode?: SearchMode
-    initialSearchQuery?: string
-    initialPageNumber?: number
-  } = {}
-) {
-  const {
-    initialSortField = DEFAULT_SORT_FIELD,
-    initialSearchMode = 'packs',
-    initialSearchQuery = '',
-    initialPageNumber = 0
-  } = options
+export function useRegistrySearch(inputs: {
+  query: MaybeRefOrGetter<string>
+  searchMode: MaybeRefOrGetter<SearchMode>
+}): PagedList<RegistryNodePack> & {
+  suggestions: Readonly<Ref<QuerySuggestion[]>>
+} {
+  const { searchPacks } = useRegistrySearchGateway()
 
-  const isLoading = ref(false)
-  const sortField = ref<string>(initialSortField)
-  const searchMode = ref<SearchMode>(initialSearchMode)
-  const pageSize = ref(DEFAULT_PAGE_SIZE)
-  const pageNumber = ref(initialPageNumber)
-  const searchQuery = ref(initialSearchQuery)
-  const searchResults = ref<RegistryNodePack[]>([])
+  let pageNumber = 0
+  const items = ref<RegistryNodePack[]>([])
+  const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
-  const hasMore = ref(true)
+  const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
 
-  const searchAttributes = computed<SearchAttribute[]>(() =>
-    searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
-  )
+  const searchableAttributes = (): SearchAttribute[] =>
+    toValue(inputs.searchMode) === 'nodes'
+      ? ['comfy_nodes']
+      : ['name', 'description']
 
-  const searchGateway = useRegistrySearchGateway()
-
-  const { searchPacks, clearSearchCache, getSortValue, getSortableFields } =
-    searchGateway
-
-  const updateSearchResults = async (options: { append?: boolean }) => {
-    isLoading.value = true
-    if (!options.append) {
-      pageNumber.value = 0
-    }
+  async function doLoadMore() {
+    if (!morePages.value) return
     const { nodePacks, querySuggestions } = await searchPacks(
-      searchQuery.value,
+      toValue(inputs.query),
       {
-        pageSize: pageSize.value,
-        pageNumber: pageNumber.value,
-        restrictSearchableAttributes: searchAttributes.value
+        pageSize: DEFAULT_PAGE_SIZE,
+        pageNumber,
+        restrictSearchableAttributes: searchableAttributes()
       }
     )
-
-    hasMore.value = nodePacks.length >= pageSize.value
-
-    let sortedPacks = nodePacks
-
-    // Results are sorted by the default field to begin with -- so don't manually sort again
-    if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
-      // Get the sort direction from the provider's sortable fields
-      const sortableFields = getSortableFields()
-      const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
-      const direction = fieldConfig?.direction || 'desc'
-
-      sortedPacks = orderBy(
-        nodePacks,
-        [(pack) => getSortValue(pack, sortField.value)],
-        [direction]
-      )
-    }
-
-    if (options.append && searchResults.value?.length) {
-      searchResults.value = searchResults.value.concat(sortedPacks)
-    } else {
-      searchResults.value = sortedPacks
-    }
+    morePages.value = nodePacks.length >= DEFAULT_PAGE_SIZE
+    items.value.push(...nodePacks)
     suggestions.value = querySuggestions
-    isLoading.value = false
+    pageNumber++
   }
 
-  const onQueryChange = () => void updateSearchResults({ append: false })
-  const onPageChange = () => {
-    if (pageNumber.value === 0) return
-    void updateSearchResults({ append: true })
-  }
+  const reload = () =>
+    preempt(async () => {
+      pageNumber = 0
+      morePages.value = true
+      items.value = []
+      await doLoadMore()
+    })
 
-  watch([sortField, searchMode], onQueryChange)
-  watch(pageNumber, onPageChange)
-  watchDebounced(searchQuery, onQueryChange, {
-    debounce: SEARCH_DEBOUNCE_TIME,
-    immediate: true
-  })
-
-  const sortOptions = computed(() => {
-    return getSortableFields()
-  })
+  watch(
+    () => [toValue(inputs.query), toValue(inputs.searchMode)],
+    () => void reload(),
+    { immediate: true }
+  )
 
   return {
+    items,
+    hasMore: computed(() => morePages.value),
     isLoading,
-    hasMore,
-    pageNumber,
-    pageSize,
-    sortField,
-    searchMode,
-    searchQuery,
-    suggestions,
-    searchResults,
-    sortOptions,
-    clearCache: clearSearchCache
+    loadMore: () => enqueue('loadMore', doLoadMore),
+    loadNew: reload,
+    invalidate: reload,
+    suggestions
   }
 }
