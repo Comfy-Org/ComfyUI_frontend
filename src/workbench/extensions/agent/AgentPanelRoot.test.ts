@@ -276,7 +276,8 @@ const telemetry = vi.hoisted(() => ({
   trackAgentAttachButtonClicked: vi.fn(),
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
+  trackAgentPanelClosed: vi.fn(),
+  trackAgentError: vi.fn()
 }))
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
@@ -386,6 +387,13 @@ describe('AgentPanelRoot session notices', () => {
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
+    })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
     })
   })
 })
