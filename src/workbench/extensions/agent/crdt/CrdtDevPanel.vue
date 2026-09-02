@@ -13,6 +13,7 @@ import {
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
@@ -382,7 +383,8 @@ async function copyReport() {
         : undefined
     })
     flashReportCopyState(await writeClipboard(report))
-  } catch {
+  } catch (error) {
+    reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
     flashReportCopyState(false)
   }
 }

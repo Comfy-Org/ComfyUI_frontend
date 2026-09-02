@@ -17,8 +17,12 @@ vi.mock('@/stores/extensionStore', () => ({
   useExtensionStore: () => ({ extensions: [] })
 }))
 
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
+import * as crdtDebugReport from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -45,6 +49,7 @@ describe('CrdtDevPanel', () => {
     // to undo a previous test's dismissal.
     setCrdtDebugEnabled(true)
     clearDevEvents()
+    reportError.mockClear()
   })
 
   it('starts collapsed to a chip so it cannot cover the composer', () => {
@@ -195,5 +200,24 @@ describe('CrdtDevPanel', () => {
     const trace = screen.getByTestId('crdt-dev-panel-trace').textContent
     expect(trace).toContain('delete-wins')
     expect(trace).toContain('had already been deleted')
+  })
+
+  it('reports a failure and flips to the failed state when report collection rejects', async () => {
+    const collectSpy = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockRejectedValueOnce(new Error('snapshot unavailable'))
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    const copyReportButton = screen.getByTestId('crdt-dev-panel-copy-report')
+    await user.click(copyReportButton)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'crdt_dev_panel_report_copy_failed'
+    })
+    expect(copyReportButton.textContent).toContain('Copy failed')
+
+    collectSpy.mockRestore()
   })
 })
