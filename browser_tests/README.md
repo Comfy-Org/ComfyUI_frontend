@@ -612,6 +612,34 @@ test.afterEach(async ({ comfyPage }) => {
 `debugShowCanvasOverlay()`, `debugGetCanvasDataURL()` are for local debugging
 only. Never commit them.
 
+## Replay coverage for agent bug fixes
+
+When a fix changes how the agent's turns affect the app (graph edits,
+CRDT frames, panel state), add a conversation replay case alongside the
+fix so the bug stays fixed:
+
+1. **Capture the conversation.** Reproduce the bug's turn against the
+   local agent harness (`scripts/dev-agent-integration.ts`); the
+   standalone agent records every turn in its local SQLite store
+   (`agent_messages` / `agent_tool_calls`). Export the turn's rows and
+   convert them to a conversation JSON under
+   `browser_tests/fixtures/data/agent/conversations/`, marking
+   `response_side: 'recorded'`. Until the exporter lands, a fixture may
+   be hand-assembled from the recorded rows; never invent responses for
+   a `recorded` fixture.
+2. **Add the replay case.** Drive the fixture through the conversation
+   replay fixture (`agentConversationFixture`), asserting the
+   canvas-observable outcome the bug corrupted (graph end-state or
+   panel state - not mock call counts, not model text).
+3. **Prove it bites.** Before merging, run the case once against the
+   fix's parent commit (red) and once at the fix (green); paste both
+   run lines in the PR description. A replay case that never went red
+   against the bug does not count as regression coverage.
+
+Name the case after the fix PR (`agent-fix-<PR>-<slug>.json`) and note
+the fixture's source rows (thread id + seq range) in the JSON's
+metadata block so the recording can be re-exported.
+
 ## Test Data & Typed API Mocks
 
 Mock data in `fixtures/data/` exports **typed** objects that conform to
