@@ -1742,6 +1742,16 @@ describe('AgentPanelRoot feedback capture', () => {
     store.startTurn(turnId)
     store.ingest(
       zAgentWsEventForTest({
+        type: 'agent_active_tab',
+        data: {
+          workflow_id: 'wf-rated',
+          message_id: 'turn-9',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
         type: 'agent_message_delta',
         data: { delta: 'Here is a cat', message_id: 'turn-9', thread_id: 'th' }
       })
@@ -1762,8 +1772,8 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
     ])
   })
 })
