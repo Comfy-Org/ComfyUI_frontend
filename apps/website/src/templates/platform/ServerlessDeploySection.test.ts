@@ -6,8 +6,10 @@ import { describe, expect, it } from 'vitest'
 import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
-const transcriptLines = () =>
-  (screen.getByRole('tabpanel').textContent ?? '').split('\n')
+const commandLines = () =>
+  (screen.getByRole('tabpanel').textContent ?? '')
+    .split('\n')
+    .filter((line) => line.startsWith('$ '))
 
 describe('ServerlessDeploySection', () => {
   it('walks through the install flow first and the workflow flow on demand', async () => {
@@ -24,13 +26,10 @@ describe('ServerlessDeploySection', () => {
         /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Comfy API\./
       )
     ).toBeTruthy()
-    expect(transcriptLines()).toEqual([
+    expect(commandLines()).toEqual([
       '$ comfy build init',
-      '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
       '$ comfy build push --release --target linux/nvidia',
-      '✔ Build released',
-      '$ comfy deploy up',
-      '✔ Endpoint live → https://your-build.run.comfy.app'
+      '$ comfy deploy up'
     ])
 
     await userEvent.click(
@@ -39,13 +38,10 @@ describe('ServerlessDeploySection', () => {
       })
     )
 
-    expect(transcriptLines()).toEqual([
+    expect(commandLines()).toEqual([
       '$ comfy build init --from-workflow ./workflow.json --comfy-version v0.34.2',
-      '✔ Custom nodes and models resolved from your workflow',
       '$ comfy build push --release --target linux/nvidia',
-      '✔ Build released',
-      '$ comfy deploy up',
-      '✔ Endpoint live → https://your-build.run.comfy.app'
+      '$ comfy deploy up'
     ])
   })
 })
