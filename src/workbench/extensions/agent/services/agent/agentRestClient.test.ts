@@ -156,13 +156,19 @@ describe('agentRestClient route + method', () => {
   })
 
   it('stops at the designed page cap and returns what accumulated', async () => {
-    const page = (data: unknown[]) =>
+    const page = (data: unknown[], nextCursor: string) =>
       jsonResponse(200, {
         data,
-        pagination: { offset: 0, limit: 100, total: 999, has_more: true }
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 999,
+          has_more: true,
+          next_cursor: nextCursor
+        }
       })
     for (let i = 0; i < 5; i++) {
-      respond(page([{ id: `wf-${i}`, name: `${i}` }]))
+      respond(page([{ id: `wf-${i}`, name: `${i}` }], `cursor-${i}`))
     }
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
