@@ -47,17 +47,17 @@ transactions, and CRDT support beyond layout are later work outside this phase.
 
 ## Reference map
 
-| Question                                                          | Reference                                                             |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------- |
-| What has shipped and what remains?                                | [Migration plan](ecs-migration-plan.md)                               |
-| How does implementation align with ADR-CRDT-LAYOUT-0003 and ADR-ECS-0008?        | [Decision traceability](ecs-decision-traceability.md)                 |
-| Which source owns each kind of state?                             | [State authority audit](ecs-state-authority-audit.md)                 |
-| How are entities registered, replaced, removed, and cleared?      | [Lifecycle audit](ecs-lifecycle-audit.md)                             |
-| Which writes are commands, store actions, or direct mutations?    | [Mutation audit](ecs-mutation-audit.md)                               |
-| How do IDs and graph scopes work?                                 | [Identity and scope audit](ecs-identity-scope-audit.md)               |
-| What changes affect extensions?                                   | [Extension compatibility audit](ecs-extension-compatibility-audit.md) |
-| Which invariants are tested and where are the gaps?               | [Verification audit](ecs-verification-audit.md)                       |
-| Which existing architecture documents are stale or contradictory? | [Documentation audit](ecs-documentation-audit.md)                     |
+| Question                                                                  | Reference                                                             |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| What has shipped and what remains?                                        | [Migration plan](ecs-migration-plan.md)                               |
+| How does implementation align with ADR-CRDT-LAYOUT-0003 and ADR-ECS-0008? | [Decision traceability](ecs-decision-traceability.md)                 |
+| Which source owns each kind of state?                                     | [State authority audit](ecs-state-authority-audit.md)                 |
+| How are entities registered, replaced, removed, and cleared?              | [Lifecycle audit](ecs-lifecycle-audit.md)                             |
+| Which writes are commands, store actions, or direct mutations?            | [Mutation audit](ecs-mutation-audit.md)                               |
+| How do IDs and graph scopes work?                                         | [Identity and scope audit](ecs-identity-scope-audit.md)               |
+| What changes affect extensions?                                           | [Extension compatibility audit](ecs-extension-compatibility-audit.md) |
+| Which invariants are tested and where are the gaps?                       | [Verification audit](ecs-verification-audit.md)                       |
+| Which existing architecture documents are stale or contradictory?         | [Documentation audit](ecs-documentation-audit.md)                     |
 
 The ADRs remain the decision records:
 [ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) governs centralized

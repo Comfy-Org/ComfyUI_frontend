@@ -550,17 +550,17 @@ This is a hard constraint with no expiration:
 This document proposes or surfaces the following changes to
 [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md):
 
-| Area                | Current ADR-ECS-0008                                                          | Proposed Change                                                                 |
-| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Entity taxonomy     | 7 kinds including `SubgraphEntityId`                                     | 6 kinds — subgraph is a node with `SubgraphStructure` component                 |
-| `SubgraphEntityId`  | `string & { __brand: 'SubgraphEntityId' }`                               | Eliminated; replaced by `GraphId` scope identifier                              |
-| Subgraph components | `SubgraphStructure`, `SubgraphMeta` listed as separate-entity components | Become node components on SubgraphNode entities                                 |
-| Storage structure   | Implied per-graph containment                                            | Dedicated stores with `graphScope`-tagged entries; no single registry           |
-| Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation   |
-| Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
-| Widget promotion    | Treated as a given feature to migrate                                    | ADR-SUBGRAPH-PROMOTION-0009 chooses Candidate A: promoted value widgets are linked inputs     |
-| Serialization       | Not explicitly separated from internal model                             | Internal model ≠ wire format; `SerializationSystem` is the membrane             |
-| Backward compat     | Implicit                                                                 | Explicit contract: load any prior format, indefinitely                          |
+| Area                | Current ADR-ECS-0008                                                     | Proposed Change                                                                           |
+| ------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Entity taxonomy     | 7 kinds including `SubgraphEntityId`                                     | 6 kinds — subgraph is a node with `SubgraphStructure` component                           |
+| `SubgraphEntityId`  | `string & { __brand: 'SubgraphEntityId' }`                               | Eliminated; replaced by `GraphId` scope identifier                                        |
+| Subgraph components | `SubgraphStructure`, `SubgraphMeta` listed as separate-entity components | Become node components on SubgraphNode entities                                           |
+| Storage structure   | Implied per-graph containment                                            | Dedicated stores with `graphScope`-tagged entries; no single registry                     |
+| Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation             |
+| Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs           |
+| Widget promotion    | Treated as a given feature to migrate                                    | ADR-SUBGRAPH-PROMOTION-0009 chooses Candidate A: promoted value widgets are linked inputs |
+| Serialization       | Not explicitly separated from internal model                             | Internal model ≠ wire format; `SerializationSystem` is the membrane                       |
+| Backward compat     | Implicit                                                                 | Explicit contract: load any prior format, indefinitely                                    |
 
 These amendments should be applied to ADR-ECS-0008 and the related architecture
 documents in a follow-up pass after team review of this document:

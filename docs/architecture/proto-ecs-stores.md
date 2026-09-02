@@ -121,14 +121,14 @@ graph LR
 ### ECS Alignment
 
 | Aspect                      | ECS-0008-like | Why                                               |
-| --------------------------- | -------- | ------------------------------------------------- |
-| `WidgetState` is plain data | Yes      | No methods, serializable, reactive                |
-| Graph-scoped lifecycle      | Yes      | `clearGraph(graphId)` cleans up                   |
-| Query API                   | Yes      | `getWidget()`, `getNodeWidgets()`                 |
-| Cross-subgraph sync         | Yes      | Same nodeId:name shares state across depths       |
-| Back-reference (`_node`)    | **No**   | Widget still holds owning node ref                |
-| Behavior on class           | **No**   | Drawing, events, callbacks still on widget        |
-| Module-scope store access   | **No**   | `useWidgetValueStore()` called from domain object |
+| --------------------------- | ------------- | ------------------------------------------------- |
+| `WidgetState` is plain data | Yes           | No methods, serializable, reactive                |
+| Graph-scoped lifecycle      | Yes           | `clearGraph(graphId)` cleans up                   |
+| Query API                   | Yes           | `getWidget()`, `getNodeWidgets()`                 |
+| Cross-subgraph sync         | Yes           | Same nodeId:name shares state across depths       |
+| Back-reference (`_node`)    | **No**        | Widget still holds owning node ref                |
+| Behavior on class           | **No**        | Drawing, events, callbacks still on widget        |
+| Module-scope store access   | **No**        | `useWidgetValueStore()` called from domain object |
 
 ## 3. Linked promoted widgets and preview exposures
 
@@ -159,12 +159,12 @@ and `PromotedWidgetViewManager`).
 ### ECS Alignment
 
 | Aspect                       | ECS-0008-like | Why                                                            |
-| ---------------------------- | -------- | -------------------------------------------------------------- |
-| Canonical topology           | Yes      | Value exposure is ordinary subgraph input/link state           |
-| Host-scoped preview state    | Yes      | Preview exposure data is keyed by host locator                 |
-| Legacy migration boundary    | Yes      | `proxyWidgets` is consumed into canonical state or quarantine  |
-| Promoted value is plain data | Yes      | Host widget is `WidgetState` in the store, keyed by `WidgetId` |
-| Projection over data         | Yes      | `SubgraphNode.widgets` derives from inputs; no view cache      |
+| ---------------------------- | ------------- | -------------------------------------------------------------- |
+| Canonical topology           | Yes           | Value exposure is ordinary subgraph input/link state           |
+| Host-scoped preview state    | Yes           | Preview exposure data is keyed by host locator                 |
+| Legacy migration boundary    | Yes           | `proxyWidgets` is consumed into canonical state or quarantine  |
+| Promoted value is plain data | Yes           | Host widget is `WidgetState` in the store, keyed by `WidgetId` |
+| Projection over data         | Yes           | `SubgraphNode.widgets` derives from inputs; no view cache      |
 
 ## 4. LayoutStore (CRDT)
 
@@ -205,15 +205,15 @@ objects do not instantiate the mutation composable at module scope.
 
 ### ECS Alignment
 
-| Aspect                           | ECS-0008-like  | Why                                                         |
-| -------------------------------- | --------- | ----------------------------------------------------------- |
-| Position data extracted          | Yes       | Closest to the ECS `Position` component                     |
-| CRDT-ready                       | Yes       | Enables collaboration (ADR-CRDT-LAYOUT-0003)                          |
-| Covers multiple entity kinds     | Yes       | Nodes, groups, and reroutes in one store                    |
-| Mutation API (composable)        | Partially | System-like, but called from entities, not a system         |
-| Direct store access              | Partially | Domain objects and `graphLayoutAttachment` import the store |
-| Module-scope mutation composable | Yes       | Domain objects do not instantiate it at module scope        |
-| Per-store keying                 | Yes       | Uses root-scoped node/group/reroute layout keys             |
+| Aspect                           | ECS-0008-like | Why                                                         |
+| -------------------------------- | ------------- | ----------------------------------------------------------- |
+| Position data extracted          | Yes           | Closest to the ECS `Position` component                     |
+| CRDT-ready                       | Yes           | Enables collaboration (ADR-CRDT-LAYOUT-0003)                |
+| Covers multiple entity kinds     | Yes           | Nodes, groups, and reroutes in one store                    |
+| Mutation API (composable)        | Partially     | System-like, but called from entities, not a system         |
+| Direct store access              | Partially     | Domain objects and `graphLayoutAttachment` import the store |
+| Module-scope mutation composable | Yes           | Domain objects do not instantiate it at module scope        |
+| Per-store keying                 | Yes           | Uses root-scoped node/group/reroute layout keys             |
 
 ## 5. Pattern Analysis
 
