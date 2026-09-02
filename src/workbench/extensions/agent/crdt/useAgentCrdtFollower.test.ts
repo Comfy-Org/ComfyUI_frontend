@@ -229,7 +229,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('classifies an exhausted auth refusal for alerting', () => {
+  it('classifies an exhausted auth refusal for alerting without forwarding server text', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
 
@@ -242,11 +242,45 @@ describe('useAgentCrdtFollower', () => {
       vi.advanceTimersByTime(500 * 2 ** attempt)
     }
 
+    // The server-supplied `code`/`message` are unrestricted wire content
+    // (r3911180523): the reported error text is fixed and client-owned, and
+    // an unrecognized code (the server sends 'unauthorized', not one of the
+    // allowlisted classifications) normalizes to 'auth_reject' by pattern,
+    // never forwarded verbatim as a tag.
     expect(reportErrorMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'token rejected' }),
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
       expect.objectContaining({
         errorType: 'crdt_auth_reject',
-        tags: expect.objectContaining({ code: 'unauthorized' })
+        tags: expect.objectContaining({ code: 'auth_reject' })
+      })
+    )
+    const [, options] = reportErrorMock.mock.calls.at(-1)!
+    expect(JSON.stringify(options)).not.toContain('token rejected')
+    unmount()
+  })
+
+  it('normalizes an unrecognized subscribe-refusal code to unknown', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        code: 'some_new_server_code_v7',
+        message: 'a message an attacker could shape'
+      })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
+      expect.objectContaining({
+        errorType: 'crdt_connect_failure',
+        tags: expect.objectContaining({ code: 'unknown' })
       })
     )
     unmount()

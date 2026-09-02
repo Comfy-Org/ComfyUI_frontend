@@ -111,6 +111,37 @@ function clearPersistedDocId(): void {
 }
 
 /**
+ * Narrows an unknown event/frame `detail` down to its `code` field without
+ * asserting the whole shape (r3911414923) — an `in` check only proves
+ * `detail` is a non-null object, it does not prove `code` exists or is a
+ * string, so both are checked explicitly.
+ */
+function readEventCode(detail: unknown): string | null {
+  if (typeof detail !== 'object' || detail === null) return null
+  if (!('code' in detail)) return null
+  const code = (detail as { code: unknown }).code
+  return typeof code === 'string' ? code : null
+}
+
+// Known CRDT subscribe-refusal classifications. Anything outside this set
+// normalizes to 'unknown' so an arbitrary server-supplied code can never
+// reach telemetry as an unbounded-cardinality tag (r3911180523).
+const REFUSAL_CODES = new Set([
+  'auth_reject',
+  'not_found',
+  'schema_mismatch',
+  'catalog_mismatch',
+  'rate_limited'
+])
+
+function allowlistRefusalCode(code: string | null): string {
+  if (code !== null && REFUSAL_CODES.has(code)) return code
+  if (code !== null && /auth|forbidden|unauthorized|permission/i.test(code))
+    return 'auth_reject'
+  return 'unknown'
+}
+
+/**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
  * delivers NO doc-scoped frame for this long gets ONE active probe - a
  * resubscribe whose state-vector catch-up is a no-op on a healthy channel and
@@ -286,17 +317,12 @@ export function useAgentCrdtFollower(
   let subscribeRetryAttempt = 0
 
   const reportSubscribeFailure = (detail: unknown): void => {
-    const refusal =
-      detail && typeof detail === 'object'
-        ? (detail as { code?: unknown; message?: unknown })
-        : {}
-    const code = typeof refusal.code === 'string' ? refusal.code : 'unknown'
-    const message =
-      typeof refusal.message === 'string'
-        ? refusal.message
-        : 'CRDT document subscription was refused'
-    const isAuthRejection = /auth|forbidden|unauthorized|permission/i.test(code)
-    reportError(new Error(message), {
+    const code = allowlistRefusalCode(readEventCode(detail))
+    const isAuthRejection = code === 'auth_reject'
+    // Never forward the server-supplied `message` to telemetry — it is
+    // unrestricted wire content (r3911180523). The tag carries only the
+    // allowlisted `code`; the error text is fixed and client-owned.
+    reportError(new Error('CRDT document subscription was refused'), {
       errorType: isAuthRejection ? 'crdt_auth_reject' : 'crdt_connect_failure',
       tags: { code, attempts: subscribeRetryAttempt },
       context: { workflow_id: subscribedWorkflowId.value }
@@ -571,7 +597,11 @@ export function useAgentCrdtFollower(
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
-  const reconnects: number[] = []
+  // Scoped to the active subscription target (r3911180528): these are shared
+  // socket events, counted even while this composable has no active
+  // subscription, so an unscoped history attributes reconnects from one
+  // workflow (or from before any subscription existed) to the next.
+  let reconnects: number[] = []
   const onSocketClosed: EventListener = (event) => {
     if (!(event instanceof CustomEvent) || event.detail?.code !== 1006) return
     reportError(new Error('CRDT WebSocket closed abnormally'), {
@@ -580,13 +610,14 @@ export function useAgentCrdtFollower(
     })
   }
   const onReconnecting: EventListener = () => {
+    if (!isTargetActive.value || subscribedWorkflowId.value === null) return
     const now = Date.now()
     reconnects.push(now)
-    while (
-      reconnects.length > 0 &&
-      now - reconnects[0]! > RECONNECT_STORM_WINDOW_MS
+    reconnects = reconnects.filter(
+      (at) => now - at <= RECONNECT_STORM_WINDOW_MS
     )
-      reconnects.shift()
+    const oldest = reconnects[0]
+    if (oldest === undefined) return
 
     if (reconnects.length === RECONNECT_STORM_THRESHOLD) {
       reportError(new Error('CRDT WebSocket is reconnecting repeatedly'), {
@@ -650,6 +681,10 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
+      // The active target is changing (or deactivating): reconnect history
+      // from the previous target must not count toward this one's storm
+      // threshold (r3911180528).
+      reconnects = []
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
