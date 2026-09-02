@@ -218,6 +218,9 @@ describe('WidgetItem', () => {
         value: 'model_a.safetensors',
         options: { values: ['model_a.safetensors'] }
       })
+      Object.defineProperty(widget, 'type', {
+        get: () => useWidgetValueStore().getWidget(id)?.type ?? 'string'
+      })
 
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
@@ -387,9 +390,16 @@ describe('WidgetItem', () => {
     )
 
     it('does not add linked presentation to a special widget', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'gradient')
       const widget = createMockWidget({
+        widgetId: id,
         name: 'gradient',
         type: 'gradientslider'
+      })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'number',
+        value: 0.5,
+        options: {}
       })
       const node = createMockNode({
         inputs: [
@@ -406,6 +416,7 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.linkedDisplay).toBeNull()
+      expect(stub.type).toBe('gradientslider')
       expect(stub.options.disabled).toBe(true)
       expect(screen.queryByTestId('linked-widget-placeholder')).toBeNull()
     })

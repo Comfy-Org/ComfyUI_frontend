@@ -90,7 +90,7 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
       ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
       : undefined
   const widgetName = widgetState?.name ?? widget.name
-  const widgetType = widgetState?.type ?? widget.type
+  const widgetType = widget.type
 
   const baseOptions = widgetState?.options ?? widget.options
   const spec = nodeDefStore.getInputSpecForWidget(node, widgetName)

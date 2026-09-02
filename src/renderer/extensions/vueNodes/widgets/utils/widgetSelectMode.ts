@@ -1,6 +1,6 @@
-import type { ResultItemType } from '@/schemas/apiSchema'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { AssetKind } from '@/types/widgetTypes'
 
 interface WidgetSelectModeWidget {
