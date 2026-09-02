@@ -9,7 +9,7 @@ import EmailVerificationNudge from './EmailVerificationNudge.vue'
 
 const h = vi.hoisted(() => ({
   composable: null as {
-    nudgeVariant: { value: 'credits' | 'generic' | null }
+    isNudgeVisible: { value: boolean }
     canResend: { value: boolean }
     resend: ReturnType<typeof vi.fn>
     dismiss: ReturnType<typeof vi.fn>
@@ -19,7 +19,7 @@ const h = vi.hoisted(() => ({
 vi.mock('@/composables/auth/useEmailVerification', async () => {
   const { ref } = await import('vue')
   h.composable = {
-    nudgeVariant: ref(null),
+    isNudgeVisible: ref(false),
     canResend: ref(true),
     resend: vi.fn(),
     dismiss: vi.fn()
@@ -37,7 +37,7 @@ function renderNudge() {
 }
 
 beforeEach(() => {
-  h.composable!.nudgeVariant.value = null
+  h.composable!.isNudgeVisible.value = false
   h.composable!.canResend.value = true
   h.composable!.resend.mockReset()
   h.composable!.dismiss.mockReset()
@@ -52,8 +52,8 @@ describe('EmailVerificationNudge', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
-  it('renders the generic nudge with resend and dismiss controls', async () => {
-    h.composable!.nudgeVariant.value = 'generic'
+  it('renders the nudge with resend and dismiss controls', async () => {
+    h.composable!.isNudgeVisible.value = true
     renderNudge()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -67,18 +67,8 @@ describe('EmailVerificationNudge', () => {
     expect(h.composable!.dismiss).toHaveBeenCalledOnce()
   })
 
-  it('shows credit-specific copy without a dismiss control', () => {
-    h.composable!.nudgeVariant.value = 'credits'
-    renderNudge()
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Verify your email to receive free credits'
-    )
-    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
-  })
-
   it('disables resend while on cooldown', () => {
-    h.composable!.nudgeVariant.value = 'generic'
+    h.composable!.isNudgeVisible.value = true
     h.composable!.canResend.value = false
     renderNudge()
 

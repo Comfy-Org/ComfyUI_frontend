@@ -2631,7 +2631,6 @@
     },
     "emailVerification": {
       "genericMessage": "Verify your email to unlock account benefits",
-      "creditsMessage": "Verify your email to receive free credits",
       "resendButton": "Resend verification email",
       "dismiss": "Dismiss",
       "resentSuccess": "Verification email sent",

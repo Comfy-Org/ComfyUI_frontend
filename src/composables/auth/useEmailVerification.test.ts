@@ -4,8 +4,7 @@ import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
 const mocks = vi.hoisted(() => ({
-  authStore: { currentUser: null as unknown },
-  subscription: { subscriptionStatus: { value: null as unknown } },
+  authStore: { currentUser: null as FakeUser | null },
   flags: { emailVerificationNudgeEnabled: true },
   isCloud: { current: true },
   toast: { add: vi.fn() },
@@ -15,9 +14,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => mocks.authStore
-}))
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => mocks.subscription
 }))
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: mocks.flags })
@@ -66,7 +62,6 @@ async function loadComposable() {
 beforeEach(() => {
   localStorage.clear()
   mocks.authStore.currentUser = null
-  mocks.subscription.subscriptionStatus.value = null
   mocks.flags.emailVerificationNudgeEnabled = true
   mocks.isCloud.current = true
   mocks.toast.add.mockReset()
@@ -83,18 +78,18 @@ describe('useEmailVerification', () => {
   describe('needsEmailVerification / provider filtering', () => {
     it('flags an unverified password user', async () => {
       mocks.authStore.currentUser = makeUser()
-      const { needsEmailVerification, nudgeVariant } = await loadComposable()
+      const { needsEmailVerification, isNudgeVisible } = await loadComposable()
       expect(needsEmailVerification.value).toBe(true)
-      expect(nudgeVariant.value).toBe('generic')
+      expect(isNudgeVisible.value).toBe(true)
     })
 
     it('ignores SSO (google.com) users', async () => {
       mocks.authStore.currentUser = makeUser({
         providerData: [{ providerId: 'google.com' }]
       })
-      const { needsEmailVerification, nudgeVariant } = await loadComposable()
+      const { needsEmailVerification, isNudgeVisible } = await loadComposable()
       expect(needsEmailVerification.value).toBe(false)
-      expect(nudgeVariant.value).toBeNull()
+      expect(isNudgeVisible.value).toBe(false)
     })
 
     it('ignores an already-verified user', async () => {
@@ -114,27 +109,27 @@ describe('useEmailVerification', () => {
     it('renders nothing when the feature flag is off', async () => {
       mocks.authStore.currentUser = makeUser()
       mocks.flags.emailVerificationNudgeEnabled = false
-      const { nudgeVariant } = await loadComposable()
-      expect(nudgeVariant.value).toBeNull()
+      const { isNudgeVisible } = await loadComposable()
+      expect(isNudgeVisible.value).toBe(false)
     })
 
     it('renders nothing outside cloud', async () => {
       mocks.authStore.currentUser = makeUser()
       mocks.isCloud.current = false
-      const { nudgeVariant } = await loadComposable()
-      expect(nudgeVariant.value).toBeNull()
+      const { isNudgeVisible } = await loadComposable()
+      expect(isNudgeVisible.value).toBe(false)
     })
   })
 
   describe('dismissal', () => {
-    it('hides the generic nudge for the rest of the session and persists it', async () => {
+    it('hides the nudge for the rest of the session and persists it', async () => {
       mocks.authStore.currentUser = makeUser()
-      const { nudgeVariant, dismiss } = await loadComposable()
-      expect(nudgeVariant.value).toBe('generic')
+      const { isNudgeVisible, dismiss } = await loadComposable()
+      expect(isNudgeVisible.value).toBe(true)
 
       dismiss()
 
-      expect(nudgeVariant.value).toBeNull()
+      expect(isNudgeVisible.value).toBe(false)
       expect(
         localStorage.getItem('Comfy.EmailVerificationNudge.DismissedAt')
       ).not.toBeNull()
@@ -143,8 +138,8 @@ describe('useEmailVerification', () => {
     it('re-prompts a dismissal from an earlier session', async () => {
       mocks.authStore.currentUser = makeUser()
       localStorage.setItem('Comfy.EmailVerificationNudge.DismissedAt', '1')
-      const { nudgeVariant } = await loadComposable()
-      expect(nudgeVariant.value).toBe('generic')
+      const { isNudgeVisible } = await loadComposable()
+      expect(isNudgeVisible.value).toBe(true)
     })
 
     it('survives storage being blocked (sandboxed iframe / privacy mode)', async () => {
@@ -160,29 +155,14 @@ describe('useEmailVerification', () => {
         })
       mocks.authStore.currentUser = makeUser()
 
-      const { nudgeVariant, dismiss } = await loadComposable()
-      expect(nudgeVariant.value).toBe('generic')
+      const { isNudgeVisible, dismiss } = await loadComposable()
+      expect(isNudgeVisible.value).toBe(true)
 
       expect(() => dismiss()).not.toThrow()
-      expect(nudgeVariant.value).toBeNull()
+      expect(isNudgeVisible.value).toBe(false)
 
       getItem.mockRestore()
       setItem.mockRestore()
-    })
-  })
-
-  describe('free-tier verification_required', () => {
-    it('shows the credits variant and ignores a prior dismissal', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.subscription.subscriptionStatus.value = {
-        free_tier_grant_state: 'verification_required'
-      }
-      const { nudgeVariant, dismiss } = await loadComposable()
-      expect(nudgeVariant.value).toBe('credits')
-
-      dismiss()
-
-      expect(nudgeVariant.value).toBe('credits')
     })
   })
 

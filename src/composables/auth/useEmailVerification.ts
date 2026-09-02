@@ -5,7 +5,6 @@ import { computed, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -21,18 +20,6 @@ const DISMISSED_AT_KEY = 'Comfy.EmailVerificationNudge.DismissedAt'
  * re-prompted at most once per session while the dismissal itself persists.
  */
 const SESSION_START_MS = Date.now()
-
-type EmailVerificationNudgeVariant = 'credits' | 'generic'
-
-/**
- * `free_tier_grant_state` is not yet in the generated `BillingStatusResponse`
- * (packages/ingest-types); the ingest billing-status endpoint doesn't return
- * it yet either, so this narrows what's already an optional read rather than
- * asserting a value. Drop this once the field lands in the generated type.
- */
-type WithFreeTierGrantState = {
-  free_tier_grant_state?: 'verification_required' | 'deferred'
-}
 
 function readDismissedAt(): number {
   try {
@@ -58,7 +45,6 @@ function useEmailVerificationInternal() {
   const authStore = useAuthStore()
   const currentUser = computed(() => authStore.currentUser)
   const { flags } = useFeatureFlags()
-  const { subscriptionStatus } = useSubscription()
   const toastStore = useToastStore()
 
   // Bumped after an in-place `User.reload()` so computeds that read the mutated
@@ -84,12 +70,6 @@ function useEmailVerificationInternal() {
     return isPasswordUser.value
   })
 
-  const freeTierVerificationRequired = computed(
-    () =>
-      (subscriptionStatus.value as WithFreeTierGrantState | null)
-        ?.free_tier_grant_state === 'verification_required'
-  )
-
   const isDismissedThisSession = computed(
     () => dismissedAt.value >= SESSION_START_MS
   )
@@ -98,15 +78,12 @@ function useEmailVerificationInternal() {
     () => isCloud && flags.emailVerificationNudgeEnabled
   )
 
-  const nudgeVariant = computed<EmailVerificationNudgeVariant | null>(() => {
-    if (!isNudgeEnabled.value) return null
-    if (!needsEmailVerification.value) return null
-    // The credit-specific state is more important than a prior dismissal, so it
-    // stays visible until verification clears it.
-    if (freeTierVerificationRequired.value) return 'credits'
-    if (isDismissedThisSession.value) return null
-    return 'generic'
-  })
+  const isNudgeVisible = computed(
+    () =>
+      isNudgeEnabled.value &&
+      needsEmailVerification.value &&
+      !isDismissedThisSession.value
+  )
 
   function dismiss(): void {
     const now = Date.now()
@@ -186,14 +163,14 @@ function useEmailVerificationInternal() {
   }
 
   useEventListener(window, 'focus', () => {
-    // Deliberately not gated on `nudgeVariant`: a dismissed generic nudge still
+    // Deliberately not gated on `isNudgeVisible`: a dismissed nudge still
     // needs to pick up a verification done in another tab.
     if (isNudgeEnabled.value && needsEmailVerification.value) void refresh()
   })
 
   return {
     needsEmailVerification,
-    nudgeVariant,
+    isNudgeVisible,
     canResend,
     resend,
     refresh,

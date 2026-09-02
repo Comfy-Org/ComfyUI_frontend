@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="nudgeVariant"
+    v-if="isNudgeVisible"
     class="mr-2 inline-flex shrink-0 items-center gap-1 rounded-lg bg-secondary-background py-1 pr-1 pl-3"
     role="status"
     aria-live="polite"
@@ -11,7 +11,7 @@
       aria-hidden="true"
     />
     <span class="text-xs whitespace-nowrap text-base-foreground">
-      {{ message }}
+      {{ t('auth.emailVerification.genericMessage') }}
     </span>
     <Button
       variant="link"
@@ -23,7 +23,6 @@
       {{ t('auth.emailVerification.resendButton') }}
     </Button>
     <Button
-      v-if="nudgeVariant === 'generic'"
       variant="muted-textonly"
       size="icon-sm"
       :aria-label="t('auth.emailVerification.dismiss')"
@@ -36,20 +35,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useEmailVerification } from '@/composables/auth/useEmailVerification'
 
 const { t } = useI18n()
-const { nudgeVariant, canResend, resend, dismiss } = useEmailVerification()
-
-const message = computed(() =>
-  nudgeVariant.value === 'credits'
-    ? t('auth.emailVerification.creditsMessage')
-    : t('auth.emailVerification.genericMessage')
-)
+const { isNudgeVisible, canResend, resend, dismiss } = useEmailVerification()
 
 function handleResend() {
   void resend()
