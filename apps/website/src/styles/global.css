@@ -52,6 +52,14 @@
 }
 
 @font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'PP Formula Narrow';
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
