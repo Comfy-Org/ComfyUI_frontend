@@ -287,6 +287,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
@@ -386,6 +387,62 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
+  })
+})
+
+describe('AgentPanelRoot compact submission bridge', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  it('forwards a queued compact prompt through the existing Agent transport', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, ack('workflow-1'))
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a compact image workflow'
+    expect(composer.requestSubmission()).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(messageBodies).toHaveLength(1))
+    expect(messageBodies[0]).toMatchObject({
+      content: 'Build a compact image workflow'
+    })
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('')
+    expect(composer.compactSessionPhase).toBe('running')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+  })
+
+  it('returns the compact composer to idle when the Agent rejects the request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        return new Response('Agent unavailable', { status: 503 })
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a workflow even if the request fails'
+    expect(composer.requestSubmission()).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('Build a workflow even if the request fails')
   })
 })
 
@@ -655,6 +712,53 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
+  })
+
+  it('drains compact reference files through the same Agent upload path', async () => {
+    const uploaded: string[] = []
+    const messages: Array<Record<string, unknown>> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (init?.method === 'POST' && url.includes('/messages')) {
+          messages.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-42'))
+        }
+        if (!url.includes('/upload/')) return json(200, { threads: [] })
+        const file =
+          init?.body instanceof FormData ? init.body.get('image') : undefined
+        const name = file instanceof File ? file.name : 'unknown'
+        uploaded.push(name)
+        return json(200, {
+          name: `uploaded_${name}`,
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.requestAttachments([
+      new File(['dog'], 'dog.png', { type: 'image/png' }),
+      new File(['sheep'], 'sheep.png', { type: 'image/png' })
+    ])
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['dog.png', 'sheep.png']))
+    expect(composer.pendingAttachmentRequests).toEqual([])
+    expect(composer.attachments).toMatchObject([
+      { name: 'dog.png', ref: 'uploaded_dog.png', uploading: false },
+      { name: 'sheep.png', ref: 'uploaded_sheep.png', uploading: false }
+    ])
+
+    composer.draft = 'Animate the dog and sheep in one consistent story'
+    expect(composer.requestSubmission()).toBe(true)
+    await vi.waitFor(() => expect(messages).toHaveLength(1))
+    expect(messages[0]).toMatchObject({
+      content: 'Animate the dog and sheep in one consistent story',
+      attachments: ['uploaded_dog.png', 'uploaded_sheep.png']
+    })
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {

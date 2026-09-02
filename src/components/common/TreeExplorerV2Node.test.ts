@@ -274,6 +274,18 @@ describe('TreeExplorerV2Node', () => {
   })
 
   describe('rendering', () => {
+    it('exposes the canonical node identity for guided interactions', () => {
+      const { container } = renderComponent({
+        item: createMockItem('node', {
+          data: { name: 'KSampler', display_name: 'KSampler Advanced' }
+        })
+      })
+
+      const nodeDiv = getTreeNode(container)
+      expect(nodeDiv).toHaveAttribute('data-node-type', 'KSampler')
+      expect(nodeDiv).toHaveAttribute('data-node-name', 'KSampler Advanced')
+    })
+
     it('renders node icon for node type', () => {
       const { container } = renderComponent({
         item: createMockItem('node')

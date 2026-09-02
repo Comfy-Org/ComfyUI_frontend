@@ -157,23 +157,6 @@ function commitRename(): void {
 function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
-
-function addAttachment(attachment: ComposerAttachment): void {
-  composerRef.value?.addAttachment(attachment)
-}
-
-function updateAttachment(
-  id: string,
-  patch: Partial<ComposerAttachment>
-): void {
-  composerRef.value?.updateAttachment(id, patch)
-}
-
-function removeAttachment(id: string): void {
-  composerRef.value?.removeAttachment(id)
-}
-
-defineExpose({ addAttachment, updateAttachment, removeAttachment })
 </script>
 
 <template>

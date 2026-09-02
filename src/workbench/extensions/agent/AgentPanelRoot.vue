@@ -22,6 +22,7 @@ import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -32,6 +33,8 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -53,6 +56,9 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
+import { isRemoteMutationContext } from '@/types/graphMutationContext'
+import type { LinkTopology } from '@/types/linkTopology'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -80,8 +86,19 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import {
+  agentGraphBuildPlaybackState,
+  cancelAgentGraphNodeBuild,
+  skipAgentGraphBuild,
+  stageAgentGraphNodeBuild
+} from './services/agent/agentGraphBuildPlayback'
+import {
+  createAgentGraphNodePresenter,
+  suspendAgentGraphConnections
+} from './services/agent/agentGraphNodePresenter'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -104,12 +121,186 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
+const agentComposerStore = useAgentComposerStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
+const linkStore = useLinkStore()
+const nodeDataStore = useNodeDataStore()
+
+function agentGraphBuildKey(graphId: string, nodeId: string | number): string {
+  return `${graphId}:${nodeId}`
+}
+
+function graphBuildSource(position: { x: number; y: number }): {
+  x: number
+  y: number
+} {
+  const canvas = app.canvas
+  const element = canvas?.canvas
+  if (!canvas || !element) return { x: position.x - 360, y: position.y }
+
+  const rect = element.getBoundingClientRect()
+  const source = canvas.convertCanvasToOffset([
+    Math.max(48, rect.width / 2),
+    Math.max(80, rect.height - 120)
+  ])
+  return { x: source[0], y: source[1] }
+}
+
+function graphBuildClientPosition(position: { x: number; y: number }): {
+  x: number
+  y: number
+} {
+  const canvas = app.canvas
+  const element = canvas?.canvas
+  if (!canvas || !element) return position
+
+  const rect = element.getBoundingClientRect()
+  const offset = canvas.convertOffsetToCanvas([position.x, position.y])
+  return { x: rect.left + offset[0], y: rect.top + offset[1] }
+}
+
+function graphBuildNodeLibraryPoint(fallback: { x: number; y: number }): {
+  x: number
+  y: number
+} {
+  const canvas = app.canvas
+  const element = canvas?.canvas
+  const trigger = document.querySelector<HTMLElement>(
+    '[data-testid="node-library-tab-button"]'
+  )
+  if (!canvas || !element || !trigger) return fallback
+
+  const canvasRect = element.getBoundingClientRect()
+  const triggerRect = trigger.getBoundingClientRect()
+  const point = canvas.convertCanvasToOffset([
+    triggerRect.left + triggerRect.width / 2 - canvasRect.left,
+    triggerRect.top + triggerRect.height / 2 - canvasRect.top
+  ])
+  return { x: point[0], y: point[1] }
+}
+
+function graphBuildPointFromClient(
+  client: { x: number; y: number },
+  fallback: { x: number; y: number }
+): { x: number; y: number } {
+  const canvas = app.canvas
+  const element = canvas?.canvas
+  if (!canvas || !element) return fallback
+
+  const rect = element.getBoundingClientRect()
+  const point = canvas.convertCanvasToOffset([
+    client.x - rect.left,
+    client.y - rect.top
+  ])
+  return { x: point[0], y: point[1] }
+}
+
+function graphBuildFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()))
+}
+
+function graphBuildSearchInput(): HTMLInputElement | null {
+  const root = document.querySelector<HTMLElement>(
+    '[data-testid="node-library-search"]'
+  )
+  if (root instanceof HTMLInputElement) return root
+  return root?.querySelector('input') ?? null
+}
+
+function setGraphBuildSearchValue(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value'
+  )?.set
+  if (setter) setter.call(input, value)
+  else input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const NODE_LIBRARY_SEARCH_SETTLE_MS = 360
+let highlightedGraphBuildLibraryNode: HTMLElement | null = null
+let activeGraphBuildSearch = ''
+
+function waitForGraphBuildSearch(signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout>
+    const abort = () => {
+      clearTimeout(timer)
+      resolve(false)
+    }
+    timer = setTimeout(() => {
+      signal.removeEventListener('abort', abort)
+      resolve(true)
+    }, NODE_LIBRARY_SEARCH_SETTLE_MS)
+    signal.addEventListener('abort', abort, { once: true })
+  })
+}
+
+async function selectGraphBuildNodeFromLibrary(
+  nodeType: string,
+  fallback: { x: number; y: number },
+  signal: AbortSignal
+): Promise<{ x: number; y: number } | null> {
+  if (signal.aborted) return null
+  sidebarTabStore.activeSidebarTabId = 'node-library'
+  await nextTick()
+  await graphBuildFrame()
+  if (signal.aborted) return null
+
+  const input = graphBuildSearchInput()
+  if (!input) return null
+  input.focus()
+  activeGraphBuildSearch = nodeType
+  setGraphBuildSearchValue(input, nodeType)
+  if (!(await waitForGraphBuildSearch(signal))) return null
+  await nextTick()
+  await graphBuildFrame()
+  if (signal.aborted) return null
+
+  const result = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-node-type]')
+  ).find((candidate) => candidate.dataset.nodeType === nodeType)
+  if (!result) return null
+  result.scrollIntoView({ block: 'center' })
+  await graphBuildFrame()
+  if (signal.aborted) return null
+
+  highlightedGraphBuildLibraryNode?.removeAttribute(
+    'data-agent-teaching-selected'
+  )
+  highlightedGraphBuildLibraryNode = result
+  result.setAttribute('data-agent-teaching-selected', 'true')
+  const rect = result.getBoundingClientRect()
+  return graphBuildPointFromClient(
+    { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+    fallback
+  )
+}
+
+function suspendGraphBuildPresentation(canvas: LGraphCanvas | null) {
+  const previousSidebarTabId = sidebarTabStore.activeSidebarTabId
+  const restoreConnections = suspendAgentGraphConnections(canvas)
+  return () => {
+    highlightedGraphBuildLibraryNode?.removeAttribute(
+      'data-agent-teaching-selected'
+    )
+    highlightedGraphBuildLibraryNode = null
+    const input = graphBuildSearchInput()
+    if (input?.value === activeGraphBuildSearch)
+      setGraphBuildSearchValue(input, '')
+    activeGraphBuildSearch = ''
+    if (sidebarTabStore.activeSidebarTabId === 'node-library')
+      sidebarTabStore.activeSidebarTabId = previousSidebarTabId
+    restoreConnections()
+  }
+}
+
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -130,6 +321,7 @@ const graphMutations = (workflowId: string) => {
     layout: {
       createNode(scope, nodeId, layout, context) {
         const { position, size } = layout
+        const buildKey = agentGraphBuildKey(scope.rootGraphId, nodeId)
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
@@ -147,9 +339,50 @@ const graphMutations = (workflowId: string) => {
           opId: context.opId,
           timestamp: Date.now()
         })
+        if (
+          LiteGraph.vueNodesMode &&
+          agentComposerStore.compactSessionPhase !== 'idle'
+        ) {
+          const isCurrentGraph = () =>
+            canvasStore.rootGraphId === scope.rootGraphId &&
+            canvasStore.currentGraph?.id === scope.owningGraphId
+          const presenter = createAgentGraphNodePresenter(
+            nodeId,
+            position,
+            isCurrentGraph
+          )
+          const source = graphBuildSource(position)
+          const pickup = graphBuildNodeLibraryPoint(source)
+          stageAgentGraphNodeBuild({
+            key: buildKey,
+            label:
+              nodeDataStore.getNode(scope.rootGraphId, nodeId)?.title ||
+              t('agent.graphBuild.node'),
+            source,
+            pickup,
+            selectFromLibrary: (signal) =>
+              selectGraphBuildNodeFromLibrary(
+                nodeDataStore.getNode(scope.rootGraphId, nodeId)?.type ?? '',
+                pickup,
+                signal
+              ),
+            target: position,
+            isPresentable: isCurrentGraph,
+            prepare: presenter.prepare,
+            present: presenter.present,
+            toClient: graphBuildClientPosition,
+            suspendConnections: () =>
+              suspendGraphBuildPresentation(app.canvas ?? null)
+          })
+        }
       },
       deleteNodes(scope, nodeIds, context) {
         const timestamp = Date.now()
+        for (const nodeId of nodeIds) {
+          cancelAgentGraphNodeBuild(
+            agentGraphBuildKey(scope.rootGraphId, nodeId)
+          )
+        }
         layoutStore.applyOperations(
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
@@ -167,6 +400,96 @@ const graphMutations = (workflowId: string) => {
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations
 }
+
+function isCompactGraphBuildActive(): boolean {
+  return agentComposerStore.compactSessionPhase !== 'idle'
+}
+
+function graphBuildConnectionPoint(
+  scope: GraphScope,
+  nodeId: LinkTopology['originNodeId'],
+  slot: number,
+  output: boolean
+): { x: number; y: number } | null {
+  const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
+  if (!layout) return null
+  return {
+    x: layout.position.x + (output ? layout.size.width : 0),
+    y:
+      layout.position.y +
+      Math.min(layout.size.height - 12, 36 + Math.max(0, slot) * 20)
+  }
+}
+
+function stageRemoteGraphConnection(
+  scope: GraphScope,
+  topology: LinkTopology
+): void {
+  if (!isCompactGraphBuildActive() || !LiteGraph.vueNodesMode) return
+  const source = graphBuildConnectionPoint(
+    scope,
+    topology.originNodeId,
+    topology.originSlot,
+    true
+  )
+  const target = graphBuildConnectionPoint(
+    scope,
+    topology.targetNodeId,
+    topology.targetSlot,
+    false
+  )
+  if (!source || !target) return
+  const originData = nodeDataStore.getNode(
+    scope.rootGraphId,
+    topology.originNodeId
+  )
+  const targetData = nodeDataStore.getNode(
+    scope.rootGraphId,
+    topology.targetNodeId
+  )
+  const isCurrentGraph = () =>
+    canvasStore.rootGraphId === scope.rootGraphId &&
+    canvasStore.currentGraph?.id === scope.owningGraphId &&
+    isCompactGraphBuildActive()
+  stageAgentGraphNodeBuild({
+    key: `${String(topology.graphId)}:link:${String(topology.id)}`,
+    kind: 'connection',
+    label: `${originData?.title || originData?.type || t('agent.graphBuild.node')} → ${targetData?.title || targetData?.type || t('agent.graphBuild.node')}`,
+    source,
+    target,
+    resolveEndpoints: () => {
+      const graph = app.canvas?.graph
+      if (!graph || String(graph.id) !== String(scope.owningGraphId))
+        return null
+      const origin = graph.getNodeById(topology.originNodeId)
+      const target = graph.getNodeById(topology.targetNodeId)
+      if (!origin || !target) return null
+      const originPosition = origin.getConnectionPos(false, topology.originSlot)
+      const targetPosition = target.getConnectionPos(true, topology.targetSlot)
+      return {
+        source: { x: originPosition[0], y: originPosition[1] },
+        target: { x: targetPosition[0], y: targetPosition[1] }
+      }
+    },
+    isPresentable: isCurrentGraph,
+    present: () => {},
+    toClient: graphBuildClientPosition,
+    suspendConnections: () => suspendGraphBuildPresentation(app.canvas),
+    durationMs: 700,
+    gapMs: 120
+  })
+}
+
+const detachRemoteLinkPlayback = linkStore.$onAction(
+  ({ name, args, after }) => {
+    if (name !== 'replaceLink') return
+    if (!isRemoteMutationContext(args.at(-1))) return
+    const [scope] = args
+    after((placed) => {
+      if (placed) stageRemoteGraphConnection(scope, placed)
+    })
+  }
+)
 const { focusNodeInstance } = useFocusNode()
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
@@ -547,7 +870,16 @@ async function onAgentActiveTab(
 
 start()
 void refreshCloudWorkflowIds()
+watch(
+  [
+    () => workflowStore.activeWorkflow?.path,
+    () => canvasStore.currentGraph?.id
+  ],
+  () => skipAgentGraphBuild()
+)
 onBeforeUnmount(() => {
+  skipAgentGraphBuild()
+  detachRemoteLinkPlayback()
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
@@ -623,15 +955,49 @@ const coachStep: CoachStep = {
   body: t('agent.coachBody')
 }
 
-function onSend(text: string, attachments: ComposerAttachment[]): void {
+function maybeFinishCompactSession(): void {
+  if (
+    agentComposerStore.compactSessionPhase !== 'running' ||
+    status.value !== 'idle'
+  )
+    return
+  const playbackPhase = agentGraphBuildPlaybackState.value.phase
+  if (
+    playbackPhase === 'queued' ||
+    playbackPhase === 'playing' ||
+    playbackPhase === 'paused'
+  )
+    return
+  agentComposerStore.finishCompactSession()
+}
+
+async function onSend(
+  text: string,
+  attachments: ComposerAttachment[],
+  source: 'panel' | 'compact' = 'panel'
+): Promise<void> {
   exitNodeSelectionMode()
   const nodeTags = consumeSelection()
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
   })
-  void sendMessage(text, attachments, nodeTags)
+  const accepted = await sendMessage(text, attachments, nodeTags)
+  if (source !== 'compact') return
+  if (!accepted) {
+    agentComposerStore.restoreCompactSubmission(text, attachments)
+    return
+  }
+  agentComposerStore.markCompactSessionRunning()
+  maybeFinishCompactSession()
 }
+
+// The server can finish before the teaching playback drains (or vice versa).
+// Keep the hidden runtime alive until both parts of the canvas turn settle.
+watch(
+  [status, () => agentGraphBuildPlaybackState.value.phase],
+  maybeFinishCompactSession
+)
 
 function onStop(): void {
   void stopTurn()
@@ -657,7 +1023,6 @@ function onNewChat(): void {
   newChat()
 }
 
-const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
@@ -794,10 +1159,35 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
-  stage: (staged) => panelRef.value?.addAttachment(staged),
-  update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
-  remove: (id) => panelRef.value?.removeAttachment(id)
+  stage: agentComposerStore.addAttachment,
+  update: agentComposerStore.updateAttachment,
+  remove: agentComposerStore.removeAttachment
 })
+
+let drainingCompactAttachmentRequests = false
+async function drainCompactAttachmentRequests(): Promise<void> {
+  if (drainingCompactAttachmentRequests) return
+  drainingCompactAttachmentRequests = true
+  try {
+    let request = agentComposerStore.takeAttachmentRequest()
+    while (request !== undefined) {
+      await attachment.addFiles(request.files)
+      request = agentComposerStore.takeAttachmentRequest()
+    }
+  } finally {
+    drainingCompactAttachmentRequests = false
+    if (agentComposerStore.pendingAttachmentRequests.length > 0)
+      void drainCompactAttachmentRequests()
+  }
+}
+
+watch(
+  () => agentComposerStore.pendingAttachmentRequests.length,
+  (count) => {
+    if (count > 0) void drainCompactAttachmentRequests()
+  },
+  { immediate: true }
+)
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -895,7 +1285,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
   }
 
   if (asset.ref && asset.kind !== 'other') {
-    panelRef.value?.addAttachment({
+    agentComposerStore.addAttachment({
       id: `asset:${asset.ref}`,
       name: asset.name,
       ref: asset.ref,
@@ -938,6 +1328,17 @@ function onPanelDrop(event: DragEvent): void {
   event.preventDefault()
   void attachment.addFiles(files)
 }
+
+watch(
+  () => agentComposerStore.pendingSubmission,
+  (pendingSubmission) => {
+    if (pendingSubmission === null) return
+    const submission = agentComposerStore.takeSubmission(pendingSubmission.id)
+    if (submission === undefined) return
+    void onSend(submission.text, submission.attachments, 'compact')
+  },
+  { immediate: true, flush: 'post' }
+)
 </script>
 
 <template>
@@ -976,7 +1377,6 @@ function onPanelDrop(event: DragEvent): void {
     </div>
     <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
-      ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :user-name="userName"

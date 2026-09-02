@@ -5109,6 +5109,27 @@
     "title": "Comfy Agent",
     "loadFailed": "The agent panel failed to load.",
     "askComfyAgent": "Ask Comfy Agent",
+    "compactComposer": {
+      "label": "Ask Comfy Agent",
+      "placeholder": "Describe what to build or change…",
+      "working": "The Agent is building your workflow…",
+      "building": "Building on canvas",
+      "open": "Open the full Agent panel"
+    },
+    "graphBuild": {
+      "progress": {
+        "selecting": "Choosing {current} of {total}: {node}",
+        "dragging": "Placing {current} of {total}: {node}",
+        "connecting": "Connecting {current} of {total}: {node}"
+      },
+      "selecting": "Find and select {node}",
+      "dragging": "Drag {node} onto the canvas",
+      "connecting": "Connect {node}",
+      "node": "workflow node",
+      "pause": "Pause",
+      "resume": "Resume",
+      "skip": "Skip animation"
+    },
     "crdtStatus": "CRDT {connection} · {workflowId} · {updates} updates · {frame}",
     "crdtConnected": "connected",
     "crdtDisconnected": "disconnected",

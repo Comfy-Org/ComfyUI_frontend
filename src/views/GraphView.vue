@@ -20,6 +20,15 @@
     </template>
   </div>
 
+  <component
+    :is="CompactAgentComposer"
+    v-if="agentCanvasEntryEnabled && !isBuilderMode && !linearMode"
+  />
+  <component
+    :is="AgentGraphBuildPlaybackOverlay"
+    v-if="agentCanvasEntryEnabled && !isBuilderMode && !linearMode"
+  />
+
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
@@ -103,10 +112,17 @@ import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+import { useAgentCanvasEntryMount } from '@/workbench/extensions/agent/composables/useAgentCanvasEntryMount'
 
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
+
+const {
+  enabled: agentCanvasEntryEnabled,
+  CompactAgentComposer,
+  AgentGraphBuildPlaybackOverlay
+} = useAgentCanvasEntryMount()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
