@@ -476,6 +476,7 @@ export function useAgentCrdtFollower(
           ...outcomes.value,
           applied: outcomes.value.applied + 1
         }
+        connected.value = true
         projectedSequence.value = projection.sequence
     }
     reconcileLiveGraph(update.workflowId)

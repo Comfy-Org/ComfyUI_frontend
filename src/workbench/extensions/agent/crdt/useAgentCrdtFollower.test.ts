@@ -566,7 +566,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
-      adapterState.applyFrame.mockReturnValueOnce(false)
+      adapterState.applyFrame.mockReturnValueOnce({ status: 'unbound' })
       const { unmount, status } = mountFollower('wf-1')
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
@@ -816,6 +816,18 @@ describe('useAgentCrdtFollower', () => {
       ])
       unmount()
     })
+  })
+
+  it('restores connected status after a successful projection', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(status().connected).toBe(false)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(status().connected).toBe(true)
+    unmount()
   })
 
   it('stamps human ops only from successfully projected updates', () => {
