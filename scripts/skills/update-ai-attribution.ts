@@ -83,12 +83,12 @@ function parseSettings(content: string): Record<string, unknown> {
 function writeSettings(path: string, content: string) {
   mkdirSync(dirname(path), { recursive: true })
   const temporaryPath = `${path}.${process.pid}.tmp`
-  const mode = existsSync(path) ? statSync(path).mode : undefined
+  const mode = existsSync(path) ? statSync(path).mode & 0o777 : 0o600
 
   try {
     writeFileSync(temporaryPath, content, { mode })
     renameSync(temporaryPath, path)
-    if (mode !== undefined) chmodSync(path, mode)
+    chmodSync(path, mode)
   } finally {
     rmSync(temporaryPath, { force: true })
   }

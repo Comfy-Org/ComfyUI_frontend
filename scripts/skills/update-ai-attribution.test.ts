@@ -3,6 +3,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,6 +17,22 @@ import {
 } from './update-ai-attribution'
 
 describe('updateAttributionSettings', () => {
+  it('creates settings files with owner-only permissions', () => {
+    const home = mkdtempSync(join(tmpdir(), 'update-ai-attribution-'))
+    try {
+      updateAttributionSettings(home)
+
+      expect(
+        statSync(join(home, '.claude', 'settings.json')).mode & 0o777
+      ).toBe(0o600)
+      expect(
+        statSync(join(home, '.config', 'amp', 'settings.json')).mode & 0o777
+      ).toBe(0o600)
+    } finally {
+      rmSync(home, { recursive: true, force: true })
+    }
+  })
+
   it('updates only attribution settings without exposing other values', () => {
     const home = mkdtempSync(join(tmpdir(), 'update-ai-attribution-'))
     try {
