@@ -53,7 +53,7 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     const mintable = shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
-      localProvenance: !deps.session.inRemoteApply(),
+      localProvenance: true,
       teardown: deps.session.inTeardown()
     })
     if (!mintable) return

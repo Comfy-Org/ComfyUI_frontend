@@ -414,7 +414,6 @@ const mintPortWiring = attachMintPortWiring({
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
-  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null)
 })

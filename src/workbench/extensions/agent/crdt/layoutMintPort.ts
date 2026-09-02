@@ -15,8 +15,6 @@ import type { SeveranceLog } from './linkMintPort'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
-export const AGENT_REMOTE_ACTOR = 'agent-remote'
-
 /**
  * The structural slice of the layout store's LayoutChange this port reads.
  * Structural on purpose: the real feed passes the store's own change objects
@@ -83,7 +81,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
       localProvenance:
-        change.operation.source !== AGENT_REMOTE_ACTOR &&
+        change.operation.source !== 'agent-remote' &&
         actor !== undefined &&
         actor.startsWith(deps.localActorPrefix),
       teardown

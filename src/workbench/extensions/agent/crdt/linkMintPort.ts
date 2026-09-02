@@ -91,7 +91,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     return shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
-      localProvenance: !deps.session.inRemoteApply(),
+      localProvenance: true,
       teardown: deps.session.inTeardown()
     })
   }

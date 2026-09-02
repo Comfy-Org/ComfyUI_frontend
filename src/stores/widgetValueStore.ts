@@ -24,6 +24,13 @@ interface WidgetRestorationState {
   restoreNamed: boolean
 }
 
+export interface WidgetValueChange {
+  widgetId: WidgetId
+  value: WidgetState['value']
+  oldValue: WidgetState['value']
+  context: RemoteMutationContext | undefined
+}
+
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
@@ -38,6 +45,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     UUID,
     Map<NodeId, WidgetRestorationState>
   >()
+  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
 
   function setNodeWidgetRestoration(
     graphId: UUID,
@@ -240,12 +248,23 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function setValue(
     widgetId: WidgetId,
     value: WidgetState['value'],
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
+    const oldValue = state.value
     state.value = value
+    for (const listener of valueChangeListeners) {
+      listener({ widgetId, value, oldValue, context })
+    }
     return true
+  }
+
+  function onValueChange(
+    listener: (change: WidgetValueChange) => void
+  ): () => void {
+    valueChangeListeners.add(listener)
+    return () => valueChangeListeners.delete(listener)
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
@@ -443,6 +462,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     setValue,
+    onValueChange,
     setLabel,
     updateOptions,
     deleteWidget,

@@ -177,6 +177,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return this._state.value
   }
   set value(value: TWidget['value']) {
+    const id = this.widgetId
+    if (id && useWidgetValueStore().setValue(id, value)) return
     this._state.value = value
   }
 

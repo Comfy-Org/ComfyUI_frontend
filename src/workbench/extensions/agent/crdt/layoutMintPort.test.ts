@@ -5,7 +5,7 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
-import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
+import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
@@ -236,12 +236,6 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('never mints an agent-remote echo (KA-6 sender half)', () => {
-    deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
-
-    expect(minted).toEqual([])
-  })
-
   it('uses call-carried source to suppress an echoed local actor', () => {
     const change = createNodeChange('1', LOCAL_ACTOR)
     change.operation.source = 'agent-remote'
@@ -306,11 +300,10 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('never mints a teardown-bracketed or agent-remote deleteNode', () => {
+  it('never mints a teardown-bracketed deleteNode', () => {
     session.beginGraphTeardown()
     deliver(deleteChange('1'))
     session.endGraphTeardown()
-    deliver(deleteChange('2', AGENT_REMOTE_ACTOR))
 
     expect(minted).toEqual([])
   })

@@ -90,7 +90,6 @@ describe('attachMintPortWiring', () => {
         layoutListeners.add(listener)
         return () => layoutListeners.delete(listener)
       },
-      withLayoutActor: (_actor, fn) => fn(),
       localActorPrefix: 'user-',
       getGraph: () => graph
     })
@@ -212,20 +211,6 @@ describe('attachMintPortWiring', () => {
 
   it('mints nothing for a setValue that did not apply', () => {
     useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
-
-    expect(minted).toEqual([])
-  })
-
-  it('suppresses every port inside the remote scope', () => {
-    wiring.runRemoteScope(() => {
-      useLinkStore().registerLink(ROOT_SCOPE, topology(41))
-      const widgetStore = useWidgetValueStore()
-      const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
-      widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
-        typeof widgetStore.registerWidget
-      >[1])
-      widgetStore.setValue(id, 42)
-    })
 
     expect(minted).toEqual([])
   })
