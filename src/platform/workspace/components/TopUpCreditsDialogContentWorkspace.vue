@@ -722,7 +722,7 @@ async function handleBuy() {
 
   loading.value = true
   paymentSubmitted.value = true
-  balanceBeforeCharge.value = currentBalanceCredits()
+  balanceBeforeCharge.value = balance.value ? currentBalanceCredits() : null
   const attemptStartedAt = Date.now()
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)

@@ -753,7 +753,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
       expect(screen.getByText('Payment declined')).toBeInTheDocument()
-      expect(screen.queryByText('Stripe reasoning:')).not.toBeInTheDocument()
+      expect(screen.queryByText('What your bank said')).not.toBeInTheDocument()
 
       await userEvent.click(screen.getByRole('button', { name: 'Back' }))
 
@@ -800,7 +800,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
       expect(await screen.findByText('Payment declined')).toBeInTheDocument()
-      expect(screen.getByText('Stripe reasoning:')).toBeInTheDocument()
+      expect(screen.getByText('What your bank said')).toBeInTheDocument()
       expect(screen.getByText('Insufficient funds')).toBeInTheDocument()
     })
 

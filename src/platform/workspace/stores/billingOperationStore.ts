@@ -729,24 +729,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return
     }
 
-    // A subscription checkout shows its own success step in the pricing dialog,
-    // so leave it open. Top-ups have no such step: close and surface settings.
-    if (operation.type === 'topup') {
-      useDialogStore().closeDialog({ key: 'top-up-credits' })
+    // A dialog that is open when its operation resolves renders the outcome
+    // itself: the top-up dialog stays put for its success step, and no toast
+    // repeats what the screen already says. With the dialog closed, the old
+    // delivery stands — settings surface the result and the toast carries it.
+    const topupDialogAttending =
+      operation.type === 'topup' &&
+      useDialogStore().isDialogOpen('top-up-credits')
+    if (operation.type === 'topup' && !topupDialogAttending) {
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
     }
 
-    const toastStore = useToastStore()
-    const messageKey =
-      operation.type === 'subscription'
-        ? 'billingOperation.subscriptionSuccess'
-        : 'billingOperation.topupSuccess'
-
-    toastStore.add({
-      severity: 'success',
-      summary: t(messageKey),
-      life: 5000
-    })
+    if (!topupDialogAttending) {
+      const messageKey =
+        operation.type === 'subscription'
+          ? 'billingOperation.subscriptionSuccess'
+          : 'billingOperation.topupSuccess'
+      useToastStore().add({
+        severity: 'success',
+        summary: t(messageKey),
+        life: 5000
+      })
+    }
 
     resolveTerminal(opId)
   }
@@ -827,7 +831,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel' && !superseded) {
+    if (
+      operation.type !== 'cancel' &&
+      !superseded &&
+      !(
+        operation.type === 'topup' &&
+        useDialogStore().isDialogOpen('top-up-credits')
+      )
+    ) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,

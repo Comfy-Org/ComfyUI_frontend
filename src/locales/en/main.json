@@ -2717,7 +2717,7 @@
       "newBalance": "New balance",
       "declinedTitle": "Payment declined",
       "declinedBody": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.",
-      "declinedReasonLabel": "Stripe reasoning:",
+      "declinedReasonLabel": "What your bank said",
       "updatePaymentMethod": "Update payment method",
       "verifyTitle": "Verify your payment",
       "viewPricing": "View pricing details",
