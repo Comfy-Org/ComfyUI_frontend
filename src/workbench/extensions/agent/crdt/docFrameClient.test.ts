@@ -55,6 +55,25 @@ describe('doc frame client', () => {
     )
   })
 
+  it('throws on malformed base64 without dispatching a doc_update', () => {
+    const data = {
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      update_b64: 'not base64!'
+    }
+
+    expect(() => parseServerDocFrame({ type: 'doc_update', data })).toThrow()
+
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    let updatesDispatched = 0
+    client.addEventListener('doc_update', () => updatesDispatched++)
+
+    expect(() => transport.receive('doc_update', data)).toThrow()
+    expect(updatesDispatched).toBe(0)
+  })
+
   it('replaying an update is idempotent', () => {
     const source = new Y.Doc()
     source.getArray('items').push(['a'])
