@@ -492,6 +492,145 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  // FEC-4 current-risk reproducer (node-type-change-semantics). The applier's
+  // only node-write op is `add_node`, and a same-id `add_node` always
+  // `mset`s a brand-new Y.Map at that key (applier.js `applyAddNode`) rather
+  // than patching the existing one — there is no `update_node` op, so a
+  // class/type change can only ever arrive as a winning re-add, and
+  // ecsFollowerAdapter.ts does pair that root 'update' action with a
+  // deleteNode+addNode batch (not a same-node in-place patch).
+  //
+  // But that pairing does not fully converge: `applyQueuedFrame` also
+  // re-queues `connect` for every link that referenced the retyped node
+  // (`replacedNodeIds` walk, ecsFollowerAdapter.ts:223-239), reading the
+  // link's slot indices from the OLD, now-stale semantic shape still sitting
+  // in the Yjs doc's `links` map. When the new type no longer has a matching
+  // slot (Source's output slot 0 vs. Sink's zero outputs here), graphMutations
+  // `prepare()`'s `connect` validation rejects with "connect origin slot 0
+  // does not exist" — and because `batch()` validates the WHOLE queued batch
+  // atomically before committing anything (graphMutations.ts:325 `prepare`
+  // returning a string aborts prepare() for every queued mutation, including
+  // the deleteNode/addNode pair that would have retyped the node), the entire
+  // frame is dropped. The node is left rendered as its OLD type — the exact
+  // "already-rendered type uncorrected" gap this row exists to catch, just
+  // via atomic-batch-abort rather than a coalesced-no-op read. Do not fix the
+  // adapter/batch semantics here — this is risk evidence only.
+  it('leaves the old type rendered when a same-id retype batch is rejected by a stale link revalidation', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [0, 0],
+            widgets_values: { seed: 1, stale: 9 },
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            pos: [300, 0],
+            inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+            outputs: []
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const createLayout = vi.fn()
+    const deleteLayouts = vi.fn()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const bootstrap = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(bootstrap)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: bootstrap,
+        actor: 'agent:test',
+        opIds: ['bootstrap']
+      })
+    ).toBe(true)
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(1)
+
+    // Node 1 is re-minted at the same id as a different, unrelated type
+    // ('Sink' has no widgets and no output) - not a widget/property edit.
+    const before = Y.encodeStateVector(host)
+    const result = applyOps(
+      host,
+      [
+        op('retype', 2, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Sink',
+          pos: [0, 0],
+          node: {
+            id: 1,
+            type: 'Sink',
+            pos: [0, 0],
+            inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+            outputs: []
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([{ op_id: 'retype', outcome: 'applied' }])
+    const update = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(update)
+    // The doc-layer op applied cleanly (asserted above); the follower frame
+    // is still reported as consumed (no seq gap, no error state) even though
+    // the projection batch beneath it silently rejected.
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update,
+        actor: 'agent:test',
+        opIds: ['retype']
+      })
+    ).toBe(true)
+
+    const stillSource = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(1))
+    // CURRENT-RISK EVIDENCE: the canvas still renders node 1 as the OLD
+    // 'Source' shape with its stale widgets and its old link intact — the
+    // retype batch (deleteNode(1) + addNode(1, Sink) + connect(9)) was
+    // rejected wholesale by `prepare()`'s connect-slot check and never
+    // committed. No remove/add reached the stores; nothing was corrected.
+    expect(stillSource?.type).toBe('Source')
+    expect(stillSource?.outputs).toHaveLength(1)
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(1)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeDefined()
+    expect(deleteLayouts).not.toHaveBeenCalledWith(
+      scope,
+      [toNodeId(1)],
+      expect.objectContaining({ opId: 'retype' })
+    )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('keeps follower docs and apply queues isolated by workflow target', () => {
     const followerA = new FollowerDoc()
     const followerB = new FollowerDoc()
