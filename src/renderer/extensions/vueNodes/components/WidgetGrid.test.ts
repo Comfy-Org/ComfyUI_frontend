@@ -157,15 +157,23 @@ describe('WidgetGrid', () => {
     )
   })
 
-  it.each([
+  const nonTargetCases = [
     ['inactive drag', false, 'input', '1', 0, true],
     ['incompatible candidate', true, 'input', '1', 0, false],
     ['output candidate', true, 'output', '1', 0, true],
     ['different node', true, 'input', '2', 0, true],
     ['different slot', true, 'input', '1', 1, true]
-  ])(
-    'does not highlight for %s',
-    (_, active, type, nodeId, index, compatible) => {
+  ] as const
+
+  for (const [
+    name,
+    active,
+    type,
+    nodeId,
+    index,
+    compatible
+  ] of nonTargetCases) {
+    it(`does not highlight for ${name}`, () => {
       mockDragState.active = active
       mockDragState.candidate = {
         layout: { nodeId, index, type },
@@ -185,8 +193,8 @@ describe('WidgetGrid', () => {
       })
 
       expect(screen.getByTestId('node-widget')).not.toHaveClass('ring')
-    }
-  )
+    })
+  }
 
   it('marks linked widgets when they are not a drag target', () => {
     const linkedWidget = widget('seed', 'number', 0)
