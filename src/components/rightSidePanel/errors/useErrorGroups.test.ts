@@ -139,7 +139,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isAgentPromptErrorType, useErrorGroups } from './useErrorGroups'
+import { useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
@@ -729,11 +729,6 @@ describe('useErrorGroups', () => {
           ? promptGroup.cards[0]?.errors[0]?.details
           : undefined
       expect(details).toBe('op_rejected: unknown_widget at seed')
-    })
-
-    it('recognizes agent prompt errors without accepting other prompt errors', () => {
-      expect(isAgentPromptErrorType('agent_api_failed')).toBe(true)
-      expect(isAgentPromptErrorType('prompt_no_outputs')).toBe(false)
     })
 
     it('includes prompt error when a node is selected', async () => {

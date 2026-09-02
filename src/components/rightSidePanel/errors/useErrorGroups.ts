@@ -59,7 +59,7 @@ const AGENT_PROMPT_ERROR_TYPES: ReadonlySet<string> = new Set(
   AGENT_PROMPT_ERROR_TYPE_LIST
 )
 
-export function isAgentPromptErrorType(
+function isAgentPromptErrorType(
   errorType: string
 ): errorType is AgentPromptErrorType {
   return AGENT_PROMPT_ERROR_TYPES.has(errorType)
