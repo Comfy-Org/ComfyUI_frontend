@@ -132,7 +132,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
-import { formatNumberWithSuffix } from '@/utils/formatUtil'
+import { formatNumberWithSuffix } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {

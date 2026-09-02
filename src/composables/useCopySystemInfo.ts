@@ -8,7 +8,7 @@ import {
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import type { SystemStats } from '@/schemas/apiSchema'
-import { formatSize } from '@/utils/formatUtil'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 function formatSystemInfoText(stats: SystemStats): string {
   const lines: string[] = ['## System Info']

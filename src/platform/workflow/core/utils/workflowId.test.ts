@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { isValidUuid } from '@/utils/formatUtil'
+import { isValidUuid } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,

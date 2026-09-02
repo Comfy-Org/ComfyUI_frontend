@@ -1,5 +1,3 @@
-import { default as DOMPurify } from 'dompurify'
-
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
   const isCamelCase = /^([A-Z][a-z]*)+$/.test(str)

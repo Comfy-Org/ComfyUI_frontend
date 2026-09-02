@@ -1,8 +1,8 @@
 import type { Token } from 'marked'
 
 import { ResultItemImpl } from '@/stores/queueStore'
-import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaType } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 

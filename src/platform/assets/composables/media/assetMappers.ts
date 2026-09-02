@@ -9,7 +9,7 @@ import { ResultItemImpl } from '@/stores/queueStore'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
-} from '@/utils/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Extract asset type from tags array

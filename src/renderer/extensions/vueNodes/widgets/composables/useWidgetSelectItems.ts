@@ -27,7 +27,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(

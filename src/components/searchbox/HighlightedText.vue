@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { highlightQuery } from '@/utils/formatUtil'
+import { highlightQuery } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const { text, query } = defineProps<{
   text: string

@@ -94,7 +94,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
-import { formatSize } from '@/utils/formatUtil'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 interface MissingModelRowEntry {
   key: string
