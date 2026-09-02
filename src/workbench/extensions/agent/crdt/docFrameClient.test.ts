@@ -351,27 +351,31 @@ describe('doc frame client', () => {
     })
   })
 
-  it.for([
+  const invalidDocUpdateCases: [string, Record<string, unknown>][] = [
     ['invalid base64 characters', { seq: 1, update_b64: '!!!=' }],
     ['partial base64', { seq: 1, update_b64: 'AQ' }],
     ['empty base64', { seq: 1, update_b64: '' }],
     ['negative sequence', { seq: -1, update_b64: 'AQ==' }],
     ['fractional sequence', { seq: 1.5, update_b64: 'AQ==' }],
     ['mixed op ids', { seq: 1, update_b64: 'AQ==', op_ids: ['ok', 1] }]
-  ])('rejects %s in doc_update without throwing', (_name, fields) => {
-    expect(() =>
-      parseServerDocFrame({
-        type: 'doc_update',
-        data: { v: 1, workflow_id: 'wf-1', ...fields }
-      })
-    ).not.toThrow()
-    expect(
-      parseServerDocFrame({
-        type: 'doc_update',
-        data: { v: 1, workflow_id: 'wf-1', ...fields }
-      })
-    ).toBeNull()
-  })
+  ]
+  it.for(invalidDocUpdateCases)(
+    'rejects %s in doc_update without throwing',
+    ([_name, fields]) => {
+      expect(() =>
+        parseServerDocFrame({
+          type: 'doc_update',
+          data: { v: 1, workflow_id: 'wf-1', ...fields }
+        })
+      ).not.toThrow()
+      expect(
+        parseServerDocFrame({
+          type: 'doc_update',
+          data: { v: 1, workflow_id: 'wf-1', ...fields }
+        })
+      ).toBeNull()
+    }
+  )
 
   it('rejects an oversized decoded update before decoding', () => {
     expect(
