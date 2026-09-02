@@ -132,8 +132,12 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
           return concreteDescriptor.get?.call(this)
         },
         set(value: unknown) {
-          concreteDescriptor.set?.call(this, value)
           foreignDescriptor.set?.call(this, value)
+          const normalised = foreignDescriptor.get?.call(this)
+          concreteDescriptor.set?.call(
+            this,
+            normalised === undefined ? value : normalised
+          )
         }
       })
     }

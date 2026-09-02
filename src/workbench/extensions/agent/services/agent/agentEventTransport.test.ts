@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
@@ -53,7 +53,7 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
   )
 }
 
-const T = 't1' as TurnId
+const T = toTurnId('t1')
 
 function drive(events: AgentChatEvent[]): AssistantMessage {
   const message = createAssistantMessage(T)
@@ -70,10 +70,20 @@ function thinking(delta: string): AgentChatEvent {
   }
 }
 
-function toolCall(tool_name: string, status: string): AgentChatEvent {
+function toolCall(
+  tool_name: string,
+  status: 'running' | 'success' | 'error',
+  tool_call_id = `call-${tool_name}`
+): AgentChatEvent {
   return {
     type: 'agent_tool_call',
-    data: { tool_name, status, args: [], message_id: 'm', thread_id: 't' }
+    data: {
+      tool_call_id,
+      tool_name,
+      status,
+      message_id: 'm',
+      thread_id: 't'
+    }
   }
 }
 
@@ -162,7 +172,7 @@ describe('agentEventTransport thinking chip', () => {
   it('thinking after prior text and tools reopens the status', () => {
     const message = drive([
       delta('before'),
-      toolCall('run', 'ok'),
+      toolCall('run', 'success'),
       delta('after'),
       thinking('Planning the next step')
     ])
@@ -188,15 +198,11 @@ describe('agentEventTransport thinking narration', () => {
   })
 
   it('a tool call clears the live narration but retains the completed step', () => {
-    const now = vi
-      .spyOn(Date, 'now')
-      .mockReturnValueOnce(1000)
-      .mockReturnValueOnce(2300)
+    vi.spyOn(Date, 'now').mockReturnValueOnce(1000).mockReturnValueOnce(2300)
     const message = drive([
       thinking('Adding a node'),
-      toolCall('add_node', 'ok')
+      toolCall('add_node', 'success')
     ])
-    now.mockRestore()
     expect(message.thinkingText).toBeUndefined()
     expect(thinkingParts(message)).toEqual([
       {
@@ -211,12 +217,13 @@ describe('agentEventTransport thinking narration', () => {
   it('a tool call after thinking clears the thinking status', () => {
     const message = drive([
       thinking('Adding a node'),
-      toolCall('add_node', 'ok')
+      toolCall('add_node', 'success')
     ])
     expect(message.thinking).toBe(false)
   })
 
   it('the first text delta clears the live narration but retains the step', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([thinking('Writing a reply'), delta('Here')])
     expect(message.thinkingText).toBeUndefined()
     expect(thinkingParts(message)).toEqual([
@@ -228,6 +235,7 @@ describe('agentEventTransport thinking narration', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
+    vi.spyOn(Date, 'now').mockReturnValue(1000)
     transport.ingest(thinking('Wrapping up'))
     transport.settle()
     const final = emit.mock.calls.at(-1)?.[0] ?? message
@@ -237,14 +245,35 @@ describe('agentEventTransport thinking narration', () => {
     ])
   })
 
+  it('each emit is a distinct snapshot whose parts array ignores later events', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(thinking('First'))
+    const first = emit.mock.calls.at(-1)![0]
+    const firstPartsLength = first.parts.length
+    transport.ingest(toolCall('add_node', 'success'))
+    const second = emit.mock.calls.at(-1)![0]
+
+    expect(second).not.toBe(first)
+    expect(second.parts).not.toBe(first.parts)
+    expect(first.parts).toHaveLength(firstPartsLength)
+    expect(first.parts[0]).toEqual({
+      type: 'thinking',
+      text: 'First',
+      state: 'streaming'
+    })
+  })
+
   it('retains alternating reasoning and tool events in transcript order', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([
       thinking('Inspecting the graph'),
-      toolCall('list_slots', 'ok'),
+      toolCall('list_slots', 'success'),
       thinking('Applying the edit'),
-      toolCall('set_widget', 'ok')
+      toolCall('set_widget', 'success')
     ])
-
     expect(message.parts).toEqual([
       {
         type: 'thinking',
@@ -275,7 +304,7 @@ describe('agentEventTransport text and tool parts', () => {
   it('delta -> tool -> delta yields text, tool, text as three parts', () => {
     const message = drive([
       delta('before'),
-      toolCall('run', 'ok'),
+      toolCall('run', 'success'),
       delta('after')
     ])
     expect(parts(message).map((p) => p.type)).toEqual(['text', 'tool', 'text'])
@@ -288,6 +317,24 @@ describe('agentEventTransport text and tool parts', () => {
       state: 'done',
       ok: false
     })
+  })
+
+  it('folds running and success frames into one tool lifecycle', () => {
+    const message = drive([
+      toolCall('run', 'running', 'call-1'),
+      toolCall('run', 'success', 'call-1')
+    ])
+
+    expect(toolParts(message)).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'run',
+        state: 'done',
+        ok: true,
+        durationMs: undefined
+      }
+    ])
   })
 })
 
@@ -326,7 +373,7 @@ describe('agentEventTransport settle lifecycle', () => {
     const callsAfterSettle = emit.mock.calls.length
 
     transport.ingest(delta(' late'))
-    transport.ingest(toolCall('late_tool', 'ok'))
+    transport.ingest(toolCall('late_tool', 'success'))
 
     expect(emit.mock.calls.length).toBe(callsAfterSettle)
     expect(textParts(message)[0]).toMatchObject({
@@ -357,11 +404,38 @@ describe('agentEventTransport settle lifecycle', () => {
     })
   })
 
+  it('closes thinking before recording a tab switch', () => {
+    const message = drive([
+      thinking('opening the workflow'),
+      activeTab('wf-1', 'Portrait upscale'),
+      thinking('checking its nodes')
+    ])
+
+    expect(parts(message).map((part) => part.type)).toEqual([
+      'thinking',
+      'tabLink',
+      'thinking'
+    ])
+    expect(thinkingParts(message)).toEqual([
+      {
+        type: 'thinking',
+        text: 'opening the workflow',
+        state: 'done'
+      },
+      {
+        type: 'thinking',
+        text: 'checking its nodes',
+        state: 'streaming'
+      }
+    ])
+    expect(message.thinkingText).toBe('checking its nodes')
+  })
+
   it('links a tab once even when the agent keeps working between announcements', () => {
     const message = drive([
       activeTab('wf-1', 'First'),
       delta('adding the nodes'),
-      toolCall('add_node', 'ok'),
+      toolCall('add_node', 'success'),
       activeTab('wf-1', 'First')
     ])
 

@@ -35,6 +35,7 @@ import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
+import RunModePopover from './composer/RunModePopover.vue'
 import AgentTooltip from './AgentTooltip.vue'
 
 const {
@@ -575,6 +576,7 @@ defineExpose({
         </DropdownMenuRoot>
 
         <div class="flex items-center gap-1">
+          <RunModePopover />
           <AgentTooltip :label="primaryActionTooltip" :disabled="running">
             <button
               type="button"

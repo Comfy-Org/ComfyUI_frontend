@@ -869,8 +869,8 @@ describe('AgentPanelRoot attach flow', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
     const refresh = vi
-      .spyOn(useAssetsStore(), 'updateInputs')
-      .mockResolvedValue(undefined as never)
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
 
     dispatchDrag(screen.getByRole('textbox'), 'drop', {
       files: [new File(['x'], 'cat.png', { type: 'image/png' })]
@@ -956,7 +956,7 @@ describe('AgentPanelRoot attach flow', () => {
     { mime: 'image/png', filename: 'gen.png' },
     { mime: 'video/mp4', filename: 'movie.mp4' }
   ])(
-    'attaches a Media-card $mime URI and forwards its uploaded ref',
+    'T-08 / PM-646 / FE-1314 attaches a Media-card $mime URI and forwards its uploaded ref',
     async ({ mime, filename }) => {
       // PM-116: MediaAssetCard.dragStart sets asset-info + text/uri-list on the
       // transfer and never a File, so the panel must claim and fetch the URI.
@@ -1705,9 +1705,9 @@ describe('AgentPanelRoot transcript copy', () => {
       zAgentWsEventForTest({
         type: 'agent_tool_call',
         data: {
+          tool_call_id: 'call-add-node',
           tool_name: 'add_node',
-          status: 'ok',
-          args: [],
+          status: 'success',
           message_id: 'turn-1',
           thread_id: 'th-1'
         }
@@ -2518,7 +2518,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('reports only the bound tab in the snapshot when a second tab is unbound', async () => {
+  it('T-03 / PM-655 / FE-1311 sends the active canvas workflow in the agent snapshot', async () => {
     makeTab('wf-42')
     addTab('workflows/scratch.json', {
       activeState: { id: 'graph-internal-id-not-a-cloud-id' }
@@ -3350,7 +3350,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(state.selectItems).not.toHaveBeenCalled()
   })
 
-  it('keeps additive Vue-node selections and sends every node id', async () => {
+  it('X-03 / PM-680 / FE-1311 keeps displayed node chips identical to every sent node id', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()

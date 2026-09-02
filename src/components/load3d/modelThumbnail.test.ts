@@ -91,25 +91,23 @@ describe('generateModelThumbnail', () => {
     expect(createLoad3d).toHaveBeenCalledTimes(2)
   })
 
-  it('[11-T5 regression] times out a stuck load, disposes it, and advances the queue', async () => {
+  it('times out a stuck load, disposes it, and advances the queue', async () => {
     vi.useFakeTimers()
-    try {
-      const first = mockInstance({
-        loadModel: vi.fn(() => new Promise(() => {}))
-      })
-      const second = mockInstance()
-      createLoad3d.mockReturnValueOnce(first).mockReturnValueOnce(second)
+    const stuck = mockInstance({
+      loadModel: vi.fn(() => new Promise<void>(() => {}))
+    })
+    const next = mockInstance()
+    createLoad3d.mockReturnValueOnce(stuck).mockReturnValueOnce(next)
 
-      const firstRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
-      const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
-      await vi.advanceTimersByTimeAsync(10_000)
+    const stuckRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+    const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+    await vi.waitFor(() => expect(createLoad3d).toHaveBeenCalledTimes(1))
 
-      await expect(firstRun).resolves.toBeNull()
-      await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
-      expect(first.remove).toHaveBeenCalledOnce()
-      expect(second.remove).toHaveBeenCalledOnce()
-    } finally {
-      vi.useRealTimers()
-    }
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    await expect(stuckRun).resolves.toBeNull()
+    await expect(nextRun).resolves.toBe('data:image/png;base64,thumb')
+    expect(stuck.remove).toHaveBeenCalledTimes(1)
+    expect(next.loadModel).toHaveBeenCalledWith('/next.glb')
   })
 })

@@ -1,10 +1,12 @@
+import { withTimeout } from 'es-toolkit'
+
 import {
   isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
 
 let queue: Promise<unknown> = Promise.resolve()
-const MODEL_LOAD_TIMEOUT_MS = 10_000
+const MODEL_LOAD_TIMEOUT_MS = 15_000
 
 /**
  * Render a model to a thumbnail data URL offscreen, without opening the
@@ -33,21 +35,8 @@ async function renderThumbnail(
       height: 256,
       isViewerMode: true
     })
-    let timeoutHandle: ReturnType<typeof setTimeout> | undefined
     try {
-      try {
-        await Promise.race([
-          load3d.loadModel(modelUrl),
-          new Promise<never>((_, reject) => {
-            timeoutHandle = setTimeout(
-              () => reject(new Error('Model thumbnail load timed out')),
-              MODEL_LOAD_TIMEOUT_MS
-            )
-          })
-        ])
-      } finally {
-        clearTimeout(timeoutHandle)
-      }
+      await withTimeout(() => load3d.loadModel(modelUrl), MODEL_LOAD_TIMEOUT_MS)
       const dataUrl = await load3d.captureThumbnail(256, 256)
       if (isAssetPreviewSupported()) {
         void fetch(dataUrl)

@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "컨디셔닝에 1~10개의 참조 이미지를 첨부합니다. 1개는 편집 지시, 여러 개는 주제 기반 개인화에 사용됩니다.",
+    "description": "양성 및 음성 conditioning에 순서가 지정된 참조 이미지를 연결합니다.",
     "display_name": "HiDream-O1 Reference Images",
     "inputs": {
       "images": {
         "name": "images",
-        "tooltip": "참조 이미지. 1개 = 편집 지시; 2~10개 = 다중 참조."
+        "tooltip": "참조 이미지는 숫자 소켓 순서대로 사용됩니다."
       },
       "negative": {
         "name": "negative"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "MiniMax H3 Fun ControlNet을 모델 패치로 텍스트-투-비디오 모델에 적용합니다.",
+    "display_name": "MiniMax H3 Fun ControlNet 적용",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1은 다시 생성할 영역을 표시합니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "mask 뒤의 비디오이며, mask가 제공된 경우에만 읽습니다."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21113,6 +21153,23 @@
       },
       "scale": {
         "name": "스케일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNova 플로우 시프트를 설정합니다.",
+    "display_name": "SenseNova 샘플링 옵션",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

@@ -178,6 +178,13 @@ describe('WidgetInputText Value Binding', () => {
         'true'
       )
     })
+
+    it('does not mark a valid text input as invalid', () => {
+      const widget = createInputTextWidget('valid value')
+      renderComponent(widget, 'valid value', { invalid: false })
+
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid')
+    })
   })
 
   describe('Locked Field Hover Styling', () => {

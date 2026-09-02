@@ -1,22 +1,33 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
+import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
+
+const tooltipBindings = new WeakMap<Element, unknown>()
+const tooltipDirectiveStub = {
+  mounted(element: Element, binding: DirectiveBinding<unknown>) {
+    tooltipBindings.set(element, binding.value)
+  },
+  updated(element: Element, binding: DirectiveBinding<unknown>) {
+    tooltipBindings.set(element, binding.value)
+  }
+}
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [i18n],
+      directives: { tooltip: tooltipDirectiveStub }
     }
   })
 }
@@ -26,7 +37,7 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
-  it('shows the interactive empty-composer hint', () => {
+  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
@@ -144,14 +155,135 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
-  it('[12-T7 regression] hides unenforced run-mode promises', () => {
-    mount()
-    expect(
-      screen.queryByRole('button', { name: 'Ask' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('Choose when the agent needs your consent')
-    ).not.toBeInTheDocument()
+  describe('run permissions popover', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('opens from the mode control with the ask mode selected by default', async () => {
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+
+      expect(
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+      ).toBeChecked()
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
+    })
+
+    it('saves a new run mode with its credit limit and closes', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run with limits/ })
+      )
+      const save = screen.getByRole('button', { name: 'Save changes' })
+      expect(save).toBeEnabled()
+      const input = screen.getByRole('spinbutton', { name: 'credits' })
+      await userEvent.clear(input)
+      await userEvent.type(input, '500')
+      expect(save).toBeEnabled()
+      await userEvent.click(save)
+
+      expect(store.mode).toBe('auto-limit')
+      expect(store.creditLimit).toBe(500)
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+      expect(
+        screen.getByRole('button', { name: 'Auto (limited)' })
+      ).toBeInTheDocument()
+    })
+
+    it('keeps Save disabled while the limit draft is invalid', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+      store.save('auto-limit', 450)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Auto (limited)' })
+      )
+      const input = await screen.findByRole('spinbutton', { name: 'credits' })
+      await userEvent.clear(input)
+
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
+    })
+
+    it('enables Save when only the credit limit changes', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+      store.save('auto-limit', 450)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Auto (limited)' })
+      )
+      const save = await screen.findByRole('button', { name: 'Save changes' })
+      expect(save).toBeDisabled()
+
+      const input = screen.getByRole('spinbutton', { name: 'credits' })
+      await userEvent.clear(input)
+      await userEvent.type(input, '460')
+      expect(save).toBeEnabled()
+
+      await userEvent.click(save)
+      expect(store.creditLimit).toBe(460)
+    })
+
+    it('keeps unlimited auto mode distinct from limited auto mode', () => {
+      const store = useAgentRunModeStore()
+      store.save('auto', 450)
+
+      mount()
+
+      expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Auto (limited)' })
+      ).not.toBeInTheDocument()
+    })
+
+    it.for([
+      ['ask', 'Ask', 'Ask for permission'],
+      ['auto', 'Auto', 'Run workflow without permission'],
+      ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
+    ] as const)(
+      'shows the %s mode tooltip copy',
+      ([mode, triggerName, tooltipCopy]) => {
+        useAgentRunModeStore().save(mode, 450)
+
+        mount()
+
+        const trigger = screen.getByRole('button', { name: triggerName })
+        expect(tooltipBindings.get(trigger)).toEqual(
+          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
+        )
+      }
+    )
+
+    it('discards an unsaved draft when the popover closes without saving', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+      )
+      await userEvent.keyboard('{Escape}')
+      expect(store.mode).toBe('ask')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      expect(
+        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+      ).toBeChecked()
+    })
   })
 
   describe('typed @ mention', () => {
@@ -438,6 +570,17 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
+  it('passes the full tooltip config to selection chip directives', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    const button = screen.getByRole('button', {
+      name: 'Show KSampler #5 on canvas'
+    })
+    expect(tooltipBindings.get(button)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
+    )
+  })
+
   it('emits removeTag when a selection chip is removed', async () => {
     const { emitted } = mount({
       selectionTags: [{ id: '5', title: 'KSampler' }]
@@ -450,16 +593,15 @@ describe('Composer', () => {
     expect(emitted().removeTag).toEqual([['5']])
   })
 
-  it('shows the remove tooltip for a selection chip', async () => {
+  it('builds the remove tooltip for a selection chip', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.hover(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    const removeButton = screen.getByRole('button', {
+      name: 'Remove KSampler #5 reference'
+    })
+    expect(tooltipBindings.get(removeButton)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Remove')
     )
-
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Remove')
   })
 
   it('emits focusTag when a selection chip is activated', async () => {
