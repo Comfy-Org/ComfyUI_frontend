@@ -72,13 +72,15 @@ const galleryItems = computed(() =>
 const galleryIndex = ref(-1)
 
 /**
- * One entry per model url. The controller is `markRaw`, because a `ref`
- * deep-proxies nested objects and the proxy would not compare equal to the
- * controller the pending strand closed over. Keeping the controller inside
- * the state is what
- * makes "gave up while off screen" unrepresentable: dropping the entry and
- * cancelling its render are the same act, so the watcher can always tell an
- * in-flight lookup from one that is finished with.
+ * One entry per model url. The invariant is that a url can never be both
+ * forgotten and still rendering: dropping the entry and aborting its
+ * controller are one act, so whatever the watcher finds is either in
+ * flight, settled, or absent.
+ *
+ * The controller is `markRaw`, because a `ref` deep-proxies nested objects
+ * and the proxy would not compare equal to the controller a pending strand
+ * closed over — that identity is what tells an owned strand from a
+ * superseded one.
  */
 type ThumbnailState =
   | { phase: 'loading'; controller: AbortController }

@@ -390,7 +390,7 @@ describe('ReplyAssetGroup', () => {
       dialog.dialogComponentProps.onClose()
       await vi.advanceTimersByTimeAsync(0)
       const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
-      expect(vi.getTimerCount()).toBeGreaterThan(0)
+      expect(vi.getTimerCount()).toBe(2)
 
       unmount()
       expect(vi.getTimerCount()).toBe(0)

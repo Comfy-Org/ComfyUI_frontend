@@ -84,7 +84,7 @@ async function renderThumbnailWithTimeout(
     if (error === cancelError) return { status: 'cancelled' }
     reportError(redactModelUrls(error), {
       errorType: 'agent_model_thumbnail_generation_failure',
-      context: { assetName }
+      context: { assetName: redactAssetName(assetName) }
     })
     return { status: 'failed' }
   } finally {
@@ -96,19 +96,31 @@ async function renderThumbnailWithTimeout(
 }
 
 /**
- * three.js embeds the failed request URL in its loader errors. On the agent
- * path that URL comes from the model's markdown reply and may carry
- * credentials or signed query parameters, so strip the query string before
- * the message reaches Sentry or Datadog.
+ * three.js embeds the failed request URL in its loader errors, and the
+ * agent path derives both that URL and the asset name from the model's
+ * markdown reply, so either may carry credentials or signed parameters.
+ * Strip them before anything reaches Sentry or Datadog.
  */
-function redactModelUrls(error: unknown): unknown {
-  if (!(error instanceof Error)) return error
-  const scrubbed = error.message
+function redactUrls(text: string): string {
+  return text
     .replace(/(https?:\/\/)[^/\s"']*@/g, '$1<redacted>@')
     .replace(/(https?:\/\/[^\s"'?]+|\/?api\/view)\?[^\s"']*/g, '$1?<redacted>')
-  if (scrubbed === error.message) return error
-  const copy = new Error(scrubbed)
+}
+
+function redactAssetName(assetName: string): string {
+  return assetName.replace(/[?#].*$/, '')
+}
+
+function redactModelUrls(error: unknown): Error {
+  if (!(error instanceof Error)) return new Error(redactUrls(String(error)))
+
+  const message = redactUrls(error.message)
+  const stack = error.stack ? redactUrls(error.stack) : undefined
+  if (message === error.message && stack === error.stack) return error
+
+  const copy = new Error(message)
   copy.name = error.name
+  if (stack) copy.stack = stack
   return copy
 }
 
