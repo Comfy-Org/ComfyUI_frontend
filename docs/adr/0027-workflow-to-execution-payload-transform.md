@@ -8,14 +8,11 @@ Proposed
 
 ## Context
 
-> **Reconstruction note (Christian Byrne):** The proposal below is reconstructed
-> from a Slack message in `#p-frontend-graph-improvements` posted
-> 2026-08-22T08:33:50Z (thread `p1787387630437609`). Ben Cooley's verbal
-> proposal from the 2026-08-21 API v2 discussion has no transcript — Fireflies
-> has no record of August meetings, and a targeted search for attendees Ben, Alex,
-> and Christian on 2026-08-21 around 2pm PT returned nothing. Sections clearly
-> derived from that reconstruction are marked **[reconstruction]**. Ben should
-> confirm or correct before this ADR is accepted.
+> **Reconstruction note:** Christian Byrne reconstructed this proposal from a
+> Slack message in `#p-frontend-graph-improvements` posted at
+> 2026-08-22T08:33:50Z (thread `p1787387630437609`). No transcript exists for
+> Ben Cooley's proposal from the 2026-08-21 API v2 discussion. Sections marked
+> **[reconstruction]** require Ben's confirmation before this ADR is accepted.
 
 ### The two formats
 
