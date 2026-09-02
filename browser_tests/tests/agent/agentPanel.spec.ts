@@ -379,7 +379,16 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
+    const messageActions = editButton.locator('..')
+    await expect(messageActions).toHaveCSS('pointer-events', 'none')
+
+    await editButton.focus()
+    await expect(messageActions).toHaveCSS('pointer-events', 'auto')
+    await composer.focus()
+    await expect(messageActions).toHaveCSS('pointer-events', 'none')
+
     await panel.getByText(originalPrompt, { exact: true }).last().hover()
+    await expect(messageActions).toHaveCSS('pointer-events', 'auto')
     await editButton.click()
 
     await expect(composer).toHaveValue(originalPrompt)
