@@ -373,7 +373,7 @@ describe('doc frame client', () => {
     ).toBeNull()
   })
 
-  it('rejects an oversized encoded update before decoding', () => {
+  it('rejects an oversized decoded update before decoding', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_update',
@@ -381,7 +381,7 @@ describe('doc frame client', () => {
           v: 1,
           workflow_id: 'wf-1',
           seq: 1,
-          update_b64: 'A'.repeat((8 << 20) + 4)
+          update_b64: 'AAAA'.repeat(((8 << 20) + 1) / 3)
         }
       })
     ).toBeNull()

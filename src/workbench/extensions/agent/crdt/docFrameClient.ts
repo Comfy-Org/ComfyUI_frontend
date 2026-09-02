@@ -3,7 +3,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { reportError } from '@/platform/telemetry/reportError'
 
 const DOC_PROTOCOL_VERSION = 1
-const MAX_DOC_FRAME_B64_LENGTH = 8 << 20
+const MAX_DOC_UPDATE_BYTES = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
 const MAX_ACTOR_LENGTH = 256
 const MAX_AWARENESS_STATE_BYTES = 8 << 10
@@ -120,7 +120,10 @@ interface WireData {
 }
 
 function decodeBase64(value: string): Uint8Array | null {
-  if (value === '' || value.length > MAX_DOC_FRAME_B64_LENGTH) return null
+  if (value === '' || value.length % 4 !== 0) return null
+  const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
+  if ((value.length / 4) * 3 - padding > MAX_DOC_UPDATE_BYTES) return null
+
   // `atob` is permissive about missing padding, so require canonical standard
   // base64 before decoding the untrusted wire value.
   if (
@@ -129,6 +132,7 @@ function decodeBase64(value: string): Uint8Array | null {
     )
   )
     return null
+
   try {
     const binary = atob(value)
     return Uint8Array.from(binary, (character) => character.charCodeAt(0))
