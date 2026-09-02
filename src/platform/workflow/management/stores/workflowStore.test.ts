@@ -207,6 +207,17 @@ describe('useWorkflowStore', () => {
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
     })
 
+    it('assigns each workflow a stable unique session identity', async () => {
+      const workflow = store.createTemporary()
+      const otherWorkflow = store.createTemporary()
+      const instanceId = workflow.instanceId
+
+      await workflow.rename('workflows/renamed.json')
+
+      expect(workflow.instanceId).toBe(instanceId)
+      expect(otherWorkflow.instanceId).not.toBe(instanceId)
+    })
+
     it('should create a temporary workflow not clashing with persisted workflows', async () => {
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.createTemporary('a.json')
