@@ -60,7 +60,7 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
-    socket: { readyState: 1 },
+    socket: { readyState: 1, send: vi.fn() },
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
@@ -1817,6 +1817,19 @@ describe('AgentPanelRoot lifecycle', () => {
 
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
+
+  it('clears workflow activity when the panel unmounts', () => {
+    const activity = useWorkflowTabActivityStore()
+    activity.setEditing('workflows/active.json')
+    activity.setCreating(true)
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    unmount()
+
+    expect(activity.$state.editingTabPath).toBeNull()
+    expect(activity.$state.creatingTab).toBe(false)
+  })
 })
 
 describe('AgentPanelRoot greeting', () => {
@@ -1836,6 +1849,7 @@ describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
+    useAgentPanelStore().enabled = true
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
     telemetry.trackAgentNodeTagged.mockClear()

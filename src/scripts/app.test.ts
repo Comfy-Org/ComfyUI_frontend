@@ -376,6 +376,10 @@ describe('ComfyApp', () => {
         'workflow-load',
         7
       )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'bad workflow json' })
+      )
     })
 
     it('notifies extensions once on each side of a graph load, in order', async () => {

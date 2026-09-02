@@ -34,7 +34,7 @@ export function createAgentEventTransport(
   let openThinkingStartedAt = 0
   const tools = new Map<string, ToolPart>()
   let settled = false
-  let lastTabWorkflowId: string | undefined
+  let lastTabTargetKey: string | undefined
 
   function closeOpenText(): void {
     if (openText) {
@@ -108,8 +108,9 @@ export function createAgentEventTransport(
         // The agent re-announces the same tab as it keeps working on it, with
         // text and tool calls in between, so the tail of parts is not the test;
         // only a change of tab is worth another link in the transcript.
-        if (lastTabWorkflowId === event.data.workflow_id) return
-        lastTabWorkflowId = event.data.workflow_id
+        const targetKey = `${event.data.workflow_id}\u0000${event.data.node_locator_id ?? ''}`
+        if (lastTabTargetKey === targetKey) return
+        lastTabTargetKey = targetKey
         closeOpenText()
         closeOpenThinking()
         message.thinking = false
@@ -117,6 +118,7 @@ export function createAgentEventTransport(
         message.parts.push({
           type: 'tabLink',
           workflowId: event.data.workflow_id,
+          locatorId: event.data.node_locator_id,
           name: event.data.name
         })
         break

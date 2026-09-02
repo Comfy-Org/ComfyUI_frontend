@@ -5246,6 +5246,7 @@
     "toolSavedPreference": "Saved a preference",
     "toolForgotPreference": "Forgot a preference",
     "openWorkflowTab": "Open {name}",
+    "targetNavigationUnavailable": "This workflow target is no longer available.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",

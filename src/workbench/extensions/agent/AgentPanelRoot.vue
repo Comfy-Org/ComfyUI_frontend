@@ -104,7 +104,8 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
-const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
+const { dismissedSelectionSignature, enabled: agentEnabled } =
+  storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
@@ -190,6 +191,7 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
+  enabled: agentEnabled,
   isLive: () => agentPanelStore.isOpen,
   isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
