@@ -1,4 +1,6 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import type { Rule } from 'eslint'
+
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
@@ -22,7 +24,6 @@ import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
-import { noPrimeVueImports } from './tools/eslint-plugins/noPrimeVueImports'
 
 const extraFileExtensions = ['.vue']
 
@@ -90,6 +91,44 @@ const reportErrorRestrictions = [
       "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
   }
 ] as const
+
+const noPrimeVueImports: Rule.RuleModule = {
+  meta: {
+    type: 'problem',
+    messages: {
+      banned:
+        'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.ts only shrinks; do not add entries.'
+    },
+    schema: []
+  },
+  create(context) {
+    function report(node: Rule.Node, source: unknown) {
+      if (
+        typeof source === 'string' &&
+        /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/.test(source)
+      ) {
+        context.report({ node, messageId: 'banned' })
+      }
+    }
+
+    return {
+      ImportDeclaration(node) {
+        report(node, node.source.value)
+      },
+      ImportExpression(node) {
+        if (node.source.type === 'Literal') {
+          report(node, node.source.value)
+        }
+      },
+      ExportNamedDeclaration(node) {
+        report(node, node.source?.value)
+      },
+      ExportAllDeclaration(node) {
+        report(node, node.source.value)
+      }
+    }
+  }
+}
 
 const primeVueRemovalPlugin = {
   rules: {

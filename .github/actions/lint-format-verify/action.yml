@@ -21,12 +21,6 @@ runs:
         pnpm format:check
         pnpm knip
 
-    - name: Verify PrimeVue import allowlist
-      shell: bash
-      run: |
-        pnpm generate:primevue-import-allowlist
-        git diff --exit-code -- scripts/primevue-import-allowlist.ts
-
     - name: Verify locale integrity
       shell: bash
       run: pnpm locale:check

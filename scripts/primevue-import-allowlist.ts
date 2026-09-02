@@ -10,7 +10,6 @@ export const primeVueImportAllowlist = [
   'src/components/breadcrumb/SubgraphBreadcrumb.vue',
   'src/components/breadcrumb/SubgraphBreadcrumbItem.vue',
   'src/components/button/MoreButton.vue',
-  'src/components/common/ApiNodesList.vue',
   'src/components/common/BackgroundImageUpload.vue',
   'src/components/common/ColorCustomizationSelector.test.ts',
   'src/components/common/ColorCustomizationSelector.vue',

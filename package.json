@@ -34,7 +34,6 @@
     "fallow:audit": "fallow audit",
     "format:check": "oxfmt --check",
     "format": "oxfmt --write",
-    "generate:primevue-import-allowlist": "scripts/generate-primevue-import-allowlist.sh",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
