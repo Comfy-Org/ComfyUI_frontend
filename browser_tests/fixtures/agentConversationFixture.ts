@@ -37,7 +37,7 @@ const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 
 interface DocFrame {
-  type: 'doc_subscribed' | 'doc_update'
+  type: 'doc_subscribed' | 'doc_update' | 'doc_ops_result'
   data: Record<string, unknown>
 }
 
@@ -334,6 +334,31 @@ class AgentConversationHarness {
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
     this.clientFrames.push({ type, data })
+    if (type === 'doc_ops' && typeof data === 'object' && data !== null) {
+      // The real host acknowledges every submitted batch; the client's op
+      // sender keeps one batch in flight and only transmits the next after
+      // the ack, so without this reply every mint after the first stalls.
+      const { workflow_id, ops } = data as {
+        workflow_id?: unknown
+        ops?: unknown
+      }
+      if (workflow_id === this.conversation.workflow.id && Array.isArray(ops)) {
+        const applied = ops
+          .map((op) => (op as { op_id?: unknown }).op_id)
+          .filter((id): id is string => typeof id === 'string')
+        this.send({
+          type: 'doc_ops_result',
+          data: {
+            v: DOC_PROTOCOL_VERSION,
+            workflow_id,
+            ok: true,
+            applied,
+            skipped: []
+          }
+        })
+      }
+      return
+    }
     if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
       return
     const { workflow_id, state_vector_b64 } = data as {
