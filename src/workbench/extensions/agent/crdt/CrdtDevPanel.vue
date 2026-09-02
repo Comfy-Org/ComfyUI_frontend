@@ -207,7 +207,8 @@ function fmtTime(at: number): string {
 
     <div
       v-else
-      class="flex max-h-[70vh] w-[420px] flex-col overflow-hidden rounded-lg border border-border-default bg-base-background shadow-xl"
+      class="flex max-h-[70vh] w-[calc(100vw-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-lg border border-border-default bg-base-background shadow-xl"
+      data-testid="crdt-dev-panel-open"
     >
       <div
         class="flex items-center justify-between border-b border-border-default px-3 py-2"
@@ -222,7 +223,10 @@ function fmtTime(at: number): string {
         </button>
       </div>
 
-      <div class="flex-1 space-y-3 overflow-y-auto p-3">
+      <div
+        class="flex-1 space-y-3 overflow-y-auto p-3"
+        data-testid="crdt-dev-panel-content"
+      >
         <section>
           <div class="mb-1 font-bold">{{ S.sectionStatus }}</div>
           <table class="w-full">
