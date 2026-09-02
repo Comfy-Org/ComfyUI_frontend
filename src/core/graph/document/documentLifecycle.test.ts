@@ -65,10 +65,10 @@ describe('reduceDocument', () => {
     ])
     expect(
       reduceDocument(state, { type: 'saveCompleted', atRevision: 99 })
-    ).toEqual(state)
+    ).toBe(state)
     expect(
       reduceDocument(state, { type: 'saveCompleted', atRevision: 0 })
-    ).toEqual(state)
+    ).toBe(state)
   })
 
   it('remote or human mutations after a save make a loaded document dirty again', () => {
@@ -126,10 +126,10 @@ describe('reduceDocument', () => {
       { type: 'hydrated' },
       { type: 'closed', atRevision: 0, discardChanges: true }
     ])
-    expect(reduceDocument(closed, { type: 'mutated' })).toEqual(closed)
+    expect(reduceDocument(closed, { type: 'mutated' })).toBe(closed)
     expect(
       reduceDocument(closed, { type: 'saveCompleted', atRevision: 0 })
-    ).toEqual(closed)
+    ).toBe(closed)
   })
 
   it('cannot close a document that was never loaded', () => {
