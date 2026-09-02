@@ -221,13 +221,21 @@ export function useAgentCrdtFollower(
   const transport: DocFrameTransport = {
     send(frame) {
       const delivered = apiTransport.send(frame)
-      let parsed: unknown = frame
+      // Never store the raw string: `sanitizeDetail` redacts by key, so an
+      // unparsable frame would bypass it. Record only its length.
+      let detail: Record<string, unknown>
       try {
-        parsed = JSON.parse(frame)
+        const parsed: unknown = JSON.parse(frame)
+        detail =
+          parsed !== null &&
+          typeof parsed === 'object' &&
+          !Array.isArray(parsed)
+            ? { delivered, frame: parsed }
+            : { delivered, frame: null, unparsed_chars: frame.length }
       } catch {
-        // Leave the raw string.
+        detail = { delivered, frame: null, unparsed_chars: frame.length }
       }
-      wireLog.trace('ws_out', 'outbound frame', { delivered, frame: parsed })
+      wireLog.trace('ws_out', 'outbound frame', detail)
       return delivered
     },
     addEventListener(type, listener) {
