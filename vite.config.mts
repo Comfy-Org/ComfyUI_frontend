@@ -202,6 +202,14 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
+const DEV_AGENT_URL = process.env.DEV_AGENT_URL
+const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
+
+if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
+  throw new Error(
+    'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together.'
+  )
+}
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
@@ -321,6 +329,19 @@ export default defineConfig({
         ? {
             '/api/view': gcsRedirectProxyConfig,
             '/api/viewvideo': gcsRedirectProxyConfig
+          }
+        : {}),
+
+      ...(DEV_AGENT_URL && DEV_AGENT_SESSION_TOKEN
+        ? {
+            '/api/agent': {
+              target: DEV_AGENT_URL,
+              ws: true,
+              headers: {
+                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
+              },
+              rewrite: (path: string) => path.replace(/^\/api/, '')
+            }
           }
         : {}),
 
