@@ -1,4 +1,9 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -495,27 +500,31 @@ describe('EcsFollowerAdapter integration', () => {
   // FEC-4 current-risk reproducer (node-type-change-semantics). The applier's
   // only node-write op is `add_node`, and a same-id `add_node` always
   // `mset`s a brand-new Y.Map at that key (applier.js `applyAddNode`) rather
-  // than patching the existing one — there is no `update_node` op, so a
+  // than patching the existing one. There is no `update_node` op, so a
   // class/type change can only ever arrive as a winning re-add, and
   // ecsFollowerAdapter.ts does pair that root 'update' action with a
   // deleteNode+addNode batch (not a same-node in-place patch).
   //
-  // But that pairing does not fully converge: `applyQueuedFrame` also
-  // re-queues `connect` for every link that referenced the retyped node
-  // (`replacedNodeIds` walk, ecsFollowerAdapter.ts:223-239), reading the
-  // link's slot indices from the OLD, now-stale semantic shape still sitting
-  // in the Yjs doc's `links` map. When the new type no longer has a matching
-  // slot (Source's output slot 0 vs. Sink's zero outputs here), graphMutations
-  // `prepare()`'s `connect` validation rejects with "connect origin slot 0
-  // does not exist" — and because `batch()` validates the WHOLE queued batch
-  // atomically before committing anything (graphMutations.ts:325 `prepare`
-  // returning a string aborts prepare() for every queued mutation, including
-  // the deleteNode/addNode pair that would have retyped the node), the entire
-  // frame is dropped. The node is left rendered as its OLD type — the exact
-  // "already-rendered type uncorrected" gap this row exists to catch, just
-  // via atomic-batch-abort rather than a coalesced-no-op read. Do not fix the
-  // adapter/batch semantics here — this is risk evidence only.
-  it('leaves the old type rendered when a same-id retype batch is rejected by a stale link revalidation', () => {
+  // Two layers leave the retype unconverged. First the doc: `applyAddNode`
+  // ends with `reconcileNodeLinkRefs`, which rewrites only the re-added
+  // node's `inputs[].link` / `outputs[].links` from the live `links` map and
+  // never severs a link whose slot no longer exists on the new payload. Link
+  // 9 therefore stays in `links` as [9, 1, 0, 2, 0] while node 1 has zero
+  // outputs. Then the projection: `applyQueuedFrame` re-queues `connect` for
+  // every link that referenced a replaced node (the `replacedNodeIds` walk),
+  // and `readSemanticLink` attaches `originOutputs` read from the NEW node in
+  // the doc. With Source's output slot 0 gone on Sink, graphMutations
+  // `prepare()`'s `connect` case returns "connect origin slot 0 does not
+  // exist", and because `batch()` validates the WHOLE queued batch before
+  // committing anything (a string from `prepare()` makes `batch()` `fail()`
+  // without a single store write, including the deleteNode/addNode pair that
+  // would have retyped the node), the entire frame is dropped. The node is
+  // left rendered as its OLD type, the exact "already-rendered type
+  // uncorrected" gap this row exists to catch, just via atomic-batch-abort
+  // rather than a coalesced-no-op read. Do not fix the applier, adapter or
+  // batch semantics here; this is risk evidence only, and it is expected to
+  // go red when FEC-4 lands.
+  it('FEC-4 current risk: leaves the old type rendered when a same-id retype batch is rejected by a stale link revalidation', () => {
     const host = mint(
       {
         nodes: [
@@ -588,11 +597,19 @@ describe('EcsFollowerAdapter integration', () => {
       catalog
     )
     expect(result.outcomes).toEqual([{ op_id: 'retype', outcome: 'applied' }])
+    // Doc-level half of the risk: the applier re-derived node 1's slot refs
+    // but left link 9 in the live `links` map with an origin slot the Sink
+    // payload no longer has.
+    expect(nodesMap(host).get('1')?.get('outputs')).toHaveLength(0)
+    expect(linksMap(host).get('9')).toEqual([9, 1, 0, 2, 0, 'IMAGE'])
     const update = Y.encodeStateAsUpdate(host, before)
     follower.applyRemoteUpdate(update)
     // The doc-layer op applied cleanly (asserted above); the follower frame
     // is still reported as consumed (no seq gap, no error state) even though
     // the projection batch beneath it silently rejected.
+    const rejected = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
     expect(
       adapter.applyFrame({
         workflowId: 'wf',
@@ -602,6 +619,11 @@ describe('EcsFollowerAdapter integration', () => {
         opIds: ['retype']
       })
     ).toBe(true)
+    // Pin the mechanism, not just the outcome: any other `prepare()`
+    // rejection would also leave node 1 untouched and keep this test green.
+    expect(rejected).toHaveBeenCalledWith(
+      expect.stringContaining('connect origin slot 0 does not exist')
+    )
 
     const stillSource = useNodeDataStore()
       .getGraphNodesFor('root', 'root')
