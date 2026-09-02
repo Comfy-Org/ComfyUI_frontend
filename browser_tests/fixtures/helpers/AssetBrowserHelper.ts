@@ -8,7 +8,6 @@ export type TagMutationCall = {
   body: { tags: string[] }
 }
 
-const modelFoldersRoutePattern = /\/api\/experiment\/models(?:\?.*)?$/
 const assetTagsRoutePattern = /\/api\/assets\/([^/]+)\/tags(?:\?.*)?$/
 
 export class AssetBrowserHelper {
@@ -18,21 +17,6 @@ export class AssetBrowserHelper {
   }> = []
 
   constructor(private readonly page: Page) {}
-
-  async mockModelFolders(
-    folders: Array<{ name: string; folders: string[] }>
-  ): Promise<void> {
-    const handler = async (route: Route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(folders)
-      })
-    }
-
-    this.routeHandlers.push({ pattern: modelFoldersRoutePattern, handler })
-    await this.page.route(modelFoldersRoutePattern, handler)
-  }
 
   async mockAssetTags(
     initialAssets?: Array<{ id: string; tags: string[] }>

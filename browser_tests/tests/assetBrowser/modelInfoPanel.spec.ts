@@ -67,7 +67,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     await comfyPage.assetApi.mock()
 
     assetBrowserHelper = new AssetBrowserHelper(comfyPage.page)
-    await assetBrowserHelper.mockModelFolders(MOCK_MODEL_FOLDERS)
+    await comfyPage.modelLibrary.mockModelFolders(MOCK_MODEL_FOLDERS)
     tagCalls = await assetBrowserHelper.mockAssetTags([
       { id: EDITABLE_MODEL.id, tags: [...(EDITABLE_MODEL.tags ?? [])] },
       { id: IMMUTABLE_MODEL.id, tags: [...(IMMUTABLE_MODEL.tags ?? [])] },
@@ -86,6 +86,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
 
   test.afterEach(async ({ comfyPage }) => {
     await assetBrowserHelper.clearMocks()
+    await comfyPage.modelLibrary.clearMocks()
     await comfyPage.assetApi.clearMocks()
   })
 
