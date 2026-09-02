@@ -39,6 +39,16 @@ function getRegistryAccelerator(deviceType?: string): RegistryAccelerator {
   return 'CPU'
 }
 
+const ACCELERATOR_ALIASES: Record<string, RegistryAccelerator> = {
+  'gpu :: nvidia cuda': 'CUDA',
+  'gpu :: amd rocm': 'ROCm',
+  'gpu :: apple metal': 'Metal',
+  cuda: 'CUDA',
+  rocm: 'ROCm',
+  metal: 'Metal',
+  cpu: 'CPU'
+}
+
 /**
  * Checks OS compatibility
  * @param supported Supported OS list from Registry (null/undefined = all OS supported)
@@ -96,6 +106,32 @@ export function checkAcceleratorCompatibility(
   }
 
   return null
+}
+
+/**
+ * Normalizes accelerator values from the Registry API.
+ *
+ * Registry classifiers may contain the full `GPU :: vendor :: backend` form,
+ * while compatibility checks use the frontend's canonical short names.
+ * Unknown values are ignored; a list with no recognized accelerator means the
+ * Registry did not supply an enforceable accelerator constraint.
+ */
+export function normalizeAcceleratorList(
+  acceleratorValues?: string[] | null
+): RegistryAccelerator[] | undefined {
+  if (isNil(acceleratorValues) || isEmpty(acceleratorValues)) return undefined
+
+  const validAccelerators: RegistryAccelerator[] = []
+  for (const value of acceleratorValues) {
+    const normalizedValue = value.trim().toLowerCase()
+    const accelerator = ACCELERATOR_ALIASES[normalizedValue]
+
+    if (accelerator && !validAccelerators.includes(accelerator)) {
+      validAccelerators.push(accelerator)
+    }
+  }
+
+  return validAccelerators.length > 0 ? validAccelerators : undefined
 }
 
 /**
