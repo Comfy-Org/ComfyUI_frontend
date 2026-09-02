@@ -5,7 +5,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick } from 'vue'
 
 import type * as FocusNodeModule from '@/composables/canvas/useFocusNode'
 
@@ -2991,7 +2991,7 @@ describe('AgentPanelRoot workflow binding', () => {
       animateToBounds,
       canvas: { focus: state.focus, width: 1000, height: 600 }
     })
-    hostStores.canvas.canvas = state.canvas
+    hostStores.canvas.canvas = markRaw(state.canvas)
     focusNodeMode.useRealImplementation = true
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
       callback(0)
