@@ -70,9 +70,9 @@ export class AssetBrowserModal {
       'button',
       { name: /copy all/i }
     )
-    this.triggerPhraseButtons = this.modelDescriptionSection
-      .locator('button')
-      .filter({ hasText: /.+/ })
+    this.triggerPhraseButtons = this.modelDescriptionSection.locator(
+      '[data-trigger-phrase]'
+    )
 
     this.selectModelPrompt = this.root.locator('.wrap-break-word.text-muted')
   }
