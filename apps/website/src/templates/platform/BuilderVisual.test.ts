@@ -4,27 +4,13 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import type * as VueUse from '@vueuse/core'
-
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '../../test/fakeIntersectionObserver'
 import BuilderVisual from './BuilderVisual.vue'
-
-// The gate reads element and document visibility, neither of which happy-dom
-// drives on its own, so both are stubbed to make the two states reachable.
-const hoisted = vi.hoisted(() => ({
-  onScreen: true,
-  documentVisibility: 'visible' as DocumentVisibilityState
-}))
-
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueUse>()
-  const { computed } = await import('vue')
-  return {
-    ...actual,
-    useElementVisibility: () => computed(() => hoisted.onScreen),
-    useDocumentVisibility: () => computed(() => hoisted.documentVisibility)
-  }
-})
 
 /** Every animation in the diagram, each of which costs main-thread work. */
 const ANIMATION_CLASSES = [
@@ -43,20 +29,26 @@ function countAnimated(container: Element) {
 }
 
 describe('BuilderVisual', () => {
+  let visibilityState: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
-    hoisted.onScreen = true
-    hoisted.documentVisibility = 'visible'
+    stubIntersectionObserver()
+    visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
   })
 
-  it('animates while on screen in a visible tab', () => {
+  it('animates while on screen in a visible tab', async () => {
     const { container } = render(BuilderVisual)
+    await setAllIntersecting(true)
 
     expect(countAnimated(container)).toBe(9)
   })
 
-  it('parks every animation once scrolled out of view', () => {
-    hoisted.onScreen = false
+  it('parks every animation once scrolled out of view', async () => {
     const { container } = render(BuilderVisual)
+    await setAllIntersecting(true)
+    await setAllIntersecting(false)
 
     // None of these can be composited, so off-screen they would otherwise
     // keep doing main-thread work every frame.
@@ -65,9 +57,12 @@ describe('BuilderVisual', () => {
     expect(container.querySelector('svg')).toBeTruthy()
   })
 
-  it('parks every animation while the tab is hidden', () => {
-    hoisted.documentVisibility = 'hidden'
+  it('parks every animation while the tab is hidden', async () => {
     const { container } = render(BuilderVisual)
+    await setAllIntersecting(true)
+    visibilityState.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
 
     expect(countAnimated(container)).toBe(0)
   })
