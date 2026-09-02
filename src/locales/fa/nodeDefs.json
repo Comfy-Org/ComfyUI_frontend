@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک تصویر فریم اول و یک تصویر اختیاری فریم آخر ویدئو تولید می‌کند. نسبت ابعاد ویدئو از تصاویر ارائه‌شده پیروی می‌کند.",
     "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک prompt متنی ویدئو تولید می‌کند.",
     "display_name": "تبدیل متن به ویدیو MiniMax H3",
     "inputs": {
       "control_after_generate": {

@@ -12934,7 +12934,7 @@
   },
   "MinimaxHailuo03FirstLastFrameNode": {
     "display_name": "MiniMax H3 First-Last-Frame to Video",
-    "description": "Generate video from a first frame image and an optional last frame image using the MiniMax H3 model. The aspect ratio of the video follows the supplied images.",
+    "description": "Generate video from a first frame image and an optional last frame image using the MiniMax H3 models. The aspect ratio of the video follows the supplied images.",
     "inputs": {
       "model": {
         "name": "model",
@@ -13052,7 +13052,7 @@
   },
   "MinimaxHailuo03TextToVideoNode": {
     "display_name": "MiniMax H3 Text to Video",
-    "description": "Generate video from a text prompt using the MiniMax H3 model.",
+    "description": "Generate video from a text prompt using the MiniMax H3 models.",
     "inputs": {
       "model": {
         "name": "model",

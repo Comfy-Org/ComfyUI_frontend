@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
+    "description": "أنشئ فيديو من صورة إطار أول وصورة إطار أخير اختيارية باستخدام نماذج MiniMax H3. تتبع نسبة أبعاد الفيديو الصور المُدخلة.",
     "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "إنشاء فيديو من نص باستخدام نموذج MiniMax H3.",
+    "description": "أنشئ فيديو من مطالبة نصية باستخدام نماذج MiniMax H3.",
     "display_name": "MiniMax H3 تحويل نص إلى فيديو",
     "inputs": {
       "control_after_generate": {

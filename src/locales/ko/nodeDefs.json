@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로부터 영상을 생성합니다. 영상의 종횡비는 제공된 이미지를 따릅니다.",
+    "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로 동영상을 생성합니다. 동영상의 가로세로 비율은 제공된 이미지를 따릅니다.",
     "display_name": "MiniMax H3 첫-마지막 프레임 영상 생성",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 모델을 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "description": "MiniMax H3 모델을 사용하여 텍스트 프롬프트로 동영상을 생성합니다.",
     "display_name": "MiniMax H3 텍스트 기반 비디오",
     "inputs": {
       "control_after_generate": {

@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Genera un video da un'immagine del primo frame e, opzionalmente, da un'immagine dell'ultimo frame utilizzando il modello MiniMax H3. Il rapporto d'aspetto del video segue quello delle immagini fornite.",
+    "description": "Genera un video a partire da un'immagine del primo fotogramma e da un'immagine opzionale dell'ultimo fotogramma utilizzando i modelli MiniMax H3. Le proporzioni del video seguono le immagini fornite.",
     "display_name": "MiniMax H3 Da Primo-Ultimo Frame a Video",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Genera un video da un prompt testuale utilizzando il modello MiniMax H3.",
+    "description": "Genera un video da un prompt di testo utilizzando i modelli MiniMax H3.",
     "display_name": "MiniMax H3 Testo a Video",
     "inputs": {
       "control_after_generate": {
