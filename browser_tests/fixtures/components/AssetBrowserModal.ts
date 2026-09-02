@@ -23,7 +23,6 @@ export class AssetBrowserModal {
   public readonly userDescriptionTextarea: Locator
   public readonly triggerPhrasesCopyAllButton: Locator
   public readonly triggerPhraseButtons: Locator
-  public readonly selectModelPrompt: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.locator('[data-component-id="AssetBrowserModal"]')
@@ -73,8 +72,6 @@ export class AssetBrowserModal {
     this.triggerPhraseButtons = this.modelDescriptionSection.locator(
       '[data-trigger-phrase]'
     )
-
-    this.selectModelPrompt = this.root.locator('.wrap-break-word.text-muted')
   }
 
   async clickAsset(name: string, assetId?: string): Promise<void> {
