@@ -125,6 +125,7 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'packages/*/dist/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
