@@ -8,10 +8,7 @@ import {
   IMMUTABLE_MODEL,
   MOCK_MODEL_FOLDERS
 } from '@e2e/fixtures/data/assetBrowserFixtures'
-import {
-  assetToDisplayName,
-  AssetBrowserHelper
-} from '@e2e/fixtures/helpers/AssetBrowserHelper'
+import { AssetBrowserHelper } from '@e2e/fixtures/helpers/AssetBrowserHelper'
 import type { TagMutationCall } from '@e2e/fixtures/helpers/AssetBrowserHelper'
 import { withAsset } from '@e2e/fixtures/helpers/AssetHelper'
 
@@ -25,23 +22,17 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
   let tagCalls: { getCalls(): TagMutationCall[] }
 
   async function focusEditableModel() {
-    await modal.clickAsset(
-      assetToDisplayName(EDITABLE_MODEL),
-      EDITABLE_MODEL.id
-    )
+    await modal.clickAsset(EDITABLE_MODEL.id)
     await modal.waitForAssetContent('cinematic_details_v2.safetensors')
   }
 
   async function focusImmutableModel() {
-    await modal.clickAsset(
-      assetToDisplayName(IMMUTABLE_MODEL),
-      IMMUTABLE_MODEL.id
-    )
+    await modal.clickAsset(IMMUTABLE_MODEL.id)
     await modal.waitForAssetContent('sdxl_base_1.0.safetensors')
   }
 
   async function focusBareModel() {
-    await modal.clickAsset(assetToDisplayName(BARE_MODEL), BARE_MODEL.id)
+    await modal.clickAsset(BARE_MODEL.id)
     await modal.waitForAssetContent('bare_checkpoint.safetensors')
   }
 

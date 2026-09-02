@@ -74,18 +74,10 @@ export class AssetBrowserModal {
     )
   }
 
-  async clickAsset(name: string, assetId?: string): Promise<void> {
-    const assetCard = assetId
-      ? this.assetGrid.locator(
-          `[data-component-id="AssetCard"][data-asset-id="${assetId}"]`
-        )
-      : this.assetGrid.locator('[data-component-id="AssetCard"]').filter({
-          has: this.page.getByRole('heading', {
-            name,
-            exact: true
-          })
-        })
-
+  async clickAsset(assetId: string): Promise<void> {
+    const assetCard = this.assetGrid.locator(
+      `[data-component-id="AssetCard"][data-asset-id="${assetId}"]`
+    )
     await assetCard.first().click()
   }
 
