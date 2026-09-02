@@ -67,7 +67,6 @@
     "test:custom-nodes:self-check": "pnpm test:custom-nodes:watch -g \"self-check\"",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run",
-    "test:w10-baseline": "node scripts/w10-baseline.mjs",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
