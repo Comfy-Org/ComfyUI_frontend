@@ -11,13 +11,19 @@ import {
   watch
 } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
-import type { ReportSources } from './crdtDebugReport'
+import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
@@ -372,9 +378,11 @@ async function copyReport() {
   clearTimeout(reportCopyReset)
   reportCopyState.value = 'busy'
   try {
+    const crdt = snapshot?.() ?? docState.value ?? fallbackSnapshot()
     const report = await collectCrdtDebugReport({
-      crdt: snapshot?.() ?? docState.value ?? fallbackSnapshot(),
+      crdt,
       events: devEvents.value,
+      identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
       sources: reportSources.value,
@@ -408,6 +416,50 @@ function serializeActiveWorkflow(): unknown {
     return app.rootGraph.serialize()
   } catch (error) {
     return { error: String(error) }
+  }
+}
+
+/**
+ * The IDs a backend engineer needs to find this session in Datadog/logs —
+ * see {@link ReportIdentifiers}. Collected here rather than inside
+ * `crdtDebugReport.ts` because every value lives behind a Pinia store or
+ * composable, and that module deliberately stays framework-store-free.
+ *
+ * Per-field try/catch, not one wrapping try/catch: a store that throws
+ * (uninitialized outside a real app mount, e.g. in a test) must not blank
+ * out the eight other identifiers that read fine — the same fault-isolation
+ * principle `attempt()` uses for the async sources in crdtDebugReport.ts.
+ */
+function collectIdentifiers(crdt: CrdtDebugSnapshot): ReportIdentifiers {
+  const read = <T>(get: () => T): T | null => {
+    try {
+      return get()
+    } catch {
+      return null
+    }
+  }
+
+  const recentJobIds =
+    read(() => {
+      const queueStore = useQueueStore()
+      return [
+        ...queueStore.runningTasks,
+        ...queueStore.pendingTasks,
+        ...queueStore.historyTasks
+      ].map((task) => task.jobId)
+    }) ?? []
+
+  return {
+    userId: read(() => useCurrentUser().resolvedUserInfo.value?.id ?? null),
+    workspaceId: read(() => useTeamWorkspaceStore().activeWorkspaceId ?? null),
+    tabId: crdt.tabId,
+    activeJobId: read(() => useExecutionStore().activeJobId ?? null),
+    recentJobIds,
+    workflowPath: read(() => useWorkflowStore().activeWorkflow?.path ?? null),
+    docId: crdt.status.workflowId ?? null,
+    clientId: read(() => api.clientId ?? null),
+    deployEnv: read(() => resolveDeployEnv() ?? null),
+    backendUrl: read(() => `${api.api_host}${api.api_base}`) ?? 'unknown'
   }
 }
 

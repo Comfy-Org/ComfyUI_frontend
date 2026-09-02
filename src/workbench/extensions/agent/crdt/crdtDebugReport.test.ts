@@ -27,7 +27,7 @@ vi.mock('@/platform/telemetry/reportError', () => ({
   reportError
 }))
 
-import type { ReportSources } from './crdtDebugReport'
+import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { collectCrdtDebugReport } from './crdtDebugReport'
 
@@ -53,6 +53,19 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   linkIds: ['1'],
   appliedOpIds: ['op1'],
   stamps: { '["widget","A","text"]': [1, 'human:u:t', 'op1'] }
+}
+
+const IDENTIFIERS: ReportIdentifiers = {
+  userId: 'user-42',
+  workspaceId: 'workspace-7',
+  tabId: 'tab-1',
+  activeJobId: 'prompt-99',
+  recentJobIds: ['prompt-98', 'prompt-97'],
+  workflowPath: 'workflows/my-flow.json',
+  docId: 'doc-1',
+  clientId: 'client-abc',
+  deployEnv: 'test-v2',
+  backendUrl: 'https://testcloud.comfy.org'
 }
 
 describe('collectCrdtDebugReport', () => {
@@ -96,6 +109,50 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
     expect(report).toContain('doc_update')
     expect(report).toContain('Document stamps')
+  })
+
+  it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      identifiers: IDENTIFIERS
+    })
+
+    const identifiersIndex = report.indexOf('## Identifiers')
+    expect(identifiersIndex).toBeGreaterThanOrEqual(0)
+    // "At the TOP" means before every other section, not merely present.
+    expect(report.indexOf('## CRDT state')).toBeGreaterThan(identifiersIndex)
+
+    for (const value of [
+      IDENTIFIERS.userId,
+      IDENTIFIERS.workspaceId,
+      IDENTIFIERS.tabId,
+      IDENTIFIERS.activeJobId,
+      ...IDENTIFIERS.recentJobIds,
+      IDENTIFIERS.workflowPath,
+      IDENTIFIERS.docId,
+      IDENTIFIERS.clientId,
+      IDENTIFIERS.deployEnv,
+      IDENTIFIERS.backendUrl
+    ]) {
+      expect(report).toContain(String(value))
+    }
+    expect(report).toContain(__COMFYUI_FRONTEND_COMMIT__)
+    expect(report).toContain(__COMFYUI_FRONTEND_VERSION__)
+  })
+
+  it('writes explicit "none" rows instead of omitting an unset identifier', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: []
+    })
+
+    const identifiersIndex = report.indexOf('## Identifiers')
+    const nextSectionIndex = report.indexOf('##', identifiersIndex + 1)
+    const identifiersBlock = report.slice(identifiersIndex, nextSectionIndex)
+
+    expect(identifiersBlock).toContain('none')
+    expect(identifiersBlock).not.toMatch(/undefined|\[object Object\]/)
   })
 
   it("puts the tester's own words about expected merge behaviour first", async () => {

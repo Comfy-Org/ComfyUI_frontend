@@ -7,7 +7,10 @@ vi.mock('@/scripts/api', () => ({
     getSystemStats: () => Promise.reject(new Error('offline')),
     getLogs: () => Promise.reject(new Error('offline')),
     getSettings: () => Promise.reject(new Error('offline')),
-    apiURL: (path: string) => `http://backend${path}`
+    apiURL: (path: string) => `http://backend${path}`,
+    clientId: 'client-test-1',
+    api_host: 'localhost:8188',
+    api_base: ''
   }
 }))
 vi.mock('@/scripts/app', () => ({
@@ -217,6 +220,31 @@ describe('CrdtDevPanel', () => {
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
     expect(copyReportButton.textContent).toContain('Copy failed')
+
+    collectSpy.mockRestore()
+  })
+
+  it('passes an identifiers block to the report collector on every copy', async () => {
+    const collectSpy = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockResolvedValueOnce('# report')
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    await user.click(screen.getByTestId('crdt-dev-panel-copy-report'))
+
+    expect(collectSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identifiers: expect.objectContaining({
+          tabId: null,
+          docId: 'doc-1',
+          clientId: 'client-test-1',
+          backendUrl: 'localhost:8188',
+          recentJobIds: []
+        })
+      })
+    )
 
     collectSpy.mockRestore()
   })

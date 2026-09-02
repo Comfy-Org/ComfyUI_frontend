@@ -102,9 +102,63 @@ export const DEFAULT_REPORT_SOURCES: ReportSources = {
   workflow: false
 }
 
+/**
+ * The IDs a backend engineer needs to find this session in Datadog/logs,
+ * without reading the rest of the report. None of these are secrets — they
+ * are the join keys support and backend already search by — so this block
+ * is included unconditionally, unlike the opt-in {@link ReportSources}.
+ *
+ * Collected by the caller (the panel component) rather than read directly in
+ * this module, because every value here lives behind a Pinia store or a
+ * composable and this module deliberately stays framework-store-free — see
+ * the file header on why collection is fault-tolerant per source instead.
+ */
+export interface ReportIdentifiers {
+  /** Comfy account id, from Firebase or an API-key session. */
+  userId: string | null
+  /** Active team/workspace id, when the tester is in one. */
+  workspaceId: string | null
+  /** Per-tab CRDT actor id — the closest thing to a "session id" today. */
+  tabId: string | null
+  /** The prompt/job id currently executing, if any. */
+  activeJobId: string | null
+  /** Prompt/job ids from queue history, most recent first. */
+  recentJobIds: readonly string[]
+  /** Active workflow's path, which is what the workflow store keys on. */
+  workflowPath: string | null
+  /** CRDT document id — the same id as {@link CrdtDebugSnapshot.status.workflowId}. */
+  docId: string | null
+  /** ComfyUI server-assigned websocket session id (`api.clientId`). */
+  clientId: string | null
+  /** `location.hostname`-derived deploy env (`prod-v2`/`stg-v2`/`test-v2`/…). */
+  deployEnv: string | null
+  /** The ComfyUI server this client is talking to (`api.api_host` + `api.api_base`). */
+  backendUrl: string
+}
+
+/** Every field unknown — the fallback when a caller has none to report. */
+export const EMPTY_REPORT_IDENTIFIERS: ReportIdentifiers = {
+  userId: null,
+  workspaceId: null,
+  tabId: null,
+  activeJobId: null,
+  recentJobIds: [],
+  workflowPath: null,
+  docId: null,
+  clientId: null,
+  deployEnv: null,
+  backendUrl: 'unknown'
+}
+
 export interface CrdtDebugReportInput {
   crdt: CrdtDebugSnapshot
   events: readonly DevEvent[]
+  /**
+   * IDs for finding this session in Datadog/logs. The real caller
+   * (`CrdtDevPanel.vue`) always supplies this; optional here only so a
+   * synthetic input (a test) is not forced to construct every field.
+   */
+  identifiers?: ReportIdentifiers
   /** Which sensitive sources the tester agreed to include. */
   sources?: ReportSources
   /** Whatever the tester typed into "what did you expect instead?". */
@@ -265,6 +319,32 @@ function systemSection(stats: SystemStats): string {
   return lines.join('\n')
 }
 
+/**
+ * Every value here is a search key, not a secret — a backend engineer greps
+ * Datadog by exactly these fields, so `none`/`unknown` is written out loud
+ * rather than omitting the row: a missing bullet reads as "not collected",
+ * an explicit `none` reads as "collected, and there isn't one".
+ */
+function identifiersSection(identifiers: ReportIdentifiers): string {
+  return [
+    `- **User id:** ${identifiers.userId ?? 'none (not logged in)'}`,
+    `- **Workspace id:** ${identifiers.workspaceId ?? 'none'}`,
+    `- **Client id:** ${identifiers.clientId ?? 'unknown'}`,
+    `- **Tab/session id:** ${identifiers.tabId ?? 'unknown'}`,
+    `- **Active job/prompt id:** ${identifiers.activeJobId ?? 'none'}`,
+    `- **Recent job/prompt ids:** ${identifiers.recentJobIds.length ? identifiers.recentJobIds.join(', ') : 'none'}`,
+    `- **Workflow path:** ${identifiers.workflowPath ?? 'none'}`,
+    `- **CRDT doc id:** ${identifiers.docId ?? 'none'}`,
+    `- **Backend URL:** ${identifiers.backendUrl}`,
+    `- **Deploy env:** ${identifiers.deployEnv ?? 'unknown'}`,
+    `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
+    `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
+    `- **Distribution:** ${DISTRIBUTION}`,
+    `- **Timestamp (UTC):** ${new Date().toISOString()}`,
+    `- **User agent:** ${navigator.userAgent}`
+  ].join('\n')
+}
+
 function crdtSection(crdt: CrdtDebugSnapshot): string {
   return [
     `- **Enabled:** ${crdt.status.enabled}`,
@@ -318,7 +398,10 @@ export async function collectCrdtDebugReport(
 
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
-    `Generated ${new Date().toISOString()}`
+    `Generated ${new Date().toISOString()}`,
+    '## Identifiers',
+    'Paste this block into a bug report or search Datadog/logs by any of these fields.',
+    identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS)
   ]
 
   if (input.testerNote?.trim()) {
