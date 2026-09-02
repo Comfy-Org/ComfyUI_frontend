@@ -389,6 +389,35 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('stops retrying an in-flight batch after the subscription is refused', () => {
+    vi.useFakeTimers()
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')

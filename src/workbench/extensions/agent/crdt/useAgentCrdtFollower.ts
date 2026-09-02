@@ -124,7 +124,9 @@ export function useAgentCrdtFollower(
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
   const sender = createOpSender({
-    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    sendOps: (target, tab, ops) =>
+      bridge.subscribedWorkflowId === target &&
+      client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
