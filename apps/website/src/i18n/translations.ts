@@ -183,6 +183,18 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
+  'modelDiscovery.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'modelDiscovery.heading': {
+    en: 'All the latest models,\nready to run',
+    'zh-CN': '最新模型，\n即刻运行'
+  },
+  'modelDiscovery.subtitle': {
+    en: 'Seedance, Kling, Veo, Flux, Nano Banana and more, from Comfy Router. Pick one, set your inputs, hit Run.',
+    'zh-CN':
+      'Seedance、Kling、Veo、Flux、Nano Banana 等模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
+  },
+  'modelDiscovery.rowLabel': { en: 'Latest models', 'zh-CN': '最新模型' },
+  'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
 
   // Model release carousel (home page)
   'modelRelease.eyebrow': {

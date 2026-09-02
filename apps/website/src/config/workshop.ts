@@ -333,13 +333,12 @@ export function capabilitiesFor(
   return [...new Set(labels)].sort()
 }
 
-// The registry names some models "Model (Provider)"; the card already
-// shows the provider on its own line.
-function withoutProviderSuffix(name: string, provider?: string): string {
-  const suffix = provider ? `(${provider})` : undefined
-  return suffix && name.endsWith(suffix)
-    ? name.slice(0, -suffix.length).trim()
-    : name
+// The registry names some models "Model (Provider)" or "Model (API)"; the
+// card already shows the provider, and every Workshop model runs via API.
+function withoutRegistrySuffix(name: string, provider?: string): string {
+  const suffixes = ['(API)', ...(provider ? [`(${provider})`] : [])]
+  const suffix = suffixes.find((candidate) => name.endsWith(candidate))
+  return suffix ? name.slice(0, -suffix.length).trim() : name
 }
 
 function toWorkshopModel(model: Model): WorkshopModel {
@@ -353,7 +352,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
       : overrides.creditsPerRun
   return {
     slug: model.slug,
-    name: withoutProviderSuffix(model.displayName, provider),
+    name: withoutRegistrySuffix(model.displayName, provider),
     workflowCount: model.workflowCount,
     href: modelDetailHref(model.slug),
     routerId: routerIdFor(model.slug, provider),

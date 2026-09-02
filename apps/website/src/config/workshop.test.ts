@@ -9,6 +9,7 @@ import {
   countByUseCase,
   decodeGeneratedModels,
   filterWorkshopModels,
+  getWorkshopModel,
   isRouterModel,
   sortWorkshopModels,
   splitTask,
@@ -256,10 +257,12 @@ describe('countByUseCase', () => {
 })
 
 describe('workshopModels', () => {
-  it('drops a provider suffix the registry put in the name', () => {
+  it('drops provider and API suffixes the registry put in the name', () => {
     const seedance = workshopModels.find((m) => m.provider === 'ByteDance')
     expect(seedance?.name).toBe('Seedance')
+    expect(getWorkshopModel('flux-2-api')?.name).toBe('Flux 2')
     for (const model of workshopModels) {
+      expect(model.name).not.toMatch(/\((API|Provider)\)$/)
       if (model.provider)
         expect(model.name).not.toContain(`(${model.provider})`)
     }
