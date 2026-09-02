@@ -8,10 +8,123 @@
     "share": "مشاركة",
     "shareTooltip": "مشاركة سير العمل"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "التكلفة لكل تشغيل",
-    "title": "عقد API",
-    "totalCost": "التكلفة الإجمالية"
+  "agent": {
+    "addFromAssets": "إضافة من لوحة الأصول",
+    "addNodesFromGraph": "إضافة عقد من الرسم البياني",
+    "addPromptToSend": "أضف مطالبة لإرسالها",
+    "addToPrompt": "إضافة إلى المطالبة",
+    "alpha": "ألفا",
+    "askComfyAgent": "اسأل Comfy Agent",
+    "assetNotAttachable": "يمكن إرفاق الصور والفيديو والصوت ونماذج 3D والملفات النصية",
+    "attach": "إرفاق ملف",
+    "attachFiles": "إرفاق صور أو ملفات",
+    "attachmentTooLarge": "حجم {name} أكبر من {limit}",
+    "attachmentUploadFailed": "تعذر تحميل {name}",
+    "backToPreviousChat": "العودة إلى المحادثة السابقة",
+    "caption": "قد يرتكب وكيل الذكاء الاصطناعي أخطاءً",
+    "captionExpanded": "قد يرتكب وكيل الذكاء الاصطناعي أخطاءً. تحقق من ردك مرة أخرى.",
+    "changeWorkflowForChat": "تغيير سير العمل لهذه المحادثة",
+    "chatOptions": "خيارات المحادثة",
+    "chooseWorkflow": "اختر سير عمل",
+    "chooseWorkflowForChat": "اختر سير عمل لهذه الدردشة",
+    "close": "إغلاق",
+    "coachBody": "اطلب منه إنشاء الرسوم البيانية أو تحريرها.",
+    "coachTitle": "تعرّف على الوكيل",
+    "copied": "تم النسخ!",
+    "copy": "نسخ",
+    "copyMarkdown": "نسخ بصيغة markdown",
+    "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
+    "crdtConnected": "متصل",
+    "crdtDisconnected": "غير متصل",
+    "crdtNoDocument": "لا يوجد مستند",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} تحديثات · {frame}",
+    "credits": "الرصيد",
+    "delete": "حذف",
+    "dismiss": "تجاهل",
+    "dontWorkInWorkflow": "لا تعمل ضمن سير عمل",
+    "downloadAssets": "تنزيل الأصول",
+    "dragAndDropAssets": "اسحب الأصول وأفلتها هنا",
+    "focusNode": "إظهار على اللوحة",
+    "focusNodeLabel": "إظهار {node} على اللوحة",
+    "friend": "مرحبًا",
+    "gotIt": "فهمت",
+    "greeting": "مرحبًا {name}،",
+    "greetingQuestion": "ما الذي تريد إنشاءه؟",
+    "helpful": "مفيد",
+    "history": "سجل المحادثات",
+    "historyCurrent": "الحالية",
+    "historyEarlier": "سابقًا",
+    "historyEmpty": "لا توجد محادثات بعد",
+    "historyToday": "اليوم",
+    "historyYesterday": "أمس",
+    "latest": "الأحدث",
+    "loadFailed": "تعذر تحميل لوحة الوكيل.",
+    "malformedEvent": "أرسل الوكيل حدثًا تعذّر على هذه اللوحة قراءته",
+    "maximize": "تكبير اللوحة",
+    "mention": "الإشارة إلى عقدة",
+    "minimize": "تصغير اللوحة",
+    "modelAuto": "تلقائي",
+    "newChat": "محادثة جديدة",
+    "newChatTitle": "بلا عنوان",
+    "noNodesToMention": "لا توجد عُقد في سير العمل هذا",
+    "nodeSelection": {
+      "bannerSubtitle": "حدد عقدة واحدة أو عدة عقد لإضافتها كمرجع",
+      "bannerTitle": "إضافة عقد من الرسم البياني",
+      "exit": "الخروج من الوضع",
+      "selectNode": "تحديد عقدة"
+    },
+    "notHelpful": "غير مفيد",
+    "openWorkflowTab": "فتح {name}",
+    "placeholder": "صِف أفكارك، {'@'} للإشارة،\nأضف عقدًا من الرسم البياني أو اسحب الأصول وأفلتها",
+    "ranToolCalls": "تم تشغيل {count} استدعاء للأداة | تم تشغيل {count} استدعاءات للأداة",
+    "ranToolCallsTimed": "تم تشغيل {count} استدعاء للأداة لمدة {seconds} ثانية | تم تشغيل {count} استدعاءات للأداة لمدة {seconds} ثانية",
+    "remove": "إزالة",
+    "removeNodeLabel": "إزالة مرجع {node}",
+    "runModeAsk": "اسأل قبل تشغيل سير العمل",
+    "runModeAskDescription": "سيطلب Comfy الموافقة قبل كل تشغيل لسير العمل",
+    "runModeAuto": "تشغيل تلقائي دون موافقة",
+    "runModeAutoDescription": "سيشغّل Comfy سير العمل دون طلب إذن",
+    "runModeLimit": "تشغيل تلقائي مع حدود",
+    "runModeLimitDescription": "لن يطلب Comfy التأكيد إلا عندما يتجاوز تشغيل سير العمل حد رصيدك",
+    "runModeTriggerAsk": "اسأل",
+    "runModeTriggerAskTooltip": "اطلب الإذن",
+    "runModeTriggerAuto": "تلقائي",
+    "runModeTriggerAutoLimit": "تلقائي (محدود)",
+    "runModeTriggerAutoLimitTooltip": "اسأل عند بلوغ حد الرصيد",
+    "runModeTriggerAutoTooltip": "شغّل سير العمل دون إذن",
+    "runNotice": "يمكن للوكيل تعديل الرسم البياني. ستحتاج إلى النقر على «تشغيل» لتنفيذ سير العمل.",
+    "runNoticeExpanded": "يمكن للوكيل تعديل سير العمل الخاص بك. ستحتاج إلى النقر على «تشغيل» للتنفيذ.",
+    "runPermissions": "أذونات التشغيل",
+    "runPermissionsDescription": "اختر متى يحتاج الوكيل إلى موافقتك",
+    "saveChanges": "حفظ التغييرات",
+    "searchWorkflows": "ابحث في سير العمل",
+    "selectWorkflowToGenerate": "اختر سير عمل للإنشاء فيه",
+    "send": "إرسال",
+    "sendBusy": "يجري بالفعل إرسال رسالة",
+    "sendFailed": "تعذر إرسال الرسالة",
+    "showChatHistory": "إظهار سجل المحادثات",
+    "showLess": "إظهار أقل",
+    "showMore": "إظهار المزيد",
+    "skip": "تخطي",
+    "stop": "إيقاف",
+    "suggestedPrompts": [
+      "أنشئ بطة صفراء ترتدي قناع هوكي",
+      "اعرض سير العمل المحفوظ لدي",
+      "اعثر على أفضل سير عمل لتحسين دقة البشرة",
+      "اشرح العقدة المحددة",
+      "أنشئ سير عمل لتحويل صورة إلى فيديو باستخدام 3 نماذج"
+    ],
+    "switchWorkflow": "تبديل سير العمل",
+    "thinking": "جارٍ التفكير...",
+    "thought": "فكرة",
+    "thoughtTimed": "فكّر لمدة {seconds} ثوانٍ",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "نسي تفضيلًا",
+    "toolOpenedNewTab": "فتح علامة تبويب جديدة",
+    "toolSavedPreference": "حفظ تفضيلًا",
+    "toolSwitchedTabs": "بدّل علامات التبويب",
+    "untitledChat": "بلا عنوان",
+    "uploading": "جارٍ الرفع"
   },
   "apiNodesSignInDialog": {
     "message": "يحتوي سير العمل هذا على عقد API، والتي تتطلب تسجيل دخولك إلى حسابك لتشغيلها.",
@@ -977,6 +1090,7 @@
     "UPSCALE_MODEL": "نموذج التكبير",
     "VAE": "VAE",
     "VIDEO": "فيديو",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "فوكسل",
     "WAN_CAMERA_EMBEDDING": "تضمين كاميرا وان",
     "WEBCAM": "كاميرا ويب"
@@ -1073,6 +1187,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "واجه Comfy Agent خطأً في الخادم.",
+        "title": "خطأ في Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "تعذر تطبيق تعديل الوكيل على مستند سير العمل.",
+        "title": "فشل تعديل الوكيل"
+      },
+      "guard_trip": {
+        "desc": "لم يطابق تحديث وارد من الوكيل البنية المتوقعة لمستند سير العمل، لذا تم حظره.",
+        "title": "تم حظر تحديث الوكيل"
+      },
       "missing_node_type": {
         "desc": "نوع عقدة مفقود أو غير متوفر. قد يكون سير العمل تالفًا أو يحتاج إلى عقدة مخصصة.",
         "title": "نوع العقدة مفقود"
@@ -1080,6 +1206,14 @@
       "no_prompt": {
         "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام.",
         "title": "بيانات سير العمل فارغة"
+      },
+      "op_rejected": {
+        "desc": "رفض مستند سير العمل تعديلًا من الوكيل. قد تختلف اللوحة والمستند المشترك مؤقتًا حتى التحديث التالي.",
+        "title": "تم رفض تعديل الوكيل"
+      },
+      "prefix_abort": {
+        "desc": "توقفت دفعة من تعديلات الوكيل في منتصف الطريق. ستُعاد محاولة التعديلات المتبقية تلقائيًا.",
+        "title": "تم تطبيق تعديلات الوكيل جزئيًا"
       },
       "prompt_no_outputs": {
         "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة أو معاينة الصورة) لإنتاج نتيجة.",
@@ -1497,6 +1631,8 @@
     "addNewKeybinding": "إضافة اختصار مفتاح جديد",
     "addNode": "إضافة عقدة...",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
+    "agentModified": "حدّث الوكيل سير العمل هذا",
+    "agentWorking": "يعمل الوكيل على سير العمل هذا",
     "all": "الكل",
     "allKeybindingsReset": "تمت إعادة تعيين جميع اختصارات المفاتيح إلى الوضع الافتراضي",
     "amount": "الكمية",
@@ -1715,6 +1851,7 @@
     "moreWorkflows": "المزيد من سير العمل",
     "mostRelevant": "الأكثر صلة",
     "multiSelectDropdown": "قائمة منسدلة متعددة الاختيار",
+    "mute": "كتم الصوت",
     "nMoreKeybindings": "+ {count} المزيد",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "الاسم",
@@ -1870,6 +2007,7 @@
     "triggerPhrase": "عبارة التشغيل",
     "unknownError": "خطأ غير معروف",
     "unknownFile": "ملف غير معروف",
+    "unmute": "إلغاء كتم الصوت",
     "untitled": "بدون عنوان",
     "update": "تحديث",
     "updateAvailable": "تحديث متاح",
@@ -2409,8 +2547,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "العقد الأساسية من الإصدار {version}:",
-    "outdatedVersion": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI ({version}). قد لا تعمل بعض العقد بشكل صحيح.",
-    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
+    "newerVersionRequired": "تتطلب بعض العقد إصدارًا أحدث من ComfyUI (الحالي: {version}). يُرجى التحديث لاستخدام جميع العقد.",
+    "newerVersionRequiredGeneric": "تتطلب بعض العقد إصدارًا أحدث من ComfyUI. يُرجى التحديث لاستخدام جميع العقد.",
     "unknownVersion": "غير معروف"
   },
   "logsTerminal": {
@@ -3058,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سيجمات",
     "sound": "صوت",
@@ -3221,26 +3360,15 @@
     "done": "تم",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "من صورة إلى فيديو · 5 ثوانٍ",
-          "title": "حرّكها"
-        },
-        "body": "كل منها يبدأ من الصورة التي أنشأتها للتو.",
-        "explore": "تصفح جميع القوالب",
-        "fallback": {
+        "dismiss": "ليس الآن",
+        "explore": "استكشف القوالب",
+        "noTour": {
           "body": "تصفح القوالب واختر شيئًا لإنشائه.",
-          "title": "وهناك مئات الخيارات الأخرى"
+          "title": "المزيد من حيث أتى ذلك"
         },
-        "loadFailed": "تعذر تحميل ذلك القالب. يُرجى المحاولة مرة أخرى.",
-        "restyle": {
-          "detail": "نموذج شريك · أي خطة مدفوعة",
-          "title": "أعد تصميمها باستخدام Nano Banana"
-        },
-        "title": "نتيجتك الأولى. إليك ما التالي.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "الصورة نفسها، تفاصيل أكثر",
-          "title": "حسّن دقتها"
+        "ran": {
+          "body": "لقد أنشأت للتو أول واحد. استكشف ما يمكنك إنشاؤه أيضًا.",
+          "title": "كان هذا واحدًا من مئات"
         }
       },
       "prompt": {
@@ -4906,8 +5034,10 @@
       "failedCount": "تعذر إرسال {count} دعوة. حاول مرة أخرى. | تعذر إرسال {count} دعوات. حاول مرة أخرى.",
       "invalidEmailCount": "{count} عنوان بريد إلكتروني غير صالح | {count} عناوين بريد إلكتروني غير صالحة",
       "invitedMessage": "تم إرسال دعوة إلى {emails} | تم إرسال دعوات إلى {emails}",
+      "pendingInviteCount": "لدى {count} من هؤلاء الأشخاص دعوة معلّقة بالفعل. سيتم تخطيهم.",
+      "pendingInviteSingle": "لدى هذا الشخص بالفعل دعوة معلّقة",
       "placeholder": "أدخل بريد الشخص الإلكتروني",
-      "seatLimitReached": "يمكنك دعوة حتى {count} زميل. | يمكنك دعوة حتى {count} زملاء.",
+      "seatLimitExceeded": "تقتصر مساحة العمل هذه على {max} أعضاء. أزل {overage} للمتابعة.",
       "title": "دعوة شخص إلى هذه المساحة"
     },
     "inviteUpsellDialog": {

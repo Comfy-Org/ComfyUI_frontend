@@ -5,7 +5,7 @@ import { t } from '../i18n/translations'
 export type NavColumnItem = {
   label: string
   href: string
-  badge?: 'new'
+  badge?: 'new' | 'beta'
   external?: boolean
 }
 
@@ -64,22 +64,23 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
-              label: t('nav.comfyApi', locale),
-              href: routes.api,
-              badge: 'new'
+              label: t('nav.developerPlatform', locale),
+              href: routes.platform,
+              badge: 'beta'
             },
             {
               label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              href: routes.enterprise
             }
           ]
         },
         {
           header: t('nav.colFeatures', locale),
           items: [
+            { label: t('nav.mcpServer', locale), href: routes.mcp },
             {
-              label: t('nav.mcpServer', locale),
-              href: routes.mcp,
+              label: t('nav.comfyAgent', locale),
+              href: routes.agent,
               badge: 'new'
             },
             {
@@ -90,11 +91,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },
-            {
-              label: t('nav.launches', locale),
-              href: routes.launches,
-              badge: 'new'
-            },
+            { label: t('nav.launches', locale), href: routes.launches },
             { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
@@ -105,7 +102,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.cloudPricing },
+    { label: t('nav.pricing', locale), href: routes.pricing },
     {
       label: t('nav.community', locale),
       badge: 'new',
