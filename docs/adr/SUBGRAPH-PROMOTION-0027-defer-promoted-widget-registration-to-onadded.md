@@ -1,4 +1,4 @@
-# 27. Defer Promoted-Widget Registration to `onAdded()`
+# ADR-SUBGRAPH-PROMOTION-0027: Defer Promoted-Widget Registration to `onAdded()`
 
 Date: 2026-09-01
 
