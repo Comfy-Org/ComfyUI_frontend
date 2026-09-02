@@ -1763,11 +1763,10 @@ describe('billingOperationStore', () => {
         ])
       })
 
-      // Regression guard for the failure that shipped: handleNextAction
-      // resolves with no error and an intent that never moved, the store keeps
-      // the operation on `processing`, and nothing distinguished it from a
-      // completed challenge. The state machine still reads `processing` here —
-      // this event is what makes the difference observable.
+      // handleNextAction resolves with no error and an intent that never
+      // moved past its pre-challenge status. The store reports that as
+      // failed_retryable, not processing; this event is the telemetry side
+      // of the same distinction.
       it('reports a challenge that resolved cleanly without advancing as failed', async () => {
         mockHandleNextAction.mockResolvedValue({
           paymentIntent: { status: 'requires_payment_method' }
@@ -1777,7 +1776,7 @@ describe('billingOperationStore', () => {
 
         expect(mockHandleNextAction).toHaveBeenCalledOnce()
         expect(store.getOperation('op-3ds')?.authenticationState).toBe(
-          'processing'
+          'failed_retryable'
         )
         expect(challengeEvents('challenge_returned')).toEqual([
           expect.objectContaining({
@@ -1819,14 +1818,12 @@ describe('billingOperationStore', () => {
         ])
       })
 
-      // `canRetryAuthentication` is also true for a plain `failed_retryable`
-      // decline, so the retry button reaches the same Stripe call without any
-      // challenge ever having been presented. Reporting its return would put
-      // the operation in the funnel's numerator and not its denominator.
+      // A decline's authenticationState is failed_retryable, never
+      // requires_action, so retryPaymentAuthentication's own gate stops it
+      // before Stripe is ever called. trackChallengeReturned's presented-latch
+      // check is a second guard against the same case if that gate is ever
+      // loosened.
       it('reports no return for a decline retry that presented no challenge', async () => {
-        mockHandleNextAction.mockResolvedValue({
-          paymentIntent: { status: 'succeeded' }
-        })
         vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
           id: 'op-declined',
           status: 'pending',
@@ -1846,9 +1843,9 @@ describe('billingOperationStore', () => {
         expect(challengeEvents('challenge_presented')).toEqual([])
         await expect(
           store.retryPaymentAuthentication('op-declined')
-        ).resolves.toBe(true)
+        ).resolves.toBe(false)
 
-        expect(mockHandleNextAction).toHaveBeenCalledOnce()
+        expect(mockHandleNextAction).not.toHaveBeenCalled()
         expect(challengeEvents('challenge_returned')).toEqual([])
       })
 
