@@ -742,6 +742,104 @@ describe('useKeybindingStore', () => {
     })
   })
 
+  describe('source tiers', () => {
+    const combo = { key: 'z', ctrl: true }
+    const coreUndo = () => new KeybindingImpl({ commandId: 'core.undo', combo })
+    const extensionUndo = () =>
+      new KeybindingImpl({ commandId: 'ext.undo', combo })
+
+    it('tries a user binding before a default with a narrower clause', () => {
+      const store = useKeybindingStore()
+      const narrow = new KeybindingImpl({
+        commandId: 'core.narrow',
+        combo,
+        when: 'core.mode'
+      })
+      store.addDefaultKeybinding(narrow)
+      const userBinding = new KeybindingImpl({ commandId: 'user.save', combo })
+      store.addUserKeybinding(userBinding)
+
+      expect(store.getKeybindings(narrow.combo)).toEqual([userBinding, narrow])
+    })
+
+    it('tries an extension binding before the core one and hides the core one', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(coreUndo())
+      store.addExtensionKeybinding(extensionUndo(), 'ext')
+
+      expect(store.getKeybindings(coreUndo().combo)).toEqual([
+        extensionUndo(),
+        coreUndo()
+      ])
+      expect(store.keybindings).toEqual([extensionUndo()])
+      expect(store.getKeybindingsByCommandId('core.undo')).toEqual([])
+      expect(store.isCommandKeybindingModified('core.undo')).toBe(false)
+    })
+
+    it('attributes each binding to its source', () => {
+      const store = useKeybindingStore()
+      const core = coreUndo()
+      const extension = extensionUndo()
+      const user = new KeybindingImpl({
+        commandId: 'user.save',
+        combo: { key: 'k', ctrl: true }
+      })
+      store.addDefaultKeybinding(core)
+      store.addExtensionKeybinding(extension, 'ext')
+      store.addUserKeybinding(user)
+
+      expect(store.sourceOf(core)).toEqual({ tier: 'core' })
+      expect(store.sourceOf(extension)).toEqual({
+        tier: 'extension',
+        name: 'ext'
+      })
+      expect(store.sourceOf(user)).toEqual({ tier: 'user' })
+      expect(store.keybindings.map(store.sourceOf)).toEqual([
+        { tier: 'extension', name: 'ext' },
+        { tier: 'user' }
+      ])
+    })
+
+    it('rejects a binding another extension already declared and names it', () => {
+      const store = useKeybindingStore()
+      store.addExtensionKeybinding(extensionUndo(), 'first')
+
+      expect(() =>
+        store.addExtensionKeybinding(
+          new KeybindingImpl({ commandId: 'other.undo', combo }),
+          'second'
+        )
+      ).toThrow('already exists on ext.undo from first')
+    })
+
+    it('ignores an extension binding identical to a core one', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(coreUndo())
+      store.addExtensionKeybinding(coreUndo(), 'ext')
+
+      expect(store.keybindings).toEqual([coreUndo()])
+      expect(store.sourceOf(store.keybindings[0])).toEqual({ tier: 'core' })
+    })
+
+    it('unsets every tier a user binding displaces', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(coreUndo())
+      store.addExtensionKeybinding(extensionUndo(), 'ext')
+      const userBinding = new KeybindingImpl({ commandId: 'user.save', combo })
+      store.addUserKeybinding(userBinding)
+
+      expect(store.getKeybindings(userBinding.combo)).toEqual([userBinding])
+      expect(store.getUserUnsetKeybindings()).toEqual([
+        coreUndo(),
+        extensionUndo()
+      ])
+
+      expect(store.resetKeybindingForCommand('ext.undo')).toBe(true)
+      expect(store.getKeybindings(userBinding.combo)).toEqual([extensionUndo()])
+      expect(store.getUserUnsetKeybindings()).toEqual([coreUndo()])
+    })
+  })
+
   it('treats a binding that matches the default combo but not its scope as modified', () => {
     const store = useKeybindingStore()
     const defaultBinding = new KeybindingImpl({

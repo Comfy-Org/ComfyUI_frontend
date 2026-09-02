@@ -101,7 +101,7 @@ describe('keybindingService dispatch', () => {
     keybindingStore.addDefaultKeybinding(
       new KeybindingImpl({
         commandId: 'test.textCommand',
-        combo: { key: 'ArrowUp', ctrl: true },
+        combo: { key: 'ArrowLeft', ctrl: true },
         when: 'textInputFocus'
       })
     )
@@ -253,10 +253,54 @@ describe('keybindingService dispatch', () => {
     const textarea = document.createElement('textarea')
     document.body.appendChild(textarea)
 
-    keydown(textarea, { key: 'ArrowUp', ctrlKey: true })
+    keydown(textarea, { key: 'ArrowLeft', ctrlKey: true })
     expect(textCommand).toHaveBeenCalledOnce()
 
-    keydown(document.body, { key: 'ArrowUp', ctrlKey: true })
+    keydown(document.body, { key: 'ArrowLeft', ctrlKey: true })
+    expect(textCommand).toHaveBeenCalledOnce()
+    textarea.remove()
+  })
+
+  it('runs an extension binding over the core binding on the same combo', () => {
+    const extensionUndo = vi.fn<() => void>()
+    useCommandStore().registerCommand({
+      id: 'ext.undo',
+      function: extensionUndo
+    })
+    useKeybindingStore().addExtensionKeybinding(
+      new KeybindingImpl({
+        commandId: 'ext.undo',
+        combo: { key: 'z', ctrl: true }
+      }),
+      'ext'
+    )
+
+    keydown(document.body, { key: 'z', ctrlKey: true })
+
+    expect(extensionUndo).toHaveBeenCalledOnce()
+    expect(undo).not.toHaveBeenCalled()
+  })
+
+  it('keeps an extension binding out of text inputs even when its clause asks', () => {
+    const extensionCommand = vi.fn<() => void>()
+    useCommandStore().registerCommand({
+      id: 'ext.text',
+      function: extensionCommand
+    })
+    useKeybindingStore().addExtensionKeybinding(
+      new KeybindingImpl({
+        commandId: 'ext.text',
+        combo: { key: 'ArrowLeft', ctrl: true },
+        when: 'textInputFocus'
+      }),
+      'ext'
+    )
+    const textarea = document.createElement('textarea')
+    document.body.appendChild(textarea)
+
+    keydown(textarea, { key: 'ArrowLeft', ctrlKey: true })
+
+    expect(extensionCommand).not.toHaveBeenCalled()
     expect(textCommand).toHaveBeenCalledOnce()
     textarea.remove()
   })
