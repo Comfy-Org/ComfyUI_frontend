@@ -145,9 +145,6 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
-  // PM-813 / ecw-128: the client's live canvas rides the turn as `draft` so
-  // the agent can answer canvas-content questions from what the user
-  // actually sees, instead of an empty/stale server-side draft.
   it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
@@ -155,11 +152,7 @@ describe('postMessage wire body', () => {
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
 
-    const parsed = JSON.parse(lastCall().init.body as string) as Record<
-      string,
-      unknown
-    >
-    expect(parsed).toEqual({
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
@@ -172,10 +165,9 @@ describe('postMessage wire body', () => {
       draft: { content: { nodes: [], links: [] }, version: 4 }
     })
 
-    const parsed = JSON.parse(lastCall().init.body as string) as {
-      draft: { version: number }
-    }
-    expect(parsed.draft.version).toBe(4)
+    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
+      draft: { version: 4 }
+    })
   })
 })
 

@@ -45,16 +45,7 @@ export interface OpenTabsSnapshot {
   current_tab?: string
 }
 
-/**
- * The client's live canvas for the active tab, mirroring the backend's
- * draftInput{Content, Version} shape (services/agent/server/agent_handler.go).
- * `version` is the draft version this client last saw `undefined` on a
- * client's first send for a session, which the backend's CAS treats as "the
- * user's canvas is authoritative for this send" (no conflict check). Sending
- * this on every turn is what lets the agent answer canvas-content questions
- * from what the user actually sees instead of falling back to an empty or
- * stale server-side draft — see PM-813 / ecw-128.
- */
+/** An omitted `version` makes this content authoritative for the backend CAS. */
 export interface DraftSnapshot {
   content: Record<string, unknown>
   version?: number

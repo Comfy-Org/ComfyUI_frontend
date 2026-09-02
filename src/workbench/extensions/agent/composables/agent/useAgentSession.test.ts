@@ -526,11 +526,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -551,18 +551,12 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.boundWorkflowId.value).toBe('wf-1')
   })
 
-  // PM-813 / ecw-128: the agent answered "what's on my canvas" as empty even
-  // though the active tab had nodes, because the FE never sent the client's
-  // live canvas on a turn — the backend's draft{content,version} seed only
-  // had whatever had synced server-side (e.g. via CRDT), which can be stale
-  // or absent. This pins that a workflow.draft() snapshot is now forwarded
-  // as-is on every turn.
   it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const draftSnapshot = {
@@ -581,16 +575,16 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('what is on my canvas')
 
-    const body = vi.mocked(postMessage).mock.calls[0][1] as PostMessageInput
+    const body = postMessage.mock.calls[0][1]
     expect(body.draft).toEqual(draftSnapshot)
   })
 
   it('(h6) no draft field is sent when workflow.draft() returns undefined (e.g. detached tab)', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const session = useAgentSession({

@@ -19,11 +19,12 @@ vi.hoisted(() => {
 
 import { i18n } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 
@@ -120,7 +121,7 @@ type FakeTab = {
   filename: string
   isTemporary: boolean
   isModified: boolean
-  activeState: { id?: string } | null
+  activeState: ComfyWorkflowJSON | null
   initialMode?: 'app' | 'graph'
   activeMode?: 'builder:inputs'
 }
@@ -160,7 +161,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     closeWorkflow: vi.fn(async (tab: FakeTab) => {
       tabs.delete(tab.path)
     }),
-    createTemporary: (path?: string, data?: unknown) => {
+    createTemporary: (path?: string, data?: ComfyWorkflowJSON) => {
       const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
       let stem = requested
       let counter = 2
@@ -172,7 +173,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
         filename: stem,
         isTemporary: true,
         isModified: false,
-        activeState: (data ?? null) as { id?: string } | null
+        activeState: data ?? null
       }
       tabs.set(tab.path, tab)
       return tab
@@ -1334,12 +1335,6 @@ describe('AgentPanelRoot attach flow', () => {
   })
 })
 
-// PM-813 / ecw-128: the agent reported the canvas as empty despite the active
-// tab having nodes, because no live canvas snapshot was ever sent on a turn —
-// the backend only had whatever draft content had separately synced
-// server-side (e.g. via CRDT), which can be stale or entirely absent. These
-// pin that the active tab's activeState is now forwarded as `draft.content`
-// on every send.
 describe('AgentPanelRoot canvas draft on send', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -1357,13 +1352,13 @@ describe('AgentPanelRoot canvas draft on send', () => {
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       })
     )
-    const activeState = {
+    const activeState = fromPartial<ComfyWorkflowJSON>({
       nodes: [
         { id: 1, type: 'LoadImage' },
         { id: 2, type: 'MiniMaxH3I2V' }
       ],
       links: []
-    } as unknown as FakeTab['activeState']
+    })
     hostStores.workflow.activeWorkflow = {
       path: 'workflows/video_minimax_h3_i2v.json',
       directory: 'workflows',
@@ -1938,7 +1933,8 @@ describe('AgentPanelRoot workflow binding', () => {
       filename: 'current',
       isTemporary: false,
       isModified: false,
-      activeState: id === undefined ? null : { id }
+      activeState:
+        id === undefined ? null : fromPartial<ComfyWorkflowJSON>({ id })
     }
     hostStores.workflow.tabs.set(tab.path, tab)
     hostStores.workflow.activeWorkflow = tab
@@ -2243,11 +2239,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
-    // PM-813 / ecw-128: the outgoing turn now carries the active tab's live
-    // canvas as `draft.content` so the agent can answer canvas-content
-    // questions without depending on server-side sync. Content sync back INTO
-    // the canvas is still the CRDT follower's job: nothing re-loads the
-    // canvas from the ack path.
     expect(bodies[0]).toMatchObject({ draft: { content: { id: 'wf-42' } } })
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
@@ -2263,7 +2254,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Send' })
 
     const scratch = addTab('workflows/scratch.json', {
-      activeState: { id: 'local-scratch' }
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'local-scratch' })
     })
     hostStores.workflow.activeWorkflow = scratch
     await sendFromComposer('second message')
@@ -2615,7 +2606,9 @@ describe('AgentPanelRoot workflow binding', () => {
   it('T-03 / PM-655 / FE-1311 sends the active canvas workflow in the agent snapshot', async () => {
     makeTab('wf-42')
     addTab('workflows/scratch.json', {
-      activeState: { id: 'graph-internal-id-not-a-cloud-id' }
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'graph-internal-id-not-a-cloud-id'
+      })
     })
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -2937,7 +2930,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
     const tab = makeTab()
-    tab.activeState = { id: 'graph-internal-id-not-a-cloud-id' }
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({
+      id: 'graph-internal-id-not-a-cloud-id'
+    })
     appMock.graph.nodes = [{ id: 1 }]
     const bodies: unknown[] = []
     vi.stubGlobal(

@@ -51,13 +51,6 @@ export interface AgentSessionDeps {
     prepare?(): Promise<void>
     tabs?(): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
-    /**
-     * The active tab's live canvas, captured fresh at send time. Sent as
-     * `draft` on every turn so the agent answers canvas-content questions
-     * (e.g. "what's on my canvas") from what the user actually sees, rather
-     * than an empty/stale server-side draft when e.g. the CRDT doc connection
-     * never delivered the user's edits. See PM-813 / ecw-128.
-     */
     draft?(): DraftSnapshot | undefined
   }
 }
@@ -200,10 +193,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ])
     const wfContext = workflow?.current()
     const tabs = workflow?.tabs?.()
-    // Captured fresh per send (not hoisted with wfContext/tabs above) so the
-    // draft reflects the canvas at the moment of sending, not at prepare time.
     async function postTurn(threadId: string) {
       const draft = workflow?.draft?.()
+      const shouldSendDraft =
+        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
       const input = {
         content: text,
         tabs,
@@ -212,10 +205,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
             ? { node_ids: tags.map((tag) => tag.id) }
             : undefined,
         attachments: attachments?.map((attachment) => attachment.ref),
-        // Omit the key entirely (not just an undefined value) when there is
-        // no draft to send, so a turn with no active/detached workflow is
-        // indistinguishable from a pre-draft-support client.
-        ...(draft !== undefined ? { draft } : {})
+        ...(shouldSendDraft ? { draft } : {})
       }
       return rest.postMessage(
         threadId,
