@@ -57,6 +57,20 @@ describe('HeaderAccount', () => {
     )
   })
 
+  it('switches workspace from the submenu', async () => {
+    const user = userEvent.setup()
+    const api = mountAccount('existing')
+    await nextTick()
+
+    await user.click(screen.getByTestId('header-account'))
+    await user.click(await screen.findByTestId('account-workspace'))
+    await user.click(await screen.findByTestId('account-workspace-Comfy team'))
+    expect(
+      api.session.value.status === 'signedIn' &&
+        api.session.value.account.workspace
+    ).toBe('Comfy team')
+  })
+
   it('signs out back to the sign-in button', async () => {
     const user = userEvent.setup()
     mountAccount('existing')

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
-  ChevronDown,
+  Check,
+  ChevronRight,
   Coins,
   CreditCard,
-  Info,
   LogOut,
   SlidersHorizontal
 } from '@lucide/vue'
@@ -13,6 +13,9 @@ import {
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed } from 'vue'
@@ -20,7 +23,7 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useMockSession } from '../../../composables/useMockSession'
+import { WORKSPACES, useMockSession } from '../../../composables/useMockSession'
 import { useSignInHref } from '../../../composables/useSignInHref'
 import { externalLinks, getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
@@ -28,7 +31,7 @@ import { t } from '../../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const { session, signOut } = useMockSession()
+const { session, signOut, switchWorkspace } = useMockSession()
 const routes = getRoutes(locale)
 const signInHref = useSignInHref(locale)
 
@@ -88,15 +91,9 @@ const itemClass =
       <DropdownMenuTrigger
         data-testid="header-account"
         :aria-label="t('nav.accountMenu', locale)"
-        class="bg-primary-comfy-plum focus-visible:ring-primary-comfy-yellow/50 relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-xs font-bold text-primary-warm-white transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
+        class="bg-primary-comfy-plum focus-visible:ring-primary-comfy-yellow/50 grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-xs font-bold text-primary-warm-white transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
       >
         {{ initials }}
-        <span
-          class="bg-primary-comfy-yellow absolute -right-1 -bottom-1 grid size-4 place-items-center rounded-full text-[9px] leading-none font-bold text-primary-comfy-ink ring-2 ring-primary-comfy-ink"
-          aria-hidden="true"
-        >
-          {{ account.workspace[0] }}
-        </span>
       </DropdownMenuTrigger>
     </div>
 
@@ -106,28 +103,61 @@ const itemClass =
         :side-offset="10"
         class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
-        <button
-          type="button"
-          :aria-label="t('nav.switchWorkspace', locale)"
-          :title="t('nav.switchWorkspace', locale)"
-          class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
-        >
-          <span
-            class="grid size-11 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-lg font-bold text-primary-warm-white"
-            aria-hidden="true"
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger
+            class="hover:bg-transparency-white-t4 data-[state=open]:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
+            data-testid="account-workspace"
           >
-            {{ account.workspace[0] }}
-          </span>
-          <span
-            class="flex-1 truncate text-base font-bold text-primary-warm-white"
-          >
-            {{ account.workspace }}
-          </span>
-          <ChevronDown
-            class="size-5 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </button>
+            <span
+              class="grid size-11 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-lg font-bold text-primary-warm-white"
+              aria-hidden="true"
+            >
+              {{ account.workspace[0] }}
+            </span>
+            <span
+              class="flex-1 truncate text-base font-bold text-primary-warm-white"
+            >
+              {{ account.workspace }}
+            </span>
+            <ChevronRight
+              class="size-5 text-primary-warm-gray"
+              aria-hidden="true"
+            />
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent
+              :side-offset="12"
+              class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+              data-testid="account-workspaces"
+            >
+              <p
+                class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+              >
+                {{ t('nav.workspaces', locale) }}
+              </p>
+              <DropdownMenuItem
+                v-for="workspace in WORKSPACES"
+                :key="workspace"
+                :class="itemClass"
+                :data-testid="`account-workspace-${workspace}`"
+                @click="switchWorkspace(workspace)"
+              >
+                <span
+                  class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
+                  aria-hidden="true"
+                >
+                  {{ workspace[0] }}
+                </span>
+                <span class="flex-1 truncate">{{ workspace }}</span>
+                <Check
+                  v-if="workspace === account.workspace"
+                  class="text-primary-comfy-yellow size-4"
+                  aria-hidden="true"
+                />
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
 
         <div
           class="flex items-center gap-3 p-3 text-sm"
@@ -149,11 +179,6 @@ const itemClass =
           >
             {{ formattedCredits }}
           </span>
-          <Info
-            class="size-4 text-primary-warm-gray"
-            :aria-label="t('nav.creditsInfo', locale)"
-            :title="t('nav.creditsInfo', locale)"
-          />
         </div>
 
         <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />

@@ -20,16 +20,19 @@ export type MockSessionEvent =
   | { type: 'setCredits'; credits: number }
   | { type: 'addCredits'; credits: number }
   | { type: 'setSubscribed'; subscribed: boolean }
+  | { type: 'switchWorkspace'; workspace: string }
 
 // Nothing is free: a new account starts empty and buys credits to run;
 // existing ones carry whatever they bought.
 export const WELCOME_CREDITS = 0
 export const EXISTING_CREDITS = 5840
 
+export const WORKSPACES = ["Ada's Studio", 'Comfy team', 'Client demos']
+
 const BASE_ACCOUNT = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
-  workspace: "Ada's Studio"
+  workspace: WORKSPACES[0]
 }
 
 export function accountFor(kind: AccountKind): MockAccount {
@@ -50,6 +53,13 @@ export function transition(
       return { status: 'signedIn', account: accountFor(event.kind) }
     case 'signOut':
       return SIGNED_OUT
+    case 'switchWorkspace':
+      return session.status === 'signedIn'
+        ? {
+            status: 'signedIn',
+            account: { ...session.account, workspace: event.workspace }
+          }
+        : session
     case 'setCredits':
     case 'addCredits':
     case 'setSubscribed': {
@@ -84,10 +94,16 @@ function readStoredSession(): MockSession {
     ) {
       const subscribed =
         'subscribed' in parsed.account && parsed.account.subscribed === true
+      const workspace =
+        'workspace' in parsed.account &&
+        typeof parsed.account.workspace === 'string'
+          ? parsed.account.workspace
+          : BASE_ACCOUNT.workspace
       return {
         status: 'signedIn',
         account: {
           ...BASE_ACCOUNT,
+          workspace,
           credits: parsed.account.credits,
           subscribed
         }
@@ -127,6 +143,8 @@ export function useMockSession() {
     signIn: (kind: AccountKind = 'existing') =>
       dispatch({ type: 'signIn', kind }),
     signOut: () => dispatch({ type: 'signOut' }),
+    switchWorkspace: (workspace: string) =>
+      dispatch({ type: 'switchWorkspace', workspace }),
     setCredits: (credits: number) => dispatch({ type: 'setCredits', credits }),
     addCredits: (credits: number) => dispatch({ type: 'addCredits', credits }),
     setSubscribed: (subscribed: boolean) =>

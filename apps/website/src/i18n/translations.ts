@@ -8223,11 +8223,7 @@ Enterprise`
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
   'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
-  'nav.creditsInfo': {
-    en: 'Credits are spent per run. Top up on Developer Platform.',
-    'zh-CN': '每次运行消耗积分。可在开发者平台充值。'
-  },
-  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
+  'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
   'nav.settings': { en: 'Settings', 'zh-CN': '设置' },
   'nav.planPro': { en: 'Pro', 'zh-CN': 'Pro' },
