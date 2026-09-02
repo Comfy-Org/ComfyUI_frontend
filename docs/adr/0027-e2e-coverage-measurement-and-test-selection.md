@@ -18,8 +18,10 @@ usable for deciding what to test next, for three reasons.
    triggers never enter the report, so 457 `src/` files (about 65k raw lines)
    are absent rather than at 0%. The layer editor, agent panel, workspace and
    subscription UI, video edit panel, and compositor are all in that set. Raw
-   source lines are not comparable to lcov's executable-line count, so the
-   corrected percentage is not known until those files enter the report.
+   source lines are not comparable to lcov's executable-line count. Applying
+   the loaded files' executable-to-raw ratio (0.27) to the absent files gives
+   about 17.5k executable lines and a corrected figure near 54%. The exact
+   number arrives when those files enter the report.
 2. Only the `chromium` project sets `COLLECT_COVERAGE`. The 154 `cloud`
    tests that exercise sign-in, workspaces, billing, and the agent panel are
    never credited.
@@ -51,8 +53,9 @@ The supporting analysis, per-area tables, and reproduction steps are in
 1. Every Chromium-based project run by `ci-tests-e2e.yaml` collects coverage:
    `chromium`, `cloud`, `mobile-chrome`, `chromium-2x`, and `chromium-0.5x`.
    The cloud bundle is built with `COLLECT_COVERAGE` so it retains source-map
-   comments. Each job uploads a uniquely named `e2e-coverage-shard-*` artifact
-   that the existing package step merges. `mobile-safari` is excluded because
+   comments. Each job uploads a uniquely named `e2e-coverage-shard-*` artifact. The
+   package job depends on every uploading job and rejects an incomplete
+   artifact set instead of merging a partial one. `mobile-safari` is excluded because
    Playwright's coverage API does not support WebKit. `performance` is excluded
    because coverage instrumentation would perturb its measurements, as
    described in ADR 0022. No regular CI job runs `audit`.
@@ -107,8 +110,9 @@ Positive:
 
 Negative:
 
-- The reported E2E percentage will drop when never-loaded files are counted.
-  Its size is not known until executable lines are measured. The Slack target
+- The reported E2E percentage will drop when never-loaded files are counted,
+  by roughly 14 points on the estimate above. The exact size is known once
+  executable lines are measured. The Slack target
   of 80% becomes a trend line only until per-component thresholds exist.
 - Collecting coverage in the `cloud` and mobile jobs adds a small amount of
   runtime and one artifact per project.
