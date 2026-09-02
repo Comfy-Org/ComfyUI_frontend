@@ -175,6 +175,17 @@ be stamped on the billing-op row, which is what lets a pre-op-ID failure
 join backend records rather than only its own outcome. The deferral
 reasoning above stands for the rails that still lack it.
 
+**An attempt id spans retries of the same quote, not just one subscribe
+call.** `beginCheckoutAttempt()` mints once when the customer picks a plan;
+a subsequent retry of the same plan choice — including a reactivation retry
+or a `handleConfirmTransition` retry after a failed subscribe — reuses it
+rather than minting a fresh one. One `checkout_attempt_id` can therefore
+carry two `started`/terminal pairs. That is intended: the id identifies the
+plan choice, not the individual subscribe call, and is the more useful
+definition for measuring abandonment. A consumer joining on
+`checkout_attempt_id` should read a repeated `started` as a retry of the
+same attempt, not a duplicate.
+
 **Two rails the attempt id does not reach yet.** The team-to-personal
 downgrade delegates its preview, subscribe and telemetry to
 `useDowngradeToPersonal`, which owns its own `startOperation()` calls and
