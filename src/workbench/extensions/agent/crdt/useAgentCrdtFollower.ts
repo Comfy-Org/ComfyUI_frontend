@@ -6,6 +6,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
 
+import { installAgentCrdtPocGlobal } from './agentCrdtPocGlobal'
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
@@ -355,7 +356,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // "client.destroy() always runs" guarantee local and readable.
     try {
       clearSubscribeRetry()
-      delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
+      removePocGlobal()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
@@ -474,8 +475,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     bridge.sendHumanOps(tabId, [op])
     return op
   }
-  const pocGlobal = window as unknown as Record<string, unknown>
-  pocGlobal.__agentCrdtPoc = {
+  const removePocGlobal = installAgentCrdtPocGlobal({
     addNode: pocAddNode,
     deleteNode: pocDeleteNode,
     // Bind a fresh tab to an existing doc without waiting for a turn ack
@@ -518,7 +518,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         lastFrameType: lastFrameType.value
       }
     }
-  }
+  })
   // ──────────────────────────────────────────────────────────────────────────
 
   const status = computed<AgentCrdtStatus>(() => ({
