@@ -120,11 +120,20 @@ interface TargetSession {
   readonly changedWidgets: Map<string, Set<string>>
   readonly replacedWidgetMaps: Set<string>
   readonly changedLinks: Set<string>
-  readonly frameQueue: DocUpdate[]
+  readonly frameQueue: PendingProjection[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+}
+
+interface PendingProjection {
+  readonly update: DocUpdate
+  readonly nodeActions: Map<string, NodeRootAction>
+  readonly changedWidgets: Map<string, Set<string>>
+  readonly replacedWidgetMaps: Set<string>
+  readonly changedLinks: Set<string>
+  readonly reconcile: boolean
 }
 
 /**
@@ -159,17 +168,18 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(update.workflowId)
     if (!session) return { status: 'unbound' }
 
-    session.frameQueue.push(update)
+    session.frameQueue.push(this.captureSessionPending(session, update))
     if (session.applying) return { status: 'queued' }
     session.applying = true
     let projectedSequence = update.seq
     try {
       while (session.frameQueue.length > 0) {
-        const frame = session.frameQueue.shift()
-        if (frame && !this.applyQueuedFrame(session, frame)) {
-          return { status: 'failed', sequence: frame.seq }
+        const pending = session.frameQueue.shift()
+        if (pending && !this.applyQueuedFrame(session, pending)) {
+          session.frameQueue.unshift(pending)
+          return { status: 'failed', sequence: pending.update.seq }
         }
-        if (frame) projectedSequence = frame.seq
+        if (pending) projectedSequence = pending.update.seq
       }
     } finally {
       session.applying = false
@@ -223,15 +233,37 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
-    const nodeActions = new Map(session.nodeActions)
-    const changedWidgets = new Map(
-      [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
-    )
-    const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
-    const changedLinkIds = new Set(session.changedLinks)
-    const reconcile = session.reconcileNextFrame
+  private captureSessionPending(
+    session: TargetSession,
+    update: DocUpdate
+  ): PendingProjection {
+    const pending = {
+      update,
+      nodeActions: new Map(session.nodeActions),
+      changedWidgets: new Map(
+        [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
+      ),
+      replacedWidgetMaps: new Set(session.replacedWidgetMaps),
+      changedLinks: new Set(session.changedLinks),
+      reconcile: session.reconcileNextFrame
+    }
+    session.reconcileNextFrame = false
     this.discardSessionPending(session)
+    return pending
+  }
+
+  private applyQueuedFrame(
+    session: TargetSession,
+    pending: PendingProjection
+  ): boolean {
+    const {
+      update,
+      nodeActions,
+      changedWidgets,
+      replacedWidgetMaps,
+      reconcile
+    } = pending
+    const changedLinkIds = pending.changedLinks
 
     const replacedNodeIds = new Set(
       [...nodeActions]
@@ -308,53 +340,13 @@ export class EcsFollowerAdapter {
           if (link) batch.connect(link)
         }
       })
-      if (!committed) {
-        this.restoreSessionPending(
-          session,
-          nodeActions,
-          changedWidgets,
-          replacedWidgetMaps,
-          changedLinkIds,
-          reconcile
-        )
-      } else {
-        session.reconcileNextFrame = false
-      }
       return committed
     } catch (error) {
       reportError(error, {
         errorType: 'agent_crdt_projection_failure'
       })
-      this.restoreSessionPending(
-        session,
-        nodeActions,
-        changedWidgets,
-        replacedWidgetMaps,
-        changedLinkIds,
-        reconcile
-      )
       return false
     }
-  }
-
-  private restoreSessionPending(
-    session: TargetSession,
-    nodeActions: Map<string, NodeRootAction>,
-    changedWidgets: Map<string, Set<string>>,
-    replacedWidgetMaps: Set<string>,
-    changedLinks: Set<string>,
-    reconcileNextFrame: boolean
-  ): void {
-    session.nodeActions.clear()
-    for (const [id, action] of nodeActions) session.nodeActions.set(id, action)
-    session.changedWidgets.clear()
-    for (const [id, names] of changedWidgets)
-      session.changedWidgets.set(id, new Set(names))
-    session.replacedWidgetMaps.clear()
-    for (const id of replacedWidgetMaps) session.replacedWidgetMaps.add(id)
-    session.changedLinks.clear()
-    for (const id of changedLinks) session.changedLinks.add(id)
-    session.reconcileNextFrame = reconcileNextFrame
   }
 
   private discardSessionPending(session: TargetSession): void {

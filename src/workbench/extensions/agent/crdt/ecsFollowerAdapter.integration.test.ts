@@ -428,10 +428,12 @@ describe('EcsFollowerAdapter integration', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const projectedNodes: SemanticNodePayload[] = []
+    const projectionOpIds: string[] = []
     let batchAttempts = 0
     const mutations: GraphMutations = {
-      batch: (_context, define) => {
+      batch: (context, define) => {
         batchAttempts += 1
+        projectionOpIds.push(context.opId)
         define({
           addNode: (payload) => projectedNodes.push(payload),
           reconcileNode: (payload) => projectedNodes.push(payload),
@@ -499,6 +501,7 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ).toEqual({ status: 'projected', sequence: 2 })
     expect(projectedNodes.map(({ id }) => id)).toEqual(['1'])
+    expect(projectionOpIds).toEqual(['node-1', 'node-1', 'retry-drain'])
 
     adapter.destroy()
     follower.destroy()
