@@ -143,7 +143,9 @@ key with `on_call_write`; export it as `DATADOG_WRITE_APP_KEY`, and never widen
 or reuse the CI secret for this destructive operation.
 
 `PUT` is a full replace, so read the schedule first and edit what comes back
-rather than composing a body by hand:
+rather than composing a body by hand. Save the following block as a script and
+run the saved file with Bash; do not paste it into an interactive shell, where
+queued input could satisfy its confirmation prompts:
 
 ```bash
 set -euo pipefail
