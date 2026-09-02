@@ -119,6 +119,12 @@
               :is-modified="command.isModified"
             />
             <KeybindingScope :binding="binding" />
+            <span
+              v-if="extensionOwning(binding)"
+              class="text-xs text-muted-foreground"
+            >
+              {{ extensionOwning(binding) }}
+            </span>
           </div>
           <div class="flex flex-row">
             <Button
@@ -155,6 +161,7 @@ import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 import KeybindingList from './KeybindingList.vue'
@@ -183,4 +190,11 @@ const emit = defineEmits<{
   rowContextmenu: [event: Event]
   rowDblclick: []
 }>()
+
+const keybindingStore = useKeybindingStore()
+
+function extensionOwning(binding: KeybindingImpl): string | null {
+  const source = keybindingStore.sourceOf(binding)
+  return source.tier === 'extension' ? source.name : null
+}
 </script>
