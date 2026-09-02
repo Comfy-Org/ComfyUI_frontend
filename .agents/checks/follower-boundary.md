@@ -45,10 +45,10 @@ Flag:
 - **New durable dependence on `LitegraphMutator` / snapshot-diff / `SemanticProjector`** —
   these are the disposable POC stopgap mounted with the flag-gated agent panel. New code
   that treats them as the permanent seam, or extends them instead of routing state into a
-domain store, should be questioned against FOLLOWER.
+  domain store, should be questioned against FOLLOWER.
 - **Layout/view fields written into the shared semantic doc** — `pos`, `size`, pan/zoom,
   live drags, or group geometry placed in the semantic doc. Layout is a separate FE-owned
-`Y.Doc` (LAYOUT, KEEP-ALIVE #8); the two docs are composed, not merged.
+  `Y.Doc` (LAYOUT, KEEP-ALIVE #8); the two docs are composed, not merged.
 - **Presence/awareness persisted into the doc** — cursors/selection/hover belong on the
   awareness channel, never written into the shared or layout doc.
 - **Optimistic overlay merged back as a Yjs update** — pending local ops on a shadow are

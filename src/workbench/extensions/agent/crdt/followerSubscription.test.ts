@@ -669,7 +669,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
-// AGENT: an ordinary gap is same-lineage state-vector replay. Only a
+    // AGENT: an ordinary gap is same-lineage state-vector replay. Only a
     // separately delivered doc_reset may replace the document.
     const gapSubscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
