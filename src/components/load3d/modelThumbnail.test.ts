@@ -134,6 +134,30 @@ describe('generateModelThumbnail', () => {
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 
+  it('redacts the request URL from a loader error before reporting', async () => {
+    const instance = mockInstance({
+      loadModel: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'fetch for "https://tok:sec@host/api/view?filename=a.glb&sig=abc" responded with 404'
+          )
+        )
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await expect(generateModelThumbnail('/a.glb', 'a.glb')).resolves.toEqual({
+      status: 'failed'
+    })
+
+    const [reported, options] = reportError.mock.calls[0]
+    const message = (reported as Error).message
+    expect(message).not.toContain('sig=abc')
+    expect(message).not.toContain('tok:sec')
+    expect(message).toContain('<redacted>')
+    expect(options).toMatchObject({ context: { assetName: 'a.glb' } })
+  })
+
   it('runs generations one at a time', async () => {
     let releaseFirst!: () => void
     const first = mockInstance({

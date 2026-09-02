@@ -83,7 +83,8 @@ async function renderThumbnailWithTimeout(
     // otherwise relabel a real failure as a user cancellation.
     if (error === cancelError) return { status: 'cancelled' }
     reportError(redactModelUrls(error), {
-      errorType: 'agent_model_thumbnail_generation_failure'
+      errorType: 'agent_model_thumbnail_generation_failure',
+      context: { assetName }
     })
     return { status: 'failed' }
   } finally {
@@ -102,10 +103,9 @@ async function renderThumbnailWithTimeout(
  */
 function redactModelUrls(error: unknown): unknown {
   if (!(error instanceof Error)) return error
-  const scrubbed = error.message.replace(
-    /(https?:\/\/[^\s"']+|\/?api\/view)\?[^\s"']*/g,
-    '$1?<redacted>'
-  )
+  const scrubbed = error.message
+    .replace(/(https?:\/\/)[^/\s"']*@/g, '$1<redacted>@')
+    .replace(/(https?:\/\/[^\s"'?]+|\/?api\/view)\?[^\s"']*/g, '$1?<redacted>')
   if (scrubbed === error.message) return error
   const copy = new Error(scrubbed)
   copy.name = error.name

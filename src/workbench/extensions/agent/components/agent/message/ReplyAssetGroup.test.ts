@@ -265,22 +265,22 @@ describe('ReplyAssetGroup', () => {
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
   })
 
-  it('leaves a model that failed to render as a placeholder', async () => {
-    isAssetPreviewSupported.mockReturnValue(true)
-    renderGroup([model])
-    await vi.waitFor(() =>
-      expect(generateModelThumbnail).toHaveBeenCalledOnce()
-    )
-
+  it('retries a failed model even if it was hidden when the retry came due', async () => {
     vi.useFakeTimers()
     try {
-      await vi.advanceTimersByTimeAsync(30_000)
+      isAssetPreviewSupported.mockReturnValue(true)
+      const { rerender } = renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+
+      await rerender({ assets: [image(1)] })
+      await vi.advanceTimersByTimeAsync(2_000)
+
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
     } finally {
       vi.useRealTimers()
     }
-
-    expect(generateModelThumbnail).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
   })
 
   it('aborts an in-flight generation when unmounted', async () => {

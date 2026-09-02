@@ -83,14 +83,14 @@ const galleryIndex = ref(-1)
 type ThumbnailState =
   | { phase: 'loading'; controller: AbortController }
   | { phase: 'ready'; src: string }
-  | { phase: 'gaveUp' }
+  | { phase: 'gaveUp'; attempts: number }
 
 const THUMBNAIL_RETRY_MS = 2_000
+const MAX_THUMBNAIL_ATTEMPTS = 2
 
 const modelThumbnails = ref<Record<string, ThumbnailState>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
-const retriedThumbnails = new Set<string>()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
@@ -119,7 +119,7 @@ function releaseModelThumbnail(url: string): void {
  * `failed` also covers a transient deadline; nothing else re-runs this, as
  * the watcher only reacts to which assets are on screen.
  */
-function loadModelThumbnail(url: string, filename: string): void {
+function loadModelThumbnail(url: string, filename: string, attempt = 1): void {
   const controller = new AbortController()
   modelThumbnails.value[url] = {
     phase: 'loading',
@@ -148,8 +148,10 @@ function loadModelThumbnail(url: string, filename: string): void {
       } else if (result.status === 'cancelled') {
         delete modelThumbnails.value[url]
       } else {
-        modelThumbnails.value[url] = { phase: 'gaveUp' }
-        scheduleThumbnailRetry(url, filename)
+        modelThumbnails.value[url] = { phase: 'gaveUp', attempts: attempt }
+        if (attempt < MAX_THUMBNAIL_ATTEMPTS) {
+          scheduleThumbnailRetry(url, filename, attempt + 1)
+        }
       }
     })
     .catch((error) => {
@@ -160,15 +162,16 @@ function loadModelThumbnail(url: string, filename: string): void {
     })
 }
 
-function scheduleThumbnailRetry(url: string, filename: string): void {
-  if (retriedThumbnails.has(url)) return
-  retriedThumbnails.add(url)
+function scheduleThumbnailRetry(
+  url: string,
+  filename: string,
+  attempt: number
+): void {
   const timeout = setTimeout(() => {
     refreshTimeouts.delete(timeout)
     if (!mounted) return
     if (modelThumbnails.value[url]?.phase !== 'gaveUp') return
-    if (!visibleVisual.value.some((asset) => asset.url === url)) return
-    loadModelThumbnail(url, filename)
+    loadModelThumbnail(url, filename, attempt)
   }, THUMBNAIL_RETRY_MS)
   refreshTimeouts.add(timeout)
 }
@@ -220,6 +223,8 @@ function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
     .then((preview) => {
       if (!mounted) return
       if (preview) {
+        const inFlight = modelThumbnails.value[asset.url]
+        if (inFlight?.phase === 'loading') inFlight.controller.abort()
         modelThumbnails.value[asset.url] = { phase: 'ready', src: preview }
       } else if (retry) {
         const timeout = setTimeout(() => {

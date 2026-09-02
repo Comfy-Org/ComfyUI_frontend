@@ -259,9 +259,19 @@ export interface LoadModelOptions {
 }
 
 /**
- * Why a load stopped. `cancelled` means the viewer was disposed or a newer
- * load superseded this one; `empty` means nothing claimed the URL. Both
- * leave the viewer untouched, so callers must not run success work on them.
+ * Why a load stopped.
+ *
+ * - `loaded` — the model is in the scene.
+ * - `cancelled` — the viewer was disposed, or a newer load superseded this
+ *   one and now owns the shared state. The managers may be torn down, so
+ *   touch nothing.
+ * - `empty` — the file type could not be determined, or no adapter claimed
+ *   it. Nothing was loaded.
+ * - `failed` — loading threw.
+ *
+ * Only `loaded` means a model is displayed. Every other outcome has already
+ * cleared the previous scene, so callers must neither run success work nor
+ * assume the old model is still there.
  */
 export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
 
