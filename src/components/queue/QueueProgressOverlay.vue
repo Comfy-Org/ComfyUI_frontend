@@ -68,7 +68,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -90,7 +89,6 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
-const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -245,13 +243,6 @@ const focusAssetInSidebar = async (item: JobListItem) => {
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
-  await assetsStore.updateHistory()
-  const asset = assetsStore.historyAssets.find(
-    (existingAsset) => existingAsset.id === assetId
-  )
-  if (!asset) {
-    throw new Error('Asset not found in media assets panel')
-  }
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
 }

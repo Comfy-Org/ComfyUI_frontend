@@ -9,11 +9,13 @@ const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
 const mockToastAdd = vi.fn()
 
-const { mockCaptureException } = vi.hoisted(() => ({
-  mockCaptureException: vi.fn()
+const { mockReportError } = vi.hoisted(() => ({
+  mockReportError: vi.fn()
 }))
 
-vi.mock('@sentry/vue', () => ({ captureException: mockCaptureException }))
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockToastAdd })
@@ -75,7 +77,7 @@ Object.defineProperty(window, 'open', {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     mockIsCloud.value = true
-    mockCaptureException.mockReset()
+    mockReportError.mockReset()
   })
 
   describe('handleAddApiCredits', () => {
@@ -148,24 +150,24 @@ describe('useSubscriptionActions', () => {
 
       await handleMessageSupport()
 
-      expect(mockCaptureException).toHaveBeenCalledWith(failure, {
-        tags: { error_type: 'contact_support_failed' }
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'contact_support_failed'
       })
     })
 
     // Commands run arbitrary registered functions, including ones contributed
     // by extensions, so the rejected value is not guaranteed to be an Error.
-    it('reports a thrown non-Error as an Error so it carries a stack', async () => {
+    // Normalizing it is reportError's job, covered in reportError.test.ts; what
+    // matters here is that the raw cause reaches the reporter at all.
+    it('reports a thrown non-Error', async () => {
       mockExecute.mockRejectedValueOnce('Command failed')
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()
 
-      expect(mockCaptureException).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Command failed' }),
-        { tags: { error_type: 'contact_support_failed' } }
-      )
-      expect(mockCaptureException.mock.calls[0][0]).toBeInstanceOf(Error)
+      expect(mockReportError).toHaveBeenCalledWith('Command failed', {
+        errorType: 'contact_support_failed'
+      })
     })
   })
 

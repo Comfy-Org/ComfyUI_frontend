@@ -2,7 +2,7 @@ name: 'PR: Unified Report'
 
 on:
   workflow_run:
-    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: E2E Coverage']
+    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: Tests E2E']
     types:
       - completed
     branches-ignore:
@@ -77,8 +77,9 @@ jobs:
         id: find-coverage
         uses: ./.github/actions/find-workflow-run
         with:
-          workflow-id: ci-tests-e2e-coverage.yaml
+          workflow-id: ci-tests-e2e.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          artifact-name: e2e-coverage
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -143,6 +144,7 @@ jobs:
               '<!-- COMFYUI_FRONTEND_PERF -->',
               '<!-- PLAYWRIGHT_TEST_STATUS -->',
               '<!-- STORYBOOK_BUILD_STATUS -->',
+              '<!-- WEBSITE_CI_REPORT -->',
             ];
 
             const comments = await github.paginate(github.rest.issues.listComments, {

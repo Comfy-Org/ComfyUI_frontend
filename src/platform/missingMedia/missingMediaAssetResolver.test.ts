@@ -10,14 +10,17 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
-  vi.hoisted(() => ({
-    mockGetInputAssetsIncludingPublic: vi.fn(),
-    mockGetAssetsPageByTag: vi.fn()
-  }))
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
+  mockGetAssetsPageByTag: vi.fn()
+}))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
@@ -29,7 +32,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
+      getAllAssetsByTag: mockGetAllAssetsByTag,
       getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
@@ -100,14 +103,14 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets when requested', async () => {
+  it('loads cloud input assets via a public-inclusive query', async () => {
     const inputAsset = makeAsset('photo.png')
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
+    mockGetAllAssetsByTag.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
       isCloud: true,
@@ -116,11 +119,13 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+      'input',
+      true,
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
@@ -219,7 +224,7 @@ describe('resolveMissingMediaAssetSources', () => {
     const inputError = new Error('input failed')
     let rejectInputAssets!: (err: Error) => void
     let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
-    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
+    mockGetAllAssetsByTag.mockReturnValueOnce(
       new Promise<AssetItem[]>((_, reject) => {
         rejectInputAssets = reject
       })

@@ -21,14 +21,14 @@ export const sharedWorkflowImportScenario = {
 
 type SharedWorkflowRequestEvent =
   | 'import'
-  | 'input-assets-including-public-before-import'
-  | 'input-assets-including-public-after-import'
+  | 'input-assets-before-import'
+  | 'input-assets-after-import'
 
 export interface SharedWorkflowImportMocks {
   resetAndStartRecording: () => void
   getImportBody: () => ImportPublishedAssetsRequest | undefined
   getRequestEvents: () => SharedWorkflowRequestEvent[]
-  waitForPublicInclusiveInputAssetResponseAfterImport: () => Promise<void>
+  waitForInputAssetResponseAfterImport: () => Promise<void>
 }
 
 const defaultInputFileName = '00000000000000000000000Aexample.png'
@@ -133,20 +133,16 @@ async function mockSharedWorkflowImportFlow(
   let isRecording = false
   let importEndpointCalled = false
   let importBody: ImportPublishedAssetsRequest | undefined
-  let resolvePublicInclusiveInputAssetResponseAfterImport: () => void = () => {}
-  let publicInclusiveInputAssetResponseAfterImport = new Promise<void>(
-    (resolve) => {
-      resolvePublicInclusiveInputAssetResponseAfterImport = resolve
-    }
-  )
+  let resolveInputAssetResponseAfterImport: () => void = () => {}
+  let inputAssetResponseAfterImport = new Promise<void>((resolve) => {
+    resolveInputAssetResponseAfterImport = resolve
+  })
   const requestEvents: SharedWorkflowRequestEvent[] = []
 
-  function resetPublicInclusiveInputAssetResponseWaiter() {
-    publicInclusiveInputAssetResponseAfterImport = new Promise<void>(
-      (resolve) => {
-        resolvePublicInclusiveInputAssetResponseAfterImport = resolve
-      }
-    )
+  function resetInputAssetResponseWaiter() {
+    inputAssetResponseAfterImport = new Promise<void>((resolve) => {
+      resolveInputAssetResponseAfterImport = resolve
+    })
   }
 
   function recordRequestEvent(event: SharedWorkflowRequestEvent) {
@@ -182,18 +178,12 @@ async function mockSharedWorkflowImportFlow(
     const url = new URL(route.request().url())
     const includeTags = getTagParam(url, 'include_tags')
     const isInputAssetRequest = includeTags.includes('input')
-    const includesPublicAssets =
-      url.searchParams.get('include_public') === 'true'
-    const isPublicInclusiveInputAssetRequest =
-      isInputAssetRequest && includesPublicAssets
-    const isAfterImportPublicInclusiveInputAssetRequest =
-      isPublicInclusiveInputAssetRequest && importEndpointCalled
 
-    if (isPublicInclusiveInputAssetRequest) {
+    if (isInputAssetRequest) {
       recordRequestEvent(
         importEndpointCalled
-          ? 'input-assets-including-public-after-import'
-          : 'input-assets-including-public-before-import'
+          ? 'input-assets-after-import'
+          : 'input-assets-before-import'
       )
     }
 
@@ -219,8 +209,8 @@ async function mockSharedWorkflowImportFlow(
       body: JSON.stringify(response)
     })
 
-    if (isAfterImportPublicInclusiveInputAssetRequest) {
-      resolvePublicInclusiveInputAssetResponseAfterImport()
+    if (isInputAssetRequest && importEndpointCalled) {
+      resolveInputAssetResponseAfterImport()
     }
   })
 
@@ -230,12 +220,11 @@ async function mockSharedWorkflowImportFlow(
       importEndpointCalled = false
       importBody = undefined
       requestEvents.length = 0
-      resetPublicInclusiveInputAssetResponseWaiter()
+      resetInputAssetResponseWaiter()
     },
     getImportBody: () => importBody,
     getRequestEvents: () => [...requestEvents],
-    waitForPublicInclusiveInputAssetResponseAfterImport: () =>
-      publicInclusiveInputAssetResponseAfterImport
+    waitForInputAssetResponseAfterImport: () => inputAssetResponseAfterImport
   }
 }
 

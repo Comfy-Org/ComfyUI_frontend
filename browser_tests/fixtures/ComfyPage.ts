@@ -14,12 +14,25 @@ import {
   EMPTY_BILLING_PLANS,
   LEGACY_PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
-import { ZERO_BALANCE } from '@e2e/fixtures/data/subscriptionFixtures'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import {
+  UNSUBSCRIBED,
+  ZERO_BALANCE
+} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import {
+  installCustomNodeBlankStartup,
+  runWithCollectedCleanup
+} from '@e2e/fixtures/utils/customNodeSuite'
+import {
+  collectConsoleErrors,
+  recordStartupConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
+import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -286,8 +299,16 @@ export class ComfyPage {
       data: { username }
     })
 
-    if (resp.status() !== 200)
-      throw new Error(`Failed to create user: ${await resp.text()}`)
+    if (resp.status() !== 200) {
+      const body = await resp.text()
+      // Persistent backends (Comfy Desktop server user storage) keep the user
+      // across runs and do not list it via GET /api/users, so a duplicate means
+      // it already exists. Returns the username since the generated id is not
+      // retrievable here; only reached on single-user / default-resolving backends.
+      if (resp.status() === 400 && body.includes('Duplicate username.'))
+        return username
+      throw new Error(`Failed to create user: ${body}`)
+    }
 
     return await resp.json()
   }
@@ -357,13 +378,55 @@ export class ComfyPage {
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
-    await this.page.waitForFunction(
-      // window.app => GraphCanvas ready
-      // window.app.extensionManager => GraphView ready
-      () => window.app?.extensionManager
-    )
-    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    const readyFuseMs = 300_000
+    try {
+      await this.page.waitForFunction(
+        // window.app => GraphCanvas ready
+        // window.app.extensionManager => GraphView ready
+        () => window.app?.extensionManager,
+        null,
+        { timeout: readyFuseMs }
+      )
+      await this.page
+        .locator('.p-blockui-mask')
+        .waitFor({ state: 'hidden', timeout: readyFuseMs })
+    } catch (error) {
+      const state = await this.describeUnreadyApp()
+      throw new Error(`app never became ready: ${state}`, { cause: error })
+    }
     await this.nextFrame()
+  }
+
+  /**
+   * Why the app is not ready, in one line, for the failure message. A bare
+   * "timeout exceeded" cannot tell a stalled sign-in from a crashed boot from
+   * a backend that never answered, which is the difference between a
+   * five-minute fix and a day of guessing - so every unready-app failure
+   * carries this. Best-effort by construction: it runs on an already-failing
+   * page, so it reports what it could not read rather than throwing over it.
+   */
+  private async describeUnreadyApp(): Promise<string> {
+    try {
+      const state = await this.page.evaluate(() => ({
+        url: location.href,
+        title: document.title,
+        hasApp: !!window.app,
+        hasExtensionManager: !!window.app?.extensionManager,
+        blockUiVisible: !!document.querySelector('.p-blockui-mask'),
+        signInVisible: !!document.querySelector(
+          '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
+        ),
+        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
+      }))
+      return (
+        `url=${state.url} title=${JSON.stringify(state.title)} ` +
+        `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
+        `blockUiMask=${state.blockUiVisible} signInView=${state.signInVisible} ` +
+        `body=${JSON.stringify(state.bodyText)}`
+      )
+    } catch (probeError) {
+      return `page state unreadable (${probeError instanceof Error ? probeError.message : String(probeError)})`
+    }
   }
 
   /** @deprecated Use standalone `assetPath` from `browser_tests/fixtures/utils/assetPath` directly. */
@@ -514,6 +577,8 @@ export const comfyPageFixture = base.extend<{
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
+    // A closed page has no coverage to collect
+    if (page.isClosed()) return
     const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
@@ -532,14 +597,29 @@ export const comfyPageFixture = base.extend<{
 
     const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
-    const userId = await comfyPage.setupUser(username)
-    comfyPage.userIds[parallelIndex] = userId
+    const isCustomNodes = testInfo.project.name === 'custom-nodes'
+    const needsPerf =
+      testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
+    const startupErrorCollector = isCustomNodes
+      ? collectConsoleErrors(page)
+      : undefined
+    let perfStarted = false
+    const cleanups: (() => Promise<void>)[] = []
+    if (needsPerf)
+      cleanups.push(async () => {
+        if (perfStarted) await comfyPage.perf.dispose()
+      })
+    if (startupErrorCollector)
+      cleanups.push(async () => startupErrorCollector.stop())
 
-    const isVueNodes = testInfo.tags.includes('@vue-nodes')
-    comfyPage.isVueNodes = isVueNodes
+    const run = async () => {
+      const userId = await comfyPage.setupUser(username)
+      comfyPage.userIds[parallelIndex] = userId
 
-    try {
-      await comfyPage.setupSettings({
+      const isVueNodes = testInfo.tags.includes('@vue-nodes')
+      comfyPage.isVueNodes = isVueNodes
+
+      const startupSettings: Record<string, unknown> = {
         'Comfy.UseNewMenu': 'Top',
         // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
@@ -565,52 +645,75 @@ export const comfyPageFixture = base.extend<{
         'Comfy.RightSidePanel.ShowErrorsTab': false,
         ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
         ...initialSettings
-      })
-    } catch (e) {
-      console.error(e)
+      }
+      await comfyPage.setupSettings(startupSettings)
+      if (testInfo.tags.includes('@cloud')) {
+        const context = page.context()
+        await context.route('**/api/auth/session', (route) =>
+          route.fulfill({ status: 204 })
+        )
+        await context.route('**/api/billing/status', (route) =>
+          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+        )
+        await context.route('**/api/billing/capabilities', (route) =>
+          route.fulfill({ json: createBillingCapabilities('ws-personal') })
+        )
+        await context.route('**/api/billing/balance', (route) =>
+          route.fulfill({ json: EMPTY_BILLING_BALANCE })
+        )
+        await context.route('**/api/billing/plans', (route) =>
+          route.fulfill({ json: EMPTY_BILLING_PLANS })
+        )
+        await context.route('**/customers/cloud-subscription-status', (route) =>
+          route.fulfill({ json: UNSUBSCRIBED })
+        )
+        await context.route('**/customers/balance', (route) =>
+          route.fulfill({ json: ZERO_BALANCE })
+        )
+        await mockWorkspace(context, workspace('personal', 'owner'), [])
+      }
+      if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
+        await comfyPage.cloudAuth.mockAuth()
+      }
+
+      if (isCustomNodes) await installCustomNodeBlankStartup(page)
+      if (isCustomNodes) await trackVisibleErrors(page)
+
+      if (Object.keys(initialFeatureFlags).length > 0) {
+        await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
+      }
+
+      await comfyPage.setup()
+
+      if (startupErrorCollector) {
+        startupErrorCollector.stop()
+        recordStartupConsoleErrors(page, startupErrorCollector.errors)
+      }
+
+      if (isCustomNodes) {
+        await comfyExpect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(0)
+      }
+
+      if (testInfo.tags.includes('@cloud')) {
+        await comfyPage.featureFlags.setServerFlagsPersistent({
+          asset_deletion_enabled: true
+        })
+      }
+
+      if (isVueNodes) {
+        await comfyPage.vueNodes.waitForNodes()
+      }
+
+      if (needsPerf) {
+        await comfyPage.perf.init()
+        perfStarted = true
+      }
+
+      await use(comfyPage)
     }
-
-    if (testInfo.tags.includes('@cloud')) {
-      const context = page.context()
-      await context.route('**/api/auth/session', (route) =>
-        route.fulfill({ status: 204 })
-      )
-      await context.route('**/api/billing/status', (route) =>
-        route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
-      )
-      await context.route('**/api/billing/balance', (route) =>
-        route.fulfill({ json: EMPTY_BILLING_BALANCE })
-      )
-      await context.route('**/api/billing/plans', (route) =>
-        route.fulfill({ json: EMPTY_BILLING_PLANS })
-      )
-      await context.route('**/customers/balance', (route) =>
-        route.fulfill({ json: ZERO_BALANCE })
-      )
-      await mockWorkspace(context, workspace('personal', 'owner'), [])
-    }
-
-    if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
-      await comfyPage.cloudAuth.mockAuth()
-    }
-
-    if (Object.keys(initialFeatureFlags).length > 0) {
-      await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
-    }
-
-    await comfyPage.setup()
-
-    if (isVueNodes) {
-      await comfyPage.vueNodes.waitForNodes()
-    }
-
-    const needsPerf =
-      testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
-    if (needsPerf) await comfyPage.perf.init()
-
-    await use(comfyPage)
-
-    if (needsPerf) await comfyPage.perf.dispose()
+    await runWithCollectedCleanup(run, cleanups)
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
