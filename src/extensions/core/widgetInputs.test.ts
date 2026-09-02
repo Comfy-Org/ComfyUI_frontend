@@ -324,6 +324,58 @@ describe('PrimitiveNode', () => {
     })
   })
 
+  it('clamps a serialized number to the rebuilt widget range', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('steps', 'INT')
+    target.inputs[0].widget = {
+      name: 'steps',
+      [GET_CONFIG]: () => ['INT', { min: 1, max: 100 }]
+    }
+    target.addWidget('number', 'steps', 20, () => {}, { min: 1, max: 100 })
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: [500], outputs: [{ type: 'INT' }] })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe(100)
+  })
+
+  it('keeps the target value when a serialized combo option was removed', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('sampler', 'COMBO')
+    target.inputs[0].widget = {
+      name: 'sampler',
+      [GET_CONFIG]: () => [['current', 'other'], {}]
+    }
+    target.addWidget('combo', 'sampler', 'current', () => {}, {
+      values: ['current', 'other']
+    })
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: ['removed'], outputs: [{ type: 'COMBO' }] })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe('current')
+  })
+
   it('survives a widgets_values that is not an array', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')

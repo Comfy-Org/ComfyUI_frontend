@@ -288,7 +288,8 @@ export class PrimitiveNode extends LGraphNode {
       widget = this._createAssetWidget(node, widgetName, inputData)
       const theirWidget = node.widgets?.find((w) => w.name === widgetName)
       if (theirWidget) widget.value = theirWidget.value
-      if (hasConfiguredWidgetValue) widget.value = configuredWidgetValue
+      if (hasConfiguredWidgetValue)
+        this._restoreConfiguredWidgetValue(widget, configuredWidgetValue)
       if (configuredWidgetValues) this.configuredWidgetValues = undefined
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
       return
@@ -307,7 +308,8 @@ export class PrimitiveNode extends LGraphNode {
         widget.value = theirWidget.value
       }
     }
-    if (hasConfiguredWidgetValue) widget.value = configuredWidgetValue
+    if (hasConfiguredWidgetValue)
+      this._restoreConfiguredWidgetValue(widget, configuredWidgetValue)
 
     if (
       !inputData?.[1]?.control_after_generate &&
@@ -341,6 +343,39 @@ export class PrimitiveNode extends LGraphNode {
 
     if (configuredWidgetValues) this.configuredWidgetValues = undefined
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+  }
+
+  private _restoreConfiguredWidgetValue(
+    widget: IBaseWidget,
+    configuredValue: WidgetValue
+  ) {
+    if (configuredValue == null) {
+      widget.value = configuredValue
+      return
+    }
+
+    const allowedValues = widget.options?.values
+    if (Array.isArray(allowedValues)) {
+      if (allowedValues.includes(configuredValue))
+        widget.value = configuredValue
+      return
+    }
+
+    if (widget.type === 'number') {
+      if (
+        typeof configuredValue !== 'number' ||
+        !Number.isFinite(configuredValue)
+      )
+        return
+      widget.value = Math.min(
+        Math.max(configuredValue, widget.options.min ?? -Infinity),
+        widget.options.max ?? Infinity
+      )
+      return
+    }
+
+    if (widget.value == null || typeof widget.value === typeof configuredValue)
+      widget.value = configuredValue
   }
 
   private _createAssetWidget(
