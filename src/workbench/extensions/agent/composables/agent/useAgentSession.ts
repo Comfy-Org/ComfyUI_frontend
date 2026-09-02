@@ -114,7 +114,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const currentUser = useCurrentUser()
   const workspaceStore = useTeamWorkspaceStore()
   const storageScope = computed(() => {
-    const userId = currentUser.resolvedUserInfo.value?.id ?? 'signed-out'
+    const userId = toValue(currentUser.resolvedUserInfo)?.id ?? 'signed-out'
     const workspaceId = toValue(workspaceStore.activeWorkspaceId) ?? 'personal'
     return `${encodeURIComponent(userId)}.${encodeURIComponent(workspaceId)}`
   })
