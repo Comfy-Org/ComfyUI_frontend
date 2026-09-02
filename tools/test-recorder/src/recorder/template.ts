@@ -30,8 +30,8 @@ interface TemplateOptions {
  * of their full normalized origin+path instead (path included, since
  * path-routed backends like /tenant-a/ vs /tenant-b/ are distinct sessions);
  * the three fixed cloud distributions keep their id. Hashing also bounds the
- * resulting filename length and gives every unparseable/malformed URL its
- * own bucket instead of one shared fallback.
+ * resulting filename length and routes every unparseable/malformed URL to
+ * one shared fallback bucket.
  */
 export function storageStateKey(distribution?: Distribution): string {
   if (!distribution) return 'cloud'
