@@ -8251,9 +8251,9 @@ Enterprise`
     'zh-CN': '运行顶尖模型'
   },
   'workshop.hero.subtitle': {
-    en: 'Pick what you want to make and run the best partner model for it, straight from Comfy Router. No install, no setup: set your inputs, hit Run. You see the price before every run.',
+    en: 'The best partner models, ready to run. No install, no setup: set your inputs, see the price, hit Run.',
     'zh-CN':
-      '选择想要创作的内容，直接通过 Comfy Router 运行最合适的合作伙伴模型。无需安装配置：设置输入、点击运行。每次运行前都会显示价格。'
+      '顶尖合作伙伴模型，即开即用。无需安装配置：设置输入、查看价格、点击运行。'
   },
   'workshop.useCase.label': { en: 'Browse by type', 'zh-CN': '按类型浏览' },
   'workshop.useCase.all': { en: 'All', 'zh-CN': '全部' },

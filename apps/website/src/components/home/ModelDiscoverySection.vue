@@ -69,10 +69,10 @@ const cardClass =
           <template v-if="revealed.has(model.slug) && model.thumbnailUrl">
             <StaticFrame
               :src="model.thumbnailUrl"
-              class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+              class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
             />
             <span
-              class="absolute inset-0 bg-black/40 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+              class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
               aria-hidden="true"
             />
           </template>
