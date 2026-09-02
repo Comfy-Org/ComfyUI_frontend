@@ -72,12 +72,22 @@ export class LayoutFollowerBridge extends EventTarget {
   /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
   private schemaError: FollowerSchemaError | null = null
   /**
-   * Highest doc seq seen since the last subscribe left the transport; `null`
-   * until the first post-subscribe frame, so catch-up re-baselines instead of
-   * being compared across a resubscribe. See the gap detector in
+   * Highest doc seq APPLIED since the last subscribe left the transport;
+   * `null` until the first post-subscribe update, so catch-up re-baselines
+   * instead of being compared across a resubscribe. See the gap detector in
    * {@link onDocUpdate}.
    */
   private lastSeq: number | null = null
+  /**
+   * The host's seq at the moment it acknowledged the current subscribe
+   * (`doc_subscribed.seq`); `null` until that ack lands. It is NOT an applied
+   * baseline — the catch-up carrying that very seq may still be in flight, or
+   * may never come when the follower was already current — so it never gates
+   * a frame as stale. It only arms the gap detector before the first applied
+   * update and stands in for {@link lastSeq} in {@link lastSequence} while no
+   * update has been applied.
+   */
+  private ackSeq: number | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -97,8 +107,15 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.sentWorkflowId
   }
 
+  /**
+   * The host seq this follower is known to be at: the last applied update, or
+   * — before any update has been applied for the current subscribe — the seq
+   * the host acknowledged. An already-current follower receives an ack and no
+   * catch-up, so without the fallback the outbound op `baseVersion` would sit
+   * at 0 until the next live frame.
+   */
   get lastSequence(): number {
-    return this.lastSeq ?? 0
+    return this.lastSeq ?? this.ackSeq ?? 0
   }
 
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
@@ -161,6 +178,7 @@ export class LayoutFollowerBridge extends EventTarget {
     ) {
       this.sentWorkflowId = desired
       this.lastSeq = null
+      this.ackSeq = null
     }
   }
 
@@ -212,7 +230,13 @@ export class LayoutFollowerBridge extends EventTarget {
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
     // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
-    if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
+    //
+    // Before the first applied update the detector is armed from the ack seq
+    // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
+    // both contiguous with it, so neither trips it, while a first frame at
+    // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
+    const baseline = this.lastSeq ?? this.ackSeq
+    if (baseline !== null && update.seq > baseline + 1) {
       this.resubscribe()
       return
     }
@@ -268,10 +292,14 @@ export class LayoutFollowerBridge extends EventTarget {
 
   /**
    * `ok: true` confirms the subscription but does not mean its catch-up update
-   * has already been integrated. The host sends `doc_subscribed(seq=N)` before
-   * `doc_update(seq=N)`, so treating the acknowledgement as the applied
-   * baseline drops the snapshot as stale and leaves a fresh follower empty.
-   * The first actual update establishes the baseline instead.
+   * has already been integrated. The host sends `doc_subscribed(seq=N)` and
+   * THEN `doc_update(seq=N)` — and sends no catch-up at all when the follower
+   * was already current — so recording N as the applied baseline drops the
+   * snapshot as stale and leaves a fresh follower empty (the KA-11
+   * `schema_version=undefined` symptom). The ack seq is kept apart in
+   * {@link ackSeq}: it arms the gap detector and backs {@link lastSequence},
+   * but only an applied update ever moves {@link lastSeq}. The ack therefore
+   * never rewinds a baseline established by an update that arrived first.
    *
    * `ok: false` means the server refused: clearing REALITY re-opens
    * the intent/reality disagreement so the next `reconcile()` (any status
@@ -282,7 +310,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) this.lastSeq = null
+    if (subscribed.ok) this.ackSeq = subscribed.seq ?? null
     else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
