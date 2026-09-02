@@ -59,7 +59,7 @@ describe('resolveAgentPaywallPresentation', () => {
       hasAuthoritativeCapabilities: false,
       canTopUp: true,
       canSubscribeSelfServe: false,
-      expected: { kind: 'member' }
+      expected: { kind: 'local' }
     },
     {
       name: 'Localhost owner without a subscription',
