@@ -275,9 +275,13 @@ export class EcsFollowerAdapter {
         const node = session.nodes.get(id)
         const widgets = node?.get('widgets')
         if (!(widgets instanceof Y.Map)) continue
+        if ([...names].some((name) => !widgets.has(name))) {
+          const payload = readSemanticNode(session.follower.doc, id)
+          if (payload) batch.reconcileNode(payload)
+          continue
+        }
         for (const name of names) {
-          if (widgets.has(name))
-            batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
         }
       }
       for (const id of changedLinkIds) {

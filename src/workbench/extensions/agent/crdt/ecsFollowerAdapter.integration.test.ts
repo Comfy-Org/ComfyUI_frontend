@@ -1,4 +1,4 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -697,6 +697,72 @@ describe('EcsFollowerAdapter integration', () => {
       [toNodeId(2)],
       expect.objectContaining({ source: 'agent-remote', opId: 'op-8' })
     )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('removes a widget deleted from an existing remote widget map', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            widgets_values: { seed: 1, stale: 9 },
+            inputs: [],
+            outputs: []
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const initial = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(initial)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: initial,
+        actor: 'agent:test',
+        opIds: ['add']
+      })
+    ).toBe(true)
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
+        ?.value
+    ).toBe(9)
+
+    const beforeRemoval = Y.encodeStateVector(host)
+    const widgets = nodesMap(host).get('1')?.get('widgets')
+    expect(widgets).toBeInstanceOf(Y.Map)
+    ;(widgets as Y.Map<unknown>).delete('stale')
+    const update = Y.encodeStateAsUpdate(host, beforeRemoval)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update,
+        actor: 'agent:test',
+        opIds: ['remove-widget-key']
+      })
+    ).toBe(true)
+
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
+    ).toBeUndefined()
 
     adapter.destroy()
     follower.destroy()
