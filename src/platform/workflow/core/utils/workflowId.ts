@@ -1,5 +1,8 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { generateUUID, isValidUuid } from '@comfyorg/shared-frontend-utils/formatUtil'
+import {
+  generateUUID,
+  isValidUuid
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 type WorkflowWithId = ComfyWorkflowJSON & { id: string }
 

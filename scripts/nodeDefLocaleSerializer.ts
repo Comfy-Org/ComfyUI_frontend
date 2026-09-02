@@ -1,4 +1,7 @@
-import { escapeI18nMessage, normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
+import {
+  escapeI18nMessage,
+  normalizeI18nKey
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 interface LocalizableInput {
   type: string
