@@ -50,13 +50,13 @@ jobs:
       checks: write # the rollup read + the opt-in Check Run publish
       actions: read # CheckRun -> checkSuite -> workflowRun for self-exclusion
       statuses: read
-    # Pinned to github-workflows main (e4a8f7c); keep workflows_ref in
+    # Pinned to github-workflows main (df10491); keep workflows_ref in
     # lock-step so the grader + risk map schema load from the same commit.
     # This permissions block must stay a superset of the UNION of every job
     # the reusable workflow declares, including jobs whose `if:` skips them.
-    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@e4a8f7cd4a073da082b03950136530d4df50738f # github-workflows main (e4a8f7c)
+    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@df10491e93cddef6fd78e512a2ec1d363237d44a # github-workflows main (df10491)
     with:
-      workflows_ref: e4a8f7cd4a073da082b03950136530d4df50738f
+      workflows_ref: df10491e93cddef6fd78e512a2ec1d363237d44a
       # Required: upstream defaults enabled to FALSE. The repository variable
       # RISK_CONFIG outranks this in both directions ({"enabled": false} is a
       # kill switch that needs no PR).
