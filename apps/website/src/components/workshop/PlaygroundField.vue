@@ -256,7 +256,7 @@ function acceptHint(accept: readonly string[]): string {
         <span class="font-bold tracking-wider uppercase">
           {{ t('workshop.field.upload', locale) }}
         </span>
-        <span>
+        <span class="text-[11px] text-primary-warm-gray/70">
           {{ acceptHint(field.accept) }} ·
           {{ t('workshop.field.uploadLimit', locale) }}
         </span>

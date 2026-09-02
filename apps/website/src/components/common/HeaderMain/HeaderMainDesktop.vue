@@ -51,11 +51,8 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             :active="isNavItemActive(navItem, currentPath)"
           >
             <span class="inline-flex items-center gap-1">
-              <span class="ppformula-text-center">{{ navItem.label }}</span>
-              <span
-                v-if="navItem.badge"
-                class="ppformula-text-center hidden 2xl:inline-flex"
-              >
+              <span>{{ navItem.label }}</span>
+              <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
                 <NewBadge :locale="locale" size="xxs" />
               </span>
             </span>
