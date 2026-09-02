@@ -33,6 +33,23 @@ describe('agentRunModeStore', () => {
     expect(store.creditLimit).toBeNull()
   })
 
+  it('migrates a legacy preference when loading gets 404', async () => {
+    localStorage.setItem('Comfy.Agent.RunMode', 'auto-limit')
+    localStorage.setItem('Comfy.Agent.RunCreditLimit', '75')
+    fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
+
+    const store = useAgentRunModeStore()
+    await store.load()
+
+    expect(store.mode).toBe('auto_limited')
+    expect(store.creditLimit).toBe(75)
+    expect(
+      JSON.parse(localStorage.getItem('Comfy.Agent.RunModePreference')!)
+    ).toEqual({ mode: 'auto_limited', credit_limit: 75 })
+    expect(localStorage.getItem('Comfy.Agent.RunMode')).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBeNull()
+  })
+
   it('loads the server preference as the source of truth', async () => {
     fetchApi.mockResolvedValueOnce(
       jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })
@@ -78,6 +95,8 @@ describe('agentRunModeStore', () => {
       'Comfy.Agent.RunModePreference',
       JSON.stringify({ mode: 'auto_limited', credit_limit: 50 })
     )
+    localStorage.setItem('Comfy.Agent.RunMode', 'ask')
+    localStorage.setItem('Comfy.Agent.RunCreditLimit', '300')
     fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
 
     const store = useAgentRunModeStore()
@@ -85,6 +104,8 @@ describe('agentRunModeStore', () => {
 
     expect(store.mode).toBe('auto_limited')
     expect(store.creditLimit).toBe(50)
+    expect(localStorage.getItem('Comfy.Agent.RunMode')).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBeNull()
   })
 
   it('saves through the endpoint and applies its canonical response', async () => {

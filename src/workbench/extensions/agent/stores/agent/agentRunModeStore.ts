@@ -17,11 +17,47 @@ const DEFAULT_PREFERENCE: AgentRunModePreference = {
   mode: 'ask_approval',
   credit_limit: null
 }
+const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
+const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
+const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
+
+function migrateLegacyPreference(): void {
+  const storedPreference = localStorage.getItem(PREFERENCE_STORAGE_KEY)
+  const legacyMode = localStorage.getItem(LEGACY_MODE_STORAGE_KEY)
+  const legacyCreditLimit = localStorage.getItem(
+    LEGACY_CREDIT_LIMIT_STORAGE_KEY
+  )
+
+  if (storedPreference === null && legacyMode !== null) {
+    const mode = {
+      ask: 'ask_approval',
+      auto: 'auto',
+      'auto-limit': 'auto_limited'
+    }[legacyMode]
+    const creditLimit = Number(legacyCreditLimit)
+    const migrated = zAgentRunMode.safeParse({
+      mode,
+      credit_limit: mode === 'auto_limited' ? creditLimit : null
+    })
+    if (migrated.success) {
+      localStorage.setItem(
+        PREFERENCE_STORAGE_KEY,
+        JSON.stringify(migrated.data)
+      )
+    }
+  }
+
+  if (legacyMode !== null || legacyCreditLimit !== null) {
+    localStorage.removeItem(LEGACY_MODE_STORAGE_KEY)
+    localStorage.removeItem(LEGACY_CREDIT_LIMIT_STORAGE_KEY)
+  }
+}
 
 export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   const api = createAgentRestClient()
+  migrateLegacyPreference()
   const preference = useLocalStorage<AgentRunModePreference>(
-    'Comfy.Agent.RunModePreference',
+    PREFERENCE_STORAGE_KEY,
     DEFAULT_PREFERENCE,
     {
       serializer: {
