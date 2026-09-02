@@ -88,10 +88,8 @@ const itemClass =
       :title="t('nav.addCredits', locale)"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm font-bold whitespace-nowrap transition-colors',
-          hasCredits
-            ? 'border-transparency-white-t20 text-primary-warm-white'
-            : 'border-primary-comfy-yellow/60 text-primary-comfy-yellow'
+          'bg-transparency-white-t4 flex h-10 items-center gap-2 rounded-full border border-transparency-white-t20 px-3 text-sm font-bold whitespace-nowrap text-primary-warm-white transition-colors hover:bg-transparency-white-t8',
+          !hasCredits && 'border-primary-comfy-red/60'
         )
       "
     >
@@ -99,9 +97,7 @@ const itemClass =
         :class="
           cn(
             'size-4',
-            hasCredits
-              ? 'text-primary-comfy-yellow'
-              : 'text-primary-comfy-yellow'
+            hasCredits ? 'text-primary-warm-gray' : 'text-primary-comfy-red'
           )
         "
         aria-hidden="true"
@@ -119,7 +115,7 @@ const itemClass =
       <DropdownMenuTrigger
         data-testid="header-account"
         :aria-label="t('nav.accountMenu', locale)"
-        class="bg-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 grid size-10 shrink-0 cursor-pointer place-items-center rounded-full text-sm font-bold text-primary-comfy-ink transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
+        class="bg-primary-comfy-plum focus-visible:ring-primary-comfy-yellow/50 grid size-10 shrink-0 cursor-pointer place-items-center rounded-full text-sm font-bold text-primary-warm-white transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
       >
         {{ initials }}
       </DropdownMenuTrigger>

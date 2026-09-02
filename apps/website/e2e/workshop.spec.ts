@@ -75,12 +75,10 @@ test.describe('Model playground', () => {
     await page.getByTestId('sign-in-github').click()
 
     await expect(page).toHaveURL(new RegExp(`${MODEL_PATH}$`))
-    await expect(page.getByTestId('signed-in-notice')).toBeVisible({
-      timeout: 15_000
-    })
     await expect(page.getByTestId('run-button')).toHaveAttribute(
       'data-gate',
-      'ready'
+      'ready',
+      { timeout: 15_000 }
     )
     await expect(page.getByTestId('field-prompt')).toHaveValue(prompt)
   })

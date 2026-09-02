@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, Loader2 } from '@lucide/vue'
+import { Download, Image as ImageIcon, Loader2 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -16,15 +16,11 @@ const {
   state,
   now,
   modality,
-  exampleUrl,
-  exampleTitle,
   locale = 'en'
 } = defineProps<{
   state: RunState
   now: number
   modality?: Modality
-  exampleUrl?: string
-  exampleTitle?: string
   locale?: Locale
 }>()
 
@@ -97,39 +93,19 @@ const blurred = computed(
       </span>
     </header>
 
-    <!-- Idle: example output -->
+    <!-- Idle -->
     <div
       v-if="state.status === 'idle'"
-      class="relative flex min-h-80 flex-1 flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center"
+      class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
     >
-      <video
-        v-if="exampleUrl && isVideoUrl(exampleUrl)"
-        :src="exampleUrl"
-        class="absolute inset-0 size-full object-cover opacity-40"
-        autoplay
-        muted
-        loop
-        playsinline
-      />
-      <img
-        v-else-if="exampleUrl"
-        :src="exampleUrl"
-        alt=""
-        class="absolute inset-0 size-full object-cover opacity-40"
-      />
-      <div
-        v-if="exampleUrl"
-        class="absolute inset-0 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/40 to-transparent"
-      />
-      <p class="relative text-sm text-primary-warm-white">
-        {{ t('workshop.output.placeholder', locale) }}
-      </p>
-      <p
-        v-if="exampleUrl"
-        class="relative text-xs tracking-wider text-primary-warm-gray uppercase"
+      <span
+        class="grid size-12 place-items-center rounded-2xl border border-dashed border-transparency-white-t20 text-primary-warm-gray"
+        aria-hidden="true"
       >
-        {{ t('workshop.output.example', locale) }}
-        <template v-if="exampleTitle">· {{ exampleTitle }}</template>
+        <ImageIcon class="size-5" />
+      </span>
+      <p class="text-sm text-primary-warm-gray">
+        {{ t('workshop.output.placeholder', locale) }}
       </p>
     </div>
 

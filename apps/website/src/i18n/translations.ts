@@ -8514,10 +8514,6 @@ Enterprise`
     en: 'Model temporarily unavailable',
     'zh-CN': '模型暂时不可用'
   },
-  'workshop.run.signedInNotice': {
-    en: "You're signed in. Hit Run when ready.",
-    'zh-CN': '你已登录。准备好后点击运行。'
-  },
   'workshop.run.videoHint': {
     en: 'Video runs can take up to 10 minutes and run without a queue.',
     'zh-CN': '视频生成最长可能需要 10 分钟，且不排队。'
@@ -8529,7 +8525,6 @@ Enterprise`
     en: 'Your output will appear here.',
     'zh-CN': '你的输出会显示在这里。'
   },
-  'workshop.output.example': { en: 'Example output', 'zh-CN': '示例输出' },
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
   'workshop.output.useInCode': {
     en: 'Use these settings in code',

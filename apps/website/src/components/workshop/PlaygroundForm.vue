@@ -56,7 +56,7 @@ const groups = computed(() => {
 
     <div
       v-if="groups.settings.length"
-      class="grid gap-x-5 gap-y-8 sm:grid-cols-2"
+      class="flex flex-col gap-8"
       data-testid="playground-settings"
     >
       <PlaygroundField

@@ -4,8 +4,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import { useMockSession } from '../../composables/useMockSession'
-import { EXISTING_CREDITS } from '../../composables/useMockSession'
+import { useMockSession,EXISTING_CREDITS } from '../../composables/useMockSession'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import ModelDetail from './ModelDetail.vue'
 
@@ -99,11 +98,8 @@ describe('ModelDetail', () => {
 
   it('validates the form before charging anything', async () => {
     const api = await signedInDetail()
-    expect(screen.getByTestId('signed-in-notice')).toBeTruthy()
-
     await user().click(screen.getByTestId('run-button'))
     expect(screen.getByTestId('error-prompt')).toBeTruthy()
-    expect(screen.queryByTestId('signed-in-notice')).toBeNull()
     expect(credits(api)).toBe(EXISTING_CREDITS)
   })
 

@@ -5,10 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
-import {
-  consumeJustSignedIn,
-  useSignInHref
-} from '../../composables/useSignInHref'
+import { useSignInHref } from '../../composables/useSignInHref'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
@@ -64,7 +61,6 @@ const schema = computed(() =>
 const values = ref<FormValues>(defaultValues(schema.value, model.defaults))
 const runState = ref<RunState>(IDLE)
 const revealed = ref(false)
-const signedInNotice = ref(false)
 
 const { session, setCredits } = useMockSession()
 const {
@@ -110,20 +106,9 @@ const { pause, resume } = useIntervalFn(
 )
 watch(isRunning, (running) => (running ? resume() : pause()))
 
-watch(
-  () => session.value.status,
-  (status, previous) => {
-    if (previous === 'signedOut' && status === 'signedIn') {
-      signedInNotice.value = true
-    }
-    if (status === 'signedOut') signedInNotice.value = false
-  }
-)
-
 // Keeps the form intact across a sign-in or a top-up round trip.
 const storageKey = `comfy-workshop-form:${model.slug}`
 onMounted(() => {
-  if (consumeJustSignedIn()) signedInNotice.value = true
   try {
     const stored = sessionStorage.getItem(storageKey)
     if (stored) values.value = { ...values.value, ...JSON.parse(stored) }
@@ -208,7 +193,6 @@ function finishRun() {
 }
 
 function run() {
-  signedInNotice.value = false
   revealed.value = false
   const fieldErrors = validateForm(schema.value, values.value)
   if (Object.keys(fieldErrors).length) {
@@ -325,15 +309,6 @@ function useInCode() {
             :locale
             :disabled="isRunning"
           />
-
-          <p
-            v-if="signedInNotice"
-            class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/10 rounded-2xl border px-4 py-3 text-sm text-primary-warm-white"
-            role="status"
-            data-testid="signed-in-notice"
-          >
-            {{ t('workshop.run.signedInNotice', locale) }}
-          </p>
         </div>
 
         <div
@@ -424,8 +399,6 @@ function useInCode() {
           :state="runState"
           :now
           :modality="model.modality"
-          :example-url="examples[0]?.outputUrl ?? model.thumbnailUrl"
-          :example-title="examples[0]?.title"
           :locale
           @cancel="cancel"
           @retry="reset"

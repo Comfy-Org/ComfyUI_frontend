@@ -4,11 +4,7 @@ import { onMounted, ref } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AccountKind } from '../../composables/useMockSession'
 import { useMockSession } from '../../composables/useMockSession'
-import {
-  RETURN_PARAM,
-  markJustSignedIn,
-  safeReturnPath
-} from '../../composables/useSignInHref'
+import { RETURN_PARAM, safeReturnPath } from '../../composables/useSignInHref'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -42,7 +38,6 @@ function switchMode(next: Mode) {
 function complete() {
   const kind: AccountKind = mode.value === 'signUp' ? 'new' : 'existing'
   signIn(kind)
-  markJustSignedIn()
   location.assign(returnTo.value)
 }
 
