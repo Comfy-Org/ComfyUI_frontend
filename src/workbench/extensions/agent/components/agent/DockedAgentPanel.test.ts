@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -50,6 +51,7 @@ describe('DockedAgentPanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    document.documentElement.style.removeProperty(WORKSPACE_INSET_RIGHT)
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
   })
@@ -66,6 +68,9 @@ describe('DockedAgentPanel', () => {
         timeout: 5000
       })
     ).toBeTruthy()
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe(`${store.width}px`)
   })
 
   it('T-30 / PM-654 / FE-1285 fills the panel opaquely and draws the canvas seam border', () => {

@@ -82,8 +82,9 @@ describe('attachLinkMintPort', () => {
     })
   })
 
-  it('mints a concrete connect for a local link placement', () => {
+  it('mints a concrete connect for a local link placement', async () => {
     place(ROOT_SCOPE, topology(41))
+    await Promise.resolve()
 
     expect(minted).toEqual([
       {
@@ -197,5 +198,40 @@ describe('attachLinkMintPort', () => {
     place(ROOT_SCOPE, topology(41))
 
     expect(minted).toEqual([])
+  })
+
+  it('cancels a same-task deletion of an unflushed placement without a phantom connect', async () => {
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3893153026
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    place(ROOT_SCOPE, topology(41))
+    remove(ROOT_SCOPE, topology(41))
+    await afterSweep()
+
+    // The canceled placement never reaches enqueue and is never reported as
+    // a `link connect` divergence (it did not ship). The severance sweep
+    // still runs and correctly reports the unconsumed disconnect - it was a
+    // real local delete that nothing (e.g. a delete_node mint) consumed.
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    expect(consoleError.mock.calls[0][0]).toContain('link disconnect')
+    consoleError.mockRestore()
+  })
+
+  it('flushes and surfaces pending placements on detach instead of discarding them silently', () => {
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825337
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    place(ROOT_SCOPE, topology(41))
+    port.detach()
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    expect(consoleError.mock.calls[0][1]).toBe(41)
+    consoleError.mockRestore()
   })
 })

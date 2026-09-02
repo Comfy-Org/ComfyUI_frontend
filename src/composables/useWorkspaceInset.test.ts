@@ -59,6 +59,10 @@ describe('useWorkspaceInsetRight', () => {
     width.value = 960
     await nextTick()
 
-    expect(readInset()).toBe('420px')
+    // Teardown clears the var rather than freezing it at its last published
+    // value - a docked surface unmounted mid-close (its host's `v-if` beats
+    // its own `docked.value ? width : 0` branch to the flush) must not leave
+    // every portaled overlay permanently offset.
+    expect(readInset()).toBe('0px')
   })
 })

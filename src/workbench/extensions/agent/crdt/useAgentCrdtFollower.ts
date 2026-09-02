@@ -12,8 +12,7 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-import type { OpsResultView } from './opSender'
-import { createOpSender } from './opSender'
+import { createOpSender, toOpsResultView } from './opSender'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -185,15 +184,7 @@ export function useAgentCrdtFollower(
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
-        listener({
-          ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
-            : {})
-        })
+        listener(toOpsResultView(event.detail))
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
