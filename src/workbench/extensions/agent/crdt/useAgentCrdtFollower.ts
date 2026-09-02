@@ -56,6 +56,23 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
+const DEFAULT_SCHEMA_ERROR_MESSAGE = 'Document schema version mismatch'
+
+// `AgentCrdtStatus.schemaError` is contractually `string | null`; the detail
+// arrives as an untyped CustomEvent payload (server frame or, in tests, a
+// hand-built object), so a non-string `message` must not reach the ref — it
+// would otherwise flow straight into a toast expecting a string.
+function readSchemaErrorMessage(detail: unknown): string {
+  if (
+    detail !== null &&
+    typeof detail === 'object' &&
+    'message' in detail &&
+    typeof (detail as { message?: unknown }).message === 'string'
+  )
+    return (detail as { message: string }).message
+  return DEFAULT_SCHEMA_ERROR_MESSAGE
+}
+
 function safeSessionStorage(): Storage | null {
   try {
     return window.sessionStorage
@@ -155,6 +172,12 @@ export function useAgentCrdtFollower(
   const lastFrameType = ref<string | null>(null)
   const schemaError = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  // Set to the workflow id a `schema_version_mismatch` refusal was reported
+  // for; cleared only when the watch rebinds to a different workflow (or the
+  // target goes inactive). While set for the CURRENT workflow, no retry path
+  // — ack-driven clear, reconcile(), or resubscribe() — may re-arm a
+  // subscribe attempt or wipe the displayed error for that same mismatch.
+  let permanentSchemaMismatchWorkflowId: string | null = null
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -309,7 +332,19 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      schemaError.value = null
+      // A successful ack confirms the SUBSCRIPTION, not that the merged doc
+      // is readable — the ack always precedes its catch-up `doc_update` (see
+      // LayoutFollowerBridge.onDocSubscribed), and a reconnect can ack a
+      // lineage whose FollowerDoc is still the one `bridge.lastSchemaError`
+      // latched. Clearing the public error here would report "connected"
+      // while projection stays blocked. Only clear once the bridge itself
+      // holds no schema error (a fresh document passed the read-time guard)
+      // and this same workflow was not permanently gated below.
+      if (
+        bridge.lastSchemaError === null &&
+        subscribedWorkflowId.value !== permanentSchemaMismatchWorkflowId
+      )
+        schemaError.value = null
       clearSubscribeRetry()
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
@@ -320,8 +355,8 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       if (event.detail?.code === 'schema_version_mismatch') {
         clearSubscribeRetry()
-        schemaError.value =
-          event.detail?.message ?? 'Document schema version mismatch'
+        permanentSchemaMismatchWorkflowId = subscribedWorkflowId.value
+        schemaError.value = readSchemaErrorMessage(event.detail)
       } else {
         scheduleSubscribeRetry()
       }
@@ -409,6 +444,15 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      // A lineage break mints a brand-new FollowerDoc (see
+      // LayoutFollowerBridge.dropDocForNewLineage), which is exactly the
+      // "unreadable FollowerDoc was replaced" condition that may lift a
+      // permanent schema-error gate for this workflow — the prior doc's
+      // failure says nothing about the fresh one.
+      if (workflowId === permanentSchemaMismatchWorkflowId) {
+        permanentSchemaMismatchWorkflowId = null
+        schemaError.value = null
+      }
       adapter.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -424,22 +468,39 @@ export function useAgentCrdtFollower(
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
+    clearSubscribeRetry()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string; message?: string } | null)
+        ? (event.detail as { workflowId?: unknown } | null)
         : null
-    schemaError.value = detail?.message ?? 'Document schema version mismatch'
-    if (detail?.workflowId !== undefined)
-      adapter.discardPending(detail.workflowId)
+    const workflowId =
+      typeof detail?.workflowId === 'string' ? detail.workflowId : null
+    // Same permanent-mismatch gate as the subscribe-refusal path: the doc this
+    // workflow just merged is unreadable, so a later status/reconnect must not
+    // resubscribe into the same failure until the workflow itself changes.
+    permanentSchemaMismatchWorkflowId = workflowId ?? subscribedWorkflowId.value
+    schemaError.value = readSchemaErrorMessage(detail)
+    if (workflowId !== null) adapter.discardPending(workflowId)
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  // True while the CURRENT workflow already failed a permanent schema check
+  // (subscribe refusal or KA-11 read gate). Guards every path that could
+  // otherwise re-drive a subscribe for that same doc: `reconcile()`/
+  // `resubscribe()` themselves have no notion of "permanent", so without this
+  // check a later `status` frame or a reconnect resends the exact request the
+  // server (or the local read gate) already refused.
+  const isPermanentlyMismatched = (): boolean =>
+    subscribedWorkflowId.value !== null &&
+    subscribedWorkflowId.value === permanentSchemaMismatchWorkflowId
+
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
+    if (isPermanentlyMismatched()) return
     bridge.resubscribe()
   }
   /**
@@ -453,9 +514,13 @@ export function useAgentCrdtFollower(
    * on every accepted connection, first one included, so it is the earliest
    * signal available that the socket can now carry a frame. `reconcile()` is a
    * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing.
+   * nothing — EXCEPT for a permanently-mismatched workflow, where intent and
+   * reality deliberately disagree (the ack refusal cleared `sentWorkflowId`)
+   * so that a later, unrelated retry path cannot mistake the gap for one still
+   * owed a retry.
    */
   const onSocketActivity: EventListener = () => {
+    if (isPermanentlyMismatched()) return
     bridge.reconcile()
   }
 
@@ -480,6 +545,12 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       connected.value = false
       schemaError.value = null
+      // The workflow or active state changed — the one condition that is
+      // allowed to lift a permanent-mismatch gate (see
+      // `isPermanentlyMismatched`). Reset unconditionally, even back to the
+      // same workflow id after a detach, so a fresh subscribe attempt is not
+      // silently swallowed by a gate left over from the previous binding.
+      permanentSchemaMismatchWorkflowId = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false

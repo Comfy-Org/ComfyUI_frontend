@@ -25,6 +25,7 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    lastSchemaError: unknown = null
     follower = {
       updatesApplied: 0,
       doc: {
@@ -232,6 +233,126 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().schemaError).toContain('expected 2, actual 1')
     expect(status().schemaError).toContain('req-123')
+    unmount()
+  })
+
+  // DrJKL discussion_r3911655585: a later status/reconnect must not re-enter
+  // the retry path for a permanent mismatch already reported for this doc.
+  it('a permanent schema mismatch is not re-entered by a later status event', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'doc schema v1 does not match v2'
+    })
+    bridge().reconcile.mockClear()
+
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('a permanent schema mismatch is not re-entered by a socket reconnect', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'doc schema v1 does not match v2'
+    })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('a permanent schema mismatch gate lifts once the workflow changes', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'doc schema v1 does not match v2'
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
+    apiState.target.dispatchEvent(new Event('status'))
+    // The gate applied to wf-1 only; wf-2 is free to reconcile normally.
+    expect(bridge().reconcile).toHaveBeenCalled()
+    unmount()
+  })
+
+  // DrJKL discussion_r3911655577: a successful ack must not clear a read-time
+  // schema error the bridge itself still holds (KA-11), since the ack can
+  // land before — or for — a lineage whose merged doc remains unreadable.
+  it('does not clear a read-time schema error on a bare subscription ack', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+    expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
+
+    // A later ack for the SAME still-unreadable lineage (no follower_replaced
+    // in between) must not clear it — only a workflow change or a confirmed
+    // doc replacement may.
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
+    unmount()
+  })
+
+  it('clears a schema error once the bridge confirms the unreadable doc was replaced', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+    expect(status().schemaError).not.toBeNull()
+
+    // The bridge minted a fresh FollowerDoc for the same workflow (a lineage
+    // break) — this is the "bridge confirms the unreadable FollowerDoc was
+    // replaced" recovery path, distinct from a bare re-ack of the old doc.
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+    expect(status().schemaError).toBeNull()
+    unmount()
+  })
+
+  // DrJKL discussion_r3911655596: a non-string `message` must not reach the
+  // strictly-typed `schemaError: string | null` contract.
+  it('falls back to a default message when schema_error detail is malformed', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: { unexpected: 'object' }
+    })
+
+    expect(status().schemaError).toBe('Document schema version mismatch')
+    unmount()
+  })
+
+  it('falls back to a default message when a schema_version_mismatch detail has no string message', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 12345
+    })
+
+    expect(status().schemaError).toBe('Document schema version mismatch')
     unmount()
   })
 
