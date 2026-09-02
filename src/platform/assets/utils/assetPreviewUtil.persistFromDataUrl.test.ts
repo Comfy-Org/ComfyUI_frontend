@@ -8,7 +8,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 const fetchApi = vi.hoisted(() =>
-  vi.fn(async () => ({ json: async () => ({ assets: [] }) }))
+  vi.fn(async () => ({ ok: true, json: async () => ({ assets: [] }) }))
 )
 vi.mock('@/scripts/api', () => ({
   api: {
