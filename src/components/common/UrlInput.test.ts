@@ -177,7 +177,8 @@ describe('UrlInput', () => {
     it('trims whitespace when user types', async () => {
       renderComponent({
         modelValue: '',
-        placeholder: 'Enter URL'
+        placeholder: 'Enter URL',
+        validateUrlFn: () => Promise.resolve(true)
       })
 
       const input = screen.getByRole('textbox')
@@ -204,7 +205,8 @@ describe('UrlInput', () => {
     it('trims whitespace when value set externally', async () => {
       const { rerender } = renderComponent({
         modelValue: '  https://initial-value.com  ',
-        placeholder: 'Enter URL'
+        placeholder: 'Enter URL',
+        validateUrlFn: () => Promise.resolve(true)
       })
 
       const input = screen.getByRole('textbox')
