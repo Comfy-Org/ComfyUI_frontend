@@ -447,7 +447,7 @@ class NodeWithDynamicCombo(IO.ComfyNode):
 
 class NodeWithComboControlWidget:
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict[str, dict[str, tuple[str, dict[str, object]]]]:
         return {
             "required": {
                 "combo_option": (
@@ -523,23 +523,23 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 }
 
 __all__ = [
-    "LongComboDropdown",
-    "NodeWithOptionalInput",
-    "NodeWithOptionalComboInput",
-    "NodeWithOnlyOptionalInput",
-    "NodeWithOutputList",
-    "NodeWithForceInput",
-    "NodeWithDefaultInput",
-    "NodeWithStringInput",
-    "NodeWithUnionInput",
-    "NodeWithBooleanInput",
-    "NodeWithColorInput",
-    "SimpleSlider",
-    "NodeWithSeedInput",
-    "NodeWithValidation",
-    "NodeWithV2ComboInput",
-    "NodeWithNumericCombo",
-    "NodeWithComboControlWidget",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
+    "LongComboDropdown",
+    "NodeWithBooleanInput",
+    "NodeWithColorInput",
+    "NodeWithComboControlWidget",
+    "NodeWithDefaultInput",
+    "NodeWithForceInput",
+    "NodeWithNumericCombo",
+    "NodeWithOnlyOptionalInput",
+    "NodeWithOptionalComboInput",
+    "NodeWithOptionalInput",
+    "NodeWithOutputList",
+    "NodeWithSeedInput",
+    "NodeWithStringInput",
+    "NodeWithUnionInput",
+    "NodeWithV2ComboInput",
+    "NodeWithValidation",
+    "SimpleSlider",
 ]

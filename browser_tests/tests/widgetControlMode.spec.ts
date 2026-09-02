@@ -103,10 +103,9 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
 
     await comfyPage.page.evaluate(() => {
       const node = window.LiteGraph!.createNode('Reroute')
-      if (node) {
-        node.pos = [400, 30]
-        window.app!.graph!.add(node)
-      }
+      if (!node) throw new Error('Failed to create Reroute node')
+      node.pos = [400, 30]
+      window.app!.graph!.add(node)
     })
     await comfyPage.nextFrame()
 
@@ -196,11 +195,9 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
           return [controlWidget?.label, ...linked.map((l) => l.label ?? '')]
         })
       )
-      .toEqual(
-        expect.arrayContaining([
-          expect.stringContaining('before'),
-          expect.stringContaining('before')
-        ])
-      )
+      .toEqual([
+        expect.stringContaining('before'),
+        expect.stringContaining('before')
+      ])
   })
 })
