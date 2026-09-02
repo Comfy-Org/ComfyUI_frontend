@@ -11,6 +11,8 @@ const MAX_DOC_OPS_PER_FRAME = 256
 const MAX_OP_ID_LENGTH = 128
 const MAX_ERROR_CODE_LENGTH = 128
 const MAX_ERROR_MESSAGE_LENGTH = 8 << 10
+const BASE64_SINGLE_PADDING_END = /[AEIMQUYcgkosw048]=$/
+const BASE64_DOUBLE_PADDING_END = /[AQgw]==$/
 const utf8 = new TextEncoder()
 
 export interface DocOp {
@@ -126,24 +128,14 @@ function decodeBase64(value: string): Uint8Array | null {
 
   // `atob` is permissive about missing padding, so require canonical standard
   // base64 before decoding the untrusted wire value.
-  if (
-    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
-      value
-    )
-  )
-    return null
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value)) return null
+
+  if (padding === 2 && !BASE64_DOUBLE_PADDING_END.test(value)) return null
+  if (padding === 1 && !BASE64_SINGLE_PADDING_END.test(value)) return null
 
   try {
     const binary = atob(value)
-    const bytes = Uint8Array.from(binary, (character) =>
-      character.charCodeAt(0)
-    )
-    // The regex above only checks alphabet and padding shape, not unused pad
-    // bits (RFC 4648 §3.5): `YR==` and `YQ==` both pass it and decode to the
-    // same byte, which is a malleability hole for an op_id-derived digest.
-    // Re-encoding canonically and requiring an exact match rejects that.
-    if (encodeBase64(bytes) !== value) return null
-    return bytes
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0))
   } catch {
     return null
   }
@@ -194,7 +186,7 @@ function isValidActor(value: string): boolean {
 }
 
 function isSequence(value: unknown): value is number {
-  return Number.isSafeInteger(value) && (value as number) >= 0
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -397,6 +389,7 @@ export class DocFrameClient extends EventTarget {
 
   constructor(private readonly transport: DocFrameTransport) {
     super()
+    const reportedTypes = new Set<string>()
     for (const type of [
       'doc_update',
       'doc_subscribed',
@@ -411,6 +404,8 @@ export class DocFrameClient extends EventTarget {
           this.dispatchEvent(new CustomEvent(type, { detail: parsed.data }))
           return
         }
+        if (reportedTypes.has(type)) return
+        reportedTypes.add(type)
         reportError(new Error('Discarded invalid server document frame'), {
           errorType: 'agent_crdt_invalid_server_frame',
           tags: { frame_type: type },

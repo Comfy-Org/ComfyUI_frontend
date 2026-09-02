@@ -32,6 +32,13 @@ describe('parseServerDocFrame doc_update base64 validation', () => {
     expect(parseServerDocFrame(docUpdate(encoded))).toBeNull()
   })
 
+  it('accepts a decoded update at exactly 8 MiB', () => {
+    const maxBytes = 8 * 1024 * 1024
+    const encoded = 'AAAA'.repeat(Math.floor(maxBytes / 3)) + 'AAA='
+
+    expect(parseServerDocFrame(docUpdate(encoded))).not.toBeNull()
+  })
+
   it('rejects an empty update without throwing', () => {
     expect(() => parseServerDocFrame(docUpdate(''))).not.toThrow()
     expect(parseServerDocFrame(docUpdate(''))).toBeNull()

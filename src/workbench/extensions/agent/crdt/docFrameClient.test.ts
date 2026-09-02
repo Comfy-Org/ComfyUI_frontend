@@ -330,23 +330,32 @@ describe('doc frame client', () => {
     })
   })
 
-  it('reports malformed inbound frames without forwarding them', () => {
+  it('reports the first malformed inbound frame per type', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
     const listener = vi.fn()
     client.addEventListener('doc_update', listener)
 
-    transport.receive('doc_update', {
+    const invalidUpdate = {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
       update_b64: 'not-base64'
-    })
+    }
+    transport.receive('doc_update', invalidUpdate)
+    transport.receive('doc_update', invalidUpdate)
+    transport.receive('awareness', {})
 
     expect(listener).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'doc_update' },
+      level: 'warning'
+    })
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'awareness' },
       level: 'warning'
     })
   })
