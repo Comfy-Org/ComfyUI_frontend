@@ -4,13 +4,11 @@
  * the output directory instead of asking for the annotation as part of the
  * filename under `type=input`, which 404s and renders "Image failed to load".
  */
-import { expect, mergeTests } from '@playwright/test'
+import { expect } from '@playwright/test'
 
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Load Image annotated widget value', { tag: '@widget' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -18,108 +16,92 @@ test.describe('Load Image annotated widget value', { tag: '@widget' }, () => {
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
     )
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
   })
 
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 
-  test('requests an [output] widget value from the output directory', async ({
-    comfyPage
-  }) => {
-    const viewRequests: URL[] = []
-    await comfyPage.page.route('**/api/view?*', async (route) => {
-      viewRequests.push(new URL(route.request().url()))
-      await route.fulfill({
-        status: 200,
-        contentType: 'image/png',
-        body: Buffer.from(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-          'base64'
+  test(
+    'renders a Generated asset after drag and workflow restore',
+    { tag: '@slow' },
+    async ({ comfyPage }) => {
+      test.setTimeout(30_000)
+      await comfyPage.assets.mockOutputHistory([
+        createMockJob({
+          id: 'generated-image',
+          preview_output: {
+            filename: 'generated.png',
+            subfolder: 'runs/2026',
+            type: 'output',
+            nodeId: '1',
+            mediaType: 'images'
+          }
+        })
+      ])
+
+      await comfyPage.page.route('**/api/view?*', async (route) => {
+        const params = new URL(route.request().url()).searchParams
+        const isGeneratedImage =
+          params.get('type') === 'output' &&
+          params.get('filename') === 'generated.png' &&
+          params.get('subfolder') === 'runs/2026'
+
+        await route.fulfill(
+          isGeneratedImage
+            ? { path: comfyPage.assetPath('image64x64.webp') }
+            : { status: 404 }
         )
       })
-    })
 
-    await comfyPage.workflow.loadWorkflow(
-      'widgets/load_image_widget_output_annotated'
-    )
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      await comfyPage.vueNodes.waitForNodes()
+      const loadImageNode =
+        await comfyPage.vueNodes.getFixtureByTitle('Load Image')
 
-    const generatedRequests = () =>
-      viewRequests.filter((url) =>
-        url.searchParams.get('filename')?.includes('generated')
-      )
-
-    await expect(() => expect(generatedRequests()).not.toHaveLength(0)).toPass({
-      timeout: 15_000
-    })
-
-    const params = generatedRequests()[0].searchParams
-    expect(params.get('type')).toBe('output')
-    expect(params.get('filename')).toBe('generated.png')
-    expect(params.get('subfolder')).toBe('runs/2026')
-  })
-
-  test(
-    'preserves an annotated widget preview across a workflow tab switch',
-    { tag: '@slow' },
-    async ({ comfyPage, getWebSocket }) => {
-      test.setTimeout(30_000)
-      await comfyPage.page.route('**/api/view?*', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'image/png',
-          body: Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-            'base64'
-          )
+      const { assetsTab } = comfyPage.menu
+      await assetsTab.open()
+      const generatedAsset = assetsTab.assetCards.filter({
+        has: comfyPage.page.getByRole('button', {
+          name: 'generated.png - image asset'
         })
       })
-
-      const tab = comfyPage.menu.workflowsTab
-      await tab.open()
-      await comfyPage.workflow.loadWorkflow(
-        'widgets/load_image_widget_output_annotated'
+      await expect(generatedAsset).toBeVisible()
+      const dataTransfer = await comfyPage.page.evaluateHandle(
+        () => new DataTransfer()
       )
+      await generatedAsset.dispatchEvent('dragstart', { dataTransfer })
+      await loadImageNode.root.dispatchEvent('dragover', { dataTransfer })
+      await loadImageNode.root.dispatchEvent('drop', { dataTransfer })
+      await generatedAsset.dispatchEvent('dragend', { dataTransfer })
+      await dataTransfer.dispose()
+      await assetsTab.close()
+
       await comfyPage.menu.topbar.saveWorkflow('annotated-widget-output')
 
+      const workflowsTab = comfyPage.menu.workflowsTab
+      await workflowsTab.open()
+      await workflowsTab.switchToWorkflow('Unsaved Workflow')
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await workflowsTab.switchToWorkflow('annotated-widget-output')
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      const previewImage = loadImageNode.imagePreview.locator('img')
+      const imageLoadError = loadImageNode.root.getByTestId(
+        TestIds.errors.imageLoadError
+      )
+      await expect(loadImageNode.imagePreview).toBeVisible()
+      await expect(previewImage).toBeVisible()
+      await expect(imageLoadError).toBeHidden()
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(
-            () => window.app!.nodeOutputs?.['10']?.images?.[0]?.filename
+          previewImage.evaluate(
+            (image: HTMLImageElement) =>
+              image.complete && image.naturalWidth > 0
           )
         )
-        .toBe('generated.png')
-
-      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await tab.switchToWorkflow('annotated-widget-output')
-      await comfyPage.workflow.waitForWorkflowIdle()
-
-      const ws = await getWebSocket()
-      const execution = new ExecutionHelper(comfyPage, ws)
-      const jobId = await execution.run()
-      execution.executed(jobId, '10', {})
-
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => window.app!.nodeOutputs?.['10']?.images?.[0]?.filename
-          )
-        )
-        .toBe('generated.png')
-
-      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await tab.switchToWorkflow('annotated-widget-output')
-      await comfyPage.workflow.waitForWorkflowIdle()
-
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => window.app!.nodeOutputs?.['10']?.images?.[0]?.filename
-          )
-        )
-        .toBe('generated.png')
+        .toBe(true)
     }
   )
 })
