@@ -5,6 +5,7 @@ import WhatsIncludedSection from '../components/pricing/WhatsIncludedSection.vue
 import PricingFaq from '../components/pricing/PricingFaq.astro'
 import ResourceCostsSection from '../templates/platform/PricingSection.vue'
 import LookingForElseSection from '../components/pricing/LookingForElseSection.vue'
+import MinimaxLicenseCostBand from '../components/pricing/MinimaxLicenseCostBand.vue'
 import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../config/pricing'
 import { t } from '../i18n/translations'
@@ -49,7 +50,9 @@ const productId = jsonLdId(url, 'product')
     locale={locale}
     heading={t('pricing.resourceCosts.heading', locale)}
     note={t('pricing.resourceCosts.note', locale)}
-  />
+  >
+    <MinimaxLicenseCostBand locale={locale} />
+  </ResourceCostsSection>
   <LookingForElseSection locale={locale} />
   <PricingFaq locale={locale} />
 </BaseLayout>

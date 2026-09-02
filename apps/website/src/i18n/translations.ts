@@ -7897,6 +7897,19 @@ Enterprise`
     en: 'Resource costs',
     'zh-CN': '资源成本'
   },
+  'pricing.resourceCosts.minimaxLicense.eyebrow': {
+    en: 'MiniMax commercial license',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'pricing.resourceCosts.minimaxLicense.description': {
+    en: 'Run MiniMax models locally for commercial work — Professional at $5,000 / month, Enterprise custom.',
+    'zh-CN':
+      '在本地运行 MiniMax 模型进行商业创作——专业版 5,000 美元 / 月，企业版定制。'
+  },
+  'pricing.resourceCosts.minimaxLicense.cta': {
+    en: 'See license tiers',
+    'zh-CN': '查看许可级别'
+  },
   'platform.pricing.heading': {
     en: 'Pricing',
     'zh-CN': '定价'
