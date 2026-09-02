@@ -33,7 +33,7 @@ export const minimaxLicenseComparison: ModelLaunchComparison = {
       id: 'price',
       label: { en: 'Price', 'zh-CN': '价格' },
       cells: [
-        { en: '$5,000 / month', 'zh-CN': '5,000 美元 / 月' },
+        { en: 'From $5,000 / month', 'zh-CN': '5,000 美元 / 月起' },
         { en: 'Contact sales', 'zh-CN': '联系销售' }
       ]
     },
