@@ -29,6 +29,15 @@
  * second one, and reuses `attachNodeLayout`'s existing "layout already
  * exists → adopt, don't recreate" branch (`graphLayoutAttachment.ts`) instead
  * of duplicating that logic here.
+ *
+ * Ordering is rollback-safe: `node.configure()` (which runs node-class /
+ * extension code and can throw) happens BEFORE the store record is deleted;
+ * the store record is only cleared once `configure()` has already succeeded,
+ * immediately ahead of `graph.add()` (whose own failure, e.g.
+ * `MAX_NUMBER_OF_NODES`, is caught and the record restored). A throw from
+ * either fallible step leaves the authoritative store state exactly as it
+ * was, so the node is never dropped from both the live graph and the store
+ * at once — it just stays store-only and is retried on the next frame.
  */
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -70,7 +79,11 @@ export function materializeMissingAdapters(
   for (const rawId of nodeIds) {
     const nodeId = parseNodeId(rawId)
     if (nodeId === null) continue
-    if (graph.getNodeById(nodeId) !== null) continue // already has a live adapter
+    // `LGraph.getNodeById` indexes `_nodes_by_id` directly and returns
+    // `undefined` for an absent id despite its `LGraphNode | null` type, so
+    // this must be a falsiness check, not `!== null` (which is always true
+    // for `undefined` and made this whole function a no-op in production).
+    if (graph.getNodeById(nodeId)) continue // already has a live adapter
 
     const state = nodeDataStore.getNode(scope.rootGraphId, nodeId)
     if (!state) continue // store no longer has it (deleted later in the batch)
@@ -82,14 +95,26 @@ export function materializeMissingAdapters(
     const node = LiteGraph.createNode(state.type, state.title)
     if (!node) continue // unregistered node type — nothing to materialize
 
+    // `configure()` runs extension/node-class code (`onConfigure`, and
+    // `graph.add()` below can trigger `onConnectionsChange`) and can throw —
+    // do this BEFORE touching the store so a throw here leaves the
+    // authoritative record untouched.
+    try {
+      node.configure(serialised)
+    } catch {
+      continue // leaves the store-only record in place; retried next frame
+    }
+    node.id = nodeId
+
     // The store record this node is about to recreate is the ONLY thing
     // standing in the way of `attachNodeToStores`'s registration succeeding
     // with the CRDT-assigned id (`registerNode` sees an incumbent at this id
     // and returns undefined, which would otherwise force a mint-a-new-id
     // retry — wrong here, since this isn't a real collision, it's the same
-    // node already having store state). Clear it first so the id round-trips
-    // unchanged; `configure()` below rebuilds an equivalent record from the
-    // same payload that produced the one just removed.
+    // node already having store state). Clear it only once `configure()`
+    // above has already succeeded, and restore it if `graph.add()` (the
+    // other fallible step, e.g. `MAX_NUMBER_OF_NODES`) throws or declines,
+    // so a failure here never drops the node from the store and the save.
     nodeDataStore.deleteNode(scope, state)
     // Keyed by rootGraphId, matching every other clearNode call site in
     // graphMutations.ts's commit() (e.g. the reconcileNode-replace and
@@ -97,11 +122,20 @@ export function materializeMissingAdapters(
     // not per owning (sub)graph.
     widgetValueStore.clearNode(scope.rootGraphId, nodeId)
 
-    node.configure(serialised)
-    node.id = nodeId
-
-    const added = graph.add(node)
-    if (added) materialized.push(rawId)
+    let added: LGraphNode | null | undefined
+    try {
+      added = graph.add(node)
+    } catch {
+      added = undefined
+    }
+    if (added) {
+      materialized.push(rawId)
+    } else {
+      // Restore the authoritative record so the node isn't lost from the
+      // store/save; `registerNode` accepts the same state object back
+      // (`toRaw(incumbent) === toRaw(state)` in nodeDataStore.registerNode).
+      nodeDataStore.registerNode(scope, state)
+    }
   }
 
   return materialized

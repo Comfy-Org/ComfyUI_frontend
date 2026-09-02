@@ -211,6 +211,15 @@ export function useAgentCrdtFollower(
     reset: 0,
     dropped: 0
   })
+  // qa-59 / DrJKL: ids this session has seen added but not yet materialized —
+  // either because `getGraph()` returned null on their frame (panel bound
+  // before `app.isGraphReady`), or `materializeMissingAdapters` skipped them
+  // (unregistered type, etc). Accumulates across frames instead of being
+  // replaced, so a node added before the graph existed is retried once one
+  // becomes available rather than being dropped from every future check —
+  // `materializeMissingAdapters` itself is idempotent for ids that already
+  // have a live adapter or that the store no longer has.
+  const pendingMaterializeIds = new Set<string>()
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -411,19 +420,24 @@ export function useAgentCrdtFollower(
     // #3 — it stays litegraph-free), so a remote add_node still has no
     // `LGraphNode` adapter at this point. Materialize one for anything the
     // adapter just landed, so the node enters `LGraph._nodes` and survives
-    // serialize()/save. Only the ids this exact frame touched are checked —
-    // an id already carrying a live adapter (e.g. a widget-only update on an
-    // existing node) is skipped by `materializeMissingAdapters` itself.
+    // serialize()/save. Ids from this frame join any still-pending ids from
+    // earlier frames (see `pendingMaterializeIds` above) so an add that
+    // arrived before a graph existed is retried here, not dropped.
+    const addedIds = adapter.lastAddedNodeIds(update.workflowId)
+    for (const id of addedIds) pendingMaterializeIds.add(id)
     const graph = getGraph()
-    if (graph) {
-      const addedIds = adapter.lastAddedNodeIds(update.workflowId)
-      if (addedIds.size > 0) {
-        const materialized = materializeMissingAdapters(graph, addedIds)
-        if (materialized.length > 0)
-          recordDevEvent('agent_node_adapters_materialized', {
-            workflowId: update.workflowId,
-            nodeIds: materialized
-          })
+    if (graph && pendingMaterializeIds.size > 0) {
+      // Snapshot before calling out — `materializeMissingAdapters` is a pure
+      // read of whatever set it's given, and mutating `pendingMaterializeIds`
+      // in place afterward must not retroactively change what was passed.
+      const attempted = new Set(pendingMaterializeIds)
+      const materialized = materializeMissingAdapters(graph, attempted)
+      if (materialized.length > 0) {
+        for (const id of materialized) pendingMaterializeIds.delete(id)
+        recordDevEvent('agent_node_adapters_materialized', {
+          workflowId: update.workflowId,
+          nodeIds: materialized
+        })
       }
     }
     recordDevEvent('doc_update', {

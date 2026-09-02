@@ -666,6 +666,36 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('qa-59/DrJKL: retries a pending id once a graph becomes available, without another add', () => {
+    const fakeGraph = {
+      id: 'root',
+      rootGraph: { id: 'root' },
+      getNodeById: () => null,
+      add: () => null
+    } satisfies MaterializableGraph
+    let graph: MaterializableGraph | null = null
+    adapterState.lastAddedNodeIds.mockReturnValue(new Set(['1']))
+
+    const { unmount } = mountFollower('wf-1', true, () => graph)
+
+    // First frame: added while no graph is bound yet — must not be dropped.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+    expect(materializerState.materializeMissingAdapters).not.toHaveBeenCalled()
+
+    // Graph becomes available; a later frame carries no new adds, but the
+    // pending id from the earlier frame must still be retried.
+    graph = fakeGraph
+    adapterState.lastAddedNodeIds.mockReturnValue(new Set())
+    materializerState.materializeMissingAdapters.mockReturnValue(['1'])
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 10 })
+
+    expect(materializerState.materializeMissingAdapters).toHaveBeenCalledWith(
+      fakeGraph,
+      new Set(['1'])
+    )
+    unmount()
+  })
+
   it('qa-59: skips materialization when the frame added no new nodes', () => {
     const fakeGraph = {
       id: 'root',
