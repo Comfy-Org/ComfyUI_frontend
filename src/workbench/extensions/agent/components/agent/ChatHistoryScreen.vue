@@ -62,6 +62,7 @@ const renameDraft = ref('')
 const renameOriginalTitle = ref('')
 const selectOnFocus = ref(false)
 const optionsTriggers = new Map<string, HTMLElement>()
+const focusedRenameInputs = new WeakSet<HTMLInputElement>()
 
 function startRename(session: ChatSession): void {
   renamingId.value = session.id
@@ -75,6 +76,8 @@ function startRename(session: ChatSession): void {
 // wipe what the user has already typed.
 function focusInput(el: Element | ComponentPublicInstance | null): void {
   if (!(el instanceof HTMLInputElement)) return
+  if (focusedRenameInputs.has(el)) return
+  focusedRenameInputs.add(el)
   const shouldSelect = selectOnFocus.value
   selectOnFocus.value = false
   // Deferred because the ref fires before the element is in the document and

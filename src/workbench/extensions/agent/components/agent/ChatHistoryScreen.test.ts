@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
@@ -207,6 +207,18 @@ describe('ChatHistoryScreen', () => {
     expect(input.selectionEnd).toBe(input.value.length)
     expect(screen.queryByRole('button', { name: 'Original title' })).toBeNull()
     expect(emitted().select).toBeUndefined()
+  })
+
+  it('does not refocus the editor on each draft update', async () => {
+    const user = userEvent.setup()
+    const focus = vi.spyOn(HTMLInputElement.prototype, 'focus')
+    renderScreen(groupsWithTitle('Original title'))
+    const input = await openRename(user)
+    const focusCallsAfterMount = focus.mock.calls.length
+
+    await user.type(input, ' updated')
+
+    expect(focus).toHaveBeenCalledTimes(focusCallsAfterMount)
   })
 
   it('emits trimmed rename and renders the parent-updated title', async () => {
