@@ -23,6 +23,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
+
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
@@ -372,19 +376,22 @@ describe('workflowDraftStoreV2', () => {
       )
     })
 
-    it('rolls the persisted index back when the final index write fails after eviction', () => {
+    it('restores the evicted draft when the final index write fails', () => {
       const store = useWorkflowDraftStoreV2()
       seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
 
       let payloadFailures = 0
-      let indexFailureInjected = false
+      let indexWrites = 0
+      let finalIndexFailureInjected = false
       withQuotaMock((key) => {
         if (key.startsWith(PAYLOAD_PREFIX) && payloadFailures === 0) {
           payloadFailures++
           return true
         }
-        if (key !== INDEX_KEY || indexFailureInjected) return false
-        indexFailureInjected = true
+        if (key !== INDEX_KEY) return false
+        indexWrites++
+        if (indexWrites !== 2 || finalIndexFailureInjected) return false
+        finalIndexFailureInjected = true
         return true
       })
 
@@ -393,12 +400,13 @@ describe('workflowDraftStoreV2', () => {
         isTemporary: true
       })
       expect(ok).toBe(false)
-      expect(indexFailureInjected).toBe(true)
+      expect(finalIndexFailureInjected).toBe(true)
 
       const persisted = readIndexFromStorage()
       expect(persisted.order).not.toContain(hashPath('workflows/incoming.json'))
-      expect(persisted.order).not.toContain(hashPath('workflows/a.json'))
+      expect(persisted.order).toContain(hashPath('workflows/a.json'))
       expect(store.getDraft('workflows/incoming.json')).toBeNull()
+      expect(store.getDraft('workflows/a.json')?.data).toBe('{"id":"a"}')
     })
   })
 
