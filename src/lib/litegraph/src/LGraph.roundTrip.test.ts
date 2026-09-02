@@ -173,10 +173,6 @@ function expectPreserved<T>(before: T[], after: T[]) {
   expect(after).toEqual(before)
 }
 
-/**
- * Links and groups are compared whole, not counted. A count survives a link
- * being renumbered, repointed at a different slot, or replaced outright.
- */
 function linkKeys(graph: Pick<ISerialisedGraph, 'links'>) {
   return (graph.links ?? []).map((link) => JSON.stringify(link)).sort()
 }
