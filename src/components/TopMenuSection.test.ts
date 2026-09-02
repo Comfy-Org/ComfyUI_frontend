@@ -24,6 +24,8 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const mockData = vi.hoisted(() => ({
   isLoggedIn: false,
+  isDesktop: false,
+  isCloud: false,
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
@@ -36,8 +38,13 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false,
-  isNightly: false
+  get isCloud() {
+    return mockData.isCloud
+  },
+  isNightly: false,
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
 
 vi.mock('@/platform/updates/common/releaseStore', () => ({
@@ -198,43 +205,41 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 describe('TopMenuSection', () => {
   beforeEach(() => {
     mockData.isLoggedIn = false
+    mockData.isCloud = false
     mockData.setShowConflictRedDot(false)
   })
 
-  describe('authentication state', () => {
-    function createLegacyTabBarWrapper() {
+  describe('auth fallback when workflow tabs are not in topbar', () => {
+    function createSidebarTabsWrapper() {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) =>
-        key === 'Comfy.UI.TabBarLayout' ? 'Legacy' : undefined
+        key === 'Comfy.Workflow.WorkflowTabsPosition' ? 'Sidebar' : undefined
       )
       return createWrapper({ pinia })
     }
 
-    describe('when user is logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = true
-      })
-
-      it('should display CurrentUserButton and not display LoginButton', () => {
-        const { container } = createLegacyTabBarWrapper()
-        expect(
-          container.querySelector('current-user-button-stub')
-        ).not.toBeNull()
-        expect(container.querySelector('login-button-stub')).toBeNull()
-      })
+    it('should display CurrentUserButton when user is logged in', () => {
+      mockData.isLoggedIn = true
+      const { container } = createSidebarTabsWrapper()
+      expect(container.querySelector('current-user-button-stub')).not.toBeNull()
+      expect(container.querySelector('login-button-stub')).toBeNull()
     })
 
-    describe('when user is not logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = false
-      })
+    it('should display LoginButton when user is not logged in on desktop', () => {
+      mockData.isLoggedIn = false
+      mockData.isDesktop = true
+      const { container } = createSidebarTabsWrapper()
+      expect(container.querySelector('login-button-stub')).not.toBeNull()
+      expect(container.querySelector('current-user-button-stub')).toBeNull()
+    })
 
-      it('should display LoginButton and not display CurrentUserButton', () => {
-        const { container } = createLegacyTabBarWrapper()
-        expect(container.querySelector('login-button-stub')).not.toBeNull()
-        expect(container.querySelector('current-user-button-stub')).toBeNull()
-      })
+    it('should display CurrentUserButton when user is logged out on cloud', () => {
+      mockData.isLoggedIn = false
+      mockData.isCloud = true
+      const { container } = createSidebarTabsWrapper()
+      expect(container.querySelector('current-user-button-stub')).not.toBeNull()
+      expect(container.querySelector('login-button-stub')).toBeNull()
     })
   })
 
@@ -584,7 +589,7 @@ describe('TopMenuSection', () => {
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.UseNewMenu') return 'Top'
-      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+      if (key === 'Comfy.UI.TabBarLayout') return 'Default'
       if (key === 'Comfy.RightSidePanel.IsOpen') return true
       return undefined
     })
