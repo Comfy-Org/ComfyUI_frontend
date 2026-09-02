@@ -18,7 +18,7 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { compareNodeIds, toNodeId } from '@/types/nodeId'
 
 function plain(value: unknown): unknown {
-  if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
+  if (value instanceof Y.AbstractType) return value.toJSON()
   return structuredClone(value)
 }
 
