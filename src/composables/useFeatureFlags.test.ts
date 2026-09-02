@@ -428,7 +428,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-
   describe('dev override via localStorage', () => {
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
