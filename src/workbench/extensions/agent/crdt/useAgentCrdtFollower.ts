@@ -107,6 +107,16 @@ function readPersistedDocId(): string | null {
   }
 }
 
+/**
+ * The doc id the follower would rebind to on its next `[null, active]`
+ * evaluation, or null when there is no record this page load can honour. Lets
+ * the composition root scope its activity fallback to that one doc instead of
+ * to every tab that still carries a persisted tab binding.
+ */
+export function peekPersistedDocId(): string | null {
+  return readPersistedDocId()
+}
+
 function clearPersistedDocId(): void {
   try {
     safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)

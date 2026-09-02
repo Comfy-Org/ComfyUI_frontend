@@ -304,18 +304,19 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
 
-// FE-1969: spy on the CRDT follower's `isTargetActive` input as a wrapper
-// around the real composable, so a test can assert AgentPanelRoot.vue
-// resolves `isBoundWorkflowActive` correctly without needing to drive a full
-// subscribe/persist round trip through the mocked transport.
+// FE-1969: record the CRDT follower's inputs and stub the persisted doc id it
+// would restore, so tests can assert how AgentPanelRoot.vue resolves
+// `isBoundWorkflowActive` without a subscribe/persist round trip.
 const crdtFollowerCalls = vi.hoisted(
   () => [] as { workflowId: string | null; active: boolean }[]
 )
+const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
 vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
   const actual =
     await importOriginal<typeof import('./crdt/useAgentCrdtFollower')>()
   return {
     ...actual,
+    peekPersistedDocId: () => persistedCrdtDocId.value,
     useAgentCrdtFollower: (
       workflowId: import('vue').Ref<string | null>,
       graphMutations: unknown,
@@ -328,9 +329,7 @@ vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
       })
       return actual.useAgentCrdtFollower(
         workflowId,
-        graphMutations as Parameters<
-          typeof actual.useAgentCrdtFollower
-        >[1],
+        graphMutations as Parameters<typeof actual.useAgentCrdtFollower>[1],
         userId,
         isTargetActive
       )
@@ -355,6 +354,7 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
+  persistedCrdtDocId.value = null
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
     (_name: string, defaultValue?: unknown) => defaultValue
@@ -2131,45 +2131,58 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('drives the CRDT follower active from the persisted tab binding when boundWorkflowId is unset (FE-1969)', async () => {
-    // Reproduces FE #16499. AgentPanelRoot.vue's `isBoundWorkflowActive`
-    // computed `boundWorkflowId !== null` alone (useAgentSession.ts's
-    // in-memory session binding). Before the fix, whenever a tab's workflow
-    // was resolvable ONLY via the persisted tab<->workflow binding
-    // (`Comfy.Agent.WorkflowTabBindings`, bindingStore - what `makeTab`
-    // below seeds) and not via `boundWorkflowId`, `isBoundWorkflowActive`
-    // was false, driving useAgentCrdtFollower's active-tab watcher with
-    // `active=false` unconditionally (useAgentCrdtFollower.ts:488-497,
-    // "unsubscribe, don't even try"). The fix's own persisted-docId
-    // restoration branch (:498-511) is unreachable at all unless `active`
-    // is first true, which is exactly what AgentPanelRoot.vue:386-396
-    // controls - and is exactly the contradiction QA reproduced on #16652
-    // (a resolvable binding the panel never even tried to use).
-    // `boundWorkflowId` (useAgentSession.ts) is module-level and can carry a
-    // stale value from an earlier test in this file. Force it to null via
-    // the real "New chat" action on a throwaway instance before mounting
-    // the instance under test, so this test's mount genuinely starts with
-    // no in-memory session binding.
-    const throwaway = render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-    )
-    throwaway.unmount()
-    cleanup()
+  describe('FE-1969: CRDT follower activity without an in-memory binding', () => {
+    // `boundWorkflowId` (useAgentSession.ts) is module-level and may carry a
+    // value from an earlier test; "New chat" on a throwaway instance resets it.
+    async function resetSessionBinding(): Promise<void> {
+      const throwaway = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      throwaway.unmount()
+      cleanup()
+      crdtFollowerCalls.length = 0
+    }
 
-    crdtFollowerCalls.length = 0
-    makeTab('wf-42') // seeds bindingStore.bind('wf-42', 'workflows/current.json')
-    mockMessagesEndpoint('wf-42')
+    it('drives the follower active when the active tab is bound to the restorable doc', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    // No turn has been sent, so `boundWorkflowId` (useAgentSession.ts) is
-    // unset; only the persisted tab-binding store can resolve `wf-42` for
-    // the active tab. useAgentCrdtFollower must be driven with `active=true`
-    // from that fallback, not `active=false`.
-    expect(crdtFollowerCalls.at(-1)).toEqual({
-      workflowId: null,
-      active: true
+      expect(crdtFollowerCalls.at(-1)).toEqual({
+        workflowId: null,
+        active: true
+      })
+    })
+
+    it('keeps the follower inactive when the active tab is bound to a different doc', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-other'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toEqual({
+        workflowId: null,
+        active: false
+      })
+    })
+
+    it('keeps the follower inactive when a tab binding persists but no doc is restorable', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toEqual({
+        workflowId: null,
+        active: false
+      })
     })
   })
 
