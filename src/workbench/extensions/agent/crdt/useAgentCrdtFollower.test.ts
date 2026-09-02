@@ -41,7 +41,9 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn(
+    (_workflowId: string, _tab: string, _ops: Array<{ op_id: string }>) => true
+  )
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -813,10 +815,32 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  it('does not stamp human ops from an unprojected follower sequence', () => {
+  it('stamps human ops only from successfully projected updates', () => {
     const { enqueueHumanOperations, unmount, status } = mountFollower('wf-1')
     bridge().lastSequence = 41
     dispatchFrame('doc_subscribed', { ok: true })
+
+    enqueueHumanOperations([
+      {
+        op: 'delete_node',
+        node_id: '1',
+        removed_links: []
+      }
+    ])
+    expect(clientState.sendOps).toHaveBeenLastCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ base_version: 0 })]
+    )
+    const firstOpId = clientState.sendOps.mock.calls.at(-1)?.[2][0]?.op_id
+    if (!firstOpId) throw new Error('expected a sent operation')
+    dispatchFrame('doc_ops_result', {
+      ok: true,
+      applied: [firstOpId],
+      skipped: []
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 41 })
     bridge().lastSequence = 42
     bridge().follower.updatesApplied = 3
     adapterState.applyFrame.mockReturnValueOnce({
