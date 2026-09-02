@@ -373,6 +373,38 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      const target = subscribedWorkflowId.value
+      if (target !== null) {
+        const projection = adapter.retryPending(target)
+        switch (projection.status) {
+          case 'projected':
+            projectedSequence.value = projection.sequence
+            updatesApplied.value = bridge.follower.updatesApplied
+            break
+          case 'retrying':
+            lastFrameType.value = 'projection_retry'
+            recordDevEvent('projection_error', {
+              workflowId: target,
+              seq: projection.sequence,
+              attempt: projection.attempt
+            })
+            break
+          case 'failed':
+            connected.value = false
+            lastFrameType.value = 'projection_error'
+            clearStaleProbe()
+            recordDevEvent('projection_error', {
+              workflowId: target,
+              seq: projection.sequence,
+              reason: projection.reason
+            })
+            break
+          case 'idle':
+          case 'queued':
+          case 'unbound':
+            break
+        }
+      }
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)

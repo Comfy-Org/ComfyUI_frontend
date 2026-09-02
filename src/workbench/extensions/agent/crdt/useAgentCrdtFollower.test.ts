@@ -99,6 +99,7 @@ vi.mock('./ecsFollowerAdapter', () => ({
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
+    retryPending = adapterState.retryPending
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -209,6 +210,7 @@ describe('useAgentCrdtFollower', () => {
       status: 'projected',
       sequence: update.seq
     }))
+    adapterState.retryPending.mockReturnValue({ status: 'idle' })
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
@@ -1063,6 +1065,25 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('keeps stale recovery armed while a projection retry is pending', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'retrying',
+      sequence: 2,
+      attempt: 1
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    expect(status().connected).toBe(true)
+    expect(status().lastFrameType).toBe('projection_retry')
+    vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     unmount()
   })
