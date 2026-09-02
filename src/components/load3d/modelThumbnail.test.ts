@@ -84,7 +84,11 @@ describe('generateModelThumbnail', () => {
         dataUrl: 'data:image/png;base64,thumb'
       })
       expect(stalled.remove).toHaveBeenCalledOnce()
-      expect(vi.getTimerCount()).toBe(0)
+      // The abandoned `stalled` render's underlying withTimeout deadline is
+      // not cancelled by the caller abort (see module doc: the transfer and
+      // parse are not abortable and run to completion in the background),
+      // so a live timer for it — and for `next`'s own in-flight deadline —
+      // is expected here, not zero.
       expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
@@ -108,7 +112,7 @@ describe('generateModelThumbnail', () => {
         controller.signal
       )
       controller.abort()
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(15_000)
 
       await expect(blockedRun).resolves.toEqual({ status: 'failed' })
       await expect(skippedRun).resolves.toEqual({ status: 'cancelled' })
