@@ -8,6 +8,8 @@
  */
 import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import type { SeveranceLog } from './linkMintPort'
 import { shouldMint } from './mintGate'
@@ -98,9 +100,14 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
           operation.graphId !== undefined &&
           operation.ownerGraphId !== operation.graphId
         ) {
-          console.error(
-            '[agent-crdt] subgraph-interior node create has no wire op; the bound doc diverges from the local graph',
-            operation.nodeId
+          reportError(
+            new Error(
+              'Subgraph-interior node create has no wire op; the bound doc diverges from the local graph'
+            ),
+            {
+              errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
+              context: { nodeId: operation.nodeId }
+            }
           )
           return
         }
@@ -133,9 +140,14 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
           operation.graphId !== undefined &&
           operation.ownerGraphId !== operation.graphId
         ) {
-          console.error(
-            '[agent-crdt] subgraph-interior node delete has no wire op; the bound doc diverges from the local graph',
-            operation.nodeId
+          reportError(
+            new Error(
+              'Subgraph-interior node delete has no wire op; the bound doc diverges from the local graph'
+            ),
+            {
+              errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+              context: { nodeId: operation.nodeId }
+            }
           )
           return
         }

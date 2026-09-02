@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
@@ -95,7 +101,6 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('surfaces interior create and delete without minting root operations', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const interior = {
       graphId: 'root',
       ownerGraphId: 'subgraph'
@@ -109,21 +114,26 @@ describe('attachLayoutMintPort', () => {
     })
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenNthCalledWith(
+    expect(reportError).toHaveBeenNthCalledWith(
       1,
-      expect.stringContaining('subgraph-interior node create'),
-      '1'
+      expect.objectContaining({
+        message: expect.stringContaining('Subgraph-interior node create')
+      }),
+      {
+        errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
+        context: { nodeId: '1' }
+      }
     )
-    expect(consoleError).toHaveBeenNthCalledWith(
+    expect(reportError).toHaveBeenNthCalledWith(
       2,
-      expect.stringContaining('subgraph-interior node delete'),
-      '1'
+      expect.objectContaining({
+        message: expect.stringContaining('Subgraph-interior node delete')
+      }),
+      {
+        errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+        context: { nodeId: '1' }
+      }
     )
-    expect(consoleError).not.toHaveBeenCalledWith(
-      expect.stringContaining('no snapshot for node'),
-      expect.anything()
-    )
-    consoleError.mockRestore()
   })
 
   it('never mints an agent-remote echo (KA-6 sender half)', () => {
