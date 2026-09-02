@@ -51,7 +51,12 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     )
     recordMeasurement(measurement)
 
-    await expect(comfyPage.page.locator('.litegraph-minimap')).toBeVisible()
+    const finalProgress = await comfyPage.page.evaluate(async (nodeId) => {
+      const { useExecutionStore } =
+        await import('../../../src/stores/executionStore')
+      return useExecutionStore().nodeProgressStates[nodeId]
+    }, nodeId)
+    expect(finalProgress).toMatchObject({ value: 19, max: 20 })
   })
 
   test('node geometry cadence', async ({ comfyPage }) => {
