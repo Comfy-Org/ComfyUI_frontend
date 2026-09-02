@@ -269,18 +269,9 @@ function useInCode() {
         data-testid="playground-input"
       >
         <header
-          class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
         >
           <span>{{ t('workshop.input.title', locale) }}</span>
-          <span
-            v-if="creditsPerRun"
-            class="text-primary-warm-white tabular-nums"
-            :title="t('workshop.input.estimateNote', locale)"
-            data-testid="run-estimate"
-          >
-            {{ t('workshop.input.estimate', locale) }} · {{ creditsPerRun }}
-            {{ t('nav.credits', locale) }}
-          </span>
         </header>
 
         <div class="flex flex-col gap-6 p-5">

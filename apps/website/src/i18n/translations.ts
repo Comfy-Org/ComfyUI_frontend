@@ -8285,11 +8285,6 @@ Enterprise`
   'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
   'workshop.input.title': { en: 'Input', 'zh-CN': '输入' },
-  'workshop.input.estimate': { en: 'Estimated cost', 'zh-CN': '预计费用' },
-  'workshop.input.estimateNote': {
-    en: 'Final cost depends on your settings.',
-    'zh-CN': '最终费用取决于您的设置。'
-  },
   'workshop.output.select': { en: 'Output {n}', 'zh-CN': '输出 {n}' },
   'workshop.proto.outputs': { en: 'Outputs per run', 'zh-CN': '每次输出数' },
   'workshop.filter.search': { en: 'Search', 'zh-CN': '搜索' },
