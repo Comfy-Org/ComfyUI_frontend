@@ -1,7 +1,9 @@
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -77,4 +79,10 @@ export async function bootAgentApp(
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+
+  const panelTrigger = page.getByRole('button', {
+    name: enMessages.agent.askComfyAgent
+  })
+  if (agentFlag) await expect(panelTrigger).toBeVisible()
+  else await expect(panelTrigger).toHaveCount(0)
 }
