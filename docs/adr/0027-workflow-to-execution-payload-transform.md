@@ -153,9 +153,9 @@ At that point:
 
 - New transform logic must be added to the central pipeline, not to extension
   hooks or `queuePrompt()` call-sites.
-- The `widget.serializeValue` override pattern (currently used by
-  `dynamicPrompts.ts`) is deprecated in favor of a registered transform step
-  with explicit ordering and isolation guarantees.
+- Assigning `widget.serializeValue` from extension lifecycle hooks (as
+  `dynamicPrompts.ts` currently does) is deprecated in favor of a registered
+  transform step with explicit ordering and isolation guarantees.
 - An ESLint rule or ADR compliance check can flag direct calls to `graph.serialize()`
   or `graphToPrompt()` from outside the designated transform module.
 
