@@ -9,6 +9,12 @@ describe('localizeHref', () => {
 
   it('leaves the default locale unprefixed', () => {
     expect(localizeHref('/mcp', 'en')).toBe('/mcp')
+    expect(localizeHref('/workshop/models/seedance-2/', 'zh-CN')).toBe(
+      '/workshop/models/seedance-2/'
+    )
+    expect(localizeHref('/workshop/sign-in?return=%2Fworkshop', 'ja')).toBe(
+      '/workshop/sign-in?return=%2Fworkshop'
+    )
   })
 
   it('passes external URLs through unchanged', () => {

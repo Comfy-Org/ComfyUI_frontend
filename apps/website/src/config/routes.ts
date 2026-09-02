@@ -100,7 +100,7 @@ export function isLocaleInvariantPath(pathname: string): boolean {
 
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
-  if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  if (isLocaleInvariantPath(href.split(/[?#]/, 1)[0])) return href
   if (locale === 'ja') return href === '/' ? '/ja/' : href
   return `/${locale}${href}`
 }
