@@ -130,6 +130,19 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].stamp).toEqual([0, ACTOR])
   })
 
+  it('resets the local stamp when the document lineage resets', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 0
+    sender.resetLineage()
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(0)
+    expect(sent[1].ops[0].stamp).toEqual([0, ACTOR])
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])

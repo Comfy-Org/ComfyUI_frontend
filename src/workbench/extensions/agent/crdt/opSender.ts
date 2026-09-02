@@ -65,6 +65,8 @@ export type BatchOutcome =
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
+  /** Reset creator-owned ordering after an explicit document lineage break. */
+  resetLineage(): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
   /**
@@ -219,6 +221,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
       pump()
+    },
+    resetLineage() {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = null
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
