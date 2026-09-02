@@ -126,11 +126,6 @@
     "untitledChat": "제목 없음",
     "uploading": "업로드 중"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "실행 당 비용",
-    "title": "API 노드(들)",
-    "totalCost": "총 비용"
-  },
   "apiNodesSignInDialog": {
     "message": "이 워크플로에는 API 노드가 포함되어 있으며, 실행하려면 계정에 로그인해야 합니다.",
     "title": "API 노드 사용에 필요한 로그인"
@@ -3201,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "시그마",
     "sound": "사운드",
@@ -5038,8 +5034,10 @@
       "failedCount": "{count}개의 초대를 보낼 수 없습니다. 다시 시도하세요.",
       "invalidEmailCount": "{count}개의 잘못된 이메일 주소",
       "invitedMessage": "{emails}에게 초대장이 전송되었습니다",
+      "pendingInviteCount": "이 사람들 중 {count}명에게는 이미 대기 중인 초대가 있습니다. 건너뜁니다.",
+      "pendingInviteSingle": "이 사람에게는 이미 대기 중인 초대가 있습니다",
       "placeholder": "이메일을 입력하세요",
-      "seatLimitReached": "최대 {count}명의 팀원을 초대할 수 있습니다.",
+      "seatLimitExceeded": "이 작업 공간은 최대 {max}명으로 제한됩니다. 계속하려면 {overage}명을 제거하세요.",
       "title": "이 워크스페이스에 사람 초대"
     },
     "inviteUpsellDialog": {

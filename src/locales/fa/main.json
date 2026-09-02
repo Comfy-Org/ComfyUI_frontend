@@ -126,11 +126,6 @@
     "untitledChat": "بدون عنوان",
     "uploading": "در حال بارگذاری"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "هزینه هر اجرا",
-    "title": "API Node(ها)",
-    "totalCost": "هزینه کل"
-  },
   "apiNodesSignInDialog": {
     "message": "این workflow شامل API Node است که برای اجرا نیاز به ورود به حساب کاربری دارد.",
     "title": "ورود برای استفاده از API Nodeها لازم است"
@@ -3201,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سیگماها",
     "sound": "صدا",
@@ -5038,8 +5034,10 @@
       "failedCount": "ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید. | ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید.",
       "invalidEmailCount": "{count} آدرس ایمیل نامعتبر | {count} آدرس ایمیل نامعتبر",
       "invitedMessage": "دعوت‌نامه به {emails} ارسال شد | دعوت‌نامه‌ها به {emails} ارسال شدند",
+      "pendingInviteCount": "{count} نفر از این افراد از پیش دعوت‌نامه‌ای در انتظار دارند. از آن‌ها صرف‌نظر می‌شود.",
+      "pendingInviteSingle": "این شخص از پیش یک دعوت‌نامه در انتظار دارد",
       "placeholder": "ایمیل شخص را وارد کنید",
-      "seatLimitReached": "شما می‌توانید تا {count} همکار دعوت کنید. | شما می‌توانید تا {count} همکار دعوت کنید.",
+      "seatLimitExceeded": "این فضای کاری حداکثر {max} عضو دارد. برای ادامه، {overage} نفر را حذف کنید.",
       "title": "دعوت یک نفر به این فضای کاری"
     },
     "inviteUpsellDialog": {
