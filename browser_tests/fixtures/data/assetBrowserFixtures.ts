@@ -5,7 +5,7 @@ function createAssetBrowserModel(overrides: Partial<Asset> = {}): Asset {
     id: 'browser-model-001',
     name: 'test_model.safetensors',
     asset_hash:
-      'blake3:abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
+      'blake3:abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd',
     size: 2_147_483_648,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
