@@ -214,6 +214,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     const panel = page.locator('#agent-panel-root')
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const ws = await getWebSocket()
+    await expect
+      .poll(() => webSocketMessages.length, { timeout: 10_000 })
+      .toBeGreaterThan(0)
     await composer.fill('Add a node to this workflow')
     await panel.getByRole('button', { name: 'Send' }).click()
 
@@ -224,7 +228,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       })
       .toBe(true)
 
-    const ws = await getWebSocket()
     pushEvent(ws, agentDocSubscribed())
     const updates = agentWorkflowUpdates()
     pushEvent(ws, updates.initial)
