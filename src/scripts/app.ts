@@ -47,7 +47,11 @@ import type {
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
@@ -1259,7 +1263,7 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<boolean> {
+  ): Promise<LoadedComfyWorkflow | boolean> {
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1442,6 +1446,7 @@ export class ComfyApp {
     }
 
     ChangeTracker.isLoadingGraph = true
+    let activatedWorkflow: LoadedComfyWorkflow | undefined
     try {
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
@@ -1556,6 +1561,9 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      // Capture the workflow this load activated before the asset-scan awaits
+      // below can hand control back and let the user switch to another one.
+      activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -1599,7 +1607,7 @@ export class ComfyApp {
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
-      return true
+      return activatedWorkflow ?? true
     } finally {
       // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(

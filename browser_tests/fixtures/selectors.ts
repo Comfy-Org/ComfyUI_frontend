@@ -116,7 +116,9 @@ export const TestIds = {
   },
   partnerNodes: {
     signInToRunButton: 'partner-sign-in-to-run-button',
-    runGateCaption: 'partner-run-gate-caption'
+    runGateCaption: 'partner-run-gate-caption',
+    educationCard: 'partner-nodes-education-card',
+    educationCardDismiss: 'partner-nodes-education-dismiss'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
