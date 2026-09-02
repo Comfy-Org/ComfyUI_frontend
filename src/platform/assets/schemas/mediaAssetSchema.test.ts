@@ -33,10 +33,12 @@ describe('parseAssetInfo', () => {
     })
   })
 
-  it('rejects the whole payload when an optional enrichment field is malformed', () => {
-    expect(
-      parseAssetInfo(transferWith({ ...BASE_ITEM, attachment_ref: '' }))
-    ).toBeUndefined()
+  it.each([
+    ['attachment_ref', { attachment_ref: '' }],
+    ['media_kind', { media_kind: 'hologram' }],
+    ['preview_url', { preview_url: 'not a url' }]
+  ])('rejects the whole payload when %s is malformed', (_name, extra) => {
+    expect(parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))).toBeUndefined()
   })
 
   it.todo('W10: should drop malformed optional fields without rejecting the payload')
