@@ -1037,6 +1037,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: OperationType,
     errorMessage: string | null
   ) {
+    if (errorMessage && PROCESSING_FAILURE_CODES.has(errorMessage)) {
+      return t('billingOperation.processingErrorDetail')
+    }
     switch (errorMessage) {
       case 'insufficient_funds':
         return t('billingOperation.insufficientFundsDetail')
@@ -1049,10 +1052,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
         return t('billingOperation.authenticationFailedDetail')
-      case 'processing_error':
-      case 'issuer_not_available':
-      case 'try_again_later':
-        return t('billingOperation.processingErrorDetail')
       case 'card_declined':
       case 'generic_decline':
       case 'approve_with_id':

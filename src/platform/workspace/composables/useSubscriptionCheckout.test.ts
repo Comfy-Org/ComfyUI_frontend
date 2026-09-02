@@ -163,6 +163,8 @@ const {
   mockStartOperation,
   mockRetryPaymentAuthentication,
   mockGetOperation,
+  mockMarkOperationAttended,
+  mockMarkOperationUnattended,
   mockCancelOperation,
   mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
@@ -194,6 +196,8 @@ const {
   mockStartOperation: vi.fn(),
   mockRetryPaymentAuthentication: vi.fn(),
   mockGetOperation: vi.fn(),
+  mockMarkOperationAttended: vi.fn(),
+  mockMarkOperationUnattended: vi.fn(),
   mockCancelOperation: vi.fn(),
   mockSubscriptionActionOperation: {
     value: undefined as MockSubscriptionActionOperation | undefined
@@ -354,6 +358,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
     retryPaymentAuthentication: mockRetryPaymentAuthentication,
     getOperation: mockGetOperation,
     cancelOperation: mockCancelOperation,
+    markOperationAttended: mockMarkOperationAttended,
+    markOperationUnattended: mockMarkOperationUnattended,
     get subscriptionActionOperation() {
       return mockSubscriptionActionOperation.value
     }
@@ -2602,6 +2608,22 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(checkout.checkoutStep.value).toBe('success')
     })
+  })
+
+  it('claims an adopted operation only for a host with recovery steps', async () => {
+    mockSubscriptionActionOperation.value = {
+      opId: 'op-attend',
+      status: 'pending',
+      workspaceId: 'workspace-1',
+      actionUrl: 'https://verify.example/token'
+    } as never
+
+    await setup()
+    expect(mockMarkOperationAttended).toHaveBeenCalledWith('op-attend')
+
+    mockMarkOperationAttended.mockClear()
+    await setup(undefined, 'personal', true, false)
+    expect(mockMarkOperationAttended).not.toHaveBeenCalled()
   })
 
   it('leaves a pending charge on the pricing step for a host without recovery steps', async () => {

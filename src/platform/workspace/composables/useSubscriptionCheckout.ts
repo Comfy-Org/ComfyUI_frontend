@@ -935,21 +935,24 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
-  // While this dialog holds an operation, its outcome renders here — the
-  // store's success/failure toasts stay quiet. Closing the dialog releases
-  // the operation back to toast delivery.
-  watch(
-    activeCheckoutOperationId,
-    (newId, oldId) => {
-      if (oldId) billingOperationStore.markOperationUnattended(oldId)
-      if (newId) billingOperationStore.markOperationAttended(newId)
-    },
-    { immediate: true }
-  )
-  onScopeDispose(() => {
-    const opId = activeCheckoutOperationId.value
-    if (opId) billingOperationStore.markOperationUnattended(opId)
-  })
+  // While a host that renders the outcome steps holds an operation, its
+  // outcome renders there — the store's success/failure toasts stay quiet.
+  // Closing the dialog releases the operation back to toast delivery. Hosts
+  // without those steps never claim the operation at all.
+  if (rendersRecoverySteps) {
+    watch(
+      activeCheckoutOperationId,
+      (newId, oldId) => {
+        if (oldId) billingOperationStore.markOperationUnattended(oldId)
+        if (newId) billingOperationStore.markOperationAttended(newId)
+      },
+      { immediate: true }
+    )
+    onScopeDispose(() => {
+      const opId = activeCheckoutOperationId.value
+      if (opId) billingOperationStore.markOperationUnattended(opId)
+    })
+  }
 
   function showFailureOutcome(operation: {
     errorMessage: string | null
@@ -1410,7 +1413,7 @@ export function useSubscriptionCheckout(
     }
     if (operation.status === 'succeeded') {
       checkoutStep.value = 'success'
-    } else if (operation.status === 'failed') {
+    } else if (operation.status === 'failed' && rendersRecoverySteps) {
       showFailureOutcome(operation)
     }
   }
