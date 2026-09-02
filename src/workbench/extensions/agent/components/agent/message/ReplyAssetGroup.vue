@@ -119,7 +119,7 @@ function owns(url: string, controller: AbortController): boolean {
  * against the shared queue), and `showThumbnail` restarts it, so Show more
  * -> Show less -> Show more never strands a tile blank.
  */
-function loadModelThumbnail(url: string, filename: string): void {
+function loadModelThumbnail(url: string, filename: string, attempts = 0): void {
   const controller = markRaw(new AbortController())
   thumbnailState.value[url] = { phase: 'loading', controller }
 
@@ -139,14 +139,14 @@ function loadModelThumbnail(url: string, filename: string): void {
       if (result.status === 'rendered') {
         thumbnailState.value[url] = { phase: 'ready', src: result.dataUrl }
       } else if (result.status === 'failed') {
-        scheduleThumbnailRetry(url, filename, 0)
+        scheduleThumbnailRetry(url, filename, attempts)
       }
       // 'cancelled' leaves no entry here — hideThumbnail already removed it
       // synchronously when the abort was issued.
     })
     .catch((error) => {
       if (mounted && owns(url, controller)) {
-        scheduleThumbnailRetry(url, filename, 0)
+        scheduleThumbnailRetry(url, filename, attempts)
       }
       reportError(error, {
         errorType: 'agent_reply_asset_preview_failure'
@@ -176,7 +176,7 @@ function scheduleThumbnailRetry(
   const timeout = setTimeout(() => {
     refreshTimeouts.delete(timeout)
     if (!mounted) return
-    loadModelThumbnail(url, filename)
+    loadModelThumbnail(url, filename, attempts + 1)
   }, THUMBNAIL_RETRY_DELAY_MS)
   refreshTimeouts.add(timeout)
   thumbnailState.value[url] = { phase: 'gaveUp', attempts: attempts + 1 }

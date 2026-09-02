@@ -688,6 +688,77 @@ describe('LoaderManager', () => {
       expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
     })
 
+    it('disposes textures held by a stale result material, not just the material itself', async () => {
+      // Regression coverage: Material.dispose() releases GPU program/shader
+      // state but not the textures it references — a stale result's
+      // material was disposed but its map/normalMap/etc. textures were
+      // leaked, retaining full-resolution texture memory per superseded
+      // load.
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const map = new THREE.Texture()
+      const normalMap = new THREE.Texture()
+      const material = new THREE.MeshStandardMaterial({ map, normalMap })
+      const firstModel = new THREE.Mesh(geometry, material)
+      const disposeMap = vi.spyOn(map, 'dispose')
+      const disposeNormalMap = vi.spyOn(normalMap, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeMap).toHaveBeenCalledOnce()
+      expect(disposeNormalMap).toHaveBeenCalledOnce()
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
+    })
+
+    it('does not dispose textures on the shared standardMaterial', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const sharedMap = new THREE.Texture()
+      modelManager.standardMaterial.map = sharedMap
+      const firstModel = new THREE.Mesh(geometry, modelManager.standardMaterial)
+      const disposeSharedMap = vi.spyOn(sharedMap, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeSharedMap).not.toHaveBeenCalled()
+    })
+
     it('discards the result of a stale load when a newer one has started', async () => {
       const { lm, modelManager, eventManager } = makeLoaderManager()
 

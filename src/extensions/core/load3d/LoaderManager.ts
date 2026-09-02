@@ -43,6 +43,23 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 /**
+ * Materials own their maps (`map`, `normalMap`, `roughnessMap`,
+ * `metalnessMap`, `aoMap`, `emissiveMap`, `alphaMap`, `bumpMap`,
+ * `displacementMap`, `envMap`, `clearcoatMap`, ...) but `Material.dispose()`
+ * only releases GPU program/shader state, not the textures it references.
+ * `disposeLoadResult` disposes non-shared materials on every load-generation
+ * change, so leaving their textures alive would retain full-resolution
+ * texture memory for every superseded model. Walk own enumerable properties
+ * rather than a hardcoded map-name list so newly added map types (e.g. a
+ * future `sheenColorMap`) are covered without touching this function.
+ */
+function disposeMaterialTextures(material: THREE.Material): void {
+  for (const value of Object.values(material)) {
+    if (value instanceof THREE.Texture) value.dispose()
+  }
+}
+
+/**
  * Default adapter set: mesh + splat + pointCloud. Each adapter declares the
  * file extensions it owns. For shared extensions (.ply), the adapter with an
  * async `matches()` tiebreaker is tried first; the unconditional adapter acts
@@ -186,7 +203,10 @@ export class LoaderManager implements LoaderManagerInterface {
         ? child.material
         : [child.material]
       for (const material of materials) {
-        if (material !== this.modelManager.standardMaterial) material?.dispose()
+        if (!material || material === this.modelManager.standardMaterial)
+          continue
+        disposeMaterialTextures(material)
+        material.dispose()
       }
     })
   }

@@ -288,6 +288,36 @@ describe('ReplyAssetGroup', () => {
     expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
   })
 
+  it('bounds retries to exactly the initial attempt plus MAX_THUMBNAIL_RETRY_ATTEMPTS', async () => {
+    // Regression coverage for a bug where every retry rescheduled with
+    // attempts=0 instead of the incremented count, so a persistently
+    // failing render never reached MAX_THUMBNAIL_RETRY_ATTEMPTS and kept
+    // rescheduling every THUMBNAIL_RETRY_DELAY_MS indefinitely.
+    isAssetPreviewSupported.mockReturnValue(true)
+    vi.useFakeTimers()
+    try {
+      renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+
+      // MAX_THUMBNAIL_RETRY_ATTEMPTS = 2, THUMBNAIL_RETRY_DELAY_MS = 2000:
+      // the initial call plus 2 retries is 3 total calls, then the retry
+      // budget is spent and no further calls are scheduled.
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(3)
+
+      // No timer left pending once the budget is spent.
+      expect(vi.getTimerCount()).toBe(0)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('aborts queued generation when unmounted', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     // Keep the render pending so the strand is still 'loading' (not yet

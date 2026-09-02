@@ -1,4 +1,4 @@
-import { withTimeout } from 'es-toolkit'
+import { TimeoutError } from 'es-toolkit'
 
 import {
   isAssetPreviewSupported,
@@ -17,13 +17,17 @@ const MODEL_LOAD_TIMEOUT_MS = 15_000
  * that error's message and stack both reach `reportError` (Sentry/Datadog),
  * so both must be scrubbed before they leave this module: query strings are
  * dropped and `user:pass@` credentials are stripped from any URL-shaped
- * substring.
+ * substring. Agent reply assets are also referenced by root-relative URLs
+ * (e.g. `/api/view?filename=mesh-0.glb`), which three.js embeds verbatim
+ * too, so path-shaped tokens carrying a query string are scrubbed as well.
  */
 function redactUrls(text: string): string {
-  return text.replace(
-    /https?:\/\/(?:[^\s"']*@)?[^\s"']+/g,
-    (match) => match.replace(/^(https?:\/\/)[^@\s"']*@/, '$1').split('?')[0]
-  )
+  return text
+    .replace(
+      /https?:\/\/(?:[^\s"']*@)?[^\s"']+/g,
+      (match) => match.replace(/^(https?:\/\/)[^@\s"']*@/, '$1').split('?')[0]
+    )
+    .replace(/(\/[^\s"']*)\?[^\s"']*/g, '$1')
 }
 
 function redactedCopy(error: unknown): Error {
@@ -54,12 +58,13 @@ export type ModelThumbnailResult =
  * live, and persists the result through the asset API so other surfaces
  * pick it up.
  *
- * The model load is bounded by `withTimeout` (see #16485) so a stuck load
- * cannot block the queue forever; a render that outlives its deadline is
- * given up on — its viewer is torn down and the queue moves on — but the
- * underlying transfer and parse are not abortable and run to completion
- * in the background. Aborting `callerSignal` gives up the same way, and
- * skips the render entirely if it has not started yet.
+ * The whole render (see #16485, extended to cover the full body not just
+ * the model load) is bounded by a deadline so a stuck render cannot block
+ * the queue forever; a render that outlives its deadline is given up on —
+ * its viewer is torn down and the queue moves on — but the underlying
+ * transfer and parse are not abortable and run to completion in the
+ * background. Aborting `callerSignal` gives up the same way, and skips the
+ * render entirely if it has not started yet.
  */
 export function generateModelThumbnail(
   modelUrl: string,
@@ -112,9 +117,9 @@ async function renderThumbnailWithTimeout(
     // catch time. One shared AbortController/signal used to cover every
     // model in a group (it no longer does — see the per-url controllers in
     // ReplyAssetGroup.vue), and a mutable flag read after the fact can't
-    // tell a genuine render fault (parse error, WebGL fault, the
-    // withTimeout deadline) from an unrelated abort that lands in the same
-    // tick. `cancelError` is the one thing only a real caller-signal abort
+    // tell a genuine render fault (parse error, WebGL fault, the render
+    // deadline) from an unrelated abort that lands in the same tick.
+    // `cancelError` is the one thing only a real caller-signal abort
     // produces, so compare against it directly.
     if (error === cancelError) return { status: 'cancelled' }
     // modelUrl is untrusted and may be embedded verbatim in three.js's own
@@ -137,6 +142,47 @@ async function renderThumbnail(
   assetName: string,
   signal: AbortSignal
 ): Promise<string> {
+  // The deadline covers the whole render body, not just `loadModel`: the
+  // dynamic `import()` below and `captureThumbnail` run in the same queued
+  // task with no deadline of their own, and `queue` is module-global and
+  // serial, so a stalled chunk fetch or a capture that never settles would
+  // otherwise block every later `generateModelThumbnail` caller.
+  //
+  // `deadline` is threaded into `renderThumbnailInner` as its abort signal
+  // so `remove()` there fires immediately once the deadline (or the outer
+  // `signal`) fires, tearing down the viewer the same way a caller cancel
+  // does. Racing a plain timer here (rather than wrapping the whole body in
+  // `withTimeout`) is what lets this function's own promise settle without
+  // waiting on `renderThumbnailInner` — the underlying transfer/parse is
+  // not itself abortable and keeps running in the background once given up
+  // on; awaiting it here would defeat the deadline entirely.
+  const deadline = new AbortController()
+  const onSignalAbort = () => deadline.abort()
+  signal.addEventListener('abort', onSignalAbort, { once: true })
+  let timer: ReturnType<typeof setTimeout>
+  const timedOut = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      deadline.abort()
+      reject(new TimeoutError())
+    }, MODEL_LOAD_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([
+      renderThumbnailInner(modelUrl, assetName, deadline.signal),
+      timedOut
+    ])
+  } finally {
+    clearTimeout(timer!)
+    deadline.abort()
+    signal.removeEventListener('abort', onSignalAbort)
+  }
+}
+
+async function renderThumbnailInner(
+  modelUrl: string,
+  assetName: string,
+  signal: AbortSignal
+): Promise<string> {
   const { createLoad3d } = await import('@/extensions/core/load3d/createLoad3d')
   signal.throwIfAborted()
 
@@ -155,10 +201,7 @@ async function renderThumbnail(
   signal.addEventListener('abort', remove, { once: true })
 
   try {
-    await withTimeout(
-      () => load3d.loadModel(modelUrl, undefined, { silent: true }),
-      MODEL_LOAD_TIMEOUT_MS
-    )
+    await load3d.loadModel(modelUrl, undefined, { silent: true })
     signal.throwIfAborted()
     const dataUrl = await load3d.captureThumbnail(256, 256)
     signal.throwIfAborted()
