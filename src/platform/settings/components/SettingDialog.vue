@@ -53,10 +53,7 @@
         v-else-if="isWorkspaceSection && workspaceName"
         class="flex min-w-0 items-center gap-3"
       >
-        <WorkspaceProfilePic
-          class="size-11 text-2xl"
-          :workspace-name="workspaceName"
-        />
+        <WorkspaceProfilePic size="lg" :workspace-name="workspaceName" />
         <h1 class="truncate text-2xl font-semibold text-base-foreground">
           {{ workspaceName }}
         </h1>
