@@ -41,7 +41,7 @@ vi.mock('@/composables/canvas/useFocusNode', async (importOriginal) => {
     useFocusNode: () =>
       focusNodeMode.useRealImplementation
         ? actual.useFocusNode()
-        : { focusNodeInstance }
+        : { ...actual.useFocusNode(), focusNodeInstance }
   }
 })
 
