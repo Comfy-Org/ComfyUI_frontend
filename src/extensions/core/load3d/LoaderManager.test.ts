@@ -685,9 +685,7 @@ describe('LoaderManager', () => {
       expect(disposeMaterial).toHaveBeenCalledOnce()
       // The stale load's setOriginalModel write must never have landed —
       // createLoadContext gates it on loadId.
-      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(
-        firstModel
-      )
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {

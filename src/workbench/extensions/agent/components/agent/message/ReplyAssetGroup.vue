@@ -242,8 +242,7 @@ const MediaLightbox = defineAsyncComponent(
 
 function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
   const state = thumbnailState.value[asset.url]
-  if (!mounted || !isAssetPreviewSupported() || state?.phase === 'ready')
-    return
+  if (!mounted || !isAssetPreviewSupported() || state?.phase === 'ready') return
   void findServerPreviewUrl(asset.filename)
     .then((preview) => {
       if (!mounted) return

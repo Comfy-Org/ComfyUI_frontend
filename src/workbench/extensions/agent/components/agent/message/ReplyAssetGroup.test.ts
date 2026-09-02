@@ -294,7 +294,10 @@ describe('ReplyAssetGroup', () => {
     // settled to 'ready'/'gaveUp') when unmount fires — a mock that
     // resolves immediately would let the retry-on-failure transition win
     // the race and leave nothing in flight to abort.
-    let resolveGenerate!: (result: { status: 'rendered'; dataUrl: string }) => void
+    let resolveGenerate!: (result: {
+      status: 'rendered'
+      dataUrl: string
+    }) => void
     generateModelThumbnail.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveGenerate = resolve
@@ -414,7 +417,10 @@ describe('ReplyAssetGroup', () => {
 
   it('aborts a hidden render and restarts it on re-render without leaving the tile permanently blank', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    let resolveGenerate!: (result: { status: 'rendered'; dataUrl: string }) => void
+    let resolveGenerate!: (result: {
+      status: 'rendered'
+      dataUrl: string
+    }) => void
     generateModelThumbnail.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveGenerate = resolve
