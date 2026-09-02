@@ -34,16 +34,25 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-export function isLegacyFile(id: string): boolean {
+function defaultSrcRoot(): string {
+  return path.join(process.cwd(), 'src')
+}
+
+/**
+ * Whether `id` is one of this package's legacy public-API files under
+ * `src/scripts/` or `src/extensions/core/`, resolved relative to `srcRoot`
+ * (this package's own `src/`, the same base transformExports uses for the
+ * shim path). A bare substring match on "src/scripts" would also match other
+ * packages' source, e.g. apps/website/src/scripts/customerio.ts, which is not
+ * part of this shim and whose emitted asset path would escape the output root.
+ */
+export function isLegacyFile(
+  id: string,
+  srcRoot: string = defaultSrcRoot()
+): boolean {
   if (!id.endsWith('.ts')) return false
 
-  // Resolve relative to this package's own src/ (same base transformExports
-  // uses for the shim path below), not a substring match on "src/scripts" —
-  // that substring also matches other packages' source, e.g.
-  // apps/website/src/scripts/customerio.ts, which isn't part of this shim.
-  const relativePath = path
-    .relative(path.join(process.cwd(), 'src'), id)
-    .replace(/\\/g, '/')
+  const relativePath = path.relative(srcRoot, id).replace(/\\/g, '/')
 
   if (relativePath.startsWith('..')) return false
 
@@ -100,9 +109,8 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
         const result = transformExports(code, id)
 
         if (result.exports.length > 0) {
-          const projectRoot = process.cwd()
           const relativePath = path
-            .relative(path.join(projectRoot, 'src'), id)
+            .relative(defaultSrcRoot(), id)
             .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
