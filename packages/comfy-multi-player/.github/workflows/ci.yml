@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: build / purity / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify conformance corpus
+        run: npm run verify:corpus
+
+      - name: Build
+        run: npm run build
+
+      - name: Type-check gate
+        run: npm run typecheck
+
+      - name: Purity gate
+        run: npm run check:purity
+
+      - name: Statelessness gate
+        run: npm run check:stateless
+
+      - name: Profile-claim staleness gate
+        run: npm run check:profile-claims
+
+      # .coderabbit.yaml's path_instructions are generated from the
+      # <!-- coderabbit-instructions --> blocks in .agents/checks/*.md. This
+      # fails when the committed file no longer matches them. CodeRabbit reads
+      # the config at the PR head, so a drifted config still reviews the PR that
+      # drifted it — this blocks the merge, it does not prevent the drift.
+      - name: CodeRabbit config drift gate
+        run: npm run check:coderabbit
+
+      # Module-graph gate. Exits 2 (INCONCLUSIVE) rather than green when it
+      # cruises too few modules to mean anything — see .agents/checks/import-graph.md.
+      - name: Import-graph gate
+        run: npm run check:imports
+
+      # Offline only: asserts the citation sites and docs/upstream-pins.json
+      # agree on one SHA and that nothing cites upstream by a moving branch.
+      # Reachability of each pinned SHA needs the network and is a maintainer
+      # step (`npm run check:pins -- --verify-remote`), because a check that
+      # cannot reach GitHub must report INCONCLUSIVE rather than pass.
+      - name: Citation-pin gate (FC-10)
+        run: npm run check:pins
+
+      - name: Tests
+        run: npm test
+
+      - name: Clock ordering matrix
+        run: npm run test:clock-matrix

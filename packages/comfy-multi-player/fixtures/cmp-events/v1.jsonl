@@ -1,0 +1,3 @@
+{"schema_version":1,"type":"op_rejected","source":"applyOps","code":"unknown_op","message":"unknown op 'not_a_real_op'","error_name":"OpRejectedError","op_id":"00000000000000000000000000000001","batch_index":0}
+{"schema_version":1,"type":"applier_error","source":"applyOps","code":"apply_failed","message":"boom","error_name":"Error","op_id":"00000000000000000000000000000003","batch_index":0}
+{"schema_version":1,"type":"limit_violation","source":"applyOps","code":"max_ops_per_batch","message":"batch of 1025 ops exceeds the 1024-op limit; rejected before any op was processed (#14)"}

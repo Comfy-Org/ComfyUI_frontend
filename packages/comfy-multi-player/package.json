@@ -1,0 +1,60 @@
+{
+  "name": "@comfyorg/comfy-multi-player",
+  "version": "0.2.1",
+  "license": "GPL-3.0-only",
+  "description": "Shared workflow-document package: CRDT op applier + JSON projection used identically by the browser and the server doc host.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "fixtures/cmp-events"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/comfy-multi-player.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "npm run build && tsc -p tsconfig.test.json && tsc -p test/types/tsconfig.json",
+    "prepack": "npm run build",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:mutation": "stryker run",
+    "check:mutation-report": "node scripts/check-mutation-report.mjs",
+    "check:purity": "node scripts/check-purity.mjs",
+    "check:pins": "node scripts/check-pins.mjs",
+    "check:profile-claims": "node scripts/check-profile-claims.mjs",
+    "check:coderabbit": "node scripts/gen-coderabbit-config.mjs",
+    "gen:coderabbit": "node scripts/gen-coderabbit-config.mjs --write",
+    "check:imports": "node scripts/check-import-graph.mjs",
+    "check:stateless": "node scripts/check-stateless.mjs",
+    "test:clock-matrix": "npm run build && vitest run test/clock-matrix/clock-matrix.test.ts --reporter=verbose",
+    "verify:corpus": "node scripts/verify-corpus.mjs"
+  },
+  "dependencies": {
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@types/node": "^26.3.0",
+    "@typescript-eslint/parser": "^8.68.0",
+    "dependency-cruiser": "^18.2.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-sonarjs": "^3.0.7",
+    "fast-check": "^4.9.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  }
+}

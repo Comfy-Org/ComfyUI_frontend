@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  publish:
+    name: verify / publish / release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Require tag to match package version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          package_version="$(node --input-type=module -e "import packageJson from './package.json' with { type: 'json' }; console.log(packageJson.version)")"
+          test "$RELEASE_TAG" = "v$package_version"
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify conformance corpus
+        run: npm run verify:corpus
+
+      - name: Build
+        run: npm run build
+
+      - name: Purity gate
+        run: npm run check:purity
+
+      - name: Statelessness gate
+        run: npm run check:stateless
+
+      - name: Profile-claim staleness gate
+        run: npm run check:profile-claims
+
+      - name: CodeRabbit config drift gate
+        run: npm run check:coderabbit
+
+      - name: Import-graph gate
+        run: npm run check:imports
+
+      - name: Citation-pin gate
+        run: npm run check:pins
+
+      - name: Tests
+        run: npm test
+
+      - name: Clock ordering matrix
+        run: npm run test:clock-matrix
+
+      - name: Verify package contents
+        run: |
+          npm pack --dry-run --json > /tmp/npm-pack.json
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises'
+
+          const [{ files }] = JSON.parse(await readFile('/tmp/npm-pack.json', 'utf8'))
+          const paths = new Set(files.map(({ path }) => path))
+          for (const required of ['dist/index.js', 'dist/index.d.ts']) {
+            if (!paths.has(required)) throw new Error(`npm package is missing ${required}`)
+          }
+          const source = [...paths].find((path) => path.startsWith('src/'))
+          if (source) throw new Error(`npm package unexpectedly includes ${source}`)
+          NODE
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"

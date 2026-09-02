@@ -1,0 +1,63 @@
+name: Mutation testing
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: Stryker mutation testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Use a unique save key per run and restore the newest compatible report.
+      # Including the lockfile and Stryker config prevents results produced with
+      # different dependencies or measurement pins from being reused.
+      - name: Restore incremental mutation report
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ runner.os }}-${{ hashFiles('package-lock.json', 'stryker.config.mjs') }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-${{ runner.os }}-${{ hashFiles('package-lock.json', 'stryker.config.mjs') }}-
+
+      - name: Mutation tests
+        run: npm run test:mutation
+
+      # Stryker scores a `Timeout` as killed, so a loaded runner inflates the
+      # score. `stryker.config.mjs` pins timeoutMS/concurrency; this re-derives
+      # the score from the JSON report, reports Timeout as its own outcome, and
+      # exits 2 INCONCLUSIVE when timeouts are material. Runs even when Stryker
+      # broke the threshold, so the failure is explained rather than just red.
+      - name: Check mutation report
+        if: always()
+        run: npm run check:mutation-report
+
+      # Without this the run discards reports/mutation/ and even a failure
+      # leaves nothing to inspect.
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 14
+          if-no-files-found: error
