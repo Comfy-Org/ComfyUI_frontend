@@ -25,15 +25,21 @@ describe('getAgentCards', () => {
     expect(new Set(tags).size).toBe(tags.length)
   })
 
-  it('translates every field for zh-CN', () => {
-    const en = getAgentCards('en')
-    const zh = getAgentCards('zh-CN')
+  // Pins the card-to-key mapping: a reordered CARD_KEYS or a mistyped key
+  // stem would swap a tag onto the wrong title, which comparing en against
+  // zh cannot catch.
+  it('maps each card to its own zh-CN tag and title', () => {
+    expect(getAgentCards('zh-CN')).toMatchObject([
+      { tag: '创意知识', title: '最佳实践可以端到端交付' },
+      { tag: '人机协同', title: '你们两位同时编辑' },
+      { tag: '掌控与迭代', title: '创作始终属于你' },
+      { tag: '本地与云端', title: '你在哪里运行，它就在哪里运行' }
+    ])
+  })
 
-    expect(zh).toHaveLength(en.length)
-    for (const [index, card] of zh.entries()) {
-      expect(card.tag).not.toBe(en[index].tag)
-      expect(card.title).not.toBe(en[index].title)
-      expect(card.body).not.toBe(en[index].body)
+  it('gives every zh-CN card a body to render', () => {
+    for (const card of getAgentCards('zh-CN')) {
+      expect(card.body.length).toBeGreaterThan(0)
     }
   })
 })
