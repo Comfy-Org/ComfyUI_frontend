@@ -36,6 +36,7 @@ An Architecture Decision Record captures an important technical decision made al
 | [0024](0024-in-app-agent-offscreen-graphs.md)                               | Graph Activation and Document Objects for In-App Agent Targets  | Proposed | 2026-08-28 |
 | [0025](0025-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 | [0026](0026-frontend-document-model.md)                                     | Frontend Document Model                                         | Proposed | 2026-08-31 |
+| [0027](0027-workflow-to-execution-payload-transform.md)                     | Workflow-to-Execution-Payload Transform                         | Proposed | 2026-08-23 |
 
 ## Creating a New ADR
 
