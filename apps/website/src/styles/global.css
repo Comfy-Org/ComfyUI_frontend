@@ -229,7 +229,9 @@
 }
 
 @utility animate-dash-flow {
-  animation: dash-flow 1.2s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: dash-flow 1.2s linear infinite;
+  }
 }
 
 @keyframes platform-builder-float {

@@ -41,6 +41,14 @@ const workflowIndex = ref(0)
 
 const workflow = computed(() => WORKFLOWS[workflowIndex.value])
 
+// The dashed connectors animate stroke-dashoffset, which cannot be composited,
+// so they are parked on the same condition as the rotation above rather than
+// running behind a scrolled-past section. Reduced motion is handled by the
+// animate-dash-flow utility itself.
+const animated = computed(
+  () => visible.value && documentVisibility.value === 'visible'
+)
+
 const { pause, resume } = useIntervalFn(
   () => {
     workflowIndex.value = (workflowIndex.value + 1) % WORKFLOWS.length
@@ -65,7 +73,7 @@ watchEffect(() => {
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessDeploy.heading', locale) }}
       <template #subtitle>
-        <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
+        <p class="text-smoke-700 mx-auto mt-4 max-w-2xl text-sm">
           {{ t('platform.serverlessDeploy.subtitle', locale) }}
         </p>
       </template>
@@ -83,21 +91,21 @@ watchEffect(() => {
         <article class="h-full">
           <div
             aria-hidden="true"
-            class="border-transparency-white-t4 flex min-h-52 items-center justify-center overflow-hidden rounded-2xl border bg-primary-comfy-ink p-4"
+            class="border-transparency-white-t4 bg-primary-comfy-ink flex min-h-52 items-center justify-center overflow-hidden rounded-2xl border p-4"
           >
             <div
               v-if="step.number === 1"
               class="flex size-full flex-col items-center justify-center gap-1"
             >
               <div
-                class="border-transparency-white-t4 bg-transparency-ink-t80 w-full max-w-60 rounded-xl border p-3 font-mono text-sm/relaxed text-primary-comfy-canvas"
+                class="border-transparency-white-t4 bg-transparency-ink-t80 text-primary-comfy-canvas w-full max-w-60 rounded-xl border p-3 font-mono text-sm/relaxed"
               >
                 <Transition name="crossfade" mode="out-in">
                   <p :key="workflow.file" class="text-primary-comfy-yellow">
                     {{ workflow.file }}
                   </p>
                 </Transition>
-                <p class="mt-1 text-smoke-700">{ "nodes": [...],</p>
+                <p class="text-smoke-700 mt-1">{ "nodes": [...],</p>
                 <p class="text-smoke-700">&nbsp;&nbsp;"models": [...],</p>
                 <p class="text-smoke-700">&nbsp;&nbsp;"deps": [...] }</p>
               </div>
@@ -107,13 +115,16 @@ watchEffect(() => {
                   y1="0"
                   x2="4"
                   y2="18"
-                  class="animate-dash-flow stroke-primary-comfy-yellow/60"
+                  :class="[
+                    'stroke-primary-comfy-yellow/60',
+                    animated && 'animate-dash-flow'
+                  ]"
                   stroke-width="1.5"
                   stroke-dasharray="4 5"
                 />
               </svg>
               <div
-                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 w-full max-w-60 rounded-xl border px-3 py-1.5 text-center font-mono text-sm text-primary-comfy-canvas"
+                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 text-primary-comfy-canvas w-full max-w-60 rounded-xl border px-3 py-1.5 text-center font-mono text-sm"
               >
                 <span class="text-primary-comfy-yellow">POST&#32;</span>
                 <Transition name="crossfade" mode="out-in">
@@ -129,7 +140,7 @@ watchEffect(() => {
               class="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap lg:flex-nowrap"
             >
               <div
-                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 max-w-full rounded-full border px-3 py-2 text-center font-mono text-sm text-primary-comfy-canvas"
+                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 text-primary-comfy-canvas max-w-full rounded-full border px-3 py-2 text-center font-mono text-sm"
               >
                 <Transition name="crossfade" mode="out-in">
                   <span :key="workflow.endpoint" class="break-all">
@@ -143,7 +154,10 @@ watchEffect(() => {
                   y1="4"
                   x2="28"
                   y2="4"
-                  class="animate-dash-flow stroke-primary-comfy-canvas/40"
+                  :class="[
+                    'stroke-primary-comfy-canvas/40',
+                    animated && 'animate-dash-flow'
+                  ]"
                   stroke-width="1.5"
                   stroke-dasharray="4 5"
                 />
@@ -152,7 +166,7 @@ watchEffect(() => {
                 <span
                   v-for="member in TEAM"
                   :key="member"
-                  class="bg-transparency-white-t4 flex size-9 items-center justify-center rounded-full border-2 border-primary-comfy-ink font-mono text-sm text-primary-comfy-canvas"
+                  class="bg-transparency-white-t4 border-primary-comfy-ink text-primary-comfy-canvas flex size-9 items-center justify-center rounded-full border-2 font-mono text-sm"
                 >
                   {{ member }}
                 </span>
@@ -164,7 +178,7 @@ watchEffect(() => {
               class="flex w-full flex-col items-center justify-center gap-2 sm:flex-row sm:flex-wrap lg:flex-nowrap"
             >
               <div
-                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 max-w-full shrink-0 rounded-full border px-3 py-2 text-center font-mono text-sm text-primary-comfy-canvas"
+                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 text-primary-comfy-canvas max-w-full shrink-0 rounded-full border px-3 py-2 text-center font-mono text-sm"
               >
                 <Transition name="crossfade" mode="out-in">
                   <span :key="workflow.endpoint" class="break-all">
@@ -181,7 +195,10 @@ watchEffect(() => {
                   v-for="(app, index) in APPS"
                   :key="app"
                   :d="`M 0 48 C 20 48, 20 ${12 + index * 24}, 40 ${12 + index * 24}`"
-                  class="animate-dash-flow fill-none stroke-primary-comfy-canvas/40"
+                  :class="[
+                    'stroke-primary-comfy-canvas/40 fill-none',
+                    animated && 'animate-dash-flow'
+                  ]"
                   stroke-width="1.5"
                   stroke-dasharray="4 5"
                 />
@@ -190,7 +207,7 @@ watchEffect(() => {
                 <span
                   v-for="app in APPS"
                   :key="app"
-                  class="border-transparency-white-t4 bg-transparency-white-t4 rounded-md border px-1 py-0.5 font-mono text-sm text-primary-comfy-canvas"
+                  class="border-transparency-white-t4 bg-transparency-white-t4 text-primary-comfy-canvas rounded-md border px-1 py-0.5 font-mono text-sm"
                 >
                   {{ app }}
                 </span>
@@ -198,10 +215,10 @@ watchEffect(() => {
             </div>
           </div>
 
-          <h3 class="mt-4 text-base font-normal text-primary-warm-white">
+          <h3 class="text-primary-warm-white mt-4 text-base font-normal">
             {{ step.title }}
           </h3>
-          <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
+          <p class="text-primary-comfy-canvas mt-2 text-xs/relaxed font-light">
             {{ step.description }}
           </p>
         </article>
