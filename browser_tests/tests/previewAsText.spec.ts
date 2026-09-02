@@ -131,6 +131,17 @@ test.describe('Preview as Text node', () => {
         execution.executed(jobId, id, { text: ['recovered again'] })
         await expect(preview).toHaveValue('recovered again')
       })
+
+      await test.step('nullish output does not wedge the widget', async () => {
+        execution.executed(jobId, id, null)
+        await expect(preview).toHaveValue('')
+
+        execution.executed(jobId, id, undefined)
+        await expect(preview).toHaveValue('')
+
+        execution.executed(jobId, id, { text: ['recovered from nullish'] })
+        await expect(preview).toHaveValue('recovered from nullish')
+      })
     }
   )
 })
