@@ -42,6 +42,9 @@ const S = {
   nodesRemoved: 'doc nodes removed',
   filterAll: 'all kinds',
   clear: 'Clear',
+  copy: 'Copy',
+  copyDocumentId: 'Copy document id',
+  copyLogDetail: 'Copy log detail',
   copyJson: 'Copy JSON',
   copied: 'Copied',
   eventCount: 'events'
@@ -160,16 +163,22 @@ const filteredEvents = computed<readonly DevEvent[]>(() => {
 
 const copyLabel = ref<string>(S.copyJson)
 
+async function copyText(value: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function copyEvents() {
   const events = kindFilter.value
     ? devEvents.value.filter((e) => e.kind === kindFilter.value)
     : devEvents.value
-  try {
-    await navigator.clipboard.writeText(stringifyDevEvents(events))
+  if (await copyText(stringifyDevEvents(events))) {
     copyLabel.value = S.copied
     setTimeout(() => (copyLabel.value = S.copyJson), 1200)
-  } catch {
-    /* clipboard unavailable (non-secure context) — silently ignore */
   }
 }
 
@@ -184,6 +193,17 @@ function fmtDetail(detail: unknown): string {
   } catch {
     return String(detail)
   }
+}
+
+function eventNodeIds(event: DevEvent): string[] {
+  if (event.kind !== 'doc_nodes_changed') return []
+  const detail = event.detail as {
+    added?: unknown[]
+    removed?: unknown[]
+  } | null
+  return [...(detail?.added ?? []), ...(detail?.removed ?? [])].filter(
+    (id): id is string => typeof id === 'string'
+  )
 }
 
 function fmtTime(at: number): string {
@@ -229,8 +249,20 @@ function fmtTime(at: number): string {
             <tbody>
               <tr>
                 <td class="pr-2 text-muted">{{ S.docId }}</td>
-                <td class="break-all">
-                  {{ props.status.workflowId ?? S.none }}
+                <td>
+                  <div class="flex items-center gap-1">
+                    <span class="break-all">
+                      {{ props.status.workflowId ?? S.none }}
+                    </span>
+                    <button
+                      v-if="props.status.workflowId"
+                      class="rounded-sm border border-border-default px-1.5 py-0.5"
+                      :aria-label="S.copyDocumentId"
+                      @click="copyText(props.status.workflowId)"
+                    >
+                      {{ S.copy }}
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -334,7 +366,33 @@ function fmtTime(at: number): string {
             >
               <span class="text-muted">{{ fmtTime(e.at) }}</span>
               <span class="ml-1 font-bold">{{ e.kind }}</span>
-              <div class="break-all text-muted">{{ fmtDetail(e.detail) }}</div>
+              <div class="flex items-start gap-1">
+                <div class="break-all text-muted">
+                  {{ fmtDetail(e.detail) }}
+                </div>
+                <button
+                  v-if="fmtDetail(e.detail)"
+                  class="rounded-sm border border-border-default px-1.5 py-0.5"
+                  :aria-label="S.copyLogDetail"
+                  @click="copyText(fmtDetail(e.detail))"
+                >
+                  {{ S.copy }}
+                </button>
+              </div>
+              <div
+                v-if="eventNodeIds(e).length"
+                class="mt-1 flex flex-wrap gap-1"
+              >
+                <button
+                  v-for="nodeId in eventNodeIds(e)"
+                  :key="nodeId"
+                  class="rounded-sm border border-border-default px-1.5 py-0.5"
+                  :aria-label="`${S.copy} node id ${nodeId}`"
+                  @click="copyText(nodeId)"
+                >
+                  {{ nodeId }}
+                </button>
+              </div>
             </div>
           </div>
         </section>
