@@ -36,7 +36,7 @@ describe('ServerlessDeploySection', () => {
     )
 
     expect(transcript()).toContain(
-      '$ comfy build init --from-workflow ./workflow.json'
+      '$ comfy build init --from-workflow ./workflow.json --comfy-version v0.34.2\n'
     )
     expect(transcript()).toContain(
       '$ comfy build push --release --target linux/nvidia'
