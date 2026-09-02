@@ -112,7 +112,7 @@
       v-if="canceledNoticeVisible && step === 'amount'"
       class="mx-8 mb-2 rounded-lg bg-secondary-background px-4 py-2 text-center text-xs text-muted-foreground"
     >
-      {{ $t('credits.topUp.paymentCanceledNotice') }}
+      {{ $t('billingOperation.paymentCanceledNotice') }}
     </div>
 
     <div v-if="step === 'amount'" class="px-8">
@@ -242,14 +242,14 @@
           v-if="cancelUnavailable"
           class="m-0 py-2 text-center text-xs text-muted-foreground"
         >
-          {{ $t('credits.topUp.cancelUnavailable') }}
+          {{ $t('billingOperation.cancelUnavailable') }}
         </p>
         <template v-else>
           <p
             v-if="cancelUnreachable"
             class="m-0 pt-2 text-center text-xs text-muted-foreground"
           >
-            {{ $t('credits.topUp.cancelUnreachable') }}
+            {{ $t('billingOperation.cancelUnreachable') }}
           </p>
           <Button
             v-if="!topupReconciliationOperationId"
@@ -259,7 +259,7 @@
             :loading="isCancelingPayment"
             @click="handleCancelPendingPayment"
           >
-            {{ $t('credits.topUp.cancelPayment') }}
+            {{ $t('billingOperation.cancelPayment') }}
           </Button>
         </template>
       </div>
@@ -413,11 +413,22 @@ async function handleCancelPendingPayment() {
     clearTimeout(canceledNoticeTimer)
     canceledNoticeTimer = setTimeout(() => {
       canceledNoticeVisible.value = false
-    }, 8000)
+    }, 5000)
   } finally {
     isCancelingPayment.value = false
   }
 }
+
+// A cancel verdict describes one operation. A different operation — a fresh
+// attempt, a recovered charge — must not inherit it, or a stale refusal
+// removes the cancel affordance from a charge it never judged.
+watch(
+  () => topupOperation.value?.opId,
+  () => {
+    cancelUnavailable.value = false
+    cancelUnreachable.value = false
+  }
+)
 
 onScopeDispose(() => clearTimeout(canceledNoticeTimer))
 
