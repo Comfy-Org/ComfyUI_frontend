@@ -32,21 +32,18 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   }
 }
 
-const VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH = {
-  VHS_VAEDecodeBatched: 'per_batch',
-  VHS_VAEEncodeBatched: 'per_batch'
-}
+// VHS_VAEDecodeBatched.per_batch / VHS_VAEEncodeBatched.per_batch no longer
+// drift on save/reload; the ComfyUI-VideoHelperSuite entry was removed here
+// (see ROUNDTRIP_VALUE_ALLOWLIST in allNodesRoundtripTier.ts) — qax-19/valuedrift-1.
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH: Record<
+  string,
+  Record<string, string>
+> = {}
 
-export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH
-}
-
-export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
-  'ComfyUI-VideoHelperSuite': {
-    VHS_VAEDecodeBatched: 'per_batch',
-    VHS_VAEEncodeBatched: 'per_batch'
-  }
-}
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE: Record<
+  string,
+  Record<string, string>
+> = {}
 
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }

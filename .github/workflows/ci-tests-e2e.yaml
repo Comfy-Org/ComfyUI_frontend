@@ -56,7 +56,7 @@ jobs:
 
       - name: Build and verify desktop Assets default
         run: |
-          DISTRIBUTION=desktop pnpm build
+          pnpm build:desktop-dist
           pnpm test:assets-flag-artifact
         env:
           EXPECTED_DISTRIBUTION: desktop

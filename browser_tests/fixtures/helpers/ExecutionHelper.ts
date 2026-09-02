@@ -188,7 +188,7 @@ export class ExecutionHelper {
   executed(
     jobId: string,
     nodeId: string,
-    output: Record<string, unknown>
+    output: Record<string, unknown> | null | undefined
   ): void {
     this.requireWs().send(
       JSON.stringify({
