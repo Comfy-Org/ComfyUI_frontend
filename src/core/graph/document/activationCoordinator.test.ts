@@ -49,6 +49,26 @@ describe('createActivationCoordinator', () => {
     expect(log).toEqual([])
   })
 
+  it('keeps the active binding when the next document is not loaded', async () => {
+    const docA = toDocumentId('doc-a')
+    const docB = toDocumentId('doc-b')
+    const coordinator = createActivationCoordinator({
+      isLoaded: (id) => id === docA
+    })
+    const log: string[] = []
+    await coordinator.activate(docA, recordingBinding(log, 'a'))
+
+    const outcome = await coordinator.activate(docB, recordingBinding(log, 'b'))
+
+    expect(outcome).toEqual({
+      status: 'rejected',
+      documentId: docB,
+      reason: 'not-loaded'
+    })
+    expect(coordinator.activeDocumentId()).toBe(docA)
+    expect(log).toEqual([`attach:a:${docA}`])
+  })
+
   it('rejects when hydration fails and leaves the previous binding intact', async () => {
     const docA = toDocumentId('doc-a')
     const docB = toDocumentId('doc-b')
