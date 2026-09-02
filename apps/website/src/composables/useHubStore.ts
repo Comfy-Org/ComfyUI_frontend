@@ -5,7 +5,7 @@ export interface FilterBadge {
   readonly value: string
 }
 
-export type HubTab = 'all' | 'nodeGraphs' | 'comfyApps'
+export type HubTab = 'all' | 'nodeGraphs' | 'comfyApps' | 'models'
 type HubSort = 'popular' | 'newest'
 
 // Module-level refs: every island on the page shares the same browse state.

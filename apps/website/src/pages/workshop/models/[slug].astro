@@ -47,7 +47,7 @@ const price =
       : undefined
 
 const pillClass =
-  'rounded-2xl bg-transparency-white-t8 px-3 py-1 text-[11px] font-bold tracking-wider text-primary-warm-white uppercase'
+  'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
 
 const tags = [
   ...(model.provider
@@ -66,7 +66,7 @@ const tags = [
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
+  <div class="mx-auto max-w-8xl px-6 py-12 lg:px-8 lg:py-16">
     <header
       class="relative mb-12 overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light"
       data-testid="model-hero"
@@ -75,7 +75,7 @@ const tags = [
         model.thumbnailUrl && (
           <StaticFrame
             src={model.thumbnailUrl}
-            class="absolute inset-0 size-full object-cover opacity-60"
+            class="absolute inset-0 size-full object-cover opacity-40"
             client:load
           />
         )
@@ -102,7 +102,7 @@ const tags = [
         <div class="flex max-w-2xl flex-col gap-3">
         <div class="flex flex-wrap items-center gap-2">
           <p
-            class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
+            class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
           >
             {model.provider ?? t('workshop.card.partnerNode')}
           </p>

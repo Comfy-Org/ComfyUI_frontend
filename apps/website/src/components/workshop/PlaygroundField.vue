@@ -133,7 +133,7 @@ function acceptHint(accept: readonly string[]): string {
       :aria-describedby="errorId()"
       :data-testid="`field-${field.name}`"
       rows="5"
-      :class="cn(inputClass, 'resize-none py-3')"
+      :class="cn(inputClass, 'min-h-32 resize-y py-3')"
       @input="onText"
     />
     <input

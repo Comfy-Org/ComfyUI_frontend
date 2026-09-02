@@ -8619,6 +8619,67 @@ Enterprise`
   'workshop.hub.kind.all': { en: 'ALL', 'zh-CN': '全部' },
   'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
   'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
+  'workshop.hub.kind.models': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.hub.io.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.workflow.crumb': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
+  'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
+  'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
+  'workshop.workflow.serverless': {
+    en: 'Serverless API',
+    'zh-CN': '无服务器 API'
+  },
+  'workshop.workflow.ratingLine': {
+    en: '{rating} · {ratings} ratings · {runs} runs',
+    'zh-CN': '{rating} · {ratings} 条评分 · {runs} 次运行'
+  },
+  'workshop.workflow.stats': {
+    en: '{avg}s avg on A100 · Cloud-ready · {credits} cr/run · Clone {clone} cr',
+    'zh-CN':
+      'A100 平均 {avg} 秒 · 云端就绪 · 每次 {credits} 积分 · 克隆 {clone} 积分'
+  },
+  'workshop.workflow.about': { en: 'About', 'zh-CN': '关于' },
+  'workshop.workflow.customNodes': {
+    en: 'Requires custom nodes',
+    'zh-CN': '需要自定义节点'
+  },
+  'workshop.workflow.io': { en: 'Inputs & Outputs', 'zh-CN': '输入与输出' },
+  'workshop.workflow.inputs': { en: 'Inputs', 'zh-CN': '输入' },
+  'workshop.workflow.outputs': { en: 'Outputs', 'zh-CN': '输出' },
+  'workshop.workflow.graph': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.workflow.graphNote': {
+    en: 'The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.',
+    'zh-CN':
+      '此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。'
+  },
+  'workshop.workflow.openComfy': {
+    en: 'Open on comfy.org',
+    'zh-CN': '在 comfy.org 打开'
+  },
+  'workshop.workflow.download': {
+    en: 'Download workflow JSON',
+    'zh-CN': '下载工作流 JSON'
+  },
+  'workshop.workflow.ratings': {
+    en: 'Ratings & comments',
+    'zh-CN': '评分与评论'
+  },
+  'workshop.workflow.comment1': {
+    en: 'Dropped straight into our pipeline via the API. Cloned it to desktop for the heavy batch nights, worth it.',
+    'zh-CN':
+      '通过 API 直接接入了我们的流水线。批量任务多的晚上克隆到桌面端跑，很值。'
+  },
+  'workshop.workflow.comment2': {
+    en: 'Identity preservation is the best I have found. Would love a strength slider on the rim light.',
+    'zh-CN': '身份保持是我用过最好的。希望轮廓光能加一个强度滑块。'
+  },
+  'workshop.workflow.related': {
+    en: 'More like this',
+    'zh-CN': '更多类似工作流'
+  },
   'workshop.hub.sort.popular': { en: 'Most Popular', 'zh-CN': '最受欢迎' },
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
   'workshop.hub.facets.clearAll': { en: 'Clear all', 'zh-CN': '全部清除' },

@@ -24,13 +24,32 @@ test.describe('Workshop entry', () => {
       'true'
     )
     await hub.getByTestId('hub-tab-all').click()
-    await hub.getByTestId('hub-search').fill('minimax h3 image')
+    await hub.getByTestId('hub-search').fill('minimax h3')
     await expect(hub.getByTestId('hub-card-link').first()).toContainText(
       'MiniMax H3'
     )
     await hub.getByTestId('hub-filter').click()
     await page.getByRole('option', { name: /^Flux \d+$/ }).click()
     await expect(hub.getByTestId('hub-filter-count')).toHaveText('1')
+  })
+
+  test('workflow cards open a detail page with the model playground', async ({
+    page
+  }) => {
+    await page.goto('/workshop/?q=minimax%20h3')
+    const hub = page.getByTestId('workshop-hub')
+    await hub.getByTestId('hub-card-link').first().click()
+    await expect(page).toHaveURL(
+      /\/workshop\/workflows\/video_minimax_h3_i2v\/?$/
+    )
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'MiniMax H3'
+    )
+    await expect(page.getByTestId('playground-tab')).toBeVisible()
+    await expect(page.getByTestId('workflow-io')).toContainText('image')
+    await expect(
+      page.getByTestId('related-workflows').getByTestId('hub-card')
+    ).toHaveCount(3)
   })
 })
 

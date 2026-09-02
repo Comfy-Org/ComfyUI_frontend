@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue'
-import { computed, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 
 import { useHubStore } from '../../composables/useHubStore'
 import type { WorkshopModel } from '../../config/workshop'
 import { workshopModels } from '../../config/workshop'
 import hubTemplates from '../../data/hubTemplates.json'
-import { hubWorkflowUrl } from '../../lib/hub/routes'
+import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale } from '../../i18n/translations'
@@ -14,6 +14,7 @@ import { t } from '../../i18n/translations'
 import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
+import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -21,10 +22,25 @@ const templates = hubTemplates as HubTemplate[]
 const store = useHubStore()
 onUnmounted(() => store.reset())
 
+const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
+
+onMounted(() => {
+  const params = new URLSearchParams(location.search)
+  const tab = TABS.find((value) => value === params.get('tab'))
+  if (tab) store.setTab(tab)
+  for (const type of ['tag', 'model'] as const) {
+    const value = params.get(type)
+    if (value) store.toggleBadge({ type, value })
+  }
+  const query = params.get('q')
+  if (query) store.searchQuery.value = query
+})
+
 const toolbarLabels: ToolbarLabels = {
   all: t('workshop.hub.kind.all', locale),
   nodeGraphs: t('workshop.hub.kind.graph', locale),
   comfyApps: t('workshop.hub.kind.app', locale),
+  models: t('workshop.hub.kind.models', locale),
   filter: t('workshop.filter.label', locale),
   clearAll: t('workshop.hub.facets.clearAll', locale),
   searchPlaceholder: t('workshop.hub.facets.search', locale),
@@ -69,7 +85,20 @@ function partnerModelFor(template: HubTemplate): WorkshopModel | undefined {
 }
 
 const hrefFor = (template: HubTemplate) =>
-  partnerModelFor(template)?.href ?? hubWorkflowUrl(template.name)
+  partnerModelFor(template)?.href ?? hubWorkflowPath(template.name)
+
+const filteredModels = computed(() => {
+  const query = store.searchQuery.value.trim().toLowerCase()
+  const matches = workshopModels.filter(
+    (model) =>
+      query === '' ||
+      model.name.toLowerCase().includes(query) ||
+      (model.provider ?? '').toLowerCase().includes(query)
+  )
+  return store.sortBy.value === 'popular'
+    ? [...matches].sort((a, b) => b.runs - a.runs)
+    : [...matches].sort((a, b) => a.name.localeCompare(b.name))
+})
 
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value
@@ -123,6 +152,17 @@ const filteredTemplates = computed(() => {
       :toolbar-labels="toolbarLabels"
       :labels="gridLabels"
       :href-for="hrefFor"
-    />
+    >
+      <template #models>
+        <ul
+          class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+          data-testid="hub-models"
+        >
+          <li v-for="model in filteredModels" :key="model.slug">
+            <WorkshopModelCard :model :locale />
+          </li>
+        </ul>
+      </template>
+    </WorkflowGrid>
   </section>
 </template>

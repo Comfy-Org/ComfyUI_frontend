@@ -12,6 +12,7 @@ export function templatesInTab<T extends TabbableTemplate>(
 ): T[] {
   if (tab === 'comfyApps') return templates.filter((t) => t.isApp)
   if (tab === 'nodeGraphs') return templates.filter((t) => !t.isApp)
+  if (tab === 'models') return []
   return [...templates]
 }
 

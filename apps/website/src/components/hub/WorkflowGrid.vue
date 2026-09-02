@@ -87,7 +87,9 @@ const showingText = computed(() =>
       />
     </div>
 
+    <slot v-if="store.activeTab.value === 'models'" name="models" />
     <div
+      v-else
       class="relative z-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
       data-testid="hub-grid"
     >
@@ -101,7 +103,9 @@ const showingText = computed(() =>
     </div>
 
     <div
-      v-if="displayedTemplates.length === 0"
+      v-if="
+        store.activeTab.value !== 'models' && displayedTemplates.length === 0
+      "
       class="text-content-muted py-20 text-center"
       data-testid="hub-empty"
     >
@@ -121,6 +125,7 @@ const showingText = computed(() =>
     </div>
 
     <div
+      v-if="store.activeTab.value !== 'models'"
       class="text-hub-muted pt-2 pb-4 text-center text-sm"
       data-testid="hub-showing"
     >

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   ArrowUpDown,
+  Boxes,
   Check,
   ChevronDown,
   LayoutGrid,
@@ -38,6 +39,7 @@ export interface ToolbarLabels {
   readonly all: string
   readonly nodeGraphs: string
   readonly comfyApps: string
+  readonly models: string
   readonly filter: string
   readonly clearAll: string
   readonly searchPlaceholder: string
@@ -63,7 +65,8 @@ const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
   [
     { key: 'all', labelKey: 'all', icon: LayoutGrid },
     { key: 'nodeGraphs', labelKey: 'nodeGraphs', icon: IconWorkflow },
-    { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps }
+    { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps },
+    { key: 'models', labelKey: 'models', icon: Boxes }
   ]
 
 const filterOpen = ref(false)

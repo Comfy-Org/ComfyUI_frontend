@@ -30,6 +30,20 @@ describe('HubBrowse', () => {
     )
   })
 
+  it('shows the Workshop model cards under the Models tab', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    await user.click(screen.getByTestId('hub-tab-models'))
+    expect(screen.queryByTestId('hub-grid')).toBeNull()
+    expect(screen.getAllByTestId('workshop-model-card').length).toBeGreaterThan(
+      10
+    )
+    await user.type(screen.getByTestId('hub-search'), 'kling')
+    const cards = screen.getAllByTestId('workshop-model-card')
+    expect(cards.length).toBeGreaterThan(0)
+    cards.forEach((card) => expect(card.textContent).toMatch(/Kling/i))
+  })
+
   it('filters by a model facet from the Filter popover', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
