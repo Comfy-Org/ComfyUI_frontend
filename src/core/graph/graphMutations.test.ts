@@ -95,12 +95,12 @@ describe('graphMutations', () => {
       graph.batch({ ...context, opId: 'op-2' }, (batch) => {
         batch.reconcileNode({
           ...node(7),
-          nodeIncarnation: 'incarnation-7'
+          nodeIncarnation: 'incarnation-7-reconciled'
         })
       })
     ).toBe(true)
     expect(useNodeDataStore().getNode('root', toNodeId(7))).toMatchObject({
-      nodeIncarnation: 'incarnation-7'
+      nodeIncarnation: 'incarnation-7-reconciled'
     })
   })
 
