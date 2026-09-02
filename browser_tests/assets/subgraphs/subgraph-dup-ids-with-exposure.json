@@ -1,0 +1,264 @@
+{
+  "id": "cccccccc-9999-4999-8999-00000000000c",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "aaaaaaaa-2222-4222-8222-00000000000a",
+      "pos": [100, 100],
+      "size": [300, 160],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "title": "Host A",
+      "properties": {
+        "previewExposures": [
+          {
+            "name": "$$canvas-image-preview",
+            "sourceNodeId": "3",
+            "sourcePreviewName": "$$canvas-image-preview"
+          }
+        ]
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 2,
+      "type": "bbbbbbbb-1111-4111-8111-00000000000b",
+      "pos": [100, 400],
+      "size": [300, 160],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "title": "Host B",
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "bbbbbbbb-1111-4111-8111-00000000000b",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 3,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Host B",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "bbbbbbbb-1111-4111-8111-00000000000b",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": {
+              "0": 920,
+              "1": 220
+            }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 3,
+            "type": "KSampler",
+            "pos": [250, 120],
+            "size": [280, 260],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "title": "B Sampler",
+            "properties": {
+              "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [1, "increment", 20, 8, "euler", "normal", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      },
+      {
+        "id": "aaaaaaaa-2222-4222-8222-00000000000a",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 3,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Host A",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "99999999-2222-4222-8222-000000000009",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": {
+              "0": 920,
+              "1": 220
+            }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 3,
+            "type": "KSampler",
+            "pos": [250, 120],
+            "size": [280, 260],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "title": "A Sampler",
+            "properties": {
+              "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [1, "increment", 20, 8, "euler", "normal", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
+  },
+  "version": 0.4
+}
