@@ -126,11 +126,6 @@
     "untitledChat": "無題",
     "uploading": "アップロード中"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "実行あたりのコスト",
-    "title": "APIノード",
-    "totalCost": "合計コスト"
-  },
   "apiNodesSignInDialog": {
     "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
     "title": "APIノードを使用するためにはサインインが必要です"

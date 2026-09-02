@@ -49,7 +49,7 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.getByText(PARTNER_NODE_DISPLAY_NAME)).toBeVisible()
 
-    await new ApiSignin(page).cancel.click()
+    await new ApiSignin(page).close()
     await expect(dialog).toBeHidden()
     await expect(signInButton).toBeVisible()
 

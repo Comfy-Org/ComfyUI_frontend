@@ -2152,13 +2152,12 @@
     "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
-    "title": "Sign In Required to Use API Nodes",
-    "message": "This workflow contains API Nodes, which require you to be signed in to your account in order to run."
-  },
-  "apiNodesCostBreakdown": {
-    "title": "API Node(s)",
-    "costPerRun": "Cost per run",
-    "totalCost": "Total Cost"
+    "title": "Sign in to run partner nodes",
+    "message": "Partner nodes run on third-party services and use credits from your account. That's why signing in is needed.",
+    "partnerNodesInWorkflow": "Partner nodes in this workflow",
+    "whatArePartnerNodes": "What are partner nodes?",
+    "tooltip": "Partner nodes run on third-party services. They use credits, the only paid part of Comfy.",
+    "signIn": "Sign In"
   },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",

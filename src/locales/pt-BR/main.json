@@ -126,11 +126,6 @@
     "untitledChat": "Sem título",
     "uploading": "Enviando"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Custo por execução",
-    "title": "Nó(s) de API",
-    "totalCost": "Custo total"
-  },
   "apiNodesSignInDialog": {
     "message": "Este fluxo de trabalho contém nós de API, que exigem que você esteja conectado à sua conta para executar.",
     "title": "Login necessário para usar nós de API"
