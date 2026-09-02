@@ -101,6 +101,7 @@
 
       <!-- Total Due Section -->
       <div
+        v-if="totalDueToday"
         :class="
           cn(
             'flex flex-col gap-2 border-t border-border-subtle pt-8',

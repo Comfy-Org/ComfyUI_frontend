@@ -95,8 +95,8 @@
 
     <template v-if="checkoutStep === 'preview'">
       <SubscriptionTransitionPreviewWorkspace
-        v-if="previewVariant === 'team-change'"
-        :preview-data="previewData!"
+        v-if="previewVariant === 'team-change' && previewData"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
@@ -173,8 +173,8 @@
       />
 
       <SubscriptionTransitionPreviewWorkspace
-        v-else-if="previewVariant === 'personal-change'"
-        :preview-data="previewData!"
+        v-else-if="previewVariant === 'personal-change' && previewData"
+        :preview-data="previewData"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"

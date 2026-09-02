@@ -411,6 +411,18 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     ).toBeNull()
   })
 
+  it('omits the total row entirely when no quote is available to price it', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
+        previewData: null
+      },
+      global: globalOptions
+    })
+
+    expect(screen.queryByText('subscription.preview.totalDueToday')).toBeNull()
+  })
+
   it('prices a legacy preview from the server costs instead of rendering a blank total', () => {
     const {
       amount_due_cents,

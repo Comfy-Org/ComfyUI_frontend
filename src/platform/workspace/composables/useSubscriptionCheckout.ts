@@ -353,6 +353,16 @@ export function useSubscriptionCheckout(
     )
   }
 
+  function isUsableTeamPreview(
+    preview: PreviewSubscribeResponse | null | undefined,
+    checkoutType: SubscriptionCheckoutType
+  ): preview is PreviewSubscribeResponse & { allowed: true } {
+    if (isSubscriptionCancelled()) return isReactivationCapablePreview(preview)
+    return checkoutType === 'change'
+      ? isExistingPlanPreview(preview)
+      : Boolean(preview?.allowed)
+  }
+
   function reactivationMaterialSnapshot(
     preview: PreviewSubscribeResponse,
     ignoreTimeDerivedTodayValues = false
@@ -766,19 +776,19 @@ export function useSubscriptionCheckout(
     quoteIsCurrent.value = false
 
     if (!embeddedCheckoutEnabled) {
-      checkoutStep.value = 'preview'
-      const needsPreview = payload.isChange || isSubscriptionCancelled()
-      isLoadingPreview.value = needsPreview && !!payload.stop.id
-      if (!needsPreview || !payload.stop.id) return
+      const teamCreditStopId = payload.stop.id
+      if (!teamCreditStopId) {
+        if (checkoutType === 'new') checkoutStep.value = 'preview'
+        return
+      }
+      isLoadingPreview.value = true
 
       let response: PreviewSubscribeResponse | null = null
       let previewError: unknown
       try {
         response = await previewSubscribe(
           getTeamPlanSlug(payload.billingCycle),
-          {
-            teamCreditStopId: payload.stop.id
-          }
+          { teamCreditStopId }
         )
       } catch (error) {
         previewError = error
@@ -798,14 +808,11 @@ export function useSubscriptionCheckout(
       }
 
       if (previewRequestId !== teamPreviewRequestId) return
-      if (
-        (isSubscriptionCancelled() && isReactivationCapablePreview(response)) ||
-        (!isSubscriptionCancelled() && isExistingPlanPreview(response))
-      ) {
-        if (response) installPreview(response)
+      if (isUsableTeamPreview(response, checkoutType)) {
+        installPreview(response)
+        checkoutStep.value = 'preview'
         return
       }
-      if (!isSubscriptionCancelled()) return
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
