@@ -189,7 +189,7 @@
     />
     <!-- Need More Members Footer -->
     <div
-      v-if="hasMemberSeats"
+      v-if="hasMemberSeats && membersLoaded"
       class="flex shrink-0 items-center gap-1 pt-2 pb-6"
     >
       <p class="text-sm text-muted-foreground">
