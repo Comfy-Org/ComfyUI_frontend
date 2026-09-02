@@ -85,6 +85,7 @@ jobs:
     needs: [changes, website-e2e-shard]
     if: ${{ always() && (needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     outputs:
@@ -249,6 +250,7 @@ jobs:
     if: ${{ always() }}
     needs: [changes, website-e2e-shard, website-e2e-report]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Check website E2E result
         env:
