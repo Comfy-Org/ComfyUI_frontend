@@ -418,15 +418,23 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
   })
 
   test.describe('7) Watchers & State Reset', () => {
-    test('switching assets resets pending metadata updates', async () => {
+    test('switching assets resets metadata update state', async ({
+      comfyPage
+    }) => {
+      const initial = metadataMutations(comfyPage).length
       await modal.userDescriptionTextarea.fill('pending draft')
+      await expect
+        .poll(() => metadataMutations(comfyPage).length)
+        .toBeGreaterThan(initial)
 
       await focusBareModel()
       await focusEditableModel()
 
-      await expect(modal.userDescriptionTextarea).toHaveValue(
-        'Great for close-up portraits and high-frequency details.'
-      )
+      const afterSwitch = metadataMutations(comfyPage).length
+      await modal.userDescriptionTextarea.fill('something else')
+      await expect
+        .poll(() => metadataMutations(comfyPage).length)
+        .toBe(afterSwitch + 1)
     })
 
     test('switching assets resets pending model-type state', async () => {
