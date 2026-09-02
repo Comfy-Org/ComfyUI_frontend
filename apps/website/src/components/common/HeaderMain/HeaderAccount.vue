@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import {
-  ArrowLeftRight,
+  ChevronDown,
   Coins,
   CreditCard,
   Info,
   LogOut,
-  SlidersHorizontal,
-  Tag,
-  Users
+  SlidersHorizontal
 } from '@lucide/vue'
 import {
   DropdownMenuContent,
@@ -24,7 +22,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../../composables/useMockSession'
 import { useSignInHref } from '../../../composables/useSignInHref'
-import { PRICING_URL } from '../../../config/model-pricing'
 import { externalLinks, getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
@@ -51,21 +48,6 @@ const initials = computed(() =>
     .toUpperCase()
 )
 
-const links = [
-  {
-    icon: CreditCard,
-    label: 'nav.planAndCredits',
-    href: externalLinks.platform
-  },
-  { icon: Tag, label: 'nav.partnerNodesPricing', href: PRICING_URL },
-  { icon: Users, label: 'nav.workspaceSettings', href: externalLinks.cloud },
-  {
-    icon: SlidersHorizontal,
-    label: 'nav.accountSettings',
-    href: externalLinks.cloud
-  }
-] as const
-
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
 </script>
@@ -82,180 +64,170 @@ const itemClass =
     {{ t('nav.signIn', locale) }}
   </Button>
 
-  <div v-else class="flex items-center gap-2">
-    <a
-      :href="externalLinks.platform"
-      data-testid="header-credits"
-      :title="t('nav.addCredits', locale)"
-      :class="
-        cn(
-          'bg-transparency-white-t4 flex h-10 items-center gap-2 rounded-full border border-transparency-white-t20 px-3 text-sm font-bold whitespace-nowrap text-primary-warm-white transition-colors hover:bg-transparency-white-t8',
-          !hasCredits && 'border-primary-comfy-red/60'
-        )
-      "
+  <DropdownMenuRoot v-else>
+    <div
+      class="bg-transparency-white-t4 flex h-11 items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1"
     >
-      <Coins
+      <a
+        :href="externalLinks.platform"
+        data-testid="header-credits"
+        :title="t('nav.addCredits', locale)"
         :class="
           cn(
-            'size-4',
-            hasCredits ? 'text-primary-warm-gray' : 'text-primary-comfy-red'
+            'flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-colors',
+            hasCredits
+              ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow hover:bg-primary-comfy-yellow/20'
+              : 'bg-primary-comfy-red/10 text-primary-comfy-red hover:bg-primary-comfy-red/20'
           )
         "
-        aria-hidden="true"
-      />
-      <template v-if="hasCredits">
-        <span class="tabular-nums">{{ formattedCredits }}</span>
-        <span class="hidden font-medium text-primary-warm-gray 2xl:inline">
-          {{ t('nav.credits', locale) }}
-        </span>
-      </template>
-      <template v-else>{{ t('nav.noCredits', locale) }}</template>
-    </a>
+      >
+        <Coins class="size-4" aria-hidden="true" />
+        {{ hasCredits ? formattedCredits : t('nav.noCredits', locale) }}
+      </a>
 
-    <DropdownMenuRoot>
       <DropdownMenuTrigger
         data-testid="header-account"
         :aria-label="t('nav.accountMenu', locale)"
-        class="bg-primary-comfy-plum focus-visible:ring-primary-comfy-yellow/50 grid size-10 shrink-0 cursor-pointer place-items-center rounded-full text-sm font-bold text-primary-warm-white transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
+        class="bg-primary-comfy-plum focus-visible:ring-primary-comfy-yellow/50 relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-xs font-bold text-primary-warm-white transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
       >
         {{ initials }}
-      </DropdownMenuTrigger>
-
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          align="end"
-          :side-offset="10"
-          class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        <span
+          class="bg-primary-comfy-yellow absolute -right-1 -bottom-1 grid size-4 place-items-center rounded-full text-[9px] leading-none font-bold text-primary-comfy-ink ring-2 ring-primary-comfy-ink"
+          aria-hidden="true"
         >
-          <div class="flex items-center gap-3 p-3">
-            <span
-              class="bg-primary-comfy-yellow grid size-11 shrink-0 place-items-center rounded-xl text-lg font-bold text-primary-comfy-ink"
+          {{ account.workspace[0] }}
+        </span>
+      </DropdownMenuTrigger>
+    </div>
+
+    <DropdownMenuPortal>
+      <DropdownMenuContent
+        align="end"
+        :side-offset="10"
+        class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+      >
+        <button
+          type="button"
+          :aria-label="t('nav.switchWorkspace', locale)"
+          :title="t('nav.switchWorkspace', locale)"
+          class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
+        >
+          <span
+            class="grid size-11 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-lg font-bold text-primary-warm-white"
+            aria-hidden="true"
+          >
+            {{ account.workspace[0] }}
+          </span>
+          <span
+            class="flex-1 truncate text-base font-bold text-primary-warm-white"
+          >
+            {{ account.workspace }}
+          </span>
+          <ChevronDown
+            class="size-5 text-primary-warm-gray"
+            aria-hidden="true"
+          />
+        </button>
+
+        <div
+          class="flex items-center gap-3 p-3 text-sm"
+          data-testid="account-credits"
+        >
+          <Coins class="text-primary-comfy-yellow size-5" aria-hidden="true" />
+          <span class="flex-1 text-primary-warm-gray">
+            {{ t('nav.creditsLabel', locale) }}
+          </span>
+          <span
+            :class="
+              cn(
+                'text-base font-bold tabular-nums',
+                hasCredits
+                  ? 'text-primary-warm-white'
+                  : 'text-primary-comfy-yellow'
+              )
+            "
+          >
+            {{ formattedCredits }}
+          </span>
+          <Info
+            class="size-4 text-primary-warm-gray"
+            :aria-label="t('nav.creditsInfo', locale)"
+            :title="t('nav.creditsInfo', locale)"
+          />
+        </div>
+
+        <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />
+
+        <DropdownMenuItem as-child>
+          <a
+            :href="account.subscribed ? externalLinks.platform : routes.pricing"
+            :target="account.subscribed ? '_blank' : undefined"
+            :rel="account.subscribed ? 'noopener noreferrer' : undefined"
+            :class="itemClass"
+            data-testid="account-plan"
+          >
+            <CreditCard
+              class="size-5 text-primary-warm-gray"
               aria-hidden="true"
+            />
+            <span class="flex-1">{{ t('nav.planAndCredits', locale) }}</span>
+            <span
+              v-if="account.subscribed"
+              class="rounded-full bg-transparency-white-t8 px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary-warm-white uppercase"
+              data-testid="account-plan-pro"
             >
-              {{ account.workspace[0] }}
+              {{ t('nav.planPro', locale) }}
             </span>
             <span
-              class="flex-1 truncate text-base font-bold text-primary-warm-white"
+              v-else
+              class="bg-primary-comfy-yellow rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase"
+              data-testid="account-upgrade"
             >
-              {{ account.workspace }}
+              {{ t('nav.upgrade', locale) }}
             </span>
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem as-child>
+          <a
+            :href="externalLinks.cloud"
+            target="_blank"
+            rel="noopener noreferrer"
+            :class="itemClass"
+          >
+            <SlidersHorizontal
+              class="size-5 text-primary-warm-gray"
+              aria-hidden="true"
+            />
+            {{ t('nav.settings', locale) }}
+          </a>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />
+
+        <div class="flex items-center gap-3 px-3 py-2">
+          <span
+            class="bg-primary-comfy-yellow/80 grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-comfy-ink"
+            aria-hidden="true"
+          >
+            {{ initials }}
+          </span>
+          <span class="flex-1 truncate text-sm text-primary-warm-gray">
+            {{ account.email }}
+          </span>
+          <DropdownMenuItem as-child>
             <button
               type="button"
-              :aria-label="t('nav.switchWorkspace', locale)"
-              :title="t('nav.switchWorkspace', locale)"
-              class="cursor-pointer rounded-lg p-1.5 text-primary-warm-gray hover:text-primary-warm-white"
+              :aria-label="t('nav.signOut', locale)"
+              :title="t('nav.signOut', locale)"
+              class="cursor-pointer rounded-lg p-1.5 text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:text-primary-warm-white"
+              data-testid="account-sign-out"
+              @click="signOut"
             >
-              <ArrowLeftRight class="size-5" aria-hidden="true" />
+              <LogOut class="size-5" aria-hidden="true" />
             </button>
-          </div>
-
-          <div
-            class="flex items-center gap-3 px-3 py-2 text-sm"
-            data-testid="account-credits"
-          >
-            <Coins
-              class="text-primary-comfy-yellow size-5"
-              aria-hidden="true"
-            />
-            <span class="flex-1 text-primary-warm-gray">
-              {{ t('nav.creditsLabel', locale) }}
-            </span>
-            <span
-              :class="
-                cn(
-                  'text-base font-bold tabular-nums',
-                  hasCredits
-                    ? 'text-primary-warm-white'
-                    : 'text-primary-comfy-yellow'
-                )
-              "
-            >
-              {{ formattedCredits }}
-            </span>
-            <Info
-              class="size-4 text-primary-warm-gray"
-              :aria-label="t('nav.creditsInfo', locale)"
-              :title="t('nav.creditsInfo', locale)"
-            />
-          </div>
-          <div class="px-3 pt-1 pb-2">
-            <DropdownMenuItem as-child>
-              <Button
-                v-if="account.subscribed"
-                as="a"
-                :href="externalLinks.platform"
-                variant="outline"
-                size="sm"
-                class="w-full"
-                data-testid="account-add-credits"
-              >
-                {{ t('nav.addCredits', locale) }}
-              </Button>
-              <Button
-                v-else
-                as="a"
-                :href="routes.pricing"
-                variant="outline"
-                size="sm"
-                class="w-full"
-                data-testid="account-upgrade"
-              >
-                {{ t('nav.upgradeToAddCredits', locale) }}
-              </Button>
-            </DropdownMenuItem>
-          </div>
-
-          <DropdownMenuSeparator class="my-2 h-px bg-transparency-white-t8" />
-
-          <template v-for="(link, index) in links" :key="link.label">
-            <DropdownMenuSeparator
-              v-if="index === 2"
-              class="my-2 h-px bg-transparency-white-t8"
-            />
-            <DropdownMenuItem as-child>
-              <a
-                :href="link.href"
-                target="_blank"
-                rel="noopener noreferrer"
-                :class="itemClass"
-              >
-                <component
-                  :is="link.icon"
-                  class="size-5 text-primary-warm-gray"
-                  aria-hidden="true"
-                />
-                {{ t(link.label, locale) }}
-              </a>
-            </DropdownMenuItem>
-          </template>
-
-          <DropdownMenuSeparator class="my-2 h-px bg-transparency-white-t8" />
-
-          <div class="flex items-center gap-3 px-3 py-2">
-            <span
-              class="bg-primary-comfy-yellow/80 grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-comfy-ink"
-              aria-hidden="true"
-            >
-              {{ initials }}
-            </span>
-            <span class="flex-1 truncate text-sm text-primary-warm-gray">
-              {{ account.email }}
-            </span>
-            <DropdownMenuItem as-child>
-              <button
-                type="button"
-                :aria-label="t('nav.signOut', locale)"
-                :title="t('nav.signOut', locale)"
-                class="cursor-pointer rounded-lg p-1.5 text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:text-primary-warm-white"
-                data-testid="account-sign-out"
-                @click="signOut"
-              >
-                <LogOut class="size-5" aria-hidden="true" />
-              </button>
-            </DropdownMenuItem>
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
-  </div>
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
 </template>

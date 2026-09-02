@@ -8229,12 +8229,9 @@ Enterprise`
   },
   'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
-  'nav.partnerNodesPricing': {
-    en: 'Partner nodes pricing',
-    'zh-CN': '合作伙伴节点定价'
-  },
-  'nav.workspaceSettings': { en: 'Workspace settings', 'zh-CN': '工作区设置' },
-  'nav.accountSettings': { en: 'Account settings', 'zh-CN': '账户设置' },
+  'nav.settings': { en: 'Settings', 'zh-CN': '设置' },
+  'nav.planPro': { en: 'Pro', 'zh-CN': 'Pro' },
+  'nav.upgrade': { en: 'Upgrade', 'zh-CN': '升级' },
   'nav.addCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
   'nav.upgradeToAddCredits': {
     en: 'Upgrade to add credits',
