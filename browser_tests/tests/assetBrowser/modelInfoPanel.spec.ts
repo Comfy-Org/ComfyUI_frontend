@@ -71,8 +71,8 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     tagCalls = await assetBrowserHelper.mockAssetTags()
 
     await comfyPage.setup()
-    await assetBrowserHelper.enableAssetApiSetting()
-    await assetBrowserHelper.openModelLibrary()
+    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
+    await comfyPage.command.executeCommand('Comfy.BrowseModelAssets')
 
     modal = new AssetBrowserModal(comfyPage.page)
     await expect(modal.root).toBeVisible()
