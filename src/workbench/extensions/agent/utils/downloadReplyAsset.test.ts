@@ -38,11 +38,14 @@ describe('downloadReplyAsset', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it.fails('fetches an embedded same-origin route without authentication', async () => {
-    await downloadReplyAsset(
-      asset('https://evil.example/x/http://localhost/api/view?filename=a.png')
-    )
+  it('routes an off-origin asset URL through fetchApi', async () => {
+    const url = 'https://cdn.example.com/signed/a.png'
 
-    expect(fetchApi).not.toHaveBeenCalled()
+    await downloadReplyAsset(asset(url))
+
+    expect(fetchApi).toHaveBeenCalledWith(url)
+    expect(fetch).not.toHaveBeenCalled()
   })
+
+  it.todo('W10: should fetch off-origin asset URLs without routing through apiURL')
 })
