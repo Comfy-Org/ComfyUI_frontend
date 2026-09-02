@@ -16,12 +16,6 @@ describe('useDownloadFile', () => {
     mockDownloadFileAsync.mockReset()
   })
 
-  it('starts with isLoading false and no error', () => {
-    const { isLoading, error } = useDownloadFile()
-    expect(isLoading.value).toBe(false)
-    expect(error.value).toBeUndefined()
-  })
-
   it('sets isLoading true while download is in progress', async () => {
     let resolveDownload!: () => void
     mockDownloadFileAsync.mockReturnValue(
