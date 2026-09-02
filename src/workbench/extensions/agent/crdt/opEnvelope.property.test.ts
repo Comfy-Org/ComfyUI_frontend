@@ -143,45 +143,33 @@ describe('chunkWireOps (property)', () => {
   })
 
   it('isolates every non-batchable op in a batch of exactly one', () => {
-    let isolated = 0
-
     fc.assert(
       fc.property(operationsArb, (operations) => {
         for (const batch of chunkWireOps(mintWireOps(operations, MINT))) {
           if (batch.some((op) => !BATCHABLE_OPS.includes(op.op as never))) {
             expect(batch).toHaveLength(1)
-            isolated++
           }
         }
       }),
       FC_OPTIONS
     )
 
-    expect(isolated).toBeGreaterThanOrEqual(0)
     expect(chunkWireOps(mintWireOps([clear([])], MINT))).toHaveLength(1)
   })
 
   it('keeps multi-op batches under the byte cap, and ships an oversize op alone', () => {
-    let multiOp = 0
-    let oversizeAlone = 0
-
     fc.assert(
       fc.property(operationsArb, (operations) => {
         for (const batch of chunkWireOps(mintWireOps(operations, MINT))) {
           const bytes = wireBatchSize(batch)
           if (batch.length > 1) {
-            multiOp++
             expect(bytes).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
-          } else if (bytes > WIRE_MAX_BATCH_BYTES) {
-            oversizeAlone++
           }
         }
       }),
       FC_OPTIONS
     )
 
-    expect(multiOp).toBeGreaterThanOrEqual(0)
-    expect(oversizeAlone).toBeGreaterThanOrEqual(0)
     const oversize = mintWireOps(
       [setWidget(1, 'x'.repeat(WIRE_MAX_BATCH_BYTES + 16))],
       MINT
@@ -196,8 +184,6 @@ describe('chunkWireOps (property)', () => {
   })
 
   it('is maximal: a batch only ends early when a cap or a clear forces it', () => {
-    let boundariesChecked = 0
-
     fc.assert(
       fc.property(operationsArb, (operations) => {
         const ops = mintWireOps(operations, MINT)
@@ -214,7 +200,6 @@ describe('chunkWireOps (property)', () => {
           ) {
             continue
           }
-          boundariesChecked++
           const overOps = batch.length + 1 > WIRE_MAX_OPS_PER_BATCH
           const overBytes =
             wireBatchSize([...batch, head]) > WIRE_MAX_BATCH_BYTES
@@ -223,10 +208,6 @@ describe('chunkWireOps (property)', () => {
       }),
       FC_OPTIONS
     )
-
-    // Explicit cap-boundary examples above provide the non-vacuous cases;
-    // this random corpus checks every boundary it happens to generate.
-    expect(boundariesChecked).toBeGreaterThanOrEqual(0)
   })
 })
 
