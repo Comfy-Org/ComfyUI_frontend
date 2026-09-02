@@ -28,7 +28,6 @@ const bridgeState = vi.hoisted(() => {
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
-      updatesApplied: 0,
       doc: {
         getMap: () => ({ toJSON: () => ({}) })
       }
@@ -45,7 +44,7 @@ const clientState = vi.hoisted(() => ({
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
+  applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -400,9 +399,14 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('clears only for an explicit reset and rebinds after replacement', () => {
+  it('clears update outcome counters only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+    expect(status().updatesReceived).toBe(1)
+    expect(status().updatesApplied).toBe(1)
 
     dispatchFrame('doc_reset', {
       workflowId: 'wf-1',
@@ -414,13 +418,15 @@ describe('useAgentCrdtFollower', () => {
       actor: 'agent:turn',
       opId: 'doc-reset:43'
     })
+    expect(status().updatesReceived).toBe(0)
+    expect(status().updatesApplied).toBe(0)
 
-    bridge().follower.updatesApplied = 3
+    dispatchFrame('doc_update_received', {})
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
-    expect(status().updatesApplied).toBe(3)
+    expect(status().updatesApplied).toBe(1)
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
-    expect(status().updatesApplied).toBe(3)
+    expect(status().updatesApplied).toBe(1)
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
@@ -459,15 +465,27 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('surfaces applied updates and the last frame type in status', () => {
+  it('reports received, applied, skipped, and errored update outcomes', () => {
     const { unmount, status } = mountFollower('wf-1')
-    bridge().follower.updatesApplied = 3
 
     const update = { workflowId: 'wf-1', seq: 7 }
+    adapterState.applyFrame.mockReturnValueOnce(true)
+    dispatchFrame('doc_update_received', {})
     dispatchFrame('doc_update', update)
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update_skipped', {})
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update_error', {})
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
 
-    expect(status().updatesApplied).toBe(3)
-    expect(status().lastFrameType).toBe('doc_update')
+    expect(status()).toMatchObject({
+      updatesReceived: 4,
+      updatesApplied: 1,
+      updatesSkipped: 1,
+      updatesErrored: 2
+    })
+    expect(status().lastFrameType).toBe('schema_error')
     expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
     unmount()
   })
@@ -598,6 +616,22 @@ describe('useAgentCrdtFollower', () => {
       opNacks: 2,
       lastOpNack: null,
       projectionErrors: 1
+    })
+    unmount()
+  })
+
+  it('counts an unbound projection as skipped', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(status()).toMatchObject({
+      updatesReceived: 1,
+      updatesApplied: 0,
+      updatesSkipped: 1,
+      updatesErrored: 0
     })
     unmount()
   })

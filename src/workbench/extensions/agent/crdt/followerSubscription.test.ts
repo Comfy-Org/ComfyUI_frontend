@@ -100,13 +100,36 @@ function wire() {
   const bridge = new LayoutFollowerBridge(client)
   const projected: DocUpdate[] = []
   const schemaErrors: unknown[] = []
+  const updateOutcomes: string[] = []
+  bridge.addEventListener('doc_update_received', () => {
+    updateOutcomes.push('received')
+  })
   bridge.addEventListener('doc_update', (event) => {
-    if (event instanceof CustomEvent) projected.push(event.detail as DocUpdate)
+    if (event instanceof CustomEvent) {
+      projected.push(event.detail as DocUpdate)
+      updateOutcomes.push('applied')
+    }
+  })
+  bridge.addEventListener('doc_update_skipped', () => {
+    updateOutcomes.push('skipped')
+  })
+  bridge.addEventListener('doc_update_error', () => {
+    updateOutcomes.push('errored')
   })
   bridge.addEventListener('schema_error', (event) => {
-    if (event instanceof CustomEvent) schemaErrors.push(event.detail)
+    if (event instanceof CustomEvent) {
+      schemaErrors.push(event.detail)
+      updateOutcomes.push('errored')
+    }
   })
-  return { transport, client, bridge, projected, schemaErrors }
+  return {
+    transport,
+    client,
+    bridge,
+    projected,
+    schemaErrors,
+    updateOutcomes
+  }
 }
 
 describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers', () => {
@@ -467,7 +490,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
   })
 
   it('arms the gap detector from the ack: a first frame beyond ack+1 forces a resync', () => {
-    const { transport, bridge, projected } = wire()
+    const { transport, bridge, projected, updateOutcomes } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
     transport.deliver('doc_subscribed', {
@@ -484,6 +507,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     )
 
     expect(projected).toHaveLength(0)
+    expect(updateOutcomes).toEqual(['received', 'skipped'])
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
@@ -764,7 +788,8 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
   it('refuses to project a doc whose schema_version is newer than this build', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { transport, bridge, projected, schemaErrors } = wire()
+    const { transport, bridge, projected, schemaErrors, updateOutcomes } =
+      wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
@@ -779,6 +804,7 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
     ])
+    expect(updateOutcomes).toEqual(['received', 'errored'])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
     expect(error).toHaveBeenCalled()
     error.mockRestore()

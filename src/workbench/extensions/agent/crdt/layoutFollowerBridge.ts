@@ -235,6 +235,11 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    this.dispatchEvent(
+      new CustomEvent('doc_update_received', {
+        detail: { workflowId: update.workflowId, seq: update.seq }
+      })
+    )
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
@@ -244,8 +249,18 @@ export class LayoutFollowerBridge extends EventTarget {
     // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
-    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq)
+    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_skipped', {
+          detail: {
+            workflowId: update.workflowId,
+            seq: update.seq,
+            reason: 'stale'
+          }
+        })
+      )
       return
+    }
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
@@ -257,13 +272,31 @@ export class LayoutFollowerBridge extends EventTarget {
     // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
     const baseline = this.lastSeq ?? this.ackSeq
     if (baseline !== null && update.seq > baseline + 1) {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_skipped', {
+          detail: {
+            workflowId: update.workflowId,
+            seq: update.seq,
+            reason: 'gap'
+          }
+        })
+      )
       this.resubscribe()
       return
     }
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
-    this.follower.applyRemoteUpdate(update.update)
+    try {
+      this.follower.applyRemoteUpdate(update.update)
+    } catch (error) {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_error', {
+          detail: { workflowId: update.workflowId, seq: update.seq }
+        })
+      )
+      throw error
+    }
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose

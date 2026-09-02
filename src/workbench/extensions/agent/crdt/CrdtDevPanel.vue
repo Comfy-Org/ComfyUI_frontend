@@ -33,7 +33,10 @@ const S = {
   yes: 'yes',
   no: 'no',
   none: '—',
-  updates: 'updates applied',
+  updatesReceived: 'updates received',
+  updatesApplied: 'updates applied',
+  updatesSkipped: 'updates skipped',
+  updatesErrored: 'updates errored',
   lastFrame: 'last frame',
   tabId: 'tab id',
   lastSeq: 'last seq',
@@ -238,8 +241,20 @@ function fmtTime(at: number): string {
                 <td>{{ props.status.connected ? S.yes : S.no }}</td>
               </tr>
               <tr>
-                <td class="pr-2 text-muted">{{ S.updates }}</td>
+                <td class="pr-2 text-muted">{{ S.updatesReceived }}</td>
+                <td>{{ props.status.updatesReceived }}</td>
+              </tr>
+              <tr>
+                <td class="pr-2 text-muted">{{ S.updatesApplied }}</td>
                 <td>{{ props.status.updatesApplied }}</td>
+              </tr>
+              <tr>
+                <td class="pr-2 text-muted">{{ S.updatesSkipped }}</td>
+                <td>{{ props.status.updatesSkipped }}</td>
+              </tr>
+              <tr>
+                <td class="pr-2 text-muted">{{ S.updatesErrored }}</td>
+                <td>{{ props.status.updatesErrored }}</td>
               </tr>
               <tr>
                 <td class="pr-2 text-muted">{{ S.lastFrame }}</td>
