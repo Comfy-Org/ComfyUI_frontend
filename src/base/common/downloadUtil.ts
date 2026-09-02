@@ -45,6 +45,7 @@ function triggerLinkDownload(href: string, filename: string): void {
  * @throws {Error} If the URL is invalid or empty
  */
 export function downloadFile(url: string, filename?: string): void {
+  assertValidDownloadUrl(url)
   void downloadFileAsync(url, filename).catch((error) => {
     console.error('Failed to download file', error)
   })
