@@ -185,6 +185,57 @@ describe('attachLayoutMintPort', () => {
     expect(reportError).toHaveBeenCalledTimes(3)
   })
 
+  it('fails closed on a graphId with no ownerGraphId instead of minting as root', () => {
+    deliver({
+      operation: { ...createNodeChange('1').operation, graphId: 'root' }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, graphId: 'root' }
+    })
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        message: expect.stringContaining('createNode has no ownerGraphId')
+      }),
+      {
+        errorType: 'agent_crdt_missing_owner_graph_id_create',
+        context: { graphId: 'root', nodeId: '1' }
+      }
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        message: expect.stringContaining('deleteNode has no ownerGraphId')
+      }),
+      {
+        errorType: 'agent_crdt_missing_owner_graph_id_delete',
+        context: { graphId: 'root', nodeId: '1' }
+      }
+    )
+  })
+
+  it('mints a root createNode when ownerGraphId equals graphId', () => {
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    })
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: '1',
+        class_type: 'TestNode',
+        pos: [128, 96],
+        node: { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }
+      }
+    ])
+  })
+
   it('never mints an agent-remote echo (KA-6 sender half)', () => {
     deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
 

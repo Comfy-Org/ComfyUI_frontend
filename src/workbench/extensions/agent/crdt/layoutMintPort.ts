@@ -94,13 +94,28 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     operation: LayoutChangeView['operation'],
     action: 'create' | 'delete'
   ): boolean {
-    if (
-      operation.ownerGraphId === undefined ||
-      operation.graphId === undefined ||
-      operation.ownerGraphId === operation.graphId
-    ) {
-      return false
+    if (operation.graphId === undefined) return false
+
+    if (operation.ownerGraphId === undefined) {
+      // Every production emitter (canvas attach/detach, the agent panel) now
+      // sets ownerGraphId on every createNode/deleteNode it mints, root scope
+      // included (ownerGraphId === graphId there). A defined graphId with no
+      // ownerGraphId means an emitter regressed the contract, not a benign
+      // root edit — fail closed instead of silently minting a root op that
+      // may really belong to a subgraph (the #16503 class of bug).
+      reportError(
+        new Error(
+          `${action}Node has no ownerGraphId; refusing to mint (root-vs-subgraph is unknown)`
+        ),
+        {
+          errorType: `agent_crdt_missing_owner_graph_id_${action}`,
+          context: { graphId: operation.graphId, nodeId: operation.nodeId }
+        }
+      )
+      return true
     }
+
+    if (operation.ownerGraphId === operation.graphId) return false
 
     const reportKey = `${action}:${operation.graphId}:${operation.ownerGraphId}`
     if (reportedInteriorChanges.has(reportKey)) return true
