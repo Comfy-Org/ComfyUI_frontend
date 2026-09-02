@@ -1,12 +1,13 @@
-import { render } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const apiMock = vi.hoisted(() => new EventTarget())
 
@@ -157,6 +158,23 @@ vi.mock('@/utils/envUtil', () => ({
     Events: { incrementUserProperty: vi.fn(), trackEvent: vi.fn() }
   })
 }))
+vi.mock(
+  '@/workbench/extensions/agent/composables/useAgentCanvasEntryMount',
+  async () => {
+    const { defineComponent, ref } = await import('vue')
+    return {
+      useAgentCanvasEntryMount: () => ({
+        enabled: ref(true),
+        CompactAgentComposer: defineComponent({
+          template: '<div data-testid="compact-agent-composer" />'
+        }),
+        AgentGraphBuildPlaybackOverlay: defineComponent({
+          template: '<div data-testid="agent-graph-build-overlay" />'
+        })
+      })
+    }
+  }
+)
 
 // Module-mock heavy child components so we don't pay their import cost.
 const stubModule = { default: { template: '<div />' } }
@@ -198,6 +216,10 @@ vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 // loaded worker pool while it passed in isolation (#14666).
 const { default: GraphView } = await import('./GraphView.vue')
 
+beforeEach(() => {
+  useCanvasStore().linearMode = false
+})
+
 describe('GraphView - reconnect wiring', () => {
   it('wires the reconnected event to the toast and queue refresh', () => {
     render(GraphView)
@@ -211,5 +233,20 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('GraphView - Agent canvas entry', () => {
+  it('hides canvas-only Agent controls in linear mode', async () => {
+    render(GraphView)
+
+    expect(screen.getByTestId('compact-agent-composer')).toBeInTheDocument()
+    expect(screen.getByTestId('agent-graph-build-overlay')).toBeInTheDocument()
+
+    useCanvasStore().linearMode = true
+    await nextTick()
+
+    expect(screen.queryByTestId('compact-agent-composer')).toBeNull()
+    expect(screen.queryByTestId('agent-graph-build-overlay')).toBeNull()
   })
 })

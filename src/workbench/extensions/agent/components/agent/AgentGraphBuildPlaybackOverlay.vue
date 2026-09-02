@@ -10,6 +10,7 @@ import {
   resumeAgentGraphBuild,
   skipAgentGraphBuild
 } from '../../services/agent/agentGraphBuildPlayback'
+import type { AgentGraphBuildConnectionSegment } from '../../services/agent/agentGraphBuildPlaybackState'
 
 const { t } = useI18n()
 const progress = computed(() =>
@@ -27,7 +28,7 @@ const connections = computed(() => {
   ]
 })
 
-function connectionPath(segment: (typeof connections.value)[number]): string {
+function connectionPath(segment: AgentGraphBuildConnectionSegment): string {
   const bend = Math.max(48, Math.abs(segment.endX - segment.startX) * 0.45)
   return [
     `M ${segment.startX} ${segment.startY}`,
@@ -37,7 +38,7 @@ function connectionPath(segment: (typeof connections.value)[number]): string {
   ].join(' ')
 }
 
-function cursorLabel(): string {
+const cursorLabel = computed(() => {
   const value = progress.value
   if (!value) return ''
   const params = { node: value.nodeLabel }
@@ -49,9 +50,10 @@ function cursorLabel(): string {
     case 'connecting':
       return t('agent.graphBuild.connecting', params)
   }
-}
+  return ''
+})
 
-function progressLabel(): string {
+const progressLabel = computed(() => {
   const value = progress.value
   if (!value) return ''
   const params = {
@@ -67,7 +69,8 @@ function progressLabel(): string {
     case 'connecting':
       return t('agent.graphBuild.progress.connecting', params)
   }
-}
+  return ''
+})
 </script>
 
 <template>
@@ -106,7 +109,7 @@ function progressLabel(): string {
     <span
       class="bg-agent-surface text-agent-fg mt-1 ml-4 block max-w-56 truncate rounded-lg border border-interface-stroke px-2 py-1 text-xs shadow-lg"
     >
-      {{ cursorLabel() }}
+      {{ cursorLabel }}
     </span>
   </div>
 
@@ -130,7 +133,7 @@ function progressLabel(): string {
           class="icon-[comfy--comfy-c] size-5 shrink-0 text-brand-yellow"
         />
         <span class="text-agent-fg min-w-0 flex-1 truncate text-sm">
-          {{ progressLabel() }}
+          {{ progressLabel }}
         </span>
         <Button
           type="button"

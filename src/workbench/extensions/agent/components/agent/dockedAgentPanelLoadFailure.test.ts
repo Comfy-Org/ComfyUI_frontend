@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -28,11 +29,11 @@ describe('DockedAgentPanel chunk-load failure', () => {
     vi.mocked(reportError).mockClear()
   })
 
-  it('reports the failure and shows the error state when the chunk cannot load', async () => {
+  it('reports a compact load failure before clearing queued work', async () => {
     const store = useAgentPanelStore()
     const composer = useAgentComposerStore()
     store.enabled = true
-    store.isOpen = true
+    store.isOpen = false
     composer.draft = 'Keep this prompt after a failed panel load'
     expect(composer.requestSubmission()).toBe(true)
     composer.requestAttachments([
@@ -49,11 +50,17 @@ describe('DockedAgentPanel chunk-load failure', () => {
       global: { plugins: [i18n], config: { errorHandler: () => {} } }
     })
 
-    await screen.findByText('The agent panel failed to load.')
-    screen.getByRole('complementary', { name: 'Comfy Agent' })
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_panel_load_failure'
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_panel_load_failure'
+      })
+    )
+    expect(useToastStore().messagesToAdd).toContainEqual({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'The agent panel failed to load.'
     })
+    expect(screen.queryByRole('complementary')).toBeNull()
     expect(composer.pendingSubmission).toBeNull()
     expect(composer.pendingAttachmentRequests).toEqual([])
     expect(composer.hasPendingAttachmentWork).toBe(false)

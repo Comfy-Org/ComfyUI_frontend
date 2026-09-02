@@ -9,8 +9,14 @@ import {
   stageAgentGraphNodeBuild
 } from './agentGraphBuildPlayback'
 
-afterEach(() => {
+afterEach(async () => {
   skipAgentGraphBuild()
+  await vi.waitFor(() =>
+    expect(['idle', 'complete']).toContain(
+      agentGraphBuildPlaybackState.value.phase
+    )
+  )
+  if (vi.isFakeTimers()) vi.runOnlyPendingTimers()
 })
 
 describe('agent graph build playback', () => {

@@ -1,4 +1,4 @@
-interface AgentGraphBuildConnectionSegment {
+export interface AgentGraphBuildConnectionSegment {
   startX: number
   startY: number
   endX: number

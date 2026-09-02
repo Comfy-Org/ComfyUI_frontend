@@ -86,11 +86,24 @@ function waitForClientFrame(
   return new Promise((resolve) => {
     ws.onMessage((message) => {
       if (typeof message !== 'string') return
-      const frame = JSON.parse(message) as {
-        type?: unknown
-        data?: Record<string, unknown>
+      let frame: unknown
+      try {
+        frame = JSON.parse(message)
+      } catch {
+        return
       }
-      if (frame.type === type) resolve(frame.data ?? {})
+      if (
+        typeof frame !== 'object' ||
+        frame === null ||
+        !('type' in frame) ||
+        frame.type !== type ||
+        !('data' in frame)
+      )
+        return
+      const data = frame.data
+      if (typeof data !== 'object' || data === null || Array.isArray(data))
+        return
+      resolve({ ...data })
     })
   })
 }

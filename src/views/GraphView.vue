@@ -22,11 +22,11 @@
 
   <component
     :is="CompactAgentComposer"
-    v-if="agentCanvasEntryEnabled && !isBuilderMode"
+    v-if="agentCanvasEntryEnabled && !isBuilderMode && !linearMode"
   />
   <component
     :is="AgentGraphBuildPlaybackOverlay"
-    v-if="agentCanvasEntryEnabled && !isBuilderMode"
+    v-if="agentCanvasEntryEnabled && !isBuilderMode && !linearMode"
   />
 
   <GlobalToast />
