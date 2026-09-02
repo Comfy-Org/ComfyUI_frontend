@@ -115,6 +115,12 @@ describe.for(pages)('$name launch page config', ({ page }) => {
         ).not.toBe('')
       }
     }
+    if (page.comparison) {
+      // Empty columns/rows would render an empty table while every loop below
+      // runs zero times and passes.
+      expect(page.comparison.columns, 'comparison columns').not.toHaveLength(0)
+      expect(page.comparison.rows, 'comparison rows').not.toHaveLength(0)
+    }
     for (const column of page.comparison?.columns ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(column.label[locale], `${column.id} column label`).not.toBe('')

@@ -57,6 +57,23 @@ describe('MinimaxLicensePricingSection', () => {
     expect(cta.getAttribute('href')).toBe('/minimax/license')
   })
 
+  it('re-resolves the CTA route when the locale prop changes', async () => {
+    const { rerender } = render(MinimaxLicensePricingSection, {
+      props: { locale: 'en' as const }
+    })
+    expect(
+      screen
+        .getByRole('link', { name: 'See license tiers' })
+        .getAttribute('href')
+    ).toBe('/minimax/license')
+
+    await rerender({ locale: 'zh-CN' })
+
+    expect(
+      screen.getByRole('link', { name: '查看许可级别' }).getAttribute('href')
+    ).toBe('/zh-CN/minimax/license')
+  })
+
   it('localizes the copy, the table and the CTA route for zh-CN', () => {
     render(MinimaxLicensePricingSection, { props: { locale: 'zh-CN' } })
 

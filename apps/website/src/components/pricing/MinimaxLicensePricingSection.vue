@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import SectionHeader from '../common/SectionHeader.vue'
 import { getRoutes } from '../../config/routes'
 import { minimaxLicenseComparison } from '../../data/minimaxLicense'
@@ -7,7 +9,7 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const licenseHref = getRoutes(locale).minimaxLicense
+const licenseHref = computed(() => getRoutes(locale).minimaxLicense)
 const { columns, rows } = minimaxLicenseComparison
 </script>
 
