@@ -1,11 +1,11 @@
 import { defineComponent, h, inject, onScopeDispose, readonly, ref } from 'vue'
 import type { InjectionKey, PropType, Ref } from 'vue'
-import { AccountError } from '../core/index'
+import { AccountError } from '../core/index.js'
 import type {
   BillingBalanceResponse,
   BillingClient,
   Loadable
-} from '../core/index'
+} from '../core/index.js'
 
 export const billingClientKey: InjectionKey<BillingClient> =
   Symbol('billingClient')
@@ -64,4 +64,4 @@ export const CreditsDisplay = defineComponent({
   }
 })
 
-export { accountPackageId } from '../core/index'
+export { accountPackageId } from '../core/index.js'

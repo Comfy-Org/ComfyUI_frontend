@@ -1,5 +1,10 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": { "rootDir": ".", "outDir": "dist", "composite": false },
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "composite": false,
+    "types": ["node", "vitest/globals"]
+  },
   "include": ["src/**/*.ts", "examples/**/*.ts"]
 }
