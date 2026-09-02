@@ -1110,15 +1110,24 @@ describe('rewriteSessionWorkflowPaths', () => {
     store = useExecutionStore()
   })
 
-  it('rewrites all entries matching old path when no workflowId filter', () => {
-    store.ensureSessionWorkflowPath('job-1', 'workflows/old.app.json')
-    store.ensureSessionWorkflowPath('job-2', 'workflows/keep.app.json')
-    store.ensureSessionWorkflowPath('job-3', 'workflows/old.app.json')
-
-    store.rewriteSessionWorkflowPaths(
+  it('rewrites all entries associated with the workflow instance', () => {
+    store.ensureSessionWorkflowPath(
+      'job-1',
       'workflows/old.app.json',
-      'workflows/new.app.json'
+      'instance-A'
     )
+    store.ensureSessionWorkflowPath(
+      'job-2',
+      'workflows/keep.app.json',
+      'instance-B'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-3',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
 
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       'workflows/new.app.json'
@@ -1131,17 +1140,19 @@ describe('rewriteSessionWorkflowPaths', () => {
     )
   })
 
-  it('only rewrites entries matching both path and workflowId', () => {
-    store.ensureSessionWorkflowPath('job-1', 'workflows/old.app.json')
-    store.ensureSessionWorkflowPath('job-2', 'workflows/old.app.json')
-    store.registerJobWorkflowIdMapping('job-1', 'wf-A')
-    store.registerJobWorkflowIdMapping('job-2', 'wf-B')
-
-    store.rewriteSessionWorkflowPaths(
+  it('only rewrites entries matching the workflow instance', () => {
+    store.ensureSessionWorkflowPath(
+      'job-1',
       'workflows/old.app.json',
-      'workflows/new.app.json',
-      'wf-A'
+      'instance-A'
     )
+    store.ensureSessionWorkflowPath(
+      'job-2',
+      'workflows/old.app.json',
+      'instance-B'
+    )
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
 
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       'workflows/new.app.json'
@@ -1154,19 +1165,18 @@ describe('rewriteSessionWorkflowPaths', () => {
   it('does not rewrite entries from a different workflow sharing the same temp path', () => {
     store.ensureSessionWorkflowPath(
       'job-old',
-      'workflows/Unsaved Workflow.json'
+      'workflows/Unsaved Workflow.json',
+      'instance-OLD'
     )
     store.ensureSessionWorkflowPath(
       'job-new',
-      'workflows/Unsaved Workflow.json'
+      'workflows/Unsaved Workflow.json',
+      'instance-NEW'
     )
-    store.registerJobWorkflowIdMapping('job-old', 'wf-OLD')
-    store.registerJobWorkflowIdMapping('job-new', 'wf-NEW')
 
     store.rewriteSessionWorkflowPaths(
-      'workflows/Unsaved Workflow.json',
-      'workflows/saved.app.json',
-      'wf-NEW'
+      'instance-NEW',
+      'workflows/saved.app.json'
     )
 
     expect(store.jobIdToSessionWorkflowPath.get('job-old')).toBe(
@@ -1181,10 +1191,7 @@ describe('rewriteSessionWorkflowPaths', () => {
     store.ensureSessionWorkflowPath('job-1', 'workflows/keep.app.json')
     const originalMap = store.jobIdToSessionWorkflowPath
 
-    store.rewriteSessionWorkflowPaths(
-      'workflows/old.app.json',
-      'workflows/new.app.json'
-    )
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
 
     expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
   })
@@ -1192,10 +1199,7 @@ describe('rewriteSessionWorkflowPaths', () => {
   it('handles empty map', () => {
     const originalMap = store.jobIdToSessionWorkflowPath
 
-    store.rewriteSessionWorkflowPaths(
-      'workflows/old.app.json',
-      'workflows/new.app.json'
-    )
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
 
     expect(store.jobIdToSessionWorkflowPath.size).toBe(0)
     expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)

@@ -611,18 +611,28 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
     })
 
-    it('renameWorkflow updates executionStore session path map scoped by workflowId', async () => {
-      const workflow = store.createTemporary('app-to-save.json')
-      const loaded = await workflow.load()
+    it('renames only jobs from the matching workflow instance', async () => {
+      const duplicateId = 'duplicate-workflow-id'
+      const workflow = store.createTemporary('app-to-save.json', {
+        ...defaultGraph,
+        id: duplicateId
+      })
+      const otherWorkflow = store.createTemporary('other.json', {
+        ...defaultGraph,
+        id: duplicateId
+      })
       const executionStore = useExecutionStore()
-      const workflowId = String(
-        loaded.activeState?.id ?? loaded.initialState?.id
-      )
 
-      executionStore.ensureSessionWorkflowPath('job-1', workflow.path)
-      executionStore.registerJobWorkflowIdMapping('job-1', workflowId)
-      executionStore.ensureSessionWorkflowPath('job-other', workflow.path)
-      executionStore.registerJobWorkflowIdMapping('job-other', 'different-wf')
+      executionStore.ensureSessionWorkflowPath(
+        'job-1',
+        workflow.path,
+        workflow.instanceId
+      )
+      executionStore.ensureSessionWorkflowPath(
+        'job-other',
+        workflow.path,
+        otherWorkflow.instanceId
+      )
 
       vi.spyOn(workflow, 'rename').mockImplementation(
         async (...args: unknown[]) => {

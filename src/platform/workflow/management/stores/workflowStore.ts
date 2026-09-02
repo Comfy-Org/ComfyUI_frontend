@@ -494,12 +494,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
-      const workflowId = workflow.activeState?.id ?? workflow.initialState?.id
       await workflow.rename(newPath)
       useExecutionStore().rewriteSessionWorkflowPaths(
-        oldPath,
-        workflow.path,
-        workflowId ? String(workflowId) : undefined
+        workflow.instanceId,
+        workflow.path
       )
 
       // Synchronously swap old path for new path in lookup and open paths
