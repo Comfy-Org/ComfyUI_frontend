@@ -116,7 +116,6 @@ const i18n = createI18n({
 
 describe('NodeLibrarySidebarTabV2', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.mockSearchNode.mockReturnValue([])
     mockCurrentHelpNode.value = null
     mockIsHelpOpen.value = false
