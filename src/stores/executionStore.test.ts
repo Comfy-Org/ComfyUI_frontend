@@ -14,11 +14,7 @@ import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
 // Create mock functions that will be shared
-const {
-  mockNodeExecutionIdToNodeLocatorId,
-  mockRevokePreviewsByExecutionId
-} = vi.hoisted(() => ({
-  mockNodeExecutionIdToNodeLocatorId: vi.fn(),
+const { mockRevokePreviewsByExecutionId } = vi.hoisted(() => ({
   mockRevokePreviewsByExecutionId: vi.fn()
 }))
 
@@ -1110,7 +1106,6 @@ describe('useExecutionStore - active workflow gating', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     mockActiveWorkflow.value = null
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -1129,6 +1124,7 @@ describe('useExecutionStore - active workflow gating', () => {
       makeProgressNodes('1', 'job-other'),
       'wf-other'
     )
+    vi.advanceTimersToNextFrame()
 
     expect(store.nodeProgressStatesByJob).toHaveProperty('job-other')
   })
@@ -1155,6 +1151,7 @@ describe('useExecutionStore - active workflow gating', () => {
     }
 
     fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-active')
+    vi.advanceTimersToNextFrame()
 
     expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
   })
@@ -1190,6 +1187,7 @@ describe('useExecutionStore - active workflow gating', () => {
     }
 
     fireProgressState('job-unknown', makeProgressNodes('1', 'job-unknown'))
+    vi.advanceTimersToNextFrame()
 
     expect(store.nodeProgressStates).toEqual(
       makeProgressNodes('1', 'job-unknown')
@@ -1200,6 +1198,7 @@ describe('useExecutionStore - active workflow gating', () => {
     mockActiveWorkflow.value = null
 
     fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-1')
+    vi.advanceTimersToNextFrame()
 
     expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
   })
@@ -1228,6 +1227,7 @@ describe('useExecutionStore - active workflow gating', () => {
     mockRevokePreviewsByExecutionId.mockClear()
 
     fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-active')
+    vi.advanceTimersToNextFrame()
 
     expect(mockRevokePreviewsByExecutionId).toHaveBeenCalledWith('1')
   })
@@ -1239,6 +1239,7 @@ describe('useExecutionStore - active workflow gating', () => {
     }
 
     fireProgress('job-other', '1', 'wf-other')
+    vi.advanceTimersToNextFrame()
 
     expect(store._executingNodeProgress).toBeNull()
   })
@@ -1250,6 +1251,7 @@ describe('useExecutionStore - active workflow gating', () => {
     }
 
     fireProgress('job-1', '1', 'wf-active', 7, 10)
+    vi.advanceTimersToNextFrame()
 
     expect(store._executingNodeProgress).toEqual({
       value: 7,
@@ -1463,7 +1465,9 @@ describe('useExecutionStore - active workflow gating', () => {
 
     expect(store.activeJobId).toBe('job-1')
     expect(store.initializingJobIds.has('job-other')).toBe(false)
-    expect(useExecutionErrorStore().lastExecutionError).toBeNull()
+    // Errors are recorded for diagnostics regardless of which workflow they
+    // belong to; only the active-tab execution UI reset is gated.
+    expect(useExecutionErrorStore().lastExecutionError).not.toBeNull()
   })
 
   it('revokes preview when node transitions pending -> running', () => {
@@ -1482,12 +1486,14 @@ describe('useExecutionStore - active workflow gating', () => {
       }
     }
     fireProgressState('job-1', pendingNodes, 'wf-active')
+    vi.advanceTimersToNextFrame()
     mockRevokePreviewsByExecutionId.mockClear()
 
     const runningNodes: Record<string, NodeProgressState> = {
       n1: { ...pendingNodes.n1, state: 'running', value: 1 }
     }
     fireProgressState('job-1', runningNodes, 'wf-active')
+    vi.advanceTimersToNextFrame()
 
     expect(mockRevokePreviewsByExecutionId).toHaveBeenCalledWith('n1')
   })

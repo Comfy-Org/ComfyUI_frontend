@@ -38,7 +38,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
@@ -543,7 +543,7 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
+  function handleExecuting(e: CustomEvent<SerializedNodeId | null>): void {
     progressCoalescer.cancel()
     if (e.detail == null) progressStateCoalescer.cancel()
 
@@ -553,9 +553,6 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
 
     if (e.detail == null) {
-      if (activeJobId.value) {
-        delete queuedJobs.value[activeJobId.value]
-      }
       activeJobId.value = null
     }
   }
@@ -769,7 +766,6 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
       return
 
-    executionErrorStore.lastExecutionError = e.detail
     resetExecutionState(e.detail.prompt_id)
   }
 
