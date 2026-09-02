@@ -99,8 +99,8 @@ class SharedPagedList<T> implements PagedList<T> {
   get items() {
     return this.childList.items
   }
-  get loadMore() {
-    return this.childList.loadMore
+  async loadMore() {
+    await this.childList.loadMore()
   }
   async loadNew() {
     await Promise.all(this.overlapping().map((l) => l.loadNew()))
