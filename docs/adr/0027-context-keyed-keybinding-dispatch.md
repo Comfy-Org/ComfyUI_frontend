@@ -102,18 +102,30 @@ extensions already run arbitrary JavaScript, so ownership is enforced at
 registration, where it prevents accidental collisions, and not at write
 time, where it could only be advisory.
 
-Resolution within one combo and scope: bindings with narrower clauses (more
-atoms) are tried first, user bindings before defaults at equal width, then
-registration order, and the first whose clause holds runs. Two bindings
-conflict only when combo, scope and clause are all identical. So
-`w → pan when ext.wasdMode` coexists with the core `w → toggle sidebar` and
-shadows it while the mode is on. Phase 2 puts the binding's source ahead of
-clause width, so that a user's rebind always beats an extension's or core's
-narrower clause; until then a narrower default clause can outrank a broader
-user binding on the same combo.
+Every binding has a source: core, an extension (by name), or the user. The
+source is assigned by whoever registers the binding, never declared by the
+binding itself, so an extension cannot promote its own bindings.
+
+Resolution within one combo and scope: user bindings first, then extension
+bindings, then core; within a tier, narrower clauses (more atoms) before
+broader ones; then registration order. The clause is a filter, not a rank
+across tiers: a user's rebind beats an extension's or core's narrower
+clause, and the first candidate in that order whose clause holds runs. Two
+bindings conflict only when combo, scope, clause and tier are all
+identical. So `w → pan when ext.wasdMode` coexists with the core
+`w → toggle sidebar` and shadows it while the mode is on, and an extension
+binding on `Ctrl+Z` coexists with the core undo binding and shadows it
+until the user rebinds `Ctrl+Z`. A binding hidden this way is not listed
+as active for its command, so menus never show a shortcut that would run
+something else; the shortcuts panel and the Edit Keybinding dialog name
+the extension that owns the binding that wins.
 
 Combos reserved by text inputs stay out of text-editing controls unless the
 clause names `textInputFocus`, which is how a binding opts into a textarea.
+Only core and user bindings may opt in. The app contains credential inputs,
+so an extension binding never fires from a text-editing control on a
+reserved combo, whatever its clause says; a user who wants an extension's
+command there binds it themselves.
 
 The store keeps arrays keyed by binding identity (command, combo, target
 element, dialog key, clause) and derives the active set. The Edit Keybinding
@@ -123,17 +135,17 @@ an identical binding. Extension keybindings are validated at registration.
 
 ### D3 — Guard policy is uniform and explicit
 
-| Guard                    | Window path before                                                                                  | `processKey` path before                                     | Now                                                                                                                                                                                                  |
-| ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which bindings           | all                                                                                                 | canvas-scoped, then `stopImmediatePropagation`               | all, one path, never stops propagation                                                                                                                                                               |
-| `event.defaultPrevented` | ignored                                                                                             | ignored                                                      | skipped                                                                                                                                                                                              |
-| `event.isComposing`      | ignored                                                                                             | ignored                                                      | skipped                                                                                                                                                                                              |
-| `event.repeat`           | dispatched                                                                                          | skipped, then fell through to the window path and dispatched | dispatched                                                                                                                                                                                           |
-| Modal open               | workspace bindings blocked, `preventDefault` if Ctrl                                                | not checked                                                  | unchanged for workspace bindings; bindings scoped to the active dialog run                                                                                                                           |
-| Text input focus         | reserved combos blocked on `INPUT`, `TEXTAREA`, `contentEditable === 'true'`, `SPAN.property_value` | dead check                                                   | same set, except `INPUT` types that do not edit text (range, checkbox, radio, button, submit, reset, color, file, image) and inherited `isContentEditable`; a clause naming `textInputFocus` opts in |
-| Escape ownership         | `[role="menu"]`                                                                                     | none                                                         | `[role="menu"]` and `[data-dismissable-layer]`                                                                                                                                                       |
-| Unknown command          | throws after `preventDefault`                                                                       | throws                                                       | inert, console warning                                                                                                                                                                               |
-| `graph.change()`         | none                                                                                                | after the command                                            | litegraph's `processKey` still calls it before the command for canvas-targeted keydowns; every canvas command redraws on its own                                                                     |
+| Guard                    | Window path before                                                                                  | `processKey` path before                                     | Now                                                                                                                                                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Which bindings           | all                                                                                                 | canvas-scoped, then `stopImmediatePropagation`               | all, one path, never stops propagation                                                                                                                                                                                      |
+| `event.defaultPrevented` | ignored                                                                                             | ignored                                                      | skipped                                                                                                                                                                                                                     |
+| `event.isComposing`      | ignored                                                                                             | ignored                                                      | skipped                                                                                                                                                                                                                     |
+| `event.repeat`           | dispatched                                                                                          | skipped, then fell through to the window path and dispatched | dispatched                                                                                                                                                                                                                  |
+| Modal open               | workspace bindings blocked, `preventDefault` if Ctrl                                                | not checked                                                  | unchanged for workspace bindings; bindings scoped to the active dialog run                                                                                                                                                  |
+| Text input focus         | reserved combos blocked on `INPUT`, `TEXTAREA`, `contentEditable === 'true'`, `SPAN.property_value` | dead check                                                   | same set, except `INPUT` types that do not edit text (range, checkbox, radio, button, submit, reset, color, file, image) and inherited `isContentEditable`; a clause naming `textInputFocus` opts a core or user binding in |
+| Escape ownership         | `[role="menu"]`                                                                                     | none                                                         | `[role="menu"]` and `[data-dismissable-layer]`                                                                                                                                                                              |
+| Unknown command          | throws after `preventDefault`                                                                       | throws                                                       | inert, console warning                                                                                                                                                                                                      |
+| `graph.change()`         | none                                                                                                | after the command                                            | litegraph's `processKey` still calls it before the command for canvas-targeted keydowns; every canvas command redraws on its own                                                                                            |
 
 Behavior that changes for users as a result:
 
@@ -182,6 +194,10 @@ Consequences for users:
 - A combo reserved by text inputs never fires from a text-editing control
   unless its clause names `textInputFocus`.
 - A clause naming an unregistered context key never matches.
+- A user binding is never outranked by a default with a narrower clause on
+  the same combo and scope.
+- An extension binding on a combo reserved by text inputs never fires from
+  a text-editing control.
 - The dispatcher calls `preventDefault()` in exactly two cases: when it
   executes a command, and when a Ctrl combo that a workspace binding would
   claim arrives while a modal is open, so the browser does not act on it.
@@ -196,7 +212,7 @@ Phases are ordered by dependency. Each is its own change.
 | Phase | What                                                                                                                                                                                                                | Status                       |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | 1     | Context key store, `when` parser, `dialogKey`, extension-registered keys                                                                                                                                            | Done, preceding change       |
-| 2     | Store rework: several bindings per combo, a `source` on every binding, resolution by source tier (user, extension, core) before clause width, attributable conflict reporting                                       | Next change                  |
+| 2     | Store rework: several bindings per combo, a `source` on every binding, resolution by source tier (user, extension, core) before clause width, attributable conflict reporting                                       | Done, this change            |
 | 3     | One dispatcher with the guard matrix in D3                                                                                                                                                                          | Done, this change            |
 | 4     | Capture-phase dispatcher behind a hidden setting with a kill switch; `data-comfy-keybinding-ignore` escape hatch checked via `composedPath()`; `processKey` kept as a deprecated shim for one cycle                 | Pending; preconditions below |
 | 5     | Undo and redo as bindings (D4)                                                                                                                                                                                      | Done, following change       |
@@ -252,6 +268,11 @@ be rebound separately.
   shields are no longer required for correctness.
 - Same combo, different dialog, no conflict: extensions can bind inside
   their own dialogs.
+- Same combo, same scope, different source, no conflict either: an
+  extension's binding coexists with core's and wins until the user rebinds,
+  and the panel says which extension owns it. Two extensions declaring the
+  identical binding still collide, and the toast names the one that got
+  there first.
 - Undo and redo behave like every other shortcut.
 
 ### Negative
@@ -264,9 +285,9 @@ be rebound separately.
   shortcut that throws on that build. A user who customizes undo or
   mask-editor undo and then edits keybindings on an older build loses that
   customization.
-- Until phase 2 lands, an extension that declared a workspace binding on
-  `Ctrl+Z`, `Ctrl+Y` or `Ctrl+Shift+Z` collides with the new core default
-  and is rejected with the usual conflict toast.
+- A core binding hidden by an extension's shows nowhere in the shortcuts
+  panel until the extension is disabled; the persistent conflict report
+  that would explain the gap is diagnostics work still to come.
 - A DOM-only modal (legacy `.comfy-modal`, a native `<dialog>`, a hand-rolled
   `aria-modal` overlay) raises the modal guard but never becomes the active
   dialog, so a scoped binding under one would still fire. No such surface is

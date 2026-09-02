@@ -83,8 +83,8 @@ export const useExtensionService = () => {
   const registerExtension = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
-    const addKeybinding = wrapWithErrorHandling(
-      keybindingStore.addDefaultKeybinding
+    const addKeybinding = wrapWithErrorHandling((keybinding: KeybindingImpl) =>
+      keybindingStore.addExtensionKeybinding(keybinding, extension.name)
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 

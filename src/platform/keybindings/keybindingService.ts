@@ -9,6 +9,7 @@ import { useContextKeyStore } from './contextKeyStore'
 import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
+import type { KeybindingSource } from './keybindingStore'
 import { useKeybindingStore } from './keybindingStore'
 import { matchesContext, parseWhenClause } from './whenClause'
 
@@ -58,19 +59,27 @@ function isWithinTargetElement(
   return document.getElementById(targetElementId)?.contains(target) ?? false
 }
 
-/** Reserved combos stay out of text inputs unless the clause asks for one. */
+/**
+ * Reserved combos stay out of text inputs unless the clause asks for one.
+ * Only core and user bindings may ask: the app contains credential inputs,
+ * so an extension cannot route keys out of them.
+ */
 function clauseHolds(
   keybinding: KeybindingImpl,
+  source: KeybindingSource,
   context: ContextSnapshot
 ): boolean {
   const parsed =
     keybinding.when === undefined ? undefined : parseWhenClause(keybinding.when)
   if (parsed && !parsed.success) return false
   const clause = parsed?.clause ?? []
+  const optsIntoTextInput =
+    source.tier !== 'extension' &&
+    clause.some((atom) => atom.key === 'textInputFocus')
   if (
     context.textInputFocus &&
     keybinding.combo.isReservedByTextInput &&
-    !clause.some((atom) => atom.key === 'textInputFocus')
+    !optsIntoTextInput
   ) {
     return false
   }
@@ -147,7 +156,7 @@ export function useKeybindingService() {
             .find(
               (binding) =>
                 isWithinTargetElement(binding, target) &&
-                clauseHolds(binding, context)
+                clauseHolds(binding, keybindingStore.sourceOf(binding), context)
             )
     if (scoped) {
       await execute(scoped, event)
@@ -158,7 +167,7 @@ export function useKeybindingService() {
       .getKeybindings(keyCombo)
       .filter((binding) => isWithinTargetElement(binding, target))
     const keybinding = candidates.find((binding) =>
-      clauseHolds(binding, context)
+      clauseHolds(binding, keybindingStore.sourceOf(binding), context)
     )
     if (!keybinding) {
       const bare = !keyCombo.ctrl && !keyCombo.alt

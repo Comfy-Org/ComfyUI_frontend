@@ -203,6 +203,12 @@
                       :key-combo="binding.combo"
                       :is-modified="slotProps.data.isModified"
                     />
+                    <span
+                      v-if="extensionOwning(binding)"
+                      class="text-xs text-muted-foreground"
+                    >
+                      {{ extensionOwning(binding) }}
+                    </span>
                   </div>
                   <div class="flex flex-row">
                     <Button
@@ -466,6 +472,11 @@ const selectedCommandData = ref<ICommandData | null>(null)
 const editKeybindingDialog = useEditKeybindingDialog()
 
 const contextMenuTarget = ref<ICommandData | null>(null)
+
+function extensionOwning(binding: KeybindingImpl): string | null {
+  const source = keybindingStore.sourceOf(binding)
+  return source.tier === 'extension' ? source.name : null
+}
 
 function editKeybinding(commandData: ICommandData, binding: KeybindingImpl) {
   editKeybindingDialog.show({

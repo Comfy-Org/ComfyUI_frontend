@@ -10,6 +10,7 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 interface DialogProps {
   dialogState: EditKeybindingDialogState
   existingKeybindingOnCombo: ComputedRef<KeybindingImpl | null>
+  existingKeybindingSource: ComputedRef<string | null>
   onUpdateCombo: (combo: KeyComboImpl) => void
 }
 
@@ -107,5 +108,24 @@ describe('useEditKeybindingDialog', () => {
     dialog.onUpdateCombo(ctrlZ)
 
     expect(dialog.existingKeybindingOnCombo.value).toEqual(maskEditorUndo)
+    expect(dialog.existingKeybindingSource.value).toBeNull()
+  })
+
+  it('names the extension that owns the conflicting binding', () => {
+    useKeybindingStore().addExtensionKeybinding(
+      new KeybindingImpl({ commandId: 'ext.undo', combo: ctrlZ }),
+      'ext'
+    )
+
+    useEditKeybindingDialog().show({
+      commandId: 'test.save',
+      commandLabel: 'Save',
+      currentCombo: null
+    })
+    const dialog = shownDialog()
+    dialog.onUpdateCombo(ctrlZ)
+
+    expect(dialog.existingKeybindingOnCombo.value?.commandId).toBe('ext.undo')
+    expect(dialog.existingKeybindingSource.value).toBe('ext')
   })
 })
