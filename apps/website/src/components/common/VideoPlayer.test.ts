@@ -13,7 +13,11 @@ describe('VideoPlayer', () => {
     vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(true)
 
     render(VideoPlayer, {
-      props: { src: 'https://example.com/clip.mp4', muteOnly: true }
+      props: {
+        locale: 'en',
+        src: 'https://example.com/clip.mp4',
+        muteOnly: true
+      }
     })
 
     expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy()
@@ -22,7 +26,11 @@ describe('VideoPlayer', () => {
 
   it('shows play and mute for a paused, unmuted video', async () => {
     render(VideoPlayer, {
-      props: { src: 'https://example.com/clip.mp4', muteOnly: true }
+      props: {
+        locale: 'en',
+        src: 'https://example.com/clip.mp4',
+        muteOnly: true
+      }
     })
 
     expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()

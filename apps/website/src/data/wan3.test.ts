@@ -29,7 +29,9 @@ function flushMount() {
 }
 
 function renderHero() {
-  render(ModelLaunchHeroSection, { props: { hero: wan3Page.hero } })
+  render(ModelLaunchHeroSection, {
+    props: { hero: wan3Page.hero, locale: 'en' }
+  })
   return flushMount()
 }
 

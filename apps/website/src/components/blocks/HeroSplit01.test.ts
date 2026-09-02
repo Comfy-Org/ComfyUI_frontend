@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import HeroSplit01 from './HeroSplit01.vue'
 
 const hero = {
+  locale: 'en' as const,
   badgeText: 'Platform',
   title: 'Build on Comfy',
   primaryCta: { label: 'Get Started', href: '/start' }

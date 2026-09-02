@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 
 const SRC_DIR = join(process.cwd(), 'src')
-const LOCALES = ['en', 'zh-CN'] as const
+const LOCALES = ['en', 'zh-CN', 'ja'] as const
 const DEFAULT_LOCALE = 'en'
 
 type Locale = (typeof LOCALES)[number]
@@ -138,8 +138,9 @@ function lineOf(source: string, index: number): number {
 }
 
 /**
- * The locale a page renders in, derived from its path: `pages/zh-CN/**` is
- * `zh-CN`, everything else under `pages/` is the unprefixed default locale.
+ * The locale a page renders in, derived from its path: localized directories
+ * use their matching locale, while everything else under `pages/` uses the
+ * unprefixed default locale.
  * Shared components live outside `pages/` and inherit their caller's locale,
  * so they have no fixed locale and return `undefined`.
  */
