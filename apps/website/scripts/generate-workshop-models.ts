@@ -654,7 +654,8 @@ function run() {
           : []
         const ownForm =
           exampleSchema !== undefined &&
-          JSON.stringify(exampleFields) !== JSON.stringify(fields)
+          (exampleSchema.id !== schema?.id ||
+            JSON.stringify(exampleFields) !== JSON.stringify(fields))
         return {
           name: template.name,
           title: template.title,

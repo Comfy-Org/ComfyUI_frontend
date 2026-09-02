@@ -245,7 +245,6 @@ function useInCode() {
         :href="`#${section}`"
         :data-testid="`tab-${section}`"
         class="hover:border-primary-comfy-yellow border-b-2 border-transparent pb-3 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white"
-        @click.prevent="scrollTo(section)"
       >
         {{ t(sectionLabel[section], locale) }}
       </a>

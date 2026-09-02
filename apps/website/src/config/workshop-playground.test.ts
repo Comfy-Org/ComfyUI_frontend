@@ -165,4 +165,12 @@ describe('estimateCredits', () => {
     expect(estimateCredits(10, { resolution: '4K', num_images: 2 })).toBe(40)
     expect(estimateCredits(0, { duration: 10 })).toBe(1)
   })
+
+  it('reads the batch size from n, num_images or count in that order', () => {
+    expect(estimateCredits(10, { n: 3 })).toBe(30)
+    expect(estimateCredits(10, { count: 2 })).toBe(20)
+    expect(estimateCredits(10, { n: 2, num_images: 5, count: 7 })).toBe(20)
+    expect(estimateCredits(10, { n: 0, num_images: 4 })).toBe(40)
+    expect(estimateCredits(10, { n: -2, count: 'many' })).toBe(10)
+  })
 })

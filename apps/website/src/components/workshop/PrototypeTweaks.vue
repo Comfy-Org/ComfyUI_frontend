@@ -99,7 +99,7 @@ const knobClass = (on: boolean) =>
     on && 'translate-x-4'
   )
 const selectClass =
-  'h-8 w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-2 text-xs text-primary-warm-white outline-none'
+  'h-8 w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-2 text-xs text-primary-warm-white outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'
 </script>
 
 <template>

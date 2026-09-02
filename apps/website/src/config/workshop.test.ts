@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { models } from './models'
+import generatedModels from './workshop-models.generated.json'
 import type { GeneratedField, WorkshopModel } from './workshop'
 import {
   countByFacet,
@@ -171,6 +172,7 @@ describe('taskFor', () => {
     })
     expect(splitTask('text-to-all')).toBeUndefined()
     expect(splitTask('nonsense')).toBeUndefined()
+    expect(splitTask('image-to-video-to-audio')).toBeUndefined()
   })
 })
 
@@ -234,10 +236,25 @@ describe('workshopModels', () => {
 
 describe('decodeGeneratedModels', () => {
   it('keeps well-formed records and drops the rest', () => {
+    const prompt = {
+      kind: 'text',
+      name: 'prompt',
+      label: 'Prompt',
+      multiline: true,
+      required: true
+    }
+    const example = {
+      name: 'demo',
+      title: 'Demo',
+      description: '',
+      tags: ['video'],
+      thumbnailUrl: 'https://example.com/demo.webp',
+      values: { prompt: 'a capybara', steps: 20, hd: true }
+    }
     const good = {
-      fields: [{ kind: 'text', name: 'prompt', label: 'Prompt' }],
-      defaults: {},
-      examples: []
+      fields: [prompt],
+      defaults: { prompt: 'hello' },
+      examples: [example]
     }
     expect(
       decodeGeneratedModels({
@@ -247,9 +264,21 @@ describe('decodeGeneratedModels', () => {
           ...good,
           fields: [{ kind: 'color', name: 'x', label: 'X' }]
         },
+        halfNumber: {
+          ...good,
+          fields: [{ kind: 'number', name: 'steps', label: 'Steps', min: 1 }]
+        },
+        badDefaults: { ...good, defaults: { seed: null } },
+        badExample: { ...good, examples: [{ name: 'x' }] },
         missing: null
       })
     ).toEqual({ good })
     expect(decodeGeneratedModels('not a manifest')).toEqual({})
+  })
+
+  it('accepts every record the generator wrote', () => {
+    expect(Object.keys(decodeGeneratedModels(generatedModels))).toEqual(
+      Object.keys(generatedModels)
+    )
   })
 })

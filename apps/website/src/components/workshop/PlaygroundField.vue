@@ -198,6 +198,8 @@ function acceptHint(accept: readonly string[]): string {
       type="button"
       role="switch"
       :aria-checked="booleanValue(field.defaultValue)"
+      :aria-invalid="invalid()"
+      :aria-describedby="errorId()"
       :disabled
       :data-testid="`field-${field.name}`"
       :class="

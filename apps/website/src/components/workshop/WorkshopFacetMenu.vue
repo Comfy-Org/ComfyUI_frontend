@@ -46,6 +46,11 @@ const visibleOptions = computed(() => {
     : options
 })
 
+// The menu's typeahead must not swallow typing, but Escape still closes it.
+function stopTypeaheadKeys(event: KeyboardEvent) {
+  if (event.key !== 'Escape') event.stopPropagation()
+}
+
 function toggle(value: string) {
   selected.value = selected.value.includes(value)
     ? selected.value.filter((item) => item !== value)
@@ -94,9 +99,10 @@ const itemClass =
             v-model="query"
             type="search"
             :placeholder="t('workshop.filter.search', locale)"
+            :aria-label="t('workshop.filter.search', locale)"
             :data-testid="`workshop-filter-${facet}-search`"
             class="bg-transparency-white-t4 h-9 w-full rounded-xl border border-transparency-white-t20 pr-3 pl-9 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray [&::-webkit-search-cancel-button]:hidden"
-            @keydown.stop
+            @keydown="stopTypeaheadKeys"
           />
         </div>
         <div class="min-h-0 overflow-y-auto">

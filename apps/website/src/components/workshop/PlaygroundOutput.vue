@@ -229,7 +229,7 @@ const blurred = computed(
       </div>
 
       <div
-        v-if="outputs.length > 1"
+        v-if="outputs.length > 1 && !blurred"
         class="grid grid-cols-4 gap-2 border-t border-transparency-white-t8 p-4 sm:grid-cols-6 lg:grid-cols-9"
         data-testid="output-thumbnails"
       >
@@ -255,7 +255,15 @@ const blurred = computed(
           "
           @click="selected = index"
         >
-          <img :src="url" alt="" class="size-full object-cover" />
+          <video
+            v-if="isVideoUrl(url)"
+            :src="url"
+            class="size-full object-cover"
+            muted
+            playsinline
+            preload="metadata"
+          />
+          <img v-else :src="url" alt="" class="size-full object-cover" />
         </button>
       </div>
 

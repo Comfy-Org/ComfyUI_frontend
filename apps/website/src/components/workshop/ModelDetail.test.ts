@@ -133,7 +133,7 @@ describe('ModelDetail', () => {
   it('swaps the form to the example template and back', async () => {
     await signedInDetail()
     await user().click(screen.getByTestId('tab-examples'))
-    await user().click(screen.getAllByTestId('example-open')[0])
+    await user().click(screen.getByTestId('example-open'))
 
     expect(screen.getByTestId('active-example').textContent).toContain(
       'Demo First-Last-Frame'

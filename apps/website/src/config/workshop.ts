@@ -118,34 +118,98 @@ export interface WorkshopModelDetail extends WorkshopModel {
 
 const display = displayOverrides as Record<string, WorkshopModelDisplay>
 
-const FIELD_KINDS = new Set(['text', 'number', 'select', 'toggle', 'file'])
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean'
+}
+
+function isFormValue(value: unknown): value is string | number | boolean {
+  return isString(value) || isFiniteNumber(value) || isBoolean(value)
+}
+
+function isFormValues(
+  value: unknown
+): value is Record<string, string | number | boolean> {
+  return isRecord(value) && Object.values(value).every(isFormValue)
+}
+
+const UPLOAD_ACCEPTS: ReadonlySet<unknown> = new Set([
+  'image',
+  'video',
+  'audio'
+])
 
 function isGeneratedField(value: unknown): value is GeneratedField {
+  if (!isRecord(value) || !isString(value.name) || !isString(value.label))
+    return false
+  if (value.hint !== undefined && !isString(value.hint)) return false
+  switch (value.kind) {
+    case 'text':
+      return (
+        isBoolean(value.multiline) &&
+        isBoolean(value.required) &&
+        (value.default === undefined || isString(value.default))
+      )
+    case 'number':
+      return (
+        isFiniteNumber(value.min) &&
+        isFiniteNumber(value.max) &&
+        isFiniteNumber(value.step) &&
+        isFiniteNumber(value.default)
+      )
+    case 'select':
+      return (
+        Array.isArray(value.options) &&
+        value.options.every(isString) &&
+        isString(value.default)
+      )
+    case 'toggle':
+      return isBoolean(value.default)
+    case 'file':
+      return UPLOAD_ACCEPTS.has(value.accept) && isBoolean(value.required)
+    default:
+      return false
+  }
+}
+
+function isGeneratedExample(value: unknown): value is GeneratedExample {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    'kind' in value &&
-    typeof value.kind === 'string' &&
-    FIELD_KINDS.has(value.kind) &&
-    'name' in value &&
-    typeof value.name === 'string' &&
-    'label' in value &&
-    typeof value.label === 'string'
+    isRecord(value) &&
+    isString(value.name) &&
+    isString(value.title) &&
+    isString(value.description) &&
+    isString(value.thumbnailUrl) &&
+    Array.isArray(value.tags) &&
+    value.tags.every(isString) &&
+    isFormValues(value.values) &&
+    (value.node === undefined ||
+      (isRecord(value.node) &&
+        isString(value.node.id) &&
+        isString(value.node.displayName))) &&
+    (value.fields === undefined ||
+      (Array.isArray(value.fields) && value.fields.every(isGeneratedField)))
   )
 }
 
 function isGeneratedModel(value: unknown): value is GeneratedModel {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    'fields' in value &&
+    isRecord(value) &&
     Array.isArray(value.fields) &&
     value.fields.every(isGeneratedField) &&
-    'defaults' in value &&
-    typeof value.defaults === 'object' &&
-    value.defaults !== null &&
-    'examples' in value &&
-    Array.isArray(value.examples)
+    isFormValues(value.defaults) &&
+    Array.isArray(value.examples) &&
+    value.examples.every(isGeneratedExample)
   )
 }
 
@@ -192,7 +256,8 @@ export function taskFor(
 export function splitTask(
   task: string
 ): { input: TaskInput; output: Exclude<ModalityFilter, 'all'> } | undefined {
-  const [rawInput, rawOutput] = task.split('-to-')
+  const [rawInput, rawOutput, ...rest] = task.split('-to-')
+  if (rest.length > 0) return undefined
   const input = TASK_INPUTS.find((value) => value === rawInput)
   const output = MODALITY_FILTERS.find((value) => value === rawOutput)
   return input && output && output !== 'all' ? { input, output } : undefined

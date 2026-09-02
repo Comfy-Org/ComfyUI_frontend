@@ -16,8 +16,13 @@ export function useSignInHref(locale: Locale = 'en') {
   return href
 }
 
+// Only same-origin paths: no protocol-relative URLs and no backslashes,
+// which browsers normalise into slashes.
 export function safeReturnPath(value: string | null, fallback: string): string {
-  return value && value.startsWith('/') && !value.startsWith('//')
+  return value &&
+    value.startsWith('/') &&
+    !value.startsWith('//') &&
+    !value.includes('\\')
     ? value
     : fallback
 }
