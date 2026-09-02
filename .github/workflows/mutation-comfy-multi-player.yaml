@@ -13,7 +13,7 @@ jobs:
     name: Stryker mutation testing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup frontend workspace
         uses: ./.github/actions/setup-frontend
@@ -22,7 +22,7 @@ jobs:
         run: pnpm --filter @comfyorg/comfy-multi-player run build
 
       - name: Restore incremental mutation report
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/comfy-multi-player/reports/stryker-incremental.json
           key: comfy-multi-player-stryker-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'packages/comfy-multi-player/stryker.config.mjs') }}-${{ github.run_id }}
@@ -38,7 +38,7 @@ jobs:
 
       - name: Upload mutation report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: comfy-multi-player-mutation-report
           path: packages/comfy-multi-player/reports/mutation/

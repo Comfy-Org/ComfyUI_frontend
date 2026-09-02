@@ -78,6 +78,9 @@ try {
     expectedEntry,
     `${originalSource}\n// temporary comfy-multi-player HMR probe\n`
   )
+  // Drive Vite's watcher pipeline directly so the proof does not depend on
+  // host-specific filesystem event latency in CI.
+  server.watcher.emit('change', expectedEntry)
   const updatedModules = await new Promise<string[]>(
     (resolveUpdate, reject) => {
       const timeout = setTimeout(

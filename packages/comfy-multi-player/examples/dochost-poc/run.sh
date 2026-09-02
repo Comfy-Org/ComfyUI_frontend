@@ -27,7 +27,10 @@ echo "== 3/4 start sidecar on :$PORT =="
 SIDECAR=$!
 trap 'kill "$SIDECAR" 2>/dev/null || true' EXIT
 for _ in $(seq 1 30); do
-  curl -sf "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 && break || sleep 0.3
+  if curl -sf "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 0.3
 done
 
 echo "== 4/4 drive it =="
