@@ -30,7 +30,7 @@ describe('ColorNode', () => {
     screen
       .getByRole('slider', { name: 'SATURATION' })
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
-    const [saturation] = emitted('update:saturation')?.at(-1) as [number]
+    const [saturation] = emitted('update:saturation').at(-1) as [number]
     expect(saturation).toBeCloseTo(0.95)
   })
 
