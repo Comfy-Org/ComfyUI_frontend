@@ -85,6 +85,24 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   lines: 70
 }
 
+// In-App Agent panel + CRDT follower surface (QA-17, coverage-floor-agent-dirs).
+// A separate bucket from CRITICAL_COVERAGE_DIRS: this directory is measured
+// ~90%+ today, so folding it into the general 60-70% floor would mask a real
+// regression here. Thresholds are set a few points under the last measured
+// run (93.38/80.25/90.09/93.68 stmts/branches/funcs/lines) so the gate
+// catches a real drop without flaking on normal churn. The aggregate already
+// absorbs crdt/CrdtDevPanel.vue's low score (it is the dev-only CRDT
+// inspector panel, intentionally minimal per CLAUDE.md's "Dev-panel
+// exception") — no separate exclude needed, the floor has margin either way.
+const AGENT_PANEL_COVERAGE_GLOB = 'src/workbench/extensions/agent/**/*.{ts,vue}'
+
+const AGENT_PANEL_COVERAGE_THRESHOLDS = {
+  statements: 88,
+  branches: 72,
+  functions: 82,
+  lines: 88
+}
+
 // WebGL2 / pixel-processing passes that need a real rendering context,
 // which happy-dom does not provide. TODO: cover via browser tests.
 const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
@@ -864,7 +882,8 @@ export default defineConfig({
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: {
-        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
+        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS,
+        [AGENT_PANEL_COVERAGE_GLOB]: AGENT_PANEL_COVERAGE_THRESHOLDS
       }
     },
     exclude: [
