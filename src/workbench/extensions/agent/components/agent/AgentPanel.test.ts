@@ -1,10 +1,11 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
+import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { TurnId } from '../../schemas/agentApiSchema'
 
 import AgentPanel from './AgentPanel.vue'
@@ -48,6 +49,45 @@ const attachmentCalls = {
   update: [] as unknown[][],
   remove: [] as unknown[][]
 }
+
+const attachment: ComposerAttachment = {
+  id: 'attachment-1',
+  name: 'workflow.png',
+  ref: 'input/workflow.png'
+}
+
+const attachmentDelegationHarness = defineComponent({
+  components: { AgentPanel },
+  setup() {
+    const panel = ref<InstanceType<typeof AgentPanel>>()
+
+    function addAttachment(): void {
+      panel.value?.addAttachment(attachment)
+    }
+
+    function updateAttachment(): void {
+      panel.value?.updateAttachment(attachment.id, { uploading: false })
+    }
+
+    function removeAttachment(): void {
+      panel.value?.removeAttachment(attachment.id)
+    }
+
+    return {
+      addAttachment,
+      historyGroups: createHistoryGroups(),
+      panel,
+      removeAttachment,
+      updateAttachment
+    }
+  },
+  template: `
+    <AgentPanel ref="panel" :entries="[]" :history-groups="historyGroups" />
+    <button type="button" @click="addAttachment">Add attachment</button>
+    <button type="button" @click="updateAttachment">Update attachment</button>
+    <button type="button" @click="removeAttachment">Remove attachment</button>
+  `
+})
 
 const eventComposerStub = defineComponent({
   emits: [
@@ -550,5 +590,29 @@ describe('AgentPanel', () => {
     ])
     expect(emitted().selectTab[0]).toEqual(['workflow-1'])
     expect(emitted().clearWorkflow).toHaveLength(1)
+  })
+
+  it('delegates attachment changes to the composer', async () => {
+    const user = userEvent.setup()
+    render(attachmentDelegationHarness, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: eventComposerStub,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Add attachment' }))
+    await user.click(screen.getByRole('button', { name: 'Update attachment' }))
+    await user.click(screen.getByRole('button', { name: 'Remove attachment' }))
+
+    expect(attachmentCalls.add).toEqual([[attachment]])
+    expect(attachmentCalls.update).toEqual([
+      [attachment.id, { uploading: false }]
+    ])
+    expect(attachmentCalls.remove).toEqual([[attachment.id]])
   })
 })
