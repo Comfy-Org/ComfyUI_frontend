@@ -135,6 +135,7 @@
       </div>
 
       <div
+        v-if="balanceBeforeCharge !== null"
         class="mx-8 mt-6 flex flex-col gap-2 rounded-xl bg-secondary-background p-4"
       >
         <div class="flex items-center justify-between text-sm">
@@ -436,6 +437,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
+import { isCloud } from '@/platform/distribution/types'
 import { useCancelPendingPayment } from '@/platform/workspace/composables/useCancelPendingPayment'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -520,14 +522,13 @@ async function handleCancelPendingPayment() {
 watch(() => topupOperation.value?.opId, resetCancelVerdict)
 
 // The refresh that follows a successful charge overwrites the balance, so the
-// "previous" figure is captured before the charge rather than derived after it.
-const balanceBeforeCharge = ref(0)
+// "previous" figure is captured before the charge rather than derived after
+// it. A charge recovered on re-entry has no snapshot — null withholds the
+// breakdown instead of reconstructing figures the client never observed.
+const balanceBeforeCharge = ref<number | null>(null)
 const creditsAdded = ref(0)
+const newBalanceCredits = ref(0)
 const declineReason = ref<string | null>(null)
-
-const newBalanceCredits = computed(
-  () => balanceBeforeCharge.value + creditsAdded.value
-)
 
 function currentBalanceCredits(): number {
   return centsToCredits(
@@ -577,8 +578,31 @@ const paymentLocked = computed(
     !!topupOperation.value
 )
 
+// The selector stops matching a terminal operation, but the operation stays
+// readable by id — that's how a charge recovered on re-entry reports its
+// outcome. In-flight charges are routed by handleBuy's own resolution.
+const observedTopupOpId = ref<string | null>(null)
+watch(
+  () => topupOperation.value?.opId,
+  (opId) => {
+    if (opId) observedTopupOpId.value = opId
+  },
+  { immediate: true }
+)
+
 watch([isPolling, topupOperation], ([polling, operation]) => {
   if (step.value === 'verifying' && !polling && !operation) {
+    const settled = observedTopupOpId.value
+      ? billingOperationStore.getOperation(observedTopupOpId.value)
+      : undefined
+    if (!paymentSubmitted.value && settled?.status === 'succeeded') {
+      showSuccess()
+      return
+    }
+    if (!paymentSubmitted.value && settled?.status === 'failed') {
+      showDeclined(settled.errorMessage ?? null)
+      return
+    }
     step.value = 'amount'
     return
   }
@@ -660,7 +684,15 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
+// A receipt states server facts: the balance is read after the refresh that
+// follows the charge, and "Added" is the observed delta from the snapshot —
+// never client arithmetic on the typed amount.
 function showSuccess() {
+  const after = currentBalanceCredits()
+  newBalanceCredits.value = after
+  if (balanceBeforeCharge.value !== null) {
+    creditsAdded.value = after - balanceBeforeCharge.value
+  }
   step.value = 'success'
 }
 
@@ -680,7 +712,7 @@ function handleBack() {
 
 function openBillingAndInvoices() {
   handleClose()
-  settingsDialog.show('workspace')
+  settingsDialog.show(isCloud ? 'workspace' : 'credits')
 }
 
 async function handleBuy() {
@@ -691,7 +723,6 @@ async function handleBuy() {
   loading.value = true
   paymentSubmitted.value = true
   balanceBeforeCharge.value = currentBalanceCredits()
-  creditsAdded.value = usdToCredits(payAmount.value)
   const attemptStartedAt = Date.now()
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
@@ -745,8 +776,8 @@ async function handleBuy() {
         billing_op_id: response.billing_op_id,
         duration_ms: Date.now() - attemptStartedAt
       })
-      showSuccess()
       await Promise.allSettled([fetchBalance(), fetchStatus()])
+      showSuccess()
     } else if (response.status === 'pending') {
       void billingOperationStore
         .startOperation(response.billing_op_id, 'topup', {

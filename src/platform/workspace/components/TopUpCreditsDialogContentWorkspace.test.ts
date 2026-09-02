@@ -59,6 +59,7 @@ interface MockTopupOperation {
 }
 
 const mockCancelOperation = vi.hoisted(() => vi.fn())
+const mockGetOperation = vi.hoisted(() => vi.fn())
 
 const mockBillingOperationState = vi.hoisted(() => ({
   isAddingCredits: undefined as { value: boolean } | undefined,
@@ -92,7 +93,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
       },
       startOperation: mockStartOperation,
       retryPaymentAuthentication: mockRetryPaymentAuthentication,
-      cancelOperation: mockCancelOperation
+      cancelOperation: mockCancelOperation,
+      getOperation: mockGetOperation
     })
   }
 })
@@ -685,8 +687,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   describe('outcome states', () => {
-    it('breaks down the balance after a completed charge', async () => {
+    it('reads the receipt figures from the refreshed balance, not the typed amount', async () => {
       mockBalance.value = { amountMicros: 46_450 }
+      mockFetchBalance.mockImplementation(async () => {
+        mockBalance.value = { amountMicros: 46_525 }
+      })
       mockTopup.mockResolvedValue(topupResponse('completed'))
 
       renderDialog()
@@ -695,8 +700,49 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       expect(screen.getByText("You're all set")).toBeInTheDocument()
       expect(screen.getByText('46,450')).toBeInTheDocument()
-      expect(screen.getByText('+50')).toBeInTheDocument()
-      expect(screen.getByText('46,500')).toBeInTheDocument()
+      expect(screen.getByText('+75')).toBeInTheDocument()
+      expect(screen.getByText('46,525')).toBeInTheDocument()
+    })
+
+    it('routes a recovered charge to the success screen without a breakdown', async () => {
+      setTopupActionOperation({
+        opId: 'op-9',
+        actionUrl: 'https://bank.example/3ds',
+        status: 'pending'
+      })
+      renderDialog()
+      expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+
+      mockGetOperation.mockReturnValue({
+        opId: 'op-9',
+        status: 'succeeded',
+        actionUrl: null
+      })
+      setTopupActionOperation(undefined)
+
+      expect(await screen.findByText("You're all set")).toBeInTheDocument()
+      expect(screen.queryByText('Previous balance')).toBeNull()
+      expect(screen.queryByText('New balance')).toBeNull()
+    })
+
+    it('routes a recovered decline to the declined screen with its reason', async () => {
+      setTopupActionOperation({
+        opId: 'op-9',
+        actionUrl: 'https://bank.example/3ds',
+        status: 'pending'
+      })
+      renderDialog()
+
+      mockGetOperation.mockReturnValue({
+        opId: 'op-9',
+        status: 'failed',
+        actionUrl: null,
+        errorMessage: 'Insufficient funds'
+      })
+      setTopupActionOperation(undefined)
+
+      expect(await screen.findByText('Payment declined')).toBeInTheDocument()
+      expect(screen.getByText('Insufficient funds')).toBeInTheDocument()
     })
 
     it('offers a way back to the charge after a decline', async () => {
