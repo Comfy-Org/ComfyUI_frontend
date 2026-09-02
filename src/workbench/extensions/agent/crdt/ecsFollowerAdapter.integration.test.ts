@@ -703,70 +703,127 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('removes a widget deleted from an existing remote widget map', () => {
-    const host = mint(
-      {
-        nodes: [
-          {
-            id: 1,
-            type: 'Source',
-            pos: [10, 20],
-            widgets_values: { seed: 1, stale: 9 },
-            inputs: [],
-            outputs: []
-          }
-        ],
-        links: []
-      },
-      catalog
-    )
-    const follower = new FollowerDoc()
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+  describe('remote widget map edits on an existing node', () => {
+    function bindSeededHost() {
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [10, 20],
+              widgets_values: { seed: 1, stale: 9 },
+              inputs: [],
+              outputs: []
+            }
+          ],
+          links: []
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+
+      const initial = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(initial)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update: initial,
+          actor: 'agent:test',
+          opIds: ['add']
+        })
+      ).toBe(true)
+
+      const nodeMap = nodesMap(host).get('1')
+      expect(nodeMap).toBeInstanceOf(Y.Map)
+      const node = nodeMap as Y.Map<unknown>
+      const widgets = node.get('widgets')
+      expect(widgets).toBeInstanceOf(Y.Map)
+
+      const deliver = (seq: number, mutate: () => void) => {
+        const before = Y.encodeStateVector(host)
+        mutate()
+        const update = Y.encodeStateAsUpdate(host, before)
+        follower.applyRemoteUpdate(update)
+        expect(
+          adapter.applyFrame({
+            workflowId: 'wf',
+            seq,
+            update,
+            actor: 'agent:test',
+            opIds: [`op-${seq}`]
+          })
+        ).toBe(true)
+      }
+      const widgetValue = (name: string) =>
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), name))
+          ?.value
+      const destroy = () => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      }
+      return {
+        node,
+        widgets: widgets as Y.Map<unknown>,
+        deliver,
+        widgetValue,
+        destroy
+      }
+    }
+
+    it('removes a widget deleted in place and keeps its siblings', () => {
+      const { widgets, deliver, widgetValue, destroy } = bindSeededHost()
+      expect(widgetValue('stale')).toBe(9)
+
+      deliver(2, () => widgets.delete('stale'))
+
+      expect(widgetValue('stale')).toBeUndefined()
+      expect(widgetValue('seed')).toBe(1)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual(['1'])
+      expect(useWidgetValueStore().clearNode).toHaveBeenCalledTimes(1)
+      destroy()
     })
-    const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind('wf', follower)
 
-    const initial = Y.encodeStateAsUpdate(host)
-    follower.applyRemoteUpdate(initial)
-    expect(
-      adapter.applyFrame({
-        workflowId: 'wf',
-        seq: 1,
-        update: initial,
-        actor: 'agent:test',
-        opIds: ['add']
+    it('keeps the targeted update path for value changes and same-frame re-adds', () => {
+      const { widgets, deliver, widgetValue, destroy } = bindSeededHost()
+
+      deliver(2, () => widgets.set('seed', 5))
+      deliver(3, () => {
+        widgets.delete('stale')
+        widgets.set('stale', 11)
       })
-    ).toBe(true)
-    expect(
-      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
-        ?.value
-    ).toBe(9)
 
-    const beforeRemoval = Y.encodeStateVector(host)
-    const widgets = nodesMap(host).get('1')?.get('widgets')
-    expect(widgets).toBeInstanceOf(Y.Map)
-    ;(widgets as Y.Map<unknown>).delete('stale')
-    const update = Y.encodeStateAsUpdate(host, beforeRemoval)
-    follower.applyRemoteUpdate(update)
-    expect(
-      adapter.applyFrame({
-        workflowId: 'wf',
-        seq: 2,
-        update,
-        actor: 'agent:test',
-        opIds: ['remove-widget-key']
+      expect(widgetValue('seed')).toBe(5)
+      expect(widgetValue('stale')).toBe(11)
+      expect(useWidgetValueStore().clearNode).not.toHaveBeenCalled()
+      destroy()
+    })
+
+    it('drops widgets missing from a replaced widget map', () => {
+      const { node, deliver, widgetValue, destroy } = bindSeededHost()
+
+      deliver(2, () => {
+        const replacement = new Y.Map<unknown>()
+        node.set('widgets', replacement)
+        replacement.set('seed', 5)
       })
-    ).toBe(true)
 
-    expect(
-      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
-    ).toBeUndefined()
-
-    adapter.destroy()
-    follower.destroy()
-    host.destroy()
+      expect(widgetValue('seed')).toBe(5)
+      expect(widgetValue('stale')).toBeUndefined()
+      destroy()
+    })
   })
 
   it('keeps follower docs and apply queues isolated by workflow target', () => {
