@@ -613,10 +613,33 @@ describe('useKeybindingStore', () => {
         combo: { key: 'z', ctrl: true }
       })
       store.addUserKeybinding(userBinding)
+      const replacement = new KeybindingImpl({
+        commandId: 'test.other',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(replacement)
 
       expect(store.getUserKeybindings()).toEqual([
         maskEditorUndo(),
-        userBinding
+        replacement
+      ])
+    })
+
+    it('drops the user binding that took a default’s place when the default is added back', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(workspaceUndo())
+      store.addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.save',
+          combo: { key: 'z', ctrl: true }
+        })
+      )
+      store.addUserKeybinding(workspaceUndo())
+
+      expect(store.getUserKeybindings()).toEqual([])
+      expect(store.getUserUnsetKeybindings()).toEqual([])
+      expect(store.getKeybindings(workspaceUndo().combo)).toEqual([
+        workspaceUndo()
       ])
     })
 

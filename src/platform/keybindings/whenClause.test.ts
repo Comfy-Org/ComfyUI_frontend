@@ -49,7 +49,9 @@ describe('matchesContext', () => {
     { source: 'wasdMode && !textInputFocus', expected: true },
     { source: 'wasdMode && textInputFocus', expected: false },
     { source: 'unregistered', expected: false },
-    { source: '!unregistered', expected: false }
+    { source: '!unregistered', expected: false },
+    { source: 'toString', expected: false },
+    { source: '!toString', expected: false }
   ])('evaluates "$source"', ({ source, expected }) => {
     const parsed = parseWhenClause(source)
     if (!parsed.success) throw new Error(parsed.error)

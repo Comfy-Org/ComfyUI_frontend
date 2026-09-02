@@ -3,6 +3,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import type { Keybinding } from '@/platform/keybindings/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -199,9 +200,10 @@ describe('registerExtension keybindings', () => {
 
   it('rejects a malformed keybinding with a toast and registers nothing', () => {
     const toast = vi.spyOn(useToastStore(), 'add')
-    const extension: ComfyExtension = JSON.parse(
-      '{"name":"Test.Broken","keybindings":[{"combo":{"key":"k","ctrl":true}}]}'
-    )
+    const extension: ComfyExtension = {
+      name: 'Test.Broken',
+      keybindings: [{ combo: { key: 'k', ctrl: true } } as Keybinding]
+    }
 
     useExtensionService().registerExtension(extension)
 
@@ -226,6 +228,25 @@ describe('registerExtension keybindings', () => {
     const contextKeys = useContextKeyStore()
     expect(contextKeys.ownerOf('Test.Keys.wasdMode')).toBe('Test.Keys')
     expect(contextKeys.set('Test.Keys.wasdMode', true)).toBe(true)
+  })
+
+  it('rejects contextKeys that are not a list of names', () => {
+    const toast = vi.spyOn(useToastStore(), 'add')
+    const extension: ComfyExtension = {
+      name: 'Test.BadKeys',
+      contextKeys: { wasdMode: true } as unknown as string[]
+    }
+
+    useExtensionService().registerExtension(extension)
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.stringContaining('Test.BadKeys')
+      })
+    )
+    expect(useContextKeyStore().ownerOf('Test.BadKeys.wasdMode')).toBe(
+      undefined
+    )
   })
 
   it('rejects a keybinding whose when clause does not parse', () => {
