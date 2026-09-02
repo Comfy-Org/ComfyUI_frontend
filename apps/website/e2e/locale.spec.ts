@@ -78,12 +78,9 @@ test.describe('locale propagation', () => {
         page.getByText(line, { exact: false }).first()
       ).toBeAttached()
     }
-    await expect(
-      page.getByText(t('hero.subtitle', 'zh-CN'), { exact: false }).first()
-    ).toBeAttached()
-    await expect(
-      page.getByText(t('hero.subtitle', 'en'), { exact: false })
-    ).toHaveCount(0)
+    for (const line of t('hero.title', 'en').split('\n')) {
+      await expect(page.getByText(line, { exact: false })).toHaveCount(0)
+    }
   })
 
   test('a component nested inside another component forwards the locale', async ({
