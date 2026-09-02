@@ -421,6 +421,10 @@ export interface VideoObjectInput {
 }
 
 export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
+  const formattedDate = /^\d{4}-\d{2}-\d{2}$/.test(input.uploadDate)
+    ? `${input.uploadDate}T00:00:00+00:00`
+    : input.uploadDate
+
   return {
     '@type': 'VideoObject',
     '@id': input.id,
@@ -429,7 +433,7 @@ export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
     thumbnailUrl: input.thumbnailUrl,
     contentUrl: input.contentUrl,
     embedUrl: input.embedUrl,
-    uploadDate: input.uploadDate,
+    uploadDate: formattedDate,
     inLanguage: input.locale,
     publisher: { '@id': organizationId(input.siteUrl) },
     isPartOf: { '@id': jsonLdId(input.pageUrl, 'webpage') }

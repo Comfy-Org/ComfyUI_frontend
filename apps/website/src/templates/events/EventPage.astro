@@ -14,8 +14,7 @@ import {
   eventJsonLdNode,
   eventVideoId,
   pastEvents,
-  toCalendarEvent,
-  youtubeWatchHref
+  toCalendarEvent
 } from '../../data/events'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
@@ -53,9 +52,8 @@ const videoJsonLd: JsonLdNode | undefined =
         name: title,
         description,
         thumbnailUrl: event.media.src,
-        contentUrl: youtubeWatchHref(event.recordingVideoId)[locale],
         embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
-        uploadDate: event.startDateTime,
+        uploadDate: event.recordingPublishDate ?? event.startDateTime,
         locale
       })
     : undefined

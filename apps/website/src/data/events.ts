@@ -34,6 +34,8 @@ export type ComfyEvent = {
   liveVideoId?: string
   /** Supersedes liveVideoId once the recording is published. */
   recordingVideoId?: string
+  /** Actual date the recording was published on YouTube (e.g. '2026-07-16'), if different from startDateTime. */
+  recordingPublishDate?: string
   featured?: {
     order: number
     media: EventMedia
@@ -84,11 +86,6 @@ function eventVideo(
 const launchesHref: LocalizedText = {
   en: localizeHref('/launches', 'en'),
   'zh-CN': localizeHref('/launches', 'zh-CN')
-}
-
-export function youtubeWatchHref(videoId: string): LocalizedText {
-  const href = `https://www.youtube.com/watch?v=${videoId}`
-  return { en: href, 'zh-CN': href }
 }
 
 export const eventPath = (event: { id: string }): string =>
@@ -502,7 +499,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '七月发布直播回放'
     }),
     startDateTime: '2026-07-29',
-    recordingVideoId: '8RGN69h_xTU'
+    recordingVideoId: '8RGN69h_xTU',
+    recordingPublishDate: '2026-07-30'
   },
   {
     id: 'black-math-hackathon',
@@ -540,7 +538,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
     }),
     startDateTime: '2026-07-08',
-    recordingVideoId: 'sX2sJ5-4MS4'
+    recordingVideoId: 'sX2sJ5-4MS4',
+    recordingPublishDate: '2026-07-16'
   },
   {
     id: 'production-pipeline',
@@ -559,7 +558,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '重塑生产流水线直播回放'
     }),
     startDateTime: '2026-07-08',
-    recordingVideoId: 'dsYggO4lsSo'
+    recordingVideoId: 'dsYggO4lsSo',
+    recordingPublishDate: '2026-07-09'
   },
   {
     id: 'june-launches',
@@ -578,7 +578,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '六月发布直播回放'
     }),
     startDateTime: '2026-06-29',
-    recordingVideoId: 'yo7b_zHd20g'
+    recordingVideoId: 'yo7b_zHd20g',
+    recordingPublishDate: '2026-06-30'
   },
   {
     id: 'krea-founders-live',
@@ -598,6 +599,7 @@ const events: readonly ComfyEvent[] = [
     }),
     startDateTime: '2026-06-23',
     recordingVideoId: '31jiUhCEjJ4',
+    recordingPublishDate: '2026-06-24',
     featured: {
       order: 3,
       media: eventVideo(
