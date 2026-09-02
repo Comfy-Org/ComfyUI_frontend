@@ -21,14 +21,14 @@ describe('WorkshopModelCard price', () => {
       props: { model: { ...base, priceUsdFrom: 0.04, creditsPerRun: 8 } }
     })
     expect(screen.getByText('from $0.04')).toBeTruthy()
-    expect(screen.queryByText('8 credits')).toBeNull()
+    expect(screen.queryByText('from 8 credits')).toBeNull()
   })
 
   it('falls back to credits per run', () => {
     render(WorkshopModelCard, {
       props: { model: { ...base, creditsPerRun: 8 } }
     })
-    expect(screen.getByText('8 credits')).toBeTruthy()
+    expect(screen.getByText('from 8 credits')).toBeTruthy()
   })
 
   it('shows no price when neither is known', () => {

@@ -16,23 +16,13 @@ const { active, locale = 'en' } = defineProps<{
 const { scope } = usePrototypeTweaks()
 const routes = getRoutes(locale)
 
-const tabs: readonly {
-  id: TabId
-  label: TranslationKey
-  href: string
-  scope: 'v1' | 'v2'
-}[] = [
-  {
-    id: 'models',
-    label: 'workshop.tabs.models',
-    href: routes.workshop,
-    scope: 'v1'
-  },
+// Only V2 has a second tab, so V1 shows no tab bar at all.
+const tabs: readonly { id: TabId; label: TranslationKey; href: string }[] = [
+  { id: 'models', label: 'workshop.tabs.models', href: routes.workshop },
   {
     id: 'workflows',
     label: 'workshop.tabs.workflows',
-    href: routes.workshopWorkflows,
-    scope: 'v2'
+    href: routes.workshopWorkflows
   }
 ]
 
@@ -47,18 +37,14 @@ const tabClass = (current: boolean) =>
 
 <template>
   <nav
+    v-if="scope === 'v2'"
     :aria-label="t('workshop.title', locale)"
     class="mb-10 border-b border-transparency-white-t8"
     data-testid="workshop-tabs"
     :data-scope="scope"
   >
     <ul class="flex gap-8">
-      <li
-        v-for="tab in tabs.filter(
-          (item) => item.scope === 'v1' || scope === 'v2' || item.id === active
-        )"
-        :key="tab.id"
-      >
+      <li v-for="tab in tabs" :key="tab.id">
         <a
           :href="tab.href"
           :aria-current="tab.id === active ? 'page' : undefined"

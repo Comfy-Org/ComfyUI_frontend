@@ -53,21 +53,39 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('combines modality, task and provider filters from the Filter menu', async () => {
+  it('combines the modality and task menus', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(screen.getByTestId('workshop-filter-modality'))
     await user.click(await screen.findByTestId('filter-modality-video'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
-    expect(screen.getByTestId('workshop-filter-count').textContent).toBe('1')
+    expect(
+      screen.getByTestId('workshop-filter-modality-count').textContent
+    ).toBe('1')
 
-    await user.click(screen.getByTestId('filter-task-image-to-image'))
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByTestId('workshop-filter-task'))
+    await user.click(await screen.findByTestId('filter-task-image-to-image'))
     expect(cardNames()).toHaveLength(0)
     expect(screen.getByTestId('workshop-empty')).toBeTruthy()
 
-    await user.click(screen.getByTestId('workshop-filter-clear'))
-    expect(cardNames()).toHaveLength(3)
+    await user.click(screen.getByTestId('workshop-filter-task-clear'))
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('narrows the provider menu with its search box', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByTestId('workshop-filter-provider'))
+    await user.type(
+      await screen.findByTestId('workshop-filter-provider-search'),
+      'forest'
+    )
+    expect(screen.queryByTestId('filter-provider-Kling')).toBeNull()
+    await user.click(screen.getByTestId('filter-provider-Black Forest Labs'))
+    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
   it('sorts by popularity by default and by name on request', async () => {

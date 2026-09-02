@@ -44,7 +44,7 @@ const languageLabel: Record<SnippetLanguage, string> = {
     </div>
 
     <div
-      class="overflow-hidden rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink"
+      class="bg-transparency-white-t4 overflow-hidden rounded-2xl border border-transparency-white-t20"
     >
       <div
         class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
@@ -61,8 +61,8 @@ const languageLabel: Record<SnippetLanguage, string> = {
               cn(
                 'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors',
                 language === option
-                  ? 'bg-transparency-white-t8 text-primary-warm-white'
-                  : 'text-primary-warm-gray hover:text-primary-warm-white'
+                  ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                  : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
               )
             "
             @click="language = option"
@@ -77,12 +77,12 @@ const languageLabel: Record<SnippetLanguage, string> = {
         />
       </div>
       <pre
-        class="overflow-x-auto p-5 font-mono text-xs/relaxed text-primary-warm-white"
+        class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
         data-testid="snippet"
       ><code>{{ snippet }}</code></pre>
     </div>
 
-    <p class="text-primary-comfy-yellow text-xs">
+    <p class="text-xs text-primary-warm-gray">
       {{ t('workshop.api.illustrative', locale) }}
     </p>
 

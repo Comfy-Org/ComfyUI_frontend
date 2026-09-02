@@ -5,6 +5,8 @@ import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuIt
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import {
@@ -70,12 +72,11 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           v-else
           as-child
           :active="isNavItemActive(navItem, currentPath)"
-          :class="navigationMenuTriggerStyle()"
+          :class="
+            cn(navigationMenuTriggerStyle(), 'flex-row gap-1 whitespace-nowrap')
+          "
         >
-          <a
-            :href="navItem.href"
-            class="inline-flex items-center gap-1 whitespace-nowrap"
-          >
+          <a :href="navItem.href">
             <span class="ppformula-text-center">{{ navItem.label }}</span>
             <span v-if="navItem.badge" class="hidden xl:inline-flex">
               <NewBadge :locale="locale" size="xxs" />

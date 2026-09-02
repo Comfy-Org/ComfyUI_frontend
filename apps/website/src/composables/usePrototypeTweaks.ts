@@ -16,11 +16,17 @@ export type ModelState = (typeof MODEL_STATES)[number]
 export const SCOPES = ['v1', 'v2'] as const
 export type Scope = (typeof SCOPES)[number]
 
+export const OUTPUT_COUNTS = [1, 4, 9] as const
+type OutputCount = (typeof OUTPUT_COUNTS)[number]
+
 const SCOPE_KEY = 'comfy-workshop-scope'
 
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
 const scope = ref<Scope>('v1')
+// Deprecated and degraded models are invented cases: hidden unless asked for.
+const showStatuses = ref(false)
+const outputCount = ref<OutputCount>(1)
 let hydrated = false
 
 function isScope(value: unknown): value is Scope {
@@ -49,5 +55,5 @@ export function usePrototypeTweaks() {
       /* storage unavailable */
     }
   })
-  return { outcome, modelState, scope }
+  return { outcome, modelState, scope, showStatuses, outputCount }
 }

@@ -289,10 +289,20 @@ export function filterWorkshopModels(
       matchesFacet(modalities, modalityOf(model)) &&
       matchesFacet(providers, model.provider) &&
       matchesFacet(tasks, model.task) &&
-      (needle === '' ||
-        model.name.toLowerCase().includes(needle) ||
-        (model.provider?.toLowerCase().includes(needle) ?? false))
+      (needle === '' || searchText(model).includes(needle))
   )
+}
+
+// Name, provider, category and task ("image to video") are all searchable.
+function searchText(model: WorkshopModel): string {
+  return [
+    model.name,
+    model.provider ?? '',
+    modalityOf(model),
+    model.task?.replaceAll('-', ' ') ?? ''
+  ]
+    .join(' ')
+    .toLowerCase()
 }
 
 export const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const

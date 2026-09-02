@@ -3,8 +3,6 @@ import { X } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
 import {
@@ -21,6 +19,7 @@ import type {
 } from '../../config/workshop-playground'
 import {
   defaultValues,
+  estimateCredits,
   examplesForModel,
   isVideoUrl,
   schemaForModel,
@@ -40,14 +39,19 @@ const { model, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-type Tab = 'playground' | 'api' | 'examples'
-const TABS: readonly Tab[] = ['playground', 'api', 'examples']
-const tabLabel: Record<Tab, TranslationKey> = {
+type Section = 'playground' | 'examples' | 'api'
+const SECTIONS: readonly Section[] = ['playground', 'examples', 'api']
+const sectionLabel: Record<Section, TranslationKey> = {
   playground: 'workshop.model.tabs.playground',
-  api: 'workshop.model.tabs.api',
-  examples: 'workshop.model.tabs.examples'
+  examples: 'workshop.model.tabs.examples',
+  api: 'workshop.model.tabs.api'
 }
-const tab = ref<Tab>('playground')
+
+function scrollTo(section: Section) {
+  document
+    .getElementById(section)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const examples = examplesForModel(model)
 const activeExample = ref<PlaygroundExample>()
@@ -63,7 +67,12 @@ const revealed = ref(false)
 const signedInNotice = ref(false)
 
 const { session, setCredits } = useMockSession()
-const { outcome: simOutcome, modelState: simGate } = usePrototypeTweaks()
+const {
+  outcome: simOutcome,
+  modelState: simGate,
+  showStatuses,
+  outputCount
+} = usePrototypeTweaks()
 const routes = getRoutes(locale)
 const signInHref = useSignInHref(locale)
 
@@ -73,13 +82,15 @@ const credits = computed(() =>
 const subscribed = computed(
   () => session.value.status === 'signedIn' && session.value.account.subscribed
 )
-const creditsPerRun = computed(() => model.creditsPerRun ?? 0)
+const creditsPerRun = computed(() =>
+  estimateCredits(model.creditsPerRun ?? 0, values.value)
+)
 const gate = computed(() =>
   runGate({
     signedIn: session.value.status === 'signedIn',
     credits: credits.value,
     creditsPerRun: creditsPerRun.value,
-    modelStatus: model.status,
+    modelStatus: showStatuses.value ? model.status : undefined,
     policyDisabled: simGate.value === 'policy',
     unavailable: simGate.value === 'unavailable'
   })
@@ -156,7 +167,17 @@ function sampleOutput(): RunOutput {
     }
   }
   const url = examples[0]?.outputUrl ?? ''
-  return { kind, url, fileName: `${stem}.${isVideoUrl(url) ? 'mp4' : 'webp'}` }
+  const urls = Array.from(
+    { length: outputCount.value },
+    (_, index) =>
+      examples[index % Math.max(examples.length, 1)]?.outputUrl ?? url
+  )
+  return {
+    kind,
+    url,
+    ...(urls.length > 1 ? { urls } : {}),
+    fileName: `${stem}.${isVideoUrl(url) ? 'mp4' : 'webp'}`
+  }
 }
 
 function finishRun() {
@@ -213,7 +234,7 @@ function openExample(example: PlaygroundExample) {
   activeExample.value = example.fields ? example : undefined
   values.value = defaultValues(schema.value, example.values)
   reset()
-  tab.value = 'playground'
+  scrollTo('playground')
 }
 
 function clearExample() {
@@ -223,88 +244,101 @@ function clearExample() {
 }
 
 function useInCode() {
-  tab.value = 'api'
+  scrollTo('api')
 }
 </script>
 
 <template>
-  <div class="flex flex-col gap-8" data-testid="model-detail">
-    <div
-      role="tablist"
+  <div class="flex flex-col gap-16" data-testid="model-detail">
+    <nav
+      :aria-label="t('workshop.title', locale)"
       class="flex gap-8 border-b border-transparency-white-t8"
       data-testid="model-tabs"
     >
-      <button
-        v-for="option in TABS"
-        :key="option"
-        type="button"
-        role="tab"
-        :aria-selected="tab === option"
-        :data-testid="`tab-${option}`"
-        :class="
-          cn(
-            'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
-            tab === option
-              ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
-          )
-        "
-        @click="tab = option"
+      <a
+        v-for="section in SECTIONS"
+        :key="section"
+        :href="`#${section}`"
+        :data-testid="`tab-${section}`"
+        class="hover:border-primary-comfy-yellow border-b-2 border-transparent pb-3 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white"
+        @click.prevent="scrollTo(section)"
       >
-        {{ t(tabLabel[option], locale) }}
-      </button>
-    </div>
+        {{ t(sectionLabel[section], locale) }}
+      </a>
+    </nav>
 
-    <div
-      v-if="tab === 'playground'"
-      class="grid gap-8 lg:grid-cols-12"
+    <section
+      id="playground"
+      class="grid scroll-mt-28 gap-8 lg:grid-cols-12"
       data-testid="playground-tab"
     >
-      <div class="flex flex-col gap-6 lg:col-span-5">
-        <div
-          v-if="activeExample"
-          class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 py-2 text-xs"
-          data-testid="active-example"
+      <div
+        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 lg:col-span-5"
+        data-testid="playground-input"
+      >
+        <header
+          class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
         >
-          <span class="min-w-0 truncate text-primary-warm-gray">
-            {{ t('workshop.example.loaded', locale) }}
-            <span class="text-primary-warm-white">
-              {{ activeExample.title }}
-            </span>
-            <template v-if="activeExample.nodeDisplayName">
-              · {{ activeExample.nodeDisplayName }}
-            </template>
-          </span>
-          <button
-            type="button"
-            :aria-label="t('workshop.example.clear', locale)"
-            :title="t('workshop.example.clear', locale)"
-            data-testid="active-example-clear"
-            class="shrink-0 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
-            @click="clearExample"
+          <span>{{ t('workshop.input.title', locale) }}</span>
+          <span
+            v-if="creditsPerRun"
+            class="text-primary-warm-white tabular-nums"
+            :title="t('workshop.input.estimateNote', locale)"
+            data-testid="run-estimate"
           >
-            <X class="size-4" aria-hidden="true" />
-          </button>
+            {{ t('workshop.input.estimate', locale) }} · {{ creditsPerRun }}
+            {{ t('nav.credits', locale) }}
+          </span>
+        </header>
+
+        <div class="flex flex-col gap-6 p-5">
+          <div
+            v-if="activeExample"
+            class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 py-2 text-xs"
+            data-testid="active-example"
+          >
+            <span class="min-w-0 truncate text-primary-warm-gray">
+              {{ t('workshop.example.loaded', locale) }}
+              <span class="text-primary-warm-white">
+                {{ activeExample.title }}
+              </span>
+              <template v-if="activeExample.nodeDisplayName">
+                · {{ activeExample.nodeDisplayName }}
+              </template>
+            </span>
+            <button
+              type="button"
+              :aria-label="t('workshop.example.clear', locale)"
+              :title="t('workshop.example.clear', locale)"
+              data-testid="active-example-clear"
+              class="shrink-0 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
+              @click="clearExample"
+            >
+              <X class="size-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          <PlaygroundForm
+            v-model="values"
+            :schema
+            :errors
+            :locale
+            :disabled="isRunning"
+          />
+
+          <p
+            v-if="signedInNotice"
+            class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/10 rounded-2xl border px-4 py-3 text-sm text-primary-warm-white"
+            role="status"
+            data-testid="signed-in-notice"
+          >
+            {{ t('workshop.run.signedInNotice', locale) }}
+          </p>
         </div>
 
-        <PlaygroundForm
-          v-model="values"
-          :schema
-          :errors
-          :locale
-          :disabled="isRunning"
-        />
-
-        <p
-          v-if="signedInNotice"
-          class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/10 rounded-2xl border px-4 py-3 text-sm text-primary-warm-white"
-          role="status"
-          data-testid="signed-in-notice"
+        <div
+          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-5"
         >
-          {{ t('workshop.run.signedInNotice', locale) }}
-        </p>
-
-        <div class="flex flex-col gap-2">
           <Button
             v-if="isRunning"
             variant="outline"
@@ -378,6 +412,9 @@ function useInCode() {
           <p v-if="gate === 'noCredits'" class="text-xs text-primary-warm-gray">
             {{ t('workshop.error.noCredits', locale) }}
           </p>
+          <p v-else-if="creditsPerRun" class="text-xs text-primary-warm-gray">
+            {{ t('workshop.input.estimateNote', locale) }}
+          </p>
         </div>
       </div>
 
@@ -395,15 +432,14 @@ function useInCode() {
           @use-in-code="useInCode"
         />
       </div>
-    </div>
+    </section>
 
-    <ApiTab
-      v-else-if="tab === 'api'"
-      :router-id="model.routerId"
-      :values
-      :locale
-    />
+    <section id="examples" class="scroll-mt-28">
+      <ExamplesTab :examples :locale @open="openExample" />
+    </section>
 
-    <ExamplesTab v-else :examples :locale @open="openExample" />
+    <section id="api" class="scroll-mt-28">
+      <ApiTab :router-id="model.routerId" :values :locale />
+    </section>
   </div>
 </template>

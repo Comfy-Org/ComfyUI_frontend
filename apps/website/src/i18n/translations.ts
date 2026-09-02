@@ -8251,7 +8251,10 @@ Enterprise`
   },
   'workshop.tabs.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.tabs.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
-  'workshop.search.label': { en: 'Search models', 'zh-CN': '搜索模型' },
+  'workshop.search.label': {
+    en: 'Search by model, task, category and more',
+    'zh-CN': '按模型、任务、类别等搜索'
+  },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.filter.label': { en: 'Filter by modality', 'zh-CN': '按模态筛选' },
   'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
@@ -8268,11 +8271,20 @@ Enterprise`
   'workshop.filter.provider': { en: 'Any provider', 'zh-CN': '任意提供方' },
   'workshop.filter.taskLabel': { en: 'Filter by task', 'zh-CN': '按任务筛选' },
   'workshop.filter.task': { en: 'Any task', 'zh-CN': '任意任务' },
+  'workshop.input.title': { en: 'Input', 'zh-CN': '输入' },
+  'workshop.input.estimate': { en: 'Estimated cost', 'zh-CN': '预计费用' },
+  'workshop.input.estimateNote': {
+    en: 'Final cost depends on your settings.',
+    'zh-CN': '最终费用取决于您的设置。'
+  },
+  'workshop.output.select': { en: 'Output {n}', 'zh-CN': '输出 {n}' },
+  'workshop.proto.outputs': { en: 'Outputs per run', 'zh-CN': '每次输出数' },
   'workshop.input.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.input.image': { en: 'Image', 'zh-CN': '图像' },
   'workshop.input.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.input.audio': { en: 'Audio', 'zh-CN': '音频' },
-  'workshop.filter.button': { en: 'Filter', 'zh-CN': '筛选' },
+  'workshop.filter.search': { en: 'Search', 'zh-CN': '搜索' },
+  'workshop.filter.clearOne': { en: 'Clear', 'zh-CN': '清除' },
   'workshop.filter.modality': { en: 'Modality', 'zh-CN': '模态' },
   'workshop.filter.providerGroup': { en: 'Provider', 'zh-CN': '提供方' },
   'workshop.filter.taskGroup': { en: 'Task', 'zh-CN': '任务' },
@@ -8364,7 +8376,6 @@ Enterprise`
     en: 'Prototype: this page mirrors the Cloud login. Real accounts sign in at',
     'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
   },
-  'workshop.count.models': { en: 'models', 'zh-CN': '个模型' },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -8417,6 +8428,14 @@ Enterprise`
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
   'workshop.model.tabs.examples': { en: 'Examples', 'zh-CN': '示例' },
+  'workshop.model.related': {
+    en: 'More from the Workshop',
+    'zh-CN': '工作坊的更多内容'
+  },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
   'workshop.model.deprecated': { en: 'Deprecated', 'zh-CN': '已弃用' },
   'workshop.model.deprecatedBody': {
     en: 'This model is being retired.',
@@ -8427,11 +8446,10 @@ Enterprise`
     'zh-CN': '建议改用 {successor}'
   },
   'workshop.model.degraded': { en: 'Degraded', 'zh-CN': '性能下降' },
-  'workshop.model.runsNode': {
-    en: 'Runs the {node} node',
-    'zh-CN': '运行 {node} 节点'
+  'workshop.model.perRun': {
+    en: '/ run · final cost depends on settings',
+    'zh-CN': '/ 次 · 最终费用取决于设置'
   },
-  'workshop.model.perRun': { en: 'run', 'zh-CN': '次' },
   'workshop.model.degradedBody': {
     en: 'The provider is reporting slow or failing runs right now.',
     'zh-CN': '提供方当前报告运行缓慢或失败。'
@@ -8616,6 +8634,10 @@ Enterprise`
   'workshop.proto.scope.v2': {
     en: 'V2 · Workflows + Deploy (GA 30 Sep)',
     'zh-CN': 'V2 · 工作流 + 部署（9 月 30 日 GA）'
+  },
+  'workshop.proto.statuses': {
+    en: 'Show deprecated and degraded models',
+    'zh-CN': '显示已弃用和降级的模型'
   },
   'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },

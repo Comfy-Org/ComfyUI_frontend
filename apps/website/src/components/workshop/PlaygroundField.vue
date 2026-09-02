@@ -244,7 +244,7 @@ function acceptHint(accept: readonly string[]): string {
           cn(
             'flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed text-xs text-primary-warm-gray transition-colors hover:border-transparency-white-t20 hover:text-primary-warm-white',
             invalid()
-              ? 'border-primary-comfy-orange'
+              ? 'border-primary-comfy-red'
               : 'border-transparency-white-t20',
             disabled && 'pointer-events-none opacity-50'
           )
@@ -275,7 +275,7 @@ function acceptHint(accept: readonly string[]): string {
     <p
       v-if="invalid()"
       :id="`error-${field.name}`"
-      class="text-primary-comfy-orange text-xs"
+      class="text-primary-comfy-red text-xs"
       role="alert"
       :data-testid="`error-${field.name}`"
     >

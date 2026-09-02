@@ -281,3 +281,28 @@ export function examplesForModel(
 export function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov)(\?|$)/i.test(url)
 }
+
+// Placeholder pricing until Router quotes a run: partner nodes price by
+// duration, resolution and batch size, so the estimate moves with them.
+export function estimateCredits(base: number, values: FormValues): number {
+  const number = (name: string) => {
+    const value = values[name]
+    return typeof value === 'number' && value > 0 ? value : undefined
+  }
+  const text = (name: string) => {
+    const value = values[name]
+    return typeof value === 'string' ? value.toLowerCase() : ''
+  }
+  const duration = number('duration')
+  const resolution = text('resolution')
+  const batch = number('n') ?? number('num_images') ?? number('count') ?? 1
+  const resolutionFactor = /4k|2160/.test(resolution)
+    ? 2
+    : /1080/.test(resolution)
+      ? 1.5
+      : 1
+  return Math.max(
+    1,
+    Math.round(base * (duration ? duration / 5 : 1) * resolutionFactor * batch)
+  )
+}

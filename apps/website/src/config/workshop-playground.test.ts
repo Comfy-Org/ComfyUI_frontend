@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
+  estimateCredits,
   examplesForModel,
   schemaForModel,
   validateForm
@@ -153,5 +154,15 @@ describe('examplesForModel', () => {
       nodeDisplayName: 'First-Last-Frame',
       fields: generatedFields
     })
+  })
+})
+
+describe('estimateCredits', () => {
+  it('scales the base price with duration, resolution and batch size', () => {
+    expect(estimateCredits(10, {})).toBe(10)
+    expect(estimateCredits(10, { duration: 10 })).toBe(20)
+    expect(estimateCredits(10, { resolution: '1080p' })).toBe(15)
+    expect(estimateCredits(10, { resolution: '4K', num_images: 2 })).toBe(40)
+    expect(estimateCredits(0, { duration: 10 })).toBe(1)
   })
 })

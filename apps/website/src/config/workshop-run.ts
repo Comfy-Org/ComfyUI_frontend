@@ -15,6 +15,7 @@ export interface RunOutput {
   readonly kind: Modality | 'other'
   readonly url: string
   readonly text?: string
+  readonly urls?: readonly string[]
   readonly fileName: string
 }
 

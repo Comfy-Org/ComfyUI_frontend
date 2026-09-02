@@ -2,7 +2,9 @@
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
+import ModelStatus from '../../../components/workshop/ModelStatus.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
+import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../../config/routes'
 import {
   getWorkshopModel,
@@ -16,6 +18,17 @@ export const getStaticPaths: GetStaticPaths = () =>
 
 const { slug } = Astro.params
 const model = getWorkshopModelDetail(slug as string)!
+// Most visitors land here from search: surface the rest of the catalog,
+// same modality first.
+const related = [...workshopModels]
+  .filter((other) => other.slug !== model.slug)
+  .sort(
+    (a, b) =>
+      Number(b.modality === model.modality) -
+        Number(a.modality === model.modality) ||
+      b.workflowCount - a.workflowCount
+  )
+  .slice(0, 4)
 const successor = model.successorSlug
   ? getWorkshopModel(model.successorSlug)
   : undefined
@@ -36,11 +49,9 @@ const price =
         currency: 'USD'
       }).format(model.priceUsdFrom)}`
     : model.creditsPerRun !== undefined
-      ? `${model.creditsPerRun} ${t('nav.credits')}`
+      ? `${t('workshop.card.from')} ${model.creditsPerRun} ${t('nav.credits')}`
       : undefined
 
-const statusClass =
-  'rounded-2xl border border-primary-comfy-orange/50 px-3 py-1 text-[11px] font-bold tracking-wider text-primary-comfy-orange uppercase'
 const pillClass =
   'rounded-2xl bg-transparency-white-t8 px-3 py-1 text-[11px] font-bold tracking-wider text-primary-warm-white uppercase'
 ---
@@ -81,20 +92,7 @@ const pillClass =
             {model.provider ?? t('workshop.card.partnerNode')}
           </p>
           {model.modality && <span class={pillClass}>{modalityLabel[model.modality]}</span>}
-          {
-            model.status === 'deprecated' && (
-              <span class={statusClass} data-testid="model-status">
-                {t('workshop.model.deprecated')}
-              </span>
-            )
-          }
-          {
-            model.status === 'degraded' && (
-              <span class={statusClass} data-testid="model-status">
-                {t('workshop.model.degraded')}
-              </span>
-            )
-          }
+          <ModelStatus status={model.status} variant="pill" client:load />
         </div>
 
         <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
@@ -102,12 +100,6 @@ const pillClass =
         </h1>
 
         <p class="text-sm text-primary-comfy-canvas/60">
-          {
-            model.nodeDisplayName
-              ? t('workshop.model.runsNode').replace('{node}', model.nodeDisplayName)
-              : t('workshop.card.partnerNode')
-          }
-          {' · '}
           {model.workflowCount} {t('workshop.card.workflows')}
         </p>
 
@@ -125,25 +117,12 @@ const pillClass =
           }
         </p>
 
-        {
-          model.status === 'deprecated' && (
-            <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
-              {t('workshop.model.deprecatedBody')}
-              {successor && (
-                <a href={successor.href} class="ml-2 font-bold text-primary-comfy-yellow hover:underline">
-                  {t('workshop.model.deprecatedSuccessor').replace('{successor}', successor.name)} →
-                </a>
-              )}
-            </p>
-          )
-        }
-        {
-          model.status === 'degraded' && (
-            <p class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white">
-              {t('workshop.model.degradedBody')}
-            </p>
-          )
-        }
+        <ModelStatus
+          status={model.status}
+          variant="banner"
+          successor={successor ? { name: successor.name, href: successor.href } : undefined}
+          client:load
+        />
       </div>
 
       {
@@ -161,6 +140,32 @@ const pillClass =
     </header>
 
     <ModelDetail model={model} client:load />
+
+    <section
+      class="mt-24 border-t border-transparency-white-t8 pt-12"
+      data-testid="related-models"
+    >
+      <div class="mb-6 flex items-end justify-between gap-4">
+        <h2 class="text-2xl font-bold text-primary-comfy-canvas">
+          {t('workshop.model.related')}
+        </h2>
+        <a
+          href={routes.workshop}
+          class="text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+        >
+          {t('workshop.model.browseAll')}
+        </a>
+      </div>
+      <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          related.map((other) => (
+            <li>
+              <WorkshopModelCard model={other} />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
   </div>
   <PrototypeTweaks show-run-controls client:load />
 </BaseLayout>

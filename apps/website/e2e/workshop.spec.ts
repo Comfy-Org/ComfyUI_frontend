@@ -22,9 +22,6 @@ test.describe('Workshop catalog', () => {
     await page.getByTestId('workshop-search').fill('kling')
     const cards = grid.getByTestId('workshop-model-card')
     await expect(cards.first()).toContainText('Kling')
-    await expect(page.getByTestId('workshop-count')).toContainText(
-      /^\d+ models/
-    )
 
     await page.getByTestId('workshop-search').fill('no such model')
     await expect(page.getByTestId('workshop-empty')).toBeVisible()
@@ -38,6 +35,9 @@ test.describe('Workshop catalog', () => {
     await page.getByTestId('workshop-model-card').first().click()
     await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kling AI')
+    await expect(
+      page.getByTestId('related-models').getByTestId('workshop-model-card')
+    ).toHaveCount(4)
   })
 
   test('homepage model releases open their Workshop model', async ({

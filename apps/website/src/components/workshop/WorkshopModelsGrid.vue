@@ -1,30 +1,17 @@
 <script setup lang="ts">
+import { ArrowUpDown, Check, ChevronDown, Search, X } from '@lucide/vue'
 import {
-  ArrowUpDown,
-  Check,
-  ChevronDown,
-  Search,
-  SlidersHorizontal,
-  X
-} from '@lucide/vue'
-import {
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
-  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
-import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type {
   ModalityFilter,
   SortOrder,
@@ -42,6 +29,8 @@ import {
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { FacetMenuOption } from './WorkshopFacetMenu.vue'
+import WorkshopFacetMenu from './WorkshopFacetMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const { models, locale = 'en' } = defineProps<{
@@ -51,52 +40,10 @@ const { models, locale = 'en' } = defineProps<{
 
 const query = ref('')
 const modalities = ref<string[]>([])
-const providers = ref<string[]>([])
 const tasks = ref<string[]>([])
+const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-
-const counts = computed(() => countByModality(models))
-const modalityOptions = computed(() =>
-  MODALITY_FILTERS.filter(
-    (filter) => filter !== 'all' && counts.value[filter] > 0
-  )
-)
-const providerOptions = computed(() => countByFacet(models, 'provider'))
-const taskOptions = computed(() => countByFacet(models, 'task'))
-
-const visible = computed(() =>
-  sortWorkshopModels(
-    filterWorkshopModels(models, {
-      query: query.value,
-      modalities: modalities.value,
-      providers: providers.value,
-      tasks: tasks.value
-    }),
-    sort.value
-  )
-)
-const activeFilterCount = computed(
-  () => modalities.value.length + providers.value.length + tasks.value.length
-)
-const isFiltered = computed(
-  () => query.value !== '' || activeFilterCount.value > 0
-)
-
-function toggle(list: Ref<string[]>, value: string) {
-  list.value = list.value.includes(value)
-    ? list.value.filter((item) => item !== value)
-    : [...list.value, value]
-}
-const toggleModality = (value: string) => toggle(modalities, value)
-const toggleTask = (value: string) => toggle(tasks, value)
-const toggleProvider = (value: string) => toggle(providers, value)
-
-function clearFilters() {
-  query.value = ''
-  modalities.value = []
-  providers.value = []
-  tasks.value = []
-}
+const { showStatuses } = usePrototypeTweaks()
 
 const filterLabelKey: Record<ModalityFilter, TranslationKey> = {
   all: 'workshop.filter.all',
@@ -127,26 +74,55 @@ function taskLabel(value: string): string {
     : value
 }
 
-const triggerClass = (active: boolean) =>
-  cn(
-    'hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3',
-    active
-      ? 'border-primary-comfy-yellow text-primary-warm-white'
-      : 'border-transparency-white-t20 text-primary-comfy-canvas'
+const counts = computed(() => countByModality(models))
+const modalityOptions = computed<FacetMenuOption[]>(() =>
+  MODALITY_FILTERS.filter(
+    (filter) => filter !== 'all' && counts.value[filter] > 0
+  ).map((filter) => ({
+    value: filter,
+    label: t(filterLabelKey[filter], locale),
+    count: counts.value[filter]
+  }))
+)
+const taskOptions = computed<FacetMenuOption[]>(() =>
+  countByFacet(models, 'task').map((option) => ({
+    ...option,
+    label: taskLabel(option.value)
+  }))
+)
+const providerOptions = computed<FacetMenuOption[]>(() =>
+  countByFacet(models, 'provider').map((option) => ({
+    ...option,
+    label: option.value
+  }))
+)
+
+const visible = computed(() =>
+  sortWorkshopModels(
+    filterWorkshopModels(models, {
+      query: query.value,
+      modalities: modalities.value,
+      providers: providers.value,
+      tasks: tasks.value
+    }),
+    sort.value
   )
-const menuClass =
-  'border-primary-comfy-ink-light bg-site-dropdown z-50 max-h-[70vh] w-64 overflow-y-auto rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
-const itemClass =
+)
+const isFiltered = computed(
+  () =>
+    query.value !== '' ||
+    modalities.value.length + tasks.value.length + providers.value.length > 0
+)
+
+function clearFilters() {
+  query.value = ''
+  modalities.value = []
+  tasks.value = []
+  providers.value = []
+}
+
+const menuItemClass =
   'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t8'
-const groupLabelClass =
-  'px-3 pt-2 pb-1 text-[10px] font-bold tracking-widest text-primary-warm-gray uppercase'
-const checkClass = (checked: boolean) =>
-  cn(
-    'grid size-4 shrink-0 place-items-center rounded-sm border',
-    checked
-      ? 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink'
-      : 'border-transparency-white-t20'
-  )
 </script>
 
 <template>
@@ -183,126 +159,34 @@ const checkClass = (checked: boolean) =>
       </div>
 
       <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
-        <DropdownMenuRoot>
-          <DropdownMenuTrigger
-            data-testid="workshop-filter"
-            :class="triggerClass(activeFilterCount > 0)"
-          >
-            <SlidersHorizontal class="size-4" aria-hidden="true" />
-            {{ t('workshop.filter.button', locale) }}
-            <span
-              v-if="activeFilterCount"
-              class="bg-primary-comfy-yellow rounded-full px-1.5 text-[10px] font-bold text-primary-comfy-ink"
-              data-testid="workshop-filter-count"
-            >
-              {{ activeFilterCount }}
-            </span>
-            <ChevronDown class="size-4" aria-hidden="true" />
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              align="end"
-              :side-offset="8"
-              :class="menuClass"
-            >
-              <DropdownMenuLabel :class="groupLabelClass">
-                {{ t('workshop.filter.modality', locale) }}
-              </DropdownMenuLabel>
-              <DropdownMenuCheckboxItem
-                v-for="option in modalityOptions"
-                :key="option"
-                :model-value="modalities.includes(option)"
-                :data-testid="`filter-modality-${option}`"
-                :class="itemClass"
-                @select.prevent
-                @update:model-value="toggleModality(option)"
-              >
-                <span :class="checkClass(modalities.includes(option))">
-                  <Check
-                    v-if="modalities.includes(option)"
-                    class="size-3"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span class="flex-1">
-                  {{ t(filterLabelKey[option], locale) }}
-                </span>
-                <span class="text-primary-warm-gray">{{ counts[option] }}</span>
-              </DropdownMenuCheckboxItem>
-
-              <DropdownMenuSeparator
-                class="my-2 h-px bg-transparency-white-t8"
-              />
-              <DropdownMenuLabel :class="groupLabelClass">
-                {{ t('workshop.filter.taskGroup', locale) }}
-              </DropdownMenuLabel>
-              <DropdownMenuCheckboxItem
-                v-for="option in taskOptions"
-                :key="option.value"
-                :model-value="tasks.includes(option.value)"
-                :data-testid="`filter-task-${option.value}`"
-                :class="itemClass"
-                @select.prevent
-                @update:model-value="toggleTask(option.value)"
-              >
-                <span :class="checkClass(tasks.includes(option.value))">
-                  <Check
-                    v-if="tasks.includes(option.value)"
-                    class="size-3"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span class="flex-1">{{ taskLabel(option.value) }}</span>
-                <span class="text-primary-warm-gray">{{ option.count }}</span>
-              </DropdownMenuCheckboxItem>
-
-              <DropdownMenuSeparator
-                class="my-2 h-px bg-transparency-white-t8"
-              />
-              <DropdownMenuLabel :class="groupLabelClass">
-                {{ t('workshop.filter.providerGroup', locale) }}
-              </DropdownMenuLabel>
-              <DropdownMenuCheckboxItem
-                v-for="option in providerOptions"
-                :key="option.value"
-                :model-value="providers.includes(option.value)"
-                :data-testid="`filter-provider-${option.value}`"
-                :class="itemClass"
-                @select.prevent
-                @update:model-value="toggleProvider(option.value)"
-              >
-                <span :class="checkClass(providers.includes(option.value))">
-                  <Check
-                    v-if="providers.includes(option.value)"
-                    class="size-3"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span class="flex-1">{{ option.value }}</span>
-                <span class="text-primary-warm-gray">{{ option.count }}</span>
-              </DropdownMenuCheckboxItem>
-
-              <template v-if="activeFilterCount">
-                <DropdownMenuSeparator
-                  class="my-2 h-px bg-transparency-white-t8"
-                />
-                <DropdownMenuItem
-                  :class="cn(itemClass, 'text-primary-warm-gray')"
-                  data-testid="workshop-filter-clear"
-                  @select="clearFilters"
-                >
-                  {{ t('workshop.empty.clear', locale) }}
-                </DropdownMenuItem>
-              </template>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
+        <WorkshopFacetMenu
+          v-model="modalities"
+          facet="modality"
+          :label="t('workshop.filter.modality', locale)"
+          :options="modalityOptions"
+          :locale
+        />
+        <WorkshopFacetMenu
+          v-model="tasks"
+          facet="task"
+          :label="t('workshop.filter.taskGroup', locale)"
+          :options="taskOptions"
+          :locale
+        />
+        <WorkshopFacetMenu
+          v-model="providers"
+          facet="provider"
+          :label="t('workshop.filter.providerGroup', locale)"
+          :options="providerOptions"
+          :locale
+          searchable
+        />
 
         <DropdownMenuRoot>
           <DropdownMenuTrigger
             data-testid="workshop-sort"
             :aria-label="t('workshop.sort.label', locale)"
-            :class="triggerClass(false)"
+            class="hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-transparency-white-t20 px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3"
           >
             <ArrowUpDown class="size-4" aria-hidden="true" />
             {{ t(sortLabelKey[sort], locale) }}
@@ -312,7 +196,7 @@ const checkClass = (checked: boolean) =>
             <DropdownMenuContent
               align="end"
               :side-offset="8"
-              :class="menuClass"
+              class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-64 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
             >
               <DropdownMenuRadioGroup v-model="sort">
                 <DropdownMenuRadioItem
@@ -320,7 +204,7 @@ const checkClass = (checked: boolean) =>
                   :key="order"
                   :value="order"
                   :data-testid="`sort-${order}`"
-                  :class="itemClass"
+                  :class="menuItemClass"
                 >
                   <span class="flex-1">{{
                     t(sortLabelKey[order], locale)
@@ -338,21 +222,13 @@ const checkClass = (checked: boolean) =>
       </div>
     </div>
 
-    <p
-      class="mb-4 text-xs text-primary-warm-gray"
-      aria-live="polite"
-      data-testid="workshop-count"
-    >
-      {{ visible.length }} {{ t('workshop.count.models', locale) }}
-    </p>
-
     <div v-if="visible.length">
       <ul
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         data-testid="workshop-models-grid"
       >
         <li v-for="model in visible" :key="model.slug">
-          <WorkshopModelCard :model :locale />
+          <WorkshopModelCard :model :locale :show-status="showStatuses" />
         </li>
       </ul>
     </div>

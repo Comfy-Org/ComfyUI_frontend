@@ -54,6 +54,15 @@ describe('filterWorkshopModels', () => {
     ])
   })
 
+  it('also matches the category and the task in words', () => {
+    expect(filterWorkshopModels(fixture, { query: 'image to image' })).toEqual([
+      fixture[1]
+    ])
+    expect(filterWorkshopModels(fixture, { query: 'video' })).toEqual([
+      fixture[0]
+    ])
+  })
+
   it('filters by modality and treats missing modality as other', () => {
     expect(
       filterWorkshopModels(fixture, { query: '', modalities: ['video'] })

@@ -9,9 +9,14 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardArrow from '../common/CardArrow.vue'
 
-const { model, locale = 'en' } = defineProps<{
+const {
+  model,
+  locale = 'en',
+  showStatus = false
+} = defineProps<{
   model: WorkshopModel
   locale?: Locale
+  showStatus?: boolean
 }>()
 
 const modality = computed(() => modalityOf(model))
@@ -45,7 +50,7 @@ const price = computed(() => {
     }).format(model.priceUsdFrom)}`
   }
   if (model.creditsPerRun !== undefined) {
-    return `${model.creditsPerRun} ${t('nav.credits', locale)}`
+    return `${t('workshop.card.from', locale)} ${model.creditsPerRun} ${t('nav.credits', locale)}`
   }
   return undefined
 })
@@ -97,7 +102,7 @@ const pillClass =
           {{ t(modalityLabelKey[modality], locale) }}
         </span>
         <span
-          v-if="model.status"
+          v-if="showStatus && model.status"
           :class="cn(pillClass, 'bg-primary-comfy-yellow/80')"
         >
           {{

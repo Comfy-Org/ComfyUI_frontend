@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Download, Loader2 } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { Modality } from '../../config/workshop'
@@ -46,6 +48,22 @@ const failureKey: Record<RunFailure, TranslationKey> = {
   noCredits: 'workshop.error.noCredits',
   unavailable: 'workshop.error.unavailable'
 }
+
+const selected = ref(0)
+const outputs = computed(() =>
+  state.status === 'succeeded'
+    ? state.output.urls?.length
+      ? state.output.urls
+      : [state.output.url]
+    : []
+)
+const currentUrl = computed(() => outputs.value[selected.value] ?? '')
+watch(
+  () => state.status,
+  () => {
+    selected.value = 0
+  }
+)
 
 const blurred = computed(
   () => state.status === 'succeeded' && state.nsfw && !revealed.value
@@ -163,7 +181,7 @@ const blurred = computed(
       data-testid="run-error"
       :data-reason="state.reason"
     >
-      <p class="text-primary-comfy-orange text-sm">
+      <p class="text-primary-comfy-red text-sm">
         {{ t(failureKey[state.reason], locale) }}
       </p>
       <Button
@@ -184,8 +202,8 @@ const blurred = computed(
           class="size-full transition-[filter]"
         >
           <video
-            v-if="state.output.url && isVideoUrl(state.output.url)"
-            :src="state.output.url"
+            v-if="currentUrl && isVideoUrl(currentUrl)"
+            :src="currentUrl"
             class="size-full max-h-128 object-contain"
             autoplay
             muted
@@ -194,8 +212,8 @@ const blurred = computed(
             controls
           />
           <img
-            v-else-if="state.output.url && state.output.kind !== 'text'"
-            :src="state.output.url"
+            v-else-if="currentUrl && state.output.kind !== 'text'"
+            :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
             class="size-full max-h-128 object-contain"
           />
@@ -234,6 +252,37 @@ const blurred = computed(
         </button>
       </div>
 
+      <div
+        v-if="outputs.length > 1"
+        class="grid grid-cols-4 gap-2 border-t border-transparency-white-t8 p-4 sm:grid-cols-6 lg:grid-cols-9"
+        data-testid="output-thumbnails"
+      >
+        <button
+          v-for="(url, index) in outputs"
+          :key="index"
+          type="button"
+          :aria-label="
+            t('workshop.output.select', locale).replace(
+              '{n}',
+              String(index + 1)
+            )
+          "
+          :aria-pressed="index === selected"
+          :data-testid="`output-thumb-${index}`"
+          :class="
+            cn(
+              'aspect-square cursor-pointer overflow-hidden rounded-xl border-2 transition-opacity',
+              index === selected
+                ? 'border-primary-comfy-yellow'
+                : 'border-transparent opacity-60 hover:opacity-100'
+            )
+          "
+          @click="selected = index"
+        >
+          <img :src="url" alt="" class="size-full object-cover" />
+        </button>
+      </div>
+
       <p
         class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
       >
@@ -243,9 +292,9 @@ const blurred = computed(
         class="flex flex-wrap items-center gap-2 border-t border-transparency-white-t8 p-4"
       >
         <Button
-          v-if="state.output.url"
+          v-if="currentUrl"
           as="a"
-          :href="state.output.url"
+          :href="currentUrl"
           :download="state.output.fileName"
           :prepend-icon="Download"
           size="sm"

@@ -23,6 +23,7 @@ import type {
 } from '../../composables/usePrototypeTweaks'
 import {
   MODEL_STATES,
+  OUTPUT_COUNTS,
   RUN_OUTCOMES,
   SCOPES,
   usePrototypeTweaks
@@ -36,7 +37,8 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 }>()
 
 const { session, signIn, signOut, setCredits, setSubscribed } = useMockSession()
-const { outcome, modelState, scope } = usePrototypeTweaks()
+const { outcome, modelState, scope, showStatuses, outputCount } =
+  usePrototypeTweaks()
 
 type SessionChoice = 'signedOut' | AccountKind
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -144,6 +146,22 @@ const selectClass =
             </select>
           </label>
 
+          <label class="flex items-center justify-between gap-3">
+            <span class="text-primary-comfy-canvas">
+              {{ t('workshop.proto.statuses', locale) }}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="showStatuses"
+              data-testid="tweak-statuses"
+              :class="switchClass(showStatuses)"
+              @click="showStatuses = !showStatuses"
+            >
+              <span :class="knobClass(showStatuses)" />
+            </button>
+          </label>
+
           <label class="flex flex-col gap-1">
             <span class="text-primary-warm-gray">
               {{ t('workshop.proto.session', locale) }}
@@ -249,6 +267,25 @@ const selectClass =
                   class="bg-primary-comfy-ink"
                 >
                   {{ t(modelStateLabel[option], locale) }}
+                </option>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-primary-warm-gray">
+                {{ t('workshop.proto.outputs', locale) }}
+              </span>
+              <select
+                v-model="outputCount"
+                data-testid="tweak-outputs"
+                :class="selectClass"
+              >
+                <option
+                  v-for="count in OUTPUT_COUNTS"
+                  :key="count"
+                  :value="count"
+                  class="bg-primary-comfy-ink"
+                >
+                  {{ count }}
                 </option>
               </select>
             </label>
