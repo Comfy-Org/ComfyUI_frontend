@@ -11,6 +11,8 @@ import {
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import type { OpenAI } from 'openai'
+
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationPipelineConfig } from './config'
 import type {
@@ -38,7 +40,9 @@ import {
 } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
+  chunkItems,
   createOpenAiTranslator,
+  createRequestCounter,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
@@ -225,15 +229,13 @@ function readManifestSource(
   }
 }
 
-export function exceedsPruneThreshold(
+export function formatPruneSummary(
+  filename: string,
   deletedCount: number,
-  previousLeafCount: number,
-  { pruneCountFloor, pruneRatioLimit } = translationPipelineConfig
-): boolean {
-  return (
-    deletedCount >
-    Math.max(pruneCountFloor, Math.ceil(previousLeafCount * pruneRatioLimit))
-  )
+  previousLeafCount: number
+): string | undefined {
+  if (deletedCount === 0) return
+  return `WARNING: ${filename}: ${deletedCount} of ${previousLeafCount} English keys deleted; matching locale keys will be pruned.`
 }
 
 function writeManifest(
@@ -327,6 +329,24 @@ function loadLocaleFileStates(
 
 function print(line: string): void {
   process.stdout.write(`${line}\n`)
+}
+
+export function formatUsageSummary(
+  usages: ReadonlyArray<Partial<OpenAI.CompletionUsage> | undefined>,
+  requestCount: number
+): string {
+  let promptTokens = 0
+  let completionTokens = 0
+  let reasoningTokens = 0
+  let totalTokens = 0
+  for (const usage of usages) {
+    if (!usage) continue
+    promptTokens += usage.prompt_tokens ?? 0
+    completionTokens += usage.completion_tokens ?? 0
+    reasoningTokens += usage.completion_tokens_details?.reasoning_tokens ?? 0
+    totalTokens += usage.total_tokens ?? 0
+  }
+  return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} completions; ${promptTokens} input, ${completionTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
 function reportCheck(states: readonly LocaleFileState[]): number {
@@ -425,38 +445,17 @@ async function run(argv: readonly string[]): Promise<void> {
     }
   })
 
-  const oversizedPrunes = plans
-    .filter((plan) =>
-      exceedsPruneThreshold(plan.changes.deleted.length, plan.previousLeafCount)
+  for (const plan of plans) {
+    const summary = formatPruneSummary(
+      plan.filename,
+      plan.changes.deleted.length,
+      plan.previousLeafCount
     )
-    .map(
-      (plan) =>
-        `${plan.filename}: ${plan.changes.deleted.length} of ${plan.previousLeafCount} keys would be deleted`
-    )
-  if (oversizedPrunes.length > 0) {
-    if (check) {
-      for (const line of oversizedPrunes) {
-        print(`WARNING: large prune pending — ${line}`)
-      }
-    } else if (!argv.includes('--allow-prune')) {
-      throw new Error(
-        `Refusing to prune:\n${oversizedPrunes.join('\n')}\nA shrink this large usually means collect-i18n observed a partial app (failed custom-node imports or an incomplete server node list). Verify the English sources are complete, or rerun with --allow-prune to confirm the deletions.`
-      )
-    }
+    if (summary) print(summary)
   }
 
   const states = loadLocaleFileStates(config, outputDir, plans)
   const orphans = orphanedOutputFiles(outputDir, config, filenames)
-
-  if (check) {
-    for (const orphan of orphans) {
-      print(
-        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
-      )
-    }
-    process.exitCode = reportCheck(states)
-    return
-  }
 
   const translationPlans = new Map(
     states.map((state) => [
@@ -468,6 +467,37 @@ async function run(argv: readonly string[]): Promise<void> {
     (count, plan) => count + plan.items.length,
     0
   )
+  const pendingPlans = [...translationPlans].filter(
+    ([, plan]) => plan.items.length > 0
+  )
+  const initialBatchCount = pendingPlans.reduce(
+    (count, [, plan]) =>
+      count +
+      chunkItems(
+        plan.items,
+        config.maxItemsPerRequest,
+        config.maxSourceCharsPerRequest
+      ).length,
+    0
+  )
+  const pendingLocaleCount = new Set(
+    pendingPlans.map(([state]) => state.locale.code)
+  ).size
+  if (pendingTotal > 0) {
+    print(
+      `Translation preflight: ${pendingTotal} strings in ${initialBatchCount} initial batches across ${pendingLocaleCount} locales; retries and truncation splits can add requests.`
+    )
+  }
+
+  if (check) {
+    for (const orphan of orphans) {
+      print(
+        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
+      )
+    }
+    process.exitCode = reportCheck(states)
+    return
+  }
 
   const apiKey = process.env.OPENAI_API_KEY
   if (pendingTotal > 0 && !apiKey) {
@@ -475,12 +505,19 @@ async function run(argv: readonly string[]): Promise<void> {
       `${pendingTotal} strings need translation but OPENAI_API_KEY is not set.`
     )
   }
+  const completionUsages: (OpenAI.CompletionUsage | undefined)[] = []
+  const counter = createRequestCounter()
   const translateBatch: TranslateBatch = apiKey
     ? createOpenAiTranslator({
         apiKey,
+        fetchFn: counter.fetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
-        glossary: config.glossary
+        glossary: config.glossary,
+        maxTruncationSplitDepth: config.maxTruncationSplitDepth,
+        onCompletion: (completion) => {
+          completionUsages.push(completion.usage)
+        }
       })
     : async () => {
         throw new Error('No translator available')
@@ -488,7 +525,7 @@ async function run(argv: readonly string[]): Promise<void> {
 
   const outcomes = await mapWithConcurrency(
     states,
-    config.localeConcurrency,
+    config.localeFileConcurrency,
     async (
       state
     ): Promise<
@@ -527,6 +564,10 @@ async function run(argv: readonly string[]): Promise<void> {
       }
     }
   )
+
+  if (counter.requestCount() > 0) {
+    print(formatUsageSummary(completionUsages, counter.requestCount()))
+  }
 
   const failuresByFile = new Map<string, string[]>()
   function addFailure(filename: string, message: string): void {
