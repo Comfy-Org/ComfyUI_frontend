@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "使用 Google Gemini Omni Flash 模型，根據文字提示生成含音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需長度（3-10 秒）。",
+    "display_name": "Google Gemini Omni（影片）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的 Gemini 影片模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_task_type": {
+        "name": "任務類型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "將 3D 模型檔案（GLB、GLTF、OBJ、STL）解析為可編輯的 MESH，供網格處理節點（簡化、重新網格化、UV 展開、烘焙、...）使用。所有場景節點／基本圖元會在套用其變換後合併為單一網格；紋理與材質係數取自第一個材質。MeshToFile3D 的對應節點。",
+    "display_name": "取得 3D 元件",
+    "inputs": {
+      "model_3d": {
+        "name": "3D 模型",
+        "tooltip": "來自 Load 3D 或其他 3D 節點的 3D 模型檔案。不支援 FBX/USDZ，請先轉換為 GLB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "網格",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "「speed」速度較快；「precision」可產生更高品質的唇形同步，但價格為兩倍。"
+        "tooltip": "'speed' 較快；'precision' 可產生品質更高的唇形同步，但費用較高。"
       },
       "output_language": {
         "name": "目標語言",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "附加 1-10 張參考圖像於條件設定，一張用於編輯指令，多張用於主題個人化。",
+    "description": "將依序排列的參考影像附加至正向與負向條件設定。",
     "display_name": "HiDream-O1 參考圖像",
     "inputs": {
       "images": {
         "name": "參考圖像",
-        "tooltip": "參考圖像。1 張 = 編輯指令；2-10 張 = 多重參考。"
+        "tooltip": "參考影像會依數字插槽順序使用。"
       },
       "negative": {
         "name": "負向"
@@ -12692,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "將 MiniMax H3 Fun ControlNet 作為模型修補套用至文字轉影片模型。",
+    "display_name": "套用 MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 標示要重新生成的區域。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "遮罩後方的影片；僅在提供遮罩時讀取。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21069,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "設定 SenseNova 流程偏移。",
+    "display_name": "SenseNova 取樣選項",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "設定 CLIP 掛鉤",
     "inputs": {
@@ -24703,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "裁切影片",
+    "inputs": {
+      "crop": {
+        "name": "裁切",
+        "tooltip": "以像素指定裁切區域。寬度／高度為零時保留完整影格。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "使用多種策略，從影片中取樣固定數量的影格。",
     "display_name": "取樣影片影格",
@@ -24804,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪影片（進階）",
+    "inputs": {
+      "strict_duration": {
+        "name": "嚴格持續時間",
+        "tooltip": "若為 True，當無法使用指定的持續時間時，將引發錯誤。"
+      },
+      "trim": {
+        "name": "修剪",
+        "tooltip": "使用起始／結束影格修剪範圍。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

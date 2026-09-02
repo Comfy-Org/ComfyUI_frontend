@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نماذج Gemini Omni Flash من Google. يمكنك اختياريًا توفير صور و/أو مقاطع فيديو مرجعية لتوجيه النتيجة أو تعديلها. صف المدة المطلوبة (3-10 ث) مباشرةً في المطالبة.",
+    "display_name": "Google Gemini Omni (فيديو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج فيديو Gemini المستخدم لإنشاء الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "توليد المسارات",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "طول المسار",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "حلّل ملف نموذج ثلاثي الأبعاد (GLB، GLTF، OBJ، STL) إلى MESH قابل للتحرير لعُقد معالجة الشبكات (تقليل المضلعات، إعادة تشكيل الشبكة، فك UV، الخَبز، ...). تُدمج جميع عُقد/بدائيات المشهد في شبكة واحدة بعد تطبيق تحويلاتها؛ وتأتي الأنسجة وعوامل المواد من المادة الأولى. النظير المقابل لـ MeshToFile3D.",
+    "display_name": "الحصول على مكوّنات ثلاثية الأبعاد",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "ملف نموذج ثلاثي الأبعاد من Load 3D أو عُقدة ثلاثية الأبعاد أخرى. لا يدعم FBX/USDZ — حوّله إلى GLB أولًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "الوضع",
-        "tooltip": "'السرعة' أسرع؛ 'الدقة' تنتج مزامنة شفاه بجودة أعلى ولكن بتكلفة مضاعفة."
+        "tooltip": "‏'speed' أسرع؛ بينما يُنتج 'precision' مزامنة شفاه أعلى جودة بتكلفة أعلى."
       },
       "output_language": {
         "name": "اللغة المستهدفة",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "إرفاق ١-١٠ صور مرجعية للتهيئة، صورة واحدة لتعليمات التحرير أو عدة صور لتخصيص قائم على الموضوع.",
+    "description": "أرفق صورًا مرجعية مرتبة بالتكييف الإيجابي والسلبي.",
     "display_name": "صور مرجعية HiDream-O1",
     "inputs": {
       "images": {
         "name": "الصور",
-        "tooltip": "صور مرجعية. صورة واحدة = تحرير بالتعليمات؛ ٢-١٠ صور = مرجع متعدد."
+        "tooltip": "تُستخدم الصور المرجعية وفق الترتيب الرقمي للمقابس."
       },
       "negative": {
         "name": "سلبي"
@@ -12692,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "إيجابي",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "تطبيق MiniMax H3 Fun ControlNet على نموذج تحويل النص إلى فيديو كرقعة للنموذج.",
+    "display_name": "تطبيق MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "يشير 1 إلى المناطق المطلوب إعادة توليدها."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "الفيديو خلف القناع؛ لا يُقرأ إلا عند توفير قناع."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21069,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "تعيين إزاحة تدفق SenseNova.",
+    "display_name": "خيارات أخذ العينات لـ SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "تعيين CLIP Hooks",
     "inputs": {
@@ -24703,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "اقتصاص الفيديو",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "منطقة الاقتصاص بالبكسل. يَحفظ العرض/الارتفاع الصفري الإطار كاملاً."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "استخلاص عدد ثابت من الإطارات من فيديو باستخدام استراتيجيات متنوعة.",
     "display_name": "استخلاص إطار من الفيديو",
@@ -24804,6 +24930,27 @@
       },
       "model": {
         "name": "النموذج"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "اقتطاع الفيديو (متقدم)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "إذا كانت القيمة True، فسيُثار خطأ عند تعذّر تحقيق المدة المحددة."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "نافذة الاقتطاع باستخدام إطارات البداية/النهاية."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

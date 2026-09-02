@@ -1,13 +1,19 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { RumErrorEvent } from '@datadog/browser-rum'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { setAssertReporter } from '@/base/assert'
 
 import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
 
-function createErrorEvent(message: string, stack?: string): RumErrorEvent {
+function createErrorEvent(
+  message: string,
+  stack?: string,
+  source: RumErrorEvent['error']['source'] = 'source'
+): RumErrorEvent {
   return fromPartial<RumErrorEvent>({
     type: 'error',
-    error: { message, source: 'source', stack }
+    error: { message, source, stack }
   })
 }
 
@@ -16,12 +22,68 @@ const FIREBASE_ASSERTION =
 const FIREBASE_FINGERPRINT = 'firebase-auth-pending-promise'
 
 describe('rumBeforeSend', () => {
+  beforeEach(() => {
+    setAssertReporter(vi.fn(), { forwardsToRum: true })
+  })
+
+  afterEach(() => {
+    setAssertReporter(null)
+  })
+
   it('drops known third-party network noise', () => {
     const event = createErrorEvent(
       'Failed to fetch https://px.ads.linkedin.com/pixel'
     )
 
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops the console echo of an assertion the reporter also reports', () => {
+    const event = createErrorEvent(
+      '[Assertion failed]: graph is corrupt',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps the reported copy of an assertion failure', () => {
+    const event = createErrorEvent(
+      '[Assertion failed]: graph is corrupt',
+      undefined,
+      'custom'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps ordinary console errors that are not assertion failures', () => {
+    const event = createErrorEvent('Application failed', undefined, 'console')
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps the console copy while no reporter exists to replace it', () => {
+    setAssertReporter(null)
+    const event = createErrorEvent(
+      '[Assertion failed]: fired before boot finished',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps the console copy when the installed reporter does not forward to RUM', () => {
+    setAssertReporter(vi.fn())
+    const event = createErrorEvent(
+      '[Assertion failed]: handled by another telemetry sink',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
   it('keeps application errors and tags their origin', () => {

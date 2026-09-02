@@ -16,6 +16,7 @@ catalog:
   '@astrojs/mdx': ^7.0.5
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^7.0.2
+  '@comfyorg/comfyui-desktop-bridge-types': 0.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
   '@datadog/browser-rum': ^6.33.0
@@ -123,6 +124,8 @@ catalog:
   primevue: 4.2.5
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
+  shaders: ^3.1.463
+  shiki: ^4.3.0
   start-server-and-test: ^3.0.11
   storybook: ^10.5.6
   stylelint: ^17.14.0
@@ -160,6 +163,7 @@ catalog:
 cleanupUnusedCatalogs: true
 
 allowBuilds:
+  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/58e2333ce3bb6375fd2efbc1e9d7df17327f37e0': true
   '@firebase/util': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
@@ -191,3 +195,8 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
+
+# Transitional - drop once 0.2.0 is older than the release-age gate.
+minimumReleaseAgeExclude:
+  - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
+  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1'

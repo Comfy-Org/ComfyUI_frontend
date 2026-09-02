@@ -6,7 +6,11 @@ import Components from 'unplugin-vue-components/vite'
 import type { InlineConfig } from 'vite'
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: [
+    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../apps/website/src/components/blocks/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+  ],
+  staticDirs: ['../public', '../apps/website/public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {
     name: '@storybook/vue3-vite',
@@ -70,6 +74,18 @@ const config: StorybookConfig = {
       },
       resolve: {
         alias: [
+          {
+            find: '@comfyorg/website',
+            replacement: process.cwd() + '/apps/website'
+          },
+          {
+            find: /^\/animations\//,
+            replacement: process.cwd() + '/apps/website/public/animations/'
+          },
+          {
+            find: /^\/icons\//,
+            replacement: process.cwd() + '/apps/website/public/icons/'
+          },
           {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'

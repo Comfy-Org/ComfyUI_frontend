@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Создавайте видео со звуком по текстовому запросу с помощью моделей Gemini Omni Flash от Google. При необходимости добавьте эталонные изображения и/или видео, чтобы направить генерацию или отредактировать результат. Укажите желаемую длительность (3–10 с) непосредственно в запросе.",
+    "display_name": "Google Gemini Omni (Видео)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini для видео, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Преобразует файл 3D-модели (GLB, GLTF, OBJ, STL) в редактируемый MESH для узлов обработки сеток (упрощение, ремешинг, UV-развёртка, запекание, ...). Все узлы/примитивы сцены объединяются в одну сетку с применёнными преобразованиями; текстуры и параметры материала берутся из первого материала. Аналог MeshToFile3D.",
+    "display_name": "Получить 3D-компоненты",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D-модели из Load 3D или другого 3D-узла. FBX/USDZ не поддерживаются — сначала преобразуйте в GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "режим",
-        "tooltip": "'speed' — быстрее; 'precision' обеспечивает более качественную синхронизацию губ, но в два раза дороже."
+        "tooltip": "'speed' работает быстрее; 'precision' обеспечивает более качественную синхронизацию губ, но стоит дороже."
       },
       "output_language": {
         "name": "язык_перевода",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Прикрепите 1-10 референсных изображений для кондиционирования: одно для редактирования по инструкции или несколько для персонализации по объекту.",
+    "description": "Подключите упорядоченные эталонные изображения к положительному и отрицательному кондиционированию.",
     "display_name": "Референсные изображения HiDream-O1",
     "inputs": {
       "images": {
         "name": "изображения",
-        "tooltip": "Референсные изображения. 1 изображение = редактирование по инструкции; 2-10 изображений = мульти-референс."
+        "tooltip": "Эталонные изображения используются в числовом порядке входов."
       },
       "negative": {
         "name": "отрицательный"
@@ -12692,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Применяет MiniMax H3 Fun ControlNet к модели преобразования текста в видео в качестве патча модели.",
+    "display_name": "Применить MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 отмечает области для регенерации."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Видео под маской; считывается только при наличии маски."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21069,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Настройте смещение потока SenseNova.",
+    "display_name": "Параметры сэмплирования SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Установить хуки CLIP",
     "inputs": {
@@ -24703,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Обрезка видео",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Область обрезки в пикселях. Нулевая ширина/высота сохраняет полный кадр."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Выберите фиксированное количество кадров из видео с использованием различных стратегий.",
     "display_name": "Выбор кадра из видео",
@@ -24804,6 +24930,27 @@
       },
       "model": {
         "name": "модель"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Обрезка видео (расширенная)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Если True и указанная длительность невозможна, будет вызвана ошибка."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Окно обрезки с использованием начального/конечного кадров."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
