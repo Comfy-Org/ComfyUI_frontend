@@ -2252,6 +2252,27 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
+  it('does not send an unbound tab draft to an existing workflow thread', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    await renderAndSend('first message')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    const scratch = addTab('workflows/scratch.json', {
+      activeState: { id: 'local-scratch' }
+    })
+    hostStores.workflow.activeWorkflow = scratch
+    await sendFromComposer('second message')
+
+    expect(bodies[1]).not.toHaveProperty('workflow_id')
+    expect(bodies[1]).not.toHaveProperty('current_tab')
+    expect(bodies[1]).not.toHaveProperty('draft')
+  })
+
   it('chip X detaches the chat so the next send carries no workflow context', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
