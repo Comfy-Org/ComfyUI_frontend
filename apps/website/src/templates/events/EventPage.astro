@@ -13,6 +13,7 @@ import type { ComfyEvent } from '../../data/events'
 import {
   eventJsonLdNode,
   eventVideoId,
+  eventVideoUploadDate,
   pastEvents,
   toCalendarEvent
 } from '../../data/events'
@@ -53,7 +54,7 @@ const videoJsonLd: JsonLdNode | undefined =
         description,
         thumbnailUrl: event.media.src,
         embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
-        uploadDate: event.recordingPublishDate ?? event.startDateTime,
+        uploadDate: eventVideoUploadDate(event),
         locale
       })
     : undefined
