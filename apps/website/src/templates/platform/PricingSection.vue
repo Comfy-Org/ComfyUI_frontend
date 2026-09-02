@@ -282,9 +282,5 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </article>
       </div>
     </div>
-
-    <!-- Extra rate cards a page appends under the tables (/pricing adds the
-         MiniMax license band); /platform leaves it empty. -->
-    <slot />
   </section>
 </template>

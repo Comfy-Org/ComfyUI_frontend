@@ -7897,16 +7897,16 @@ Enterprise`
     en: 'Resource costs',
     'zh-CN': '资源成本'
   },
-  'pricing.resourceCosts.minimaxLicense.eyebrow': {
-    en: 'MiniMax commercial license',
-    'zh-CN': 'MiniMax 商业许可'
+  'pricing.minimaxLicense.heading': {
+    en: 'License pricing',
+    'zh-CN': '许可定价'
   },
-  'pricing.resourceCosts.minimaxLicense.description': {
-    en: 'For running MiniMax models locally for commercial work. Comfy is the only official reseller.',
+  'pricing.minimaxLicense.description': {
+    en: 'Professional from $5,000 a month. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
     'zh-CN':
-      '面向在本地运行 MiniMax 模型进行商业创作的场景。Comfy 是唯一官方经销商。'
+      '专业版每月 5,000 美元起。企业版为年度协议，按用量定价。视频、音频与音乐涵盖于同一份许可。'
   },
-  'pricing.resourceCosts.minimaxLicense.cta': {
+  'pricing.minimaxLicense.cta': {
     en: 'See license tiers',
     'zh-CN': '查看许可级别'
   },
