@@ -18,7 +18,35 @@ import { createOpSender } from './opSender'
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
 // Persist it per-tab in sessionStorage so a remount can rebind immediately.
+//
+// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
+// (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
+// to whichever workflow last confirmed a subscribe, not necessarily the one
+// about to become active - and (b) a browser-tab duplication, which clones
+// sessionStorage verbatim into a second tab that never subscribed to that doc
+// at all. Neither case can be caught by re-checking `workflowId`, because the
+// whole reason a rebind is attempted is that the caller does NOT yet know
+// which workflow it's asking about. Instead the persisted record carries (1)
+// a per-page-load session nonce, so a value only ever rebinds within the
+// SAME top-level navigation that wrote it - a duplicated tab gets a fresh
+// nonce and its inherited record is refused - and (2) a short expiry, so a
+// tab left open past the window a doc realistically stays relevant is
+// refused rather than trusted indefinitely.
 const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
+const DOC_ID_TTL_MS = 5 * 60 * 1000
+
+// One nonce per page load (module scope = one per top-level navigation, since
+// a full reload re-evaluates the module). A tab duplicated mid-session
+// inherits sessionStorage's persisted record but gets its own module
+// instance and thus its own nonce, so the inherited record's nonce mismatches
+// and is refused.
+const pageSessionNonce = createUuidv4()
+
+interface PersistedDocIdRecord {
+  docId: string
+  nonce: string
+  expiresAt: number
+}
 
 function safeSessionStorage(): Storage | null {
   try {
@@ -28,17 +56,38 @@ function safeSessionStorage(): Storage | null {
   }
 }
 
-function persistDocId(id: string): void {
+function persistDocId(docId: string): void {
   try {
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, id)
+    const record: PersistedDocIdRecord = {
+      docId,
+      nonce: pageSessionNonce,
+      expiresAt: Date.now() + DOC_ID_TTL_MS
+    }
+    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
   } catch {
     // Quota / privacy mode: persistence is best-effort.
   }
 }
 
+// Returns the persisted doc id ONLY when it was written by this same page
+// load and has not expired.
 function readPersistedDocId(): string | null {
   try {
-    return safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY) ?? null
+    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
+    if (!raw) return null
+    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
+    if (
+      typeof record.docId !== 'string' ||
+      typeof record.nonce !== 'string' ||
+      typeof record.expiresAt !== 'number'
+    ) {
+      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
+      // absent rather than trusting an unscoped id.
+      return null
+    }
+    if (record.nonce !== pageSessionNonce) return null
+    if (Date.now() >= record.expiresAt) return null
+    return record.docId
   } catch {
     return null
   }

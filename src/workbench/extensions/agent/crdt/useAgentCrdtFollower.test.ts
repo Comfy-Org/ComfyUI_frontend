@@ -108,6 +108,32 @@ import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
+const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
+
+function persistedRecord(): {
+  docId: string
+  nonce: string
+  expiresAt: number
+} | null {
+  const raw = sessionStorage.getItem(DOC_ID_KEY)
+  return raw ? JSON.parse(raw) : null
+}
+
+function writeRawRecord(overrides: {
+  docId: string
+  nonce?: string
+  expiresAt?: number
+}): void {
+  const base = persistedRecord()
+  sessionStorage.setItem(
+    DOC_ID_KEY,
+    JSON.stringify({
+      docId: overrides.docId,
+      nonce: overrides.nonce ?? base?.nonce ?? 'foreign-nonce',
+      expiresAt: overrides.expiresAt ?? Date.now() + 60_000
+    })
+  )
+}
 
 function mountFollower(
   initial: string | null = null,
@@ -222,35 +248,82 @@ describe('useAgentCrdtFollower', () => {
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
     const { unmount } = mountFollower('wf-1')
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBeNull()
+    expect(persistedRecord()).toBeNull()
 
     dispatchFrame('doc_subscribed', { ok: true })
 
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBe('wf-1')
+    expect(persistedRecord()?.docId).toBe('wf-1')
     unmount()
   })
 
   it('FE-1902: a remount with no in-memory binding rebinds from sessionStorage', () => {
-    sessionStorage.setItem('Comfy.Agent.CrdtDocId', 'wf-persisted')
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
 
     const { unmount, status } = mountFollower(null)
 
-    expect(bridge().subscribe).toHaveBeenCalledWith('wf-persisted')
-    expect(status().workflowId).toBe('wf-persisted')
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
     unmount()
   })
 
   it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
     const { unmount, workflowId } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBe('wf-1')
+    expect(persistedRecord()?.docId).toBe('wf-1')
 
     workflowId.value = null
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBeNull()
+    expect(persistedRecord()).toBeNull()
     expect(bridge().unsubscribe).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('FEC-5: refuses a record from a different page session (e.g. a duplicated tab)', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    // Simulate sessionStorage cloned into a fresh tab: same docId, foreign nonce.
+    writeRawRecord({ docId: 'wf-1', nonce: 'a-different-page-session' })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses an expired record', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    const record = persistedRecord()
+    writeRawRecord({
+      docId: 'wf-1',
+      nonce: record?.nonce,
+      expiresAt: Date.now() - 1
+    })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses a legacy bare-string record', () => {
+    sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
     unmount()
   })
 
