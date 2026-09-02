@@ -58,9 +58,7 @@
         :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
-          <span class="text-text-primary">{{
-            $t('subscription.monthly')
-          }}</span>
+          <span class="text-text-primary">{{ allowanceLabel }}</span>
           <span class="text-muted">
             {{ refillsLabel }}
           </span>
@@ -151,7 +149,7 @@
           </span>
         </div>
         <span class="text-sm text-muted @max-[300px]:hidden">
-          {{ $t('subscription.usedAfterMonthly') }}
+          {{ usedAfterAllowanceLabel }}
         </span>
       </div>
     </template>
@@ -226,6 +224,7 @@ import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
@@ -259,6 +258,7 @@ const {
   fetchStatus
 } = useBillingContext()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { isYearlySubscription } = useSubscription()
 const {
   monthlyBonusCredits,
   prepaidCredits,
@@ -325,6 +325,18 @@ const refillsLabel = computed(() =>
     : t('subscription.refillsNextCycle')
 )
 
+const allowanceLabel = computed(() =>
+  t(isYearlySubscription.value ? 'subscription.yearly' : 'subscription.monthly')
+)
+
+const usedAfterAllowanceLabel = computed(() =>
+  t(
+    isYearlySubscription.value
+      ? 'subscription.usedAfterYearly'
+      : 'subscription.usedAfterMonthly'
+  )
+)
+
 const formatCreditCount = (value: number) =>
   formatCredits({
     value,
@@ -364,10 +376,15 @@ const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
 const monthlyUsageLabel = computed(() =>
-  t('subscription.monthlyUsageProgress', {
-    used: usedDisplay.value,
-    total: creditPoolTotalDisplay.value
-  })
+  t(
+    isYearlySubscription.value
+      ? 'subscription.yearlyUsageProgress'
+      : 'subscription.monthlyUsageProgress',
+    {
+      used: usedDisplay.value,
+      total: creditPoolTotalDisplay.value
+    }
+  )
 )
 
 const showBreakdown = computed(
@@ -418,10 +435,19 @@ const emptyStateNotice = computed(() => {
   if (isMonthlyDepleted.value) {
     return {
       title: hasRefillsDate.value
-        ? t('subscription.monthlyCreditsUsedUpTitle', {
-            date: refillsDateShort.value
-          })
-        : t('subscription.monthlyCreditsUsedUpTitleNoDate'),
+        ? t(
+            isYearlySubscription.value
+              ? 'subscription.yearlyCreditsUsedUpTitle'
+              : 'subscription.monthlyCreditsUsedUpTitle',
+            {
+              date: refillsDateShort.value
+            }
+          )
+        : t(
+            isYearlySubscription.value
+              ? 'subscription.yearlyCreditsUsedUpTitleNoDate'
+              : 'subscription.monthlyCreditsUsedUpTitleNoDate'
+          ),
       description: t('subscription.monthlyCreditsUsedUpDescription')
     }
   }
