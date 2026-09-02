@@ -101,15 +101,16 @@ interface BillingOperation {
 type TerminalResolver = (operation: BillingOperation) => void
 
 /**
- * A 4xx is the service answering: it considered the cancel and refused it.
- * Anything else — no response, a timeout, a 5xx — never reached a verdict.
+ * Only a considered refusal earns the "already processing" verdict: 409 (the
+ * charge raced past the point of cancelling) or 422 (the operation's state
+ * disallows it). The rest of 4xx — an expired token, a rate limit, a missing
+ * route — says nothing about the charge, so the cancel affordance must stay
+ * live rather than assert a claim about money the server never made.
  */
 function isCancelRefusal(error: unknown): boolean {
   return (
     error instanceof WorkspaceApiError &&
-    error.status !== undefined &&
-    error.status >= 400 &&
-    error.status < 500
+    (error.status === 409 || error.status === 422)
   )
 }
 

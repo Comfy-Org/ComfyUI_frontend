@@ -209,7 +209,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         opId: 'op-1',
         actionUrl: 'https://bank.example/3ds',
         status: 'pending'
-      } as never)
+      })
     }
 
     it('returns to the amount step and says nothing was charged', async () => {
@@ -265,6 +265,33 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ).toBeInTheDocument()
       expect(
         screen.queryByText('Payment canceled. Nothing was charged.')
+      ).toBeNull()
+    })
+
+    it('forgets a stale cancel verdict when a new charge starts', async () => {
+      mockCancelOperation.mockResolvedValue('unavailable')
+      pendingCharge()
+      renderDialog()
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+      await screen.findByText(
+        "This payment is already processing and can't be canceled."
+      )
+
+      setTopupActionOperation({
+        opId: 'op-2',
+        actionUrl: 'https://bank.example/3ds-2',
+        status: 'pending'
+      })
+
+      expect(
+        await screen.findByRole('button', { name: 'Cancel payment' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          "This payment is already processing and can't be canceled."
+        )
       ).toBeNull()
     })
   })

@@ -38,14 +38,14 @@
         v-if="cancelUnavailable"
         class="m-0 py-2 text-center text-xs text-muted-foreground"
       >
-        {{ $t('subscription.preview.cancelUnavailable') }}
+        {{ $t('billingOperation.cancelUnavailable') }}
       </p>
       <template v-else>
         <p
           v-if="cancelUnreachable"
           class="m-0 pt-2 text-center text-xs text-muted-foreground"
         >
-          {{ $t('subscription.preview.cancelUnreachable') }}
+          {{ $t('billingOperation.cancelUnreachable') }}
         </p>
         <Button
           variant="muted-textonly"
@@ -54,7 +54,7 @@
           :loading="isCanceling"
           @click="$emit('cancelPayment')"
         >
-          {{ $t('subscription.preview.cancelPayment') }}
+          {{ $t('billingOperation.cancelPayment') }}
         </Button>
       </template>
     </div>
