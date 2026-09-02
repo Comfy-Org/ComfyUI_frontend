@@ -512,11 +512,25 @@ interface WorkflowNode {
   widgets_values?: unknown[]
 }
 
+function isWorkflowNode(value: unknown): value is WorkflowNode {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    typeof value.type === 'string' &&
+    (!('widgets_values' in value) ||
+      value.widgets_values === undefined ||
+      Array.isArray(value.widgets_values))
+  )
+}
+
 function readWorkflow(name: string): WorkflowNode[] {
-  const raw = JSON.parse(
+  const raw: unknown = JSON.parse(
     readFileSync(join(TEMPLATES_DIR, `${name}.json`), 'utf8')
   )
-  return Array.isArray(raw?.nodes) ? (raw.nodes as WorkflowNode[]) : []
+  const nodes =
+    typeof raw === 'object' && raw !== null && 'nodes' in raw ? raw.nodes : []
+  return Array.isArray(nodes) ? nodes.filter(isWorkflowNode) : []
 }
 
 function templateValues(

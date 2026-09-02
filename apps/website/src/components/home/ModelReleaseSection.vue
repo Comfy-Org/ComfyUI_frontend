@@ -14,29 +14,32 @@ function workshopHref(slug: string | undefined): string | undefined {
   return slug ? getWorkshopModel(slug)?.href : undefined
 }
 
-const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({
-  id: slide.id,
-  media: {
-    type: slide.media.type,
-    src: slide.media.src,
-    poster: slide.media.poster,
-    alt: t(slide.media.ariaLabelKey, locale)
-  },
-  eyebrow: t('modelRelease.eyebrow', locale),
-  title: t(slide.titleKey, locale),
-  body: t(slide.bodyKey, locale),
-  primaryCta: {
-    label: t(slide.exploreLabelKey, locale),
-    href: workshopHref(slide.workshopSlug) ?? routes[slide.exploreRoute]
-  },
-  secondaryCta: {
-    label: t(slide.tryCta.labelKey, locale),
-    href: workshopHref(slide.workshopSlug) ?? slide.tryCta.href,
-    newTab: !workshopHref(slide.workshopSlug)
-  },
-  tags: slide.tagKeys.map((key) => t(key, locale)),
-  autoplayMs: slide.autoplayMs
-}))
+const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => {
+  const workshopUrl = workshopHref(slide.workshopSlug)
+  return {
+    id: slide.id,
+    media: {
+      type: slide.media.type,
+      src: slide.media.src,
+      poster: slide.media.poster,
+      alt: t(slide.media.ariaLabelKey, locale)
+    },
+    eyebrow: t('modelRelease.eyebrow', locale),
+    title: t(slide.titleKey, locale),
+    body: t(slide.bodyKey, locale),
+    primaryCta: {
+      label: t(slide.exploreLabelKey, locale),
+      href: workshopUrl ?? routes[slide.exploreRoute]
+    },
+    secondaryCta: {
+      label: t(slide.tryCta.labelKey, locale),
+      href: workshopUrl ?? slide.tryCta.href,
+      newTab: !workshopUrl
+    },
+    tags: slide.tagKeys.map((key) => t(key, locale)),
+    autoplayMs: slide.autoplayMs
+  }
+})
 </script>
 
 <template>

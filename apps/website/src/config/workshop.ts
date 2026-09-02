@@ -117,7 +117,52 @@ export interface WorkshopModelDetail extends WorkshopModel {
 }
 
 const display = displayOverrides as Record<string, WorkshopModelDisplay>
-const generated = generatedModels as unknown as Record<string, GeneratedModel>
+
+const FIELD_KINDS = new Set(['text', 'number', 'select', 'toggle', 'file'])
+
+function isGeneratedField(value: unknown): value is GeneratedField {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'kind' in value &&
+    typeof value.kind === 'string' &&
+    FIELD_KINDS.has(value.kind) &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    'label' in value &&
+    typeof value.label === 'string'
+  )
+}
+
+function isGeneratedModel(value: unknown): value is GeneratedModel {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'fields' in value &&
+    Array.isArray(value.fields) &&
+    value.fields.every(isGeneratedField) &&
+    'defaults' in value &&
+    typeof value.defaults === 'object' &&
+    value.defaults !== null &&
+    'examples' in value &&
+    Array.isArray(value.examples)
+  )
+}
+
+// Records the generator wrote in a shape the catalog cannot render are
+// dropped here rather than crashing a model page.
+export function decodeGeneratedModels(
+  manifest: unknown
+): Record<string, GeneratedModel> {
+  if (typeof manifest !== 'object' || manifest === null) return {}
+  return Object.fromEntries(
+    Object.entries(manifest).filter(
+      (entry): entry is [string, GeneratedModel] => isGeneratedModel(entry[1])
+    )
+  )
+}
+
+const generated = decodeGeneratedModels(generatedModels)
 
 function modelDetailHref(slug: string): string {
   return `/workshop/models/${slug}/`

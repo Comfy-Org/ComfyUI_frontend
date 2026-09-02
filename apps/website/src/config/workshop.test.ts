@@ -5,6 +5,7 @@ import type { GeneratedField, WorkshopModel } from './workshop'
 import {
   countByFacet,
   countByModality,
+  decodeGeneratedModels,
   filterWorkshopModels,
   isRouterModel,
   sortWorkshopModels,
@@ -190,5 +191,27 @@ describe('workshopModels', () => {
         workflowCount: 0
       })
     ).toBe(false)
+  })
+})
+
+describe('decodeGeneratedModels', () => {
+  it('keeps well-formed records and drops the rest', () => {
+    const good = {
+      fields: [{ kind: 'text', name: 'prompt', label: 'Prompt' }],
+      defaults: {},
+      examples: []
+    }
+    expect(
+      decodeGeneratedModels({
+        good,
+        badFields: { ...good, fields: 'nope' },
+        badKind: {
+          ...good,
+          fields: [{ kind: 'color', name: 'x', label: 'X' }]
+        },
+        missing: null
+      })
+    ).toEqual({ good })
+    expect(decodeGeneratedModels('not a manifest')).toEqual({})
   })
 })
