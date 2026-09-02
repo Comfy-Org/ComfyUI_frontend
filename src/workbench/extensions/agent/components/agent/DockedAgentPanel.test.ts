@@ -68,7 +68,7 @@ describe('DockedAgentPanel', () => {
     ).toBeTruthy()
   })
 
-  it('fills the panel shell and draws the canvas seam border', () => {
+  it('T-30 / PM-654 / FE-1285 fills the panel opaquely and draws the canvas seam border', () => {
     openPanel()
     renderPanel()
 

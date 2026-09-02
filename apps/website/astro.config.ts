@@ -8,7 +8,7 @@ import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { sitemapAlternates } from './src/lib/hreflang'
 
-const LOCALES = ['en', 'zh-CN'] as const
+const LOCALES = ['en', 'zh-CN', 'ja'] as const
 const DEFAULT_LOCALE = 'en'
 
 export default defineConfig({

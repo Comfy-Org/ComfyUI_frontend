@@ -22,6 +22,14 @@ export const redirects = {
   '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
     '/customers/series-entertainment/',
   '/zh-CN/terms-of-service': '/terms-of-service/',
+  // The platform rename, added on main while this branch was open.
+  '/api': '/platform/',
+  '/zh-CN/api': '/zh-CN/platform/',
+  '/platform/router': '/platform/models/',
+  '/zh-CN/platform/router': '/zh-CN/platform/models/',
+  // Pricing moved out from under /cloud, also from main.
+  '/cloud/pricing': '/pricing/',
+  '/zh-CN/cloud/pricing': '/zh-CN/pricing/',
   // Affiliates exists in English only. Without these a reader who swaps the
   // locale prefix by hand gets a 404 instead of the page they asked for.
   '/zh-CN/affiliates': '/affiliates/',
