@@ -59,11 +59,13 @@ const MAX_TITLE_LENGTH = 200
 
 const renamingId = ref<string | null>(null)
 const renameDraft = ref('')
+const renameOriginalTitle = ref('')
 const selectOnFocus = ref(false)
 
 function startRename(session: ChatSession): void {
   renamingId.value = session.id
   renameDraft.value = session.title
+  renameOriginalTitle.value = session.title
   selectOnFocus.value = true
 }
 
@@ -102,7 +104,7 @@ function commitRename(session: ChatSession): void {
   if (renamingId.value !== session.id) return
   renamingId.value = null
   const title = renameDraft.value.trim()
-  if (title !== '' && title !== session.title.trim())
+  if (title !== '' && title !== renameOriginalTitle.value.trim())
     emit('rename', session.id, title)
 }
 

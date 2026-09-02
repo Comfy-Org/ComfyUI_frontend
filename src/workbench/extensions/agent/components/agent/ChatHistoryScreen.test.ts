@@ -226,6 +226,19 @@ describe('ChatHistoryScreen', () => {
     expect(screen.getByRole('button', { name: 'Findable title' })).toBeVisible()
   })
 
+  it('does not overwrite a refreshed title with an untouched draft', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderScreen(
+      groupsWithTitle('Original title')
+    )
+    await openRename(user)
+
+    await rerender({ groups: groupsWithTitle('Refreshed title') })
+    await user.keyboard('{Enter}')
+
+    expect(emitted().rename).toBeUndefined()
+  })
+
   it('cancels a history-row rename on Escape', async () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen(groupsWithTitle('Original title'))
