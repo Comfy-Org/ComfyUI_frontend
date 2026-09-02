@@ -228,12 +228,17 @@ describe('attachLinkMintPort', () => {
   })
 
   it('rejects a workflow target whose root does not own the link scope', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
     place(ROOT_SCOPE, topology(41), {
       workflowId: 'wf-b',
       rootGraphId: 'other-root'
     })
 
     expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
   })
 
   it('stops minting after detach', () => {
