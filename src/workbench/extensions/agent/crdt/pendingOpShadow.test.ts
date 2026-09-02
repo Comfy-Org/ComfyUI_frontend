@@ -9,10 +9,23 @@ import type {
 } from './pendingOpShadow'
 import { createPendingOpShadowSurface } from './pendingOpShadow'
 
-const node = (nodeId: string): ShadowTarget => ({ kind: 'node', nodeId })
-const link = (linkId: string): ShadowTarget => ({ kind: 'link', linkId })
-const widget = (nodeId: string, widgetName: string): ShadowTarget => ({
+const node = (nodeId: string, graphId = 'root'): ShadowTarget => ({
+  kind: 'node',
+  graphId,
+  nodeId
+})
+const link = (linkId: string, graphId = 'root'): ShadowTarget => ({
+  kind: 'link',
+  graphId,
+  linkId
+})
+const widget = (
+  nodeId: string,
+  widgetName: string,
+  graphId = 'root'
+): ShadowTarget => ({
   kind: 'widget',
+  graphId,
   nodeId,
   widgetName
 })
@@ -115,6 +128,46 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     surface.clear('op-1')
     expect(surface.isPending(widget('a:b', 'c'))).toBe(false)
     expect(surface.isPending(widget('a', 'b:c'))).toBe(true)
+  })
+
+  it('keeps identical local node/link ids distinct across graph scopes', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1', 'graph-a')])
+    surface.show('op-2', [node('n1', 'graph-b'), link('l1', 'graph-b')])
+
+    expect(surface.isPending(node('n1', 'graph-a'))).toBe(true)
+    expect(surface.isPending(node('n1', 'graph-b'))).toBe(true)
+    expect(surface.isPending(link('l1', 'graph-a'))).toBe(false)
+    expect(surface.isPending(link('l1', 'graph-b'))).toBe(true)
+
+    // Resolving one graph's shadow must not touch the other graph's refcount
+    // for the same local id (the bug: an omitted graph scope shares one key).
+    surface.clear('op-1')
+    expect(surface.isPending(node('n1', 'graph-a'))).toBe(false)
+    expect(surface.isPending(node('n1', 'graph-b'))).toBe(true)
+  })
+
+  it('keeps identical local widget ids distinct across graph scopes', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [widget('n1', 'seed', 'graph-a')])
+    surface.show('op-2', [widget('n1', 'seed', 'graph-b')])
+
+    expect(surface.isPending(widget('n1', 'seed', 'graph-a'))).toBe(true)
+    expect(surface.isPending(widget('n1', 'seed', 'graph-b'))).toBe(true)
+
+    surface.revert('op-1')
+    expect(surface.isPending(widget('n1', 'seed', 'graph-a'))).toBe(false)
+    expect(surface.isPending(widget('n1', 'seed', 'graph-b'))).toBe(true)
+  })
+
+  it('dedupes pendingTargets() by graph scope, not local id alone', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1', 'graph-a')])
+    surface.show('op-2', [node('n1', 'graph-b')])
+    expect(surface.pendingTargets()).toEqual([
+      node('n1', 'graph-a'),
+      node('n1', 'graph-b')
+    ])
   })
 
   it('clearAll drops every shadow in insertion order (FEB-5)', () => {

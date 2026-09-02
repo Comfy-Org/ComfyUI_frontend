@@ -30,12 +30,22 @@
 
 import { assert } from '@/base/assert'
 
-/** One canvas entity that renders pending styling while an op is in flight. */
+/**
+ * One canvas entity that renders pending styling while an op is in flight.
+ *
+ * `graphId` is the owning (sub)graph uuid, mirroring the `graphId:nodeId:name`
+ * widget-id convention (FE-1904, see `widgetMintPort.ts`). Node/link/widget
+ * ids are graph-LOCAL: two subgraphs can mint the same local node id, so a
+ * shadow key that omits the owning graph collides across subgraphs and
+ * corrupts the refcounted `isPending`/`pendingTargets` index. Every target
+ * must carry the graph that minted its local id.
+ */
 export type ShadowTarget =
-  | { readonly kind: 'node'; readonly nodeId: string }
-  | { readonly kind: 'link'; readonly linkId: string }
+  | { readonly kind: 'node'; readonly graphId: string; readonly nodeId: string }
+  | { readonly kind: 'link'; readonly graphId: string; readonly linkId: string }
   | {
       readonly kind: 'widget'
+      readonly graphId: string
       readonly nodeId: string
       readonly widgetName: string
     }
@@ -95,13 +105,14 @@ export interface PendingOpShadowSurface {
 }
 
 function targetKey(target: ShadowTarget): string {
+  const graphId = encodeURIComponent(target.graphId)
   switch (target.kind) {
     case 'node':
-      return `node:${target.nodeId}`
+      return `node:${graphId}:${encodeURIComponent(target.nodeId)}`
     case 'link':
-      return `link:${target.linkId}`
+      return `link:${graphId}:${encodeURIComponent(target.linkId)}`
     case 'widget':
-      return `widget:${encodeURIComponent(target.nodeId)}:${encodeURIComponent(target.widgetName)}`
+      return `widget:${graphId}:${encodeURIComponent(target.nodeId)}:${encodeURIComponent(target.widgetName)}`
     default: {
       const unsupported: never = target
       assert(false, `Unsupported shadow target: ${JSON.stringify(unsupported)}`)
@@ -112,12 +123,21 @@ function targetKey(target: ShadowTarget): string {
 function cloneTarget(target: ShadowTarget): ShadowTarget {
   switch (target.kind) {
     case 'node':
-      return Object.freeze({ kind: 'node', nodeId: target.nodeId })
+      return Object.freeze({
+        kind: 'node',
+        graphId: target.graphId,
+        nodeId: target.nodeId
+      })
     case 'link':
-      return Object.freeze({ kind: 'link', linkId: target.linkId })
+      return Object.freeze({
+        kind: 'link',
+        graphId: target.graphId,
+        linkId: target.linkId
+      })
     case 'widget':
       return Object.freeze({
         kind: 'widget',
+        graphId: target.graphId,
         nodeId: target.nodeId,
         widgetName: target.widgetName
       })
