@@ -116,8 +116,16 @@ export const DEFAULT_REPORT_SOURCES: ReportSources = {
 export interface ReportIdentifiers {
   /** Comfy account id, from Firebase or an API-key session. */
   userId: string | null
+  /** Organization id, when the active workspace exposes a separate one. */
+  organizationId: string | null
   /** Active team/workspace id, when the tester is in one. */
   workspaceId: string | null
+  /** Agent conversation/thread id — the backend session correlation key. */
+  agentThreadId: string | null
+  /** Current agent request/turn id. */
+  activeAgentTurnId: string | null
+  /** Recent agent request/turn ids, most recent first. */
+  recentAgentTurnIds: readonly string[]
   /** Per-tab CRDT actor id — the closest thing to a "session id" today. */
   tabId: string | null
   /** The prompt/job id currently executing, if any. */
@@ -126,8 +134,16 @@ export interface ReportIdentifiers {
   recentJobIds: readonly string[]
   /** Active workflow's path, which is what the workflow store keys on. */
   workflowPath: string | null
+  /** Persisted workflow id used by the agent/CRDT backend. */
+  workflowId: string | null
+  /** Workflow JSON graph id. */
+  graphId: string | null
   /** CRDT document id — the same id as {@link CrdtDebugSnapshot.status.workflowId}. */
   docId: string | null
+  /** Last host sequence observed by the follower. */
+  crdtSequence: number | null
+  /** Highest Lamport counter currently present in the document stamp ledger. */
+  crdtLamport: number | null
   /** ComfyUI server-assigned websocket session id (`api.clientId`). */
   clientId: string | null
   /** `location.hostname`-derived deploy env (`prod-v2`/`stg-v2`/`test-v2`/…). */
@@ -139,12 +155,20 @@ export interface ReportIdentifiers {
 /** Every field unknown — the fallback when a caller has none to report. */
 export const EMPTY_REPORT_IDENTIFIERS: ReportIdentifiers = {
   userId: null,
+  organizationId: null,
   workspaceId: null,
+  agentThreadId: null,
+  activeAgentTurnId: null,
+  recentAgentTurnIds: [],
   tabId: null,
   activeJobId: null,
   recentJobIds: [],
   workflowPath: null,
+  workflowId: null,
+  graphId: null,
   docId: null,
+  crdtSequence: null,
+  crdtLamport: null,
   clientId: null,
   deployEnv: null,
   backendUrl: 'unknown'
@@ -328,13 +352,22 @@ function systemSection(stats: SystemStats): string {
 function identifiersSection(identifiers: ReportIdentifiers): string {
   return [
     `- **User id:** ${identifiers.userId ?? 'none (not logged in)'}`,
+    `- **Organization id:** ${identifiers.organizationId ?? 'none (not exposed separately)'}`,
     `- **Workspace id:** ${identifiers.workspaceId ?? 'none'}`,
+    `- **Agent session/thread id:** ${identifiers.agentThreadId ?? 'none'}`,
+    `- **Active agent request/turn id:** ${identifiers.activeAgentTurnId ?? 'none'}`,
+    `- **Recent agent request/turn ids:** ${identifiers.recentAgentTurnIds.length ? identifiers.recentAgentTurnIds.join(', ') : 'none'}`,
     `- **Client id:** ${identifiers.clientId ?? 'unknown'}`,
     `- **Tab/session id:** ${identifiers.tabId ?? 'unknown'}`,
     `- **Active job/prompt id:** ${identifiers.activeJobId ?? 'none'}`,
     `- **Recent job/prompt ids:** ${identifiers.recentJobIds.length ? identifiers.recentJobIds.join(', ') : 'none'}`,
     `- **Workflow path:** ${identifiers.workflowPath ?? 'none'}`,
+    `- **Workflow id:** ${identifiers.workflowId ?? 'none'}`,
+    `- **Document/graph id:** ${identifiers.graphId ?? 'none'}`,
     `- **CRDT doc id:** ${identifiers.docId ?? 'none'}`,
+    `- **CRDT room id:** ${identifiers.docId ?? 'none'}`,
+    `- **CRDT sequence/clock:** ${identifiers.crdtSequence ?? 'none'}`,
+    `- **CRDT Lamport counter:** ${identifiers.crdtLamport ?? 'none'}`,
     `- **Backend URL:** ${identifiers.backendUrl}`,
     `- **Deploy env:** ${identifiers.deployEnv ?? 'unknown'}`,
     `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,

@@ -239,6 +239,9 @@ describe('CrdtDevPanel', () => {
         identifiers: expect.objectContaining({
           tabId: null,
           docId: 'doc-1',
+          workflowId: 'doc-1',
+          crdtSequence: null,
+          crdtLamport: null,
           clientId: 'client-test-1',
           backendUrl: 'localhost:8188',
           recentJobIds: []

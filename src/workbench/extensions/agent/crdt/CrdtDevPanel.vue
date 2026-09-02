@@ -21,6 +21,7 @@ import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 
+import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
@@ -449,14 +450,38 @@ function collectIdentifiers(crdt: CrdtDebugSnapshot): ReportIdentifiers {
       ].map((task) => task.jobId)
     }) ?? []
 
+  const conversation = read(() => useAgentConversationStore())
+  const recentAgentTurnIds = conversation
+    ? [...new Set(conversation.messages.map((message) => message.id))]
+        .reverse()
+        .slice(0, 10)
+    : []
+  const crdtLamport = Object.values(crdt.stamps).reduce<number | null>(
+    (highest, stamp) => {
+      const counter = Array.isArray(stamp) ? stamp[0] : undefined
+      if (typeof counter !== 'number') return highest
+      return highest === null ? counter : Math.max(highest, counter)
+    },
+    null
+  )
+  const activeWorkflow = read(() => useWorkflowStore().activeWorkflow)
+
   return {
     userId: read(() => useCurrentUser().resolvedUserInfo.value?.id ?? null),
+    organizationId: null,
     workspaceId: read(() => useTeamWorkspaceStore().activeWorkspaceId ?? null),
+    agentThreadId: conversation?.threadId ?? null,
+    activeAgentTurnId: conversation?.activeTurnId ?? null,
+    recentAgentTurnIds,
     tabId: crdt.tabId,
     activeJobId: read(() => useExecutionStore().activeJobId ?? null),
     recentJobIds,
-    workflowPath: read(() => useWorkflowStore().activeWorkflow?.path ?? null),
+    workflowPath: activeWorkflow?.path ?? null,
+    workflowId: crdt.status.workflowId ?? null,
+    graphId: activeWorkflow?.activeState?.id ?? null,
     docId: crdt.status.workflowId ?? null,
+    crdtSequence: crdt.lastSeq,
+    crdtLamport,
     clientId: read(() => api.clientId ?? null),
     deployEnv: read(() => resolveDeployEnv() ?? null),
     backendUrl: read(() => `${api.api_host}${api.api_base}`) ?? 'unknown'

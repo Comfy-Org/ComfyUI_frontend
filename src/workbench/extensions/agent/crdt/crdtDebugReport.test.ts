@@ -57,12 +57,20 @@ const SNAPSHOT: CrdtDebugSnapshot = {
 
 const IDENTIFIERS: ReportIdentifiers = {
   userId: 'user-42',
+  organizationId: 'org-3',
   workspaceId: 'workspace-7',
+  agentThreadId: 'thread-12',
+  activeAgentTurnId: 'turn-99',
+  recentAgentTurnIds: ['turn-98', 'turn-97'],
   tabId: 'tab-1',
   activeJobId: 'prompt-99',
   recentJobIds: ['prompt-98', 'prompt-97'],
   workflowPath: 'workflows/my-flow.json',
+  workflowId: 'workflow-5',
+  graphId: 'graph-6',
   docId: 'doc-1',
+  crdtSequence: 7,
+  crdtLamport: 11,
   clientId: 'client-abc',
   deployEnv: 'test-v2',
   backendUrl: 'https://testcloud.comfy.org'
@@ -125,12 +133,20 @@ describe('collectCrdtDebugReport', () => {
 
     for (const value of [
       IDENTIFIERS.userId,
+      IDENTIFIERS.organizationId,
       IDENTIFIERS.workspaceId,
+      IDENTIFIERS.agentThreadId,
+      IDENTIFIERS.activeAgentTurnId,
+      ...IDENTIFIERS.recentAgentTurnIds,
       IDENTIFIERS.tabId,
       IDENTIFIERS.activeJobId,
       ...IDENTIFIERS.recentJobIds,
       IDENTIFIERS.workflowPath,
+      IDENTIFIERS.workflowId,
+      IDENTIFIERS.graphId,
       IDENTIFIERS.docId,
+      IDENTIFIERS.crdtSequence,
+      IDENTIFIERS.crdtLamport,
       IDENTIFIERS.clientId,
       IDENTIFIERS.deployEnv,
       IDENTIFIERS.backendUrl
