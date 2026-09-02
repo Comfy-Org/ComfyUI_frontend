@@ -293,6 +293,29 @@ export function declaredInputNamesForTypes(
   )
 }
 
+/**
+ * Whether a widgets_values pair changed container without changing meaning.
+ *
+ * widgets_values is a union of a positional array and a name-keyed record,
+ * and a pack may rewrite its own nodes to the record form in onSerialize. Only
+ * an array/record pair qualifies: an empty array and an absent value already
+ * compare equal, so treating that as a reshape would strip the equivalence.
+ *
+ * The save/reload tier mirrors this rule inside its page.evaluate closure,
+ * which cannot import; these cases are the contract both sides implement.
+ */
+export function isWidgetValuesReshape(
+  before: unknown,
+  after: unknown
+): boolean {
+  const isNamed = (value: unknown) =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+  return (
+    (Array.isArray(before) && isNamed(after)) ||
+    (isNamed(before) && Array.isArray(after))
+  )
+}
+
 export function namedWidgetValueDrifts(
   before: unknown,
   after: unknown,

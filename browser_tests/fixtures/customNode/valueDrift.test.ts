@@ -3,6 +3,7 @@ import {
   declaredInputNamesForTypes,
   initializationSignalsForTypes,
   isCanvasPreviewImagePath,
+  isWidgetValuesReshape,
   matchesTopologyExpectation,
   namedWidgetValueDrifts,
   pendingRestoredPreviewWidgets,
@@ -275,5 +276,24 @@ describe('namedWidgetValueDrifts', () => {
     expect(
       namedWidgetValueDrifts({ mode: 'basic' }, { detail: 0.5 })
     ).toBeNull()
+  })
+})
+
+describe('isWidgetValuesReshape', () => {
+  it('matches an array paired with a name-keyed record', () => {
+    expect(isWidgetValuesReshape([1], { multiply_by: 1 })).toBe(true)
+    expect(isWidgetValuesReshape({ multiply_by: 1 }, [1])).toBe(true)
+  })
+
+  it('leaves an absent value alone, so an empty array still means nothing', () => {
+    expect(isWidgetValuesReshape([], null)).toBe(false)
+    expect(isWidgetValuesReshape([], undefined)).toBe(false)
+    expect(isWidgetValuesReshape(null, [])).toBe(false)
+    expect(isWidgetValuesReshape(undefined, [])).toBe(false)
+  })
+
+  it('ignores pairs that share a container', () => {
+    expect(isWidgetValuesReshape([1], [1])).toBe(false)
+    expect(isWidgetValuesReshape({ a: 1 }, { a: 1 })).toBe(false)
   })
 })

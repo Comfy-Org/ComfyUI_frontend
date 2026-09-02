@@ -646,9 +646,18 @@ export async function assertRoundtripTier({
                         })
                       )
                     : values
+                // Only an array/record pair, never array vs absent: an empty
+                // array and a missing value already mean the same thing to
+                // preserves(), and reshaping [] into {} would strip that.
+                const isNamedShape = (value: unknown) =>
+                  typeof value === 'object' &&
+                  value !== null &&
+                  !Array.isArray(value)
                 const shapesDiffer =
-                  Array.isArray(before.widgets_values) !==
-                  Array.isArray(after.widgets_values)
+                  (Array.isArray(before.widgets_values) &&
+                    isNamedShape(after.widgets_values)) ||
+                  (isNamedShape(before.widgets_values) &&
+                    Array.isArray(after.widgets_values))
                 const comparedBeforeValues = shapesDiffer
                   ? asNamedValues(
                       before.widgets_values,
