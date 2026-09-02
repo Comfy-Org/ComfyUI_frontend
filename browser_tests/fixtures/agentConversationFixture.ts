@@ -231,9 +231,11 @@ class AgentConversationHarness {
 
   /**
    * The agent's workflow document as rendered on the canvas: every node the
-   * host doc owns, with its slot connectivity. Scoped to the doc's node ids
-   * because the tab the agent opens starts from the default template, whose
-   * nodes sit next to the follower's and would pin that template here.
+   * host doc owns, with its slot connectivity. The tab the agent opens is
+   * expected to be blank (AgentPanelRoot mints it from `blankGraph`); the
+   * doc-id filter is defensive, so a stray template node cannot pin the
+   * template here. Colliding ids are the real hazard: a template link into a
+   * doc node survives the follower's reconcile and shows up as connectivity.
    */
   async graphSnapshot(): Promise<GraphNodeSnapshot[]> {
     const docNodeIds = this.host.nodeIds()
