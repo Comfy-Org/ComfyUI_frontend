@@ -51,22 +51,22 @@ With GCS enabled, the admin browser uploads the file directly to a signed GCS
 url (`clientUploads`) rather than through `/api/media` — Vercel rejects request
 bodies over 4.5 MB at the edge, and the event videos run 5–25 MB. Minting a
 signed write url requires the `admin` role. This needs a one-time CORS rule on
-the bucket allowing `PUT` from the CMS origin (check the existing rules first
-with `gcloud storage buckets describe gs://<GCS_BUCKET> --format='default(cors_config)'`
-and merge rather than overwrite):
+the bucket allowing `PUT` from the CMS origin. `--cors-file` replaces the
+bucket's entire CORS config rather than appending to it, so merge the new rule
+into whatever the bucket already has:
 
 ```bash
-cat > cors.json <<'EOF'
-[
-  {
-    "origin": ["https://<cms-domain>"],
-    "method": ["PUT"],
-    "responseHeader": ["Content-Type"],
-    "maxAgeSeconds": 3600
-  }
-]
-EOF
-gcloud storage buckets update gs://<GCS_BUCKET> --cors-file=cors.json
+gcloud storage buckets describe gs://<GCS_BUCKET> --format='json(cors_config)' \
+  | jq '.cors_config // []' > cors.json
+
+jq '. + [{
+  "origin": ["https://<cms-domain>"],
+  "method": ["PUT"],
+  "responseHeader": ["Content-Type"],
+  "maxAgeSeconds": 3600
+}]' cors.json > cors.merged.json
+
+gcloud storage buckets update gs://<GCS_BUCKET> --cors-file=cors.merged.json
 ```
 
 Without the CORS rule the browser's `PUT` is blocked and every upload in the
