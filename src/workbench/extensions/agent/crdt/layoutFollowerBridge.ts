@@ -88,6 +88,18 @@ export class LayoutFollowerBridge extends EventTarget {
    * update has been applied.
    */
   private ackSeq: number | null = null
+  /**
+   * Armed by the ack, disarmed by the first applied frame whose seq equals
+   * {@link ackSeq}. The relay joins the fanout BEFORE it acks, so a live frame
+   * N+1 can reach the follower ahead of `doc_subscribed(seq=N)` and the
+   * catch-up `doc_update(seq=N)`. The catch-up is the only frame carrying what
+   * this follower's state vector lacked; if the stale check judged it against
+   * the already-applied N+1 it would be dropped and the hole would never show
+   * up as a gap. While armed, exactly one frame at seq == ackSeq bypasses the
+   * stale check (Yjs integration is idempotent, so a true duplicate is
+   * harmless). It never moves {@link lastSeq} backwards.
+   */
+  private catchUpPending = false
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -179,6 +191,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.sentWorkflowId = desired
       this.lastSeq = null
       this.ackSeq = null
+      this.catchUpPending = false
     }
   }
 
@@ -225,7 +238,11 @@ export class LayoutFollowerBridge extends EventTarget {
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
-    if (this.lastSeq !== null && update.seq <= this.lastSeq) return
+    // The one exception is the subscribe's own catch-up (seq == ackSeq) when
+    // a live frame overtook the ack: see {@link catchUpPending}.
+    const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
+    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq)
+      return
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
@@ -242,6 +259,7 @@ export class LayoutFollowerBridge extends EventTarget {
     }
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
+    if (isCatchUp) this.catchUpPending = false
     this.follower.applyRemoteUpdate(update.update)
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
@@ -310,8 +328,10 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) this.ackSeq = subscribed.seq ?? null
-    else this.sentWorkflowId = null
+    if (subscribed.ok) {
+      this.ackSeq = subscribed.seq ?? null
+      this.catchUpPending = this.ackSeq !== null
+    } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
