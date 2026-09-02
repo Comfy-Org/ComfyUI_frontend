@@ -3,7 +3,7 @@ import {
   declaredInputNamesForTypes,
   initializationSignalsForTypes,
   isCanvasPreviewImagePath,
-  isWidgetValuesReshape,
+  isWidgetValuesContainerSwap,
   serializedWidgetNames,
   matchesTopologyExpectation,
   namedWidgetValueDrifts,
@@ -280,39 +280,30 @@ describe('namedWidgetValueDrifts', () => {
   })
 })
 
-describe('isWidgetValuesReshape', () => {
-  it('matches an array paired with a name-keyed record', () => {
-    expect(isWidgetValuesReshape([1], { multiply_by: 1 })).toBe(true)
-    expect(isWidgetValuesReshape({ multiply_by: 1 }, [1])).toBe(true)
-  })
-
-  it('leaves an absent value alone, so an empty array still means nothing', () => {
-    expect(isWidgetValuesReshape([], null)).toBe(false)
-    expect(isWidgetValuesReshape([], undefined)).toBe(false)
-    expect(isWidgetValuesReshape(null, [])).toBe(false)
-    expect(isWidgetValuesReshape(undefined, [])).toBe(false)
-  })
-
-  it('ignores pairs that share a container', () => {
-    expect(isWidgetValuesReshape([1], [1])).toBe(false)
-    expect(isWidgetValuesReshape({ a: 1 }, { a: 1 })).toBe(false)
+describe('isWidgetValuesContainerSwap', () => {
+  it.for([
+    { after: { multiply_by: 1 }, before: [1], swap: true },
+    { after: [1], before: { multiply_by: 1 }, swap: true },
+    { after: null, before: [], swap: false },
+    { after: undefined, before: [], swap: false },
+    { after: [], before: null, swap: false },
+    { after: [], before: undefined, swap: false },
+    { after: [1], before: [1], swap: false },
+    { after: { a: 1 }, before: { a: 1 }, swap: false }
+  ])('$before -> $after is swap=$swap', ({ before, after, swap }) => {
+    expect(isWidgetValuesContainerSwap(before, after)).toBe(swap)
   })
 })
 
 describe('serializedWidgetNames', () => {
   it('drops a leading non-serialized widget so names line up with values', () => {
-    const widgets = [
-      { name: 'hidden_state', serialize: false as const },
+    const names = serializedWidgetNames([
+      { name: 'hidden_state', serialize: false },
       { name: 'steps' },
       { name: 'cfg' }
-    ]
-
-    const names = serializedWidgetNames(widgets)
+    ])
 
     expect(names).toEqual(['steps', 'cfg'])
-    // widgets_values for this node is [20, 8]: index 0 must resolve to
-    // 'steps', not the omitted 'hidden_state'.
-    expect(names[0]).toBe('steps')
   })
 
   it('keeps every widget when none opts out', () => {

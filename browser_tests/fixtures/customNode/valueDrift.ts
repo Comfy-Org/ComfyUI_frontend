@@ -293,28 +293,7 @@ export function declaredInputNamesForTypes(
   )
 }
 
-/**
- * Whether a widgets_values pair changed container without changing meaning.
- *
- * widgets_values is a union of a positional array and a name-keyed record,
- * and a pack may rewrite its own nodes to the record form in onSerialize. Only
- * an array/record pair qualifies: an empty array and an absent value already
- * compare equal, so treating that as a reshape would strip the equivalence.
- *
- * The save/reload tier mirrors this rule inside its page.evaluate closure,
- * which cannot import; these cases are the contract both sides implement.
- */
-/**
- * Widget names aligned to positional widgets_values.
- *
- * The serializer skips widgets with `serialize === false`, so a name list
- * taken from the full widget set misaligns every entry after the first skipped
- * one - a declared widget then gets checked against its neighbour's name, and
- * a real value drift can be filtered away as undeclared.
- *
- * The save/reload tier mirrors this inside its page.evaluate closure, which
- * cannot import; these cases are the contract both sides implement.
- */
+/** Returns names aligned with positional widgets_values serialization. */
 export function serializedWidgetNames(
   widgets: readonly { name: string; serialize?: boolean }[]
 ): string[] {
@@ -323,7 +302,12 @@ export function serializedWidgetNames(
     .map((widget) => widget.name)
 }
 
-export function isWidgetValuesReshape(
+/**
+ * Whether the pair swapped between the positional array and the name-keyed
+ * record, which carries the same values in a different container. An absent
+ * value is excluded: it already compares equal to an empty array.
+ */
+export function isWidgetValuesContainerSwap(
   before: unknown,
   after: unknown
 ): boolean {

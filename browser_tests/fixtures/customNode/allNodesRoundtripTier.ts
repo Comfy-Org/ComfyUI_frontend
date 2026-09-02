@@ -634,8 +634,8 @@ export async function assertRoundtripTier({
                 const asNamedValues = (
                   values: unknown,
                   names: string[]
-                ): unknown =>
-                  Array.isArray(values)
+                ): unknown => {
+                  const named = Array.isArray(values)
                     ? Object.fromEntries(
                         values.flatMap((value, index) => {
                           const name = names[index]
@@ -643,6 +643,23 @@ export async function assertRoundtripTier({
                         })
                       )
                     : values
+                  // The non-strict positional path drops frontend-only
+                  // widgets, so the reshaped record drops them too - otherwise
+                  // a pack that both reshapes and canonicalizes a UI-only
+                  // value reports drift while every declared input stuck.
+                  if (
+                    strict ||
+                    typeof named !== 'object' ||
+                    named === null ||
+                    Array.isArray(named)
+                  )
+                    return named
+                  return Object.fromEntries(
+                    Object.entries(named).filter(([name]) =>
+                      declaredNames.has(name)
+                    )
+                  )
+                }
                 // Only an array/record pair, never array vs absent: an empty
                 // array and a missing value already mean the same thing to
                 // preserves(), and reshaping [] into {} would strip that.
