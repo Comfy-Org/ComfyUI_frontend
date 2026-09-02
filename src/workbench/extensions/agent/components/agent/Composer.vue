@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
@@ -382,17 +383,21 @@ defineExpose({
               >#{{ tag.id }}</span
             >
           </span>
-          <button
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
-            type="button"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
+          <Tooltip
+            :config="buildAgentTooltipConfig(t('agent.remove'))"
+            side="top"
           >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </button>
+            <button
+              type="button"
+              :aria-label="
+                t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+              "
+              class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+              @click.stop="emit('removeTag', selectedNodeKey(tag))"
+            >
+              <span class="icon-[lucide--x] size-3.5 shrink-0" />
+            </button>
+          </Tooltip>
         </span>
       </div>
 
@@ -482,13 +487,17 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.addToPrompt'))"
-            :aria-label="t('agent.addToPrompt')"
-            class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+          <Tooltip
+            :config="buildAgentTooltipConfig(t('agent.addToPrompt'))"
+            side="top"
           >
-            <span class="icon-[lucide--plus] size-4" />
-          </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              :aria-label="t('agent.addToPrompt')"
+              class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+            >
+              <span class="icon-[lucide--plus] size-4" />
+            </DropdownMenuTrigger>
+          </Tooltip>
           <DropdownMenuPortal>
             <DropdownMenuContent
               side="top"
