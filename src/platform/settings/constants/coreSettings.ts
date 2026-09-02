@@ -807,24 +807,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.3'
   },
   {
-    id: 'Comfy.Pointer.ClickBufferTime',
-    category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
-    name: 'Pointer click drift delay (deprecated)',
-    tooltip:
-      'No longer used. Clicks and drags are disambiguated by distance alone (Pointer click drift).',
-    deprecated: true,
-    experimental: true,
-    type: 'slider',
-    attrs: {
-      min: 0,
-      max: 1000,
-      step: 1
-    },
-    defaultValue: 32,
-    versionAdded: '1.4.3',
-    versionModified: '1.44.19'
-  },
-  {
     id: 'Comfy.Pointer.DoubleClickTime',
     category: ['LiteGraph', 'Pointer', 'DoubleClickTime'],
     name: 'Double click interval (maximum)',

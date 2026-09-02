@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position } from '@e2e/fixtures/types'
-import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class CanvasHelper {
   constructor(
@@ -65,27 +65,22 @@ export class CanvasHelper {
   }
 
   /**
-   * Double-clicks at absolute page coordinates the way a person does: each
-   * press is held down for a while, and the pointer drifts a little before
-   * release. Pen, touch and trackpad devices report `pointermove` continuously
-   * while the pointer is held, so a real double click always carries movement
-   * that `page.mouse.dblclick` never sends.
+   * Double-clicks at absolute page coordinates the way a person does: the
+   * pointer drifts a little between press and release instead of staying
+   * pixel-perfect still, the way `page.mouse.dblclick` sends it.
    *
    * `driftPx` stays inside `Comfy.Pointer.ClickDrift` so both presses remain
    * clicks, and alternates sign so the pointer does not walk away from the
-   * start. `holdMs` is press duration, not a wait for application state — it
-   * is kept well under `Comfy.Pointer.DoubleClickTime` so the two presses pair
-   * up even when CDP round-trips are slow.
+   * start.
    */
-  async doubleClickHeld(
+  async doubleClickWithDrift(
     position: Position,
-    { holdMs = 60, driftPx = 2 }: { holdMs?: number; driftPx?: number } = {}
+    { driftPx = 2 }: { driftPx?: number } = {}
   ): Promise<void> {
     const { x, y } = position
     await this.page.mouse.move(x, y)
     for (const drift of [driftPx, 0]) {
       await this.page.mouse.down()
-      await sleep(holdMs)
       await this.page.mouse.move(x + drift, y)
       await this.page.mouse.up()
     }

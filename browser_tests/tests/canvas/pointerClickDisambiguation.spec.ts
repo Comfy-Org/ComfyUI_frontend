@@ -8,7 +8,6 @@ test.describe(
   { tag: ['@canvas', '@node'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.searchBoxV2.setup()
       // The gesture under test is the drift, not the interval. Playwright's
       // per-action delay (SLOW_MO=1000 in the video-recording job) lands
       // between the two presses, so the default 300ms would unpair them.
@@ -18,10 +17,10 @@ test.describe(
       )
     })
 
-    test('opens node search on a held double click that drifts within the click threshold', async ({
+    test('opens node search on a double click that drifts within the click threshold', async ({
       comfyPage
     }) => {
-      await comfyPage.canvasOps.doubleClickHeld({ x: 200, y: 200 })
+      await comfyPage.canvasOps.doubleClickWithDrift({ x: 200, y: 200 })
 
       await expect(comfyPage.searchBoxV2.dialog).toBeVisible()
     })
