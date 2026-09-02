@@ -36,11 +36,14 @@ const STAGE_WIDTH = 760
 const STAGE_HEIGHT = 360
 const INK_TOKEN = '--color-primary-comfy-ink'
 const PLUM_TOKEN = '--color-primary-comfy-plum'
-const INDICATOR_STAGE_CENTER = [87, 256] as const
+// The indicator sits inside a scaled group, so it never sampled the field at
+// its own stage position. These are the colours it showed.
+const INDICATOR_SURFACES = { left: '#d3d4e0', right: '#ebe3f1' } as const
 
-// A 30 fps cap lands exactly on the 60 Hz vsync interval, so jitter defers most
-// frames by a whole extra vsync and the cadence collapses to ~22 fps.
-const ANIMATION_FPS = 40
+// A frame budget that divides evenly into the vsync interval starves on jitter:
+// 30 fps is exactly two 60 Hz frames, and 40 fps exactly three at 120 Hz, so
+// most frames slip a whole extra vsync. 35 fps is off-grid at every common rate.
+const ANIMATION_FPS = 35
 
 // The retired holographic texture, resampled onto the stage as a 7x4 grid.
 const SURFACE_FIELD = [
@@ -63,6 +66,7 @@ interface Tile {
 
 interface VisualTile extends Tile {
   height: number
+  raised: boolean
   silhouette: string
   rightFace: string
   faceShadeOpacity: number
@@ -118,9 +122,12 @@ function surfaceColor(x: number, y: number) {
   return `#${blended.map((value) => value.toString(16).padStart(2, '0')).join('')}`
 }
 
-const indicatorSurface = surfaceColor(...INDICATOR_STAGE_CENTER)
-const indicatorLeftFill = tintedSurface(indicatorSurface, INK_TOKEN, 16)
-const indicatorRightFill = tintedSurface(indicatorSurface, PLUM_TOKEN, 8)
+const indicatorLeftFill = tintedSurface(INDICATOR_SURFACES.left, INK_TOKEN, 16)
+const indicatorRightFill = tintedSurface(
+  INDICATOR_SURFACES.right,
+  PLUM_TOKEN,
+  8
+)
 
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value))
@@ -255,17 +262,17 @@ const visualTiles = computed<VisualTile[]>(() =>
     return {
       ...tile,
       height,
+      raised,
       silhouette: raised ? tileSilhouette(tile, height) : '',
       rightFace: raised ? tileRightFace(tile, height) : '',
       faceShadeOpacity:
         (1 - clamp(height / MAX_HEIGHT)) * MAX_FACE_SHADE_OPACITY,
-      topFill:
-        height > 0.5
-          ? mixedColor('--color-primary-comfy-yellow', 76 + level * 24)
-          : mixedColor(
-              '--color-primary-comfy-plum',
-              48 + ((tile.id * 29) % 7) * 5
-            )
+      topFill: raised
+        ? mixedColor('--color-primary-comfy-yellow', 76 + level * 24)
+        : mixedColor(
+            '--color-primary-comfy-plum',
+            48 + ((tile.id * 29) % 7) * 5
+          )
     }
   })
 )
@@ -362,7 +369,7 @@ watch(
       </g>
 
       <g v-for="tile in visualTiles" :key="tile.id">
-        <template v-if="tile.height > 0.5">
+        <template v-if="tile.raised">
           <polygon :points="tile.silhouette" :fill="tile.leftFill" />
           <polygon :points="tile.rightFace" :fill="tile.rightFill" />
           <polygon
