@@ -930,6 +930,41 @@ describe('FEC-2 — a malformed doc_update fails closed instead of throwing unca
     expect(projected).toHaveLength(1)
     expect(bridge.follower.updatesApplied).toBe(1)
   })
+
+  it('a malformed frame at seq N followed by a valid frame at N+1 forces resubscribe instead of silently advancing (Ryan review, fe#16372)', () => {
+    const { transport, bridge, projected, applyErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    // The malformed frame at N=2: apply throws, so `lastSeq` must NOT be
+    // latched to 2. If it were (the bug this pins), the very next in-sequence
+    // frame at N+1=3 would look like an ordinary next frame and apply
+    // straight onto a replica that never actually integrated frame 2's bytes.
+    const garbage = new Uint8Array([9, 9, 9, 9, 9])
+    transport.deliver('doc_update', docUpdateFrame(garbage, WORKFLOW_ID, 2))
+    expect(projected).toHaveLength(0)
+    expect(applyErrors).toEqual([
+      { workflowId: WORKFLOW_ID, seq: 2, error: expect.any(FollowerApplyError) }
+    ])
+    expect(bridge.lastSequence).toBe(1)
+
+    // The valid frame that follows the dropped one, at N+1=3: with `lastSeq`
+    // still 1, this reads as a jump past `lastSeq + 1` — an authoritative
+    // resubscribe, not a silent in-sequence apply.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(projected).toHaveLength(0)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
 })
 
 describe('FEB-5 — switching workflows is a lineage break, never a fold', () => {

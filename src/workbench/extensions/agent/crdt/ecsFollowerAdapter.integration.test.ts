@@ -282,6 +282,8 @@ describe('EcsFollowerAdapter integration', () => {
 
     // First frame: the batch is rejected (no scope available), so the
     // reconciliation must not be consumed — local-only node 99 survives.
+    // `applyFrame` propagates the rejection (fe#16372) rather than
+    // reporting a drop as `applied:true`.
     scopeAvailable = false
     deleteLayouts.mockClear()
     expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
