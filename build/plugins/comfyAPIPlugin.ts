@@ -93,7 +93,7 @@ function transformExports(code: string, id: string): ShimResult {
 
 function getModuleName(id: string): string {
   // Simple example to derive a module name from the file path
-  const parts = id.split('/')
+  const parts = id.replace(/\\/g, '/').split('/')
   const fileName = parts[parts.length - 1]
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }

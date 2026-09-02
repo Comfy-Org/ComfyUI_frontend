@@ -105,6 +105,15 @@ describe('comfyAPIPlugin transform', () => {
     expect(result?.code).toContain('window.comfyAPI.api.api = api;')
   })
 
+  it('derives the module name from an id with Windows separators', () => {
+    const { result } = runTransform(
+      false,
+      `${path.join(root, 'src/scripts')}\\api.ts`
+    )
+
+    expect(result?.code).toContain('window.comfyAPI.api.api = api;')
+  })
+
   it('emits a deprecation warning shim for a deprecated legacy file', () => {
     const { emitFile } = runTransform(
       false,
