@@ -276,7 +276,9 @@ export class EcsFollowerAdapter {
 
     // This baseline performed the initial reconciliation. Later wire deltas
     // must use the normal add/update paths so links are updated atomically.
-    session.reconcileNextFrame = false
+    if (nodes.length > 0 || links.length > 0) {
+      session.reconcileNextFrame = false
+    }
     return true
   }
 

@@ -699,6 +699,73 @@ describe('EcsFollowerAdapter integration', () => {
     adapter.destroy()
   })
 
+  it('keeps the first frame armed after projecting an empty baseline', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    const addNode = vi.fn()
+    const reconcileNode = vi.fn()
+    const adapter = new EcsFollowerAdapter(() => ({
+      batch: (_context, define) => {
+        define({
+          addNode,
+          reconcileNode,
+          setWidget: vi.fn(),
+          connect: vi.fn(),
+          removeLinks: vi.fn(),
+          deleteNode: vi.fn(),
+          clearSemanticGraph: vi.fn()
+        })
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }))
+    adapter.bind('wf', follower)
+    expect(
+      adapter.projectBaseline('wf', {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'baseline'
+      })
+    ).toBe(true)
+
+    const stateVector = Y.encodeStateVector(host)
+    applyOps(
+      host,
+      [
+        op('first-node', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [0, 0],
+          node: { id: 1, type: 'Source', pos: [0, 0] }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    const update = Y.encodeStateAsUpdate(host, stateVector)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['first-frame']
+      })
+    ).toBe(true)
+    expect(reconcileNode).toHaveBeenCalledOnce()
+    expect(addNode).not.toHaveBeenCalled()
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('refuses to project a doc this build cannot read', () => {
     const host = mint(
       { nodes: [{ id: 1, type: 'Source', pos: [0, 0] }], links: [] },
