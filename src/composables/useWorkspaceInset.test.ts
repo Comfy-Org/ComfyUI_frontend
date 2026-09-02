@@ -59,6 +59,20 @@ describe('useWorkspaceInsetRight', () => {
     width.value = 960
     await nextTick()
 
-    expect(readInset()).toBe('420px')
+    // Teardown clears the var rather than freezing it at its last published
+    // value - a docked surface unmounted mid-close (its host's `v-if` beats
+    // its own `docked.value ? width : 0` branch to the flush) must not leave
+    // every portaled overlay permanently offset.
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825318
+    expect(readInset()).toBe('0px')
+  })
+
+  it('clears the inset on teardown even when the last published width was already zero', () => {
+    const scope = effectScope()
+    scope.run(() => useWorkspaceInsetRight(() => 0))
+    scope.stop()
+
+    expect(readInset()).toBe('0px')
   })
 })
