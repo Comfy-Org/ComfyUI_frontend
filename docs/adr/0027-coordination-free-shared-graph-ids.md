@@ -43,7 +43,7 @@ Partition the safe-integer space and mint the shared range randomly.
    on unbind, so nothing changes for a user who never opens the agent panel.
 3. **Random, not actor-scoped.** Ids stay `number`, which is what makes this shippable
    without touching the wire type. The shared span is `2**53 - 2**40` (~9.0e15); at
-   10^5 nodes in one document the birthday collision probability is ~5.5e-9, and every
+   10^5 nodes in one document the birthday collision probability is ~5.5e-7, and every
    high-volume minting call site already retries on a registry reject
    (`LGraphCanvas`'s used-id loop, `subgraphDeduplication.findNextAvailableId`, and
    ADR-0018's own remint-on-reject path in `LGraph.add`).
