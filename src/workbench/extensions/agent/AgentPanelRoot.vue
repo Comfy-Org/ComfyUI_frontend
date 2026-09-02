@@ -395,6 +395,17 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive
 )
+watch(
+  () => crdtStatus.value.schemaError,
+  (detail) => {
+    if (detail !== null)
+      toast.add({
+        severity: 'warn',
+        summary: t('agent.schemaMismatch'),
+        detail
+      })
+  }
+)
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,

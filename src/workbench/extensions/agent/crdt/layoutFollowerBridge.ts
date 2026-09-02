@@ -277,7 +277,11 @@ export class LayoutFollowerBridge extends EventTarget {
       this.schemaError = error
       this.dispatchEvent(
         new CustomEvent('schema_error', {
-          detail: { workflowId: update.workflowId, found: error.found }
+          detail: {
+            workflowId: update.workflowId,
+            found: error.found,
+            message: error.message
+          }
         })
       )
       return

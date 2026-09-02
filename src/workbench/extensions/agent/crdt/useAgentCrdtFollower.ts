@@ -124,6 +124,7 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+  schemaError: string | null
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -152,6 +153,7 @@ export function useAgentCrdtFollower(
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
+  const schemaError = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
@@ -307,6 +309,7 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      schemaError.value = null
       clearSubscribeRetry()
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
@@ -315,7 +318,13 @@ export function useAgentCrdtFollower(
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
       clearStaleProbe()
-      scheduleSubscribeRetry()
+      if (event.detail?.code === 'schema_version_mismatch') {
+        clearSubscribeRetry()
+        schemaError.value =
+          event.detail?.message ?? 'Document schema version mismatch'
+      } else {
+        scheduleSubscribeRetry()
+      }
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -417,8 +426,9 @@ export function useAgentCrdtFollower(
     clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: string; message?: string } | null)
         : null
+    schemaError.value = detail?.message ?? 'Document schema version mismatch'
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
     recordDevEvent(
@@ -469,6 +479,7 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
+      schemaError.value = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -542,7 +553,8 @@ export function useAgentCrdtFollower(
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    schemaError: schemaError.value
   }))
 
   return {

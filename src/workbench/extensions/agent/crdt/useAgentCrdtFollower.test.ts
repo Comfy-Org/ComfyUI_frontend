@@ -217,6 +217,24 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('does not retry a permanent schema mismatch and exposes its detail', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message:
+        'doc schema v1 does not match v2 [meta.schema_version: expected 2, actual 1] (request ID: req-123)'
+    })
+    vi.advanceTimersByTime(60_000)
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(status().schemaError).toContain('expected 2, actual 1')
+    expect(status().schemaError).toContain('req-123')
+    unmount()
+  })
+
   it('FE-1901: a confirmed subscribe clears the retry timer', () => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
@@ -445,10 +463,15 @@ describe('useAgentCrdtFollower', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
 
-    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      code: 'unreadable',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
+    expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
     expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
     unmount()
   })

@@ -5236,6 +5236,7 @@
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
+    "schemaMismatch": "Workflow version mismatch",
     "coachTitle": "Meet the agent",
     "coachBody": "Ask it to build or edit graphs.",
     "thought": "Thought",
