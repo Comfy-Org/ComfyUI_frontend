@@ -39,7 +39,7 @@ import {
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
-type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success' | 'declined'
+type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -164,7 +164,6 @@ export function useSubscriptionCheckout(
       ? 'verifying'
       : 'pricing'
   )
-  const checkoutDeclineReason = ref<string | null>(null)
   const isCancelingPayment = ref(false)
   const cancelUnavailable = ref(false)
   const cancelUnreachable = ref(false)
@@ -1448,9 +1447,10 @@ export function useSubscriptionCheckout(
         return
       }
       if (status === 'failed') {
-        checkoutDeclineReason.value =
-          activeCheckoutOperation.value?.errorMessage ?? null
-        checkoutStep.value = 'declined'
+        // The declined outcome step arrives one PR up; until it does, the
+        // store's failure toast carries the verdict and the dialog returns
+        // to plan selection.
+        checkoutStep.value = 'pricing'
         return
       }
       if (status === undefined) {
