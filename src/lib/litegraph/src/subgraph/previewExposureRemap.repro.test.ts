@@ -51,12 +51,13 @@ describe('load-time subgraph id dedup vs previewExposures', () => {
     const defA = result.subgraphs.find((subgraph) => subgraph.id === DA)
     const interiorId = String(defA?.nodes?.[0]?.id)
 
+    const exposures = hostA?.properties?.previewExposures as
+      | { sourceNodeId: string }[]
+      | undefined
+
     // The interior node was renumbered ...
     expect(interiorId).not.toBe('3')
     // ... so the exposure that points at it must follow.
-    expect(
-      (hostA?.properties?.previewExposures as { sourceNodeId: string }[])[0]
-        .sourceNodeId
-    ).toBe(interiorId)
+    expect(exposures?.[0]?.sourceNodeId).toBe(interiorId)
   })
 })
