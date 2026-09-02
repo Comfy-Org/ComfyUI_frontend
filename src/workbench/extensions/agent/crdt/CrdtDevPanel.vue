@@ -72,7 +72,8 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'reconnected',
   'subscribe_retry',
   'doc_nodes_changed',
-  'rebind'
+  'rebind',
+  'pending_ops'
 ] as const
 
 // ── open/close state, persisted ───────────────────────────────────────────

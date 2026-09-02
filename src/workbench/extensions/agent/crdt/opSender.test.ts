@@ -266,4 +266,92 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(1)
   })
+
+  describe('pending-op lifecycle hooks (s3-opt-6)', () => {
+    let trace: string[]
+
+    function hookedSender(): ReturnType<typeof createOpSender> {
+      sender.detach()
+      return createOpSender({
+        sendOps: (workflowId, tab, ops) => {
+          if (!transportUp) return false
+          sent.push({ workflowId, tab, ops })
+          trace.push(`send:${ops.map((op) => op.op_id).join(',')}`)
+          return true
+        },
+        onOpsResult: (listener) => {
+          resultListener = listener
+          return () => {
+            resultListener = null
+          }
+        },
+        workflowId: () => boundWorkflow,
+        tab: TAB,
+        actor: () => ACTOR,
+        baseVersion: () => 41,
+        onBatchMinted: (ops) =>
+          trace.push(`minted:${ops.map((op) => op.op_id).join(',')}`),
+        onBatchTransmitted: (ops) =>
+          trace.push(`transmitted:${ops.map((op) => op.op_id).join(',')}`),
+        onBatchSettled: (outcome) => {
+          settled.push(outcome)
+          trace.push(`settled:${outcome.state}`)
+        }
+      })
+    }
+
+    beforeEach(() => {
+      trace = []
+    })
+
+    it('reports minted ids before the transport sees them, then each accepted send', () => {
+      sender = hookedSender()
+      sender.enqueue([addNode(1), addNode(2)])
+      const ids = sent[0].ops.map((op) => op.op_id).join(',')
+
+      expect(trace).toEqual([
+        `minted:${ids}`,
+        `send:${ids}`,
+        `transmitted:${ids}`
+      ])
+    })
+
+    it('reports minted ids even when no doc is bound, before the undeliverable settle', () => {
+      boundWorkflow = null
+      sender = hookedSender()
+      sender.enqueue([addNode(1)])
+
+      expect(trace.map((step) => step.split(':')[0])).toEqual([
+        'minted',
+        'settled'
+      ])
+      expect(settled[0].state).toBe('undeliverable')
+    })
+
+    it('does not report a transmission the transport refused', () => {
+      transportUp = false
+      sender = hookedSender()
+      sender.enqueue([addNode(1)])
+      expect(trace.some((step) => step.startsWith('transmitted'))).toBe(false)
+
+      transportUp = true
+      vi.advanceTimersByTime(500)
+      expect(
+        trace.filter((step) => step.startsWith('transmitted'))
+      ).toHaveLength(1)
+    })
+
+    it('reports the silent-result resend as a second transmission of the same ids', () => {
+      sender = hookedSender()
+      sender.enqueue([addNode(1)])
+      vi.advanceTimersByTime(10_000)
+
+      const transmissions = trace.filter((step) =>
+        step.startsWith('transmitted')
+      )
+      expect(transmissions).toHaveLength(2)
+      expect(transmissions[0]).toBe(transmissions[1])
+      expect(trace.filter((step) => step.startsWith('minted'))).toHaveLength(1)
+    })
+  })
 })
