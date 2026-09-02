@@ -171,12 +171,15 @@ describe('document activation persistence (ADR-0024 seam)', () => {
       seq: 1,
       update: session.encodeCommittedState()
     })
+    const reloadScope = scopeFor('reload-root')
     expect(
-      reloadSession.commitNext(createTargetFrameApplyPort(mutations)).status
+      reloadSession.commitNext(
+        createTargetFrameApplyPort(mutationsFor(reloadScope))
+      ).status
     ).toBe('committed')
 
-    expect(serializeDocumentScope(scope)).toEqual(savedBytes)
-    expect(serializeDocumentScope(scope)).toEqual(baseline)
+    expect(serializeDocumentScope(reloadScope)).toEqual(savedBytes)
+    expect(serializeDocumentScope(reloadScope)).toEqual(baseline)
 
     session.destroy()
     reloadSession.destroy()
@@ -205,11 +208,14 @@ describe('document activation persistence (ADR-0024 seam)', () => {
       seq: 1,
       update: session.encodeCommittedState()
     })
+    const reloadScope = scopeFor('reload-root')
     expect(
-      reloadSession.commitNext(createTargetFrameApplyPort(mutations)).status
+      reloadSession.commitNext(
+        createTargetFrameApplyPort(mutationsFor(reloadScope))
+      ).status
     ).toBe('committed')
 
-    expect(serializeDocumentScope(scope)).toEqual(baseline)
+    expect(serializeDocumentScope(reloadScope)).toEqual(baseline)
     expect(coordinator.activeDocumentId()).toBe(otherDocumentId)
 
     session.destroy()
