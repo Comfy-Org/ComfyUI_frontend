@@ -27,6 +27,7 @@ import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 const {
   entries,
@@ -201,15 +202,19 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <button
-          v-tooltip.bottom="buildAgentTooltipConfig(t('agent.showChatHistory'))"
-          type="button"
-          :aria-label="t('agent.showChatHistory')"
-          class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-          @click="onOpenHistory"
+        <Tooltip
+          :config="buildAgentTooltipConfig(t('agent.showChatHistory'))"
+          side="bottom"
         >
-          <span class="icon-[lucide--history] size-4 shrink-0" />
-        </button>
+          <button
+            type="button"
+            :aria-label="t('agent.showChatHistory')"
+            class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            @click="onOpenHistory"
+          >
+            <span class="icon-[lucide--history] size-4 shrink-0" />
+          </button>
+        </Tooltip>
         <template v-if="renaming">
           <input
             ref="renameInput"
@@ -239,13 +244,17 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             }}</span>
           </button>
           <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger
-              v-tooltip.bottom="buildAgentTooltipConfig(t('agent.chatOptions'))"
-              :aria-label="t('agent.chatOptions')"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
+            <Tooltip
+              :config="buildAgentTooltipConfig(t('agent.chatOptions'))"
+              side="bottom"
             >
-              <span class="icon-[lucide--chevron-down] size-3" />
-            </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                :aria-label="t('agent.chatOptions')"
+                class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
+              >
+                <span class="icon-[lucide--chevron-down] size-3" />
+              </DropdownMenuTrigger>
+            </Tooltip>
             <DropdownMenuPortal>
               <DropdownMenuContent
                 side="bottom"

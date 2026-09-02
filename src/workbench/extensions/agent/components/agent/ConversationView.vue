@@ -4,6 +4,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -94,15 +95,19 @@ watch(
       </div>
     </div>
 
-    <button
+    <Tooltip
       v-if="!atBottom"
-      v-tooltip.top="buildAgentTooltipConfig(t('agent.latest'))"
-      type="button"
-      :aria-label="t('agent.latest')"
-      class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
-      @click="scrollToLatest"
+      :config="buildAgentTooltipConfig(t('agent.latest'))"
+      side="top"
     >
-      <span class="icon-[lucide--chevron-down] size-4" />
-    </button>
+      <button
+        type="button"
+        :aria-label="t('agent.latest')"
+        class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
+        @click="scrollToLatest"
+      >
+        <span class="icon-[lucide--chevron-down] size-4" />
+      </button>
+    </Tooltip>
   </div>
 </template>

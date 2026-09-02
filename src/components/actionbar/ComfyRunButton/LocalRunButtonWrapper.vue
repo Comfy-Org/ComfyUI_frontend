@@ -1,22 +1,26 @@
 <template>
   <div ref="root" class="contents">
     <ComfyQueueButton v-if="gate === 'none'" />
-    <Button
+    <Tooltip
       v-else
-      v-tooltip.bottom="{
+      :config="{
         value: t('actionbar.partnerRunGate.signInCaption'),
         showDelay: 600
       }"
-      variant="secondary"
-      size="unset"
-      class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
-      data-testid="partner-sign-in-to-run-button"
-      aria-describedby="partner-run-gate-caption"
-      @click="openPartnerSignInDialog"
+      side="bottom"
     >
-      <i class="icon-[lucide--log-in] size-4" aria-hidden="true" />
-      {{ t('actionbar.partnerRunGate.signInToRun') }}
-    </Button>
+      <Button
+        variant="secondary"
+        size="unset"
+        class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+        data-testid="partner-sign-in-to-run-button"
+        aria-describedby="partner-run-gate-caption"
+        @click="openPartnerSignInDialog"
+      >
+        <i class="icon-[lucide--log-in] size-4" aria-hidden="true" />
+        {{ t('actionbar.partnerRunGate.signInToRun') }}
+      </Button>
+    </Tooltip>
   </div>
 </template>
 
@@ -26,6 +30,7 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { useDialogService } from '@/services/dialogService'
 
