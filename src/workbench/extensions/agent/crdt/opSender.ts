@@ -28,6 +28,13 @@ export interface OpsResultView {
   ok: boolean
   applied: string[]
   skipped: string[]
+  /**
+   * The host's doc seq at the moment it acked the batch (`DocOpsResultFrame.seq`,
+   * omitted on the wire when zero). A `skipped` duplicate is already contained
+   * in doc state at this seq, so a follower that has projected `seq` can
+   * resolve the duplicate's pending shadow (s3-opt-2).
+   */
+  seq?: number
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
   failure?: { op_id?: string }
 }

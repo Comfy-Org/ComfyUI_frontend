@@ -153,14 +153,15 @@ describe('createPendingOpTracker', () => {
     expect(events).toHaveLength(1)
   })
 
-  it('a skipped op is already in the doc: retained until its effect, like applied', () => {
+  it('a skipped op whose effect frame does arrive still clears on that effect', () => {
     tracker.onBatchMinted(ops)
     tracker.onBatchTransmitted(ops)
     tracker.onBatchSettled(
       acknowledged(ops, {
         ok: true,
         applied: ['op-1', 'op-3'],
-        skipped: ['op-2']
+        skipped: ['op-2'],
+        seq: 50
       })
     )
     expect(tracker.entries().find((e) => e.opId === 'op-2')?.state).toBe(
@@ -169,6 +170,147 @@ describe('createPendingOpTracker', () => {
     tracker.onDocEffect(['op-1', 'op-2', 'op-3'])
     expect(tracker.entries()).toEqual([])
     expect(tracker.shadow.size()).toBe(0)
+    // Nothing left awaiting: a later projection has nothing to resolve.
+    tracker.onAuthoritativeState(50)
+    expect(events.map((e) => e.type)).toEqual(['skipped_awaiting', 'cleared'])
+  })
+
+  describe('s3-opt-2: skipped duplicates resolve on a covering projection, never on the ack', () => {
+    it('clears immediately when the projected seq already covers the ack seq', () => {
+      tracker = createPendingOpTracker({
+        currentSeq: () => 42,
+        onEvent: (event) => events.push(event)
+      })
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: true,
+          applied: [],
+          skipped: ['op-1', 'op-2', 'op-3'],
+          seq: 42
+        })
+      )
+      // All-skipped batch: no broadcast will ever carry these ids, yet the
+      // projection is already at the ack seq, so nothing lingers.
+      expect(tracker.entries()).toEqual([])
+      expect(tracker.shadow.size()).toBe(0)
+      expect(events).toEqual([
+        { type: 'skipped_cleared', seq: 42, opIds: ['op-1', 'op-2', 'op-3'] }
+      ])
+    })
+
+    it('waits for a covering projection transition, never clearing on the ack', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: true,
+          applied: ['op-1'],
+          skipped: ['op-2', 'op-3'],
+          seq: 45
+        })
+      )
+      expect(tracker.shadow.size()).toBe(3)
+      expect(events).toEqual([
+        { type: 'skipped_awaiting', seq: 45, opIds: ['op-2', 'op-3'] }
+      ])
+
+      // A projection below the ack seq proves nothing about the duplicate.
+      tracker.onAuthoritativeState(44)
+      expect(tracker.shadow.size()).toBe(3)
+      expect(events).toHaveLength(1)
+
+      tracker.onAuthoritativeState(45)
+      expect(tracker.shadow.isPending({ kind: 'node', nodeId: '2' })).toBe(
+        false
+      )
+      expect(tracker.shadow.isPending({ kind: 'node', nodeId: '3' })).toBe(
+        false
+      )
+      // The applied op still waits for its own effect (KEEP-ALIVE #9).
+      expect(tracker.entries().map((e) => e.opId)).toEqual(['op-1'])
+      expect(events[1]).toEqual({
+        type: 'skipped_cleared',
+        seq: 45,
+        opIds: ['op-2', 'op-3']
+      })
+    })
+
+    it('treats a seq-less ack as satisfied by any later authoritative transition', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, { ok: true, applied: [], skipped: ['op-1'] })
+      )
+      expect(events).toEqual([
+        { type: 'skipped_awaiting', seq: null, opIds: ['op-1'] }
+      ])
+      tracker.onAuthoritativeState(null)
+      expect(tracker.entries().map((e) => e.opId)).toEqual(['op-2', 'op-3'])
+      expect(events[1]).toEqual({
+        type: 'skipped_cleared',
+        seq: null,
+        opIds: ['op-1']
+      })
+    })
+
+    it('does not let a seq-less transition satisfy a numbered requirement', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: true,
+          applied: [],
+          skipped: ['op-1'],
+          seq: 45
+        })
+      )
+      tracker.onAuthoritativeState(null)
+      expect(tracker.entries().find((e) => e.opId === 'op-1')?.state).toBe(
+        'skipped'
+      )
+      tracker.onAuthoritativeState(46)
+      expect(tracker.entries().find((e) => e.opId === 'op-1')).toBeUndefined()
+    })
+
+    it('a redelivered ack cannot double-resolve or re-park an already cleared id', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      const ack = acknowledged(ops, {
+        ok: true,
+        applied: [],
+        skipped: ['op-1', 'op-2', 'op-3'],
+        seq: 45
+      })
+      tracker.onBatchSettled(ack)
+      tracker.onAuthoritativeState(45)
+      expect(tracker.entries()).toEqual([])
+      const seen = events.length
+
+      tracker.onBatchSettled(ack)
+      tracker.onAuthoritativeState(46)
+      expect(tracker.entries()).toEqual([])
+      expect(tracker.shadow.size()).toBe(0)
+      expect(events).toHaveLength(seen)
+    })
+
+    it('reset drops awaiting bookkeeping so a stale ack cannot clear after doc_reset', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: true,
+          applied: [],
+          skipped: ['op-1'],
+          seq: 45
+        })
+      )
+      tracker.reset()
+      const seen = events.length
+      tracker.onAuthoritativeState(45)
+      expect(events).toHaveLength(seen)
+    })
   })
 
   it('reverts the failed op and everything the host never reached; keeps the applied prefix', () => {

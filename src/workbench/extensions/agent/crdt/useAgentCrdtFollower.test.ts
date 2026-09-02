@@ -25,6 +25,7 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    lastAppliedSequence: number | null = null
     follower = {
       updatesApplied: 0,
       doc: {
@@ -453,6 +454,66 @@ describe('useAgentCrdtFollower', () => {
         workflowId: 'wf-1',
         seq: 43,
         opIds: [opId]
+      })
+      expect(follower.pendingShadows.isPending(node1)).toBe(false)
+      unmount()
+    })
+
+    it('clears a skipped-duplicate shadow once a projection covers the ack seq (s3-opt-2)', () => {
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+
+      // Host already had this op; no doc_update will ever carry its id.
+      dispatchFrame('doc_ops_result', {
+        ok: true,
+        applied: [],
+        skipped: [opId],
+        seq: 43
+      })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 43 })
+      expect(follower.pendingShadows.isPending(node1)).toBe(false)
+      unmount()
+    })
+
+    it('keeps a skipped shadow through the subscribe-ack window until a frame is applied', () => {
+      // After (re)subscribe the bridge knows the host seq from the ack
+      // (lastSequence = 41) but has applied nothing yet; the canvas still shows
+      // pre-op state. A skipped result at that seq must not clear the shadow.
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      expect(bridge().lastAppliedSequence).toBeNull()
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+
+      dispatchFrame('doc_ops_result', {
+        ok: true,
+        applied: [],
+        skipped: [opId],
+        seq: 41
+      })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 41 })
+      expect(follower.pendingShadows.isPending(node1)).toBe(false)
+      unmount()
+    })
+
+    it('clears a skipped shadow at once when an applied frame already covers its seq', () => {
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      bridge().lastAppliedSequence = 43
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+
+      dispatchFrame('doc_ops_result', {
+        ok: true,
+        applied: [],
+        skipped: [opId],
+        seq: 43
       })
       expect(follower.pendingShadows.isPending(node1)).toBe(false)
       unmount()
