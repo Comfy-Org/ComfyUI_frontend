@@ -423,6 +423,31 @@ function matchesFacet(
   )
 }
 
+// Deep links into the catalog: `?useCase=edit-images&capability=Upscale&provider=Kling`.
+export function catalogSearch(filter: Partial<WorkshopFilter>): string {
+  const params = new URLSearchParams()
+  if (filter.query) params.set('q', filter.query)
+  if (filter.useCase && filter.useCase !== 'all')
+    params.set('useCase', filter.useCase)
+  for (const capability of filter.capabilities ?? [])
+    params.append('capability', capability)
+  for (const provider of filter.providers ?? [])
+    params.append('provider', provider)
+  const search = params.toString()
+  return search ? `?${search}` : ''
+}
+
+export function parseCatalogSearch(search: string): WorkshopFilter {
+  const params = new URLSearchParams(search)
+  const useCase = params.get('useCase')
+  return {
+    query: params.get('q') ?? '',
+    useCase: USE_CASES.find((value) => value === useCase) ?? 'all',
+    capabilities: params.getAll('capability'),
+    providers: params.getAll('provider')
+  }
+}
+
 export function filterWorkshopModels(
   list: readonly WorkshopModel[],
   { query, useCase = 'all', providers = [], capabilities = [] }: WorkshopFilter

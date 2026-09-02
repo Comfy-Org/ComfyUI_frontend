@@ -8,7 +8,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
@@ -18,6 +18,7 @@ import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
 import {
   SORT_ORDERS,
   USE_CASES,
+  parseCatalogSearch,
   countByFacet,
   countByUseCase,
   filterWorkshopModels,
@@ -40,6 +41,14 @@ const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 const { showStatuses } = usePrototypeTweaks()
+
+onMounted(() => {
+  const initial = parseCatalogSearch(location.search)
+  query.value = initial.query
+  useCase.value = initial.useCase ?? 'all'
+  capabilities.value = [...(initial.capabilities ?? [])]
+  providers.value = [...(initial.providers ?? [])]
+})
 
 const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   all: 'workshop.useCase.all',

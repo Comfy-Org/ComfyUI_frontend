@@ -8,6 +8,7 @@ import StaticFrame from '../../../components/workshop/StaticFrame.vue'
 import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../../config/routes'
 import {
+  catalogSearch,
   getWorkshopModel,
   getWorkshopModelDetail,
   workshopModels
@@ -46,6 +47,16 @@ const price =
 
 const pillClass =
   'rounded-2xl bg-transparency-white-t8 px-3 py-1 text-[11px] font-bold tracking-wider text-primary-warm-white uppercase'
+
+const tags = [
+  ...(model.provider
+    ? [{ label: model.provider, search: catalogSearch({ providers: [model.provider] }) }]
+    : []),
+  ...model.capabilities.map((capability) => ({
+    label: capability,
+    search: catalogSearch({ capabilities: [capability] })
+  }))
+]
 ---
 
 <BaseLayout
@@ -127,6 +138,23 @@ const pillClass =
           successor={successor ? { name: successor.name, href: successor.href } : undefined}
           client:load
         />
+
+        {
+          tags.length > 0 && (
+            <ul class="mt-2 flex flex-wrap gap-2" data-testid="model-tags">
+              {tags.map((tag) => (
+                <li>
+                  <a
+                    href={`${routes.workshop}${tag.search}`}
+                    class="rounded-2xl border border-transparency-white-t20 px-3 py-1 text-xs text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
+                  >
+                    {tag.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
         </div>
       </div>
     </header>

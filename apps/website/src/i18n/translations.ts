@@ -8216,6 +8216,7 @@ Enterprise`
 
   // Workshop – header account + nav
   'nav.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'nav.comfyWorkshop': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Sign out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },

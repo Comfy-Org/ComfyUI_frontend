@@ -46,6 +46,24 @@ test.describe('Workshop catalog', () => {
     ).toHaveCount(4)
   })
 
+  test('model tags deep-link into a filtered catalog', async ({ page }) => {
+    await page.goto('/workshop/models/topaz-labs/')
+    const tag = page
+      .getByTestId('model-tags')
+      .getByRole('link', { name: 'Upscale' })
+    await expect(tag).toHaveAttribute('href', '/workshop?capability=Upscale')
+    await tag.click()
+    await expect(page).toHaveURL(/\/workshop\/?\?capability=Upscale$/)
+    await expect(
+      page.getByTestId('workshop-filter-capability-count')
+    ).toHaveText('1')
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+    ).toHaveCount(3)
+  })
+
   test('homepage model releases open their Workshop model', async ({
     page
   }) => {

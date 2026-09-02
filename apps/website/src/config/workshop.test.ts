@@ -8,8 +8,10 @@ import {
   countByFacet,
   countByUseCase,
   decodeGeneratedModels,
+  catalogSearch,
   filterWorkshopModels,
   getWorkshopModel,
+  parseCatalogSearch,
   isRouterModel,
   sortWorkshopModels,
   splitTask,
@@ -337,5 +339,26 @@ describe('decodeGeneratedModels', () => {
     expect(Object.keys(decodeGeneratedModels(generatedModels))).toEqual(
       Object.keys(generatedModels)
     )
+  })
+})
+
+describe('catalog deep links', () => {
+  it('round-trips a filter through the query string', () => {
+    const search = catalogSearch({
+      useCase: 'edit-images',
+      capabilities: ['Upscale', 'Image editing'],
+      providers: ['Kling']
+    })
+    expect(parseCatalogSearch(search)).toEqual({
+      query: '',
+      useCase: 'edit-images',
+      capabilities: ['Upscale', 'Image editing'],
+      providers: ['Kling']
+    })
+  })
+
+  it('ignores unknown use cases and yields no query string when empty', () => {
+    expect(parseCatalogSearch('?useCase=nonsense').useCase).toBe('all')
+    expect(catalogSearch({ useCase: 'all', capabilities: [] })).toBe('')
   })
 })
