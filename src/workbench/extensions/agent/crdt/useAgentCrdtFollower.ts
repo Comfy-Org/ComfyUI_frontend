@@ -555,9 +555,11 @@ export function useAgentCrdtFollower(
    * on every accepted connection, first one included, so it is the earliest
    * signal available that the socket can now carry a frame. `reconcile()` is a
    * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing.
+   * nothing unless a refused subscribe has a scheduled retry. In that case,
+   * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
+    if (subscribeRetryTimer !== null) return
     bridge.reconcile()
   }
 
