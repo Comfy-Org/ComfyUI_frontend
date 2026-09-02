@@ -6,7 +6,7 @@ const config: KnipConfig = {
   workspaces: {
     '.': {
       entry: [
-        '{build,scripts}/**/*.{js,ts}',
+        '{build,scripts}/**/*.{js,mjs,ts}',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
@@ -55,6 +55,16 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
+    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in
+    // the build imports it — that is the point: it is the entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v2.js',
+    // The extension contract the handles conform to, kept as types so the
+    // shapes are checkable. Nothing imports it — it is a reference.
+    'src/types/extensionV2.ts',
+    // Example packs: ComfyUI loads their web/ scripts by URL at runtime,
+    // exactly as a real pack does, so the build has no import to find.
+    'examples/node-api/**/web/*.js',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',

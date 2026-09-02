@@ -464,6 +464,9 @@ export interface IContextMenuValue<
 > extends IContextMenuBase {
   value?: TValue
   content: string | undefined
+  /** Extension items only: insert above the canvas menu's Paste entry
+   * instead of appending at the end. */
+  beforePaste?: boolean
   has_submenu?: boolean
   disabled?: boolean
   submenu?: IContextMenuSubmenu<TValue>

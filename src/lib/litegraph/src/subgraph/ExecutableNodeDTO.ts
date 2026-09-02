@@ -297,6 +297,14 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return this._resolveSubgraphOutput(slot, type, visited)
 
     if (node.isVirtualNode) {
+      // The resolution pass owns this node's outputs: stop here and report it
+      // as the origin, and the prompt builder substitutes from its computed
+      // map. The legacy shapes below cannot express a computed source — a
+      // Get node has no inputs for the pass-through to find — and falling
+      // through to them silently dropped the consumer's input.
+      if (node.resolutionOwned) {
+        return { node: this, origin_id: this.id, origin_slot: slot }
+      }
       // Cross-graph virtual nodes (e.g. Set/Get) resolve their source directly.
       const virtualSource = this.node.resolveVirtualOutput?.(slot)
       if (virtualSource) {
