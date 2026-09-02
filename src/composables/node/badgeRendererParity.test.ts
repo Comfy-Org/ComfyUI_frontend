@@ -60,7 +60,7 @@ function legacyBadgeText(node: LGraphNode): string {
   return badge?.text.replaceAll('[', '').replaceAll(']', '') ?? ''
 }
 
-function vueBadgeText(node: LGraphNode): string {
+function vueBadges(node: LGraphNode) {
   if (!node.graph) throw new Error('node is not attached to a graph')
   const nodeData: NodeState = {
     flags: node.flags,
@@ -74,15 +74,18 @@ function vueBadgeText(node: LGraphNode): string {
     type: node.type
   }
   const scope = effectScope()
-  const facts = scope.run(() => {
-    const partitioned = usePartitionedBadges(nodeData).value
-    return [
-      ...partitioned.core.map((badge) => badge.text),
-      ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
-    ]
-  })
+  const partitioned = scope.run(() => usePartitionedBadges(nodeData).value)
   scope.stop()
-  return (facts ?? []).join(' ')
+  if (!partitioned) throw new Error('partitioned badges were not computed')
+  return partitioned
+}
+
+function vueBadgeText(node: LGraphNode): string {
+  const partitioned = vueBadges(node)
+  return [
+    ...partitioned.core.map((badge) => badge.text),
+    ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
+  ].join(' ')
 }
 
 describe('badge renderer parity (I2)', () => {
@@ -168,6 +171,32 @@ describe('badge renderer parity (I2)', () => {
       const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
 
       expect(vueBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
+  })
+
+  // Known gap, tracked as BE-11449: the Comfy Cloud mark is a Nodes 2.0
+  // affordance. The legacy canvas has no logo badge — a core node's source is
+  // the fox as text — so it cannot tell a Comfy Cloud node from any other
+  // partner node. Delete this once the legacy renderer carries the mark.
+  describe('Comfy Cloud mark is Vue-only', () => {
+    const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
+    const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
+
+    it('legacy cannot distinguish Comfy Cloud from another partner node', () => {
+      const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
+      const cloudText = legacyBadgeText(cloud)
+      const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
+
+      expect(cloudText).toBe(legacyBadgeText(partner))
+      expect(cloudText).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
+
+    it('Vue marks Comfy Cloud and leaves the other partner node unmarked', () => {
+      const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
+      expect(vueBadges(cloud).hasComfyCloudBadge).toBe(true)
+
+      const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
+      expect(vueBadges(partner).hasComfyCloudBadge).toBe(false)
     })
   })
 
