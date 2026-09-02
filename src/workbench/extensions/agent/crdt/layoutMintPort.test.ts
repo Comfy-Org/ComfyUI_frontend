@@ -121,7 +121,11 @@ describe('attachLayoutMintPort', () => {
       }),
       {
         errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
-        context: { nodeId: '1' }
+        context: {
+          graphId: 'root',
+          ownerGraphId: 'subgraph',
+          nodeId: '1'
+        }
       }
     )
     expect(reportError).toHaveBeenNthCalledWith(
@@ -131,9 +135,54 @@ describe('attachLayoutMintPort', () => {
       }),
       {
         errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
-        context: { nodeId: '1' }
+        context: {
+          graphId: 'root',
+          ownerGraphId: 'subgraph',
+          nodeId: '1'
+        }
       }
     )
+  })
+
+  it('reports one interior-delete error per subgraph per tick', async () => {
+    for (let index = 0; index < 30; index++) {
+      deliver({
+        operation: {
+          ...deleteChange(String(index)).operation,
+          graphId: 'root',
+          ownerGraphId: 'subgraph-a'
+        }
+      })
+    }
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenLastCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+      context: {
+        graphId: 'root',
+        ownerGraphId: 'subgraph-a',
+        nodeId: '0'
+      }
+    })
+
+    deliver({
+      operation: {
+        ...deleteChange('30').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph-b'
+      }
+    })
+    expect(reportError).toHaveBeenCalledTimes(2)
+
+    await Promise.resolve()
+    deliver({
+      operation: {
+        ...deleteChange('31').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph-a'
+      }
+    })
+    expect(reportError).toHaveBeenCalledTimes(3)
   })
 
   it('never mints an agent-remote echo (KA-6 sender half)', () => {

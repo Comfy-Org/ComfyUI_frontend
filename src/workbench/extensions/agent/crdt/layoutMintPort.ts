@@ -75,6 +75,7 @@ export interface LayoutMintPort {
 
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
+  const reportedInteriorChanges = new Set<string>()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -89,28 +90,46 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     })
   }
 
+  function reportUnrepresentableInteriorChange(
+    operation: LayoutChangeView['operation'],
+    action: 'create' | 'delete'
+  ): boolean {
+    if (
+      operation.ownerGraphId === undefined ||
+      operation.graphId === undefined ||
+      operation.ownerGraphId === operation.graphId
+    ) {
+      return false
+    }
+
+    const reportKey = `${action}:${operation.graphId}:${operation.ownerGraphId}`
+    if (reportedInteriorChanges.has(reportKey)) return true
+
+    reportedInteriorChanges.add(reportKey)
+    queueMicrotask(() => reportedInteriorChanges.delete(reportKey))
+    reportError(
+      new Error(
+        `Subgraph-interior node ${action} has no wire op; the bound doc diverges from the local graph`
+      ),
+      {
+        errorType: `agent_crdt_unrepresentable_subgraph_node_${action}`,
+        context: {
+          graphId: operation.graphId,
+          ownerGraphId: operation.ownerGraphId,
+          nodeId: operation.nodeId
+        }
+      }
+    )
+    return true
+  }
+
   function onChange(change: LayoutChangeView): void {
     const operation = change.operation
     const inTeardown = deps.session.inTeardown()
     switch (operation.type) {
       case 'createNode': {
         if (!gate(change, inTeardown)) return
-        if (
-          operation.ownerGraphId !== undefined &&
-          operation.graphId !== undefined &&
-          operation.ownerGraphId !== operation.graphId
-        ) {
-          reportError(
-            new Error(
-              'Subgraph-interior node create has no wire op; the bound doc diverges from the local graph'
-            ),
-            {
-              errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
-              context: { nodeId: operation.nodeId }
-            }
-          )
-          return
-        }
+        if (reportUnrepresentableInteriorChange(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -135,22 +154,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       }
       case 'deleteNode': {
         if (!gate(change, inTeardown)) return
-        if (
-          operation.ownerGraphId !== undefined &&
-          operation.graphId !== undefined &&
-          operation.ownerGraphId !== operation.graphId
-        ) {
-          reportError(
-            new Error(
-              'Subgraph-interior node delete has no wire op; the bound doc diverges from the local graph'
-            ),
-            {
-              errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
-              context: { nodeId: operation.nodeId }
-            }
-          )
-          return
-        }
+        if (reportUnrepresentableInteriorChange(operation, 'delete')) return
         if (operation.nodeId === undefined) return
         deps.enqueue([
           {
