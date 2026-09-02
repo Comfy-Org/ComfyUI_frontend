@@ -2,6 +2,7 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -9,6 +10,7 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { DocumentId } from '@/types/documentId'
 import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
 
@@ -40,6 +42,15 @@ export class ComfyWorkflow extends UserFile {
    * The change tracker for the workflow. Non-reactive raw object.
    */
   changeTracker: ChangeTracker | null = null
+  /**
+   * This workflow's `GraphDocument` registry identity (ADR-0024). Created
+   * local-only (no `workflow_id`) the first time the workflow is loaded and
+   * held for the instance's lifetime; cleared on unload. A fresh load call
+   * after unload mints a new document id — the registry entry for the old
+   * one is left for the caller to close, matching `changeTracker`'s own
+   * create-on-load/null-on-unload lifecycle.
+   */
+  documentId: DocumentId | null = null
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
@@ -149,6 +160,12 @@ export class ComfyWorkflow extends UserFile {
     const initialState = JSON.parse(this.originalContent)
     const { ChangeTracker } = await import('@/scripts/changeTracker')
     this.changeTracker = markRaw(new ChangeTracker(this, initialState))
+    // Local-only document identity (ADR-0024): every loaded workflow gets a
+    // registry entry, whether or not it is ever bound to a cloud
+    // `workflow_id` (that mapping is layered on separately, e.g. by the
+    // agent panel). Minted once per load; reused across re-entrant loads of
+    // an already-loaded instance.
+    this.documentId ??= useGraphDocumentStore().createDocument()
     if (draftState && draftContent) {
       this.changeTracker.activeState = draftState
       this.content = draftContent
@@ -167,6 +184,16 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
+    // Capture the save ticket before any `await` (including the dynamic
+    // import below): a mutation that commits while this call is in flight
+    // must leave the document dirty, so the baseline can only advance to the
+    // revision captured here — the revision at the instant `save()` was
+    // invoked — never to whatever revision happens to be current once
+    // control returns to us after yielding.
+    const documentId = this.documentId
+    const graphDocumentStore = documentId ? useGraphDocumentStore() : null
+    const saveTicket = graphDocumentStore?.beginSave(documentId!) ?? null
+
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const draftStore = useWorkflowDraftStoreV2()
@@ -174,6 +201,7 @@ export class ComfyWorkflow extends UserFile {
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
+    if (saveTicket) graphDocumentStore!.completeSave(saveTicket)
     this.changeTracker?.reset()
     this.isModified = false
     draftStore.removeDraft(this.path)
