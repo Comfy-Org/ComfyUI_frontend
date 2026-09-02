@@ -145,6 +145,12 @@ interface GraphNodeSnapshot {
  */
 class AgentConversationHarness {
   readonly postedMessages: string[] = []
+  /**
+   * Every frame the CLIENT sent on /ws, in order (BE-11470 A4): human-op
+   * minting is observable only on this side of the socket, so regression
+   * specs assert against these rather than app internals.
+   */
+  readonly clientFrames: { type?: unknown; data?: unknown }[] = []
   readonly panel: Locator
   readonly ack: AgentTurnAccepted
 
@@ -313,10 +319,21 @@ class AgentConversationHarness {
     this.socket.send(JSON.stringify(frame))
   }
 
+  /** The ops of every outbound `doc_ops` frame, flattened in send order. */
+  outboundOps(): { op?: unknown }[] {
+    return this.clientFrames
+      .filter((frame) => frame.type === 'doc_ops')
+      .flatMap((frame) => {
+        const ops = (frame.data as { ops?: unknown } | undefined)?.ops
+        return Array.isArray(ops) ? (ops as { op?: unknown }[]) : []
+      })
+  }
+
   private onClientFrame(raw: string | Buffer): void {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
+    this.clientFrames.push({ type, data })
     if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
       return
     const { workflow_id, state_vector_b64 } = data as {
