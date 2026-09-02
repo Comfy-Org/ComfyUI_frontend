@@ -299,6 +299,8 @@ describe('GraphCanvas execution progress updates', () => {
       workflowStore,
       progressState,
       progressValues,
+      totalNodes,
+      activeEntries,
       get progressWrites() {
         return progressWrites
       }
@@ -323,11 +325,9 @@ describe('GraphCanvas execution progress updates', () => {
       )
       await nextTick()
 
-      expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
-      expect(harness.progressWrites).toBe(totalNodes)
-      expect(mocks.setDirty).toHaveBeenCalledOnce()
+      expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+      expect(harness.progressWrites).toBe(0)
+      expect(mocks.setDirty).not.toHaveBeenCalled()
     }
   )
 
@@ -352,10 +352,8 @@ describe('GraphCanvas execution progress updates', () => {
       }
       await nextTick()
 
-      expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
-      expect(harness.progressWrites).toBe(totalNodes)
+      expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+      expect(harness.progressWrites).toBe(1)
       expect(harness.progressValues[0]).toBe(0.5)
       expect(mocks.setDirty).toHaveBeenCalledOnce()
     }
@@ -435,7 +433,7 @@ describe('GraphCanvas execution progress updates', () => {
 
   it('clears only the node whose progress was removed', async () => {
     const harness = await mountProgressHarness()
-    const removedNodeId = String(activeEntries)
+    const removedNodeId = String(harness.activeEntries)
     const removedState = Object.fromEntries(
       Object.entries(harness.progressState).filter(
         ([nodeId]) => nodeId !== removedNodeId
@@ -446,7 +444,7 @@ describe('GraphCanvas execution progress updates', () => {
     await nextTick()
 
     expect(harness.progressWrites).toBe(1)
-    expect(harness.progressValues[activeEntries - 1]).toBeUndefined()
+    expect(harness.progressValues[harness.activeEntries - 1]).toBeUndefined()
     expect(mocks.setDirty).toHaveBeenCalledOnce()
     expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
     expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
@@ -454,7 +452,7 @@ describe('GraphCanvas execution progress updates', () => {
 
   it('ignores progress for a node outside the graph', async () => {
     const harness = await mountProgressHarness()
-    const unmatchedNodeId = String(totalNodes + 1)
+    const unmatchedNodeId = String(harness.totalNodes + 1)
 
     harness.executionStore.nodeProgressStates = {
       ...harness.progressState,
