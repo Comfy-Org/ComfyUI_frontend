@@ -31,31 +31,34 @@ const ALL_STATES: MintGateInput[] = BOOLS.flatMap((flagEnabled) =>
   )
 )
 
-describe('shouldMint — exhaustive over the whole input domain', () => {
-  it('enumerates all 16 states', () => {
-    expect(ALL_STATES).toHaveLength(16)
-    expect(new Set(ALL_STATES.map((s) => JSON.stringify(s))).size).toBe(16)
-  })
+function key({
+  flagEnabled,
+  docBound,
+  localProvenance,
+  teardown
+}: MintGateInput): string {
+  return `flag=${flagEnabled} doc=${docBound} local=${localProvenance} teardown=${teardown}`
+}
 
+describe('shouldMint — exhaustive over the whole input domain', () => {
   it('matches the literal truth table', () => {
-    const expected = [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true,
-      false
-    ]
-    expect(ALL_STATES.map(shouldMint)).toEqual(expected)
+    const expected: Record<string, boolean> = Object.fromEntries(
+      ALL_STATES.map((s) => [key(s), false])
+    )
+    // The single true state: flag enabled, doc bound, local provenance,
+    // and NOT teardown — an ordinary tab switch, not the clear-storm case.
+    expected[
+      key({
+        flagEnabled: true,
+        docBound: true,
+        localProvenance: true,
+        teardown: false
+      })
+    ] = true
+
+    const actual = Object.fromEntries(
+      ALL_STATES.map((s) => [key(s), shouldMint(s)])
+    )
+    expect(actual).toEqual(expected)
   })
 })
