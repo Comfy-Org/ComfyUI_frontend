@@ -128,4 +128,25 @@ describe('installReplayVeil', () => {
     handle.uninstall()
     expect(canvas.onDrawForeground).toBe(original)
   })
+
+  it('uninstall leaves a later chained hook in place instead of clobbering it', () => {
+    const original = vi.fn()
+    const canvas = makeCanvas({})
+    canvas.onDrawForeground = original
+    const first = installReplayVeil(canvas, () => new Set())
+    const later = vi.fn()
+    canvas.onDrawForeground = later
+    first.uninstall()
+    expect(canvas.onDrawForeground).toBe(later)
+  })
+
+  it('uninstall is a no-op when the slot was already cleared', () => {
+    const original = vi.fn()
+    const canvas = makeCanvas({})
+    canvas.onDrawForeground = original
+    const handle = installReplayVeil(canvas, () => new Set())
+    canvas.onDrawForeground = undefined
+    handle.uninstall()
+    expect(canvas.onDrawForeground).toBeUndefined()
+  })
 })

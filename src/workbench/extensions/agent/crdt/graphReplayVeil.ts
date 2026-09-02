@@ -77,7 +77,7 @@ export function installReplayVeil(
   getPendingNodeIds: () => ReadonlySet<string>
 ): ReplayVeilHandle {
   const previous = canvas.onDrawForeground
-  canvas.onDrawForeground = function (
+  const installed = function (
     this: LGraphCanvas,
     ctx: CanvasRenderingContext2D,
     visibleArea: Rectangle
@@ -85,11 +85,13 @@ export function installReplayVeil(
     previous?.call(this, ctx, visibleArea)
     drawReplayVeil(ctx, this, getPendingNodeIds())
   }
+  canvas.onDrawForeground = installed
   return {
     uninstall: () => {
-      if (canvas.onDrawForeground === undefined) return
       // Only restore if we are still the installed hook - a later installer
-      // (e.g. panel remount) may have already chained past us.
+      // (e.g. panel remount, another extension) may have already chained
+      // past us, and overwriting its hook with `previous` would drop it.
+      if (canvas.onDrawForeground !== installed) return
       canvas.onDrawForeground = previous
     }
   }

@@ -208,8 +208,10 @@ export class GraphReplayQueue {
     this.onStep?.({ nodeIds: nodes, linkIds, missingNodeIds })
     const remaining = this.pendingNodes.length + this.pendingLinks.length
     if (missingNodeIds.length > 0) {
-      // Honest failure: the graph no longer matches the batch we were pacing.
-      // Force-reveal the rest so nothing stays veiled forever.
+      // Honest failure: `nodeExists` (the caller's source of truth - the doc,
+      // in the follower) no longer holds a node we were still pacing, so the
+      // batch is stale. Force-reveal the rest so nothing stays veiled forever,
+      // reporting any further missing ids in that step too.
       this.cancelTimer()
       const restNodes = this.pendingNodes
       const restLinks = this.pendingLinks
@@ -219,7 +221,7 @@ export class GraphReplayQueue {
         this.onStep?.({
           nodeIds: restNodes,
           linkIds: restLinks.map((link) => link.id),
-          missingNodeIds: []
+          missingNodeIds: restNodes.filter((id) => !this.nodeExists(id))
         })
       }
       this.setState('failed')

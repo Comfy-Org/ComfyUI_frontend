@@ -75,6 +75,34 @@ export interface AgentCrdtStatus {
   replayState: GraphReplayState
 }
 
+/**
+ * mm3-23: endpoint node ids of one `links` record, or null when the record is
+ * not a link shape we recognise. Root links are LiteGraph tuples; the object
+ * form is the subgraph-definition interior shape, kept as a fallback.
+ */
+export function linkEndpoints(
+  value: unknown
+): { originId: string; targetId: string } | null {
+  const asId = (v: unknown): string | null =>
+    typeof v === 'string' || typeof v === 'number' ? String(v) : null
+  if (Array.isArray(value)) {
+    const originId = asId(value[1])
+    const targetId = asId(value[3])
+    return originId !== null && targetId !== null
+      ? { originId, targetId }
+      : null
+  }
+  if (typeof value === 'object' && value !== null) {
+    const record = value as Record<string, unknown>
+    const originId = asId(record.origin_id)
+    const targetId = asId(record.target_id)
+    return originId !== null && targetId !== null
+      ? { originId, targetId }
+      : null
+  }
+  return null
+}
+
 function safeLocalStorage(): Storage | null {
   try {
     return typeof window === 'undefined' ? null : window.localStorage
@@ -176,12 +204,25 @@ export function useAgentCrdtFollower(
       return new Set()
     }
   }
+  const docNodeExists = (id: string): boolean => {
+    try {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { has: (key: string) => boolean }
+      }
+      return doc.getMap('nodes').has(id)
+    } catch {
+      return false
+    }
+  }
   let knownDocLinkIds: Set<string> = new Set()
-  // mm3-23: link records carry `origin_id`/`target_id` verbatim from the
-  // definition's serialized link objects (comfy-multi-player `mint.js`
-  // `definitionLinkKey`/`cloneForMap`) - read them so the replay queue can
-  // hold a link back until its endpoint node is revealed, instead of
-  // revealing every link in its own pass.
+  // mm3-23: the root `links` map holds LiteGraph tuples
+  // `[id, origin_id, origin_slot, target_id, target_slot, type]` - both at
+  // mint (comfy-multi-player `mint.ts` `links.set(String(ln[0]), ...)`) and on
+  // `connect` (`applier.ts` writes the same tuple). Read indices 1/3 so the
+  // replay queue can hold a link back until its endpoint node is revealed.
+  // The `{origin_id, target_id}` object form only appears for subgraph
+  // definition interior links; accepted as a fallback in case a record ever
+  // arrives in that shape.
   const currentDocLinkRecords = (): Map<
     string,
     { originId: string; targetId: string }
@@ -193,20 +234,8 @@ export function useAgentCrdtFollower(
       const raw = doc.getMap('links').toJSON()
       const out = new Map<string, { originId: string; targetId: string }>()
       for (const [key, value] of Object.entries(raw)) {
-        const record = value as Record<string, unknown> | null
-        const originId = record?.origin_id
-        const targetId = record?.target_id
-        if (typeof originId === 'string' && typeof targetId === 'string') {
-          out.set(key, { originId, targetId })
-        } else if (
-          typeof originId === 'number' &&
-          typeof targetId === 'number'
-        ) {
-          out.set(key, {
-            originId: String(originId),
-            targetId: String(targetId)
-          })
-        }
+        const endpoints = linkEndpoints(value)
+        if (endpoints) out.set(key, endpoints)
       }
       return out
     } catch {
@@ -233,7 +262,7 @@ export function useAgentCrdtFollower(
   // changed, not the remaining pending set.
   const pendingReplayNodeIds = ref<ReadonlySet<string>>(new Set())
   const replayQueue = new GraphReplayQueue({
-    nodeExists: (id) => currentDocNodeIds().has(id),
+    nodeExists: docNodeExists,
     onStep: (step) => {
       recordDevEvent('replay_step', step)
       pendingReplayNodeIds.value = replayQueue.pendingNodeIds
@@ -354,11 +383,14 @@ export function useAgentCrdtFollower(
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     knownDocNodeIds = ids
+    // Everything below feeds only the replay queue; the gate is fixed for the
+    // composable's lifetime, so the default-off path stops here.
+    if (!replayEnabled) return
     const linkRecords = currentDocLinkRecords()
     const linkIds = new Set(linkRecords.keys())
     const addedLinkIds = [...linkIds].filter((id) => !knownDocLinkIds.has(id))
     knownDocLinkIds = linkIds
-    if (replayEnabled && (added.length > 0 || addedLinkIds.length > 0)) {
+    if (added.length > 0 || addedLinkIds.length > 0) {
       const addedLinks = addedLinkIds.flatMap((id) => {
         const record = linkRecords.get(id)
         if (!record) return []

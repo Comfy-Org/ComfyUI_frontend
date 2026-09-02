@@ -25,10 +25,15 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    /** Root-map contents by name (`nodes`, `links`), mutable per test. */
+    docMaps: Record<string, Record<string, unknown>> = {}
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        getMap: (name: string) => ({
+          toJSON: () => this.docMaps[name] ?? {},
+          has: (key: string) => key in (this.docMaps[name] ?? {})
+        })
       }
     }
   }
@@ -98,13 +103,20 @@ vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
 }))
 
+import { recordDevEvent } from './devPanelLog'
+import { REPLAY_STORAGE_KEY } from './replayGate'
+
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  STALE_AFTER_MS,
+  linkEndpoints,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
@@ -117,24 +129,33 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  pendingReplayNodeIds: () => ReadonlySet<string>
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedPending!: () => ReadonlySet<string>
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, pendingReplayNodeIds } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
         isTargetActive
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedPending = () => pendingReplayNodeIds.value
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    pendingReplayNodeIds: exposedPending
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -151,6 +172,7 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     sessionStorage.clear()
+    localStorage.removeItem(REPLAY_STORAGE_KEY)
     bridgeState.current = null
   })
 
@@ -484,5 +506,84 @@ describe('useAgentCrdtFollower', () => {
       'status',
       expect.any(Function)
     )
+  })
+
+  describe('linkEndpoints', () => {
+    it('reads origin/target from the LiteGraph tuple stored in the root links map', () => {
+      expect(linkEndpoints([7, 1, 0, 2, 0, 'IMAGE'])).toEqual({
+        originId: '1',
+        targetId: '2'
+      })
+      expect(linkEndpoints([7, 'n1', 0, 'n2', 0, 'IMAGE'])).toEqual({
+        originId: 'n1',
+        targetId: 'n2'
+      })
+    })
+
+    it('falls back to the object form used under definitions.<id>.links', () => {
+      expect(linkEndpoints({ origin_id: 'a', target_id: 'b' })).toEqual({
+        originId: 'a',
+        targetId: 'b'
+      })
+    })
+
+    it('returns null for anything that is not a link record', () => {
+      expect(linkEndpoints(null)).toBeNull()
+      expect(linkEndpoints('nope')).toBeNull()
+      expect(linkEndpoints([7])).toBeNull()
+      expect(linkEndpoints({ origin_id: 'a' })).toBeNull()
+    })
+  })
+
+  describe('replay queue wiring', () => {
+    it('mm3-20: enqueues added nodes and tuple-form links when the gate is on', () => {
+      localStorage.setItem(REPLAY_STORAGE_KEY, 'true')
+      vi.useFakeTimers()
+      const { unmount, status, pendingReplayNodeIds } = mountFollower('wf-1')
+
+      bridge().docMaps = {
+        nodes: { n1: {}, n2: {} },
+        links: { '7': [7, 'n1', 0, 'n2', 0, 'IMAGE'] }
+      }
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+      expect(pendingReplayNodeIds()).toEqual(new Set(['n1', 'n2']))
+      expect(status().replayState).toBe('loading')
+
+      vi.runAllTimers()
+
+      const stepEvents = vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([type]) => type === 'replay_step')
+      expect(stepEvents.length).toBeGreaterThan(0)
+      const linkIds = stepEvents.flatMap(
+        ([, payload]) => (payload as { linkIds: readonly string[] }).linkIds
+      )
+      expect(linkIds).toContain('7')
+      expect(status().replayState).toBe('complete')
+      expect(pendingReplayNodeIds().size).toBe(0)
+      unmount()
+    })
+
+    it('mm3-20: leaves the queue untouched when the gate is off (default)', () => {
+      vi.useFakeTimers()
+      const { unmount, status, pendingReplayNodeIds } = mountFollower('wf-1')
+
+      bridge().docMaps = {
+        nodes: { n1: {} },
+        links: { '7': [7, 'n1', 0, 'n2', 0, 'IMAGE'] }
+      }
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+      vi.runAllTimers()
+
+      expect(pendingReplayNodeIds().size).toBe(0)
+      expect(status().replayState).toBe('idle')
+      expect(
+        vi
+          .mocked(recordDevEvent)
+          .mock.calls.some(([type]) => type === 'replay_step')
+      ).toBe(false)
+      unmount()
+    })
   })
 })
