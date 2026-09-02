@@ -53,7 +53,8 @@ install, install and start Docker, then run:
 pnpm container:start
 ```
 
-The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
+The command mounts `tools/devtools`, the published node API example packs under
+`examples/node-api`, and starts ComfyUI at `localhost:8188`.
 Leave it running. Use another terminal for `pnpm dev` and a third for
 `pnpm test:browser:local`.
 

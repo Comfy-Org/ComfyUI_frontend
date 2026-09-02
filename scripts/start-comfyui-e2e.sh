@@ -77,6 +77,14 @@ fi
   --publish "127.0.0.1:$port:8188" \
   --mount \
   "type=bind,src=$repo_root/tools/devtools,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_frontend_nodes,dst=/ComfyUI/custom_nodes/how_to_frontend_nodes,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_widgets,dst=/ComfyUI/custom_nodes/how_to_widgets,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_graph_interaction,dst=/ComfyUI/custom_nodes/how_to_graph_interaction,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_execution,dst=/ComfyUI/custom_nodes/how_to_execution,readonly" \
   "$image" \
   bash -lc \
   'cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0'
