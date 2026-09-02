@@ -18,9 +18,10 @@ export type ComfyEvent = {
   location?: LocalizedText
   /** Hand-written display date shown on upcoming rows. */
   dateLabel?: LocalizedText
-  /** ISO start; drives upcoming/past classification, past-section sort order,
-   * and VideoObject uploadDate. Approximate (set to the recording's publish
-   * date) for events that predate this field. */
+  /** ISO start; drives upcoming/past classification and past-section sort order,
+   * while serving only as the fallback for VideoObject.uploadDate when
+   * recordingPublishDate is unavailable. Approximate (set to the recording's
+   * publish date) for events that predate this field. */
   startDateTime: string
   /** Defaults to one hour after the start. */
   endDateTime?: string
