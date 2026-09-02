@@ -354,9 +354,12 @@ describe('minted stamps (property) — order-independent LWW', () => {
  * revision that still uses the 2-tuple `Stamp` `[base_version, actor]` with no
  * incarnation component. `SCHEMA_VERSION` is 2 for the node-incarnation wire
  * changes, but those changes do not namespace a reconnecting actor's stamp;
- * `opEnvelope.ts` still mints exactly the 2-tuple shape. So the guarantee is not
- * merely untested at this head, it is unrepresentable: a life-1 op that
- * happened to carry a higher `base_version` wins, permanently.
+ * `opEnvelope.ts` still mints exactly the 2-tuple shape. The APPLIER still
+ * cannot distinguish or order two incarnations of the same actor — it has no
+ * component to do so with. The current mitigation lives on the SENDER: since
+ * DQ-11, `opSender.ts` clamps `base_version` to be non-decreasing per
+ * `(workflowId, actor)`, so a life-1 client cannot mint a stale-high
+ * `base_version` after a reconnect resets its observed sequence lower.
  *
  * The test below asserts TODAY's behaviour on purpose. It is a tripwire: when
  * the pin advances to the incarnation-namespaced stamps, it goes red and this
