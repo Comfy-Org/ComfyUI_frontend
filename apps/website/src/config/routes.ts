@@ -80,7 +80,14 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,
 // unlike the model-launch pages, which are data-driven and localized. It has no
 // `routes` entry, so it is listed by path.
-const LOCALE_INVARIANT_EXTRA_PATHS = ['/pixal3d-trellis2']
+//
+// platform/serverless-animation: English-only. Its three siblings under
+// /platform/ each have a zh-CN twin and it does not, so without this the
+// emitter advertises a Chinese page that 404s.
+const LOCALE_INVARIANT_EXTRA_PATHS = [
+  '/pixal3d-trellis2',
+  '/platform/serverless-animation'
+]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([
   ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),

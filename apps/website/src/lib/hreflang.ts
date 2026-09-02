@@ -34,6 +34,11 @@ export function hreflangAlternates(
   pathname: string,
   origin: string
 ): Alternate[] {
+  // Japanese has one page and no twin rule yet, so anything under /ja/ emits
+  // nothing rather than a cluster. Without this the homepage advertises
+  // /zh-CN/ja/, which does not exist: the same lie this function's English-only
+  // guard exists to prevent. Clustering ja properly is BE-11285.
+  if (pathname === '/ja' || pathname.startsWith('/ja/')) return []
   const en = englishPath(pathname)
   if (en === '/404' || isLocaleInvariantPath(en)) return []
   const enHref = new URL(withSlash(en), origin).href
