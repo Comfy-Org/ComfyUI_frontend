@@ -61,10 +61,7 @@
         class="flex min-w-0 flex-1 items-center gap-3"
       >
         <template v-if="!isHeaderCollapsed && workspaceName">
-          <WorkspaceProfilePic
-            class="size-11 text-2xl"
-            :workspace-name="workspaceName"
-          />
+          <WorkspaceProfilePic size="lg" :workspace-name="workspaceName" />
           <h1
             class="m-0 truncate text-2xl font-semibold text-base-foreground select-none"
           >
