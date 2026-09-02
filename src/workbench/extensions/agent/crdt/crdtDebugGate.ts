@@ -7,6 +7,15 @@
  * sticky — `?crdtDebug=1` turns it on for the origin until `?crdtDebug=0`
  * turns it off — so a tester can be handed a link rather than a build.
  *
+ * The query-param path is deliberately blocked on the production hostname
+ * (review: dante01yoon on #16365, 2026-09-01). A link is something a tester
+ * forwards, and a forwarded `?crdtDebug=1` landing on `cloud.comfy.org` would
+ * flip the instrument on for whoever opens it there, with no re-review step —
+ * unlike staging/testcloud/dev, where the audience is already internal. A
+ * saved `Comfy.Agent.CrdtDebug.enabled=true` from a non-prod origin does NOT
+ * carry over: localStorage is scoped per-origin already, so this only needs
+ * to stop the query param from minting a *new* prod opt-in.
+ *
  * Verbosity is a separate axis on purpose. Turning the panel on should not
  * also flood the console: `?crdtDebug=trace` opts into the per-frame chatter,
  * while plain `1` keeps console output at the lifecycle level.
@@ -14,6 +23,20 @@
 const ENABLED_KEY = 'Comfy.Agent.CrdtDebug.enabled'
 const LEVEL_KEY = 'Comfy.Agent.CrdtDebug.level'
 const QUERY_PARAM = 'crdtDebug'
+
+/**
+ * The one hostname this instrument must never silently light up on via a
+ * forwarded link. Keep this list to confirmed production hosts only — every
+ * other origin (staging, testcloud, PR previews, desktop, local) is where
+ * the "hand a tester a link" workflow this gate exists for actually runs.
+ */
+const PRODUCTION_HOSTNAMES = new Set(['cloud.comfy.org'])
+
+export function isProductionHostname(
+  hostname = window.location.hostname
+): boolean {
+  return PRODUCTION_HOSTNAMES.has(hostname)
+}
 
 /**
  * Console verbosity, ordered least-to-most chatty. `warn` is the floor: a
@@ -96,6 +119,13 @@ function applyQueryOverride(): void {
   const value = raw.trim().toLowerCase()
   if (value === '') return
   const disabling = value === '0' || value === 'false' || value === 'off'
+  // Opting OUT via the link must always work, on every origin — only the
+  // enabling path is production-blocked. Otherwise a prod link with a typo'd
+  // value could enable the instrument with no way to hand out a link back.
+  if (!disabling && isProductionHostname()) {
+    consumeQueryParam()
+    return
+  }
   setCrdtDebugEnabled(!disabling)
   if (!disabling && isLogLevel(value)) setCrdtLogLevel(value)
   consumeQueryParam()

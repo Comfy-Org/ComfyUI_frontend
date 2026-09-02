@@ -6,6 +6,23 @@ async function loadGate(search: string) {
   return import('./crdtDebugGate')
 }
 
+/**
+ * happy-dom's `window.location` is same-origin-only (replaceState refuses a
+ * cross-origin URL), so a production-hostname load is faked by stubbing the
+ * `location` global instead of navigating to it — same technique the
+ * `initDatadogRum` hostname tests use for the same reason. A plain object
+ * (not a spread `Location` instance) so nothing depends on the prototype.
+ */
+async function loadGateOnHostname(search: string, hostname: string) {
+  vi.resetModules()
+  vi.stubGlobal('location', {
+    hostname,
+    search,
+    href: `https://${hostname}/${search}`
+  })
+  return import('./crdtDebugGate')
+}
+
 describe('crdtDebugGate', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -85,5 +102,53 @@ describe('crdtDebugGate', () => {
 
     expect(gate.resolveDebugPanelEnabled(true)).toBe(true)
     expect(gate.resolveDebugPanelEnabled(false)).toBe(false)
+  })
+
+  it('identifies the production hostname and nothing else', async () => {
+    const gate = await loadGate('')
+
+    expect(gate.isProductionHostname('cloud.comfy.org')).toBe(true)
+    expect(gate.isProductionHostname('stagingcloud.comfy.org')).toBe(false)
+    expect(gate.isProductionHostname('testcloud.comfy.org')).toBe(false)
+    expect(gate.isProductionHostname('localhost')).toBe(false)
+    expect(gate.isProductionHostname('pr-16365.testenvs.comfy.org')).toBe(false)
+  })
+
+  it('refuses to enable from a link on the production hostname', async () => {
+    // Without the stub, `isCrdtDebugEnabled()`'s DEV fallback would mask a
+    // broken gate: vitest runs with DEV true, same trap the first test in
+    // this file guards against.
+    vi.stubEnv('DEV', false)
+    const gate = await loadGateOnHostname('?crdtDebug=1', 'cloud.comfy.org')
+
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+  })
+
+  it('still honours an explicit opt-out link on the production hostname', async () => {
+    // A stray opt-out must never be the one query value this gate refuses to
+    // apply — production must always be able to turn ITSELF back off.
+    const gate = await loadGateOnHostname('?crdtDebug=0', 'cloud.comfy.org')
+
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+  })
+
+  it('still strips the query param when refusing to enable on production', async () => {
+    // The stubbed `location` used to reach a production hostname is a plain
+    // object, not a live binding, so `window.location.search` after the fact
+    // reflects the real (unstubbed) location rather than the mutation this
+    // module made — spy on the call instead of re-reading location.
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState')
+
+    await loadGateOnHostname('?crdtDebug=1', 'cloud.comfy.org')
+
+    expect(replaceStateSpy).toHaveBeenCalled()
+    const [, , consumedUrl] = replaceStateSpy.mock.calls.at(-1)!
+    expect(String(consumedUrl)).not.toContain('crdtDebug')
+  })
+
+  it('enables normally from the same link off the production hostname', async () => {
+    const gate = await loadGateOnHostname('?crdtDebug=1', 'testcloud.comfy.org')
+
+    expect(gate.isCrdtDebugEnabled()).toBe(true)
   })
 })
