@@ -15,6 +15,8 @@ import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 
+import type { MaterializableGraph } from './agentNodeMaterializer'
+
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()
@@ -148,7 +150,7 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => unknown = () => null
+  getGraph: () => MaterializableGraph | null = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -165,8 +167,7 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        getGraph as any
+        getGraph
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -631,7 +632,12 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('qa-59: materializes a live adapter for nodes the adapter just added, given a graph', () => {
-    const fakeGraph = { id: 'root', rootGraph: { id: 'root' } }
+    const fakeGraph = {
+      id: 'root',
+      rootGraph: { id: 'root' },
+      getNodeById: () => null,
+      add: () => null
+    } satisfies MaterializableGraph
     adapterState.lastAddedNodeIds.mockReturnValue(new Set(['1']))
     materializerState.materializeMissingAdapters.mockReturnValue(['1'])
 
@@ -661,7 +667,12 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('qa-59: skips materialization when the frame added no new nodes', () => {
-    const fakeGraph = { id: 'root', rootGraph: { id: 'root' } }
+    const fakeGraph = {
+      id: 'root',
+      rootGraph: { id: 'root' },
+      getNodeById: () => null,
+      add: () => null
+    } satisfies MaterializableGraph
     adapterState.lastAddedNodeIds.mockReturnValue(new Set())
 
     const { unmount } = mountFollower('wf-1', true, () => fakeGraph)

@@ -31,7 +31,6 @@
  * of duplicating that logic here.
  */
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -107,5 +106,3 @@ export function materializeMissingAdapters(
 
   return materialized
 }
-
-export type { LGraph }
