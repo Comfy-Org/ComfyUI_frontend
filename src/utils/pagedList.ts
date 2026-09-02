@@ -21,8 +21,8 @@ export class WrappedList<T> implements PagedList<T> {
   get hasMore() {
     return this.childList.hasMore
   }
-  async invalidate() {
-    await this.childList.invalidate()
+  async invalidate(stale?: string[]) {
+    await this.childList.invalidate(stale)
   }
   get isLoading() {
     return this.childList.isLoading
