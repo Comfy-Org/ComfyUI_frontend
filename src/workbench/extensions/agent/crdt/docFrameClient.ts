@@ -123,13 +123,9 @@ function parseRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+/** Unix seconds on the wire: a non-negative integer inside the safe range. */
 function isNonNegativeInteger(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isFinite(value) &&
-    Number.isInteger(value) &&
-    value >= 0
-  )
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
 function parseAwarenessState(
@@ -139,6 +135,9 @@ function parseAwarenessState(
   const state = parseRecord(value)
   if (state === null) return null
 
+  // Defence in depth behind the server's identical cap. The counts are not
+  // byte-identical: Go's json.Marshal HTML-escapes `<`, `>` and `&`, so the
+  // server always counts >= this and is the stricter of the two.
   try {
     return new TextEncoder().encode(JSON.stringify(state)).byteLength <=
       MAX_AWARENESS_STATE_BYTES
