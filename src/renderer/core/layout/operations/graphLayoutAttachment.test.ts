@@ -60,7 +60,7 @@ describe('node layout attachment ownership', () => {
 
   it('carries the direct owner graph on interior node create and delete', async () => {
     const root = new LGraph()
-    const interiorId: UUID = 'interior-graph'
+    const interiorId: UUID = '00000000-0000-4000-8000-000000000001'
     const interior = {
       id: interiorId,
       rootGraph: root
@@ -92,8 +92,9 @@ describe('node layout attachment ownership', () => {
 
   it('carries the direct owner graph when a released subgraph is bulk-detached', async () => {
     const root = new LGraph()
+    const interiorId: UUID = '00000000-0000-4000-8000-000000000001'
     const interior = {
-      id: 'interior-graph' as UUID,
+      id: interiorId,
       rootGraph: root
     }
     const node = nodeFor(root, 'interior-node')
