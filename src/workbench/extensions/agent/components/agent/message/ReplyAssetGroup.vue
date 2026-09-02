@@ -96,6 +96,14 @@ const THUMBNAIL_RETRY_DELAY_MS = 2000
 const thumbnailState = ref<Record<string, ThumbnailState>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
+/**
+ * Retry timers keyed by url, separate from `refreshTimeouts` (which exists
+ * only to bulk-clear on unmount). `hideThumbnail` needs to cancel *this
+ * url's* pending retry specifically -- otherwise a retry scheduled while a
+ * tile was visible still fires after "Show less" hides it, resurrecting a
+ * `loading` entry for an asset the watcher already dropped.
+ */
+const retryTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
@@ -104,6 +112,7 @@ onBeforeUnmount(() => {
   }
   for (const timeout of refreshTimeouts) clearTimeout(timeout)
   refreshTimeouts.clear()
+  retryTimeouts.clear()
 })
 
 /** Whether `url`'s current entry is still the `loading` strand owned by `controller`. */
@@ -175,10 +184,12 @@ function scheduleThumbnailRetry(
   }
   const timeout = setTimeout(() => {
     refreshTimeouts.delete(timeout)
+    retryTimeouts.delete(url)
     if (!mounted) return
     loadModelThumbnail(url, filename, attempts + 1)
   }, THUMBNAIL_RETRY_DELAY_MS)
   refreshTimeouts.add(timeout)
+  retryTimeouts.set(url, timeout)
   thumbnailState.value[url] = { phase: 'gaveUp', attempts: attempts + 1 }
 }
 
@@ -191,6 +202,12 @@ function scheduleThumbnailRetry(
 function hideThumbnail(url: string): void {
   const state = thumbnailState.value[url]
   if (state?.phase === 'loading') state.controller.abort()
+  const pendingRetry = retryTimeouts.get(url)
+  if (pendingRetry !== undefined) {
+    clearTimeout(pendingRetry)
+    refreshTimeouts.delete(pendingRetry)
+    retryTimeouts.delete(url)
+  }
   delete thumbnailState.value[url]
 }
 

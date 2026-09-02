@@ -318,6 +318,33 @@ describe('ReplyAssetGroup', () => {
     }
   })
 
+  it('cancels a pending retry timer when the asset is hidden', async () => {
+    // Regression coverage: a retry scheduled while the tile was visible
+    // used to keep a bare setTimeout with no per-url handle, so
+    // `hideThumbnail` (fired by "Show less" / the asset leaving
+    // visibleVisual) had nothing to cancel. The retry fired anyway and
+    // called loadModelThumbnail for an asset the watcher had already
+    // dropped from thumbnailState.
+    isAssetPreviewSupported.mockReturnValue(true)
+    vi.useFakeTimers()
+    try {
+      const { rerender } = renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+
+      // The failed render schedules a retry in THUMBNAIL_RETRY_DELAY_MS.
+      // Hide the asset before that retry fires.
+      await rerender({ assets: [audio] })
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('aborts queued generation when unmounted', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     // Keep the render pending so the strand is still 'loading' (not yet
