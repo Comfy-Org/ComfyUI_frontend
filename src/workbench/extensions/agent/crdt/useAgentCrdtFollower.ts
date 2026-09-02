@@ -124,9 +124,7 @@ export function useAgentCrdtFollower(
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
   const sender = createOpSender({
-    sendOps: (target, tab, ops) =>
-      bridge.subscribedWorkflowId === target &&
-      client.sendOps(target, tab, ops),
+    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
@@ -143,6 +141,8 @@ export function useAgentCrdtFollower(
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
     },
+    // Send REALITY, not this composable's intent: the sender re-reads it before
+    // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
