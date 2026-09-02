@@ -1510,10 +1510,12 @@ describe('thread resume (B17)', () => {
           rejectHistory = reject
         })
     )
-    const postMessage = vi.fn(async (): Promise<AgentTurnAccepted> => ({
-      thread_id: 'th-new',
-      message_id: 'msg-new'
-    }))
+    const postMessage = vi.fn(
+      async (): Promise<AgentTurnAccepted> => ({
+        thread_id: 'th-new',
+        message_id: 'msg-new'
+      })
+    )
     const session = useAgentSession({
       rest: fakeRest({ getMessages, postMessage }),
       events: fakeEvents().source
