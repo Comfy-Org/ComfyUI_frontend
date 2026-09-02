@@ -242,6 +242,36 @@ describe('widget visibility', () => {
     expect(processWidgets({ widgetIds: [id] })).toHaveLength(0)
   })
 
+  it('keeps the row for a converted/hidden widget that still owns an input slot', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'points_store')
+    const widget = createMockWidget({
+      name: 'points_store',
+      type: 'converted-widget',
+      options: { hidden: true },
+      widgetId: id
+    })
+    const { graph, node } = createGraphWithNode([widget], nodeId)
+    node.inputs = [
+      {
+        name: 'points_store',
+        type: 'STRING',
+        widget: { name: 'points_store' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    registerWidgetState(id, { type: 'converted-widget', options: {} })
+
+    const processed = processWidgets({
+      widgetIds: [id],
+      nodeId,
+      rootGraph: graph
+    })
+
+    expect(processed).toHaveLength(1)
+    expect(processed[0]?.slotMetadata).toBeDefined()
+  })
+
   it('hides hidden widgets', () => {
     expect(visibilityOf({ hidden: true })).toBe(false)
   })
