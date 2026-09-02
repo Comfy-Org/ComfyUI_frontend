@@ -73,12 +73,46 @@ const galleryIndex = ref(-1)
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
+const thumbnailAbort = new AbortController()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
+  thumbnailAbort.abort()
   for (const timeout of refreshTimeouts) clearTimeout(timeout)
   refreshTimeouts.clear()
 })
+
+/**
+ * Look up a server-rendered preview, falling back to an offscreen render.
+ * A model that does not render keeps its placeholder: a retry would race
+ * the abandoned transfer, which is not abortable. Reopening the 3D dialog
+ * still refreshes the tile through `refreshModelThumbnail`.
+ */
+function loadModelThumbnail(url: string, filename: string): void {
+  modelThumbnails.value[url] = ''
+  void findServerPreviewUrl(filename)
+    .then(async (preview) => {
+      if (!mounted) return
+      if (preview) {
+        modelThumbnails.value[url] = preview
+        return
+      }
+      const result = await generateModelThumbnail(
+        url,
+        filename,
+        thumbnailAbort.signal
+      )
+      if (!mounted) return
+      if (result.status === 'rendered')
+        modelThumbnails.value[url] = result.dataUrl
+    })
+    .catch((error) => {
+      if (mounted) delete modelThumbnails.value[url]
+      reportError(error, {
+        errorType: 'agent_reply_asset_preview_failure'
+      })
+    })
+}
 
 watch(
   () => [
@@ -89,26 +123,7 @@ watch(
     if (!isAssetPreviewSupported()) return
     for (const { url, filename, kind } of lookups) {
       if (kind === '3D' && !(url in modelThumbnails.value)) {
-        modelThumbnails.value[url] = ''
-        void findServerPreviewUrl(filename)
-          .then(async (preview) => {
-            if (!mounted) return
-            if (preview) {
-              modelThumbnails.value[url] = preview
-              return
-            }
-            if (!mounted) return
-            const generated = await generateModelThumbnail(url, filename)
-            if (!mounted) return
-            if (generated) modelThumbnails.value[url] = generated
-            else delete modelThumbnails.value[url]
-          })
-          .catch((error) => {
-            if (mounted) delete modelThumbnails.value[url]
-            reportError(error, {
-              errorType: 'agent_reply_asset_preview_failure'
-            })
-          })
+        loadModelThumbnail(url, filename)
       }
       if (!(url in assetNames.value)) {
         assetNames.value[url] = ''

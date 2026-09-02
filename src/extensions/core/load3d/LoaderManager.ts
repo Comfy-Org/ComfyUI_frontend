@@ -93,7 +93,7 @@ export class LoaderManager implements LoaderManagerInterface {
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    if (this.disposed) throw this.createAbortError()
+    if (this.disposed) return
     const loadId = ++this.currentLoadId
 
     try {
@@ -120,6 +120,7 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
+        if (options?.silent) throw new Error(`Unknown model file type: ${url}`)
         useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
         return
       }
@@ -127,12 +128,18 @@ export class LoaderManager implements LoaderManagerInterface {
       const result = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
-        if (result) this.disposeLoadResult(result)
-        if (this.disposed) throw this.createAbortError()
+        // A newer load on a live manager may already have published this
+        // object as originalModel, so only dispose once the manager is
+        // torn down and nothing can reach it.
+        if (result && this.disposed) this.disposeLoadResult(result)
         // A newer loadModel has superseded us — do not publish our adapter
         // and do not setup the model. Whichever load is current owns the
         // shared state.
         return
+      }
+
+      if (!result && options?.silent) {
+        throw new Error(`No model could be loaded from: ${url}`)
       }
 
       if (result) {
@@ -146,21 +153,14 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
     } catch (error) {
-      if (this.disposed) throw this.createAbortError()
-      if (loadId === this.currentLoadId) {
-        this.eventManager.emitEvent('modelLoadingEnd', null)
-        console.error('Error loading model:', error)
-        if (!(options?.silentOnNotFound && isNotFoundError(error))) {
-          useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
-        }
+      if (loadId !== this.currentLoadId) return
+      this.eventManager.emitEvent('modelLoadingEnd', null)
+      console.error('Error loading model:', error)
+      if (options?.silent) throw error
+      if (!(options?.silentOnNotFound && isNotFoundError(error))) {
+        useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
       }
     }
-  }
-
-  private createAbortError(): Error {
-    const error = new Error('Model load aborted')
-    error.name = 'AbortError'
-    return error
   }
 
   private disposeLoadResult(

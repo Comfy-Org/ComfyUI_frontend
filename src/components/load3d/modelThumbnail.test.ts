@@ -43,12 +43,82 @@ describe('generateModelThumbnail', () => {
       'a.glb'
     )
 
-    expect(result).toBe('data:image/png;base64,thumb')
-    expect(instance.loadModel).toHaveBeenCalledWith('/api/view?filename=a.glb')
+    expect(result).toEqual({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,thumb'
+    })
+    expect(instance.loadModel).toHaveBeenCalledWith(
+      '/api/view?filename=a.glb',
+      undefined,
+      { silent: true }
+    )
     expect(instance.remove).toHaveBeenCalledTimes(1)
+    expect(persistThumbnail).not.toHaveBeenCalled()
   })
 
-  it('returns null and still disposes when the model fails to load', async () => {
+  it('releases the queue the moment a running render is aborted', async () => {
+    vi.useFakeTimers()
+    try {
+      const stalled = mockInstance({
+        loadModel: vi.fn(() => new Promise(() => {}))
+      })
+      const next = mockInstance()
+      createLoad3d.mockReturnValueOnce(stalled).mockReturnValueOnce(next)
+      const controller = new AbortController()
+
+      const abortedRun = generateModelThumbnail(
+        '/slow.glb',
+        'slow.glb',
+        controller.signal
+      )
+      const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+
+      controller.abort()
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(abortedRun).resolves.toEqual({ status: 'cancelled' })
+      await expect(nextRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
+      expect(stalled.remove).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('skips a queued render whose caller aborted before its turn', async () => {
+    const blocked = mockInstance({
+      loadModel: vi.fn(() => new Promise(() => {}))
+    })
+    const skipped = mockInstance()
+    createLoad3d.mockReturnValueOnce(blocked).mockReturnValueOnce(skipped)
+    const controller = new AbortController()
+
+    vi.useFakeTimers()
+    try {
+      const blockedRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+      const skippedRun = generateModelThumbnail(
+        '/next.glb',
+        'next.glb',
+        controller.signal
+      )
+      controller.abort()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(blockedRun).resolves.toEqual({ status: 'failed' })
+      await expect(skippedRun).resolves.toEqual({ status: 'cancelled' })
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a failed render and still disposes the instance', async () => {
     const instance = mockInstance({
       loadModel: vi.fn().mockRejectedValue(new Error('bad model'))
     })
@@ -56,7 +126,7 @@ describe('generateModelThumbnail', () => {
 
     const result = await generateModelThumbnail('/broken.glb', 'broken.glb')
 
-    expect(result).toBeNull()
+    expect(result).toEqual({ status: 'failed' })
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 
@@ -81,7 +151,7 @@ describe('generateModelThumbnail', () => {
     expect(createLoad3d).toHaveBeenCalledTimes(2)
   })
 
-  it('[11-T5 regression] cancels a stuck load, disposes it, and advances the queue', async () => {
+  it('cancels a stuck load, disposes it, and advances the queue', async () => {
     vi.useFakeTimers()
     try {
       const first = mockInstance({
@@ -94,8 +164,11 @@ describe('generateModelThumbnail', () => {
       const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(firstRun).resolves.toBeNull()
-      await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
+      await expect(firstRun).resolves.toEqual({ status: 'failed' })
+      await expect(secondRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
       expect(first.remove).toHaveBeenCalledOnce()
       expect(second.remove).toHaveBeenCalledOnce()
       expect(reportError).toHaveBeenCalledWith(
@@ -109,7 +182,7 @@ describe('generateModelThumbnail', () => {
     }
   })
 
-  it('bounds thumbnail capture and clears the timeout after success', async () => {
+  it('gives up on a stalled capture and leaves no timer behind', async () => {
     vi.useFakeTimers()
     try {
       const first = mockInstance({
@@ -122,8 +195,11 @@ describe('generateModelThumbnail', () => {
       const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(firstRun).resolves.toBeNull()
-      await expect(secondRun).resolves.toBe('data:image/png;base64,thumb')
+      await expect(firstRun).resolves.toEqual({ status: 'failed' })
+      await expect(secondRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
       expect(first.remove).toHaveBeenCalledOnce()
       expect(second.remove).toHaveBeenCalledOnce()
       expect(vi.getTimerCount()).toBe(0)

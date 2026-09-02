@@ -94,14 +94,19 @@ export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
 const MESSAGE_DELTA_TEXT =
   'The graph is **fully ready** to go — prompt set to the red fox in the snow.'
 
-export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
-  type: 'agent_message_delta',
-  data: {
-    delta: MESSAGE_DELTA_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export function messageDeltaEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: {
+      delta,
+      message_id: TURN_ID,
+      thread_id: THREAD_ID
+    }
   }
 }
+
+export const MESSAGE_DELTA_EVENT: AgentWsEvent =
+  messageDeltaEvent(MESSAGE_DELTA_TEXT)
 
 export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   type: 'agent_message_done',

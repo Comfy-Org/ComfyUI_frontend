@@ -590,6 +590,49 @@ describe('LoaderManager', () => {
       expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
     })
 
+    it('rejects with the load failure instead of alerting when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb', undefined, { silent: true })
+      ).rejects.toThrow('parse failure: bad header')
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('rejects on an undeterminable file type instead of alerting when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(
+        lm.loadModel('api/view?type=output', undefined, { silent: true })
+      ).rejects.toThrow(/Unknown model file type/)
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('rejects when no adapter claims the extension and silent is set', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel('api/view?filename=scene.usdz', undefined, {
+          silent: true
+        })
+      ).rejects.toThrow(/No model could be loaded/)
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('rejects when the URL carries no filename and silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(
+        lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
+      ).rejects.toThrow(/No model could be loaded/)
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
     it('discards the result of a stale load when a newer one has started', async () => {
       const { lm, modelManager, eventManager } = makeLoaderManager()
 
@@ -622,7 +665,7 @@ describe('LoaderManager', () => {
       expect(endEmits).toHaveLength(1)
     })
 
-    it('cancels an in-flight load when disposed', async () => {
+    it('drops and disposes an in-flight load when disposed', async () => {
       const { lm, modelManager } = makeLoaderManager()
       let resolveLoad!: (value: ReturnType<typeof loadResult>) => void
       const pendingLoad = new Promise<ReturnType<typeof loadResult>>(
@@ -641,10 +684,41 @@ describe('LoaderManager', () => {
       lm.dispose()
       resolveLoad(loadResult(model))
 
-      await expect(load).rejects.toMatchObject({ name: 'AbortError' })
+      await expect(load).resolves.toBeUndefined()
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(disposeGeometry).toHaveBeenCalledOnce()
       expect(disposeMaterial).toHaveBeenCalledOnce()
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('drops a load that fails after disposal without alerting', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      let rejectLoad!: (reason: Error) => void
+      meshLoad.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectLoad = reject
+        })
+      )
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      lm.dispose()
+      rejectLoad(new Error('connection reset'))
+
+      await expect(load).resolves.toBeUndefined()
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('drops a load started after disposal without alerting', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      lm.dispose()
+
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb')
+      ).resolves.toBeUndefined()
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(meshLoad).not.toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalled()
     })
 
     it('logs and drops the load when the URL is missing a filename param', async () => {
