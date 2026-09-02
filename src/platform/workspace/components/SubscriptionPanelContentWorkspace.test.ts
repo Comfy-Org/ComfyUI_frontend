@@ -502,6 +502,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('marks an ended Personal plan inactive when it cannot self-serve', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockBillingStatus.value = 'inactive'
+      mockCanSubscribeSelfServe.value = false
+      renderComponent()
+
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
+    })
+
     it('badges an ended Enterprise plan and keeps its credits out of the zero state', () => {
       useEnterprisePlan()
       mockSubscriptionStatus.value = 'ended'

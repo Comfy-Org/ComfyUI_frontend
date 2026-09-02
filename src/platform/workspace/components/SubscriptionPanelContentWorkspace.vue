@@ -225,7 +225,7 @@
                   />
                 </div>
                 <div
-                  v-if="showInactiveEnterpriseSubscription"
+                  v-if="showInactiveSalesManagedSubscription"
                   class="text-sm text-text-secondary"
                 >
                   {{ $t('subscription.inactiveEnterpriseDescription') }}
@@ -502,12 +502,16 @@ const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
 
+const isSalesManagedPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
+
 const showInactiveSubscription = computed(
   () =>
     permissions.value.canManageSubscription &&
     !isInPersonalWorkspace.value &&
     isSubscriptionEnded.value &&
-    (isTeamPlan.value || isEnterprisePlan.value)
+    (isTeamPlan.value || isSalesManagedPlan.value)
 )
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
@@ -549,12 +553,12 @@ const showInactiveTeamSubscription = computed(
   () => showInactiveSubscription.value && isTeamPlan.value
 )
 
-const showInactiveEnterpriseSubscription = computed(
-  () => showInactiveSubscription.value && isEnterprisePlan.value
+const showInactiveSalesManagedSubscription = computed(
+  () => showInactiveSubscription.value && isSalesManagedPlan.value
 )
 
 const planStatusBadge = computed(() => {
-  if (showInactiveSubscription.value) {
+  if (isSubscriptionEnded.value) {
     return {
       label: t('subscription.inactiveBadge'),
       severity: 'secondary' as const
@@ -702,9 +706,7 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
-const isNonCatalogPlan = computed(() =>
-  isSalesManagedTier(subscription.value?.tier)
-)
+const isNonCatalogPlan = isSalesManagedPlan
 
 const planDisplayName = computed(() => {
   if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
