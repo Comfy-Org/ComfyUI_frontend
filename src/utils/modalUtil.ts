@@ -33,6 +33,7 @@ function isDisplayNone(element: Element): boolean {
 function isBlockingModal(element: Element): boolean {
   return (
     element.closest(NON_MODAL_OVERLAY_SELECTOR) === null &&
+    element.closest('[hidden], [aria-hidden="true"]') === null &&
     !isDisplayNone(element)
   )
 }
