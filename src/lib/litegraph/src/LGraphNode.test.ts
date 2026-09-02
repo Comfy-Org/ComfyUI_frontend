@@ -895,9 +895,9 @@ describe('LGraphNode', () => {
       n._setConcreteSlots()
       expect(n._slotsDirty).toBe(false)
 
-      const mapSpy = vi.spyOn(n.inputs, 'map')
+      const concreteInput = n.inputs[0]
       n._setConcreteSlots()
-      expect(mapSpy).not.toHaveBeenCalled()
+      expect(n.inputs[0]).toBe(concreteInput)
     })
 
     test('is set by addInput', () => {
