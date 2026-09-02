@@ -1,17 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { toNodeId } from '@/types/nodeId'
 
 const { mockGraph, mockCanvas } = vi.hoisted(() => {
   const mockGraph = {
-    _nodes: [] as any[],
+    _nodes: [] as LGraphNode[],
     getNodeById: vi.fn(),
     beforeChange: vi.fn(),
     afterChange: vi.fn()
   }
   const mockCanvas = {
-    graph: mockGraph as any,
+    graph: mockGraph as typeof mockGraph | null,
     setDirty: vi.fn()
   }
   return { mockGraph, mockCanvas }
@@ -45,15 +47,14 @@ function createMockNode(overrides: Record<string, unknown> = {}) {
 
 describe('findCompatibleTargets', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGraph._nodes = []
     mockCanvas.graph = mockGraph
   })
 
   it('returns empty array when graph is null', () => {
-    mockCanvas.graph = null as any
+    mockCanvas.graph = null
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -63,7 +64,7 @@ describe('findCompatibleTargets', () => {
   it('returns empty array when source node is not found', () => {
     mockGraph.getNodeById.mockReturnValue(null)
     const result = findCompatibleTargets({
-      nodeId: '99',
+      nodeId: toNodeId('99'),
       slotIndex: 0,
       isInput: true
     })
@@ -79,7 +80,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -95,7 +96,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: false
     })
@@ -111,7 +112,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: false
     })
@@ -131,7 +132,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, candidate]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -153,7 +154,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, candidate]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: false
     })
@@ -176,7 +177,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, bypassed]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -196,7 +197,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, connected]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: false
     })
@@ -216,7 +217,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, wildcardCandidate]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -242,7 +243,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, nodeHigh, nodeLow]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -267,7 +268,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source, ...candidates]
 
     const result = findCompatibleTargets(
-      { nodeId: '1', slotIndex: 0, isInput: true },
+      { nodeId: toNodeId('1'), slotIndex: 0, isInput: true },
       3
     )
     expect(result).toHaveLength(3)
@@ -283,7 +284,7 @@ describe('findCompatibleTargets', () => {
     mockGraph._nodes = [source]
 
     const result = findCompatibleTargets({
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       slotIndex: 0,
       isInput: true
     })
@@ -293,7 +294,6 @@ describe('findCompatibleTargets', () => {
 
 describe('connectSlots', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanvas.graph = mockGraph
   })
 
@@ -306,7 +306,7 @@ describe('connectSlots', () => {
     mockGraph.getNodeById.mockReturnValue(source)
 
     connectSlots(
-      { nodeId: '1', slotIndex: 0, isInput: false },
+      { nodeId: toNodeId('1'), slotIndex: 0, isInput: false },
       { node: target, slotIndex: 0, slotInfo: target.inputs[0] }
     )
 
@@ -323,7 +323,7 @@ describe('connectSlots', () => {
     mockGraph.getNodeById.mockReturnValue(source)
 
     connectSlots(
-      { nodeId: '1', slotIndex: 0, isInput: false },
+      { nodeId: toNodeId('1'), slotIndex: 0, isInput: false },
       { node: target, slotIndex: 0, slotInfo: target.inputs[0] }
     )
 
@@ -339,7 +339,7 @@ describe('connectSlots', () => {
     mockGraph.getNodeById.mockReturnValue(source)
 
     connectSlots(
-      { nodeId: '1', slotIndex: 0, isInput: true },
+      { nodeId: toNodeId('1'), slotIndex: 0, isInput: true },
       { node: target, slotIndex: 0, slotInfo: target.outputs[0] }
     )
 
@@ -347,12 +347,12 @@ describe('connectSlots', () => {
   })
 
   it('does nothing when graph is null', () => {
-    mockCanvas.graph = null as any
+    mockCanvas.graph = null
     const target = createMockNode({ id: '2' })
 
     connectSlots(
-      { nodeId: '1', slotIndex: 0, isInput: false },
-      { node: target, slotIndex: 0, slotInfo: {} as any }
+      { nodeId: toNodeId('1'), slotIndex: 0, isInput: false },
+      { node: target, slotIndex: 0, slotInfo: {} as INodeInputSlot }
     )
 
     expect(target.connect).not.toHaveBeenCalled()
@@ -367,7 +367,7 @@ describe('connectSlots', () => {
     mockGraph.getNodeById.mockReturnValue(source)
 
     connectSlots(
-      { nodeId: '1', slotIndex: 0, isInput: false },
+      { nodeId: toNodeId('1'), slotIndex: 0, isInput: false },
       { node: target, slotIndex: 0, slotInfo: target.inputs[0] }
     )
 

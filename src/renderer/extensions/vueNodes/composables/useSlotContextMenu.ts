@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -9,6 +9,7 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
+import type { NodeId } from '@/types/nodeId'
 
 interface SlotMenuContext {
   nodeId: NodeId
