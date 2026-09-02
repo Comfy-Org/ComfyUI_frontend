@@ -19,7 +19,7 @@ jobs:
       dist_tag: ${{ steps.dist.outputs.dist_tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           persist-credentials: false
@@ -72,7 +72,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout merge commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 2
