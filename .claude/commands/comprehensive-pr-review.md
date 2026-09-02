@@ -151,8 +151,8 @@ Look for:
 #### 3.2.1 Audit suppressions before approving
 
 Search added lines for `eslint-disable`, `oxlint-disable`, `@ts-ignore`,
-`@ts-expect-error`, double assertions, and non-null assertions. Passing lint or
-typecheck is not evidence that these overrides are correct.
+`@ts-nocheck`, `@ts-expect-error`, double assertions, and non-null assertions.
+Passing lint or typecheck is not evidence that these overrides are correct.
 
 For each override:
 
@@ -165,11 +165,13 @@ For each override:
    instead.
 
 Do not accept an override because its comment explains why the compliant path
-was inconvenient. Request changes for file-wide or multi-rule lint disables,
-Testing Library disables that permit DOM traversal, casts that make malformed
-fixtures compile, and timing sleeps that hide missing readiness. Accept a narrow
-exception only when an external constraint is verified and no compliant fix is
-possible. State that evidence in the review.
+was inconvenient. Request changes for every `@ts-ignore` and `@ts-nocheck`, and
+for `@ts-expect-error` outside a test that intentionally verifies a compiler
+error. Request changes for file-wide or multi-rule lint disables, Testing
+Library disables that permit DOM traversal, casts that make malformed fixtures
+compile, and timing sleeps that hide missing readiness. Accept a narrow lint
+exception or specific assertion only when an external constraint is verified
+and no compliant fix is possible. State that evidence in the review.
 
 ### 3.3 Library Usage Enforcement
 

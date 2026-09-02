@@ -16,8 +16,8 @@ Steps:
 ### TypeScript
 
 - No `any` types or `as any` assertions
-- No new `@ts-ignore` or `@ts-expect-error`, except tests whose behavior is the
-  compiler error
+- No new `@ts-ignore` or `@ts-nocheck`. Allow `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
 - Treat all new `eslint-disable` and `oxlint-disable` directives as findings. Do
   not accept a directive because its comment describes an inconvenience. Verify
   the diagnostic, trace the value to its authoritative type or schema, search

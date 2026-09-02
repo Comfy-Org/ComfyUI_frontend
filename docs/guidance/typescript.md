@@ -12,8 +12,8 @@ globs:
 - Never use `any` type - use proper TypeScript types
 - Never use `as any` type assertions - fix the underlying type issue
 - Type assertions are a last resort; they lead to brittle code
-- Do not add `@ts-ignore` or `@ts-expect-error`. Fix the contract that causes the
-  error. The only exception is a test whose behavior is the compiler error.
+- Never add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
 
 ### Prove the type before overriding it
 
@@ -33,9 +33,10 @@ Model malformed runtime input as `unknown` and pass it through the boundary
 parser. Do not use a double assertion to make invalid test data compile.
 
 A comment can document an external constraint, but it cannot prove a type or
-waive a failed check. If an upstream declaration is wrong, verify its runtime
-shape and contain the workaround at the integration boundary. Do not spread
-assertions through consumers.
+waive a failed check. External constraints may justify a specific assertion at
+an integration boundary, never a TypeScript suppression. If an upstream
+declaration is wrong, verify its runtime shape and do not spread assertions
+through consumers.
 
 ### Type Assertion Hierarchy
 

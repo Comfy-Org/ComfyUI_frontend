@@ -231,15 +231,16 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
-- NEVER add `eslint-disable`, `oxlint-disable`, or TypeScript suppression
-  comments as the first fix. Remove the directive and repair the type, API,
-  component semantics, or test. A comment explaining why a workaround was
-  convenient does not make the workaround acceptable.
-  - Before keeping a rare exception, inspect the authoritative type or schema,
-    search for an existing typed pattern, and run the failing check without the
-    suppression. Record the external constraint that makes a compliant fix
-    impossible.
-  - Scope a justified exception to one expression or line. File-wide and
+- NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+- NEVER add `eslint-disable` or `oxlint-disable` as the first fix. Remove the
+  directive and repair the type, API, component semantics, or test. A comment
+  explaining why a workaround was convenient does not make it acceptable.
+  - Before keeping a rare lint exception or specific type assertion, inspect
+    the authoritative type or schema, search for an existing typed pattern, and
+    run the failing check without the override. Record the external constraint
+    that makes a compliant fix impossible.
+  - Scope a justified lint exception to one expression or line. File-wide and
     multi-rule disables are review blockers.
   - In tests, use typed builders, real platform objects, runtime narrowing,
     semantic queries, and deterministic readiness signals instead of casts,
