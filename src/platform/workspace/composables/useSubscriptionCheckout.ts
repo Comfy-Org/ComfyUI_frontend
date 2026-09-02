@@ -964,19 +964,15 @@ export function useSubscriptionCheckout(
   }
 
   // Declined is not terminal: back returns to the confirm step with the quote
-  // and selection intact so the same charge can be retried.
+  // and selection intact so the same charge can be retried. A decline reached
+  // on re-entry has no preserved quote to land on — plan selection is the only
+  // step that can host it.
   function handleDeclinedBack() {
     checkoutDeclineReason.value = null
     const opId = activeCheckoutOperation.value?.opId
     if (opId) billingOperationStore.clearOperation(opId)
-    checkoutStep.value = 'preview'
-  }
-
-  // "Update payment method" lands on the same confirm step; the caller decides
-  // to collect a new method rather than reuse the one the bank refused, since
-  // that selection lives with the dialog.
-  function handleUpdatePayment() {
-    handleDeclinedBack()
+    activeCheckoutOperationId.value = null
+    checkoutStep.value = previewData.value ? 'preview' : 'pricing'
   }
 
   async function handleSubscription(
@@ -1704,7 +1700,6 @@ export function useSubscriptionCheckout(
     checkoutStep,
     checkoutDeclineReason,
     handleDeclinedBack,
-    handleUpdatePayment,
     isLoadingPreview,
     loadingTier,
     isSubscribing,

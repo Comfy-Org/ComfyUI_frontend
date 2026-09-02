@@ -165,6 +165,7 @@ const {
   mockGetOperation,
   mockMarkOperationAttended,
   mockMarkOperationUnattended,
+  mockClearOperation,
   mockCancelOperation,
   mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
@@ -198,6 +199,7 @@ const {
   mockGetOperation: vi.fn(),
   mockMarkOperationAttended: vi.fn(),
   mockMarkOperationUnattended: vi.fn(),
+  mockClearOperation: vi.fn(),
   mockCancelOperation: vi.fn(),
   mockSubscriptionActionOperation: {
     value: undefined as MockSubscriptionActionOperation | undefined
@@ -360,6 +362,7 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
     cancelOperation: mockCancelOperation,
     markOperationAttended: mockMarkOperationAttended,
     markOperationUnattended: mockMarkOperationUnattended,
+    clearOperation: mockClearOperation,
     get subscriptionActionOperation() {
       return mockSubscriptionActionOperation.value
     }
@@ -2668,6 +2671,26 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.checkoutStep.value).toBe('declined')
+    })
+
+    it('backs out of an in-flow decline to the preserved preview', async () => {
+      const checkout = await setupWithApprovedPreview()
+
+      checkout.checkoutStep.value = 'declined'
+      checkout.handleDeclinedBack()
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('backs out of a recovered decline to plan selection, not a blank preview', async () => {
+      const checkout = await reentryOn('failed', {
+        errorMessage: 'Insufficient funds'
+      })
+
+      checkout.handleDeclinedBack()
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.checkoutDeclineReason.value).toBeNull()
     })
 
     it('closes on success when there is no plan selection to show', async () => {

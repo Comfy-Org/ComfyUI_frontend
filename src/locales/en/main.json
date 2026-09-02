@@ -3158,7 +3158,7 @@
     "declined": {
       "title": "Payment declined",
       "body": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.",
-      "reasonLabel": "Stripe reasoning:",
+      "reasonLabel": "What your bank said",
       "updatePaymentMethod": "Update payment method"
     },
     "success": {
