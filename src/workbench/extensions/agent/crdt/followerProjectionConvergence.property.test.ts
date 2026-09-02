@@ -237,7 +237,7 @@ function projection(): Projection {
   })
   const layouts = nodeStates.map((node) => [
     node.id,
-    layoutStore.getNodeLayout(scope.rootGraphId, node.id)
+    jsonSnapshot(layoutStore.getNodeLayout(scope.rootGraphId, node.id))
   ])
   return { nodes, links, widgets, layouts }
 }
