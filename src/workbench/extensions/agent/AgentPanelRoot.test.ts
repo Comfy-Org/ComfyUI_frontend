@@ -3421,6 +3421,23 @@ describe('AgentPanelRoot workflow binding', () => {
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
+  it('keeps node selection active when the active workflow is renamed', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    const active = hostStores.workflow.activeWorkflow
+    if (!active) throw new Error('expected an active workflow')
+    active.path = 'workflows/renamed.json'
+    active.filename = 'renamed'
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect(selection.canvas.multi_select).toBe(true)
+    expect(selection.canvas.allow_dragnodes).toBe(false)
+    expect(selection.canvas.selectOnly).toBe(true)
+  })
+
   it('keeps each workflow node selection separate after a graph load', async () => {
     makeTab()
     const selection = await startVueNodeSelection()

@@ -735,7 +735,7 @@ watch(
   }
 )
 
-watch(() => workflowStore.activeWorkflow?.path, exitNodeSelectionMode)
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
 
 watch(
   () => canvasStore.currentGraph,
