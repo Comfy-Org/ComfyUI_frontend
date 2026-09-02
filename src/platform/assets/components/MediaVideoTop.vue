@@ -1,11 +1,13 @@
 <template>
   <div
+    data-testid="media-video"
     class="relative size-full overflow-hidden rounded-sm bg-black"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
     <video
       ref="videoElement"
+      :aria-label="asset.name"
       :controls="shouldShowControls"
       preload="metadata"
       muted
@@ -18,6 +20,7 @@
     >
       <source
         v-if="asset.src"
+        data-testid="media-video-source"
         :src="asset.src"
         :type="asset.mime_type ?? undefined"
       />

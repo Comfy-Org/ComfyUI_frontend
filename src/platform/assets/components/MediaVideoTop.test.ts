@@ -37,51 +37,44 @@ function renderVideoTop(props: ComponentProps<typeof MediaVideoTop>) {
 
 describe('MediaVideoTop', () => {
   it('renders playable video with darkened paused overlay and play icon', () => {
-    const { container } = renderVideoTop({
+    renderVideoTop({
       asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    const video = container.querySelector('video')!
+    const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
     expect(video).toBeInTheDocument()
     expect(video.controls).toBe(false)
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
-    const source = container.querySelector('source')!
+    const source = screen.getByTestId<HTMLSourceElement>('media-video-source')
     expect(source).toHaveAttribute('src', 'https://example.com/thumb.jpg')
     expect(source).toHaveAttribute('type', 'video/mp4')
   })
 
   it('does not render source element when src is empty', () => {
-    const { container } = renderVideoTop({
+    renderVideoTop({
       asset: createVideoAsset('')
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    expect(container.querySelector('video')).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
-    expect(container.querySelector('source')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('clip.mp4')).toBeInTheDocument()
+    expect(screen.queryByTestId('media-video-source')).not.toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('emits playback events and hides paused overlay while playing', async () => {
     const user = userEvent.setup()
-    const { container, emitted } = renderVideoTop({
+    const { emitted } = renderVideoTop({
       asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    const video = container.querySelector('video')!
+    const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
     expect(video).toBeInTheDocument()
 
     await fireEvent.play(video)
     expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([true])
 
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
+    await user.hover(screen.getByTestId('media-video'))
     expect(video.controls).toBe(true)
 
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.unhover(container.firstElementChild!)
+    await user.unhover(screen.getByTestId('media-video'))
     expect(video.controls).toBe(false)
 
     await fireEvent.pause(video)
@@ -91,12 +84,11 @@ describe('MediaVideoTop', () => {
 
   it('starts playback from click when controls are hidden', async () => {
     const user = userEvent.setup()
-    const { container } = renderVideoTop({
+    renderVideoTop({
       asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    const video = container.querySelector('video')!
+    const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
     const playSpy = vi
       .spyOn(video, 'play')
       .mockImplementation(() => Promise.resolve())
@@ -119,12 +111,11 @@ describe('MediaVideoTop', () => {
     'does not start playback from a $modifier-click',
     async ({ keyDown, keyUp }) => {
       const user = userEvent.setup()
-      const { container } = renderVideoTop({
+      renderVideoTop({
         asset: createVideoAsset('https://example.com/thumb.jpg')
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const video = container.querySelector('video')!
+      const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
       const playSpy = vi
         .spyOn(video, 'play')
         .mockImplementation(() => Promise.resolve())
@@ -144,13 +135,12 @@ describe('MediaVideoTop', () => {
 
   it('pauses playback from a subsequent click when native controls are disabled', async () => {
     const user = userEvent.setup()
-    const { container } = renderVideoTop({
+    renderVideoTop({
       asset: createVideoAsset('https://example.com/thumb.jpg'),
       showNativeControls: false
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    const video = container.querySelector('video')!
+    const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
     const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
 
     Object.defineProperty(video, 'paused', {
@@ -159,8 +149,7 @@ describe('MediaVideoTop', () => {
     })
 
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
+    await user.hover(screen.getByTestId('media-video'))
     expect(video.controls).toBe(false)
 
     await user.click(video)
@@ -175,12 +164,11 @@ describe('MediaVideoTop', () => {
     'toggles playback from $name while native controls are hidden',
     async ({ key }) => {
       const user = userEvent.setup()
-      const { container } = renderVideoTop({
+      renderVideoTop({
         asset: createVideoAsset('https://example.com/thumb.jpg')
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const video = container.querySelector('video')!
+      const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
       const playSpy = vi
         .spyOn(video, 'play')
         .mockImplementation(() => Promise.resolve())
@@ -211,22 +199,19 @@ describe('MediaVideoTop', () => {
 
   it('hides the play button only while native controls are visible', async () => {
     const user = userEvent.setup()
-    const { container } = renderVideoTop({
+    renderVideoTop({
       asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    const video = container.querySelector('video')!
+    const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
+    await user.hover(screen.getByTestId('media-video'))
     expect(video.controls).toBe(true)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.unhover(container.firstElementChild!)
+    await user.unhover(screen.getByTestId('media-video'))
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
   })
 })
