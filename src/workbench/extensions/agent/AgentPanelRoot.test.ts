@@ -6,6 +6,9 @@ import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
+import type { Ref } from 'vue'
+
+import type * as AgentCrdtFollowerModule from './crdt/useAgentCrdtFollower'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -289,16 +292,15 @@ const crdtFollowerCalls = vi.hoisted(
 )
 const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
 vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('./crdt/useAgentCrdtFollower')>()
+  const actual = await importOriginal<typeof AgentCrdtFollowerModule>()
   return {
     ...actual,
     peekPersistedDocId: () => persistedCrdtDocId.value,
     useAgentCrdtFollower: (
-      workflowId: import('vue').Ref<string | null>,
+      workflowId: Ref<string | null>,
       graphMutations: unknown,
       userId: () => string | null,
-      isTargetActive: import('vue').Ref<boolean>
+      isTargetActive: Ref<boolean>
     ) => {
       crdtFollowerCalls.push({
         workflowId: workflowId.value,
