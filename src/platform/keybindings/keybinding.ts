@@ -21,7 +21,13 @@ export class KeybindingImpl implements Keybinding {
 
   /** Every field that distinguishes one binding from another. */
   serialize(): string {
-    return `${this.commandId}:${this.combo.serialize()}:${this.targetElementId ?? ''}:${this.dialogKey ?? ''}:${this.when ?? ''}`
+    return JSON.stringify([
+      this.commandId,
+      this.combo.serialize(),
+      this.targetElementId ?? '',
+      this.dialogKey ?? '',
+      this.when ?? ''
+    ])
   }
 
   equals(other: unknown): boolean {

@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -18,6 +19,8 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
+
+const zContextKeys = z.array(z.string()).optional()
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -51,7 +54,13 @@ export const useExtensionService = () => {
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
     const contextKeyStore = useContextKeyStore()
-    extension.contextKeys?.forEach((key) => {
+    const contextKeys = zContextKeys.safeParse(extension.contextKeys)
+    if (!contextKeys.success) {
+      toastErrorHandler(
+        new Error(t('g.invalidExtensionContextKeys', { name: extension.name }))
+      )
+    }
+    contextKeys.data?.forEach((key) => {
       if (
         !contextKeyStore.register(`${extension.name}.${key}`, extension.name)
       ) {

@@ -96,7 +96,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     ...userKeybindings.value
   ])
 
-  const keybindingsByScope = computed<Partial<Record<string, KeybindingImpl[]>>>(() => {
+  const keybindingsByScope = computed<
+    Partial<Record<string, KeybindingImpl[]>>
+  >(() => {
     const groups = groupBy(
       [...userKeybindings.value, ...activeDefaultKeybindings.value],
       (binding) => scopeKey(binding.combo, binding.dialogKey)
@@ -177,6 +179,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     )
     if (isDefault && unset) {
       userUnsetKeybindings.value = without(userUnsetKeybindings.value, unset)
+      userKeybindings.value = userKeybindings.value.filter(
+        (binding) => !conflicts(binding, keybinding)
+      )
       return
     }
     if (isDefault) return
