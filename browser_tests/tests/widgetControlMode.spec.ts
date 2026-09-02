@@ -1,22 +1,27 @@
 import { expect } from '@playwright/test'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 type DirtyWindow = Window & { __canvasDirtied?: boolean }
 
-const getControlLabels = (comfyPage: ComfyPage, nodeId?: string | number) =>
-  comfyPage.page.evaluate((id) => {
-    const node =
-      id === undefined
-        ? window.app!.graph!.nodes[0]
-        : window.app!.graph!.getNodeById(id)
-    return (node?.widgets ?? [])
-      .filter((widget) => (widget.label ?? '').includes('control'))
-      .map((widget) => widget.label!)
-  }, nodeId)
+const getControlLabels = (comfyPage: ComfyPage, nodeId?: SerializedNodeId) =>
+  comfyPage.page.evaluate(
+    (id) => {
+      const node =
+        id === undefined
+          ? window.app!.graph!.nodes[0]
+          : window.app!.graph!.getNodeById(id)
+      return (node?.widgets ?? [])
+        .filter((widget) => (widget.label ?? '').includes('control'))
+        .map((widget) => widget.label!)
+    },
+    nodeId === undefined ? undefined : toNodeId(nodeId)
+  )
 
 test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
   test.afterEach(async ({ comfyPage }) => {
