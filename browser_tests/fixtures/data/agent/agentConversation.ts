@@ -16,7 +16,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * (`message_id` / `thread_id`): the replay stamps those from the ack it
  * minted, then validates the result against `zAgentWsEvent` before sending.
  */
-const zRecordedWsEvent = z.object({
+export const zRecordedWsEvent = z.object({
   type: z.string(),
   data: z.record(z.string(), z.unknown())
 })
@@ -40,6 +40,17 @@ const zWidgetCatalog = z.custom<WidgetCatalog>(
   (value) => isRecord(value) && isRecord(value.types)
 )
 
+export const zAgentConversationWorkflow = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  catalog: zWidgetCatalog,
+  seed: zWorkflowJson
+})
+
+export const zAgentConversationRequest = z.object({
+  content: z.string().min(1)
+})
+
 const zResponseEntry = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('event'), event: zRecordedWsEvent }),
   z.object({
@@ -53,24 +64,40 @@ const zResponseEntry = z.discriminatedUnion('kind', [
  * (`event`) interleaved with the semantic graph operations (`graph_ops`) the
  * doc host folds into the workflow document.
  */
-const zAgentConversation = z.object({
-  schema_version: z.literal('agent-conversation.v1'),
-  source: z.object({
-    repo: z.string(),
-    suite: z.string(),
-    case_id: z.string(),
-    response_side: z.enum(['recorded', 'synthesized']),
-    note: z.string().optional()
-  }),
-  workflow: z.object({
-    id: z.string().uuid(),
-    name: z.string().min(1),
-    catalog: zWidgetCatalog,
-    seed: zWorkflowJson
-  }),
-  request: z.object({ content: z.string().min(1) }),
-  response: z.array(zResponseEntry).min(1)
-})
+export const zAgentConversation = z
+  .object({
+    schema_version: z.literal('agent-conversation.v1'),
+    source: z.object({
+      repo: z.string(),
+      suite: z.string(),
+      case_id: z.string(),
+      response_side: z.enum(['recorded', 'synthesized']),
+      note: z.string().optional(),
+      capture: z
+        .object({
+          backend: z.literal('Comfy-Org/cloud'),
+          thread_id: z.string().min(1),
+          message_id: z.string().min(1),
+          exported_at: z.string().datetime()
+        })
+        .optional()
+    }),
+    workflow: zAgentConversationWorkflow,
+    request: zAgentConversationRequest,
+    response: z.array(zResponseEntry).min(1)
+  })
+  .superRefine((conversation, ctx) => {
+    if (
+      conversation.source.response_side === 'recorded' &&
+      conversation.source.capture === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['source', 'capture'],
+        message: 'recorded responses require backend capture provenance'
+      })
+    }
+  })
 export type AgentConversation = z.infer<typeof zAgentConversation>
 
 export function loadAgentConversation(caseId: string): AgentConversation {
