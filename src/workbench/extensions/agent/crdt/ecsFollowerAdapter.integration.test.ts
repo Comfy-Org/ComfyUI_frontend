@@ -1,4 +1,9 @@
-import { applyOps, linksMap, mint } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -212,78 +217,128 @@ describe('EcsFollowerAdapter integration', () => {
 
   // crdt-1: applyQueuedFrame collects every changed link into ONE
   // session.mutations.batch(...) call. graphMutations.batch's `prepare` pass
-  // fails the entire batch string-early on the first invalid mutation (see
-  // graphMutations.ts `prepare`), so one dangling/invalid link in a frame
-  // used to discard unrelated valid node/widget/link changes queued in the
-  // SAME frame — unlike the CMP applier itself, which already applies only
-  // the valid prefix of a batch (see the 'aborted applier batch' test above).
-  // Fixed by isConnectableInFrame: unrepresentable links (missing endpoint,
-  // out-of-range slot) are dropped from the frame before they reach the
-  // batch, mirroring graphMutations.prepare's own connect preconditions.
+  // short-circuits, returning an error string, on the first invalid mutation
+  // (see graphMutations.ts `prepare`), so one dangling/invalid link in a
+  // frame used to discard unrelated valid node/widget/link changes queued in
+  // the SAME frame — unlike the CMP applier itself, which already applies
+  // only the valid prefix of a batch (see the 'aborted applier batch' test
+  // above). Fixed by isConnectableInFrame: unrepresentable links (missing or
+  // unreadable endpoint, out-of-range slot, negative id) are dropped from the
+  // frame before they reach the batch, mirroring graphMutations.prepare's
+  // own connect preconditions.
   // Source: FE #16486 review evidence (projectBaseline vs applyQueuedFrame
   // split), https://github.com/Comfy-Org/ComfyUI_frontend/pull/16486#issuecomment-5501076931
-  it('drops a dangling link from a frame instead of discarding the whole frame', () => {
-    const host = mint({ nodes: [], links: [] }, catalog)
-    const follower = new FollowerDoc()
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
-    })
-    const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind('wf', follower)
+  describe('drops an unrepresentable link instead of discarding the whole frame', () => {
+    // Each case: a valid, unrelated node add (node 1) and one bad link land
+    // in the SAME Y update/frame — e.g. an out-of-order delivery or a link
+    // whose endpoint node arrives in a later frame. Links are written
+    // directly to linksMap to isolate the applyQueuedFrame/graphMutations
+    // boundary from CMP's own op validation, which already refuses to mint
+    // an invalid connect at the source.
+    const cases: {
+      name: string
+      reason: string
+      link: (string | number)[]
+      seedDoc?: (host: Y.Doc) => void
+    }[] = [
+      {
+        name: 'dangling endpoint (node never existed on the follower doc)',
+        reason: 'missing endpoint node',
+        link: [999, 404, 0, 405, 0, 'IMAGE']
+      },
+      {
+        name: 'origin slot out of range',
+        reason: 'origin slot out of range',
+        // node 1 has exactly one output (slot 0); slot 7 does not exist.
+        link: [999, 1, 7, 1, 0, 'IMAGE']
+      },
+      {
+        name: 'negative link id (prepare rejects link.id < 0)',
+        reason: 'invalid link id',
+        link: [-5, 1, 0, 1, 0, 'IMAGE']
+      },
+      {
+        name: 'endpoint present in the doc but unreadable (empty type)',
+        reason: 'missing endpoint node',
+        // Node 404 exists in nodesMap but readSemanticNode returns null for
+        // it (no `type`), so applyQueuedFrame never addNode()s it and prepare
+        // would still see "origin node does not exist".
+        link: [999, 404, 0, 1, 0, 'IMAGE'],
+        seedDoc: (host) => {
+          const ghost = new Y.Map<unknown>()
+          ghost.set('outputs', Y.Array.from([{ name: 'out', type: 'IMAGE' }]))
+          nodesMap(host).set('404', ghost)
+        }
+      }
+    ]
 
-    // A valid, unrelated node add and a dangling link (points at a node that
-    // never existed on the follower doc) land in the SAME Y update/frame —
-    // e.g. an out-of-order delivery or a link whose endpoint node arrives in
-    // a later frame. Written directly to linksMap to isolate the
-    // applyQueuedFrame/graphMutations boundary from CMP's own op validation,
-    // which already refuses to mint an invalid connect at the source.
-    host.transact(() => {
-      applyOps(
-        host,
-        [
-          op('valid-add', 1, {
-            op: 'add_node',
-            node_id: 1,
-            class_type: 'Source',
-            pos: [0, 0],
-            node: {
-              id: 1,
-              type: 'Source',
-              inputs: [],
-              outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
-            }
-          })
-        ] as Parameters<typeof applyOps>[1],
-        catalog
-      )
-      linksMap(host).set('999', Y.Array.from([999, 404, 0, 405, 0, 'IMAGE']))
-    })
-
-    const update = Y.encodeStateAsUpdate(host)
-    follower.applyRemoteUpdate(update)
-    expect(
-      adapter.applyFrame({
-        workflowId: 'wf',
-        seq: 1,
-        update,
-        actor: 'agent:test',
-        opIds: ['valid-add']
+    it.for(cases)('$name', ({ reason, link, seedDoc }) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
-    ).toBe(true)
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
 
-    // The valid node add survives; the dangling link never reaches
-    // graphMutations.batch, so it can no longer abort the frame.
-    expect(
-      useNodeDataStore()
-        .getGraphNodesFor('root', 'root')
-        .map(({ id }) => id)
-    ).toEqual([toNodeId(1)])
-    expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+      host.transact(() => {
+        applyOps(
+          host,
+          [
+            op('valid-add', 1, {
+              op: 'add_node',
+              node_id: 1,
+              class_type: 'Source',
+              pos: [0, 0],
+              node: {
+                id: 1,
+                type: 'Source',
+                inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+                outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+              }
+            })
+          ] as Parameters<typeof applyOps>[1],
+          catalog
+        )
+        seedDoc?.(host)
+        linksMap(host).set(String(link[0]), Y.Array.from(link))
+      })
 
-    adapter.destroy()
-    follower.destroy()
-    host.destroy()
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ['valid-add']
+        })
+      ).toBe(true)
+
+      // The valid node add survives; the bad link never reaches
+      // graphMutations.batch, so it can no longer abort the frame.
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1)])
+      expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+
+      // The drop is surfaced, not silent (same channel as the other
+      // `[agent-crdt] ... dropped` paths in this directory).
+      expect(warn).toHaveBeenCalledWith(
+        '[agent-crdt] follower frame dropped unrepresentable link',
+        expect.objectContaining({ workflowId: 'wf', linkId: link[0], reason })
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+      warn.mockRestore()
+    })
   })
 
   it('applies an implicit disconnect when delete-wins installs no replacement', () => {

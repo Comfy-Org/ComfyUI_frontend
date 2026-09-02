@@ -94,34 +94,36 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 }
 
 /**
- * Mirrors graphMutations.prepare's `connect` preconditions (endpoint
- * presence, slot range) so an unrepresentable link can be dropped from a
- * frame BEFORE it reaches the batch. graphMutations.batch fails its entire
- * batch string-early on the first invalid mutation (crdt-1) — one dangling
- * or slot-out-of-range link must never take a frame's unrelated valid
- * node/widget/link changes down with it.
+ * Mirrors graphMutations.prepare's `connect` preconditions (valid id,
+ * endpoint presence, slot range) so an unrepresentable link can be dropped
+ * from a frame BEFORE it reaches the batch. graphMutations.batch
+ * short-circuits, returning an error string, on the first invalid mutation
+ * (crdt-1) — one dangling or slot-out-of-range link must never take a
+ * frame's unrelated valid node/widget/link changes down with it.
+ *
+ * Endpoint presence is judged by `readSemanticNode`, not by raw Y-doc
+ * membership: a node that is in the doc but unreadable (missing `type`) is
+ * skipped by applyQueuedFrame's addNode pass, so `prepare` would still see
+ * it as absent. Returns the rejection reason, or null when connectable.
  */
-function isConnectableInFrame(
+function unconnectableReason(
   link: SemanticLinkPayload,
-  session: Pick<TargetSession, 'nodes'>
-): boolean {
-  if (!session.nodes.has(String(link.originNodeId))) return false
-  if (!session.nodes.has(String(link.targetNodeId))) return false
-  if (
-    !link.originOutputs ||
-    link.originSlot < 0 ||
-    link.originSlot >= link.originOutputs.length
-  ) {
-    return false
-  }
-  if (
-    !link.targetInputs ||
-    link.targetSlot < 0 ||
-    link.targetSlot >= link.targetInputs.length
-  ) {
-    return false
-  }
-  return true
+  doc: Y.Doc
+): string | null {
+  if (!Number.isInteger(link.id) || link.id < 0) return 'invalid link id'
+  if (!readSemanticNode(doc, String(link.originNodeId)))
+    return 'missing endpoint node'
+  if (!readSemanticNode(doc, String(link.targetNodeId)))
+    return 'missing endpoint node'
+  // readSemanticLink always supplies both slot lists; treat a missing list as
+  // zero slots so an unverifiable slot is dropped rather than trusted.
+  const outputs = link.originOutputs?.length ?? 0
+  const inputs = link.targetInputs?.length ?? 0
+  if (link.originSlot < 0 || link.originSlot >= outputs)
+    return 'origin slot out of range'
+  if (link.targetSlot < 0 || link.targetSlot >= inputs)
+    return 'target slot out of range'
+  return null
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
@@ -297,7 +299,16 @@ export class EcsFollowerAdapter {
       }
       for (const id of changedLinkIds) {
         const link = readSemanticLink(session.follower.doc, id)
-        if (link && isConnectableInFrame(link, session)) batch.connect(link)
+        if (!link) continue
+        const reason = unconnectableReason(link, session.follower.doc)
+        if (reason) {
+          console.warn(
+            '[agent-crdt] follower frame dropped unrepresentable link',
+            { workflowId: session.workflowId, linkId: link.id, reason }
+          )
+          continue
+        }
+        batch.connect(link)
       }
     })
   }
