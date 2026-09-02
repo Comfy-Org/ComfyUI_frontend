@@ -9,6 +9,7 @@ import type {
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
+import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
@@ -236,42 +237,12 @@ export const useAgentConversationStore = defineStore(
 
     function hydrate(history: AgentMessages): void {
       clearActive()
-      const texts = new Map<TurnId, string>()
-      const assistants = new Map<TurnId, AssistantMessage>()
-      const turnOrder: TurnId[] = []
-      const seenTurns = new Set<TurnId>()
-      const rowIds = new Set<string>()
-      for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
-        const turnId = row.turn_id as TurnId
-        rowIds.add(row.id)
-        if (!seenTurns.has(turnId)) {
-          seenTurns.add(turnId)
-          turnOrder.push(turnId)
-        }
-        const text =
-          typeof row.content?.text === 'string' ? row.content.text : ''
-        if (row.role === 'user') texts.set(turnId, text)
-        if (row.role === 'assistant') {
-          const message =
-            assistants.get(turnId) ?? createAssistantMessage(turnId)
-          message.streaming = false
-          if (text)
-            message.parts = [
-              ...message.parts,
-              { type: 'text', text, state: 'done' }
-            ]
-          assistants.set(turnId, message)
-        }
-      }
-      messages.value = turnOrder.map((turnId) => {
-        const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-        message.streaming = false
-        return message
-      })
-      userTexts.value = texts
+      const transcript = normalizeAgentTranscript(history)
+      messages.value = transcript.messages
+      userTexts.value = transcript.userTexts
       userTags.value = new Map()
-      hydratedMessageIds = rowIds
-      hydratedAssistantTurnIds = new Set(assistants.keys())
+      hydratedMessageIds = transcript.rowIds
+      hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
     }
 

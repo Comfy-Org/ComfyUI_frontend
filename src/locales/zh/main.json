@@ -3201,6 +3201,7 @@
     "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "Sigmas",
     "sound": "声音",
@@ -5038,8 +5039,10 @@
       "failedCount": "无法发送 {count} 个邀请，请重试。",
       "invalidEmailCount": "{count} 个无效邮箱地址",
       "invitedMessage": "已向 {emails} 发送邀请",
+      "pendingInviteCount": "这些人中有 {count} 人已有待处理的邀请，将被跳过。",
+      "pendingInviteSingle": "此人已有待处理的邀请",
       "placeholder": "输入对方邮箱",
-      "seatLimitReached": "最多可邀请 {count} 位队友。",
+      "seatLimitExceeded": "此工作区的成员上限为 {max} 人。请移除 {overage} 人以继续。",
       "title": "邀请他人加入此工作区"
     },
     "inviteUpsellDialog": {
