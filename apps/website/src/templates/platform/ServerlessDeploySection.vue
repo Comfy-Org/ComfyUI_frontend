@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 // Command surface from comfy-cli's build + deploy stack (PRs #801-805):
 // `comfy build init` (or `--from-workflow`), `build push --release`, whose
 // `--target` decides whether `deploy up` finds a deployable artifact, and
-// `deploy up`. `init` and `up` both default to the current directory.
+// `deploy up`. All three default to the current directory.
 function terminalSegments(transcript: string): CodeTab['segments'] {
   const lines = transcript.split('\n')
   return lines.flatMap((line, index) => [

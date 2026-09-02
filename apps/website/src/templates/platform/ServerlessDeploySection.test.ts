@@ -27,6 +27,7 @@ describe('ServerlessDeploySection', () => {
     expect(transcript()).toContain(
       '$ comfy build push --release --target linux/nvidia'
     )
+    expect(transcript()).toContain('$ comfy deploy up')
 
     await userEvent.click(
       screen.getByRole('tab', {
@@ -40,5 +41,6 @@ describe('ServerlessDeploySection', () => {
     expect(transcript()).toContain(
       '$ comfy build push --release --target linux/nvidia'
     )
+    expect(transcript()).toContain('$ comfy deploy up')
   })
 })
