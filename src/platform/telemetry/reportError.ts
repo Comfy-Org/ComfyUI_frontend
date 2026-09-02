@@ -50,24 +50,44 @@ function dispatch(
   const tags = definedEntriesOf(options.tags)
   const sentryLive = !sentryAlreadyDelivered && isSentryEnabled()
   const datadogLive = isDatadogRumLive()
+  let sentryDelivered = false
+  let datadogDelivered = false
 
   if (sentryLive) {
-    captureException(error, {
-      tags: { ...tags, error_type: errorType },
-      extra: context,
-      level
-    })
+    try {
+      captureException(error, {
+        tags: { ...tags, error_type: errorType },
+        extra: context,
+        level
+      })
+      sentryDelivered = true
+    } catch (reporterFailure) {
+      console.error(
+        '[reportError] Sentry delivery failed',
+        reporterFailure,
+        error
+      )
+    }
   }
   if (datadogLive) {
-    datadogRum.addError(error, {
-      ...context,
-      ...tags,
-      error_type: errorType,
-      ...(level ? { level } : {})
-    })
+    try {
+      datadogRum.addError(error, {
+        ...context,
+        ...tags,
+        error_type: errorType,
+        ...(level ? { level } : {})
+      })
+      datadogDelivered = true
+    } catch (reporterFailure) {
+      console.error(
+        '[reportError] Datadog delivery failed',
+        reporterFailure,
+        error
+      )
+    }
   }
 
-  return { sentry: sentryLive, datadog: datadogLive }
+  return { sentry: sentryDelivered, datadog: datadogDelivered }
 }
 
 function enqueuePendingReport(report: PendingReport): void {

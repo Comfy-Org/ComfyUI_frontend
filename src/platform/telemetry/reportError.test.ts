@@ -179,7 +179,27 @@ describe('reportError', () => {
     expect(() => flushErrorReports()).not.toThrow()
   })
 
-  it('does not throw when a sink throws', async () => {
+  it('does not resend to Sentry when a buffered Datadog delivery fails', async () => {
+    mockIsCloud.value = true
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('cold boot'), { errorType: 'invariant_assert' })
+
+    sentryLive(true)
+    datadogLive(true)
+    addError.mockImplementationOnce(() => {
+      throw new Error('datadog exploded')
+    })
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledTimes(2)
+  })
+
+  it('still reports to Datadog when Sentry throws', async () => {
     captureException.mockImplementation(() => {
       throw new Error('sentry exploded')
     })
@@ -190,5 +210,6 @@ describe('reportError', () => {
         errorType: 'bootstrap_auth_wait_timeout'
       })
     ).not.toThrow()
+    expect(addError).toHaveBeenCalledOnce()
   })
 })
