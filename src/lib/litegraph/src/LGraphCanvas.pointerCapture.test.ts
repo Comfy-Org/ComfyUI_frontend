@@ -127,7 +127,6 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
   let hasPointerCapture: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     graph = new LGraph()
     ;({ canvas, releasePointerCapture, hasPointerCapture } =
       createCanvas(graph))
