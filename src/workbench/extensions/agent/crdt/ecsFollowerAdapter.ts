@@ -111,6 +111,7 @@ interface TargetSession {
   readonly mutations: GraphMutations
   readonly nodeActions: Map<string, NodeRootAction>
   readonly changedWidgets: Map<string, Set<string>>
+  readonly widgetsWithRemovals: Set<string>
   readonly changedLinks: Set<string>
   readonly frameQueue: DocUpdate[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
@@ -197,6 +198,7 @@ export class EcsFollowerAdapter {
           : this.mutations,
       nodeActions: new Map<string, NodeRootAction>(),
       changedWidgets: new Map<string, Set<string>>(),
+      widgetsWithRemovals: new Set<string>(),
       changedLinks: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
@@ -215,6 +217,7 @@ export class EcsFollowerAdapter {
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
     )
+    const widgetsWithRemovals = new Set(session.widgetsWithRemovals)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
     this.discardSessionPending(session)
@@ -270,8 +273,13 @@ export class EcsFollowerAdapter {
         if (!payload) continue
         batch.addNode(payload)
       }
-      for (const [id, names] of changedWidgets) {
+      for (const id of widgetsWithRemovals) {
         if (nodeActions.has(id)) continue
+        const payload = readSemanticNode(session.follower.doc, id)
+        if (payload) batch.reconcileNode(payload)
+      }
+      for (const [id, names] of changedWidgets) {
+        if (nodeActions.has(id) || widgetsWithRemovals.has(id)) continue
         const node = session.nodes.get(id)
         const widgets = node?.get('widgets')
         if (!(widgets instanceof Y.Map)) continue
@@ -297,6 +305,7 @@ export class EcsFollowerAdapter {
   private discardSessionPending(session: TargetSession): void {
     session.nodeActions.clear()
     session.changedWidgets.clear()
+    session.widgetsWithRemovals.clear()
     session.changedLinks.clear()
   }
 
@@ -316,7 +325,15 @@ export class EcsFollowerAdapter {
       if (!id) continue
       if (event.path[1] === 'widgets') {
         const names = session.changedWidgets.get(id) ?? new Set<string>()
-        for (const name of event.keysChanged) names.add(name)
+        for (const name of event.keysChanged) {
+          names.add(name)
+          // A key deleted in place can't be expressed by setWidget alone
+          // (it only fires `if (widgets.has(name))`) -- route this node
+          // through reconcileNode so the removed key is actually cleared
+          // from the widget store instead of silently surviving (FEC-3).
+          if (event.changes.keys.get(name)?.action === 'delete')
+            session.widgetsWithRemovals.add(id)
+        }
         session.changedWidgets.set(id, names)
         continue
       }
