@@ -5134,6 +5134,8 @@
     "historyEarlier": "Earlier",
     "historyEmpty": "No conversations yet",
     "copyMarkdown": "Copy as markdown",
+    "transcriptUser": "You",
+    "transcriptAssistant": "Agent",
     "delete": "Delete",
     "untitledChat": "Untitled",
     "skip": "Skip",

@@ -38,11 +38,38 @@ describe('chatSessionFromThread', () => {
     })
     expect(
       chatSessionFromThread(
-        { id: 'thread-2', title: '', created_at: 'invalid' },
+        {
+          id: 'thread-2',
+          title: 'Duck pipeline',
+          preview: 'ignored preview',
+          updated_at: '2026-07-06T10:00:00Z'
+        },
         'Untitled',
         NOW
       )
-    ).toEqual({ id: 'thread-2', title: 'Untitled', updatedAt: NOW })
+    ).toEqual({
+      id: 'thread-2',
+      title: 'Duck pipeline',
+      updatedAt: Date.parse('2026-07-06T10:00:00Z')
+    })
+    expect(
+      chatSessionFromThread(
+        { id: 'thread-3', title: '', created_at: '2026-07-05T10:00:00Z' },
+        'Untitled',
+        NOW
+      )
+    ).toEqual({
+      id: 'thread-3',
+      title: 'Untitled',
+      updatedAt: Date.parse('2026-07-05T10:00:00Z')
+    })
+    expect(
+      chatSessionFromThread(
+        { id: 'thread-4', title: '', created_at: 'invalid' },
+        'Untitled',
+        NOW
+      )
+    ).toEqual({ id: 'thread-4', title: 'Untitled', updatedAt: NOW })
   })
 })
 

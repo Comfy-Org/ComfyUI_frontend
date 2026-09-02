@@ -111,6 +111,7 @@ describe('agent workflow tabs', () => {
     ['a/b', 'a-b.json'],
     ['folder\\name', 'folder-name.json'],
     ['workflow.json', 'workflow.json'],
+    ['workflow.json ', 'workflow.json'],
     [' .hidden', 'hidden.json'],
     [`${'a'.repeat(79)}💩b`, `${'a'.repeat(79)}💩.json`],
     ['  ', undefined],

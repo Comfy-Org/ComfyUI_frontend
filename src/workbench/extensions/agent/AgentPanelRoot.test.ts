@@ -59,6 +59,21 @@ const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
+const MockLGraphNode = vi.hoisted(
+  () =>
+    class MockLGraphNode {
+      readonly boundingRect = {}
+      readonly type: string
+      graph?: { id?: string }
+
+      constructor(
+        public id: number | string,
+        public title: string
+      ) {
+        this.type = title
+      }
+    }
+)
 
 vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: () => ({ focusNodeInstance })
@@ -104,6 +119,7 @@ type MockCanvas = {
   selectedItems: Set<unknown>
   selectItems: ReturnType<typeof vi.fn>
   deselect: (node: unknown) => void
+  deselectAll: ReturnType<typeof vi.fn>
   multi_select: boolean
   allow_dragnodes: boolean
   selectOnly: boolean
@@ -112,7 +128,6 @@ type MockCanvas = {
 
 type MockGraph = {
   nodes: unknown[]
-  serialize: () => { version: number; nodes: unknown[] }
   getNodeById: (id: string | number) => unknown | null
 }
 
@@ -127,7 +142,6 @@ const appMock = vi.hoisted((): AppMock => {
   const nodes: unknown[] = []
   const graph = {
     nodes,
-    serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
         (node) =>
@@ -137,12 +151,11 @@ const appMock = vi.hoisted((): AppMock => {
           String(node.id) === String(id)
       ) ?? null
   }
-  const canvas: MockCanvas | undefined = undefined
   return {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
-    canvas
+    canvas: undefined
   }
 })
 
@@ -178,6 +191,7 @@ type FakeTab = {
   directory: string
   filename: string
   isTemporary: boolean
+  isPersisted: boolean
   isModified: boolean
   activeState: { id?: string } | null
 }
@@ -244,6 +258,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
         directory: 'workflows',
         filename: stem,
         isTemporary: true,
+        isPersisted: false,
         isModified: false,
         activeState: data ?? null
       }
@@ -285,11 +300,7 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphNode: (item: unknown) =>
-    typeof item === 'object' &&
-    item !== null &&
-    'isNodeFake' in item &&
-    item.isNodeFake === true
+  isLGraphNode: (item: unknown) => item instanceof MockLGraphNode
 }))
 
 type MockPromptError = {
@@ -318,8 +329,12 @@ vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
 }))
 
+const currentUser = vi.hoisted(() => ({
+  resolvedUserInfo: { value: { id: 'user-1' } },
+  userDisplayName: { value: 'Jo Rivera' }
+}))
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => currentUser
 }))
 
 const telemetry = vi.hoisted(() => ({
@@ -357,6 +372,7 @@ beforeEach(() => {
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
   hostStores.canvas.currentGraph = null
+  sidebarStore.activeSidebarTabId = null
   executionErrors.lastPromptError = null
   toastStore.messagesToAdd.length = 0
   appMock.graph.nodes = []
@@ -396,6 +412,7 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
     directory: path.slice(0, slash),
     filename: path.slice(slash + 1).replace(/\.json$/, ''),
     isTemporary: false,
+    isPersisted: true,
     isModified: false,
     activeState: null,
     ...overrides
@@ -469,19 +486,13 @@ async function openMentionPicker(): Promise<void> {
   await userEvent.type(screen.getByRole('textbox'), '@')
 }
 
-type SelectionTestNode = {
-  isNodeFake: true
-  id: number | string
-  title: string
-  boundingRect: object
-  graph?: { id?: string }
-}
+type SelectionTestNode = InstanceType<typeof MockLGraphNode>
 
 function setupNodeSelectionCanvas() {
   const focus = vi.fn()
   const nodes: SelectionTestNode[] = [
-    { isNodeFake: true, id: 9, title: 'VAE Decode', boundingRect: {} },
-    { isNodeFake: true, id: 12, title: 'KSampler', boundingRect: {} }
+    new MockLGraphNode(9, 'VAE Decode'),
+    new MockLGraphNode(12, 'KSampler')
   ]
   const selectedItems = new Set<unknown>()
   const selectItems = vi.fn((items: unknown[], add = false) => {
@@ -596,7 +607,7 @@ async function startVueNodeSelection() {
     else state.selectedItems.add(node)
     hostStores.canvas.updateSelectedItems()
   })
-  render(AgentPanelRoot, { global: { plugins: [i18n] } })
+  const view = render(AgentPanelRoot, { global: { plugins: [i18n] } })
   renderCanvasNodeButtons(state.nodes, selectClickedNode)
   useAgentPanelStore().isOpen = true
 
@@ -609,7 +620,7 @@ async function startVueNodeSelection() {
   expect(state.selectItems).not.toHaveBeenCalled()
   expect(hostStores.canvas.selectedItems).toEqual(state.nodes)
 
-  return { ...state, buttons, selectClickedNode }
+  return { ...state, ...view, buttons, selectClickedNode }
 }
 
 async function expectLaterClickCannotRestoreAccumulatedNodes(
@@ -731,6 +742,26 @@ describe('AgentPanelRoot attach flow', () => {
     expect(dispatchDrag(target, 'dragover', data)).toBe(false)
     expect(dispatchDrag(target, 'drop', data)).toBe(false)
     expect(uploaded).toEqual([])
+  })
+
+  it('claims a mixed drop for its attachable files and leaves JSON-only drops unclaimed', async () => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+    const workflow = new File(['{}'], 'workflow.json', {
+      type: 'application/json'
+    })
+    const image = new File(['image'], 'reference.png', { type: 'image/png' })
+
+    expect(dispatchDrag(target, 'drop', { files: [workflow, image] })).toBe(
+      true
+    )
+    await vi.waitFor(() => expect(uploaded).toEqual(['reference.png']))
+
+    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
+    await nextTick()
+    expect(uploaded).toEqual(['reference.png'])
   })
 
   it('attaches a Media-card URI and forwards its uploaded ref', async () => {
@@ -927,6 +958,28 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(activity.editingTabPath).toBeNull()
     expect(activity.creatingTab).toBe(false)
   })
+
+  it('exits selection on graph changes and restores canvas behavior on unmount', async () => {
+    const selection = await startVueNodeSelection()
+
+    hostStores.canvas.currentGraph = { id: 'next-graph' }
+    await nextTick()
+
+    expect(selection.canvas.multi_select).toBe(false)
+    expect(selection.canvas.allow_dragnodes).toBe(true)
+    expect(selection.canvas.selectOnly).toBe(false)
+
+    await enterNodeSelectionMode()
+    expect(selection.canvas.multi_select).toBe(true)
+
+    selection.unmount()
+    await nextTick()
+
+    expect(selection.canvas.multi_select).toBe(false)
+    expect(selection.canvas.allow_dragnodes).toBe(true)
+    expect(selection.canvas.selectOnly).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
 })
 
 describe('AgentPanelRoot workflow binding', () => {
@@ -936,6 +989,7 @@ describe('AgentPanelRoot workflow binding', () => {
       directory: 'workflows',
       filename: 'current',
       isTemporary: false,
+      isPersisted: true,
       isModified: false,
       activeState: id === undefined ? null : { id }
     }
@@ -948,12 +1002,14 @@ describe('AgentPanelRoot workflow binding', () => {
   function mockMessagesEndpoint(
     ackWorkflowId: string,
     cloudWorkflows: { id: string; name: string }[] = []
-  ): unknown[] {
+  ): { bodies: unknown[]; messageUrls: string[] } {
     const bodies: unknown[] = []
+    const messageUrls: string[] = []
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
+          messageUrls.push(url)
           bodies.push(JSON.parse(String(init.body)))
           return json(202, ack(ackWorkflowId, `m-${bodies.length}`))
         }
@@ -975,7 +1031,7 @@ describe('AgentPanelRoot workflow binding', () => {
         return new Response('{}', { status: 200 })
       })
     )
-    return bodies
+    return { bodies, messageUrls }
   }
 
   it('transitions the bound tab from editing to modified when the turn completes', async () => {
@@ -1063,7 +1119,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('chip X detaches the chat so the next send carries no workflow context', async () => {
     makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
+    const { bodies } = mockMessagesEndpoint('wf-42')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await userEvent.click(
@@ -1083,6 +1139,72 @@ describe('AgentPanelRoot workflow binding', () => {
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
     expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
+  })
+
+  it('starts workflow-detached fresh sessions from New Chat and active-chat deletion', async () => {
+    makeTab('wf-42')
+    const { bodies, messageUrls } = mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await sendFromComposer('first thread')
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42'
+    })
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await sendFromComposer('after new chat')
+    expect(messageUrls[1]).toContain('/agent/threads/new/messages')
+    expect(bodies[1]).not.toHaveProperty('workflow_id')
+    expect(bodies[1]).not.toHaveProperty('current_tab')
+    ws.emit('agent_message_done', {
+      message_id: 'm-2',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    await sendFromComposer('after delete')
+
+    expect(messageUrls[2]).toContain('/agent/threads/new/messages')
+    expect(bodies[2]).not.toHaveProperty('workflow_id')
+    expect(bodies[2]).not.toHaveProperty('current_tab')
+  })
+
+  it('includes active and background tabs restored from persisted bindings', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({
+        'wf-current': 'workflows/current.json',
+        'wf-background': 'workflows/background.json'
+      })
+    )
+    makeTab()
+    addTab('workflows/background.json')
+    const { bodies } = mockMessagesEndpoint('wf-current')
+
+    await renderAndSend('use my open workflows')
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-current',
+      current_tab: 'wf-current',
+      open_tabs: [
+        { workflow_id: 'wf-current', name: 'current' },
+        { workflow_id: 'wf-background', name: 'background' }
+      ]
+    })
   })
 
   it('agent_active_tab activates the bound tab', async () => {
@@ -1252,12 +1374,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const referencedNode = state.nodes[1]
     referencedNode.id = 'shared'
     referencedNode.title = 'Subgraph twin'
-    const rootTwin: SelectionTestNode = {
-      isNodeFake: true,
-      id: 'shared',
-      title: 'Root twin',
-      boundingRect: {}
-    }
+    const rootTwin = new MockLGraphNode('shared', 'Root twin')
     appMock.graph.nodes = [subgraphNode, rootTwin]
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1294,7 +1411,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('keeps additive Vue-node selections and sends every node id', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    const { bodies } = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
 
     expect(selection.canvas.multi_select).toBe(true)

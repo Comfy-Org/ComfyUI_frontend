@@ -14,16 +14,17 @@ type TranscriptEntry =
   | { role: 'assistant'; parts: AssistantMessage['parts'] }
 
 export function buildTranscriptMarkdown(
-  entries: readonly TranscriptEntry[]
+  entries: readonly TranscriptEntry[],
+  labels: { user: string; assistant: string }
 ): string {
   return entries
     .map((entry) => {
-      if (entry.role === 'user') return `**You:** ${entry.text}`
+      if (entry.role === 'user') return `**${labels.user}:** ${entry.text}`
       const text = entry.parts
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
         .join('')
-      return `**Agent:** ${text}`
+      return `**${labels.assistant}:** ${text}`
     })
     .join('\n\n')
 }

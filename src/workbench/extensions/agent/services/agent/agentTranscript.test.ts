@@ -101,8 +101,11 @@ describe('buildTranscriptMarkdown', () => {
       }
     ]
 
-    expect(buildTranscriptMarkdown(entries)).toBe(
-      '**You:** make a cat\n\n**Agent:** Here is a cat.'
-    )
+    expect(
+      buildTranscriptMarkdown(entries, {
+        user: 'Utilisateur',
+        assistant: 'Assistante'
+      })
+    ).toBe('**Utilisateur:** make a cat\n\n**Assistante:** Here is a cat.')
   })
 })

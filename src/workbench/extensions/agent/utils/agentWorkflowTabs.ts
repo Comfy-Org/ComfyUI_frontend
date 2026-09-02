@@ -71,8 +71,8 @@ export function agentTabFilename(name: string | undefined): string | undefined {
   const cleaned = Array.from(
     (name ?? '')
       .replace(/[/\\\p{Cc}]/gu, '-')
-      .replace(/\.json$/i, '')
       .trim()
+      .replace(/\.json$/i, '')
       .replace(/^\.+/, '')
   )
     .slice(0, 80)

@@ -565,7 +565,13 @@ async function onSelectHistory(id: string): Promise<void> {
 }
 
 function onCopyMarkdown(id: string): void {
-  if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
+  if (id === history.activeId)
+    void copy(
+      buildTranscriptMarkdown(entries.value, {
+        user: t('agent.transcriptUser'),
+        assistant: t('agent.transcriptAssistant')
+      })
+    )
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
