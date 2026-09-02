@@ -854,6 +854,56 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 
+  it('retains a schema error after a compatible continuation resumes dispatch', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected, schemaErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    const host = initDoc(new Y.Doc())
+    const incompatibleNode = new Y.Map<unknown>()
+    incompatibleNode.set('type', 'SchemaV2Node')
+    nodesMap(host).set('incompatible', incompatibleNode)
+    metaMap(host).set('schema_version', 2)
+    const incompatibleUpdate = Y.encodeStateAsUpdate(host)
+    const incompatibleState = Y.encodeStateVector(host)
+    const follower = bridge.follower
+
+    transport.deliver('doc_update', docUpdateFrame(incompatibleUpdate))
+
+    const retainedError = bridge.lastSchemaError
+    expect(retainedError).toBeInstanceOf(FollowerSchemaError)
+    expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
+      'SchemaV2Node'
+    )
+    expect(projected).toHaveLength(0)
+
+    metaMap(host).set('schema_version', 1)
+    const compatibleNode = new Y.Map<unknown>()
+    compatibleNode.set('type', 'SchemaV1Node')
+    nodesMap(host).set('compatible', compatibleNode)
+    const compatibleUpdate = Y.encodeStateAsUpdate(host, incompatibleState)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(compatibleUpdate, WORKFLOW_ID, 2)
+    )
+
+    expect(bridge.follower).toBe(follower)
+    expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
+      'SchemaV2Node'
+    )
+    expect(nodesMap(follower.doc).get('compatible')?.get('type')).toBe(
+      'SchemaV1Node'
+    )
+    expect(projected).toEqual([
+      expect.objectContaining({ seq: 2, update: compatibleUpdate })
+    ])
+    expect(schemaErrors).toEqual([{ workflowId: WORKFLOW_ID, found: 2 }])
+    expect(bridge.lastSchemaError).toBe(retainedError)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+    error.mockRestore()
+  })
+
   it('refuses a doc that declares no schema_version at all', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
