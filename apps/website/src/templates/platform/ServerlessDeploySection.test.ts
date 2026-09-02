@@ -7,7 +7,7 @@ import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
 describe('ServerlessDeploySection', () => {
-  it('walks through the snapshot flow first and the workflow flow on demand', async () => {
+  it('walks through the install flow first and the workflow flow on demand', async () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
     expect(
@@ -21,7 +21,7 @@ describe('ServerlessDeploySection', () => {
         /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Comfy API\./
       )
     ).toBeTruthy()
-    expect(screen.getByText(/comfy build init --from-snapshot/)).toBeTruthy()
+    expect(screen.getByText(/Scanned this ComfyUI install/)).toBeTruthy()
 
     await userEvent.click(
       screen.getByRole('tab', {
