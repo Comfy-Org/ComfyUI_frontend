@@ -5,118 +5,118 @@
       hide-toolbar
       :title="$t('sideToolbar.nodes')"
     >
-    <template #body>
-      <div class="flex h-full flex-col">
-        <div class="shrink-0 overflow-hidden bg-comfy-menu-bg">
-          <div
-            ref="titleTabsRef"
-            class="transition-[margin-top] duration-200 ease-out"
-            :style="{ marginTop: `${headerTop}px` }"
-          >
-            <div class="px-4 pt-4 pb-2 font-bold">
-              {{ $t('sideToolbar.nodes') }}
-            </div>
-            <div class="px-4 pt-2 pb-0">
-              <TabList v-model="selectedTab">
-                <Tab v-for="{ value, label } in tabs" :key="value" :value>
-                  {{ label }}
-                </Tab>
-              </TabList>
-            </div>
-          </div>
-          <div class="border-b border-border-default bg-comfy-menu-bg py-2">
-            <div class="flex items-center gap-2 px-4 py-2">
-              <div class="min-w-0 flex-1">
-                <SearchInput
-                  ref="searchBoxRef"
-                  v-model="searchQuery"
-                  :placeholder="$t('g.search') + '...'"
-                  @search="handleSearch"
-                />
-              </div>
-              <div class="flex shrink-0 items-center gap-2">
-                <FilterDropdown
-                  v-if="selectedTab === 'essentials'"
-                  v-model="essentialsFilters"
-                  :filter-labels="essentialsFilterLabels"
-                />
-                <FilterDropdown
-                  v-else
-                  v-model="nodeFilters"
-                  :filter-labels="nodeFilterLabels"
-                />
-                <DropdownMenu
-                  v-if="selectedTab === 'essentials'"
-                  :entries="jumpMenuEntries"
-                >
-                  <template #button>
-                    <Button size="icon" :aria-label="$t('essentials.jumpTo')">
-                      <i class="icon-[lucide--list-tree] size-4" />
-                    </Button>
-                  </template>
-                </DropdownMenu>
-                <DropdownMenu v-else>
-                  <template #button>
-                    <Button size="icon" :aria-label="$t('g.sort')">
-                      <i class="icon-[lucide--settings-2] size-4" />
-                    </Button>
-                  </template>
-                  <template #default="{ itemClass }">
-                    <DropdownMenuRadioGroup v-model="sortOrder">
-                      <DropdownMenuRadioItem
-                        v-for="option in sortingOptions"
-                        :key="option.id"
-                        :value="option.id"
-                        :class="itemClass"
-                      >
-                        <span class="flex-1">{{ $t(option.label) }}</span>
-                        <DropdownMenuItemIndicator class="size-4 shrink-0">
-                          <i class="icon-[lucide--check]" />
-                        </DropdownMenuItemIndicator>
-                      </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </template>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div
-          ref="scrollContainerRef"
-          class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto overscroll-none pb-2"
-        >
-          <TabPanel
-            v-if="flags.nodeLibraryEssentialsEnabled"
-            :model-value="selectedTab"
-            value="essentials"
-          >
-            <EssentialNodesPanel
-              :media-filters="essentialsFilters"
-              :search-query
-            />
-          </TabPanel>
-          <TabPanel :model-value="selectedTab" value="all">
+      <template #body>
+        <div class="flex h-full flex-col">
+          <div class="shrink-0 overflow-hidden bg-comfy-menu-bg">
             <div
-              v-if="hasNoMatches"
-              class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
+              ref="titleTabsRef"
+              class="transition-[margin-top] duration-200 ease-out"
+              :style="{ marginTop: `${headerTop}px` }"
             >
-              {{
-                $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
-                  query: searchQuery
-                })
-              }}
+              <div class="px-4 pt-4 pb-2 font-bold">
+                {{ $t('sideToolbar.nodes') }}
+              </div>
+              <div class="px-4 pt-2 pb-0">
+                <TabList v-model="selectedTab">
+                  <Tab v-for="{ value, label } in tabs" :key="value" :value>
+                    {{ label }}
+                  </Tab>
+                </TabList>
+              </div>
             </div>
-            <AllNodesPanel
-              v-else
-              v-model:expanded-keys="expandedKeys"
-              :sections="renderedSections"
-              :fill-node-info="fillNodeInfo"
-              :sort-order="sortOrder"
-              @node-click="handleNodeClick"
-            />
-          </TabPanel>
+            <div class="border-b border-border-default bg-comfy-menu-bg py-2">
+              <div class="flex items-center gap-2 px-4 py-2">
+                <div class="min-w-0 flex-1">
+                  <SearchInput
+                    ref="searchBoxRef"
+                    v-model="searchQuery"
+                    :placeholder="$t('g.search') + '...'"
+                    @search="handleSearch"
+                  />
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                  <FilterDropdown
+                    v-if="selectedTab === 'essentials'"
+                    v-model="essentialsFilters"
+                    :filter-labels="essentialsFilterLabels"
+                  />
+                  <FilterDropdown
+                    v-else
+                    v-model="nodeFilters"
+                    :filter-labels="nodeFilterLabels"
+                  />
+                  <DropdownMenu
+                    v-if="selectedTab === 'essentials'"
+                    :entries="jumpMenuEntries"
+                  >
+                    <template #button>
+                      <Button size="icon" :aria-label="$t('essentials.jumpTo')">
+                        <i class="icon-[lucide--list-tree] size-4" />
+                      </Button>
+                    </template>
+                  </DropdownMenu>
+                  <DropdownMenu v-else>
+                    <template #button>
+                      <Button size="icon" :aria-label="$t('g.sort')">
+                        <i class="icon-[lucide--settings-2] size-4" />
+                      </Button>
+                    </template>
+                    <template #default="{ itemClass }">
+                      <DropdownMenuRadioGroup v-model="sortOrder">
+                        <DropdownMenuRadioItem
+                          v-for="option in sortingOptions"
+                          :key="option.id"
+                          :value="option.id"
+                          :class="itemClass"
+                        >
+                          <span class="flex-1">{{ $t(option.label) }}</span>
+                          <DropdownMenuItemIndicator class="size-4 shrink-0">
+                            <i class="icon-[lucide--check]" />
+                          </DropdownMenuItemIndicator>
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </template>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            ref="scrollContainerRef"
+            class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto overscroll-none pb-2"
+          >
+            <TabPanel
+              v-if="flags.nodeLibraryEssentialsEnabled"
+              :model-value="selectedTab"
+              value="essentials"
+            >
+              <EssentialNodesPanel
+                :media-filters="essentialsFilters"
+                :search-query
+              />
+            </TabPanel>
+            <TabPanel :model-value="selectedTab" value="all">
+              <div
+                v-if="hasNoMatches"
+                class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
+              >
+                {{
+                  $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
+                    query: searchQuery
+                  })
+                }}
+              </div>
+              <AllNodesPanel
+                v-else
+                v-model:expanded-keys="expandedKeys"
+                :sections="renderedSections"
+                :fill-node-info="fillNodeInfo"
+                :sort-order="sortOrder"
+                @node-click="handleNodeClick"
+              />
+            </TabPanel>
+          </div>
         </div>
-      </div>
       </template>
     </SidebarTabTemplate>
     <NodeHelpPage
