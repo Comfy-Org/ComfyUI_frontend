@@ -11,7 +11,6 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeOutputSnapshot } from '@/stores/nodeOutputStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -269,7 +268,7 @@ export class ChangeTracker {
   _restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: NodeOutputSnapshot
+  nodeOutputs?: Record<string, ExecutedWsMessage['output']>
 
   private subgraphState?: {
     navigation: string[]
@@ -348,7 +347,7 @@ export class ChangeTracker {
       app.canvas.ds.offset = this.ds.offset
     }
     if (this.nodeOutputs) {
-      useNodeOutputStore().restoreOutputSnapshot(this.nodeOutputs)
+      useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
@@ -646,42 +645,20 @@ export class ChangeTracker {
         useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
-      changeTracker.nodeOutputs ??= {
-        outputs: {},
-        widgetSourcedPreviews: []
-      }
-      const snapshot = changeTracker.nodeOutputs
-      const nodeId = String(detail.node)
-      const output = snapshot.outputs[nodeId]
-      const incomingImages = detail.output?.images
-      const hasIncomingImages =
-        Array.isArray(incomingImages) && incomingImages.length > 0
-      if (hasIncomingImages) {
-        snapshot.widgetSourcedPreviews = snapshot.widgetSourcedPreviews.filter(
-          (locatorId) => locatorId !== nodeId
-        )
-      }
-      const preservedWidgetImages =
-        !hasIncomingImages &&
-        output?.images &&
-        snapshot.widgetSourcedPreviews.some((locatorId) => locatorId === nodeId)
-          ? output.images
-          : undefined
-      const nextOutput = detail.output
+      changeTracker.nodeOutputs ??= {}
+      const nodeOutputs = changeTracker.nodeOutputs
+      const output = nodeOutputs[detail.node]
       if (detail.merge && output) {
-        for (const k in nextOutput ?? {}) {
+        for (const k in detail.output ?? {}) {
           const v = output[k]
           if (v instanceof Array) {
-            output[k] = v.concat(nextOutput[k])
+            output[k] = v.concat(detail.output[k])
           } else {
-            output[k] = nextOutput[k]
+            output[k] = detail.output[k]
           }
         }
-        if (preservedWidgetImages) output.images = preservedWidgetImages
       } else {
-        snapshot.outputs[nodeId] = preservedWidgetImages
-          ? { ...nextOutput, images: preservedWidgetImages }
-          : nextOutput
+        nodeOutputs[detail.node] = detail.output
       }
     })
   }

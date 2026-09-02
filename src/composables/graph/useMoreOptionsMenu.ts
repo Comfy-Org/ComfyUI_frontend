@@ -191,8 +191,7 @@ export function useMoreOptionsMenu() {
     const hideLinkedInputPreview = node
       ? shouldHideLinkedCoreMediaInputPreview(
           node,
-          nodeOutputStore.getNodeOutputs(node),
-          nodeOutputStore.isWidgetSourcedPreview(node)
+          nodeOutputStore.getNodeOutputs(node)
         )
       : false
     const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()

@@ -512,7 +512,7 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
 
     // Restore from snapshot
-    store.restoreOutputSnapshot(snapshot)
+    store.restoreOutputs(snapshot)
 
     expect(app.nodeOutputs['3']).toStrictEqual(inputOutput)
     expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
@@ -548,11 +548,11 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Tab B: fresh empty workflow (no outputs)
     const tabBSnapshot = store.snapshotOutputs()
-    expect(Object.keys(tabBSnapshot.outputs)).toHaveLength(0)
+    expect(Object.keys(tabBSnapshot)).toHaveLength(0)
 
     // --- Switch back to Tab A: store Tab B then restore Tab A ---
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputSnapshot(tabASnapshot)
+    store.restoreOutputs(tabASnapshot)
 
     // Tab A's outputs should be fully restored
     expect(store.nodeOutputs['1']).toStrictEqual(outputA1)
@@ -591,20 +591,20 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Switch back to Tab A
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputSnapshot(snapshotA)
+    store.restoreOutputs(snapshotA)
 
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_a.png')
 
     // Switch back to Tab B
     const snapshotA2 = store.snapshotOutputs()
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputSnapshot(snapshotB)
+    store.restoreOutputs(snapshotB)
 
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_b.png')
 
     // And back to Tab A again - still correct
     store.resetAllOutputsAndPreviews()
-    store.restoreOutputSnapshot(snapshotA2)
+    store.restoreOutputs(snapshotA2)
 
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_a.png')
   })
@@ -621,8 +621,8 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const snapshot = store.snapshotOutputs()
 
     // Mutate the snapshot
-    snapshot.outputs['1'].images![0].filename = 'mutated.png'
-    snapshot.outputs['99'] = createMockOutputs([{ filename: 'new.png' }])
+    snapshot['1'].images![0].filename = 'mutated.png'
+    snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
 
     // Store should be unchanged
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
@@ -630,21 +630,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     expect(store.nodeOutputs['99']).toBeUndefined()
   })
 
-  it('preserves widget preview provenance across snapshot restoration', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'generated.png [output]')
-    const snapshot = store.snapshotOutputs()
-    store.resetAllOutputsAndPreviews()
-    store.restoreOutputSnapshot(snapshot)
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs()
-    )
-
-    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('generated.png')
-  })
 })
 
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
@@ -917,62 +902,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(url).toContain('type=output')
     expect(url).toContain('filename=generated.png')
     expect(url).not.toContain('%5Boutput%5D')
-  })
-
-  it('preserves an [output]-sourced widget preview when execution sends no images', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs()
-    )
-
-    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
-    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('generated.png')
-  })
-
-  it('does not duplicate a preserved widget preview during a merged execution', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs(),
-      { merge: true }
-    )
-
-    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
-    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('generated.png')
-  })
-
-  it('lets a real execution result replace a widget preview', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs([{ filename: 'executed.png', type: 'output' }])
-    )
-
-    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('executed.png')
-  })
-
-  it('does not preserve a widget preview after its output is removed', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
-
-    store.setNodeOutputs(node, 'generated.png [output]')
-    store.removeNodeOutputs(toNodeId(5))
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs()
-    )
-
-    expect(store.nodeOutputs['5']?.images).toBeUndefined()
   })
 
   it('does not preserve a widget preview after its value is cleared', () => {

@@ -12,8 +12,6 @@ import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -34,10 +32,6 @@ const mockSubgraphNavigationStore = vi.hoisted(() => ({
 const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: null as { changeTracker: unknown } | null,
   getWorkflowByPath: vi.fn()
-}))
-
-const mockExecutionStore = vi.hoisted(() => ({
-  queuedJobs: {} as Record<string, { workflow?: { changeTracker: unknown } }>
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -76,10 +70,6 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
-}))
-
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => mockExecutionStore)
 }))
 
 vi.mock('@/stores/subgraphNavigationStore', () => ({
@@ -231,7 +221,6 @@ describe('ChangeTracker', () => {
     ChangeTracker.resetCheckStateWarningForTest()
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
-    mockExecutionStore.queuedJobs = {}
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
@@ -1269,44 +1258,6 @@ describe('ChangeTracker', () => {
       expect(warn).toHaveBeenCalledWith(
         'checkState() is deprecated — use captureCanvasState() instead.'
       )
-    })
-  })
-
-  describe('executed outputs', () => {
-    it('does not duplicate a preserved widget preview during a merge', () => {
-      const tracker = createTracker()
-      const locatorId = createNodeLocatorId(null, toNodeId(5))
-      tracker.nodeOutputs = {
-        outputs: {
-          [locatorId]: {
-            images: [{ filename: 'generated.png', type: 'output' }]
-          }
-        },
-        widgetSourcedPreviews: [locatorId]
-      }
-      mockExecutionStore.queuedJobs['prompt-1'] = {
-        workflow: { changeTracker: tracker }
-      }
-      ChangeTracker.init()
-      const executedListener = vi
-        .mocked(api.addEventListener)
-        .mock.calls.find(([event]) => event === 'executed')?.[1]
-      if (!executedListener) throw new Error('executed listener missing')
-
-      executedListener(
-        new CustomEvent('executed', {
-          detail: {
-            prompt_id: 'prompt-1',
-            node: locatorId,
-            output: { images: [] },
-            merge: true
-          }
-        }) as never
-      )
-
-      expect(tracker.nodeOutputs?.outputs[locatorId]?.images).toEqual([
-        { filename: 'generated.png', type: 'output' }
-      ])
     })
   })
 

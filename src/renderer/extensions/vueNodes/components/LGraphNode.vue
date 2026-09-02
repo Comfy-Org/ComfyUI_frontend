@@ -697,14 +697,7 @@ const nodeMedia = computed(() => {
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
-  if (
-    shouldHideLinkedCoreMediaInputPreview(
-      node,
-      newOutputs,
-      nodeOutputs.isWidgetSourcedPreview(node)
-    )
-  )
-    return undefined
+  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined

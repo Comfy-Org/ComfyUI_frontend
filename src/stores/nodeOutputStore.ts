@@ -55,12 +55,6 @@ const createOutputs = (
 
 interface SetOutputOptions {
   merge?: boolean
-  widgetSourced?: boolean
-}
-
-export interface NodeOutputSnapshot {
-  outputs: Record<string, ExecutedWsMessage['output']>
-  widgetSourcedPreviews: NodeLocatorId[]
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
@@ -68,7 +62,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestPreview = ref<string[]>([])
-  const widgetSourcedPreviews = new Set<NodeLocatorId>()
   /**
    * Previews belonging to open-but-inactive workflows, keyed by workflow path.
    * The stash owns the object URL retain taken when the previews were set.
@@ -102,10 +95,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node: LGraphNode
   ): ExecutedWsMessage['output'] | undefined {
     return nodeOutputs.value[nodeToNodeLocatorId(node)]
-  }
-
-  function isWidgetSourcedPreview(node: LGraphNode): boolean {
-    return widgetSourcedPreviews.has(nodeToNodeLocatorId(node))
   }
 
   function getNodePreviews(node: LGraphNode): string[] | undefined {
@@ -196,15 +185,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
-    const preserveWidgetSource =
-      options.widgetSourced ||
-      (!hasIncomingImages && widgetSourcedPreviews.has(nodeLocatorId))
-
     const existingOutput = nodeOutputs.value[nodeLocatorId]
     const preservedImages =
       !hasIncomingImages &&
       existingOutput &&
-      (preserveWidgetSource || isInputPreviewOutput(existingOutput))
+      isInputPreviewOutput(existingOutput)
         ? existingOutput.images
         : undefined
 
@@ -234,8 +219,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     nodeOutputs.value[nodeLocatorId] = outputs
     app.nodeOutputs[nodeLocatorId] = clone(outputs)
-    if (preserveWidgetSource) widgetSourcedPreviews.add(nodeLocatorId)
-    else widgetSourcedPreviews.delete(nodeLocatorId)
   }
 
   function setNodeOutputs(
@@ -250,22 +233,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
-    if (!filenames) {
-      widgetSourcedPreviews.delete(locatorId)
-      return
-    }
+    if (!filenames) return
     if (typeof filenames === 'string') {
-      setOutputsByLocatorId(
-        locatorId,
-        createOutputs([filenames], folder, isAnimated),
-        { widgetSourced: true }
-      )
+      setOutputsByLocatorId(locatorId, createOutputs([filenames], folder, isAnimated))
     } else if (!Array.isArray(filenames)) {
-      setOutputsByLocatorId(locatorId, filenames, { widgetSourced: true })
+      setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
       if (!resultItems?.images?.length) return
-      setOutputsByLocatorId(locatorId, resultItems, { widgetSourced: true })
+      setOutputsByLocatorId(locatorId, resultItems)
     }
   }
 
@@ -434,7 +410,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function removeOutputsByLocatorId(nodeLocatorId: NodeLocatorId) {
     const hadOutputs = !!nodeOutputs.value[nodeLocatorId]
-    widgetSourcedPreviews.delete(nodeLocatorId)
     delete nodeOutputs.value[nodeLocatorId]
     delete app.nodeOutputs[nodeLocatorId]
 
@@ -462,19 +437,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
 
-  function snapshotOutputs(): NodeOutputSnapshot {
-    return {
-      outputs: clone(nodeOutputs.value),
-      widgetSourcedPreviews: [...widgetSourcedPreviews].filter(
-        (locatorId) => locatorId in nodeOutputs.value
-      )
-    }
+  function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
+    return clone(nodeOutputs.value)
   }
 
   function replaceOutputsFromLegacy(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
-    widgetSourcedPreviews.clear()
     const parsedOutputs = mapKeys(
       outputs,
       (_, id) => executionIdToNodeLocatorId(app.rootGraph, id) ?? id
@@ -487,13 +456,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     output: ExecutedWsMessage['output']
   ): void {
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, id)
-    if (locatorId) widgetSourcedPreviews.delete(locatorId)
     nodeOutputs.value[locatorId ?? id] = { ...output }
   }
 
   function removeOutputFromLegacy(id: string): void {
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, id)
-    if (locatorId) widgetSourcedPreviews.delete(locatorId)
     delete nodeOutputs.value[locatorId ?? id]
   }
 
@@ -502,13 +469,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     replaceOutputsFromLegacy(outputs)
     app.nodeOutputs = clone(nodeOutputs.value)
-  }
-
-  function restoreOutputSnapshot(snapshot: NodeOutputSnapshot) {
-    restoreOutputs(snapshot.outputs)
-    for (const locatorId of snapshot.widgetSourcedPreviews) {
-      if (locatorId in nodeOutputs.value) widgetSourcedPreviews.add(locatorId)
-    }
   }
 
   function refreshNodeOutputs(node: LGraphNode) {
@@ -524,7 +484,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function resetAllOutputsAndPreviews() {
     nodeOutputs.value = {}
     app.nodeOutputs = {}
-    widgetSourcedPreviews.clear()
     revokeAllPreviews()
   }
 
@@ -547,7 +506,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
-    isWidgetSourcedPreview,
     getNodeImageUrls,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
@@ -578,7 +536,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setOutputFromLegacy,
     removeOutputFromLegacy,
     restoreOutputs,
-    restoreOutputSnapshot,
     resetAllOutputsAndPreviews,
 
     nodeOutputs,
