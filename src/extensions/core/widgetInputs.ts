@@ -142,8 +142,15 @@ export class PrimitiveNode extends LGraphNode {
             return restored
           }, [])
         : Array.from(positionalValues ?? [])
-    this.configuredWidgetValues =
+    const configuredWidgetValues =
       typeof type === 'string' ? { type, values } : undefined
+    this.configuredWidgetValues = configuredWidgetValues
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (this.configuredWidgetValues === configuredWidgetValues)
+          this.configuredWidgetValues = undefined
+      })
+    })
   }
 
   override onAfterGraphConfigured() {
@@ -221,6 +228,8 @@ export class PrimitiveNode extends LGraphNode {
         console.warn(
           `PrimitiveNode ${this.id}: link store reports output 0 connected but no link resolves in the graph; resetting the widget.`
         )
+        this.onLastDisconnect(true)
+        return
       }
       this.onLastDisconnect()
       return
@@ -500,7 +509,8 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onLastDisconnect() {
+  onLastDisconnect(preserveConfiguredValues = false) {
+    if (!preserveConfiguredValues) this.configuredWidgetValues = undefined
     // We can't remove + re-add the output here as if you drag a link over the same link
     // it removes, then re-adds, causing it to break
     this.outputs[0].type = '*'

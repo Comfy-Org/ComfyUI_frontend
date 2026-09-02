@@ -507,6 +507,38 @@ describe('PrimitiveNode', () => {
 
     expect(primitive.widgets?.[0].value).toBe(222)
   })
+
+  it('expires an unconsumed serialized value after graph restoration', () => {
+    const animationFrames: FrameRequestCallback[] = []
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        animationFrames.push(callback)
+        return animationFrames.length
+      })
+    )
+    const primitive = new PrimitiveNode('Primitive')
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+
+    animationFrames.shift()?.(0)
+    animationFrames.shift()?.(0)
+
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(111)
+  })
 })
 
 describe('getWidgetConfig', () => {
