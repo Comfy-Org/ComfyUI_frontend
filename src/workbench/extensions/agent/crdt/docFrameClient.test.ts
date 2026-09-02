@@ -257,4 +257,31 @@ describe('doc frame client', () => {
       level: 'warning'
     })
   })
+
+  it('omits seq zero from successful subscription acknowledgements', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 0 }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true }
+    })
+
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 0,
+          update_b64: encodeBase64(new Uint8Array([1]))
+        }
+      })
+    ).toEqual({
+      type: 'doc_update',
+      data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
+    })
+  })
 })
