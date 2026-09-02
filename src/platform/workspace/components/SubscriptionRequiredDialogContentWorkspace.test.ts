@@ -63,7 +63,7 @@ const AddPaymentPreviewStub = {
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
     <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
     <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
-    <button data-testid="back-btn" @click="$emit('back')">Back</button>
+    <button @click="$emit('back')">Back</button>
   </div>`
 }
 
@@ -214,7 +214,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
-    expect(screen.queryByLabelText('Back')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
   })
 
   it('shows insufficient credits message when reason is out_of_credits', () => {
@@ -284,7 +284,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
 
-    await user.click(screen.getByTestId('back-btn'))
+    await user.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(mockHandleBackToPricing).toHaveBeenCalled()
   })
