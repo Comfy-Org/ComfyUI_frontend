@@ -150,24 +150,31 @@ const STATUS_ROWS = [
 
 const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
 
-const EVENT_KINDS: readonly DevEventKind[] = [
-  'ws_out',
-  'doc_subscribed',
-  'doc_update',
-  'doc_update_dropped',
-  'doc_ops_result',
-  'human_ops_settled',
-  'doc_reset',
-  'doc_nodes_changed',
-  'schema_error',
-  'apply_error',
-  'reconnected',
-  'subscribe_retry',
-  'stale_probe',
-  'rebind',
-  'doc_gap',
-  'doc_stale'
-]
+const EVENT_KIND_FILTERS = {
+  ws_out: true,
+  doc_subscribed: true,
+  doc_update: true,
+  doc_update_dropped: true,
+  doc_ops_result: true,
+  human_ops_settled: true,
+  doc_reset: true,
+  doc_nodes_changed: true,
+  schema_error: true,
+  apply_error: true,
+  reconnected: true,
+  subscribe_retry: true,
+  stale_probe: true,
+  rebind: true,
+  doc_gap: true,
+  doc_stale: true
+} satisfies Record<DevEventKind, true>
+
+function isDevEventKind(value: string): value is DevEventKind {
+  return Object.hasOwn(EVENT_KIND_FILTERS, value)
+}
+
+const EVENT_KINDS: readonly DevEventKind[] =
+  Object.keys(EVENT_KIND_FILTERS).filter(isDevEventKind)
 
 const VERDICT_TONE: Record<string, string> = {
   applied: 'text-agent-success border-agent-success',
