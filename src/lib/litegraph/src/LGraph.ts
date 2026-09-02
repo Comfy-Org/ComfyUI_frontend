@@ -12,6 +12,7 @@ import {
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { reportError } from '@/platform/telemetry/reportError'
 import {
   attachGroupLayout,
   attachNodeLayout,
@@ -397,9 +398,10 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
       : missingAdapter
         ? `live node ${missingAdapter.id} has no stored state`
         : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
-    console.error(
-      `Cannot serialize graph ${owner.id} from store: ${mismatch}; using live graph nodes`
-    )
+    reportError(new Error('Graph serialization state mismatch'), {
+      errorType: 'graph_serialization_state_mismatch',
+      context: { graphId: owner.id, mismatch }
+    })
     const nodes = sortNodes
       ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
       : liveNodes

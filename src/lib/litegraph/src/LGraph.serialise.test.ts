@@ -15,7 +15,15 @@ import { toNodeId } from '@/types/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  mockReportError.mockClear()
+})
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {
@@ -86,7 +94,6 @@ describe('LGraph Serialisation', () => {
     const adapterOnly = new LGraphNode('Adapter only')
     adapterOnly.id = toNodeId(99)
     graph._nodes.push(adapterOnly)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const serialized = graph.serialize()
 
@@ -94,9 +101,17 @@ describe('LGraph Serialisation', () => {
       'Registered',
       'Adapter only'
     ])
-    expect(error).toHaveBeenCalledOnce()
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining(`live node ${adapterOnly.id} has no stored state`)
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: `live node ${adapterOnly.id} has no stored state`
+        }
+      }
     )
   })
 
@@ -107,12 +122,11 @@ describe('LGraph Serialisation', () => {
     const node = new LGraphNode('Doubled')
     graph.add(node)
     graph._nodes.push(node)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const serialized = graph.serialize()
 
     expect(serialized.nodes.map(({ title }) => title)).toEqual(['Doubled'])
-    expect(error).not.toHaveBeenCalled()
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   test('serialises a duplicated live node once through the fallback', ({
@@ -125,7 +139,6 @@ describe('LGraph Serialisation', () => {
     const adapterOnly = new LGraphNode('Adapter only')
     adapterOnly.id = toNodeId(99)
     graph._nodes.push(adapterOnly)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const serialized = graph.serialize()
 
@@ -133,7 +146,7 @@ describe('LGraph Serialisation', () => {
       'Doubled',
       'Adapter only'
     ])
-    expect(error).toHaveBeenCalledOnce()
+    expect(mockReportError).toHaveBeenCalledOnce()
   })
 
   test('serialises one entry per id when distinct live nodes share an id', ({
@@ -148,7 +161,6 @@ describe('LGraph Serialisation', () => {
     const adapterOnly = new LGraphNode('Adapter only')
     adapterOnly.id = toNodeId(99)
     graph._nodes.push(adapterOnly)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const serialized = graph.serialize()
 
@@ -158,7 +170,7 @@ describe('LGraph Serialisation', () => {
     expect(new Set(ids)).toEqual(
       new Set([registered.id, adapterOnly.id].map(Number))
     )
-    expect(error).toHaveBeenCalledOnce()
+    expect(mockReportError).toHaveBeenCalledOnce()
   })
 
   test('round trips namespaced node and graph extension payloads', ({
