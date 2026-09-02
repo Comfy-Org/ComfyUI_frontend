@@ -72,6 +72,23 @@ gcloud storage buckets update gs://<GCS_BUCKET> --cors-file=cors.merged.json
 Without the CORS rule the browser's `PUT` is blocked and every upload in the
 deployed admin panel fails; local dev (no `GCS_BUCKET`) is unaffected.
 
+Public readability comes from the bucket, not from the CMS. The admin panel's
+signed `PUT` sends no `x-goog-acl`, and `acl: 'Public'` in `payload.config.ts`
+only covers server-side writes — there are none yet, so nothing the CMS does
+today makes an object readable. Before pointing it at a new bucket, check which
+access model that bucket uses:
+
+```bash
+gcloud storage objects describe gs://<GCS_BUCKET>/<object> --format='default(acl)'
+```
+
+`allUsers: READER` means uniform bucket-level access is off and a public
+`defaultObjectAcl` is what makes uploads readable. A "Cannot get legacy ACL"
+error means it is on: grant `allUsers` the `roles/storage.objectViewer` role at
+the bucket level, and drop `acl: 'Public'`, whose `makePublic()` call fails with
+HTTP 400 under uniform bucket-level access. Get this wrong and uploads succeed
+while every asset 404s on the live site.
+
 **Uploading publishes the file immediately.** Media has no draft state: the
 moment an asset is uploaded it is downloadable from the CDN and listed by
 `GET /api/media`, even while the document using it is still a draft. This
