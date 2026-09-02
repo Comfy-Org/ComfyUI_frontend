@@ -1,5 +1,5 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
@@ -28,6 +28,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useCancelPendingPayment } from '@/platform/workspace/composables/useCancelPendingPayment'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -165,11 +166,14 @@ export function useSubscriptionCheckout(
       : 'pricing'
   )
   const checkoutDeclineReason = ref<string | null>(null)
-  const isCancelingPayment = ref(false)
-  const cancelUnavailable = ref(false)
-  const cancelUnreachable = ref(false)
-  const canceledNoticeVisible = ref(false)
-  let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
+  const {
+    isCancelingPayment,
+    cancelUnavailable,
+    cancelUnreachable,
+    canceledNoticeVisible,
+    cancelPendingPayment,
+    showCanceledNotice
+  } = useCancelPendingPayment()
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
   const isSubscribing = ref(false)
@@ -1370,18 +1374,6 @@ export function useSubscriptionCheckout(
     await billingOperationStore.retryPaymentAuthentication(opId)
   }
 
-  function showCanceledNotice() {
-    canceledNoticeVisible.value = true
-    if (canceledNoticeTimer) clearTimeout(canceledNoticeTimer)
-    canceledNoticeTimer = setTimeout(() => {
-      canceledNoticeVisible.value = false
-    }, 5000)
-  }
-
-  onScopeDispose(() => {
-    if (canceledNoticeTimer) clearTimeout(canceledNoticeTimer)
-  })
-
   // Canceled is not failed: nothing persists, so from the in-flow pending
   // states the dialog stays on confirm with intent intact plus an inline
   // notice, while a re-entry cancel returns to plan selection (there is no
@@ -1391,26 +1383,14 @@ export function useSubscriptionCheckout(
   // and the cancel affordance stays live for another try.
   async function handleCancelPendingPayment() {
     const operation = activeCheckoutOperation.value
-    if (!operation || isCancelingPayment.value) return
-    isCancelingPayment.value = true
-    const result = await billingOperationStore.cancelOperation(operation.opId)
-    isCancelingPayment.value = false
-    if (result === 'unavailable') {
-      cancelUnreachable.value = false
-      cancelUnavailable.value = true
-      return
-    }
-    if (result === 'unreachable') {
-      cancelUnreachable.value = true
-      return
-    }
+    if (!operation) return
+    const result = await cancelPendingPayment(operation.opId)
+    if (result !== 'canceled') return
     // A canceled operation never reaches a terminal status — it is removed
     // outright — so the pending-checkout pointer must be cleared here or the
     // next dialog open resumes the checkout the customer just canceled.
     clearPendingSubscriptionCheckout(operation.opId)
     activeCheckoutOperationId.value = null
-    cancelUnavailable.value = false
-    cancelUnreachable.value = false
     if (checkoutStep.value === 'verifying') {
       checkoutStep.value = 'pricing'
       return

@@ -416,7 +416,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -436,6 +436,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
+import { useCancelPendingPayment } from '@/platform/workspace/composables/useCancelPendingPayment'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -492,55 +493,31 @@ const step = ref<'amount' | 'confirm' | 'verifying' | 'success' | 'declined'>(
 
 const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
 
-const isCancelingPayment = ref(false)
-const cancelUnavailable = ref(false)
-const cancelUnreachable = ref(false)
-const canceledNoticeVisible = ref(false)
-let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
+const {
+  isCancelingPayment,
+  cancelUnavailable,
+  cancelUnreachable,
+  canceledNoticeVisible,
+  cancelPendingPayment,
+  showCanceledNotice,
+  resetCancelVerdict
+} = useCancelPendingPayment()
 
 async function handleCancelPendingPayment() {
   const opId = topupOperation.value?.opId
-  if (!opId || isCancelingPayment.value) return
-  isCancelingPayment.value = true
-  try {
-    const result = await billingOperationStore.cancelOperation(opId)
-    if (result === 'unavailable') {
-      cancelUnreachable.value = false
-      cancelUnavailable.value = true
-      return
-    }
-    // No verdict reached: the charge stands, and so does the cancel button.
-    if (result === 'unreachable') {
-      cancelUnreachable.value = true
-      return
-    }
-    // Canceled is not failed: the typed amount survives so paying again does
-    // not mean entering it again.
-    cancelUnavailable.value = false
-    cancelUnreachable.value = false
-    canceledNoticeVisible.value = true
-    step.value = 'amount'
-    clearTimeout(canceledNoticeTimer)
-    canceledNoticeTimer = setTimeout(() => {
-      canceledNoticeVisible.value = false
-    }, 5000)
-  } finally {
-    isCancelingPayment.value = false
-  }
+  if (!opId) return
+  const result = await cancelPendingPayment(opId)
+  if (result !== 'canceled') return
+  // Canceled is not failed: the typed amount survives so paying again does
+  // not mean entering it again.
+  showCanceledNotice()
+  step.value = 'amount'
 }
 
 // A cancel verdict describes one operation. A different operation — a fresh
 // attempt, a recovered charge — must not inherit it, or a stale refusal
 // removes the cancel affordance from a charge it never judged.
-watch(
-  () => topupOperation.value?.opId,
-  () => {
-    cancelUnavailable.value = false
-    cancelUnreachable.value = false
-  }
-)
-
-onScopeDispose(() => clearTimeout(canceledNoticeTimer))
+watch(() => topupOperation.value?.opId, resetCancelVerdict)
 
 // The refresh that follows a successful charge overwrites the balance, so the
 // "previous" figure is captured before the charge rather than derived after it.
