@@ -1287,12 +1287,13 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
         mockSetAssetDeleting.mock.invocationCallOrder[1]
       )
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: i18n.global.t('mediaAsset.assetDelete.success'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
-        life: 2000
-      })
+      expect(useToast().success).toHaveBeenCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.success'),
+        {
+          description: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
+          duration: 2000
+        }
+      )
 
       unmount()
     })

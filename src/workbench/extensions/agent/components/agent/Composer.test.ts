@@ -5,9 +5,9 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useToast } from '@/components/ui/toast'
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
@@ -25,7 +25,9 @@ const tooltipDirectiveStub = {
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: { fetchApi, addEventListener: vi.fn() }
+}))
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -231,10 +233,12 @@ describe('Composer', () => {
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
-      expect(useToastStore().messagesToAdd).toContainEqual({
-        severity: 'error',
-        detail: i18n.global.t('agent.runModeSaveFailed')
-      })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: i18n.global.t('agent.runModeSaveFailed')
+        })
+      )
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
