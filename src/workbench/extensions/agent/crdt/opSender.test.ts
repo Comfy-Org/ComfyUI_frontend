@@ -106,13 +106,16 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent[0].ops[0].stamp).toEqual([41, ACTOR])
+    expect(sent[0].ops[0].base_version).toBe(41)
     ackInFlight()
     expect(sent[1].ops[0].stamp).toEqual([42, ACTOR])
+    expect(sent[1].ops[0].base_version).toBe(42)
 
     baseVersion = 50
     ackInFlight()
     sender.enqueue([addNode(3)])
     expect(sent[2].ops[0].stamp).toEqual([50, ACTOR])
+    expect(sent[2].ops[0].base_version).toBe(50)
   })
 
   it('resets the local stamp when the bound workflow changes', () => {
