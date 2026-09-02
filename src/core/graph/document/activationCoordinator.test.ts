@@ -108,6 +108,26 @@ describe('createActivationCoordinator', () => {
     expect(coordinator.activeDocumentId()).toBe(docB)
   })
 
+  it('leaves no active binding when the next attach fails', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const log: string[] = []
+    const docA = toDocumentId('doc-a')
+    const docB = toDocumentId('doc-b')
+    await coordinator.activate(docA, recordingBinding(log, 'a'))
+
+    await expect(
+      coordinator.activate(docB, {
+        attach: () => {
+          throw new Error('attach failed')
+        },
+        detach: () => undefined
+      })
+    ).rejects.toThrow('attach failed')
+
+    expect(coordinator.activeDocumentId()).toBeNull()
+    expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
+  })
+
   it('supersedes a slow activate when a newer activate wins the race', async () => {
     const slowHydration = deferred()
     const docA = toDocumentId('doc-a')

@@ -67,7 +67,11 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     if (!deps.isLoaded(documentId))
       return { status: 'rejected', documentId, reason: 'not-loaded' }
 
-    if (active) active.binding.detach(active.documentId)
+    if (active) {
+      const previous = active
+      active = null
+      previous.binding.detach(previous.documentId)
+    }
     binding.attach(documentId)
     active = { documentId, binding }
     return { status: 'activated', documentId }
