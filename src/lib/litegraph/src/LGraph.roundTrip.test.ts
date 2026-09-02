@@ -168,7 +168,7 @@ function linkExtensionKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
  * works. Every assertion below runs through this so a fixture that later loses
  * its reroutes degrades into a failure rather than a silent no-op.
  */
-function expectPreserved(before: string[], after: string[]) {
+function expectPreserved<T>(before: T[], after: T[]) {
   expect(before.length).toBeGreaterThan(0)
   expect(after).toEqual(before)
 }
@@ -182,7 +182,7 @@ function linkKeys(graph: Pick<ISerialisedGraph, 'links'>) {
 }
 
 function floatingLinkKeys(graph: Pick<ISerialisedGraph, 'floatingLinks'>) {
-  return (graph.floatingLinks ?? []).map((link) => JSON.stringify(link)).sort()
+  return [...(graph.floatingLinks ?? [])].sort((a, b) => ascending(a.id, b.id))
 }
 
 function groupKeys(graph: Pick<ISerialisedGraph, 'groups'>) {
