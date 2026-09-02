@@ -47,5 +47,6 @@ describe('downloadReplyAsset', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  // W10 target behavior is tracked by source PR #16211.
   it.todo('W10: should fetch off-origin asset URLs without routing through apiURL')
 })

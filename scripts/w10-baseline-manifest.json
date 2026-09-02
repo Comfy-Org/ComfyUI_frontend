@@ -14,7 +14,7 @@
     },
     {
       "path": "src/workbench/extensions/agent/utils/downloadReplyAsset.test.ts",
-      "sourceHead": "479e3a7826d1c522511a17f2be102b0318235932",
+      "sourceHead": "92d79f3e14a54ae23ed8a4ccc96bbcd620f0c577",
       "sourcePr": 16211,
       "status": "expected-failure",
       "reason": "main treats an embedded same-origin API URL as authenticated fetchApi input"

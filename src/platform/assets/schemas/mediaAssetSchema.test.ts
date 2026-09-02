@@ -41,6 +41,7 @@ describe('parseAssetInfo', () => {
     expect(parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))).toBeUndefined()
   })
 
+  // W10 target behavior is tracked by source PR #16187.
   it.todo('W10: should drop malformed optional fields without rejecting the payload')
 
   it('still rejects a payload whose base fields are malformed', () => {
