@@ -141,6 +141,16 @@ describe('getRoutes flux3', () => {
   })
 })
 
+describe('getRoutes agent', () => {
+  it('serves the agent page at its canonical path for en', () => {
+    expect(getRoutes('en').agent).toBe('/agent')
+  })
+
+  it('serves a localized agent path for zh-CN', () => {
+    expect(getRoutes('zh-CN').agent).toBe('/zh-CN/agent')
+  })
+})
+
 describe('getRoutes fdct', () => {
   it('serves the fdct page at its canonical path for en', () => {
     expect(getRoutes('en').fdct).toBe('/forward-deployed-creatives')

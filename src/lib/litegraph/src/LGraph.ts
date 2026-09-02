@@ -1,6 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
+import { assert } from '@/base/assert'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -12,6 +13,7 @@ import {
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { reportError } from '@/platform/telemetry/reportError'
 import {
   attachGroupLayout,
   attachNodeLayout,
@@ -381,14 +383,29 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     const adapter = adapters.get(state.id)
     return adapter ? [{ adapter, state }] : []
   })
-  if (serialisers.length !== ordered.length) {
-    const missing = ordered.find((state) => !adapters.has(state.id))
-    console.error(
-      `Cannot serialize graph ${owner.id} from store: node ${missing?.id} has no live adapter; using live graph nodes`
-    )
+  if (
+    serialisers.length !== ordered.length ||
+    ordered.length !== adapters.size
+  ) {
+    const liveNodes = [...adapters.values()]
+    const missingState = ordered.find((state) => !adapters.has(state.id))
+    let missingAdapter: LGraphNode | undefined
+    if (missingState === undefined) {
+      const stateIds = new Set(ordered.map((state) => state.id))
+      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
+    }
+    const mismatch = missingState
+      ? `stored node ${missingState.id} has no live adapter`
+      : missingAdapter
+        ? `live node ${missingAdapter.id} has no stored state`
+        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
+    reportError(new Error('Graph serialization state mismatch'), {
+      errorType: 'graph_serialization_state_mismatch',
+      context: { graphId: owner.id, mismatch }
+    })
     const nodes = sortNodes
-      ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
-      : owner._nodes
+      ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      : liveNodes
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
@@ -1294,6 +1311,15 @@ export class LGraph
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
+    const nodeWithSameId = this._nodes_by_id[node.id]
+    if (nodeWithSameId === node) {
+      assert(
+        false,
+        'LGraph.add: re-adding the same node instance (id collision with itself)'
+      )
+      return nodeWithSameId
+    }
+
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
@@ -1381,6 +1407,11 @@ export class LGraph
     // cannot be removed
     if (node.ignore_remove) {
       console.warn('LiteGraph: node cannot be removed', node)
+      return
+    }
+
+    if (node.graph !== this) {
+      assert(false, 'LGraph.remove: node does not belong to this graph')
       return
     }
 
