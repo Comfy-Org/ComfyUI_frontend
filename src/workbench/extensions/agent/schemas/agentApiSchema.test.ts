@@ -205,16 +205,34 @@ describe('agentApiSchema contract subtleties', () => {
     )
   })
 
-  it('parses agent_active_tab with an optional name and rejects a missing workflow_id', () => {
+  it('parses agent_active_tab with an optional stable locator and rejects a missing workflow_id', () => {
     const parsed = zAgentWsEvent.safeParse({
       type: 'agent_active_tab',
-      data: { workflow_id: 'wf-1', thread_id: 'th-1' }
+      data: {
+        workflow_id: 'wf-1',
+        node_locator_id: '42',
+        thread_id: 'th-1'
+      }
     })
     expect(parsed.success).toBe(true)
+    if (parsed.success)
+      expect(parsed.data.data).toMatchObject({ node_locator_id: '42' })
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', thread_id: 'th-1' }
+      }).success
+    ).toBe(true)
     expect(
       zAgentWsEvent.safeParse({
         type: 'agent_active_tab',
         data: { thread_id: 'th-1' }
+      }).success
+    ).toBe(false)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', node_locator_id: 'invalid:42' }
       }).success
     ).toBe(false)
   })

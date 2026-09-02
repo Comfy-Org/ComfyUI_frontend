@@ -16,9 +16,45 @@ import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount / page reload loses the binding until the NEXT turn ack.
-// Persist it per-tab in sessionStorage so a remount can rebind immediately.
+// panel remount loses the binding until the NEXT turn ack. Persist it per-tab
+// in sessionStorage so an in-page remount can rebind immediately. A full page
+// reload deliberately does NOT rebind (see the nonce below): it mints a new
+// nonce, refuses the pre-reload record, and waits for the next turn ack.
+//
+// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
+// (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
+// to whichever workflow last confirmed a subscribe, not necessarily the one
+// about to become active - and (b) a browser-tab duplication, which clones
+// sessionStorage verbatim into a second tab that never subscribed to that doc
+// at all. Neither case can be caught by re-checking `workflowId`, because the
+// whole reason a rebind is attempted is that the caller does NOT yet know
+// which workflow it's asking about. Instead the persisted record carries (1)
+// a per-page-load session nonce, so a value only ever rebinds within the
+// SAME top-level navigation that wrote it - a duplicated tab gets a fresh
+// nonce and its inherited record is refused - and (2) a short expiry that
+// slides while the doc keeps delivering frames, so a tab left idle past the
+// window a doc realistically stays relevant is refused rather than trusted
+// indefinitely. (1) closes case (b). Case (a) happens inside one page load,
+// so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
+// `fec-docid-1` reproducer tracks the remaining same-tab window.
 const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
+const DOC_ID_TTL_MS = 5 * 60 * 1000
+// Re-stamp the expiry on doc traffic at most this often, so a busy channel
+// does not turn every frame into a sessionStorage write.
+const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
+
+// One nonce per page load (module scope = one per top-level navigation, since
+// a full reload re-evaluates the module). A tab duplicated mid-session
+// inherits sessionStorage's persisted record but gets its own module
+// instance and thus its own nonce, so the inherited record's nonce mismatches
+// and is refused.
+const pageSessionNonce = createUuidv4()
+
+interface PersistedDocIdRecord {
+  docId: string
+  nonce: string
+  expiresAt: number
+}
 
 function safeSessionStorage(): Storage | null {
   try {
@@ -28,17 +64,38 @@ function safeSessionStorage(): Storage | null {
   }
 }
 
-function persistDocId(id: string): void {
+function persistDocId(docId: string): void {
   try {
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, id)
+    const record: PersistedDocIdRecord = {
+      docId,
+      nonce: pageSessionNonce,
+      expiresAt: Date.now() + DOC_ID_TTL_MS
+    }
+    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
   } catch {
     // Quota / privacy mode: persistence is best-effort.
   }
 }
 
+// Returns the persisted doc id ONLY when it was written by this same page
+// load and has not expired.
 function readPersistedDocId(): string | null {
   try {
-    return safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY) ?? null
+    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
+    if (!raw) return null
+    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
+    if (
+      typeof record.docId !== 'string' ||
+      typeof record.nonce !== 'string' ||
+      typeof record.expiresAt !== 'number'
+    ) {
+      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
+      // absent rather than trusting an unscoped id.
+      return null
+    }
+    if (record.nonce !== pageSessionNonce) return null
+    if (Date.now() >= record.expiresAt) return null
+    return record.docId
   } catch {
     return null
   }
@@ -141,6 +198,8 @@ export function useAgentCrdtFollower(
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
     },
+    // Send REALITY, not this composable's intent: the sender re-reads it before
+    // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
@@ -179,6 +238,22 @@ export function useAgentCrdtFollower(
   // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
   // reality - and a stale channel's intent DOES equal reality).
   let staleProbeTimer: ReturnType<typeof setTimeout> | null = null
+
+  // FEC-5: `Date.now()` of the last persisted-record write by this instance.
+  // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
+  // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
+  // delivering frames keeps its rebind window instead of lapsing mid-session.
+  let lastPersistedAt = 0
+  const persistConfirmedDocId = (docId: string): void => {
+    persistDocId(docId)
+    lastPersistedAt = Date.now()
+  }
+  const refreshPersistedDocId = (): void => {
+    const docId = subscribedWorkflowId.value
+    if (docId === null) return
+    if (Date.now() - lastPersistedAt < DOC_ID_REFRESH_INTERVAL_MS) return
+    persistConfirmedDocId(docId)
+  }
 
   const clearStaleProbe = (): void => {
     if (staleProbeTimer !== null) {
@@ -239,7 +314,7 @@ export function useAgentCrdtFollower(
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
-        persistDocId(subscribedWorkflowId.value)
+        persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
@@ -254,6 +329,7 @@ export function useAgentCrdtFollower(
     )
       return
     if (staleProbeTimer !== null) armStaleProbe()
+    refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     adapter.applyFrame(update)
@@ -271,7 +347,10 @@ export function useAgentCrdtFollower(
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
-    if (staleProbeTimer !== null) armStaleProbe()
+    if (staleProbeTimer !== null) {
+      armStaleProbe()
+      refreshPersistedDocId()
+    }
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
       recordDevEvent('doc_ops_result', event.detail ?? null)
