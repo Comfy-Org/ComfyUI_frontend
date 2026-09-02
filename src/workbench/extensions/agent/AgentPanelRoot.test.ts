@@ -3405,6 +3405,22 @@ describe('AgentPanelRoot workflow binding', () => {
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
+  it('ends node selection when the active workflow changes during a graph load', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+    useAgentNodeSelectionStore().beginWorkflowLoad()
+
+    hostStores.workflow.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(selection.canvas.multi_select).toBe(false)
+    expect(selection.canvas.allow_dragnodes).toBe(true)
+    expect(selection.canvas.selectOnly).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
+
   it('keeps each workflow node selection separate after a graph load', async () => {
     makeTab()
     const selection = await startVueNodeSelection()
