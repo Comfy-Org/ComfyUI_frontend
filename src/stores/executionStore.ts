@@ -688,6 +688,14 @@ export const useExecutionStore = defineStore('execution', () => {
     return executionErrorStore.runErrorKey(graphId, path)
   }
 
+  function isJobErrorForActiveWorkflow(jobId: string): boolean {
+    const runErrorKey = runErrorKeyForJob(jobId)
+    return (
+      runErrorKey !== null &&
+      runErrorKey === executionErrorStore.captureRunErrorKey()
+    )
+  }
+
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     const endTime = performance.now()
     // Resolved up front: resetExecutionState() drops the job's workflow entry
@@ -1076,6 +1084,7 @@ export const useExecutionStore = defineStore('execution', () => {
     unbindExecutionEvents,
     storeJob,
     registerJobWorkflowIdMapping,
+    isJobErrorForActiveWorkflow,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.
     _executingNodeProgress,

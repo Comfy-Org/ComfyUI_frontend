@@ -1913,6 +1913,49 @@ describe('ComfyApp', () => {
       )
     }
 
+    it('does not open the visible workflow overlay for a background run error', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.setActiveGraph(workflowAId, workflowA.path)
+
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executionErrorHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'execution_error'
+      )?.[1] as EventListener | undefined
+
+      executionErrorHandler?.(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-b',
+            node_id: '1',
+            node_type: 'TestNode',
+            exception_message: 'boom',
+            exception_type: 'RuntimeError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(executionErrorHandler).toBeTypeOf('function')
+      expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()

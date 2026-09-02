@@ -882,6 +882,8 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
+      const isActiveWorkflowError =
+        useExecutionStore().isJobErrorForActiveWorkflow(detail.prompt_id)
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type ?? '',
         exceptionMessage: detail.exception_message ?? ''
@@ -890,10 +892,12 @@ export class ComfyApp {
         useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
-      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        useExecutionErrorStore().showErrorOverlay()
-      } else {
-        useDialogService().showExecutionErrorDialog(detail)
+      } else if (isActiveWorkflowError) {
+        if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+          useExecutionErrorStore().showErrorOverlay()
+        } else {
+          useDialogService().showExecutionErrorDialog(detail)
+        }
       }
       this.canvas.draw(true, true)
     })
