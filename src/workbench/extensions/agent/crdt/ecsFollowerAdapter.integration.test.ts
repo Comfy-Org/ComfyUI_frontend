@@ -215,26 +215,7 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  // crdt-1: applyQueuedFrame collects every changed link into ONE
-  // session.mutations.batch(...) call. graphMutations.batch's `prepare` pass
-  // short-circuits, returning an error string, on the first invalid mutation
-  // (see graphMutations.ts `prepare`), so one dangling/invalid link in a
-  // frame used to discard unrelated valid node/widget/link changes queued in
-  // the SAME frame — unlike the CMP applier itself, which already applies
-  // only the valid prefix of a batch (see the 'aborted applier batch' test
-  // above). Fixed by isConnectableInFrame: unrepresentable links (missing or
-  // unreadable endpoint, out-of-range slot, negative id) are dropped from the
-  // frame before they reach the batch, mirroring graphMutations.prepare's
-  // own connect preconditions.
-  // Source: FE #16486 review evidence (projectBaseline vs applyQueuedFrame
-  // split), https://github.com/Comfy-Org/ComfyUI_frontend/pull/16486#issuecomment-5501076931
   describe('drops an unrepresentable link instead of discarding the whole frame', () => {
-    // Each case: a valid, unrelated node add (node 1) and one bad link land
-    // in the SAME Y update/frame — e.g. an out-of-order delivery or a link
-    // whose endpoint node arrives in a later frame. Links are written
-    // directly to linksMap to isolate the applyQueuedFrame/graphMutations
-    // boundary from CMP's own op validation, which already refuses to mint
-    // an invalid connect at the source.
     const cases: {
       name: string
       reason: string
@@ -243,26 +224,22 @@ describe('EcsFollowerAdapter integration', () => {
     }[] = [
       {
         name: 'dangling endpoint (node never existed on the follower doc)',
-        reason: 'missing endpoint node',
+        reason: 'connect origin node 404 does not exist',
         link: [999, 404, 0, 405, 0, 'IMAGE']
       },
       {
         name: 'origin slot out of range',
-        reason: 'origin slot out of range',
-        // node 1 has exactly one output (slot 0); slot 7 does not exist.
+        reason: 'connect origin slot 7 does not exist',
         link: [999, 1, 7, 1, 0, 'IMAGE']
       },
       {
-        name: 'negative link id (prepare rejects link.id < 0)',
-        reason: 'invalid link id',
+        name: 'negative link id',
+        reason: 'connect requires non-negative integer ids and slots',
         link: [-5, 1, 0, 1, 0, 'IMAGE']
       },
       {
-        name: 'endpoint present in the doc but unreadable (empty type)',
-        reason: 'missing endpoint node',
-        // Node 404 exists in nodesMap but readSemanticNode returns null for
-        // it (no `type`), so applyQueuedFrame never addNode()s it and prepare
-        // would still see "origin node does not exist".
+        name: 'endpoint present in the doc but unreadable (no type)',
+        reason: 'connect origin node 404 does not exist',
         link: [999, 404, 0, 1, 0, 'IMAGE'],
         seedDoc: (host) => {
           const ghost = new Y.Map<unknown>()
@@ -303,6 +280,7 @@ describe('EcsFollowerAdapter integration', () => {
           catalog
         )
         seedDoc?.(host)
+        // Bypass applyOps so the invalid link reaches the adapter.
         linksMap(host).set(String(link[0]), Y.Array.from(link))
       })
 
@@ -318,8 +296,6 @@ describe('EcsFollowerAdapter integration', () => {
         })
       ).toBe(true)
 
-      // The valid node add survives; the bad link never reaches
-      // graphMutations.batch, so it can no longer abort the frame.
       expect(
         useNodeDataStore()
           .getGraphNodesFor('root', 'root')
@@ -327,8 +303,6 @@ describe('EcsFollowerAdapter integration', () => {
       ).toEqual([toNodeId(1)])
       expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
 
-      // The drop is surfaced, not silent (same channel as the other
-      // `[agent-crdt] ... dropped` paths in this directory).
       expect(warn).toHaveBeenCalledWith(
         '[agent-crdt] follower frame dropped unrepresentable link',
         expect.objectContaining({ workflowId: 'wf', linkId: link[0], reason })

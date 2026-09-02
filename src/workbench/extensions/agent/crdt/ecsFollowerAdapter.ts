@@ -5,6 +5,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import { connectRejection } from '@/core/graph/graphMutations'
 import type {
   GraphMutations,
   SemanticLinkPayload,
@@ -94,36 +95,28 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 }
 
 /**
- * Mirrors graphMutations.prepare's `connect` preconditions (valid id,
- * endpoint presence, slot range) so an unrepresentable link can be dropped
- * from a frame BEFORE it reaches the batch. graphMutations.batch
- * short-circuits, returning an error string, on the first invalid mutation
- * (crdt-1) — one dangling or slot-out-of-range link must never take a
- * frame's unrelated valid node/widget/link changes down with it.
+ * Applies graphMutations' shared `connect` preconditions against the follower
+ * doc so an unrepresentable link is dropped from a frame BEFORE it reaches
+ * the batch. graphMutations.batch short-circuits, returning an error string,
+ * on the first invalid mutation (crdt-1) — one dangling or slot-out-of-range
+ * link must never take a frame's unrelated valid node/widget/link changes
+ * down with it.
  *
  * Endpoint presence is judged by `readSemanticNode`, not by raw Y-doc
  * membership: a node that is in the doc but unreadable (missing `type`) is
  * skipped by applyQueuedFrame's addNode pass, so `prepare` would still see
  * it as absent. Returns the rejection reason, or null when connectable.
  */
-function unconnectableReason(
+function frameConnectRejection(
   link: SemanticLinkPayload,
   doc: Y.Doc
 ): string | null {
-  if (!Number.isInteger(link.id) || link.id < 0) return 'invalid link id'
-  if (!readSemanticNode(doc, String(link.originNodeId)))
-    return 'missing endpoint node'
-  if (!readSemanticNode(doc, String(link.targetNodeId)))
-    return 'missing endpoint node'
-  // readSemanticLink always supplies both slot lists; treat a missing list as
-  // zero slots so an unverifiable slot is dropped rather than trusted.
-  const outputs = link.originOutputs?.length ?? 0
-  const inputs = link.targetInputs?.length ?? 0
-  if (link.originSlot < 0 || link.originSlot >= outputs)
-    return 'origin slot out of range'
-  if (link.targetSlot < 0 || link.targetSlot >= inputs)
-    return 'target slot out of range'
-  return null
+  const origin = readSemanticNode(doc, String(link.originNodeId))
+  const target = readSemanticNode(doc, String(link.targetNodeId))
+  return connectRejection(link, {
+    originOutputs: origin ? (link.originOutputs ?? []) : null,
+    targetInputs: target ? (link.targetInputs ?? []) : null
+  })
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
@@ -300,7 +293,7 @@ export class EcsFollowerAdapter {
       for (const id of changedLinkIds) {
         const link = readSemanticLink(session.follower.doc, id)
         if (!link) continue
-        const reason = unconnectableReason(link, session.follower.doc)
+        const reason = frameConnectRejection(link, session.follower.doc)
         if (reason) {
           console.warn(
             '[agent-crdt] follower frame dropped unrepresentable link',
