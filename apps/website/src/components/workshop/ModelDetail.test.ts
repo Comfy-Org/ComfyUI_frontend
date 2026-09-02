@@ -100,6 +100,16 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('href')).toMatch(/^\/workshop\/sign-in\?return=/)
   })
 
+  it('shows the estimated credits as a chip on the run button', async () => {
+    await signedInDetail()
+    const button = screen.getByTestId('run-button')
+    expect(button.getAttribute('data-gate')).toBe('ready')
+    expect(screen.getByTestId('run-cost').textContent).toContain('8')
+    expect(
+      screen.queryByText('Final cost depends on your settings.')
+    ).toBeNull()
+  })
+
   it('validates the form before charging anything', async () => {
     const api = await signedInDetail()
     await user().click(screen.getByTestId('run-button'))

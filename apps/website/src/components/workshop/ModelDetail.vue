@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X } from '@lucide/vue'
+import { Coins, Play, X } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
@@ -373,10 +373,19 @@ function useInCode() {
             data-gate="ready"
             @click="run"
           >
+            <template #prepend>
+              <Play class="size-5 fill-current" aria-hidden="true" />
+            </template>
             {{ t('workshop.run.run', locale) }}
-            <span v-if="creditsPerRun" class="opacity-70">
-              · {{ creditsPerRun }} {{ t('nav.credits', locale) }}
-            </span>
+            <template v-if="creditsPerRun" #append>
+              <span
+                class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
+                data-testid="run-cost"
+              >
+                <Coins class="size-3.5" aria-hidden="true" />
+                {{ creditsPerRun }} {{ t('nav.credits', locale) }}
+              </span>
+            </template>
           </Button>
           <Button
             v-else
@@ -394,9 +403,6 @@ function useInCode() {
           </Button>
           <p v-if="gate === 'noCredits'" class="text-xs text-primary-warm-gray">
             {{ t('workshop.error.noCredits', locale) }}
-          </p>
-          <p v-else-if="creditsPerRun" class="text-xs text-primary-warm-gray">
-            {{ t('workshop.input.estimateNote', locale) }}
           </p>
         </div>
       </div>
