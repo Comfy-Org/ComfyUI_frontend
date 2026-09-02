@@ -51,7 +51,7 @@ const {
     />
     <div
       aria-hidden="true"
-      class="animate-backdrop-drift absolute inset-0 -z-2 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary-warm-white)_42%,transparent)_1.15px,transparent_1.25px)] mask-[radial-gradient(circle,#000_0%,transparent_62%),radial-gradient(circle,#000_0%,transparent_58%),radial-gradient(circle,#000_0%,transparent_66%)] bg-size-[5px_5px] mask-[1100px_900px,800px_700px,1300px_1000px] mask-no-repeat will-change-[mask-position]"
+      class="animate-backdrop-drift absolute inset-0 -z-2 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary-warm-white)_42%,transparent)_1.15px,transparent_1.25px)] mask-[radial-gradient(circle,black_0%,transparent_62%),radial-gradient(circle,black_0%,transparent_58%),radial-gradient(circle,black_0%,transparent_66%)] bg-size-[5px_5px] mask-[1100px_900px,800px_700px,1300px_1000px] mask-no-repeat will-change-[mask-position]"
     />
 
     <!-- Darkens the edges and blends the hero into the page background -->
