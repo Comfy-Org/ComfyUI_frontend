@@ -38,9 +38,9 @@
     <div
       v-if="expanded"
       data-testid="queue-status-panel"
-      class="flex w-80 flex-col overflow-clip rounded-lg border border-solid border-charcoal-700 bg-comfy-menu-bg drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+      class="flex w-[326px] flex-col gap-3 overflow-clip rounded-lg border-none bg-comfy-menu-bg px-0 py-3 drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
     >
-      <div class="flex shrink-0 items-center justify-between py-3.5 pr-3 pl-4">
+      <div class="flex shrink-0 items-center justify-between px-3">
         <span class="text-[13px] font-semibold text-base-foreground">
           {{ t('queueStatus.activeGenerations') }}
         </span>
@@ -55,48 +55,44 @@
         </button>
       </div>
 
-      <div
-        class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-[9px] pb-[9px]"
-      >
+      <div class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-3">
         <div
           v-for="job in activeJobs"
           :key="job.id"
           data-testid="queue-status-row"
-          class="relative flex flex-col gap-1 overflow-clip rounded-lg bg-secondary-background px-3 py-2"
+          class="relative flex h-11 items-center gap-2 overflow-clip rounded-[10px] bg-[#1c1c1d] py-1.5 pr-1.5 pl-2.5"
         >
-          <div class="flex items-center justify-between gap-2">
-            <span
-              class="min-w-0 flex-1 truncate text-sm font-normal text-base-foreground"
-            >
+          <span class="flex min-w-0 flex-1 flex-col gap-1">
+            <span class="truncate text-[13px] font-normal text-base-foreground">
               {{ job.title }}
             </span>
-            <div class="flex shrink-0 items-center gap-2">
-              <button
-                v-tooltip.bottom="pauseTooltip"
-                type="button"
-                class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary disabled:opacity-40"
-                :aria-label="t('queueStatus.pause')"
-                data-testid="queue-status-row-pause"
-                disabled
-              >
-                <i class="icon-[comfy--pause] size-4" />
-              </button>
-              <button
-                v-tooltip.bottom="cancelTooltip"
-                type="button"
-                class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
-                :aria-label="t('queueStatus.cancel')"
-                data-testid="queue-status-row-cancel"
-                @click="cancelJob(job)"
-              >
-                <i class="icon-[comfy--stop] size-4" />
-              </button>
-            </div>
-          </div>
-
-          <span class="truncate text-xs text-muted-foreground">
-            {{ jobSubtitle(job) }}
+            <span class="truncate text-xs text-[#8a8a8a]">
+              {{ jobSubtitle(job) }}
+            </span>
           </span>
+
+          <div class="flex shrink-0 items-center gap-2 pr-1">
+            <button
+              v-tooltip.bottom="pauseTooltip"
+              type="button"
+              class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary disabled:opacity-40"
+              :aria-label="t('queueStatus.pause')"
+              data-testid="queue-status-row-pause"
+              disabled
+            >
+              <i class="icon-[comfy--pause] size-4" />
+            </button>
+            <button
+              v-tooltip.bottom="cancelTooltip"
+              type="button"
+              class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
+              :aria-label="t('queueStatus.cancel')"
+              data-testid="queue-status-row-cancel"
+              @click="cancelJob(job)"
+            >
+              <i class="icon-[comfy--stop] size-4" />
+            </button>
+          </div>
 
           <!-- Progress hugs the row's bottom edge, as it does on the pill -->
           <div
@@ -108,7 +104,7 @@
 
         <p
           v-if="!activeJobs.length"
-          class="px-2 py-4 text-center text-xs text-muted-foreground"
+          class="py-2 text-center text-xs text-muted-foreground"
         >
           {{ t('queueStatus.nothingRunning') }}
         </p>
