@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SectionHeader from "../common/SectionHeader.vue"
+import SectionHeader from '../common/SectionHeader.vue'
 import { getRoutes } from '../../config/routes'
 import { minimaxLicenseComparison } from '../../data/minimaxLicense'
 import type { Locale } from '../../i18n/translations'
