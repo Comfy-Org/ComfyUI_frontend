@@ -6,7 +6,6 @@ export type TagMutationCall = {
   method: string
   assetId: string
   body: { tags: string[] }
-  timestamp: number
 }
 
 const modelFoldersRoutePattern = /\/api\/experiment\/models(?:\?.*)?$/
@@ -71,8 +70,7 @@ export class AssetBrowserHelper {
       calls.push({
         method,
         assetId,
-        body,
-        timestamp: Date.now()
+        body
       })
 
       const existing = tagsByAssetId.get(assetId) ?? ['models']
