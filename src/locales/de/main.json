@@ -126,11 +126,6 @@
     "untitledChat": "Ohne Titel",
     "uploading": "Wird hochgeladen"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Kosten pro Ausführung",
-    "title": "API-Node(s)",
-    "totalCost": "Gesamtkosten"
-  },
   "apiNodesSignInDialog": {
     "message": "Dieser Workflow enthält API-Nodes, für deren Ausführung Sie bei Ihrem Konto angemeldet sein müssen.",
     "title": "Anmeldung zur Nutzung von API-Nodes erforderlich"

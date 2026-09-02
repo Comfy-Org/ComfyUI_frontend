@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -15,7 +15,10 @@ import { widgetId } from '@/types/widgetId'
 
 import type { GraphOperation } from './graphOperations'
 import type { LayoutChangeView } from './layoutMintPort'
-import { attachMintPortWiring } from './mintPortWiring'
+import {
+  attachMintPortWiring,
+  runMintPortsIntentionalClear
+} from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
@@ -91,6 +94,23 @@ describe('attachMintPortWiring', () => {
       localActorPrefix: 'user-',
       getGraph: () => graph
     })
+  })
+
+  afterEach(() => wiring.detach())
+
+  it('mints a root clear through the production intentional-clear entry point', () => {
+    graphNodes.set('1', { id: toNodeId(1) })
+    graphNodes.set('2', { id: toNodeId(2) })
+
+    runMintPortsIntentionalClear(() => {
+      deliverLayoutChange({
+        operation: { type: 'clearGraph', actor: 'user-abc' }
+      })
+    })
+
+    expect(minted).toEqual([
+      { op: 'clear', removed_nodes: [toNodeId(1), toNodeId(2)] }
+    ])
   })
 
   it('mints a concrete connect when the real link store places a link', () => {
