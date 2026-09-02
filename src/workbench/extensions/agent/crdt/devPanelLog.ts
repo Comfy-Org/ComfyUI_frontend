@@ -22,6 +22,7 @@ export type DevEventKind =
   | 'stale_probe'
   | 'doc_gap'
   | 'doc_stale'
+  | 'agent_node_adapters_materialized'
 
 export interface DevEvent {
   seq: number
