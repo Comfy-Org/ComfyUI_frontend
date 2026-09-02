@@ -217,15 +217,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // under thread B's id. Rehost keeps its transcript (b7) instead. A
       // turn accepted while the fetch was in flight is stashed first, so
       // it survives the reset and resumes on a later load of its thread.
-      const resetOwned =
-        resetOnFailure && conversationStore.threadId === threadId
+      const displayed = conversationStore.threadId === threadId
+      const resetOwned = resetOnFailure && displayed
       if (error instanceof AgentApiError && error.status === 404) {
         if (resetOwned) {
           conversationStore.stashActiveTurn()
           conversationStore.reset()
-        } else if (conversationStore.threadId === threadId)
-          conversationStore.setThreadId(null)
-        storageRemove()
+        } else if (displayed) conversationStore.setThreadId(null)
+        if (displayed) storageRemove()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))

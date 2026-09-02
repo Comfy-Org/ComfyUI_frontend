@@ -1711,6 +1711,34 @@ describe('thread resume (B17)', () => {
     expect(session.notices.value).toHaveLength(0)
   })
 
+  it('keeps a newly accepted thread when boot hydration 404s for the previous thread', async () => {
+    localStorage.setItem(THREAD_KEY, 'th-old')
+    let rejectHistory!: (error: unknown) => void
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((_resolve, reject) => {
+          rejectHistory = reject
+        })
+    )
+    const postMessage = vi.fn(async (): Promise<AgentTurnAccepted> => ({
+      thread_id: 'th-new',
+      message_id: 'msg-new'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages, postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('new turn')
+
+    rejectHistory(new AgentApiError('gone', 404, null))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(session.threadId.value).toBe('th-new')
+    expect(localStorage.getItem(THREAD_KEY)).toBe('th-new')
+  })
+
   it('persists the thread on send and clears it on newChat', async () => {
     const session = useAgentSession({
       rest: fakeRest(),
