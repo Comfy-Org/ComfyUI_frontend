@@ -9,7 +9,7 @@ on:
     - cron: '17 8 * * *'
 
 concurrency:
-  group: perf-${{ github.ref }}
+  group: perf-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
