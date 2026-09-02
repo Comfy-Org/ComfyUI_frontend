@@ -18,11 +18,13 @@ import {
 } from '../../composables/useMockSession'
 import type {
   ModelState,
-  RunOutcome
+  RunOutcome,
+  Scope
 } from '../../composables/usePrototypeTweaks'
 import {
   MODEL_STATES,
   RUN_OUTCOMES,
+  SCOPES,
   usePrototypeTweaks
 } from '../../composables/usePrototypeTweaks'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -34,7 +36,7 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 }>()
 
 const { session, signIn, signOut, setCredits, setSubscribed } = useMockSession()
-const { outcome, modelState } = usePrototypeTweaks()
+const { outcome, modelState, scope } = usePrototypeTweaks()
 
 type SessionChoice = 'signedOut' | AccountKind
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -64,6 +66,11 @@ function onSessionChange(event: Event) {
   const choice = (event.target as HTMLSelectElement).value as SessionChoice
   if (choice === 'signedOut') signOut()
   else signIn(choice)
+}
+
+const scopeLabel: Record<Scope, TranslationKey> = {
+  v1: 'workshop.proto.scope.v1',
+  v2: 'workshop.proto.scope.v2'
 }
 
 const outcomeLabel: Record<RunOutcome, TranslationKey> = {
@@ -111,12 +118,32 @@ const selectClass =
         class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-3 text-xs shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <p
-          class="text-primary-comfy-orange mb-3 text-[10px] font-bold tracking-widest uppercase"
+          class="text-primary-comfy-yellow mb-3 text-[10px] font-bold tracking-widest uppercase"
         >
           {{ t('workshop.proto.title', locale) }}
         </p>
 
         <div class="flex flex-col gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="text-primary-warm-gray">
+              {{ t('workshop.proto.scope', locale) }}
+            </span>
+            <select
+              v-model="scope"
+              data-testid="tweak-scope"
+              :class="selectClass"
+            >
+              <option
+                v-for="option in SCOPES"
+                :key="option"
+                :value="option"
+                class="bg-primary-comfy-ink"
+              >
+                {{ t(scopeLabel[option], locale) }}
+              </option>
+            </select>
+          </label>
+
           <label class="flex flex-col gap-1">
             <span class="text-primary-warm-gray">
               {{ t('workshop.proto.session', locale) }}

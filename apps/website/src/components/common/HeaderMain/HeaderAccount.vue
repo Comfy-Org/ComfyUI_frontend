@@ -23,7 +23,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../../composables/useMockSession'
-import { useTopUpDialog } from '../../../composables/useTopUpDialog'
+import { useSignInHref } from '../../../composables/useSignInHref'
 import { PRICING_URL } from '../../../config/model-pricing'
 import { externalLinks, getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
@@ -32,8 +32,8 @@ import { t } from '../../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const { session, signOut } = useMockSession()
-const { open: openTopUp } = useTopUpDialog()
 const routes = getRoutes(locale)
+const signInHref = useSignInHref(locale)
 
 const account = computed(() =>
   session.value.status === 'signedIn' ? session.value.account : undefined
@@ -74,7 +74,7 @@ const itemClass =
   <Button
     v-if="!account"
     as="a"
-    :href="externalLinks.cloudLogin"
+    :href="signInHref"
     variant="outline"
     data-testid="header-sign-in"
   >
@@ -82,8 +82,8 @@ const itemClass =
   </Button>
 
   <div v-else class="flex items-center gap-2">
-    <button
-      type="button"
+    <a
+      :href="externalLinks.platform"
       data-testid="header-credits"
       :title="t('nav.addCredits', locale)"
       :class="
@@ -91,10 +91,9 @@ const itemClass =
           'hover:bg-transparency-white-t4 flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm font-bold whitespace-nowrap transition-colors',
           hasCredits
             ? 'border-transparency-white-t20 text-primary-warm-white'
-            : 'border-primary-comfy-orange/60 text-primary-comfy-orange'
+            : 'border-primary-comfy-yellow/60 text-primary-comfy-yellow'
         )
       "
-      @click="openTopUp()"
     >
       <Coins
         :class="
@@ -102,7 +101,7 @@ const itemClass =
             'size-4',
             hasCredits
               ? 'text-primary-comfy-yellow'
-              : 'text-primary-comfy-orange'
+              : 'text-primary-comfy-yellow'
           )
         "
         aria-hidden="true"
@@ -114,7 +113,7 @@ const itemClass =
         </span>
       </template>
       <template v-else>{{ t('nav.noCredits', locale) }}</template>
-    </button>
+    </a>
 
     <DropdownMenuRoot>
       <DropdownMenuTrigger
@@ -170,7 +169,7 @@ const itemClass =
                   'text-base font-bold tabular-nums',
                   hasCredits
                     ? 'text-primary-warm-white'
-                    : 'text-primary-comfy-orange'
+                    : 'text-primary-comfy-yellow'
                 )
               "
             >
@@ -186,11 +185,12 @@ const itemClass =
             <DropdownMenuItem as-child>
               <Button
                 v-if="account.subscribed"
+                as="a"
+                :href="externalLinks.platform"
                 variant="outline"
                 size="sm"
                 class="w-full"
                 data-testid="account-add-credits"
-                @click="openTopUp()"
               >
                 {{ t('nav.addCredits', locale) }}
               </Button>

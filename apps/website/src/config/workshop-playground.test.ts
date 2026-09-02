@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
+  examplesForModel,
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import { buildSnippet } from './workshop-snippets'
 import type { GeneratedField } from './workshop'
 
 const generatedFields: GeneratedField[] = [
@@ -111,31 +111,47 @@ describe('validateForm', () => {
       })
     ).toEqual({})
   })
+
+  it('rejects numbers off their range or step and unknown select options', () => {
+    const fallback = schemaForModel({ fields: [], modality: 'video' })
+    const valid = { ...defaultValues(fallback), prompt: 'ok' }
+    expect(validateForm(fallback, valid)).toEqual({})
+    expect(validateForm(fallback, { ...valid, duration: 11 })).toEqual({
+      duration: 'outOfRange'
+    })
+    expect(validateForm(fallback, { ...valid, seed: 2.5 })).toEqual({
+      seed: 'outOfRange'
+    })
+    expect(validateForm(fallback, { ...valid, aspect_ratio: '3:2' })).toEqual({
+      aspect_ratio: 'badOption'
+    })
+  })
 })
 
-describe('buildSnippet', () => {
-  const values = {
-    prompt: 'a cat',
-    seed: 7,
-    audio: true,
-    image: { name: 'ref.png', size: 1, type: 'image/png' },
-    unused: undefined
-  }
-
-  it('inlines form values and references uploads by file name', () => {
-    const python = buildSnippet('python', 'kling/kling-ai', values)
-    expect(python).toContain('"kling/kling-ai"')
-    expect(python).toContain('"prompt": "a cat"')
-    expect(python).toContain('"audio": true')
-    expect(python).toContain('"image": "<ref.png>"')
-    expect(python).not.toContain('unused')
-  })
-
-  it('renders the same input for every language', () => {
-    for (const language of ['typescript', 'http'] as const) {
-      expect(buildSnippet(language, 'kling/kling-ai', values)).toContain(
-        '"seed": 7'
-      )
+describe('examplesForModel', () => {
+  it('carries the form of templates that run a different node', () => {
+    const shared = {
+      description: '',
+      tags: [],
+      thumbnailUrl: 'https://example.com/x.webp',
+      values: { prompt: 'hi' }
     }
+    const [plain, variant] = examplesForModel({
+      examples: [
+        { ...shared, name: 'a', title: 'Plain' },
+        {
+          ...shared,
+          name: 'b',
+          title: 'Variant',
+          node: { id: 'X', displayName: 'First-Last-Frame' },
+          fields: generatedFields
+        }
+      ]
+    })
+    expect(plain).not.toHaveProperty('fields')
+    expect(variant).toMatchObject({
+      nodeDisplayName: 'First-Last-Frame',
+      fields: generatedFields
+    })
   })
 })

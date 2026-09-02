@@ -59,7 +59,13 @@ interface FileValue {
 
 export type FieldValue = string | number | boolean | FileValue | undefined
 export type FormValues = Readonly<Record<string, FieldValue>>
-export type FieldErrorCode = 'required' | 'tooLarge' | 'badType' | 'rejected'
+export type FieldErrorCode =
+  | 'required'
+  | 'tooLarge'
+  | 'badType'
+  | 'outOfRange'
+  | 'badOption'
+  | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -226,9 +232,26 @@ export function validateForm(
         if (!field.accept.includes(value.type)) errors[field.name] = 'badType'
         else if (value.size > field.maxBytes) errors[field.name] = 'tooLarge'
       }
+    } else if (field.kind === 'number') {
+      if (typeof value !== 'number' || !isWithinRange(value, field)) {
+        errors[field.name] = 'outOfRange'
+      }
+    } else if (field.kind === 'select') {
+      if (typeof value !== 'string' || !field.options.includes(value)) {
+        errors[field.name] = 'badOption'
+      }
     }
   }
   return errors
+}
+
+function isWithinRange(
+  value: number,
+  { min, max, step }: { min: number; max: number; step: number }
+): boolean {
+  if (Number.isNaN(value) || value < min || value > max) return false
+  const steps = (value - min) / step
+  return Math.abs(steps - Math.round(steps)) < 1e-9
 }
 
 export interface PlaygroundExample {
@@ -237,6 +260,8 @@ export interface PlaygroundExample {
   readonly description: string
   readonly values: Readonly<Record<string, string | number | boolean>>
   readonly outputUrl: string
+  readonly nodeDisplayName?: string
+  readonly fields?: readonly GeneratedField[]
 }
 
 export function examplesForModel(
@@ -247,7 +272,9 @@ export function examplesForModel(
     title: example.title,
     description: example.description,
     values: example.values,
-    outputUrl: example.thumbnailUrl
+    outputUrl: example.thumbnailUrl,
+    ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
+    ...(example.fields ? { fields: example.fields } : {})
   }))
 }
 

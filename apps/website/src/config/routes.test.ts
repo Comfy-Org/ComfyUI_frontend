@@ -31,6 +31,20 @@ describe('localizeHref', () => {
   })
 })
 
+describe('getRoutes workshop', () => {
+  it('keeps the workshop routes locale-invariant', () => {
+    for (const locale of ['en', 'zh-CN', 'ja'] as const) {
+      expect(getRoutes(locale).workshop).toBe('/workshop')
+      expect(getRoutes(locale).workshopWorkflows).toBe('/workshop/workflows')
+    }
+  })
+
+  it('still localizes the rest of the Japanese routes', () => {
+    expect(getRoutes('ja').home).toBe('/ja/')
+    expect(getRoutes('ja').cloud).toBe('/cloud')
+  })
+})
+
 describe('getRoutes models', () => {
   it('serves the models catalog at its canonical path for zh-CN', () => {
     expect(getRoutes('zh-CN').models).toBe('/p/supported-models')

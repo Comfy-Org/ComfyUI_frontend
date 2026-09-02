@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+// @vitest-environment happy-dom
+import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 
 import type { MockSession } from './useMockSession'
 import {
@@ -61,5 +64,65 @@ describe('mock session transition', () => {
 
   it('signs out from any state', () => {
     expect(transition(existing, { type: 'signOut' })).toEqual(signedOut)
+  })
+})
+
+const STORAGE_KEY = 'comfy-workshop-mock-session'
+
+async function mountFresh() {
+  vi.resetModules()
+  const { useMockSession } = await import('./useMockSession')
+  let api!: ReturnType<typeof useMockSession>
+  render(
+    defineComponent({
+      setup() {
+        api = useMockSession()
+        return () => h('div')
+      }
+    })
+  )
+  return api
+}
+
+describe('useMockSession persistence', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('hydrates a stored session on mount', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        status: 'signedIn',
+        account: { credits: 12, subscribed: true }
+      })
+    )
+    const api = await mountFresh()
+    expect(api.session.value).toMatchObject({
+      status: 'signedIn',
+      account: { credits: 12, subscribed: true }
+    })
+  })
+
+  it('falls back to signed out on malformed or incomplete storage', async () => {
+    localStorage.setItem(STORAGE_KEY, 'not json')
+    expect((await mountFresh()).session.value).toEqual(signedOut)
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ status: 'signedIn', account: {} })
+    )
+    expect((await mountFresh()).session.value).toEqual(signedOut)
+  })
+
+  it('persists every dispatch', async () => {
+    const api = await mountFresh()
+    api.signIn('new')
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '')).toMatchObject({
+      status: 'signedIn',
+      account: { credits: WELCOME_CREDITS }
+    })
+    api.signOut()
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '')).toEqual(
+      signedOut
+    )
   })
 })

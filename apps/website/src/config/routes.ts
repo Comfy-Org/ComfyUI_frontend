@@ -42,7 +42,8 @@ const baseRoutes = {
   wan3: '/wan-3.0',
   brand: '/brand',
   workshop: '/workshop',
-  workshopWorkflows: '/workshop/workflows'
+  workshopWorkflows: '/workshop/workflows',
+  workshopSignIn: '/workshop/sign-in'
 } as const
 
 type Routes = typeof baseRoutes
@@ -80,7 +81,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
-  'workshopWorkflows'
+  'workshopWorkflows',
+  'workshopSignIn'
 ])
 
 const LOCALE_INVARIANT_PATHS = new Set<string>(

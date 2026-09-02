@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
+import WorkshopSignIn from '../../components/workshop/WorkshopSignIn.vue'
+import { workshopModels } from '../../config/workshop'
+import { t } from '../../i18n/translations'
+
+const visual = workshopModels.find((model) => model.thumbnailUrl)
+---
+
+<BaseLayout
+  title={t('workshop.signIn.meta.title')}
+  description={t('workshop.meta.description')}
+  noindex
+>
+  <div
+    class="mx-auto grid max-w-7xl items-center gap-8 px-6 py-16 lg:grid-cols-2 lg:px-8 lg:py-24"
+  >
+    <div class="hidden overflow-hidden rounded-4xl bg-white/8 p-2 lg:block">
+      {
+        visual?.thumbnailUrl && (
+          <img
+            src={visual.thumbnailUrl}
+            alt={visual.name}
+            class="h-full min-h-144 w-full rounded-3xl object-cover"
+            loading="lazy"
+          />
+        )
+      }
+    </div>
+    <WorkshopSignIn client:load />
+  </div>
+  <PrototypeTweaks client:load />
+</BaseLayout>

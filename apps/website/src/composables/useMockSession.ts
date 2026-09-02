@@ -21,9 +21,9 @@ export type MockSessionEvent =
   | { type: 'addCredits'; credits: number }
   | { type: 'setSubscribed'; subscribed: boolean }
 
-// New Cloud accounts start with a small welcome balance; existing ones
-// carry whatever they bought.
-export const WELCOME_CREDITS = 35
+// Nothing is free: a new account starts empty and buys credits to run;
+// existing ones carry whatever they bought.
+export const WELCOME_CREDITS = 0
 export const EXISTING_CREDITS = 5840
 
 const BASE_ACCOUNT = {

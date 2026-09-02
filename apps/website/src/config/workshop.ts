@@ -12,6 +12,10 @@ export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 
 export type ModelStatus = 'deprecated' | 'degraded'
 
+const TASK_INPUTS = ['text', 'image', 'video', 'audio'] as const
+export type TaskInput = (typeof TASK_INPUTS)[number]
+export type WorkshopTask = `${TaskInput}-to-${Exclude<ModalityFilter, 'all'>}`
+
 // Hand-maintained overrides on top of workshop-models.generated.json:
 // status flags Router does not report and fallbacks for models the
 // generator could not resolve. Prices here are placeholders.
@@ -73,6 +77,8 @@ export interface GeneratedExample {
   readonly description: string
   readonly tags: readonly string[]
   readonly thumbnailUrl: string
+  readonly node?: { readonly id: string; readonly displayName: string }
+  readonly fields?: readonly GeneratedField[]
   readonly values: Readonly<Record<string, string | number | boolean>>
 }
 
@@ -95,6 +101,7 @@ export interface WorkshopModel {
   readonly routerId: string
   readonly provider?: string
   readonly modality?: Modality
+  readonly task?: WorkshopTask
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
@@ -126,10 +133,31 @@ function routerIdFor(slug: string, provider?: string): string {
   return `${providerSlug}/${slug}`
 }
 
+// The task is the model's primary input to its output: a required upload
+// makes it image/video/audio-to-X, anything else is text-to-X.
+export function taskFor(
+  fields: readonly GeneratedField[],
+  modality: Modality | undefined
+): WorkshopTask {
+  const upload = fields.find((field) => field.kind === 'file' && field.required)
+  const input: TaskInput = upload?.kind === 'file' ? upload.accept : 'text'
+  return `${input}-to-${modality ?? 'other'}`
+}
+
+export function splitTask(
+  task: string
+): { input: TaskInput; output: Exclude<ModalityFilter, 'all'> } | undefined {
+  const [rawInput, rawOutput] = task.split('-to-')
+  const input = TASK_INPUTS.find((value) => value === rawInput)
+  const output = MODALITY_FILTERS.find((value) => value === rawOutput)
+  return input && output && output !== 'all' ? { input, output } : undefined
+}
+
 function toWorkshopModel(model: Model): WorkshopModel {
   const overrides = display[model.slug] ?? {}
   const data = generated[model.slug]
   const provider = overrides.provider ?? data?.provider
+  const modality = overrides.modality ?? data?.modality
   const creditsPerRun =
     data?.priceUsdFrom !== undefined
       ? usdToCredits(data.priceUsdFrom)
@@ -141,9 +169,8 @@ function toWorkshopModel(model: Model): WorkshopModel {
     href: modelDetailHref(model.slug),
     routerId: routerIdFor(model.slug, provider),
     ...(provider ? { provider } : {}),
-    ...((overrides.modality ?? data?.modality)
-      ? { modality: overrides.modality ?? data?.modality }
-      : {}),
+    ...(modality ? { modality } : {}),
+    ...(data ? { task: taskFor(data.fields, modality) } : {}),
     ...(creditsPerRun !== undefined ? { creditsPerRun } : {}),
     ...(data?.priceUsdFrom !== undefined
       ? { priceUsdFrom: data.priceUsdFrom }
@@ -193,21 +220,77 @@ export function modalityOf(
 
 export interface WorkshopFilter {
   readonly query: string
-  readonly modality: ModalityFilter
+  readonly modalities?: readonly string[]
+  readonly providers?: readonly string[]
+  readonly tasks?: readonly string[]
+}
+
+function matchesFacet(
+  selected: readonly string[],
+  value: string | undefined
+): boolean {
+  return (
+    selected.length === 0 || (value !== undefined && selected.includes(value))
+  )
 }
 
 export function filterWorkshopModels(
   list: readonly WorkshopModel[],
-  { query, modality }: WorkshopFilter
+  { query, modalities = [], providers = [], tasks = [] }: WorkshopFilter
 ): WorkshopModel[] {
   const needle = query.trim().toLowerCase()
   return list.filter(
     (model) =>
-      (modality === 'all' || modalityOf(model) === modality) &&
+      matchesFacet(modalities, modalityOf(model)) &&
+      matchesFacet(providers, model.provider) &&
+      matchesFacet(tasks, model.task) &&
       (needle === '' ||
         model.name.toLowerCase().includes(needle) ||
         (model.provider?.toLowerCase().includes(needle) ?? false))
   )
+}
+
+export const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
+export type SortOrder = (typeof SORT_ORDERS)[number]
+
+export function sortWorkshopModels(
+  list: readonly WorkshopModel[],
+  order: SortOrder
+): WorkshopModel[] {
+  const byName = (a: WorkshopModel, b: WorkshopModel) =>
+    a.name.localeCompare(b.name)
+  const compare: Record<
+    SortOrder,
+    (a: WorkshopModel, b: WorkshopModel) => number
+  > = {
+    popular: (a, b) => b.workflowCount - a.workflowCount || byName(a, b),
+    name: byName,
+    priceAsc: (a, b) =>
+      (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -
+        (b.creditsPerRun ?? Number.POSITIVE_INFINITY) || byName(a, b),
+    priceDesc: (a, b) =>
+      (b.creditsPerRun ?? -1) - (a.creditsPerRun ?? -1) || byName(a, b)
+  }
+  return [...list].sort(compare[order])
+}
+
+export interface FacetOption {
+  readonly value: string
+  readonly count: number
+}
+
+export function countByFacet(
+  list: readonly WorkshopModel[],
+  facet: 'provider' | 'task'
+): FacetOption[] {
+  const counts = new Map<string, number>()
+  for (const model of list) {
+    const value = model[facet]
+    if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+  }
+  return [...counts]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
 }
 
 export function countByModality(

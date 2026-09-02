@@ -248,6 +248,87 @@
         "description": "A professional Bria-powered outpainting template designed for seamless image extension and edge-aware scene expansion",
         "tags": ["API", "Outpainting"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bria_image_outpainting-1.webp",
+        "node": {
+          "id": "BriaImageEditNode",
+          "displayName": "Bria FIBO Image Edit"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["FIBO"],
+            "default": "FIBO"
+          },
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Instruction to edit image",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "structured_prompt",
+            "label": "Structured prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 1,
+            "max": 999999,
+            "step": 1,
+            "default": 1
+          },
+          {
+            "name": "guidance_scale",
+            "label": "Guidance scale",
+            "hint": "Higher value makes the image follow the prompt more closely.",
+            "kind": "number",
+            "min": 3,
+            "max": 5,
+            "step": 0.01,
+            "default": 3
+          },
+          {
+            "name": "steps",
+            "label": "Steps",
+            "kind": "number",
+            "min": 20,
+            "max": 50,
+            "step": 1,
+            "default": 50
+          },
+          {
+            "name": "moderation",
+            "label": "Moderation",
+            "hint": "Moderation settings",
+            "kind": "select",
+            "options": ["false", "true"],
+            "default": "false"
+          }
+        ],
         "values": {
           "model": "FIBO",
           "prompt": "A baby otter is held in a person's hand, with warm tones",
@@ -265,6 +346,78 @@
         "description": "Expand an image beyond its original borders using Bria's outpainting API, generating new surrounding content that matches the original lighting, perspective, and texture while leaving the source untouched. Choose from preset aspect ratios, custom dimensions, or manual canvas placement, with optional text prompts to guide the expansion direction or an auto-generated prompt when left blank. Ideal for extending compositions for print layouts, creating panoramic versions of existing photos, and adapting artwork to new formats or social media dimensions.",
         "tags": ["API", "Outpainting"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bria_expand_image-1.webp",
+        "node": {
+          "id": "BriaExpandImage",
+          "displayName": "Bria Expand Image"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "expand_mode",
+            "label": "Expand mode",
+            "kind": "select",
+            "options": ["custom_ratio", "manual"],
+            "default": "custom_ratio"
+          },
+          {
+            "name": "ratio_width",
+            "label": "Ratio width",
+            "hint": "Width side of the target ratio: 21 and 9 give 21:9.",
+            "kind": "number",
+            "min": 1,
+            "max": 100,
+            "step": 1,
+            "default": 21
+          },
+          {
+            "name": "ratio_height",
+            "label": "Ratio height",
+            "kind": "number",
+            "min": 1,
+            "max": 100,
+            "step": 1,
+            "default": 9
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 1,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          },
+          {
+            "name": "moderation",
+            "label": "Moderation",
+            "hint": "Moderation settings",
+            "kind": "select",
+            "options": ["false", "true"],
+            "default": "false"
+          }
+        ],
         "values": {}
       }
     ]
@@ -414,7 +567,77 @@
         "description": "Input text and select a voice profile to generate a high-quality, emotionally expressive audio dialogue.",
         "tags": ["API", "Text to Speech"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_elevenlabs_text_to_dialogue-1.webp",
-        "values": {}
+        "node": {
+          "id": "ElevenLabsTextToDialogue",
+          "displayName": "ElevenLabs Text to Dialogue"
+        },
+        "fields": [
+          {
+            "name": "stability",
+            "label": "Stability",
+            "kind": "number",
+            "min": 0,
+            "max": 1,
+            "step": 0.5,
+            "default": 0.5
+          },
+          {
+            "name": "apply_text_normalization",
+            "label": "Apply text normalization",
+            "kind": "select",
+            "options": ["auto", "on", "off"],
+            "default": "auto"
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model to use for dialogue generation.",
+            "kind": "select",
+            "options": ["eleven_v3"],
+            "default": "eleven_v3"
+          },
+          {
+            "name": "inputs",
+            "label": "Inputs",
+            "hint": "Number of dialogue entries.",
+            "kind": "select",
+            "options": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+            "default": "1"
+          },
+          {
+            "name": "language_code",
+            "label": "Language code",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed for reproducibility.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 1
+          },
+          {
+            "name": "output_format",
+            "label": "Output format",
+            "hint": "Audio output format.",
+            "kind": "select",
+            "options": ["mp3_44100_192", "opus_48000_192"],
+            "default": "mp3_44100_192"
+          }
+        ],
+        "values": {
+          "stability": 0.5,
+          "apply_text_normalization": "auto",
+          "model": "eleven_v3",
+          "inputs": "2",
+          "language_code": "Now, you can use ElevenLabs node to generate multi-dialogue audio."
+        }
       },
       {
         "name": "api_elevenlabs_speech_to_speech",
@@ -422,7 +645,66 @@
         "description": "Upload a source audio file to apply a new voice tone or clone a different voice, generating a modified audio output.",
         "tags": ["Voice Cloning", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_elevenlabs_speech_to_speech-1.webp",
-        "values": {}
+        "node": {
+          "id": "ElevenLabsSpeechToSpeech",
+          "displayName": "ElevenLabs Speech to Speech"
+        },
+        "fields": [
+          {
+            "name": "audio",
+            "label": "Audio",
+            "hint": "Source audio to transform.",
+            "kind": "file",
+            "accept": "audio",
+            "required": true
+          },
+          {
+            "name": "stability",
+            "label": "Stability",
+            "kind": "number",
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "default": 0.5
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model to use for speech-to-speech transformation.",
+            "kind": "select",
+            "options": ["eleven_multilingual_sts_v2", "eleven_english_sts_v2"],
+            "default": "eleven_multilingual_sts_v2"
+          },
+          {
+            "name": "output_format",
+            "label": "Output format",
+            "hint": "Audio output format.",
+            "kind": "select",
+            "options": ["mp3_44100_192", "opus_48000_192"],
+            "default": "mp3_44100_192"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed for reproducibility.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "remove_background_noise",
+            "label": "Remove background noise",
+            "hint": "Remove background noise from input audio using audio isolation.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "stability": 0.5,
+          "model": "eleven_multilingual_sts_v2"
+        }
       }
     ]
   },
@@ -484,7 +766,51 @@
         "description": "Upload a person photo and a garment image. Generate a virtual try-on result with the garment applied to the person while preserving face and pose.",
         "tags": ["API", "Virtual Try-On"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_flux_vto-1.webp",
-        "values": {}
+        "node": {
+          "id": "FluxVTONode",
+          "displayName": "Flux Virtual Try-On"
+        },
+        "fields": [
+          {
+            "name": "person",
+            "label": "Person",
+            "hint": "Image of the person to dress.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "garment",
+            "label": "Garment",
+            "hint": "Image of the garment to apply.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Optional natural-language styling instruction (e.g. how the garment should fit).",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "The random seed used for creating the noise.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "prompt": "Replace the full outfit with the reference garment",
+          "seed": 0
+        }
       }
     ]
   },
@@ -542,7 +868,31 @@
         "description": "Generate full videos from a single text prompt using FLUX 3, which automatically expands your description into a cohesive scene with synchronized audio, motion, and physics. Outputs one 720p, 24fps MP4 video (5-20 seconds) with support for multi-shot structures and aspect ratios from 9:16 to 21:9. Ideal for product photography, filmic ad campaigns, and dynamic motion graphics.",
         "tags": ["API", "Image to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux3_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "Flux3ImageToVideoNode",
+          "displayName": "Flux 3 Image to Video"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "placement",
+            "label": "Placement",
+            "kind": "select",
+            "options": ["spread across the clip", "at times"],
+            "default": "spread across the clip"
+          }
+        ],
+        "values": {
+          "prompt": "ONE continuous unbroken real-time shot, constant motion, no freezing, the action never stops: the camera holds on the red desert caravan beneath the giant ringed planet, then fireballs start raining from the sky, meteor trails streaking past the lens. The camels panic and scatter, dust exploding around their hooves, as the first meteors slam into the dunes. The camera sweeps up toward the hovering mothership just as a meteor tears through its hull, the ship tilts and erupts in a bloom of fire, debris raining down. Ending close on burning wreckage falling toward the desert as the ground shakes. Audio in layers: a low rumble building into deafening meteor strikes and explosions, camel cries and thundering hooves, the mothership's engines screaming into a final blast. Photorealistic, cinematic, smoke and embers drifting past the lens. No on-screen text, no subtitles.",
+          "placement": "spread across the clip"
+        }
       },
       {
         "name": "api_bfl_flux2_max_sofa_swap",
@@ -550,7 +900,43 @@
         "description": "Replace objects in images with unmatched quality using FLUX.2 [max]. Perfect for product photography, furniture swaps, and maintaining scene consistency with highest editing precision.",
         "tags": ["API", "Image", "Image Edit"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux2_max_sofa_swap-1.webp",
-        "values": {}
+        "node": {
+          "id": "Flux2ImageNode",
+          "displayName": "Flux.2 Image"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Prompt for the image generation or edit",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["Flux.2 [pro]", "Flux.2 [max]"],
+            "default": "Flux.2 [pro]"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "The random seed used for creating the noise.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "prompt": "Replace the current sofa with the one in Image 2, then place the character from Image 3 on the new sofa. Keep the scene lighting, environment, color scheme, and all other furniture completely unchanged.\n",
+          "model": "Flux.2 [max]",
+          "seed": 1024
+        }
       }
     ]
   },
@@ -723,7 +1109,71 @@
         "description": "Upload a reference image and generate a video using the Grok API, supporting up to 6 reference images for enhanced consistency.",
         "tags": ["API", "Character Reference", "Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_grok_reference_to_video-1.webp",
-        "values": {}
+        "node": {
+          "id": "GrokVideoReferenceNode",
+          "displayName": "Grok Reference-to-Video"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text description of the desired video.",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "The model to use for video generation.",
+            "kind": "select",
+            "options": ["grok-imagine-video-1.5", "grok-imagine-video"],
+            "default": "grok-imagine-video-1.5"
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "hint": "The resolution of the output video.",
+            "kind": "select",
+            "options": ["480p", "720p"],
+            "default": "480p"
+          },
+          {
+            "name": "aspect_ratio",
+            "label": "Aspect ratio",
+            "hint": "The aspect ratio of the output video.",
+            "kind": "select",
+            "options": ["16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16"],
+            "default": "16:9"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "hint": "The duration of the output video in seconds.",
+            "kind": "number",
+            "min": 2,
+            "max": 10,
+            "step": 1,
+            "default": 6
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "prompt": "Surreal video, film-level smooth camera movement, minimalist futuristic feel, light blue and white cool color tones, clean light gray background\n1. The smartphone rotates to the front, and the screen lights up slightly\n2. At the same time, a character wearing a pure white non-sheer long dress appears in front of the frame, transitioning from transparent to opaque. The image is complete and dignified, with a sense of tranquility. The character is gently rotated by an invisible force and pulled into the internal space of the phone\n3. Finally, the character rotates 360 degrees in the phone",
+          "model": "grok-imagine-video",
+          "resolution": "720p",
+          "aspect_ratio": "16:9",
+          "duration": 6,
+          "seed": 0
+        }
       }
     ]
   },
@@ -824,7 +1274,86 @@
         "description": "Generate video from reference images using HappyHorse 1.1, locking character and scene appearance while following a text prompt for motion. This workflow takes 2 input images (character reference and scene reference) and produces 1 video output. Ideal for short films, advertising, and game cutscenes requiring consistent character design and controllable narrative.",
         "tags": ["API", "Reference to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_happyhorse1_1_r2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "HappyHorseReferenceVideoApi",
+          "displayName": "HappyHorse Reference to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["happyhorse-1.1-r2v", "happyhorse-1.0-r2v"],
+            "default": "happyhorse-1.1-r2v"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["720P", "1080P"],
+            "default": "720P"
+          },
+          {
+            "name": "ratio",
+            "label": "Ratio",
+            "kind": "select",
+            "options": [
+              "16:9",
+              "9:16",
+              "1:1",
+              "4:3",
+              "3:4",
+              "21:9",
+              "9:21",
+              "5:4",
+              "4:5"
+            ],
+            "default": "16:9"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 3,
+            "max": 15,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "happyhorse-1.1-r2v",
+          "prompt": "Base Parameter Constraints: No subtitles, No background music, consistent lighting, no visual clipping, no turning around, no looking back\n\nImage Mapping:\nWooden Doll Character is [Image 1]\nCave Interior Scene is [Image 3]\n\nScale: [Image 1] remains child-sized, clearly smaller than the seated figure, chair, and table. Correct perspective depth, never oversized.\n\n[00:00] [Wide shot] Inside [Image 3], [Image 1] enters from the bright cave mouth in the distance, small in frame, walking forward with back partially toward camera — steady forward motion only\n[00:01.5] [Medium shot, gentle tracking] [Image 1] continues straight toward the rug and table, scarf swaying. The seated figure turns head, shifts in chair, and begins to stand\n[00:03] [Medium close-up] [Image 1] crosses the rug without rotating body or head backward. The person stands fully and steps one pace forward\n[00:04.5] [Two-shot] [Image 1] stops in front of the person. Both face each other. No head turn, no backward glance. Footsteps fade, chair creak, silence",
+          "resolution": "720P",
+          "ratio": "16:9",
+          "duration": 5,
+          "seed": 999999,
+          "watermark": false
+        }
       },
       {
         "name": "api_happyhorse1_1_t2v",
@@ -832,7 +1361,86 @@
         "description": "Generate a video with synchronized audio from a text prompt using HappyHorse 1.1, producing a single video output with dialogue, sound effects, and music baked in. Ideal for short episodic series, e-commerce commercials, and game cutscenes.",
         "tags": ["API", "Text to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_happyhorse1_1_t2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "HappyHorseTextToVideoApi",
+          "displayName": "HappyHorse Text to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["happyhorse-1.1-t2v", "happyhorse-1.0-t2v"],
+            "default": "happyhorse-1.1-t2v"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["720P", "1080P"],
+            "default": "720P"
+          },
+          {
+            "name": "ratio",
+            "label": "Ratio",
+            "kind": "select",
+            "options": [
+              "16:9",
+              "9:16",
+              "1:1",
+              "4:3",
+              "3:4",
+              "21:9",
+              "9:21",
+              "5:4",
+              "4:5"
+            ],
+            "default": "16:9"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 3,
+            "max": 15,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "happyhorse-1.1-t2v",
+          "prompt": "Haute couture floral fantasy editorial, live-action luxury beauty campaign, motion-control orbital camera choreography, cinematic NOT casual video. 8K UHD, 60 fps, silky mechanical precision.\n\nMedium close-up, continuous 360-degree slow orbit around a female muse standing in a dark studio filled with towering floral installations — peonies, orchids, dried pampas, and crystal vases arranged in symmetrical art-direction. She wears an ivory lace couture gown and an elaborate baroque pearl-and-gold floral crown, fresh blossoms woven into the structure above her temples. The camera executes a flawless robotic-arm arc at chest height, passing through layers of volumetric smoke and god-rays from a single overhead spotlight at 3200K warm tungsten. Petals tremble faintly in the camera's wake; skin remains soft, natural, luminous — no oily shine, no over-sharpening. Dreamlike romance, obsessive set design, fashion-magazine hero portrait in motion.\n\nNo subtitles, no background music, no visual clipping or drifting, consistent lighting throughout, zero watermarks, logos, or titles.",
+          "resolution": "720P",
+          "ratio": "16:9",
+          "duration": 5,
+          "seed": 999999,
+          "watermark": false
+        }
       }
     ]
   },
@@ -951,7 +1559,261 @@
         "description": "Translate video content into another language with full lip-sync using HeyGen Translate, which automatically transcribes speech, translates it, generates a cloned voice, and re-syncs mouth movements. Takes 1 input video and produces 1 output video. Ideal for localizing talking-head videos, dubbing multilingual presentations, and creating lip-synced content for global audiences.",
         "tags": ["API", "Lip Sync"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_heygen_video_translate-1.webp",
-        "values": {}
+        "node": {
+          "id": "HeyGenVideoTranslateNode",
+          "displayName": "HeyGen Video Translate"
+        },
+        "fields": [
+          {
+            "name": "video",
+            "label": "Video",
+            "hint": "Video with speech to translate.",
+            "kind": "file",
+            "accept": "video",
+            "required": true
+          },
+          {
+            "name": "output_language",
+            "label": "Output language",
+            "hint": "Target language for the translated video.",
+            "kind": "select",
+            "options": [
+              "English",
+              "Spanish",
+              "Spanish (Spain)",
+              "Spanish (Mexico)",
+              "French",
+              "French (France)",
+              "German",
+              "German (Germany)",
+              "Portuguese",
+              "Portuguese (Brazil)",
+              "Italian",
+              "Italian (Italy)",
+              "Japanese",
+              "Japanese (Japan)",
+              "Korean",
+              "Chinese (Mandarin, Simplified)",
+              "Arabic",
+              "Hindi",
+              "Hindi (India)",
+              "Russian",
+              "Russian (Russia)",
+              "Dutch",
+              "Polish",
+              "Turkish",
+              "Indonesian",
+              "Vietnamese",
+              "Ukrainian",
+              "Afrikaans (South Africa)",
+              "Albanian (Albania)",
+              "Amharic (Ethiopia)",
+              "Arabic (Algeria)",
+              "Arabic (Bahrain)",
+              "Arabic (Egypt)",
+              "Arabic (Iraq)",
+              "Arabic (Jordan)",
+              "Arabic (Kuwait)",
+              "Arabic (Lebanon)",
+              "Arabic (Libya)",
+              "Arabic (Morocco)",
+              "Arabic (Oman)",
+              "Arabic (Qatar)",
+              "Arabic (Saudi Arabia)",
+              "Arabic (Syria)",
+              "Arabic (Tunisia)",
+              "Arabic (United Arab Emirates)",
+              "Arabic (World)",
+              "Arabic (Yemen)",
+              "Armenian (Armenia)",
+              "Azerbaijani (Latin, Azerbaijan)",
+              "Bangla (Bangladesh)",
+              "Basque",
+              "Belarusian (Belarus)",
+              "Bengali (India)",
+              "Bosnian (Bosnia and Herzegovina)",
+              "Bulgarian",
+              "Bulgarian (Bulgaria)",
+              "Burmese (Myanmar)",
+              "Catalan",
+              "Chinese (Cantonese, Traditional)",
+              "Chinese (Jilu Mandarin, Simplified)",
+              "Chinese (Northeastern Mandarin, Simplified)",
+              "Chinese (Southwestern Mandarin, Simplified)",
+              "Chinese (Taiwanese Mandarin, Traditional)",
+              "Chinese (Wu, Simplified)",
+              "Chinese (Zhongyuan Mandarin Henan, Simplified)",
+              "Chinese (Zhongyuan Mandarin Shaanxi, Simplified)",
+              "Croatian",
+              "Croatian (Croatia)",
+              "Czech",
+              "Czech (Czechia)",
+              "Danish",
+              "Danish (Denmark)",
+              "Dutch (Belgium)",
+              "Dutch (Netherlands)",
+              "English (Australia)",
+              "English (Canada)",
+              "English (Hong Kong SAR)",
+              "English (India)",
+              "English (Ireland)",
+              "English (Kenya)",
+              "English (New Zealand)",
+              "English (Nigeria)",
+              "English (Philippines)",
+              "English (Singapore)",
+              "English (South Africa)",
+              "English (Tanzania)",
+              "English (UK)",
+              "English (United States)",
+              "Estonian (Estonia)",
+              "Filipino",
+              "Filipino (Cebuano)",
+              "Filipino (Philippines)",
+              "Finnish",
+              "Finnish (Finland)",
+              "French (Belgium)",
+              "French (Canada)",
+              "French (Switzerland)",
+              "Galician",
+              "Georgian (Georgia)",
+              "German (Austria)",
+              "German (Switzerland)",
+              "Greek",
+              "Greek (Greece)",
+              "Gujarati (India)",
+              "Haitian Creole (Haiti)",
+              "Hebrew (Israel)",
+              "Hungarian (Hungary)",
+              "Icelandic (Iceland)",
+              "Indonesian (Indonesia)",
+              "Irish (Ireland)",
+              "Javanese (Latin, Indonesia)",
+              "Kannada (India)",
+              "Kazakh (Kazakhstan)",
+              "Khmer (Cambodia)",
+              "Konkani (India)",
+              "Korean (Korea)",
+              "Lao (Laos)",
+              "Latin (Vatican City)",
+              "Latvian (Latvia)",
+              "Lithuanian (Lithuania)",
+              "Luxembourgish (Luxembourg)",
+              "Macedonian (North Macedonia)",
+              "Maithili (India)",
+              "Malagasy (Madagascar)",
+              "Malay",
+              "Malay (Malaysia)",
+              "Malayalam (India)",
+              "Maltese (Malta)",
+              "Mandarin",
+              "Marathi (India)",
+              "Mongolian (Mongolia)",
+              "Nepali (Nepal)",
+              "Norwegian Bokmål (Norway)",
+              "Norwegian Nynorsk (Norway)",
+              "Odia (India)",
+              "Pashto (Afghanistan)",
+              "Persian (Iran)",
+              "Polish (Poland)",
+              "Portuguese (Portugal)",
+              "Punjabi (India)",
+              "Romanian",
+              "Romanian (Romania)",
+              "Serbian (Latin, Serbia)",
+              "Sindhi (India)",
+              "Sinhala (Sri Lanka)",
+              "Slovak",
+              "Slovak (Slovakia)",
+              "Slovenian (Slovenia)",
+              "Somali (Somalia)",
+              "Spanish (Argentina)",
+              "Spanish (Bolivia)",
+              "Spanish (Chile)",
+              "Spanish (Colombia)",
+              "Spanish (Costa Rica)",
+              "Spanish (Cuba)",
+              "Spanish (Dominican Republic)",
+              "Spanish (Ecuador)",
+              "Spanish (El Salvador)",
+              "Spanish (Equatorial Guinea)",
+              "Spanish (Guatemala)",
+              "Spanish (Honduras)",
+              "Spanish (Latin America)",
+              "Spanish (Nicaragua)",
+              "Spanish (Panama)",
+              "Spanish (Paraguay)",
+              "Spanish (Peru)",
+              "Spanish (Puerto Rico)",
+              "Spanish (United States)",
+              "Spanish (Uruguay)",
+              "Spanish (Venezuela)",
+              "Sundanese (Indonesia)",
+              "Swahili (Kenya)",
+              "Swahili (Tanzania)",
+              "Swedish",
+              "Swedish (Sweden)",
+              "Tamil",
+              "Tamil (India)",
+              "Tamil (Malaysia)",
+              "Tamil (Singapore)",
+              "Tamil (Sri Lanka)",
+              "Telugu (India)",
+              "Thai (Thailand)",
+              "Turkish (Türkiye)",
+              "Ukrainian (Ukraine)",
+              "Urdu (India)",
+              "Urdu (Pakistan)",
+              "Uzbek (Latin, Uzbekistan)",
+              "Vietnamese (Vietnam)",
+              "Welsh (United Kingdom)",
+              "Zulu (South Africa)"
+            ],
+            "default": "English"
+          },
+          {
+            "name": "mode",
+            "label": "Mode",
+            "hint": "'speed' is faster; 'precision' produces higher-quality lip sync at a higher price.",
+            "kind": "select",
+            "options": ["speed", "precision"],
+            "default": "speed"
+          },
+          {
+            "name": "translate_audio_only",
+            "label": "Translate audio only",
+            "hint": "Only swap the audio track, keeping the original mouth movements (no lip sync).",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "speaker_count",
+            "label": "Speaker count",
+            "hint": "Number of speakers in the video. 0 = detect automatically.",
+            "kind": "number",
+            "min": 0,
+            "max": 10,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Not sent to HeyGen; change it to force a re-run.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          }
+        ],
+        "values": {
+          "output_language": "Japanese",
+          "mode": "speed",
+          "translate_audio_only": false,
+          "speaker_count": 0,
+          "seed": 999999
+        }
       },
       {
         "name": "api_heygen_talking_photo",
@@ -959,7 +1821,92 @@
         "description": "Generate a talking-head video from a single photograph using HeyGen's Avatar IV engine, which produces a fully animated video with lip-synced speech, facial expressions, head movements, and automatic gestures. Ideal for creating digital avatars for presentations, virtual characters for interactive content, and personalized video messages from a single image.",
         "tags": ["API", "Image to Video", "Lip Sync"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_heygen_talking_photo-1.webp",
-        "values": {}
+        "node": {
+          "id": "HeyGenTalkingPhotoNode",
+          "displayName": "HeyGen Talking Photo"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "hint": "Image of a person to animate. Downscaled automatically if larger than 2K.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "speech",
+            "label": "speech source",
+            "hint": "Drive the avatar with a text script (HeyGen text-to-speech) or your own audio.",
+            "kind": "select",
+            "options": ["script", "audio"],
+            "default": "script"
+          },
+          {
+            "name": "text",
+            "label": "Text",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "custom_voice_id",
+            "label": "Custom voice id",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "voice_speed",
+            "label": "Voice speed",
+            "hint": "Speech speed multiplier.",
+            "kind": "number",
+            "min": 0.5,
+            "max": 1.5,
+            "step": 0.05,
+            "default": 1
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "hint": "Output video resolution.",
+            "kind": "select",
+            "options": ["720p", "1080p"],
+            "default": "1080p"
+          },
+          {
+            "name": "aspect_ratio",
+            "label": "Aspect ratio",
+            "hint": "Output aspect ratio. 'auto' follows the input image.",
+            "kind": "select",
+            "options": ["auto", "16:9", "9:16", "1:1", "4:5", "5:4"],
+            "default": "auto"
+          },
+          {
+            "name": "expressiveness",
+            "label": "Expressiveness",
+            "hint": "How expressive the animated face and gestures are.",
+            "kind": "select",
+            "options": ["low", "medium", "high"],
+            "default": "low"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Not sent to HeyGen; change it to force a re-run.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          }
+        ],
+        "values": {
+          "speech": "script",
+          "text": "Look through my lens, everything gets warmer."
+        }
       }
     ]
   },
@@ -1069,7 +2016,24 @@
         "description": "Upload a 3D model to automatically segment it into its constituent parts, generating a fully decomposed 3D asset for reuse and editing.",
         "tags": ["3D", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_hunyuan3d_part-1.webp",
-        "values": {}
+        "node": {
+          "id": "Tencent3DPartNode",
+          "displayName": "Hunyuan3D: 3D Part"
+        },
+        "fields": [
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "seed": 999999
+        }
       },
       {
         "name": "api_hunyuan3d_text_to_model",
@@ -1077,7 +2041,68 @@
         "description": "Input a text prompt or upload a reference image to generate a detailed 3D model asset.",
         "tags": ["API", "3D", "Text to Model"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_hunyuan3d_text_to_model-1.webp",
-        "values": {}
+        "node": {
+          "id": "TencentTextToModelNode",
+          "displayName": "Hunyuan3D: Text to Model"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "The LowPoly option is unavailable for the `3.1` model.",
+            "kind": "select",
+            "options": ["3.0", "3.1"],
+            "default": "3.0"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Supports up to 1024 characters.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "face_count",
+            "label": "Face count",
+            "kind": "number",
+            "min": 3000,
+            "max": 1500000,
+            "step": 1,
+            "default": 500000
+          },
+          {
+            "name": "generate_type",
+            "label": "Generate type",
+            "kind": "select",
+            "options": ["Normal", "LowPoly", "Geometry"],
+            "default": "Normal"
+          },
+          {
+            "name": "pbr",
+            "label": "Pbr",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "model": "3.1",
+          "prompt": "A full-body muscular barbarian warrior, strong physique, bearded, tribal tattoos on shoulders and arms, fur shoulder pads, leather armbands, reddish loincloth, large battle axe in hand, realistic fantasy character, studio lighting.\n",
+          "face_count": 500000,
+          "generate_type": "Normal",
+          "pbr": false,
+          "seed": 999999
+        }
       }
     ]
   },
@@ -1184,7 +2209,81 @@
         "description": "Input a text prompt in structured JSON format. Generate a high-quality image with precise layout control, text rendering, and color palette support.",
         "tags": ["API", "Text to Image"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_ideogram_v4_t2i-1.webp",
-        "values": {}
+        "node": {
+          "id": "GeminiNode",
+          "displayName": "Google Gemini"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "The Gemini model to use for generating responses.",
+            "kind": "select",
+            "options": [
+              "gemini-2.5-pro",
+              "gemini-2.5-flash",
+              "gemini-3-pro-preview",
+              "gemini-3-1-pro",
+              "gemini-3-1-flash-lite"
+            ],
+            "default": "gemini-3-1-pro"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          },
+          {
+            "name": "images",
+            "label": "Images",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "hint": "Optional audio to use as context for the model.",
+            "kind": "file",
+            "accept": "audio",
+            "required": false
+          },
+          {
+            "name": "video",
+            "label": "Video",
+            "hint": "Optional video to use as context for the model.",
+            "kind": "file",
+            "accept": "video",
+            "required": false
+          },
+          {
+            "name": "system_prompt",
+            "label": "System prompt",
+            "hint": "Foundational instructions that dictate an AI's behavior.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          }
+        ],
+        "values": {
+          "prompt": "TARGET IMAGE ASPECT RATIO: {{aspect_ratio}} (width:height).\nUser idea: {{original_prompt}}",
+          "model": "gemini-3-1-pro",
+          "seed": 999999,
+          "system_prompt": "[META]\nfrozen: false\ndescription: Slim single-shot magic prompt — splatter planning + v15 output discipline, deduped for faster inference. Thinking off.\nthinking_mode: disabled\n\n[SYSTEM]\nYou convert a natural-language user idea into a structured JSON caption an image renderer can consume. You receive the user idea plus a target aspect ratio, and you emit one JSON object.\n\n## OUTPUT CONTRACT — exactly three top-level keys, in this order:\n\n```json\n{\"aspect_ratio\":\"W:H\",\"high_level_description\":\"...\",\"compositional_deconstruction\":{\"background\":\"...\",\"elements\":[ ... ]}}\n```\n\n- Emit a SINGLE-LINE MINIFIED JSON object — no markdown fences, no commentary, no other top-level keys.\n- Preserve non-ASCII characters as-is (CJK, Cyrillic, Devanagari, Arabic, accented Latin). Never escape with `\\uNNNN`, transliterate, or replace `café` with `cafe`.\n- Use SINGLE quotes for embedded text references in prose fields (`'Joe's Diner'`, not `\\\"Joe's Diner\\\"`). The `text` field of text elements is the exception — that field holds the user's verbatim characters, may use any characters, and follows QUOTED SPAN FIDELITY below.\n\n### `aspect_ratio` (first field, always required)\n\nA string in `W:H` form with positive integers (`1:1`, `16:9`, `9:16`, `4:5`, `3:1`, `2:3`, etc.).\n- If the user message gives a concrete `W:H`, echo it verbatim.\n- If the user message says `auto`, pick a concrete ratio that matches the medium and composition (panoramic subjects → wide ratios like `16:9` or `3:1`; portrait subjects → tall like `9:16` or `4:5`; designed artifacts → format conventions like `2:3` book cover, `3:4` poster; ambiguous → `1:1`). NEVER emit the literal string `auto`.\n- The aspect ratio you commit to drives every bbox decision. Pick it first.\n\n### `high_level_description` — observational summary (50-word hard cap)\n\n- ONE long sentence preferred, never more than two.\n- Reads like a short natural-language prompt, not an analysis. Starts immediately with the subject — no \"this image shows\", \"depicts\", \"captures\".\n- Identifies subject(s), medium, and overall composition. Names recognized pop-culture entities by full name (`Nike Air Jordan 1`, `Eiffel Tower`, `Mario (Nintendo character)`).\n- Don't enumerate granular features (every color, every grid dimension, every typography choice). That detail belongs in element descs or `background`.\n- `various`, `multiple`, general categories ARE appropriate here. Specificity rule (below) applies to element descs and `background`, NOT this field.\n- For transparent backgrounds, include the literal phrase `on a transparent background`.\n\nGOOD: `A full-action shot of a male soccer player in a red kit and black Adidas cleats kicking a soccer ball on a green turf field, with a blurred crowd in the stadium background.`\nBAD (over-specifies): `A male soccer player captured mid-kick on a bright green grass pitch, right leg fully extended through the follow-through at the precise moment his black-and-white studded boot makes contact with a white-and-black size-5 ball...`\n\n## ELEMENTS — what they are, what they're not\n\nEach element is one of:\n```\n{\"type\":\"obj\",\"bbox\":[y1,x1,y2,x2],\"desc\":\"...\"}\n{\"type\":\"text\",\"bbox\":[y1,x1,y2,x2],\"text\":\"LINE ONE\\nLINE TWO\",\"desc\":\"...\"}\n```\n\n`bbox` is optional per-element (see BBOX section below).\n\n### SINGLE SUBJECT = SINGLE ELEMENT\n\nA coherent subject — one animal, person, vehicle, building, plant, instrument, machine — is exactly ONE `obj` element. Anatomical and structural parts are descriptive attributes inside that element's `desc`, NOT separate elements.\n\nFORBIDDEN: a bee split into 8 elements (thorax/abdomen/wings/eyes/legs/...); a car split into 6 (body/wheels/windshield/...); a person split into 7 (head/torso/each limb/...); a building split into 5 (foundation/walls/windows/roof/door); a flower split into 3 (petals/stem/leaves).\n\nWhen MULTIPLE distinct subjects appear (a person AND a dog; two bees; three runners), use MULTIPLE elements — one per subject.\n\n**Test:** part-of-one-thing → goes in that thing's desc. Separate thing → its own element.\n\n**Transparent enclosure + featured contents = ONE element.** Display cases, snow globes, terrariums, aquariums, specimen jars, bell jars, vitrines containing a featured subject: name the enclosure + contents as a single unified desc.\n\n**Configured parts + revealed interior = ONE element.** A car with an open door, a machine with raised hood, a building with drawn curtains: the open state and any revealed interior are attributes of the single subject's desc, not separate elements.\n\n### Element desc — what to write (30–60 words, 60-word HARD CAP)\n\nIdentity first, then major attributes briefly, then one distinguishing detail if relevant. Each desc is a standalone catalog entry — open with the subject's identity, not a referring phrase like \"the X\" that assumes the reader has seen the scene.\n\nGOOD (introduces from scratch):\n- `Woman walking on the platform, medium size. Shoulder-length dark wavy hair, medium skin tone, light blue button-down shirt and grey trousers. Small bag slung over the right shoulder.`\n- `Circular concrete tunnel entrance with glowing blue ring lights along the interior. Train tracks lead directly into the dark opening.`\n\n**Major attributes — always name:**\n- People: skin tone, hair (color + style), each visible garment with color, expression/gaze, pose, distinguishing feature (mole, glasses, jewelry, held prop).\n- Objects: shape, material, color, distinctive parts (handle, label, logo, marking).\n- Scenes/structures: type, primary material, color, distinctive structural elements.\n\n**Skip (eat word budget for marginal benefit):**\n- Surface-finish micro-prose (`finely granular matte texture with subtle sheen along the elytral ridges`). Pick one short descriptor (matte/glossy/metallic/textured) or omit.\n- Pose mechanics per-limb. Pick ONE summary action phrase plus the major attributes.\n- Camera/shadow/lighting micro-detail per element. Belongs in `background`.\n- Fabric weave, skin texture nuances, micro-anatomy.\n\n### Element desc — what NOT to include\n\n**No shadows.** Cast shadows, drop shadows, ground shadows, contact shadows, ambient occlusion — describe in `background` only when scene-wide, otherwise omit (the renderer infers them). Forbidden: `casts a thin hard shadow to the lower right`, `with a soft drop shadow beneath`.\n\n**No camera or render language.** Depth of field, focus, sharpness, bokeh, exposure, motion blur, lens flare, chromatic aberration, film grain — render properties belong in `high_level_description` or `background` as natural prose ONLY when the user prompt explicitly named them. NEVER inside an obj desc.\n  - EXCEPTION — viewpoint/angle (`from a low-angle perspective`, `bird's-eye view`, `eye-level`) IS allowed in obj descs when the prompt calls for it. Place once, usually in the focal subject's desc or background.\n\n**No describing impressions instead of physical reality.** Avoid `luminous`, `radiant`, `vibrant`, `lush`, `dynamic`, `glowing` (metaphorically), `gorgeous`, `stunning`, `breathtaking`, `mesmerizing`. Use observable properties: `cheekbone catches a small highlight`, not `luminous complexion`.\n\n**No scene-context repetition per-element.** Lighting direction, ambient surface, mounting context, weather → describe ONCE in `background`. Each element's desc focuses on what's UNIQUE to that element.\n\n### Anchor placements to named references\n\nSpecify body parts, surfaces, spatial landmarks.\n- CORRECT: `applied to the forehead near the hairline above the left eyebrow`.\n- INCORRECT: `pressed against the skin`.\n- CORRECT: `resting on the lower-right corner of the table directly in front of the laptop`.\n- INCORRECT: `sitting on the surface`.\n\n## BACKGROUND — what goes here, what doesn't (CRITICAL)\n\n`background` describes the scene SHELL: walls and finishes, floor/ground and surface state, ceiling and architectural fixtures, windows as architecture, atmospheric context (sky, clouds, fog, dust, mist), scene-wide ambient lighting, distant out-of-focus context (horizon, blurred crowds, distant scenery).\n\n### No double-counting\n\nAnything described in `background` CANNOT also appear as an obj element. Each scene component lives in EXACTLY ONE field. Decide once and commit. Before emitting an obj element, scan `background` — if the component is named there, omit the obj element.\n\n### ALWAYS-BACKGROUND — these live in `background` only, never as obj elements:\n\n- sky, clouds, atmospheric color\n- horizon\n- distant mountains, hills, tree lines\n- atmospheric weather (fog, haze, mist, smoke)\n- distant cityscape or stadium architecture\n- distant blurred or simplified crowds\n- the floor / ground / turf / paving surface the scene sits on\n- ambient walls or studio backdrop behind focal subjects\n\nYou cannot split these by region. `sky upper-left portion`, `sky behind the fortress`, `sky upper two-thirds` are the SAME component — describe in `background` once. Same for crowd, ground, horizon.\n\nIf you want technique-level detail on an atmospheric component (watercolor wet-on-wet sky blooms, fog with directional density variation), put that detail in `background`. The `background` field is allowed to be long.\n\n### Ground/floor/pavement is ALWAYS background — zero tolerance\n\nThe surface the scene sits on — floor, ground, turf, grass, dirt, sand, asphalt, pavement, road, sidewalk, deck, water surface, snow, tile floor, hardwood, marble — lives in `background` only. This holds REGARDLESS of how the input formats it: if the prompt lists `Wet rain-slicked pavement below` as a foreground bullet, RE-CLASSIFY it into background.\n\n**Surface character that belongs in background, not as a separate obj:** wet / rain-slicked / mud-streaked / dusty / cracked / polished / weathered surface state; reflective neon pools, fragmented color reflections, puddles, wet patches, mud patches, ice patches, frost, snow on the floor, water pooled on the ground, oil slicks, footprints, tire tracks; surface material (asphalt, cobblestone, hardwood, tile, marble, packed dirt); texture words for the floor (glassy, mirror-like, matte, polished, rough).\n\n**Puddles, reflections, wet patches are part of the ground surface** — never separate obj elements, regardless of whether they reflect the hero's silhouette or carry visible content.\n\n**Failure mode this prevents:** when a standing hero is the focal element and the floor is also emitted as an obj at the bottom of the frame, the renderer treats the floor obj as a 2D frame band rather than a perspectival receding plane, and clips the hero's legs into it — figure rendered half-in-the-ground with feet/calves buried.\n\n**Discrete objects ON the floor are still elements:** broken glass shards, crushed cans, scattered debris, leaves, rocks, dropped tools, brick fragments, foreground litter remain obj elements. The rule applies to the SURFACE itself and any state of that surface (wet, frozen, muddy, puddled), never to solid objects resting on it.\n\n### Background is the shell only — no individually-placeable things\n\nFurniture, vehicles, equipment, people, animals, decor (artwork, signs, plants in pots, stacks of books), free-standing lamps → obj elements, never `background`.\n\n### Shell-affixed prominent objects → DUAL MENTION\n\nSome objects are simultaneously part of the shell AND focal elements that define the room's identity: a chalkboard covering the back wall of a classroom, a fireplace built into a living-room wall, a large mounted TV, a stage proscenium, a built-in altar, a built-in bookshelf, a large fixed reception desk, a fixed sign/banner.\n\nFor these, MANDATORY all three steps:\n1. **MENTION in `background`** as part of the shell — anchors the object to the wall.\n2. **EMIT as an obj element** with the qualifier `\"the primary background element\"` (or similar) at the start of its desc. The obj carries the detail (material, content, frame, mounting).\n3. **PLACE FIRST in the elements list** so painter's-algorithm draws it behind foreground items.\n\nSkipping step 1 (the most common failure) makes the renderer float the object in mid-room or render it in front of foreground subjects.\n\nThis is an EXCEPTION to the shell rule's \"no individually placeable things\". Applies ONLY to objects that genuinely define the room's architectural identity. Free-standing items (chairs, table lamps, plants in pots, framed pictures on a wall) get the normal treatment: elements only, no background mention.\n\n### Recession/arrangement is not architecture\n\nDo not smuggle furniture or people into `background` by describing them as a receding arrangement. Forbidden background phrasings: `rows of desks recede toward the back`, `a grid of desks fills the room`, `students seated at the desks`, `chairs arranged in front of the podium`, `the room is filled with people`, `cars parked along the street`, `customers seated at the tables`. The arrangement IS the foreground content — emit elements.\n\n### No medium/post-processing effects in background\n\n`background` describes WHAT is in the scene, not HOW it was made. Forbidden in `background` — even when the prompt names the effect (route those to HLD instead):\n- Film grain, Kodak/Portra/Tri-X grain, ISO noise\n- Lens flare, chromatic aberration, vignetting, bokeh quality\n- Color cast / film-stock shift (warm shift, cool shift)\n- Paper texture, paper grain, canvas texture\n- Brushstroke texture, palette-knife texture\n- Halftone dots, screen-print texture, risograph texture\n\n**Test:** read `background` aloud. If you can picture the EMPTY room from the description — no furniture, no people, no equipment, no wall decor — you're in the shell. If anything disappears when you remove the room's contents, the background has leaked.\n\n## BBOX STRATEGY\n\nINCLUDE bboxes on elements where precise positioning matters — portrait subjects, products on a surface, logos, signs on a wall, distinct individually-placeable objects.\n\nOMIT bboxes on elements that represent dense or hard-to-enumerate visuals — crowds, fields of wildflowers, scattered particles, starry skies. Per-element judgment.\n\n### Coordinate system\n\nCoordinates are normalized to the target image shape: `x` runs left→right along full width (0 = left edge, 1000 = right), `y` runs top→bottom along full height (0 = top, 1000 = bottom). Top-left origin. Format `[y1, x1, y2, x2]` with `y1 < y2`, `x1 < x2`.\n\n### Shape warning (common failure)\n\nBbox values are normalized to 0–1000 in BOTH axes. A square `[0, 0, 500, 500]` is square only on a square frame; on 16:9 it becomes a wide rectangle, on 9:16 a tall rectangle. Most bbox failures (extra subjects, duplicates, mis-scaled objects) come from this mismatch.\n\nFor round objects or square on-screen regions, scale spans so `(x2-x1)/(y2-y1) ≈ W/H`. For single-subject prompts on wide frames, prefer narrower x-spans. For multi-subject prompts, give each a tight bbox so no one bbox dominates and invites a duplicate.\n\n## SPECIFICITY — commit to one value\n\nThis JSON feeds a diffusion model. Leave nothing for the model to invent or choose.\n\n**Banned hedge phrasings** (in elements and background): `things like`, `such as`, `e.g.`, `for example`, `or similar`, `various`, `could include`, `might be`, `some kind of`, `style of`. Replace with concrete nouns, counts, colors, materials, poses.\n\n**Banned alternative listings for one property:** `pale institutional off-white or pale green`, `oak or walnut`, `cream or ivory`, `late afternoon or early evening`, `italic serif or italic sans-serif`, `bold or semibold`. Pick ONE and commit. `or` is reserved for the loader's exclusive-choice idiom (`'YES' or 'NO'`), not captioner hedging.\n\n**Typography specifically:** name ONE typeface category (serif OR sans-serif OR display OR script OR monospace), ONE weight (bold/regular/light/medium), ONE style (italic OR upright). Never two joined by `or`.\n\n**Banned \"implied/suggested\" hedges:** `a desk corner implied`, `a chair suggested beneath the figure`, `a building hinted at`, `a shadow that reads as a person`. If it's in the scene, paint it concretely. If it isn't, leave it out. Forbidden words: `implied, suggested, hinted, barely visible, possibly, perhaps, maybe, might be, could be, reads as, almost`.\n\n**Exhaustive content preservation.** When the user provides enumerable content — schedules, itineraries, lists, menu items, steps, names, times — every item must appear in the output. Use as many text elements as needed; never sacrifice completeness for layout.\n\n**Named prompt elements MUST appear.** Every explicitly-named visual unit in the user prompt MUST appear as its own element:\n- Input `text:` sections — every entry becomes its own text element, verbatim. Zero tolerance: 3 entries in input → ≥3 text elements in output. Empty `text: []` is the only case where text elements may be omitted on that basis.\n- Quoted strings (single or double quotes) — each is its own text element.\n- Speech bubbles / dialogue callouts / thought bubbles / captions — each gets a text element for the quoted string AND an obj element for the bubble/balloon/container.\n- Named decorative elements (`small medical cross icon top-left`, `airplane arc trajectory`, `flame-lick flourish at the tail`) — each gets its own obj.\n- Named badges / chips / CTAs / strips — each gets its own obj (and text if it carries a quoted string).\n- Named accents / graphic devices (`hairline rule`, `dot grid`, `accent line`, `divider`) — each gets its own obj UNLESS it's a scene-wide overlay belonging in `background`.\n\n**Test before emitting:** count named visual units in the user prompt; element list must contain at least that many.\n\n**No placeholder enumeration.** When the imagined image contains a sequentially-numbered, alphabetically-labeled, or otherwise individually-identified set (stones numbered 1–50, parking spaces A1–A20, place cards `1st`–`12th`, a periodic table of 118 elements, a calendar grid of 31 dates, a 22-name team roster), EACH item is its own element. No `etc.`, no `and so on`, no `6 through 49`, no single obj grouping all into one cluster. List ALL of them.\n\nThe \"dense unenumerable group\" exception (crowd of thousands, field of wildflowers, starry sky) does NOT apply to enumerable sets — if items are sequentially identified, they're enumerable BY DEFINITION.\n\n**Don't invent visual concepts the user didn't ask for.** Forbidden without explicit user request: `glitch art`, `wireframe overlay`, `mesh that fragments the body`, `digital artifacts`, `dissolved`, `decompose`. If the prompt asks for a cinematic photo of a journalist, render a cinematic photo of a journalist — not a glitch-art composite.\n\n## PLANNING — turn the user idea into elements\n\n### 1. Pick a medium\n\n`photograph | illustration | 3D render | graphic design` — applies as natural-language framing inside HLD/background, NOT as a structured slot.\n\nDecision: **DESIGNED artifact vs CAPTURED / DRAWN / RENDERED moment.**\n- **graphic design** — poster, book cover, album cover, magazine cover, flyer, banner, social post, sticker, logo, wordmark, packaging, app icon, UI mockup, infographic, menu, greeting card, ticket, signage. If a human designer would sit at a desk to make it.\n- **photograph** — portrait, landscape, lifestyle, street, sport, wildlife, food, product, fashion editorial (when described as a photograph). Default for ambiguous everyday scenes.\n- **illustration** — cartoon, anime, manga, comic, watercolor, oil painting, ink, vector, pixel art, children's book illustration, named studios (Ghibli, KyoAni, Pixar 2D).\n- **3D render** — CGI, octane/unreal/blender, hyperrealistic product render, arch viz, isometric low-poly, voxel, named 3D studios.\n\nSilent / ambiguous → photograph (default). The subject's reality status does NOT override this default — wizards, dragons, aliens, robots in a photograph are valid; the brief must explicitly ASK for illustration / painting / render to get one.\n\nImperative verbs at the start (\"Illustrate a…\", \"Paint a…\", \"Draw a…\", \"Render a…\") are NOT medium signals — they mean \"depict / show\". Default to photograph unless an explicit medium-noun or style name appears.\n\n### 2. Style commitment\n\nInside HLD/background prose, name the style ONCE (`Studio Ghibli animation`, `Pixar 3D animation`, `35mm film photograph`, `iPhone photo`, `editorial digital painting`, `flat vector illustration`). Keep it short — recognizable style names are enough; the renderer knows them. Don't append technique detail (`with hand-painted gouache backgrounds`) on top of well-known names.\n\n**\"Professional picture/photo/portrait\" of a person means PROFESSIONAL CONTEXT, not professional camera equipment.** Read as corporate headshot, LinkedIn profile, business bio — neutral business attire, soft even daylight, neutral backdrop, friendly approachable expression. NOT dramatic studio rim-lighting, creamy DSLR bokeh, dark moody backdrop.\n\n### 3. Photoreal defaults — AVOID \"warm\"\n\nFor photographic prompts (no specified medium beyond `photo`/`photorealistic`/`selfie`/real-world scene):\n- Default to iPhone aesthetic — phone snapshot, ambient natural light, neutral white balance, accurate (not flattering) skin tones, ordinary framing. AVOID DSLR-magazine markers (creamy bokeh, telephoto compression, dramatic rim lighting, cinematic grade) — those signal AI-generation.\n- Default lighting framing: `natural daylight`, `overcast daylight`, `diffused daylight`, `cool-neutral white balance`. The word **\"warm\"** (in any phrase: `warm light`, `warm window light`, `warm tone`, `warm grading`) is BANNED as a grading adjective — it triggers the amber/golden AI look that ruins photorealism. When a scene physically has a warm-coloured light source (candle, sodium streetlamp, sunset), describe the SOURCE concretely (`candle flame`, `sodium streetlamp`) and the colour of the LIGHT POOL (`amber pool from the candle`) — but the global grade stays neutral.\n- Default composition: prefer non-centered framing (off-center, rule-of-thirds, asymmetrical, leading lines) for portraits, products, single-subject scenes. Use centered framing ONLY when the prompt explicitly calls for it (`centered`, `symmetrical`, `mandala`, `kaleidoscope`) or when the genre is inherently symmetric.\n- No motion blur in candid/realistic/iPhone-aesthetic photos. Motion blur is a craft signature (long-exposure pans, light streaks); using it in a candid signals AI. Real phone snapshots freeze the moment.\n- Saturation: don't stack `vibrant + bright + intense + saturated + electric + neon` for a neutral subject. Mention saturation ONCE (in HLD or background) only when the prompt explicitly asks.\n\n### 4. Populate underspecified scenes\n\nWhen the brief is sparse, don't render only what's explicitly named. Real scenes are populated. Add believable secondary subjects, micro-props that imply the subject's life, environmental texture, small narrative moments. Each invented element should belong in the world the brief implies — a paddy-field food stall plausibly has a chicken, a sauce bowl, a hand-painted price sign, a lantern.\n\n**Populate by depth layer.** Foreground (often-skipped), midground, background — each gets its own content. A foreground crop (an out-of-focus leaf at the bottom corner, the rim of a bowl, a fly mid-air close to camera) separates a real photograph from a postcard.\n\n**Commit to a specific cultural / regional identity.** \"Southeast Asian village\" is a hedge that produces generic AI visuals. \"Vietnamese pho stall by the rice paddies outside Hoi An\" is a real place. Specific commitment shapes architecture, signage script, food, dress, props.\n\n**Built environments need text everywhere.** Real shops, stalls, restaurants, vehicles, signage carry text on practically every surface. Generate text generously: shop name sign, sub-signs (`OPEN` / `TODAY'S SPECIAL`), menu board with handwritten items, price labels, jar/bottle labels, name tags, posters, fortune slips, vehicle/equipment labels, sponsor logos. `text: []` is almost always wrong for built environments — if your scene has a shop/stall/restaurant/workshop/market/vehicle, populate text. Specific content, never `various labels` or `menu items`.\n\n**Override:** when the brief explicitly says `minimal`, `sparse`, `empty`, `lonely`, `isolated`, `quiet`, `still`, `negative space`, `alone`, `single subject`, `in the middle of nowhere`, respect the restraint and skip populate.\n\n**Fantastical / sci-fi / fantasy / futuristic briefs get a populate bonus.** Stack sky drama (galaxies, ringed planets, multiple moons, nebulae), opposing focal points (volcano right / waterfall left), mid-distance scale anchors (crystal columns, futuristic cityscape, megastructures), light/energy effects throughout, exotic architecture/geology, deeply saturated palettes.\n\n## TEXT HANDLING\n\nFor each text element:\n- `text` — literal characters appearing in the image, verbatim. Preserve diacritics, capitalization, punctuation. Never transliterate or strip.\n- `bbox` — optional, same coordinate system as obj elements.\n- `desc` — free-form prose covering size, location, font style, color, orientation, visual effects.\n\n**Sources of text to include:**\n1. **User-quoted text** (single OR double quotes) — verbatim, exact characters.\n2. **Format-required text** — headlines, taglines, author names, dates, venues, CTA copy, brand names, publisher marks, edition numbers (when format implies them).\n3. **In-scene contextual text** — signage, labels, license plates, badges, jersey numbers, t-shirt prints, awnings, neon signs, name tags.\n4. **Numeric content** — race numbers, jersey numbers, dates, prices, scores, time displays, address numbers. Numbers ARE text.\n5. **Prominent product brand text** — if an element names a prominent product (bottle, cosmetic, package, beverage) and the user didn't supply a real brand, invent a complete brand identity and list every label as text elements.\n\n**Rules:**\n- Exhaustive: if a viewer could read it, it goes in the list.\n- Each text element appears ONCE in the list. Do NOT also describe its characters in `description` — refer by role/position instead.\n- Use `\\n` for line breaks WITHIN a single text element (multi-line sign, stacked headline). Use SEPARATE list items for visually distinct text blocks.\n- For stylized hero typography where each letter is a distinct visual unit, stack with `\\n` at natural word breaks — long single-line stylized titles produce typos and dropped letters. e.g., `\"ENTRE\\nVERSOS E\\nCONTOS\"` not `\"ENTRE VERSOS E CONTOS\"`.\n- **Language scoping:** `scene`/`elements`/`description`/position descriptors are always in ENGLISH regardless of the user's brief language. Only the literal `text` field characters follow the user's brief language. Portuguese brief → English prose + Portuguese `text:` content.\n\n## POP CULTURE, BRANDS, NAMED REFERENCES\n\nWhen the user idea names or clearly implies a brand, trademark, product (sneaker/car/device), public figure, athlete, musician, actor, fictional character, film, show, game, franchise, team — the output MUST carry an explicit named reference in the relevant element `desc`, not a generic stand-in describing the look.\n\nDon't replace `Nike Dunk Low Panda` with `black and white retro sneakers`, `Spider-Man` with `a red-and-blue masked superhero`, `The Beatles` with `four men in matching suits` — unless the user asked for an anonymous lookalike. Name the specific thing the user pointed at.\n\n## TRANSPARENT BACKGROUND\n\nIf the user's idea calls for transparent background, transparent canvas, alpha channel, cutout/isolated subject, sticker-style with no backdrop, or similar, the `background` field MUST be exactly this string, verbatim and nothing else: `transparent background`\n\nDo not paraphrase (no `clear backdrop`, `empty alpha`, `no background`, `PNG transparency`).\n\nIn `high_level_description`, include the literal phrase `on a transparent background`.\n"
+        }
       }
     ]
   },
@@ -1259,7 +2358,53 @@
         "description": "Bring your stories to life with videos featuring synchronized dialogue, music, sound effects, and ambient audio from text prompts.",
         "tags": ["API", "Audio", "Text to Video", "Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling2_6_t2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "KlingTextToVideoWithAudio",
+          "displayName": "Kling 2.6 Text to Video with Audio"
+        },
+        "fields": [
+          {
+            "name": "model_name",
+            "label": "Model name",
+            "kind": "select",
+            "options": ["kling-v2-6"],
+            "default": "kling-v2-6"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Positive text prompt.",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "mode",
+            "label": "Mode",
+            "kind": "select",
+            "options": ["pro"],
+            "default": "pro"
+          },
+          {
+            "name": "aspect_ratio",
+            "label": "Aspect ratio",
+            "kind": "select",
+            "options": ["16:9", "9:16", "1:1"],
+            "default": "16:9"
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "kind": "toggle",
+            "default": true
+          }
+        ],
+        "values": {
+          "model_name": "kling-v2-6",
+          "prompt": "Visual: In a livehouse, bathed in blue light, a high barstool is placed in the center, with the audience hidden in the shadows. \n\nDialog: [Short-haired female singer] sits on the high barstool, holding a wooden guitar, her fingers gently strumming the strings.\n\n[Short-haired female singer, heartfelt voice] sings: \"And I will try to fix you, all night long...\" When she reaches the chorus, [Short-haired female singer] looks out toward the audience. Background: The sound of clinking glasses. The camera switches between focusing on the short-haired female singer's fingers on the strings and her facial expression.",
+          "mode": "pro",
+          "aspect_ratio": "16:9"
+        }
       }
     ]
   },
@@ -1357,7 +2502,80 @@
         "description": "Input a first and last frame image to generate a continuous video sequence with multi-shot generation, precise element control, and support for multilingual prompts.",
         "tags": ["API", "Video", "FLF2V"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_v3_flf2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "KlingFirstLastFrameNode",
+          "displayName": "Kling 3.0 First-Last-Frame to Video"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 3,
+            "max": 15,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "first_frame",
+            "label": "First frame",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "end_frame",
+            "label": "End frame",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model and generation settings.",
+            "kind": "select",
+            "options": ["kling-v3"],
+            "default": "kling-v3"
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["4k", "1080p", "720p"],
+            "default": "1080p"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "prompt": "A single continuous shot, about 5 seconds long. Start from a close-up of a transparent plastic bag full of bright orange goldfish, floating against a dark, softly lit background. In slow motion, the plastic bag gently dissolves and breaks apart, the water slowly drifting into the air instead of falling. The goldfish gracefully swim out of the disintegrating bag and begin to float weightlessly through the air, their scales catching warm, soft light. The camera smoothly glides forward with the fish as they drift toward a young man standing in the darkness. Without cutting, the shot continues as the goldfish gather around his head and shoulders, slowly orbiting his head like a glowing halo, ending on a portrait-like framing similar to the second reference image. Sound design: soft ambient music, subtle underwater-style whooshes, light water and bubble textures, no voices or dialogue",
+          "duration": 5,
+          "generate_audio": true,
+          "model": "kling-v3",
+          "resolution": "720p"
+        }
       },
       {
         "name": "api_kling_motion_control3",
@@ -1365,7 +2583,67 @@
         "description": "Upload a character image and a motion reference video. Generate a new video where your character performs the actions from the reference, with enhanced facial consistency using optional element binding.",
         "tags": ["API", "Motion Control"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_motion_control3-1.webp",
-        "values": {}
+        "node": {
+          "id": "KlingMotionControl",
+          "displayName": "Kling Motion Control"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "reference_image",
+            "label": "Reference image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "reference_video",
+            "label": "Reference video",
+            "kind": "file",
+            "accept": "video",
+            "required": true
+          },
+          {
+            "name": "keep_original_sound",
+            "label": "Keep original sound",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "character_orientation",
+            "label": "Character orientation",
+            "kind": "select",
+            "options": ["video", "image"],
+            "default": "video"
+          },
+          {
+            "name": "mode",
+            "label": "Mode",
+            "kind": "select",
+            "options": ["pro", "std"],
+            "default": "pro"
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["kling-v3", "kling-v2-6"],
+            "default": "kling-v3"
+          }
+        ],
+        "values": {
+          "prompt": "metallic person shadow boxing, while the train we see in the background travels pass, the subject stays in place",
+          "keep_original_sound": true,
+          "character_orientation": "video",
+          "mode": "pro",
+          "model": "kling-v3"
+        }
       }
     ]
   },
@@ -1458,7 +2736,104 @@
         "description": "Upload reference images or specify start and end frames. Generate a video with precise semantic control, longer duration, and improved narrative coherence.",
         "tags": ["API", "FLF2V"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_o3_flf2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "KlingOmniProFirstLastFrameNode",
+          "displayName": "Kling 3.0 Omni First-Last-Frame to Video"
+        },
+        "fields": [
+          {
+            "name": "model_name",
+            "label": "Model name",
+            "kind": "select",
+            "options": ["kling-v3-omni", "kling-video-o1"],
+            "default": "kling-v3-omni"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 3,
+            "max": 15,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "first_frame",
+            "label": "First frame",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "end_frame",
+            "label": "End frame",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "reference_images",
+            "label": "Reference images",
+            "hint": "Up to 6 additional reference images.",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["4k", "1080p", "720p"],
+            "default": "1080p"
+          },
+          {
+            "name": "storyboards",
+            "label": "Storyboards",
+            "kind": "select",
+            "options": [
+              "disabled",
+              "1 storyboard",
+              "2 storyboards",
+              "3 storyboards",
+              "4 storyboards",
+              "5 storyboards",
+              "6 storyboards"
+            ],
+            "default": "disabled"
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "hint": "Generate audio for the video. Only supported for kling-v3-omni.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "model_name": "kling-v3-omni",
+          "prompt": "A graceful pale-haired girl in an ivory lace outfit and orange-tinted sunglasses rides a majestic white horse. The scene transitions from a calm, intimate close-up (first frame) to a dynamic, sweeping gallop across a sun-drenched desert (end frame). The horse’s mane flows with motion, and the desert landscape shifts from a soft, ethereal close-up to a vast, open expanse. The transition is smooth, maintaining the character’s and horse’s consistent appearance and style, with cinematic lighting and a dreamlike, otherworldly atmosphere.\n",
+          "duration": 5,
+          "resolution": "1080p",
+          "storyboards": "disabled",
+          "generate_audio": false,
+          "seed": 0
+        }
       },
       {
         "name": "api_kling_o3_i2v",
@@ -1466,7 +2841,98 @@
         "description": "Upload a reference image and optional audio or text prompt. Generate a character-consistent video with native audio output and precise storyboard control.",
         "tags": ["API", "Character Reference", "Image to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_o3_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "KlingOmniProImageToVideoNode",
+          "displayName": "Kling 3.0 Omni Image to Video"
+        },
+        "fields": [
+          {
+            "name": "model_name",
+            "label": "Model name",
+            "kind": "select",
+            "options": ["kling-v3-omni", "kling-video-o1"],
+            "default": "kling-v3-omni"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "aspect_ratio",
+            "label": "Aspect ratio",
+            "kind": "select",
+            "options": ["16:9", "9:16", "1:1"],
+            "default": "16:9"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 3,
+            "max": 15,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "reference_images",
+            "label": "Reference images",
+            "hint": "Up to 7 reference images.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["4k", "1080p", "720p"],
+            "default": "1080p"
+          },
+          {
+            "name": "storyboards",
+            "label": "Storyboards",
+            "kind": "select",
+            "options": [
+              "disabled",
+              "1 storyboard",
+              "2 storyboards",
+              "3 storyboards",
+              "4 storyboards",
+              "5 storyboards",
+              "6 storyboards"
+            ],
+            "default": "disabled"
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "hint": "Generate audio for the video. Only supported for kling-v3-omni.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "model_name": "kling-v3-omni",
+          "prompt": "Wide shot of a free‑spirited young woman running toward the camera through a sun‑drenched field, white birds exploding upward all around her like symbols of freedom. Her hair and dress are caught by the wind, captured with crisp focus on her face and light motion blur in the foreground flowers and wings. Vivid colors, bright clear sky, optimistic, uplifting cinematic tone.\n",
+          "aspect_ratio": "16:9",
+          "duration": 5,
+          "resolution": "720p",
+          "storyboards": "disabled",
+          "generate_audio": true,
+          "seed": 0
+        }
       }
     ]
   },
@@ -1581,7 +3047,23 @@
         "description": "Generate video from text with LTX 2.5, a video model built for fast, high-quality production work. Type a prompt and get a cinematic clip with sharp detail, accurate motion, and support for native multishot scenes that hold character and style across cuts.",
         "tags": ["API", "Text to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_ltx2_5_t2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "LtxApi25TextToVideo",
+          "displayName": "LTX 2.5 Text To Video"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          }
+        ],
+        "values": {
+          "prompt": "LTX-2.5 (Pro)"
+        }
       },
       {
         "name": "api_ltx2_5_i2v",
@@ -1671,7 +3153,61 @@
         "description": "Generate cinematic-quality videos from text prompts using Luma Ray 3.2, with support for extending previous generations by providing a generation ID. The workflow accepts 1 input image and produces 1 video output, enabling seamless iterative refinement. Ideal for creating short film sequences, marketing content, and professional video production.",
         "tags": ["Image to Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_luma_ray3_3_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "LumaRay32ExtendVideoNode",
+          "displayName": "Luma Ray 3.2 Extend Video"
+        },
+        "fields": [
+          {
+            "name": "source_generation_id",
+            "label": "Source generation id",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "direction",
+            "label": "Direction",
+            "hint": "Forward continues after the prior clip; backward is prepended before it.",
+            "kind": "select",
+            "options": [
+              "Forward (continue after)",
+              "Backward (lead-in before)"
+            ],
+            "default": "Forward (continue after)"
+          },
+          {
+            "name": "loop",
+            "label": "Loop",
+            "hint": "Loop the extended video seamlessly (forward extend only).",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt for the new content.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["540p", "720p", "1080p"],
+            "default": "720p"
+          }
+        ],
+        "values": {
+          "source_generation_id": "",
+          "direction": "Forward (continue after)",
+          "loop": false,
+          "prompt": "",
+          "resolution": "720p"
+        }
       },
       {
         "name": "api_luma_ray3_2_video_edit",
@@ -1679,7 +3215,61 @@
         "description": "Edit videos using natural language commands with Luma Ray 3.2, processing one input video and generating an edited output based on your textual instructions. ",
         "tags": ["API", "Video Edit"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_luma_ray3_2_video_edit-1.webp",
-        "values": {}
+        "node": {
+          "id": "LumaRay32ExtendVideoNode",
+          "displayName": "Luma Ray 3.2 Extend Video"
+        },
+        "fields": [
+          {
+            "name": "source_generation_id",
+            "label": "Source generation id",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "direction",
+            "label": "Direction",
+            "hint": "Forward continues after the prior clip; backward is prepended before it.",
+            "kind": "select",
+            "options": [
+              "Forward (continue after)",
+              "Backward (lead-in before)"
+            ],
+            "default": "Forward (continue after)"
+          },
+          {
+            "name": "loop",
+            "label": "Loop",
+            "hint": "Loop the extended video seamlessly (forward extend only).",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt for the new content.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["540p", "720p", "1080p"],
+            "default": "720p"
+          }
+        ],
+        "values": {
+          "source_generation_id": "",
+          "direction": "Forward (continue after)",
+          "loop": false,
+          "prompt": "",
+          "resolution": "720p"
+        }
       }
     ]
   },
@@ -1819,7 +3409,120 @@
         "description": "Upload an image and set the magnification level. Generate an upscaled version of your image with support for up to 16x enlargement.",
         "tags": ["API", "Image Upscale"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_magnific_image_upscale_creative-1.webp",
-        "values": {}
+        "node": {
+          "id": "MagnificImageUpscalerCreativeNode",
+          "displayName": "Magnific Image Upscale (Creative)"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "scale_factor",
+            "label": "Scale factor",
+            "kind": "select",
+            "options": ["2x", "4x", "8x", "16x"],
+            "default": "2x"
+          },
+          {
+            "name": "optimized_for",
+            "label": "Optimized for",
+            "kind": "select",
+            "options": [
+              "standard",
+              "soft_portraits",
+              "hard_portraits",
+              "art_n_illustration",
+              "videogame_assets",
+              "nature_n_landscapes",
+              "films_n_photography",
+              "3d_renders",
+              "science_fiction_n_horror"
+            ],
+            "default": "standard"
+          },
+          {
+            "name": "creativity",
+            "label": "Creativity",
+            "kind": "number",
+            "min": -10,
+            "max": 10,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "hdr",
+            "label": "Hdr",
+            "hint": "The level of definition and detail.",
+            "kind": "number",
+            "min": -10,
+            "max": 10,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "resemblance",
+            "label": "Resemblance",
+            "hint": "The level of resemblance to the original image.",
+            "kind": "number",
+            "min": -10,
+            "max": 10,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "fractality",
+            "label": "Fractality",
+            "hint": "The strength of the prompt and intricacy per square pixel.",
+            "kind": "number",
+            "min": -10,
+            "max": 10,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "engine",
+            "label": "Engine",
+            "kind": "select",
+            "options": [
+              "automatic",
+              "magnific_illusio",
+              "magnific_sharpy",
+              "magnific_sparkle"
+            ],
+            "default": "automatic"
+          },
+          {
+            "name": "auto_downscale",
+            "label": "Auto downscale",
+            "hint": "Automatically downscale input image if output would exceed maximum pixel limit.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "prompt": "A photo from the 1950s in New York City of a woman sitting casually at the bus stand",
+          "scale_factor": "4x",
+          "optimized_for": "standard",
+          "creativity": 2,
+          "hdr": 3,
+          "resemblance": 1,
+          "fractality": 0,
+          "engine": "automatic",
+          "auto_downscale": true
+        }
       },
       {
         "name": "api_magnific_image_upscale_precise",
@@ -1827,7 +3530,77 @@
         "description": "Upload an image to precisely upscale it using the Magnific model, generating a high-resolution version with enhanced detail.",
         "tags": ["API", "Image Upscale"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_magnific_image_upscale_precise-1.webp",
-        "values": {}
+        "node": {
+          "id": "MagnificImageUpscalerPreciseV2Node",
+          "displayName": "Magnific Image Upscale (Precise V2)"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "scale_factor",
+            "label": "Scale factor",
+            "kind": "select",
+            "options": ["2x", "4x", "8x", "16x"],
+            "default": "2x"
+          },
+          {
+            "name": "flavor",
+            "label": "Flavor",
+            "kind": "select",
+            "options": ["sublime", "photo", "photo_denoiser"],
+            "default": "sublime"
+          },
+          {
+            "name": "sharpen",
+            "label": "Sharpen",
+            "hint": "Image sharpness intensity. Higher values increase edge definition and clarity.",
+            "kind": "number",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "default": 7
+          },
+          {
+            "name": "smart_grain",
+            "label": "Smart grain",
+            "kind": "number",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "default": 7
+          },
+          {
+            "name": "ultra_detail",
+            "label": "Ultra detail",
+            "hint": "Controls fine detail, textures, and micro-details added during upscaling.",
+            "kind": "number",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "default": 30
+          },
+          {
+            "name": "auto_downscale",
+            "label": "Auto downscale",
+            "hint": "Automatically downscale input image if output would exceed maximum resolution.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "scale_factor": "2x",
+          "flavor": "photo",
+          "sharpen": 7,
+          "smart_grain": 7,
+          "ultra_detail": 30,
+          "auto_downscale": true
+        }
       }
     ]
   },
@@ -1988,7 +3761,101 @@
         "description": "Generate production-ready 3D models from a single reference image with Meshy 7, an image-to-3D model that sets a new standard for geometry alignment, faithfully matching the input's proportions, part placement, and surface details. Ideal for concept art turnarounds, character and prop modeling from sketches, and any workflow where preserving the original design's intent is critical.",
         "tags": ["API", "3D"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_meshy7_text_to_model-1.webp",
-        "values": {}
+        "node": {
+          "id": "MeshyTextToModelNode",
+          "displayName": "Meshy: Text to Model"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["meshy-7", "meshy-6", "latest"],
+            "default": "meshy-7"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "style",
+            "label": "Style",
+            "kind": "select",
+            "options": ["realistic"],
+            "default": "realistic"
+          },
+          {
+            "name": "should_remesh",
+            "label": "Should remesh",
+            "hint": "When set to false, returns an unprocessed triangular mesh.",
+            "kind": "select",
+            "options": ["true", "false"],
+            "default": "true"
+          },
+          {
+            "name": "topology",
+            "label": "Topology",
+            "kind": "select",
+            "options": ["triangle", "quad"],
+            "default": "triangle"
+          },
+          {
+            "name": "target_polycount",
+            "label": "Target polycount",
+            "kind": "number",
+            "min": 100,
+            "max": 300000,
+            "step": 1,
+            "default": 300000
+          },
+          {
+            "name": "symmetry_mode",
+            "label": "Symmetry mode",
+            "kind": "select",
+            "options": ["auto", "on", "off"],
+            "default": "auto"
+          },
+          {
+            "name": "pose_mode",
+            "label": "Pose mode",
+            "hint": "Specify the pose mode for the generated model.",
+            "kind": "select",
+            "options": ["", "A-pose", "T-pose"],
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "ultra_mode",
+            "label": "Ultra mode",
+            "hint": "Run an extra refinement pass for higher-fidelity geometry with finer surface detail.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "meshy-7",
+          "prompt": "Anubis, jackal-headed god of the dead, full body, black obsidian body with gold trim, ornate ankh staff, stylized Egyptian mythology, low poly, t-pose",
+          "style": "realistic",
+          "should_remesh": "true",
+          "topology": "triangle",
+          "target_polycount": 300000,
+          "symmetry_mode": "auto",
+          "pose_mode": "",
+          "seed": 999999,
+          "ultra_mode": false
+        }
       }
     ]
   },
@@ -2149,7 +4016,115 @@
         "description": "Create high-quality 3D models from multiple images using Meshy 6. More photos mean better detail capture, accurate proportions, and cleaner mesh structure.",
         "tags": ["3D", "API", "Image to 3D"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_meshy_multi_image_to_model-1.webp",
-        "values": {}
+        "node": {
+          "id": "MeshyMultiImageToModelNode",
+          "displayName": "Meshy: Multi-Image to Model"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["meshy-7", "meshy-6", "latest"],
+            "default": "meshy-7"
+          },
+          {
+            "name": "should_remesh",
+            "label": "Should remesh",
+            "hint": "When set to false, returns an unprocessed triangular mesh.",
+            "kind": "select",
+            "options": ["true", "false"],
+            "default": "true"
+          },
+          {
+            "name": "topology",
+            "label": "Topology",
+            "kind": "select",
+            "options": ["triangle", "quad"],
+            "default": "triangle"
+          },
+          {
+            "name": "target_polycount",
+            "label": "Target polycount",
+            "kind": "number",
+            "min": 100,
+            "max": 300000,
+            "step": 1,
+            "default": 300000
+          },
+          {
+            "name": "symmetry_mode",
+            "label": "Symmetry mode",
+            "kind": "select",
+            "options": ["auto", "on", "off"],
+            "default": "auto"
+          },
+          {
+            "name": "should_texture",
+            "label": "Should texture",
+            "kind": "select",
+            "options": ["true", "false"],
+            "default": "true"
+          },
+          {
+            "name": "enable_pbr",
+            "label": "Enable pbr",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "texture_prompt",
+            "label": "Texture prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "texture_image",
+            "label": "Texture image",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "texture_resolution",
+            "label": "Texture resolution",
+            "kind": "select",
+            "options": ["2k", "4k", "8k"],
+            "default": "2k"
+          },
+          {
+            "name": "pose_mode",
+            "label": "Pose mode",
+            "hint": "Specify the pose mode for the generated model.",
+            "kind": "select",
+            "options": ["", "A-pose", "T-pose"],
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "model": "meshy-6",
+          "should_remesh": "true",
+          "topology": "triangle",
+          "target_polycount": 300000,
+          "symmetry_mode": "auto",
+          "should_texture": "true",
+          "enable_pbr": false,
+          "texture_prompt": "",
+          "texture_resolution": "2k",
+          "pose_mode": "",
+          "seed": 0
+        }
       },
       {
         "name": "api_meshy_text_to_model",
@@ -2157,7 +4132,101 @@
         "description": "Generate high-quality 3D models from text prompts using Meshy 6. Create characters with refined geometry, mechanical objects with sharp edges, or game-ready low-poly assets.",
         "tags": ["3D", "Text to Model", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_meshy_text_to_model-1.webp",
-        "values": {}
+        "node": {
+          "id": "MeshyTextToModelNode",
+          "displayName": "Meshy: Text to Model"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["meshy-7", "meshy-6", "latest"],
+            "default": "meshy-7"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "style",
+            "label": "Style",
+            "kind": "select",
+            "options": ["realistic"],
+            "default": "realistic"
+          },
+          {
+            "name": "should_remesh",
+            "label": "Should remesh",
+            "hint": "When set to false, returns an unprocessed triangular mesh.",
+            "kind": "select",
+            "options": ["true", "false"],
+            "default": "true"
+          },
+          {
+            "name": "topology",
+            "label": "Topology",
+            "kind": "select",
+            "options": ["triangle", "quad"],
+            "default": "triangle"
+          },
+          {
+            "name": "target_polycount",
+            "label": "Target polycount",
+            "kind": "number",
+            "min": 100,
+            "max": 300000,
+            "step": 1,
+            "default": 300000
+          },
+          {
+            "name": "symmetry_mode",
+            "label": "Symmetry mode",
+            "kind": "select",
+            "options": ["auto", "on", "off"],
+            "default": "auto"
+          },
+          {
+            "name": "pose_mode",
+            "label": "Pose mode",
+            "hint": "Specify the pose mode for the generated model.",
+            "kind": "select",
+            "options": ["", "A-pose", "T-pose"],
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "ultra_mode",
+            "label": "Ultra mode",
+            "hint": "Run an extra refinement pass for higher-fidelity geometry with finer surface detail.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "meshy-6",
+          "prompt": "Death Knight",
+          "style": "realistic",
+          "should_remesh": "true",
+          "topology": "triangle",
+          "target_polycount": 300000,
+          "symmetry_mode": "auto",
+          "pose_mode": "",
+          "seed": 0,
+          "ultra_mode": false
+        }
       }
     ]
   },
@@ -2236,6 +4305,36 @@
         "description": "Generate polished, prompt-faithful video from text using Minimax H3 Max, producing a single finished video clip with no input files required. Ideal for rapid concept exploration, cinematic text-to-video scenes, and high-throughput creative iteration where speed and visual quality matter.",
         "tags": ["API", "Text to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_minimax_h3_max_t2v-1.webp",
+        "node": {
+          "id": "MinimaxHailuo03TextToVideoNode",
+          "displayName": "MiniMax H3 Text to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model to use for video generation.",
+            "kind": "select",
+            "options": ["MiniMax H3"],
+            "default": "MiniMax H3"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AIGC watermark to the video.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
         "values": {}
       }
     ]
@@ -2597,7 +4696,50 @@
         "description": "Edit images using inpainting with OpenAI Dall-E 2 API.",
         "tags": ["Inpainting", "Image", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openai_dall_e_2_inpaint-1.webp",
-        "values": {}
+        "node": {
+          "id": "OpenAIDalle2",
+          "displayName": "OpenAI DALL·E 2"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt for DALL·E",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "size",
+            "label": "Size",
+            "hint": "Image size",
+            "kind": "select",
+            "options": ["256x256", "512x512", "1024x1024"],
+            "default": "1024x1024"
+          },
+          {
+            "name": "n",
+            "label": "N",
+            "hint": "How many images to generate",
+            "kind": "number",
+            "min": 1,
+            "max": 8,
+            "step": 1,
+            "default": 1
+          },
+          {
+            "name": "image",
+            "label": "Image",
+            "hint": "Optional reference image for image editing.",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          }
+        ],
+        "values": {
+          "prompt": "There are many clouds floating in the sky. White, hazy, and spreading out"
+        }
       }
     ]
   },
@@ -2760,7 +4902,65 @@
         "description": "Generate dynamic videos from static images with motion and effects using PixVerse.",
         "tags": ["Image to Video", "Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_pixverse_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "PixverseImageToVideoNode",
+          "displayName": "PixVerse Image to Video"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Prompt for the video generation",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "quality",
+            "label": "Quality",
+            "kind": "select",
+            "options": ["360p", "540p", "720p", "1080p"],
+            "default": "360p"
+          },
+          {
+            "name": "motion_mode",
+            "label": "Motion mode",
+            "kind": "select",
+            "options": ["normal", "fast"],
+            "default": "normal"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed for video generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "hint": "An optional text description of undesired elements on an image.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          }
+        ],
+        "values": {
+          "prompt": "An astronaut was lying on a field full of orange flowers, holding an old-fashioned radio in his hands. The camera slowly rotated around him",
+          "quality": "1080p"
+        }
       },
       {
         "name": "api_pixverse_template_i2v",
@@ -2768,7 +4968,65 @@
         "description": "Generate dynamic videos from static images with motion and effects using PixVerse.",
         "tags": ["Image to Video", "Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_pixverse_template_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "PixverseImageToVideoNode",
+          "displayName": "PixVerse Image to Video"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Prompt for the video generation",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "quality",
+            "label": "Quality",
+            "kind": "select",
+            "options": ["360p", "540p", "720p", "1080p"],
+            "default": "360p"
+          },
+          {
+            "name": "motion_mode",
+            "label": "Motion mode",
+            "kind": "select",
+            "options": ["normal", "fast"],
+            "default": "normal"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed for video generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "hint": "An optional text description of undesired elements on an image.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          }
+        ],
+        "values": {
+          "prompt": "put on suite",
+          "quality": "540p"
+        }
       }
     ]
   },
@@ -2834,7 +5092,39 @@
         "description": "Converts an image input into an SVG output.",
         "tags": ["API", "Vector"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_quiver_image_to_svg-1.webp",
-        "values": {}
+        "node": {
+          "id": "QuiverImageToSVGNode",
+          "displayName": "Quiver Image to SVG"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "hint": "Input image to vectorize.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "auto_crop",
+            "label": "Auto crop",
+            "hint": "Automatically crop to the dominant subject.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "auto_crop": false
+        }
       }
     ]
   },
@@ -2906,6 +5196,46 @@
         "description": "Generate detailed, production-ready images from text prompts using the Qwen Image 3.0 Pro model, supporting up to 4.5k tokens for complex layouts like posters, infographics, and storyboards. It renders crisp 10px text, realistic textures, and native support for 12 languages and over 100 art styles, with optional 1-3 reference images for fusion editing. Ideal for marketing materials, educational diagrams, and UI design mockups.",
         "tags": ["API", "Text to Image"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_qwen3_t2i-1.webp",
+        "node": {
+          "id": "QwenImageTextToImageApi",
+          "displayName": "Qwen Image 3 Text to Image"
+        },
+        "fields": [
+          {
+            "name": "n",
+            "label": "N",
+            "hint": "Number of images to generate, returned as a batch.",
+            "kind": "number",
+            "min": 1,
+            "max": 6,
+            "step": 1,
+            "default": 1
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          },
+          {
+            "name": "prompt_extend",
+            "label": "Prompt extend",
+            "hint": "Whether to enhance the prompt with AI assistance.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
         "values": {}
       }
     ]
@@ -3039,7 +5369,108 @@
         "description": "Generate a clean, flat vector logo from a text prompt using Recraft V4.1, producing one scalable SVG output with no file input required. Ideal for branding and logo design, vector illustration projects, and creating consistent flat-color graphics for presentations or merchandise.",
         "tags": ["Vector", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_recraft_v4_1_text_to_vector-1.webp",
-        "values": {}
+        "node": {
+          "id": "RecraftV4TextToVectorNode",
+          "displayName": "Recraft V4 Text to Vector"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Prompt for the image generation. Maximum 10,000 characters.",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": false
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": [
+              "recraftv4_1_vector",
+              "recraftv4_1_utility_vector",
+              "recraftv4_1_pro_vector",
+              "recraftv4_1_utility_pro_vector",
+              "recraftv4",
+              "recraftv4_pro",
+              "recraftv4_styles_vector",
+              "recraftv4_styles_pro_vector"
+            ],
+            "default": "recraftv4_1_vector"
+          },
+          {
+            "name": "size",
+            "label": "Size",
+            "hint": "The size of the generated image.",
+            "kind": "select",
+            "options": [
+              "1024x1024",
+              "1536x768",
+              "768x1536",
+              "1280x832",
+              "832x1280",
+              "1216x896",
+              "896x1216",
+              "1152x896",
+              "896x1152",
+              "832x1344",
+              "1280x896",
+              "896x1280",
+              "1344x768",
+              "768x1344"
+            ],
+            "default": "1024x1024"
+          },
+          {
+            "name": "n",
+            "label": "N",
+            "hint": "The number of images to generate.",
+            "kind": "number",
+            "min": 1,
+            "max": 6,
+            "step": 1,
+            "default": 1
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "style_id",
+            "label": "Style id",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "style_match",
+            "label": "Style match",
+            "kind": "select",
+            "options": ["precise", "flexible"],
+            "default": "precise"
+          }
+        ],
+        "values": {
+          "prompt": "SVG vector graphic, flat geometric whimsical illustration, centered full-body young creative girl, she is focused working on open laptop on lap, shoulder-length blue hair, gentle smile, simple stylized facial features, oversized colorful casual outfit, thick clean black contour lines, pure solid color blocks, NO gradients, no soft shadows, vibrant bold saturated color palette, bright hot pink background.\nSurreal imaginative creative workspace scene, abundant floating surrounding elements swirling around character: wireless laptop, graphic drawing tablet, stylus pens, stacked sketch notebooks, paper documents, coffee mug, glowing idea lightbulbs, curve cloud doodles, twisted colorful ribbon streamers, small cute puppy, tiny rainbow, confetti dots, curved squiggle lines, geometric ring decorations, plant sprigs, erasers, paint tubes.\nBalanced dense composition without clutter, elements orbit around the girl, retro screen print texture, modern folk graphic illustration, crisp vector shapes, sharp outlines, suitable for SVG export, lively inspirational creative office vibe",
+          "negative_prompt": "",
+          "model": "recraftv4_1_vector",
+          "size": "1024x1024",
+          "n": 1,
+          "seed": 999999
+        }
       },
       {
         "name": "api_recraft_v4_t2i",
@@ -3083,7 +5514,24 @@
         "description": "Input a text description or upload reference images. Generate a detailed 3D model with textures, exportable in multiple formats.",
         "tags": ["3D", "API", "Text to Model"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_rodin3d_gen2_5_text_to_3d-1.webp",
-        "values": {}
+        "node": {
+          "id": "Rodin3D_Gen25_Text",
+          "displayName": "Rodin 3D Gen-2.5 - Text to 3D"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt for the 3D model.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          }
+        ],
+        "values": {
+          "prompt": "forest knight, dynamic archery pose, drawing bow and aiming arrow, sharp facial features, streamlined armor, natural forest background, exquisite texture, realistic lighting, high detail, cinematic style, full body view"
+        }
       },
       {
         "name": "api_rodin_gen2",
@@ -3091,6 +5539,57 @@
         "description": "Generate detailed 4X mesh quality 3D models from photos using Rodin Gen2",
         "tags": ["Image to 3D", "3D", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_rodin_gen2-1.webp",
+        "node": {
+          "id": "Rodin3D_Gen2",
+          "displayName": "Rodin 3D Generate - Gen-2 Generate"
+        },
+        "fields": [
+          {
+            "name": "Images",
+            "label": "Images",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "Seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 65535,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "Material_Type",
+            "label": "Material Type",
+            "kind": "select",
+            "options": ["PBR", "Shaded"],
+            "default": "PBR"
+          },
+          {
+            "name": "Polygon_count",
+            "label": "Polygon count",
+            "kind": "select",
+            "options": [
+              "4K-Quad",
+              "8K-Quad",
+              "18K-Quad",
+              "50K-Quad",
+              "2K-Triangle",
+              "20K-Triangle",
+              "150K-Triangle",
+              "500K-Triangle"
+            ],
+            "default": "500K-Triangle"
+          },
+          {
+            "name": "TAPose",
+            "label": "TAPose",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
         "values": {}
       }
     ]
@@ -3166,7 +5665,56 @@
         "description": "Generate dynamic videos from images using Runway Gen4 Turbo.",
         "tags": ["Image to Video", "Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_runway_gen4_turo_image_to_video-1.webp",
-        "values": {}
+        "node": {
+          "id": "RunwayImageToVideoNodeGen4",
+          "displayName": "Runway Image to Video (Gen4 Turbo)"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt for the generation",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "start_frame",
+            "label": "Start frame",
+            "hint": "Start frame to be used for the video",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "ratio",
+            "label": "Ratio",
+            "kind": "select",
+            "options": [
+              "1280:720",
+              "720:1280",
+              "1104:832",
+              "832:1104",
+              "960:960",
+              "1584:672"
+            ],
+            "default": "1280:720"
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Random seed for generation",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "prompt": "A man sits alone in a dimly lit room, smoking a cigarette. The smoke slowly fills the space. He suddenly turns his head to look directly at the camera, making clear eye contact. The camera then slowly pushes forward toward his face, ending in a close-up. The mood is cinematic and introspective. Shallow depth of field, dramatic lighting, soft shadows, 24fps film look.\n\n"
+        }
       },
       {
         "name": "api_runway_reference_to_image",
@@ -3174,7 +5722,32 @@
         "description": "Generate new images based on reference styles and compositions with Runway's AI.",
         "tags": ["Image", "API", "Style Reference"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_runway_reference_to_image-1.webp",
-        "values": {}
+        "node": {
+          "id": "RunwayTextToImageNode",
+          "displayName": "Runway Text to Image"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt for the generation",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "reference_image",
+            "label": "Reference image",
+            "hint": "Optional reference image to guide the generation",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          }
+        ],
+        "values": {
+          "prompt": "An astronaut is lying on a recliner in a space city, deeply absorbed in reading a book.\n"
+        }
       }
     ]
   },
@@ -3247,7 +5820,9 @@
         "description": "Generate 30-second cinematic videos from text prompts with Seedance 2.5, producing synchronized sound and music alongside the footage. Input a single text prompt to create one video with precise camera control and multi-shot storytelling. Ideal for brand films, episodic series, and e-commerce content where quality matters more than budget.",
         "tags": ["API", "Text to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_seedance2_5_t2v-1.webp",
-        "values": {}
+        "values": {
+          "model": "Seedance 2.5"
+        }
       }
     ]
   },
@@ -3310,7 +5885,77 @@
         "description": "Upload the first and last frames of your video. Generate a high-quality video sequence using the Seedance2.0 model.",
         "tags": ["API", "FLF2V", "Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_seedance2_0_flf2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "ByteDance2FirstLastFrameNode",
+          "displayName": "ByteDance Seedance 2.5 First-Last-Frame to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": [
+              "Seedance 2.5",
+              "Seedance 2.0",
+              "Seedance 2.0 Fast",
+              "Seedance 2.0 Mini"
+            ],
+            "default": "Seedance 2.5"
+          },
+          {
+            "name": "first_frame",
+            "label": "First frame",
+            "hint": "First frame image for the video.",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "last_frame",
+            "label": "Last frame",
+            "hint": "Last frame image for the video.",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "first_frame_asset_id",
+            "label": "First frame asset id",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "last_frame_asset_id",
+            "label": "Last frame asset id",
+            "kind": "text",
+            "multiline": false,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add a watermark to the video.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "Seedance 2.0",
+          "first_frame_asset_id": "Cinematic drone perspective shot, smooth camera movement: drone flies forward from behind the character, then rotates 180 degrees to look back at the character, then slowly pushes up and ascends, first frame: character's back walking through golden sunset flower field with city skyline in distance, last frame: character facing camera in wide aerial shot of endless flower sea, warm golden hour backlighting, lens flare, soft wind blowing petals, hyper-detailed 8K, photorealistic, cinematic color grading",
+          "last_frame_asset_id": "720p"
+        }
       },
       {
         "name": "api_seedance2_0_mini_r2v",
@@ -3472,7 +6117,122 @@
         "description": "Upload a start frame and end frame, and Seedance 1.5 Pro automatically generates a smooth video transition with synchronized audio between them.",
         "tags": ["FLF2V", "Image to Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_seedance1_5_flf2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "ByteDanceFirstLastFrameNode",
+          "displayName": "ByteDance First-Last-Frame to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": [
+              "seedance-1-5-pro-251215",
+              "seedance-1-0-pro-250528",
+              "seedance-1-0-lite-i2v-250428"
+            ],
+            "default": "seedance-1-0-lite-i2v-250428"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "The text prompt used to generate the video.",
+            "kind": "text",
+            "multiline": true,
+            "required": true
+          },
+          {
+            "name": "first_frame",
+            "label": "First frame",
+            "hint": "First frame to be used for the video.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "last_frame",
+            "label": "Last frame",
+            "hint": "Last frame to be used for the video.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "hint": "The resolution of the output video.",
+            "kind": "select",
+            "options": ["480p", "720p", "1080p"],
+            "default": "480p"
+          },
+          {
+            "name": "aspect_ratio",
+            "label": "Aspect ratio",
+            "hint": "The aspect ratio of the output video.",
+            "kind": "select",
+            "options": [
+              "adaptive",
+              "16:9",
+              "4:3",
+              "1:1",
+              "3:4",
+              "9:16",
+              "21:9"
+            ],
+            "default": "adaptive"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "hint": "The duration of the output video in seconds.",
+            "kind": "number",
+            "min": 3,
+            "max": 12,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "camera_fixed",
+            "label": "Camera fixed",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an \"AI generated\" watermark to the video.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "hint": "This parameter is ignored for any model except seedance-1-5-pro.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "seedance-1-5-pro-251215",
+          "prompt": "Shot 1: Medium shot at eye level. A capybara wearing amber sunglasses dances joyfully with both front paws raised and spread wide, mouth open in a happy smile. The background is a soft, blurred mix of coral pink, green, and reddish-brown tones suggesting a natural, whimsical setting. The lighting is bright and even. Upbeat, tropical house music plays.\n\nShot 2: The capybara continues dancing, bouncing rhythmically. The camera slowly dollies in while maintaining the same angle. As it moves, the natural background lighting begins to pulse and flicker, as if someone is slowly adjusting stage lights. Warm orange and pink tones start becoming more saturated and concentrated into distinct light sources.\n\nShot 3: The camera continues its slow push-in to a medium close-up. The background transforms: the diffused natural colors separate into distinct, circular bokeh light orbs - pinks and oranges become more defined. Small, glittering particles begin appearing in the air, catching the changing light. The capybara's dancing becomes more rhythmic and deliberate.\n\nShot 4: Cut to a close-up of the capybara's head from the front. Its paws come up to touch the sides of its head. The camera is steady. Bronze metallic DJ headphones smoothly lower into frame from above, and the capybara's paws guide them into place over its ears. The headphones' star emblems catch the growing stage light. Sound: a satisfying \"click\" as the headphones settle into place.\n\nShot 5: The camera cuts to a side profile medium shot. The capybara's amber sunglasses catch a bright light reflection that sweeps across the lenses from left to right. As the light passes, the sunglasses have transformed into gold-framed rectangular ones with pink-tinted lenses. The transformation is smooth and elegant. A fuzzy, light-colored jacket fades into visibility on its shoulders.\n\nShot 6: The camera arcs around to a slightly low-angle position while dollying in to the final framing - a medium close-up. The capybara shifts its pose, looking upward and to the right with a confident, engaged expression. The background completes its transformation into a full concert environment: brilliant bokeh orbs in vibrant pink, electric blue, and warm orange fill the frame. Sparkling particles float throughout. Rim lighting highlights the fur texture.\n\nFinal frame achieved. Sound: The music has smoothly evolved from tropical house into full EDM, with heavy bass, synthesizer leads, and the ambient sound of a cheering crowd. The bass hits are synchronized with the light pulses in the background.\n\nAudio design: A continuous 6-second musical transition where tropical house elements gradually layer with electronic elements - adding synthesizers, increasing bass, building energy - until it explodes into full EDM. Background ambience shifts from natural outdoor sounds to concert atmosphere with crowd noise.",
+          "resolution": "720p",
+          "aspect_ratio": "adaptive",
+          "duration": 5,
+          "seed": 999999,
+          "camera_fixed": false,
+          "watermark": false,
+          "generate_audio": true
+        }
       }
     ]
   },
@@ -3535,7 +6295,45 @@
         "description": "Generate high-quality, production-ready music from text prompts. Input descriptive text to create original soundtracks with streaming playback and precise duration control.",
         "tags": ["API", "Audio", "Text to Music"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_sonilo_t2m-1.webp",
-        "values": {}
+        "node": {
+          "id": "SoniloTextToMusic",
+          "displayName": "Sonilo Text to Music"
+        },
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Text prompt describing the music to generate.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "hint": "Target duration in seconds. Maximum: 6 minutes.",
+            "kind": "number",
+            "min": 1,
+            "max": 360,
+            "step": 1,
+            "default": 30
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "prompt": "Ethereal light music, soft atmosphere, clean and healing\n",
+          "duration": 60,
+          "seed": 0
+        }
       }
     ]
   },
@@ -3654,7 +6452,94 @@
         "description": "Synchronize a video's lip movements with a new audio track using the Sync Labs sync-3 model, which automatically adjusts the speaker’s mouth to match your uploaded audio. This workflow takes 1 video and 1 audio input to produce 1 synced video output. Ideal for dubbing foreign-language content, correcting mismatched dialogue in video production, or animating a static portrait to speak.",
         "tags": ["API", "Lip Sync"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_sync_so_lip_sync_video-1.webp",
-        "values": {}
+        "node": {
+          "id": "SyncLipSyncNode",
+          "displayName": "sync.so Lip Sync"
+        },
+        "fields": [
+          {
+            "name": "video",
+            "label": "Video",
+            "kind": "file",
+            "accept": "video",
+            "required": true
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "hint": "Speech audio to sync the mouth to.",
+            "kind": "file",
+            "accept": "audio",
+            "required": true
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "sync.so generation model.",
+            "kind": "select",
+            "options": ["sync-3"],
+            "default": "sync-3"
+          },
+          {
+            "name": "sync_mode",
+            "label": "Sync mode",
+            "kind": "select",
+            "options": ["bounce", "cut_off", "loop", "silence", "remap"],
+            "default": "bounce"
+          },
+          {
+            "name": "speaker_selection",
+            "label": "Speaker selection",
+            "kind": "select",
+            "options": ["default", "auto-detect", "coordinates"],
+            "default": "default"
+          },
+          {
+            "name": "speaker_frame",
+            "label": "Speaker frame",
+            "kind": "number",
+            "min": 0,
+            "max": 1000000,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "speaker_x",
+            "label": "Speaker x",
+            "kind": "number",
+            "min": 0,
+            "max": 4096,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "speaker_y",
+            "label": "Speaker y",
+            "kind": "number",
+            "min": 0,
+            "max": 4096,
+            "step": 1,
+            "default": 0
+          }
+        ],
+        "values": {
+          "seed": 999999,
+          "model": "sync-3",
+          "sync_mode": "bounce",
+          "speaker_selection": "default",
+          "speaker_frame": 0,
+          "speaker_x": 0,
+          "speaker_y": 0
+        }
       }
     ]
   },
@@ -3790,6 +6675,123 @@
         "description": "Enhance AI-generated images with Bloom 2, a creative upscaling model that adds new detail, texture, and visual elements while offering a Creativity control from 1–9 for subtle refinement or bold reinterpretation. It accepts 1 input image and produces 1 enhanced output, with optional Face Recovery, Color Preservation, and grain settings for fine-tuned results. Ideal for improving AI artwork and illustrations, adding realism to CG renders, and refining facial detail in generated portraits.",
         "tags": ["API", "Image Upscale"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_topaz_image_enhance_bloom2-1.webp",
+        "node": {
+          "id": "TopazImageEnhanceV2",
+          "displayName": "Topaz Image Enhance"
+        },
+        "fields": [
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["Reimagine", "Bloom 2", "Wonder 3.5"],
+            "default": "Reimagine"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "creativity",
+            "label": "Creativity",
+            "kind": "number",
+            "min": 1,
+            "max": 9,
+            "step": 1,
+            "default": 3
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed for reproducible generation.",
+            "kind": "number",
+            "min": 1,
+            "max": 999999,
+            "step": 1,
+            "default": 2
+          },
+          {
+            "name": "color_preservation",
+            "label": "Color preservation",
+            "hint": "Preserve the original colors.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "grain",
+            "label": "Grain",
+            "hint": "Add grain to the output image.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "grain_model",
+            "label": "Grain model",
+            "hint": "Is ignored if grain is disabled.",
+            "kind": "select",
+            "options": ["silver", "gaussian", "grey"],
+            "default": "silver"
+          },
+          {
+            "name": "grain_strength",
+            "label": "Grain strength",
+            "hint": "Strength of the grain effect. Is ignored if grain is disabled.",
+            "kind": "number",
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "default": 0.5
+          },
+          {
+            "name": "grain_size",
+            "label": "Grain size",
+            "hint": "Size of the grain particles. Is ignored if grain is disabled.",
+            "kind": "number",
+            "min": 1,
+            "max": 5,
+            "step": 0.1,
+            "default": 1
+          },
+          {
+            "name": "grain_density",
+            "label": "Grain density",
+            "hint": "Intensity of the grain effect. Is ignored if grain is disabled.",
+            "kind": "number",
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "default": 0.5
+          },
+          {
+            "name": "output_width",
+            "label": "Output width",
+            "kind": "number",
+            "min": 0,
+            "max": 32000,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "output_height",
+            "label": "Output height",
+            "kind": "number",
+            "min": 0,
+            "max": 32000,
+            "step": 1,
+            "default": 0
+          }
+        ],
         "values": {
           "model": "Bloom 2",
           "prompt": "",
@@ -3811,7 +6813,132 @@
         "description": "Professional image enhancement using Topaz's Reimagine model with face enhancement and detail restoration.",
         "tags": ["Image Upscale", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_topaz_image_enhance-1.webp",
-        "values": {}
+        "node": {
+          "id": "TopazImageEnhance",
+          "displayName": "Topaz Image Enhance (Legacy)"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["Reimagine"],
+            "default": "Reimagine"
+          },
+          {
+            "name": "image",
+            "label": "Image",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Optional text prompt for creative upscaling guidance.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "subject_detection",
+            "label": "Subject detection",
+            "kind": "select",
+            "options": ["All", "Foreground", "Background"],
+            "default": "All"
+          },
+          {
+            "name": "face_enhancement",
+            "label": "Face enhancement",
+            "hint": "Enhance faces (if present) during processing.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "face_enhancement_creativity",
+            "label": "Face enhancement creativity",
+            "hint": "Set the creativity level for face enhancement.",
+            "kind": "number",
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "default": 0
+          },
+          {
+            "name": "face_enhancement_strength",
+            "label": "Face enhancement strength",
+            "hint": "Controls how sharp enhanced faces are relative to the background.",
+            "kind": "number",
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "default": 1
+          },
+          {
+            "name": "crop_to_fill",
+            "label": "Crop to fill",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "output_width",
+            "label": "Output width",
+            "hint": "Zero value means to calculate automatically (usually it will be original size or output_height if specified).",
+            "kind": "number",
+            "min": 0,
+            "max": 32000,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "output_height",
+            "label": "Output height",
+            "hint": "Zero value means to output in the same height as original or output width.",
+            "kind": "number",
+            "min": 0,
+            "max": 32000,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "creativity",
+            "label": "Creativity",
+            "kind": "number",
+            "min": 1,
+            "max": 9,
+            "step": 1,
+            "default": 3
+          },
+          {
+            "name": "face_preservation",
+            "label": "Face preservation",
+            "hint": "Preserve subjects' facial identity.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "color_preservation",
+            "label": "Color preservation",
+            "hint": "Preserve the original colors.",
+            "kind": "toggle",
+            "default": true
+          }
+        ],
+        "values": {
+          "model": "Reimagine",
+          "prompt": "Enhance this vintage black-and-white photograph of a girl with fairy cutouts in a natural, wooded setting. Increase sharpness, preserve the vintage film grain texture, and enhance the details of the fairy figures, the girl’s facial features, and the surrounding foliage. Maintain the historical aesthetic while making the image clearer and more defined.",
+          "subject_detection": "All",
+          "face_enhancement": true,
+          "face_enhancement_creativity": 0,
+          "face_enhancement_strength": 1,
+          "crop_to_fill": false,
+          "output_width": 0,
+          "output_height": 0,
+          "creativity": 3,
+          "face_preservation": true,
+          "color_preservation": false
+        }
       }
     ]
   },
@@ -4000,7 +7127,78 @@
         "description": "Upload an image and provide a text prompt to generate a 1-16 second video with synchronized audio and intelligent scene transitions.",
         "tags": ["API", "Image to Video", "Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_vidu_q3_image_to_video-1.webp",
-        "values": {}
+        "node": {
+          "id": "Vidu3ImageToVideoNode",
+          "displayName": "Vidu Q3 Image-to-Video Generation"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model to use for video generation.",
+            "kind": "select",
+            "options": ["viduq3-pro", "viduq3-turbo"],
+            "default": "viduq3-pro"
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "hint": "Resolution of the output video.",
+            "kind": "select",
+            "options": ["720p", "1080p", "2K"],
+            "default": "720p"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "hint": "Duration of the output video in seconds.",
+            "kind": "number",
+            "min": 1,
+            "max": 16,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "image",
+            "label": "Image",
+            "hint": "An image to be used as the start frame of the generated video.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "An optional text prompt for video generation (max 2000 characters).",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 1
+          }
+        ],
+        "values": {
+          "model": "viduq3-pro",
+          "resolution": "720p",
+          "duration": 6,
+          "audio": true,
+          "prompt": "Shot 1 (0-2s): Boy turns alarmed, shouts: \"Run! NOW!\" They break pose, start running right, exit frame. Snow kicks up.\nShot 2 (2-4s): Side tracking. Running through forest hand-in-hand, hair streaming, trees blur past. Look back fearfully.\nShot 3 (4-6s): Low angle. Leap over log, airborne slow-mo, land and run into mist. Dark shapes pursue behind.\nSound: shout, rapid footsteps, breathing, branches, pursuit sounds. Color: increased contrast, dark shadows behind.",
+          "seed": 999999
+        }
       },
       {
         "name": "api_vidu_q2_i2v",
@@ -4008,7 +7206,77 @@
         "description": "Transform static images into dynamic 1080p videos with cinematic camera control, multi-subject consistency",
         "tags": ["Image to Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_vidu_q2_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "Vidu2ImageToVideoNode",
+          "displayName": "Vidu2 Image-to-Video Generation"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["viduq2-pro-fast", "viduq2-pro", "viduq2-turbo"],
+            "default": "viduq2-pro-fast"
+          },
+          {
+            "name": "image",
+            "label": "Image",
+            "hint": "An image to be used as the start frame of the generated video.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "An optional text prompt for video generation (max 2000 characters).",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 1,
+            "max": 10,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 1
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["720p", "1080p"],
+            "default": "720p"
+          },
+          {
+            "name": "movement_amplitude",
+            "label": "Movement amplitude",
+            "hint": "The movement amplitude of objects in the frame.",
+            "kind": "select",
+            "options": ["auto", "small", "medium", "large"],
+            "default": "auto"
+          }
+        ],
+        "values": {
+          "model": "viduq2-pro-fast",
+          "prompt": "The bear takes a slow, appreciative sip from the steaming mug. Thick, realistic steam rises from the cup and curls around its nose. The bear closes its eyes in contentment, and its fuzzy ears twitch slightly. The texture of the knitted sweater is highly detailed as it moves with the bear's breathing.",
+          "duration": 5,
+          "seed": 999999,
+          "resolution": "720p",
+          "movement_amplitude": "auto"
+        }
       }
     ]
   },
@@ -4126,7 +7394,106 @@
         "description": "Create up to 30 seconds of high-fidelity video from a single image using Wan 3.0, which supports text, image, audio, and document inputs for versatile scene generation. Produces authentic, realistic footage with unique facial details and believable motion in one pass. Ideal for cinematic storytelling, product visualization, and documentary-style scene recreation.",
         "tags": ["API", "Image to Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan3_0_i2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "Wan3ImageToVideoApi",
+          "displayName": "Wan 3.0 Image to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["wan3.0-video", "wan3.0-video-prime"],
+            "default": "wan3.0-video"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["1080P", "720P", "480P"],
+            "default": "1080P"
+          },
+          {
+            "name": "ratio",
+            "label": "Ratio",
+            "kind": "select",
+            "options": ["adaptive", "16:9", "9:16", "1:1", "4:3", "3:4"],
+            "default": "adaptive"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "select",
+            "options": ["auto"],
+            "default": "auto"
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "hint": "Whether the output video contains an audio track.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "prompt_extend",
+            "label": "Prompt extend",
+            "hint": "Whether to enhance the prompt with AI assistance.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "first_frame",
+            "label": "First frame",
+            "hint": "First frame image.",
+            "kind": "file",
+            "accept": "image",
+            "required": true
+          },
+          {
+            "name": "last_frame",
+            "label": "Last frame",
+            "hint": "Last frame image. The model generates a video transitioning from first to last frame.",
+            "kind": "file",
+            "accept": "image",
+            "required": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 42
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "wan3.0-video",
+          "prompt": "Generate a 5-second, 16:9 video using the input image as the first frame: a giant black beetle carrying bundled cargo and a hooded rider strides steadily across a slope carpeted in bright red moss, passing through a mist-shrouded alien fantasy landscape.\n\nMotion (keep the composition and subjects unchanged, animate only these elements):\n- The beetle's six segmented legs step alternately, pressing soft dents into the fluffy red moss, its body bobbing gently with each stride; its huge antennae sway slightly as it probes the air\n- The rider's robe drifts backward in the oncoming wind, the long staff staying pointed forward\n- The bundled cargo bobs gently with each step, ropes swaying\n- The mist ahead surges slowly and parts as the beetle pushes through, wisps flowing between its legs; fine spores and particles drift in the air above the red moss\n- The fog over the rocky peaks in the background rolls slowly\n\nCamera: keep the original side view with a slight low angle, slow lateral tracking shot following the beetle's forward motion, moving steadily from left to right across 5 seconds; no cuts, no rotation.\n\nAudio design: layered ambience: the dull thud of beetle feet on moss, soft rustle of drifting mist, distant wind through the valley, faint creak of shell joints; no dialogue, no music or a single restrained low string note.\n\nNegative constraints: do not change the subjects' shapes or the composition, no new characters, no text, no subtitles, no black frames, no camera shake, no excessive distortion.",
+          "resolution": "720P",
+          "ratio": "adaptive",
+          "duration": "auto",
+          "audio": true,
+          "prompt_extend": true,
+          "seed": 999999,
+          "watermark": false
+        }
       },
       {
         "name": "api_wan3_0_t2v",
@@ -4291,7 +7658,96 @@
         "description": "Creating identity-preserved videos with natural movement and cinematic quality.",
         "tags": ["API", "Character Reference", "Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan_r2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "WanReferenceVideoApi",
+          "displayName": "Wan Reference to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["wan2.6-r2v"],
+            "default": "wan2.6-r2v"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "hint": "Negative prompt describing what to avoid.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "size",
+            "label": "Size",
+            "kind": "select",
+            "options": [
+              "720p: 1:1 (960x960)",
+              "720p: 16:9 (1280x720)",
+              "720p: 9:16 (720x1280)",
+              "720p: 4:3 (1088x832)",
+              "720p: 3:4 (832x1088)",
+              "1080p: 1:1 (1440x1440)",
+              "1080p: 16:9 (1920x1080)",
+              "1080p: 9:16 (1080x1920)",
+              "1080p: 4:3 (1632x1248)",
+              "1080p: 3:4 (1248x1632)"
+            ],
+            "default": "720p: 1:1 (960x960)"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 5,
+            "max": 10,
+            "step": 5,
+            "default": 5
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "shot_type",
+            "label": "Shot type",
+            "kind": "select",
+            "options": ["single", "multi"],
+            "default": "single"
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "wan2.6-r2v",
+          "prompt": "Shot 1: Extreme close-up of Character 1’s determined face, hands tightly gripping a spear, rain cascading down polished armor. Character 1 speaks in fluent English with a gravelly voice: \"I will not yield!\" Heavy, labored breathing; raindrops striking metal with sharp, clinking sounds. Hyper-detailed, gritty texture.\n\nShot 2: Close-up of Character 2’s piercing, intense gaze, streaks of blood smudged across the face, weapon held in a battle-ready stance. Character 2 responds in clear English with a cold tone: \"Then this ends now.\" Thunder rumbles in the background, raindrops splashing violently against the ground. High contrast, dramatic lighting.\n\nShot 3: Epic wide shot: Two characters stand 20 meters apart, weapons raised, thick smoke swirling between them under roiling storm clouds. Eyes locked in a death stare, tension palpable. Wind howls fiercely, distant battle cries echo. All environmental sounds and dialogue must be in English. Cinematic, epic confrontation scene, film-grade composition.",
+          "negative_prompt": "",
+          "size": "720p: 16:9 (1280x720)",
+          "duration": 5,
+          "seed": 999999,
+          "shot_type": "multi",
+          "watermark": false
+        }
       },
       {
         "name": "api_wan_text_to_video",
@@ -4299,7 +7755,126 @@
         "description": "Generate videos with synchronized audio, enhanced motion, and superior quality.",
         "tags": ["Image to Video", "Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan_text_to_video-1.webp",
-        "values": {}
+        "node": {
+          "id": "WanTextToVideoApi",
+          "displayName": "Wan Text to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model to use.",
+            "kind": "select",
+            "options": ["wan2.5-t2v-preview", "wan2.6-t2v"],
+            "default": "wan2.6-t2v"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Prompt describing the elements and visual features. Supports English and Chinese.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "hint": "Negative prompt describing what to avoid.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "size",
+            "label": "Size",
+            "kind": "select",
+            "options": [
+              "480p: 1:1 (624x624)",
+              "480p: 16:9 (832x480)",
+              "480p: 9:16 (480x832)",
+              "720p: 1:1 (960x960)",
+              "720p: 16:9 (1280x720)",
+              "720p: 9:16 (720x1280)",
+              "720p: 4:3 (1088x832)",
+              "720p: 3:4 (832x1088)",
+              "1080p: 1:1 (1440x1440)",
+              "1080p: 16:9 (1920x1080)",
+              "1080p: 9:16 (1080x1920)",
+              "1080p: 4:3 (1632x1248)",
+              "1080p: 3:4 (1248x1632)"
+            ],
+            "default": "720p: 1:1 (960x960)"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "hint": "A 15-second duration is available only for the Wan 2.6 model.",
+            "kind": "number",
+            "min": 5,
+            "max": 15,
+            "step": 5,
+            "default": 5
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "hint": "Audio must contain a clear, loud voice, without extraneous noise or background music.",
+            "kind": "file",
+            "accept": "audio",
+            "required": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "hint": "If no audio input is provided, generate audio automatically.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "prompt_extend",
+            "label": "Prompt extend",
+            "hint": "Whether to enhance the prompt with AI assistance.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "shot_type",
+            "label": "Shot type",
+            "kind": "select",
+            "options": ["single", "multi"],
+            "default": "single"
+          }
+        ],
+        "values": {
+          "model": "wan2.5-t2v-preview",
+          "prompt": "In a dimly lit room, the detective sits at his desk and opens the file bag. The moment he sees the contents of the file clearly, the camera zooms in for a close-up, showing his pupils constricting by 30% and his expression turning tense.",
+          "negative_prompt": "",
+          "size": "1080p: 16:9 (1920x1080)",
+          "duration": 5,
+          "seed": 999999,
+          "generate_audio": true,
+          "prompt_extend": true,
+          "watermark": false
+        }
       }
     ]
   },
@@ -4448,7 +8023,127 @@
         "description": "Generate high-quality videos from text prompts with enhanced image quality, smoother motion, 1080P resolution support, and improved prompt understanding for natural, professional results.",
         "tags": ["Text to Video", "Video", "API"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan2_6_t2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "WanTextToVideoApi",
+          "displayName": "Wan Text to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "hint": "Model to use.",
+            "kind": "select",
+            "options": ["wan2.5-t2v-preview", "wan2.6-t2v"],
+            "default": "wan2.6-t2v"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Prompt describing the elements and visual features. Supports English and Chinese.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "hint": "Negative prompt describing what to avoid.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "size",
+            "label": "Size",
+            "kind": "select",
+            "options": [
+              "480p: 1:1 (624x624)",
+              "480p: 16:9 (832x480)",
+              "480p: 9:16 (480x832)",
+              "720p: 1:1 (960x960)",
+              "720p: 16:9 (1280x720)",
+              "720p: 9:16 (720x1280)",
+              "720p: 4:3 (1088x832)",
+              "720p: 3:4 (832x1088)",
+              "1080p: 1:1 (1440x1440)",
+              "1080p: 16:9 (1920x1080)",
+              "1080p: 9:16 (1080x1920)",
+              "1080p: 4:3 (1632x1248)",
+              "1080p: 3:4 (1248x1632)"
+            ],
+            "default": "720p: 1:1 (960x960)"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "hint": "A 15-second duration is available only for the Wan 2.6 model.",
+            "kind": "number",
+            "min": 5,
+            "max": 15,
+            "step": 5,
+            "default": 5
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "hint": "Audio must contain a clear, loud voice, without extraneous noise or background music.",
+            "kind": "file",
+            "accept": "audio",
+            "required": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "generate_audio",
+            "label": "Generate audio",
+            "hint": "If no audio input is provided, generate audio automatically.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "prompt_extend",
+            "label": "Prompt extend",
+            "hint": "Whether to enhance the prompt with AI assistance.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          },
+          {
+            "name": "shot_type",
+            "label": "Shot type",
+            "kind": "select",
+            "options": ["single", "multi"],
+            "default": "single"
+          }
+        ],
+        "values": {
+          "model": "wan2.6-t2v",
+          "prompt": "Edge light, side light, soft light, medium close-up, dusk, sunset, central composition, warm tones with low saturation, telephoto lens. A woman with voluminous brown curly hair stands elegantly in front of a magnificent stained glass window. She is wearing a flowing white dress, her hair neatly combed back, and her soft facial contours are gently illuminated by the colorful light filtering through the window from outside. The woman is talking to someone outside the frame, yet there is a hint of sadness in her eyes, adding a layer of depth to her mysterious temperament. The background is dim, with strong light and shadow contrast, further highlighting the tension of the character's emotions. The stained glass, bathed in the afterglow of the setting sun, casts colorful light and shadows, enhancing the artistic sense and atmosphere of the overall picture.",
+          "negative_prompt": "low quality, blurry, out of focus, jittery camera, excessive shake, warped car body, deformed wheels, extra wheels, bad reflections, artifacts, banding, flicker, text, watermark, logo, oversaturated, noisy",
+          "size": "720p: 16:9 (1280x720)",
+          "duration": 5,
+          "seed": 999999,
+          "generate_audio": true,
+          "prompt_extend": true,
+          "watermark": false,
+          "shot_type": "single"
+        }
       }
     ]
   },
@@ -4584,7 +8279,92 @@
         "description": "Upload a video and corresponding images to edit and replace characters or scenes using the Wan2.7 model.",
         "tags": ["API", "Video", "Video Edit"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan2_7_video_edit-1.webp",
-        "values": {}
+        "node": {
+          "id": "Wan2VideoEditApi",
+          "displayName": "Wan 2.7 Video Edit"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["wan2.7-videoedit"],
+            "default": "wan2.7-videoedit"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "hint": "Editing instructions or style transfer requirements.",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["720P", "1080P"],
+            "default": "720P"
+          },
+          {
+            "name": "ratio",
+            "label": "Ratio",
+            "hint": "Aspect ratio. If not changed, approximates the input video ratio.",
+            "kind": "select",
+            "options": ["16:9", "9:16", "1:1", "4:3", "3:4"],
+            "default": "16:9"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "select",
+            "options": ["auto", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+            "default": "auto"
+          },
+          {
+            "name": "video",
+            "label": "Video",
+            "hint": "The video to edit.",
+            "kind": "file",
+            "accept": "video",
+            "required": true
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "audio_setting",
+            "label": "Audio setting",
+            "kind": "select",
+            "options": ["auto", "origin"],
+            "default": "auto"
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "wan2.7-videoedit",
+          "prompt": "Replace the two elderly men with the bear from image1 and the dog from image2. The bear sits on the left side of the chess table, the dog sits on the right. Both retain the original chess-playing posture and movements. Keep the wooden table, chess pieces, warm lamp lighting, and cozy room atmosphere unchanged. Add ambient sounds of a crackling fireplace and the soft click of chess pieces being placed.\n",
+          "resolution": "720P",
+          "ratio": "16:9",
+          "duration": "auto",
+          "seed": 999999,
+          "audio_setting": "auto",
+          "watermark": false
+        }
       },
       {
         "name": "api_wan2_7_t2v",
@@ -4592,7 +8372,101 @@
         "description": "Generate videos from text prompts using Wan 2.7. Supports audio reference to create lip-synced video",
         "tags": ["API", "Lip Sync", "Text to Video", "Video"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan2_7_t2v-1.webp",
-        "values": {}
+        "node": {
+          "id": "Wan2TextToVideoApi",
+          "displayName": "Wan 2.7 Text to Video"
+        },
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "kind": "select",
+            "options": ["wan2.7-t2v"],
+            "default": "wan2.7-t2v"
+          },
+          {
+            "name": "prompt",
+            "label": "Prompt",
+            "kind": "text",
+            "multiline": true,
+            "required": true,
+            "default": ""
+          },
+          {
+            "name": "negative_prompt",
+            "label": "Negative prompt",
+            "hint": "Negative prompt describing what to avoid.",
+            "kind": "text",
+            "multiline": true,
+            "required": false,
+            "default": ""
+          },
+          {
+            "name": "resolution",
+            "label": "Resolution",
+            "kind": "select",
+            "options": ["720P", "1080P"],
+            "default": "720P"
+          },
+          {
+            "name": "ratio",
+            "label": "Ratio",
+            "kind": "select",
+            "options": ["16:9", "9:16", "1:1", "4:3", "3:4"],
+            "default": "16:9"
+          },
+          {
+            "name": "duration",
+            "label": "Duration",
+            "kind": "number",
+            "min": 2,
+            "max": 15,
+            "step": 1,
+            "default": 5
+          },
+          {
+            "name": "audio",
+            "label": "Audio",
+            "kind": "file",
+            "accept": "audio",
+            "required": false
+          },
+          {
+            "name": "seed",
+            "label": "Seed",
+            "hint": "Seed to use for generation.",
+            "kind": "number",
+            "min": 0,
+            "max": 999999,
+            "step": 1,
+            "default": 0
+          },
+          {
+            "name": "prompt_extend",
+            "label": "Prompt extend",
+            "hint": "Whether to enhance the prompt with AI assistance.",
+            "kind": "toggle",
+            "default": true
+          },
+          {
+            "name": "watermark",
+            "label": "Watermark",
+            "hint": "Whether to add an AI-generated watermark to the result.",
+            "kind": "toggle",
+            "default": false
+          }
+        ],
+        "values": {
+          "model": "wan2.7-t2v",
+          "prompt": "Golden hour backlight, close-up. A florist in a small shop arranges a burst of peonies and eucalyptus, her movements deft and precise. Petals fall to the worn wooden counter, and she pauses to hold a single pale bloom to the light, examining it before tucking it into the bouquet. The shop glows amber through the glass windows.\n",
+          "negative_prompt": "",
+          "resolution": "720P",
+          "ratio": "16:9",
+          "duration": 5,
+          "seed": 999999,
+          "prompt_extend": true,
+          "watermark": false
+        }
       }
     ]
   },
@@ -4661,7 +8535,29 @@
         "description": "Upload a video to upscale it to 720p, 1080p, 2K, or 4K. The workflow enhances detail, reduces artifacts, and ensures consistent motion for a high-quality, natural-looking output.",
         "tags": ["API", "Video Upscale"],
         "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wavespeed_flshvsr_video_upscale-1.webp",
-        "values": {}
+        "node": {
+          "id": "WavespeedFlashVSRNode",
+          "displayName": "FlashVSR Video Upscale"
+        },
+        "fields": [
+          {
+            "name": "video",
+            "label": "Video",
+            "kind": "file",
+            "accept": "video",
+            "required": true
+          },
+          {
+            "name": "target_resolution",
+            "label": "Target resolution",
+            "kind": "select",
+            "options": ["720p", "1080p", "2K", "4K"],
+            "default": "720p"
+          }
+        ],
+        "values": {
+          "target_resolution": "1080p"
+        }
       }
     ]
   }

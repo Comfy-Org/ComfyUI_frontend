@@ -53,17 +53,36 @@ test.describe('Workshop catalog', () => {
 })
 
 test.describe('Model playground', () => {
-  test('sends signed-out visitors to the Cloud login', async ({ page }) => {
+  test('signs in through the Cloud-style login and returns to the playground', async ({
+    page
+  }) => {
     await page.goto(MODEL_PATH)
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'signedOut')
-    await expect(run).toHaveAttribute(
-      'href',
-      'https://cloud.comfy.org/cloud/login'
-    )
+    await expect(run).toHaveAttribute('href', /\/workshop\/sign-in\?return=/)
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-sign-in')
-    ).toHaveAttribute('href', 'https://cloud.comfy.org/cloud/login')
+    ).toHaveAttribute('href', /\/workshop\/sign-in\?return=/)
+
+    const prompt = 'a capybara in a trench coat'
+    await page.getByTestId('field-prompt').fill(prompt)
+    await run.click()
+    await expect(page).toHaveURL(/\/workshop\/sign-in/)
+    await expect(page.getByTestId('workshop-sign-in')).toHaveAttribute(
+      'data-return',
+      MODEL_PATH
+    )
+    await page.getByTestId('sign-in-github').click()
+
+    await expect(page).toHaveURL(new RegExp(`${MODEL_PATH}$`))
+    await expect(page.getByTestId('signed-in-notice')).toBeVisible({
+      timeout: 15_000
+    })
+    await expect(page.getByTestId('run-button')).toHaveAttribute(
+      'data-gate',
+      'ready'
+    )
+    await expect(page.getByTestId('field-prompt')).toHaveValue(prompt)
   })
 
   test('validates the prompt, runs, cancels and completes', async ({
@@ -99,12 +118,18 @@ test.describe('Model playground', () => {
     ).toContainText('5,832')
   })
 
-  test('a new account starts with welcome credits', async ({ page }) => {
+  test('a new account starts without credits and is sent to upgrade', async ({
+    page
+  }) => {
     await page.goto(MODEL_PATH)
     await useAccount(page, 'new')
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toContainText('35')
+    ).toContainText('No credits')
+    await expect(page.getByTestId('run-button')).toHaveAttribute(
+      'data-gate',
+      'noCredits'
+    )
     await page
       .getByTestId('desktop-nav-cta')
       .getByTestId('header-account')
@@ -112,9 +137,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('account-upgrade')).toBeVisible()
   })
 
-  test('tops up credits in place when the balance is too low', async ({
-    page
-  }) => {
+  test('an empty balance sends the run to Comfy Platform', async ({ page }) => {
     await page.goto(MODEL_PATH)
     await useAccount(page, 'existing')
     await page.getByTestId('prototype-tweaks').click()
@@ -123,21 +146,10 @@ test.describe('Model playground', () => {
 
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
-    await run.click()
-    const dialog = page.getByTestId('top-up-dialog')
-    await expect(dialog.getByTestId('top-up-insufficient')).toBeVisible()
-    await dialog.getByTestId('top-up-preset-25').click()
-    await expect(dialog.getByTestId('top-up-credits')).toHaveValue('5275')
-    await dialog.getByTestId('top-up-continue').click()
-    await dialog.getByTestId('top-up-pay').click()
-    await expect(dialog.getByTestId('top-up-done')).toBeVisible({
-      timeout: 10_000
-    })
-    await page.getByRole('button', { name: 'Done' }).click()
-    await expect(run).toHaveAttribute('data-gate', 'ready')
+    await expect(run).toHaveAttribute('href', /platform/)
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toContainText('5,275')
+    ).toHaveAttribute('href', /platform/)
   })
 
   test('API tab mirrors the form values', async ({ page }) => {

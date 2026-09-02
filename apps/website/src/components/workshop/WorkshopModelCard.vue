@@ -32,7 +32,7 @@ const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
   image: 'from-primary-comfy-plum to-secondary-deep-plum',
   video: 'from-secondary-mauve to-primary-comfy-plum',
   audio: 'from-illustration-forest to-primary-comfy-ink-light',
-  '3d': 'from-primary-comfy-orange/70 to-primary-comfy-ink-light',
+  '3d': 'from-primary-comfy-yellow/70 to-primary-comfy-ink-light',
   text: 'from-secondary-cool-gray to-primary-comfy-ink-light',
   other: 'from-primary-comfy-ink-light to-primary-comfy-ink'
 }
@@ -98,7 +98,7 @@ const pillClass =
         </span>
         <span
           v-if="model.status"
-          :class="cn(pillClass, 'bg-primary-comfy-orange/80')"
+          :class="cn(pillClass, 'bg-primary-comfy-yellow/80')"
         >
           {{
             model.status === 'deprecated'

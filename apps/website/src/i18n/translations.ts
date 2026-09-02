@@ -8229,63 +8229,6 @@ Enterprise`
     'zh-CN': '升级以添加积分'
   },
 
-  // Workshop – top-up dialog (mirrors credits.topUp in the Cloud app)
-  'workshop.topUp.addMoreCredits': {
-    en: 'Add more credits',
-    'zh-CN': '添加更多积分'
-  },
-  'workshop.topUp.addMoreCreditsToRun': {
-    en: 'Add more credits to run',
-    'zh-CN': '添加更多积分以运行'
-  },
-  'workshop.topUp.insufficientMessage': {
-    en: "You don't have enough credits to run this model.",
-    'zh-CN': '你的积分不足以运行该模型。'
-  },
-  'workshop.topUp.selectAmount': { en: 'Select amount', 'zh-CN': '选择金额' },
-  'workshop.topUp.youPay': { en: 'Amount (USD)', 'zh-CN': '金额（美元）' },
-  'workshop.topUp.youGet': { en: 'Credits', 'zh-CN': '积分' },
-  'workshop.topUp.minRequired': {
-    en: '{credits} credits minimum',
-    'zh-CN': '最少 {credits} 积分'
-  },
-  'workshop.topUp.maxAllowed': {
-    en: '{credits} credits maximum.',
-    'zh-CN': '最多 {credits} 积分。'
-  },
-  'workshop.topUp.addCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
-  'workshop.topUp.viewPricing': {
-    en: 'View pricing details',
-    'zh-CN': '查看定价详情'
-  },
-  'workshop.topUp.confirmTitle': { en: 'Confirm', 'zh-CN': '确认' },
-  'workshop.topUp.confirmSubtitle': {
-    en: 'Credits are added to this workspace as soon as payment completes.',
-    'zh-CN': '付款完成后积分会立即添加到该工作区。'
-  },
-  'workshop.topUp.totalDueToday': {
-    en: 'Total due today',
-    'zh-CN': '今日应付总额'
-  },
-  'workshop.topUp.chargedImmediatelyNote': {
-    en: 'Your saved payment method is charged immediately.',
-    'zh-CN': '将立即从你保存的付款方式扣款。'
-  },
-  'workshop.topUp.payAmount': { en: 'Pay {amount}', 'zh-CN': '支付 {amount}' },
-  'workshop.topUp.processing': {
-    en: 'Confirming your payment…',
-    'zh-CN': '正在确认付款…'
-  },
-  'workshop.topUp.purchaseSuccess': {
-    en: 'Credits added successfully!',
-    'zh-CN': '积分添加成功！'
-  },
-  'workshop.topUp.doneBody': {
-    en: 'Your balance is updated. Hit Run when ready.',
-    'zh-CN': '余额已更新。准备好后点击运行。'
-  },
-  'workshop.topUp.done': { en: 'Done', 'zh-CN': '完成' },
-
   // Workshop – catalog pages
   'workshop.title': { en: 'Workshop', 'zh-CN': '工作坊' },
   'workshop.meta.title': {
@@ -8298,13 +8241,13 @@ Enterprise`
   },
   'workshop.hero.eyebrow': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
   'workshop.hero.heading': {
-    en: 'Try models and workflows in your browser',
-    'zh-CN': '在浏览器中试用模型和工作流'
+    en: 'The best models in visual AI, ready to run',
+    'zh-CN': '视觉 AI 顶尖模型，即刻运行'
   },
   'workshop.hero.subtitle': {
-    en: 'Every partner model on Comfy Router, ready to run. Sign in, pick a model, hit Run.',
+    en: 'Image, video, audio and 3D from every partner on Comfy Router. No install, no setup: pick a model, set your inputs, hit Run. You see the price before every run.',
     'zh-CN':
-      'Comfy Router 上的每个合作伙伴模型都可直接运行。登录、选择模型、点击运行。'
+      'Comfy Router 全部合作伙伴的图像、视频、音频与 3D 模型。无需安装配置：选择模型、设置输入、点击运行。每次运行前都会显示价格。'
   },
   'workshop.tabs.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.tabs.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
@@ -8318,6 +8261,109 @@ Enterprise`
   'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
   'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
+  'workshop.filter.providerLabel': {
+    en: 'Filter by provider',
+    'zh-CN': '按提供方筛选'
+  },
+  'workshop.filter.provider': { en: 'Any provider', 'zh-CN': '任意提供方' },
+  'workshop.filter.taskLabel': { en: 'Filter by task', 'zh-CN': '按任务筛选' },
+  'workshop.filter.task': { en: 'Any task', 'zh-CN': '任意任务' },
+  'workshop.input.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.input.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.input.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.input.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.button': { en: 'Filter', 'zh-CN': '筛选' },
+  'workshop.filter.modality': { en: 'Modality', 'zh-CN': '模态' },
+  'workshop.filter.providerGroup': { en: 'Provider', 'zh-CN': '提供方' },
+  'workshop.filter.taskGroup': { en: 'Task', 'zh-CN': '任务' },
+  'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
+  'workshop.sort.popular': { en: 'Most popular', 'zh-CN': '最受欢迎' },
+  'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
+  'workshop.sort.priceAsc': {
+    en: 'Price: low to high',
+    'zh-CN': '价格：从低到高'
+  },
+  'workshop.sort.priceDesc': {
+    en: 'Price: high to low',
+    'zh-CN': '价格：从高到低'
+  },
+  'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
+  'workshop.example.loaded': { en: 'Example loaded:', 'zh-CN': '已加载示例：' },
+  'workshop.example.clear': {
+    en: 'Back to the default inputs',
+    'zh-CN': '恢复默认输入'
+  },
+  'workshop.signIn.meta.title': {
+    en: 'Sign in · Comfy Workshop',
+    'zh-CN': '登录 · Comfy 工作坊'
+  },
+  'workshop.signIn.title': {
+    en: 'Log in to your account',
+    'zh-CN': '登录您的账户'
+  },
+  'workshop.signIn.newUser': {
+    en: 'New to Comfy?',
+    'zh-CN': '初次使用 Comfy？'
+  },
+  'workshop.signIn.signUpHere': { en: 'Sign up here', 'zh-CN': '在此注册' },
+  'workshop.signIn.freeRuns': {
+    en: 'to get 5 free runs.',
+    'zh-CN': '即可获得 5 次免费运行。'
+  },
+  'workshop.signIn.google': {
+    en: 'Log in with Google',
+    'zh-CN': '使用 Google 登录'
+  },
+  'workshop.signIn.github': {
+    en: 'Log in with Github',
+    'zh-CN': '使用 Github 登录'
+  },
+  'workshop.signIn.useEmail': { en: 'Use email instead', 'zh-CN': '改用邮箱' },
+  'workshop.signIn.backToSocial': {
+    en: 'Sign up with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github'
+  },
+  'workshop.signIn.emailLabel': { en: 'Email', 'zh-CN': '邮箱' },
+  'workshop.signIn.emailPlaceholder': {
+    en: 'Enter your email',
+    'zh-CN': '输入您的邮箱'
+  },
+  'workshop.signIn.passwordLabel': { en: 'Password', 'zh-CN': '密码' },
+  'workshop.signIn.passwordPlaceholder': {
+    en: 'Enter your password',
+    'zh-CN': '输入您的密码'
+  },
+  'workshop.signIn.forgotPassword': {
+    en: 'Forgot password?',
+    'zh-CN': '忘记密码？'
+  },
+  'workshop.signIn.submit': { en: 'Sign in', 'zh-CN': '登录' },
+  'workshop.signUp.title': { en: 'Create an account', 'zh-CN': '创建账户' },
+  'workshop.signUp.haveAccount': {
+    en: 'Already have an account?',
+    'zh-CN': '已有账户？'
+  },
+  'workshop.signUp.signIn': { en: 'Sign in', 'zh-CN': '登录' },
+  'workshop.signUp.google': {
+    en: 'Sign up with Google',
+    'zh-CN': '使用 Google 注册'
+  },
+  'workshop.signUp.github': {
+    en: 'Sign up with Github',
+    'zh-CN': '使用 Github 注册'
+  },
+  'workshop.signUp.submit': { en: 'Sign up', 'zh-CN': '注册' },
+  'workshop.signUp.terms': {
+    en: 'By clicking "Next" or "Sign Up", you agree to our',
+    'zh-CN': '点击"下一步"或"注册"即表示您同意我们的'
+  },
+  'workshop.signUp.termsLink': { en: 'Terms of Use', 'zh-CN': '使用条款' },
+  'workshop.signUp.and': { en: 'and', 'zh-CN': '和' },
+  'workshop.signUp.privacyLink': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
+  'workshop.signIn.prototypeNote': {
+    en: 'Prototype: this page mirrors the Cloud login. Real accounts sign in at',
+    'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
+  },
   'workshop.count.models': { en: 'models', 'zh-CN': '个模型' },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
@@ -8420,6 +8466,14 @@ Enterprise`
     en: 'File type not supported',
     'zh-CN': '不支持的文件类型'
   },
+  'workshop.form.outOfRange': {
+    en: 'Value is outside the allowed range',
+    'zh-CN': '数值超出允许范围'
+  },
+  'workshop.form.badOption': {
+    en: 'Choose one of the listed options',
+    'zh-CN': '请选择列表中的选项'
+  },
   'workshop.form.rejected': {
     en: 'The provider rejected this value',
     'zh-CN': '提供方拒绝了该值'
@@ -8428,8 +8482,8 @@ Enterprise`
   // Workshop – run
   'workshop.run.signIn': { en: 'Sign in to run', 'zh-CN': '登录以运行' },
   'workshop.run.buyCredits': {
-    en: 'Buy credits to run',
-    'zh-CN': '购买积分以运行'
+    en: 'Add credits on Comfy Platform',
+    'zh-CN': '在 Comfy Platform 添加积分'
   },
   'workshop.run.run': { en: 'Run', 'zh-CN': '运行' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
@@ -8490,8 +8544,9 @@ Enterprise`
     'zh-CN': '你的工作区策略禁止了该提供方。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits for this run.',
-    'zh-CN': '积分不足，无法运行。'
+    en: 'Not enough credits for this run. Credits are bought on Comfy Platform; your inputs stay here while you do.',
+    'zh-CN':
+      '积分不足，无法运行。积分在 Comfy Platform 购买，期间您的输入会保留在此。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',
@@ -8553,11 +8608,20 @@ Enterprise`
     en: 'Prototype controls · mock data',
     'zh-CN': '原型控制 · 模拟数据'
   },
+  'workshop.proto.scope': { en: 'Scope', 'zh-CN': '范围' },
+  'workshop.proto.scope.v1': {
+    en: 'V1 · Models playground (11 Sep)',
+    'zh-CN': 'V1 · 模型游乐场（9 月 11 日）'
+  },
+  'workshop.proto.scope.v2': {
+    en: 'V2 · Workflows + Deploy (GA 30 Sep)',
+    'zh-CN': 'V2 · 工作流 + 部署（9 月 30 日 GA）'
+  },
   'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
   'workshop.proto.session.new': {
-    en: 'New account (35 welcome credits)',
-    'zh-CN': '新账户（35 赠送积分）'
+    en: 'New account (no credits yet)',
+    'zh-CN': '新账户（尚无积分）'
   },
   'workshop.proto.session.existing': {
     en: 'Existing account',

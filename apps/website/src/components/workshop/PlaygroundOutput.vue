@@ -243,8 +243,9 @@ const blurred = computed(
         class="flex flex-wrap items-center gap-2 border-t border-transparency-white-t8 p-4"
       >
         <Button
+          v-if="state.output.url"
           as="a"
-          :href="state.output.url || undefined"
+          :href="state.output.url"
           :download="state.output.fileName"
           :prepend-icon="Download"
           size="sm"

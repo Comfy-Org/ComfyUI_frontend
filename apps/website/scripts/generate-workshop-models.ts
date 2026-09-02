@@ -103,6 +103,10 @@ interface GeneratedExample {
   description: string
   tags: string[]
   thumbnailUrl: string
+  // Present only when the template runs a different node (or a different
+  // dynamic-combo path) than the model's default form.
+  node?: { id: string; displayName: string }
+  fields?: Field[]
   values: Record<string, Primitive>
 }
 
@@ -623,19 +627,38 @@ function run() {
 
     const examples: GeneratedExample[] = templates
       .slice(0, EXAMPLES_PER_MODEL)
-      .map((template) => ({
-        name: template.name,
-        title: template.title,
-        description: template.description ?? '',
-        tags: template.tags ?? [],
-        thumbnailUrl: thumbnailFor(template.name)!,
-        values: schema
-          ? templateValues(
-              schema,
-              readWorkflow(template.name).find((n) => n.type === schema.id)
-            )
+      .map((template) => {
+        const exampleNode = pickApiNode(readWorkflow(template.name), schemas)
+        const exampleSchema = exampleNode
+          ? schemas.get(exampleNode.type)
+          : undefined
+        const values = exampleSchema
+          ? templateValues(exampleSchema, exampleNode)
           : {}
-      }))
+        const exampleFields = exampleSchema
+          ? fieldsFor(exampleSchema.inputs, exampleSchema.sources, values)
+          : []
+        const ownForm =
+          exampleSchema !== undefined &&
+          JSON.stringify(exampleFields) !== JSON.stringify(fields)
+        return {
+          name: template.name,
+          title: template.title,
+          description: template.description ?? '',
+          tags: template.tags ?? [],
+          thumbnailUrl: thumbnailFor(template.name)!,
+          ...(ownForm
+            ? {
+                node: {
+                  id: exampleSchema.id,
+                  displayName: exampleSchema.displayName
+                },
+                fields: exampleFields
+              }
+            : {}),
+          values
+        }
+      })
 
     output[slug] = {
       thumbnailUrl: thumbnailFor(first.name),

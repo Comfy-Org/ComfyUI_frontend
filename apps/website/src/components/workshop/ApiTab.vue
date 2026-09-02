@@ -82,7 +82,7 @@ const languageLabel: Record<SnippetLanguage, string> = {
       ><code>{{ snippet }}</code></pre>
     </div>
 
-    <p class="text-primary-comfy-orange text-xs">
+    <p class="text-primary-comfy-yellow text-xs">
       {{ t('workshop.api.illustrative', locale) }}
     </p>
 

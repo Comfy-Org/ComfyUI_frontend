@@ -25,8 +25,8 @@ const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <div v-else class="rounded-4xl bg-white/8 p-2">
-      <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else>
+      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <li
           v-for="example in examples"
           :key="example.id"

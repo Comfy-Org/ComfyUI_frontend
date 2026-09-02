@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { X } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
@@ -6,8 +7,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
+import {
+  consumeJustSignedIn,
+  useSignInHref
+} from '../../composables/useSignInHref'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { useTopUpDialog } from '../../composables/useTopUpDialog'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
@@ -45,17 +49,23 @@ const tabLabel: Record<Tab, TranslationKey> = {
 }
 const tab = ref<Tab>('playground')
 
-const schema = schemaForModel(model)
 const examples = examplesForModel(model)
-const values = ref<FormValues>(defaultValues(schema, model.defaults))
+const activeExample = ref<PlaygroundExample>()
+const schema = computed(() =>
+  schemaForModel({
+    fields: activeExample.value?.fields ?? model.fields,
+    modality: model.modality
+  })
+)
+const values = ref<FormValues>(defaultValues(schema.value, model.defaults))
 const runState = ref<RunState>(IDLE)
 const revealed = ref(false)
 const signedInNotice = ref(false)
 
 const { session, setCredits } = useMockSession()
 const { outcome: simOutcome, modelState: simGate } = usePrototypeTweaks()
-const { open: openTopUp } = useTopUpDialog()
 const routes = getRoutes(locale)
+const signInHref = useSignInHref(locale)
 
 const credits = computed(() =>
   session.value.status === 'signedIn' ? session.value.account.credits : 0
@@ -102,6 +112,7 @@ watch(
 // Keeps the form intact across a sign-in or a top-up round trip.
 const storageKey = `comfy-workshop-form:${model.slug}`
 onMounted(() => {
+  if (consumeJustSignedIn()) signedInNotice.value = true
   try {
     const stored = sessionStorage.getItem(storageKey)
     if (stored) values.value = { ...values.value, ...JSON.parse(stored) }
@@ -133,18 +144,19 @@ function dispatch(event: Parameters<typeof transition>[1]) {
 
 function sampleOutput(): RunOutput {
   const kind = model.modality ?? 'other'
-  const url = examples[0]?.outputUrl ?? ''
   const prompt = values.value.prompt
-  return {
-    kind,
-    url,
-    fileName: `${model.slug}-${values.value.seed ?? 0}.${isVideoUrl(url) ? 'mp4' : kind === 'text' ? 'txt' : 'webp'}`,
-    ...(kind === 'text'
-      ? {
-          text: `1. Shot by light, finished by you.\n2. Every product deserves a hero.\n3. Studio quality, ${typeof prompt === 'string' ? prompt.split(' ').length : 0} words in.`
-        }
-      : {})
+  const stem = `${model.slug}-${values.value.seed ?? 0}`
+  if (kind === 'text') {
+    const text = `1. Shot by light, finished by you.\n2. Every product deserves a hero.\n3. Studio quality, ${typeof prompt === 'string' ? prompt.split(' ').length : 0} words in.`
+    return {
+      kind,
+      text,
+      url: `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`,
+      fileName: `${stem}.txt`
+    }
   }
+  const url = examples[0]?.outputUrl ?? ''
+  return { kind, url, fileName: `${stem}.${isVideoUrl(url) ? 'mp4' : 'webp'}` }
 }
 
 function finishRun() {
@@ -177,7 +189,7 @@ function finishRun() {
 function run() {
   signedInNotice.value = false
   revealed.value = false
-  const fieldErrors = validateForm(schema, values.value)
+  const fieldErrors = validateForm(schema.value, values.value)
   if (Object.keys(fieldErrors).length) {
     dispatch({ type: 'fail', reason: 'validation', fieldErrors })
     return
@@ -198,9 +210,16 @@ function reset() {
 }
 
 function openExample(example: PlaygroundExample) {
-  values.value = defaultValues(schema, example.values)
+  activeExample.value = example.fields ? example : undefined
+  values.value = defaultValues(schema.value, example.values)
   reset()
   tab.value = 'playground'
+}
+
+function clearExample() {
+  activeExample.value = undefined
+  values.value = defaultValues(schema.value, model.defaults)
+  reset()
 }
 
 function useInCode() {
@@ -242,6 +261,32 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div class="flex flex-col gap-6 lg:col-span-5">
+        <div
+          v-if="activeExample"
+          class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 py-2 text-xs"
+          data-testid="active-example"
+        >
+          <span class="min-w-0 truncate text-primary-warm-gray">
+            {{ t('workshop.example.loaded', locale) }}
+            <span class="text-primary-warm-white">
+              {{ activeExample.title }}
+            </span>
+            <template v-if="activeExample.nodeDisplayName">
+              · {{ activeExample.nodeDisplayName }}
+            </template>
+          </span>
+          <button
+            type="button"
+            :aria-label="t('workshop.example.clear', locale)"
+            :title="t('workshop.example.clear', locale)"
+            data-testid="active-example-clear"
+            class="shrink-0 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
+            @click="clearExample"
+          >
+            <X class="size-4" aria-hidden="true" />
+          </button>
+        </div>
+
         <PlaygroundForm
           v-model="values"
           :schema
@@ -273,7 +318,7 @@ function useInCode() {
           <Button
             v-else-if="gate === 'signedOut'"
             as="a"
-            :href="externalLinks.cloudLogin"
+            :href="signInHref"
             size="lg"
             class="w-full"
             data-testid="run-button"
@@ -283,11 +328,12 @@ function useInCode() {
           </Button>
           <Button
             v-else-if="gate === 'noCredits' && subscribed"
+            as="a"
+            :href="externalLinks.platform"
             size="lg"
             class="w-full"
             data-testid="run-button"
             data-gate="noCredits"
-            @click="openTopUp({ insufficient: true })"
           >
             {{ t('workshop.run.buyCredits', locale) }}
           </Button>
