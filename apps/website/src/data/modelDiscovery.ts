@@ -11,7 +11,7 @@ export interface DiscoveryModel {
 const LINEUP: readonly { slug: string; logo: string }[] = [
   { slug: 'seedance-2', logo: 'bytedance' },
   { slug: 'kling-o3', logo: 'kling' },
-  { slug: 'veo-3', logo: 'veo' },
+  { slug: 'ideogram', logo: 'ideogram' },
   { slug: 'nano-banana-2', logo: 'gemini' },
   { slug: 'grok-imagine', logo: 'grok' },
   { slug: 'flux-2-api', logo: 'bfl' },

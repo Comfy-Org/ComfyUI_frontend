@@ -24,4 +24,10 @@ describe('HeaderMainDesktop', () => {
     const link = await workshopLink('/workshop')
     expect(link.getAttribute('data-active')).not.toBeNull()
   })
+
+  it('keeps Products inactive on the Workshop page it also links to', async () => {
+    await workshopLink('/workshop')
+    const products = screen.getByRole('button', { name: /products/i })
+    expect(products.getAttribute('data-active')).toBeNull()
+  })
 })

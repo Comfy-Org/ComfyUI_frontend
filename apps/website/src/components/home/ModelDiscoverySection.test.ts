@@ -3,9 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import { discoveryModels } from '../../data/modelDiscovery'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
 describe('ModelDiscoverySection', () => {
+  it('only lines up models that have a preview to reveal', () => {
+    expect(discoveryModels.length).toBeGreaterThan(10)
+    for (const { model } of discoveryModels) {
+      expect(model.thumbnailUrl, model.slug).toBeTruthy()
+    }
+  })
+
   it('links every lineup model to its Workshop page once', () => {
     render(ModelDiscoverySection)
 

@@ -46,6 +46,25 @@ test.describe('Workshop catalog', () => {
     ).toHaveCount(4)
   })
 
+  test('the filter menu drills into a facet and narrows the grid', async ({
+    page
+  }) => {
+    await page.goto('/workshop/')
+    const cards = page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+    await page.getByTestId('workshop-filter').click()
+    await page.getByTestId('workshop-filter-capability').click()
+    await page.getByTestId('filter-capability-Upscale').click()
+    await expect(cards).toHaveCount(3)
+    await page.getByTestId('workshop-filter-back').click()
+    await expect(
+      page.getByTestId('workshop-filter-capability-count')
+    ).toHaveText('1')
+    await page.getByTestId('workshop-filter-clear').click()
+    await expect(cards).toHaveCount(48)
+  })
+
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
     await page.goto('/workshop/models/topaz-labs/')
     const tag = page
@@ -54,9 +73,7 @@ test.describe('Workshop catalog', () => {
     await expect(tag).toHaveAttribute('href', '/workshop?capability=Upscale')
     await tag.click()
     await expect(page).toHaveURL(/\/workshop\/?\?capability=Upscale$/)
-    await expect(
-      page.getByTestId('workshop-filter-capability-count')
-    ).toHaveText('1')
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await expect(
       page
         .getByTestId('workshop-models-grid')

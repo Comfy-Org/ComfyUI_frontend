@@ -26,10 +26,15 @@ const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
+  const onLeafPage = mainNavigation.some(
+    (item) => item.href && isHrefActive(item.href, path)
+  )
   return (
-    navItem.columns?.some((column) =>
+    !onLeafPage &&
+    (navItem.columns?.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
-    ) ?? false
+    ) ??
+      false)
   )
 }
 </script>

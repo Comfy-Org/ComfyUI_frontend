@@ -69,12 +69,13 @@ describe('WorkshopModelsGrid', () => {
         .getAttribute('aria-pressed')
     ).toBe('true')
 
-    await user.click(screen.getByTestId('workshop-filter-capability'))
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-filter-capability'))
     await user.click(await screen.findByTestId('filter-capability-Upscale'))
     expect(cardNames()).toHaveLength(0)
     expect(screen.getByTestId('workshop-empty')).toBeTruthy()
 
-    await user.click(screen.getByTestId('workshop-filter-capability-clear'))
+    await user.click(screen.getByTestId('workshop-filter-clear'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -82,7 +83,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByTestId('workshop-filter-provider'))
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-filter-provider'))
     await user.type(
       await screen.findByTestId('workshop-filter-provider-search'),
       'forest'

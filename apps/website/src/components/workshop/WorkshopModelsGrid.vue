@@ -26,8 +26,8 @@ import {
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { FacetMenuOption } from './WorkshopFacetMenu.vue'
-import WorkshopFacetMenu from './WorkshopFacetMenu.vue'
+import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
+import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const { models, locale = 'en' } = defineProps<{
@@ -179,21 +179,12 @@ const menuItemClass =
       </div>
 
       <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
-        <WorkshopFacetMenu
-          v-model="capabilities"
-          facet="capability"
-          :label="t('workshop.filter.capabilityGroup', locale)"
-          :options="capabilityOptions"
+        <WorkshopFilterMenu
+          v-model:capabilities="capabilities"
+          v-model:providers="providers"
+          :capability-options="capabilityOptions"
+          :provider-options="providerOptions"
           :locale
-          searchable
-        />
-        <WorkshopFacetMenu
-          v-model="providers"
-          facet="provider"
-          :label="t('workshop.filter.providerGroup', locale)"
-          :options="providerOptions"
-          :locale
-          searchable
         />
 
         <DropdownMenuRoot>
