@@ -12,20 +12,14 @@ import { localizeHref } from '../../config/routes'
 import type { ComfyEvent } from '../../data/events'
 import {
   eventJsonLdNode,
-  eventMediaThumbnail,
   eventVideoId,
   pastEvents,
-  toCalendarEvent,
-  youtubeWatchHref
+  toCalendarEvent
 } from '../../data/events'
+import { eventPageThumbnail, eventVideoJsonLd } from './eventPageMetadata'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
-import {
-  absoluteUrl,
-  jsonLdId,
-  pageContext,
-  videoObjectNode
-} from '../../utils/jsonLd'
+import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 
 interface Props {
   event: ComfyEvent
@@ -45,25 +39,17 @@ const description = event.description[locale] || event.description.en
 // with the section rendered behind the dialog.
 const isPast = pastEvents.includes(event)
 
-const mediaThumbnail = eventMediaThumbnail(event.media)
+const mediaThumbnail = eventPageThumbnail(event)
 
-const videoJsonLd: JsonLdNode | undefined =
-  isPast && event.recordingVideoId && mediaThumbnail
-    ? videoObjectNode({
-        siteUrl,
-        id: jsonLdId(url, 'video'),
-        pageUrl: url,
-        name: title,
-        description,
-        thumbnailUrl: mediaThumbnail,
-        contentUrl:
-          youtubeWatchHref(event.recordingVideoId)[locale] ||
-          youtubeWatchHref(event.recordingVideoId).en,
-        embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
-        uploadDate: event.startDateTime,
-        locale
-      })
-    : undefined
+const videoJsonLd: JsonLdNode | undefined = eventVideoJsonLd({
+  event,
+  isPast,
+  siteUrl,
+  url,
+  title,
+  description,
+  locale
+})
 
 const eventJsonLd: JsonLdNode | undefined = isPast
   ? undefined
