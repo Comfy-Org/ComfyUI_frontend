@@ -430,6 +430,7 @@ describe('EcsFollowerAdapter integration', () => {
     const projectedNodes: SemanticNodePayload[] = []
     const projectionOpIds: string[] = []
     let batchAttempts = 0
+    let queueReentrantFrame = (): void => undefined
     const mutations: GraphMutations = {
       batch: (context, define) => {
         batchAttempts += 1
@@ -444,6 +445,7 @@ describe('EcsFollowerAdapter integration', () => {
           clearSemanticGraph: () => undefined
         })
         if (batchAttempts === 1) {
+          queueReentrantFrame()
           projectedNodes.length = 0
           return false
         }
@@ -480,6 +482,39 @@ describe('EcsFollowerAdapter integration', () => {
 
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
+    queueReentrantFrame = () => {
+      const before = Y.encodeStateVector(host)
+      applyOps(
+        host,
+        [
+          op('node-2', 2, {
+            op: 'add_node',
+            node_id: 2,
+            class_type: 'Sink',
+            pos: [30, 40],
+            node: {
+              id: 2,
+              type: 'Sink',
+              pos: [30, 40],
+              inputs: [],
+              outputs: []
+            }
+          })
+        ] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      const reentrantUpdate = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(reentrantUpdate)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 2,
+          update: reentrantUpdate,
+          actor: 'agent:test',
+          opIds: ['node-2']
+        })
+      ).toEqual({ status: 'queued' })
+    }
     expect(
       adapter.applyFrame({
         workflowId: 'wf',
@@ -494,14 +529,19 @@ describe('EcsFollowerAdapter integration', () => {
     expect(
       adapter.applyFrame({
         workflowId: 'wf',
-        seq: 2,
+        seq: 3,
         update: Y.encodeStateAsUpdate(new Y.Doc()),
         actor: 'agent:test',
         opIds: ['retry-drain']
       })
-    ).toEqual({ status: 'projected', sequence: 2 })
-    expect(projectedNodes.map(({ id }) => id)).toEqual(['1'])
-    expect(projectionOpIds).toEqual(['node-1', 'node-1', 'retry-drain'])
+    ).toEqual({ status: 'projected', sequence: 3 })
+    expect(projectedNodes.map(({ id }) => id)).toEqual(['1', '2'])
+    expect(projectionOpIds).toEqual([
+      'node-1',
+      'node-1',
+      'node-2',
+      'retry-drain'
+    ])
 
     adapter.destroy()
     follower.destroy()
