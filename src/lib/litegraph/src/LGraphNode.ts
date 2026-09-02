@@ -61,7 +61,10 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
-import { createInputSlotView } from './node/slotDescriptorView'
+import {
+  createInputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
 import {
   extensionConfigureView,
@@ -3644,7 +3647,10 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    return calculateInputSlotPosFromSlot(this._getSlotPositionContext(), input)
+    return calculateInputSlotPosFromSlot(
+      this._getSlotPositionContext(),
+      resolveInputSlotView(this.inputs, input)
+    )
   }
 
   /**
