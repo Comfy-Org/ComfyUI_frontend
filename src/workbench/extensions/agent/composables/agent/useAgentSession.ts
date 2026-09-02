@@ -34,7 +34,7 @@ interface SentTag {
 }
 
 export interface WorkflowTurnContext {
-  id: string
+  id?: string
   tabPath: string
 }
 
@@ -225,7 +225,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return rest.postMessage(
         threadId,
-        wfContext ? { ...input, workflowId: wfContext.id } : input
+        wfContext?.id !== undefined
+          ? { ...input, workflowId: wfContext.id }
+          : input
       )
     }
     try {
