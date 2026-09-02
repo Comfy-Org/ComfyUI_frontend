@@ -92,8 +92,8 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
   })
 
   test('shows the prepaid balance the workspace still holds', async () => {
-    await expect(content.getByText('12,660')).toBeVisible()
-    await expect(content.getByText('2,110')).toBeVisible()
+    await expect(content.getByText('2,110').first()).toBeVisible()
+    await expect(content.getByText('12,660')).toHaveCount(0)
     await expect(
       content.getByText('Spendable once the plan is active again.')
     ).toBeVisible()
