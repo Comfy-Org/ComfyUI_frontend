@@ -30,11 +30,11 @@ const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
         <li
           v-for="example in examples"
           :key="example.id"
-          class="group flex flex-col overflow-hidden rounded-3xl bg-primary-comfy-ink"
+          class="group bg-transparency-white-t4 rounded-4.5xl flex flex-col border border-transparency-white-t8 px-2 pt-2 pb-4"
           data-testid="example-card"
         >
           <div
-            class="bg-primary-comfy-ink-light relative aspect-4/3 overflow-hidden"
+            class="bg-primary-comfy-ink-light relative aspect-4/3 overflow-hidden rounded-[2.25rem]"
           >
             <video
               v-if="isVideoUrl(example.outputUrl)"
@@ -54,7 +54,7 @@ const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
               decoding="async"
             />
           </div>
-          <div class="flex flex-1 flex-col gap-2 p-5">
+          <div class="flex flex-1 flex-col gap-2 px-4 pt-5 pb-2">
             <h3 class="text-lg/tight font-light text-primary-warm-white">
               {{ example.title }}
             </h3>

@@ -4,6 +4,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../../components/workshop/ModelStatus.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
+import StaticFrame from '../../../components/workshop/StaticFrame.vue'
 import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../../config/routes'
 import {
@@ -54,29 +55,16 @@ const pillClass =
   noindex
 >
   <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
-    <nav aria-label="Breadcrumb" class="mb-6 text-xs text-primary-warm-gray">
-      <ol class="flex flex-wrap items-center gap-2">
-        <li>
-          <a href={routes.workshop} class="hover:text-primary-warm-white">
-            {t('workshop.title')}
-          </a>
-        </li>
-        <li aria-hidden="true">/</li>
-        <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
-      </ol>
-    </nav>
-
     <header
       class="relative mb-8 overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light"
       data-testid="model-hero"
     >
       {
         model.thumbnailUrl && (
-          <img
+          <StaticFrame
             src={model.thumbnailUrl}
-            alt=""
             class="absolute inset-0 size-full object-cover opacity-60"
-            decoding="async"
+            client:load
           />
         )
       }
@@ -85,8 +73,21 @@ const pillClass =
       />
 
       <div
-        class="relative flex min-h-56 max-w-2xl flex-col justify-end gap-3 p-8 lg:min-h-64 lg:p-10"
+        class="relative flex min-h-64 flex-col justify-between gap-8 p-8 lg:min-h-72 lg:p-10"
       >
+        <nav aria-label="Breadcrumb" class="text-xs text-primary-warm-gray">
+          <ol class="flex flex-wrap items-center gap-2">
+            <li>
+              <a href={routes.workshop} class="hover:text-primary-warm-white">
+                {t('workshop.title')}
+              </a>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
+          </ol>
+        </nav>
+
+        <div class="flex max-w-2xl flex-col gap-3">
         <div class="flex flex-wrap items-center gap-2">
           <p
             class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
@@ -121,6 +122,7 @@ const pillClass =
           successor={successor ? { name: successor.name, href: successor.href } : undefined}
           client:load
         />
+        </div>
       </div>
     </header>
 
