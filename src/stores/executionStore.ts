@@ -667,17 +667,17 @@ export const useExecutionStore = defineStore('execution', () => {
    * purged the moment a run ends, so `jobIdToWorkflowId` — also populated from
    * queue and history polling — backs it up for jobs from a previous page load.
    *
-   * `undefined` means the job cannot be attributed to any known workflow, which
-   * leaves the error on the visible one. `null` means the graph is known but its
-   * workflow path is ambiguous or unavailable, so recording is suppressed.
+   * `null` means the job cannot be attributed to one known workflow, so
+   * recording is suppressed rather than assigning it to whichever workflow is
+   * currently visible.
    */
-  function runErrorKeyForJob(jobId: string): string | null | undefined {
+  function runErrorKeyForJob(jobId: string): string | null {
     const workflow = jobIdToWorkflow.get(jobId)
     const graphId =
       workflow?.activeState?.id ??
       workflow?.initialState?.id ??
       jobIdToWorkflowId.value.get(jobId)
-    if (graphId === undefined) return undefined
+    if (graphId === undefined) return null
 
     const path =
       workflow?.path ??

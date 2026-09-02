@@ -1015,7 +1015,8 @@ describe('useExecutionStore - background workflow error routing', () => {
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
       submissionAcceptedAt: 62,
-      workflow
+      workflow,
+      mode: 'graph'
     })
   }
 
@@ -1173,10 +1174,10 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError).toBeNull()
   })
 
-  it('attributes an unattributable failure to the visible workflow', () => {
+  it('does not route an unattributable failure to the visible workflow', () => {
     fireExecutionError('job-unknown')
 
-    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-unknown')
+    expect(errorStore.lastExecutionError).toBeNull()
   })
 })
 
@@ -2197,6 +2198,23 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     handler(new CustomEvent(event, { detail }))
   }
 
+  function storeVisibleJob(jobId: string) {
+    const workflow = createQueuedWorkflow()
+    mockActiveWorkflow.value = workflow
+    mockOpenWorkflows.value = [workflow]
+    useExecutionErrorStore().setActiveGraph(
+      workflow.activeState!.id!,
+      workflow.path
+    )
+    store.storeJob({
+      nodes: [],
+      id: jobId,
+      promptOutput: {},
+      workflow,
+      mode: 'graph'
+    })
+  }
+
   beforeEach(() => {
     apiEventHandlers.clear()
     store = useExecutionStore()
@@ -2216,6 +2234,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('clears transient errors while preserving validation errors', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
       const nodeErrors = {
         '1': {
           class_type: 'Test',
@@ -2523,6 +2542,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   describe('execution_error', () => {
     it('routes a service-level error (no node_id) to the prompt error store', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
 
       fire('execution_error', {
         prompt_id: 'job-1',
@@ -2541,6 +2561,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('routes a runtime error (with node_id) to lastExecutionError', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
 
       fire('execution_error', {
         prompt_id: 'job-1',
@@ -2613,6 +2634,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('still routes an ordinary node runtime error to the error panel', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
 
       fire('execution_error', {
         prompt_id: 'job-1',
