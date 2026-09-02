@@ -1,10 +1,16 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 const DOC_PROTOCOL_VERSION = 1
 const MAX_DOC_FRAME_B64_LENGTH = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
 const MAX_ACTOR_LENGTH = 256
 const MAX_AWARENESS_STATE_BYTES = 8 << 10
+const MAX_DOC_OPS_PER_FRAME = 256
+const MAX_OP_ID_LENGTH = 128
+const MAX_ERROR_CODE_LENGTH = 128
+const MAX_ERROR_MESSAGE_LENGTH = 8 << 10
 const utf8 = new TextEncoder()
 
 export interface DocOp {
@@ -46,10 +52,7 @@ interface DocOpsResult {
   skipped: string[]
   code?: string
   message?: string
-  /**
-   * PoC diagnostics: the batch's failure, forwarded verbatim. The wire type is
-   * a single object (`DocOpFailure {op_id, code, message}`), not an array.
-   */
+  /** Validated diagnostics for the first rejected operation in a batch. */
   failed?: DocOpFailure
 }
 
@@ -150,10 +153,18 @@ function parseRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+function isAbsent(value: unknown): value is null | undefined {
+  return value === null || value === undefined
+}
+
+function hasBoundedUtf8Length(value: string, maxBytes: number): boolean {
+  return value.length <= maxBytes && utf8.encode(value).length <= maxBytes
+}
+
 function isValidWorkflowId(value: string): boolean {
   return (
     value.length > 0 &&
-    utf8.encode(value).length <= MAX_WORKFLOW_ID_LENGTH &&
+    hasBoundedUtf8Length(value, MAX_WORKFLOW_ID_LENGTH) &&
     !/[\0\n\r\t :*?[\]]/.test(value)
   )
 }
@@ -161,7 +172,7 @@ function isValidWorkflowId(value: string): boolean {
 function isValidActor(value: string): boolean {
   if (
     value.length === 0 ||
-    utf8.encode(value).length > MAX_ACTOR_LENGTH ||
+    !hasBoundedUtf8Length(value, MAX_ACTOR_LENGTH) ||
     /[\0\n\r\t ]/.test(value)
   )
     return false
@@ -175,7 +186,25 @@ function isSequence(value: unknown): value is number {
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+  return (
+    Array.isArray(value) &&
+    value.length <= MAX_DOC_OPS_PER_FRAME &&
+    value.every(
+      (item) =>
+        typeof item === 'string' && hasBoundedUtf8Length(item, MAX_OP_ID_LENGTH)
+    )
+  )
+}
+
+function hasValidDiagnostics(data: WireData): boolean {
+  return (
+    (isAbsent(data.code) ||
+      (typeof data.code === 'string' &&
+        hasBoundedUtf8Length(data.code, MAX_ERROR_CODE_LENGTH))) &&
+    (isAbsent(data.message) ||
+      (typeof data.message === 'string' &&
+        hasBoundedUtf8Length(data.message, MAX_ERROR_MESSAGE_LENGTH)))
+  )
 }
 
 /**
@@ -190,18 +219,32 @@ function parseOptionalStringArray(value: unknown): string[] | null {
 
 function parseDocOpFailure(value: unknown): DocOpFailure | null {
   const failure = parseWireData(value)
-  return failure !== null &&
-    isSequence(failure.index) &&
-    (failure.op_id === undefined || typeof failure.op_id === 'string') &&
-    typeof failure.code === 'string' &&
-    typeof failure.message === 'string'
-    ? (failure as DocOpFailure)
-    : null
+  if (
+    failure === null ||
+    !isSequence(failure.index) ||
+    (!isAbsent(failure.op_id) &&
+      (typeof failure.op_id !== 'string' ||
+        !hasBoundedUtf8Length(failure.op_id, MAX_OP_ID_LENGTH))) ||
+    typeof failure.code !== 'string' ||
+    !hasBoundedUtf8Length(failure.code, MAX_ERROR_CODE_LENGTH) ||
+    typeof failure.message !== 'string' ||
+    !hasBoundedUtf8Length(failure.message, MAX_ERROR_MESSAGE_LENGTH)
+  )
+    return null
+
+  return {
+    index: failure.index,
+    ...(!isAbsent(failure.op_id) && { op_id: failure.op_id }),
+    code: failure.code,
+    message: failure.message
+  }
 }
 
 function encodedJsonSize(value: Record<string, unknown>): number | null {
   try {
-    return utf8.encode(JSON.stringify(value)).length
+    const encoded = JSON.stringify(value)
+    if (encoded.length > MAX_AWARENESS_STATE_BYTES) return encoded.length
+    return utf8.encode(encoded).length
   } catch {
     return null
   }
@@ -226,19 +269,18 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   ) {
     const update = decodeBase64(data.update_b64)
     if (update === null) return null
-    if (
-      data.actor !== undefined &&
-      (typeof data.actor !== 'string' || !isValidActor(data.actor))
-    )
-      return null
     if (data.op_ids !== undefined && !isStringArray(data.op_ids)) return null
+    const actor =
+      typeof data.actor === 'string' && isValidActor(data.actor)
+        ? data.actor
+        : undefined
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
         update,
-        ...(typeof data.actor === 'string' && { actor: data.actor }),
+        ...(actor !== undefined && { actor }),
         ...(Array.isArray(data.op_ids) && {
           opIds: data.op_ids
         })
@@ -248,9 +290,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
 
   if (frame.type === 'doc_subscribed' && typeof data.ok === 'boolean') {
     if (
-      data.ok
-        ? !isSequence(data.seq)
-        : typeof data.code !== 'string' || typeof data.message !== 'string'
+      (!isAbsent(data.seq) && !isSequence(data.seq)) ||
+      !hasValidDiagnostics(data)
     )
       return null
     return {
@@ -270,13 +311,12 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     const skipped = parseOptionalStringArray(data.skipped)
     if (applied === null || skipped === null) return null
     if (
-      data.ok
-        ? !isSequence(data.seq)
-        : typeof data.code !== 'string' || typeof data.message !== 'string'
+      (!isAbsent(data.seq) && !isSequence(data.seq)) ||
+      !hasValidDiagnostics(data)
     )
       return null
     let failed: DocOpFailure | undefined
-    if (data.failed !== undefined) {
+    if (!isAbsent(data.failed)) {
       const parsedFailure = parseDocOpFailure(data.failed)
       if (parsedFailure === null) return null
       failed = parsedFailure
@@ -291,45 +331,42 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         ...(isSequence(data.seq) && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message }),
-        // PoC diagnostics: surface the failure verbatim (object, not array).
         ...(failed !== undefined && { failed })
       }
     }
   }
 
   if (frame.type === 'doc_reset' && isSequence(data.seq)) {
-    if (
-      data.actor !== undefined &&
-      (typeof data.actor !== 'string' || !isValidActor(data.actor))
-    )
-      return null
+    const actor =
+      typeof data.actor === 'string' && isValidActor(data.actor)
+        ? data.actor
+        : undefined
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
-        ...(typeof data.actor === 'string' && { actor: data.actor })
+        ...(actor !== undefined && { actor })
       }
     }
   }
 
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
     if (!isValidActor(data.actor)) return null
-    const state = data.state == null ? undefined : parseRecord(data.state)
-    if (state === null) return null
-    if (state !== undefined) {
+    const state = parseRecord(data.state)
+    if (!isAbsent(data.state) && state === null) return null
+    if (state !== null) {
       const stateSize = encodedJsonSize(state)
       if (stateSize === null || stateSize > MAX_AWARENESS_STATE_BYTES)
         return null
     }
-    if (data.expires_at !== undefined && !isSequence(data.expires_at))
-      return null
+    if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         actor: data.actor,
-        ...(state !== undefined && { state }),
+        ...(state !== null && { state }),
         ...(isSequence(data.expires_at) && {
           expiresAt: data.expires_at
         })
@@ -355,8 +392,15 @@ export class DocFrameClient extends EventTarget {
       const listener: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
         const parsed = parseServerDocFrame({ type, data: event.detail })
-        if (parsed)
+        if (parsed) {
           this.dispatchEvent(new CustomEvent(type, { detail: parsed.data }))
+          return
+        }
+        reportError(new Error('Discarded invalid server document frame'), {
+          errorType: 'agent_crdt_invalid_server_frame',
+          tags: { frame_type: type },
+          level: 'warning'
+        })
       }
       this.listeners.set(type, listener)
       transport.addEventListener(type, listener)

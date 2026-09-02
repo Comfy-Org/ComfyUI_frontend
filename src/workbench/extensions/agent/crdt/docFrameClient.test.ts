@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport } from './docFrameClient'
 import {
@@ -9,6 +11,8 @@ import {
 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -224,14 +228,136 @@ describe('doc frame client', () => {
     })
   })
 
+  it('keeps optional acknowledgement fields optional', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: false, code: 'forbidden' }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: false, code: 'forbidden' }
+    })
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true }
+    })
+    expect(
+      parseServerDocFrame({
+        type: 'doc_ops_result',
+        data: { v: 1, workflow_id: 'wf-1', ok: false, message: 'rejected' }
+      })
+    ).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: false,
+        applied: [],
+        skipped: [],
+        message: 'rejected'
+      }
+    })
+  })
+
+  it('drops malformed advisory actors without dropping effect frames', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 1,
+          update_b64: 'AQ==',
+          actor: 'unknown:value'
+        }
+      })
+    ).toEqual({
+      type: 'doc_update',
+      data: { workflowId: 'wf-1', seq: 1, update: Uint8Array.from([1]) }
+    })
+    expect(
+      parseServerDocFrame({
+        type: 'doc_reset',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 2,
+          actor: 'unknown:value'
+        }
+      })
+    ).toEqual({
+      type: 'doc_reset',
+      data: { workflowId: 'wf-1', seq: 2 }
+    })
+  })
+
+  it('treats null optional values as absent', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_ops_result',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: false,
+          failed: null,
+          code: null,
+          message: null
+        }
+      })
+    ).toEqual({
+      type: 'doc_ops_result',
+      data: { workflowId: 'wf-1', ok: false, applied: [], skipped: [] }
+    })
+    expect(
+      parseServerDocFrame({
+        type: 'awareness',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          actor: 'human:user:tab',
+          state: null,
+          expires_at: null
+        }
+      })
+    ).toEqual({
+      type: 'awareness',
+      data: { workflowId: 'wf-1', actor: 'human:user:tab' }
+    })
+  })
+
+  it('reports malformed inbound frames without forwarding them', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const listener = vi.fn()
+    client.addEventListener('doc_update', listener)
+
+    transport.receive('doc_update', {
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      update_b64: 'not-base64'
+    })
+
+    expect(listener).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'doc_update' },
+      level: 'warning'
+    })
+  })
+
   it.for([
     ['invalid base64 characters', { seq: 1, update_b64: '!!!=' }],
     ['partial base64', { seq: 1, update_b64: 'AQ' }],
     ['empty base64', { seq: 1, update_b64: '' }],
     ['negative sequence', { seq: -1, update_b64: 'AQ==' }],
     ['fractional sequence', { seq: 1.5, update_b64: 'AQ==' }],
-    ['mixed op ids', { seq: 1, update_b64: 'AQ==', op_ids: ['ok', 1] }],
-    ['invalid actor', { seq: 1, update_b64: 'AQ==', actor: 'unknown:value' }]
+    ['mixed op ids', { seq: 1, update_b64: 'AQ==', op_ids: ['ok', 1] }]
   ])('rejects %s in doc_update without throwing', (_name, fields) => {
     expect(() =>
       parseServerDocFrame({
@@ -288,7 +414,7 @@ describe('doc frame client', () => {
         failed: { op_id: 'op-1', code: 'x', message: 'x' }
       })
     ).toBeNull()
-    expect(result({ ok: false, code: 'x' })).toBeNull()
+    expect(result({ ok: false, code: 1 })).toBeNull()
     expect(
       result({
         ok: false,
@@ -297,12 +423,7 @@ describe('doc frame client', () => {
         failed: { index: 0, op_id: 'op-1', code: 'bad', message: 'bad op' }
       })
     ).toMatchObject({ type: 'doc_ops_result' })
-    expect(
-      parseServerDocFrame({
-        type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-1', ok: true }
-      })
-    ).toBeNull()
+    expect(result({ ok: true, seq: '1' })).toBeNull()
   })
 
   it('rejects malformed or oversized awareness state', () => {

@@ -87,12 +87,29 @@ describe('document frame result arrays and acknowledgements', () => {
     ).toBeNull()
   })
 
-  it('rejects a successful acknowledgement without a sequence', () => {
-    expect(resultFrame({ ok: true })).toBeNull()
+  it('accepts a successful acknowledgement without a sequence', () => {
+    expect(resultFrame({ ok: true })).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: true,
+        applied: [],
+        skipped: []
+      }
+    })
   })
 
-  it('rejects a failed acknowledgement without a code', () => {
-    expect(resultFrame({ ok: false, message: 'batch rejected' })).toBeNull()
+  it('accepts a failed acknowledgement without a code', () => {
+    expect(resultFrame({ ok: false, message: 'batch rejected' })).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: false,
+        applied: [],
+        skipped: [],
+        message: 'batch rejected'
+      }
+    })
   })
 
   // The relay serialises applied/skipped with `omitempty`: rejections carry
@@ -177,5 +194,52 @@ describe('document frame result arrays and acknowledgements', () => {
         }
       }
     })
+  })
+
+  it('strips unrecognized failure properties', () => {
+    expect(
+      resultFrame({
+        ok: false,
+        failed: {
+          index: 0,
+          op_id: 'op-1',
+          code: 'invalid_op',
+          message: 'invalid operation',
+          private_context: 'must not escape the parser'
+        }
+      })
+    ).toMatchObject({
+      data: {
+        failed: {
+          index: 0,
+          op_id: 'op-1',
+          code: 'invalid_op',
+          message: 'invalid operation'
+        }
+      }
+    })
+    expect(
+      resultFrame({
+        ok: false,
+        failed: {
+          index: 0,
+          op_id: 'op-1',
+          code: 'invalid_op',
+          message: 'invalid operation',
+          private_context: 'must not escape the parser'
+        }
+      })?.data
+    ).not.toHaveProperty('failed.private_context')
+  })
+
+  it('rejects oversized operation identities and diagnostics', () => {
+    expect(resultFrame({ ok: true, applied: ['x'.repeat(129)] })).toBeNull()
+    expect(resultFrame({ ok: false, code: 'x'.repeat(129) })).toBeNull()
+    expect(
+      resultFrame({ ok: false, message: 'x'.repeat((8 << 10) + 1) })
+    ).toBeNull()
+    expect(
+      resultFrame({ ok: true, applied: Array.from({ length: 257 }, () => 'x') })
+    ).toBeNull()
   })
 })
