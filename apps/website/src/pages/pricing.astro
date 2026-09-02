@@ -4,6 +4,7 @@ import CloudPricingSection from '../components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../components/pricing/PricingFaq.astro'
 import ResourceCostsSection from '../templates/platform/PricingSection.vue'
+import MinimaxLicensePricingSection from '../components/pricing/MinimaxLicensePricingSection.vue'
 import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../config/pricing'
 import { t } from '../i18n/translations'
@@ -41,7 +42,6 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
-  <MinimaxLicenseHeroSection client:visible />
   <CloudPricingSection client:load />
   <WhatsIncludedSection />
   <ResourceCostsSection
@@ -49,5 +49,7 @@ const productId = jsonLdId(url, 'product')
     heading={t('pricing.resourceCosts.heading', locale)}
     note={t('pricing.resourceCosts.note', locale)}
   />
+  <MinimaxLicenseHeroSection client:visible />
+  <MinimaxLicensePricingSection locale={locale} />
   <PricingFaq locale={locale} />
 </BaseLayout>

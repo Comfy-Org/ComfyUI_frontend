@@ -110,6 +110,10 @@ const translations = {
     en: 'Upscaling',
     'zh-CN': '放大'
   },
+  'tags.motionControl': {
+    en: 'Motion Control',
+    'zh-CN': '运动控制'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -7096,6 +7100,10 @@ Enterprise`
     en: 'SEE MINIMAX H3',
     'zh-CN': '了解 MiniMax H3'
   },
+  'minimaxLicense.comparison.heading': {
+    en: 'Compare license tiers',
+    'zh-CN': '许可级别对比'
+  },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
     en: 'One model, every use case. Licensed for yours.',
@@ -7997,6 +8005,19 @@ Enterprise`
   'pricing.resourceCosts.heading': {
     en: 'Resource costs',
     'zh-CN': '资源成本'
+  },
+  'pricing.minimaxLicense.heading': {
+    en: 'License pricing',
+    'zh-CN': '许可定价'
+  },
+  'pricing.minimaxLicense.description': {
+    en: 'Professional from $5,000 a month. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
+    'zh-CN':
+      '专业版每月 5,000 美元起。企业版为年度协议，按用量定价。视频、音频与音乐涵盖于同一份许可。'
+  },
+  'pricing.minimaxLicense.cta': {
+    en: 'See license tiers',
+    'zh-CN': '查看许可级别'
   },
   'platform.pricing.heading': {
     en: 'Pricing',

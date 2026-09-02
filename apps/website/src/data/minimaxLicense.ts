@@ -1,4 +1,7 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchComparison,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
@@ -14,6 +17,135 @@ const HERO_POSTER_SRC =
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
 const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
+
+// Rows and figures come from the tier table supplied for this page
+// (2026-09-02); the pricing numbers live only here, so a deal change means
+// editing this table. /pricing renders these same rows in
+// MinimaxLicensePricingSection, which is why it is a named export.
+export const minimaxLicenseComparison: ModelLaunchComparison = {
+  headingKey: 'minimaxLicense.comparison.heading',
+  columns: [
+    { id: 'professional', label: { en: 'Professional', 'zh-CN': '专业版' } },
+    { id: 'enterprise', label: { en: 'Enterprise', 'zh-CN': '企业版' } }
+  ],
+  rows: [
+    {
+      id: 'price',
+      label: { en: 'Price', 'zh-CN': '价格' },
+      cells: [
+        { en: 'From $5,000 / month', 'zh-CN': '5,000 美元 / 月起' },
+        { en: 'Contact sales', 'zh-CN': '联系销售' }
+      ]
+    },
+    {
+      id: 'video-seconds',
+      label: { en: 'Video-seconds included', 'zh-CN': '包含视频秒数' },
+      cells: [
+        { en: '~46,250', 'zh-CN': '约 46,250' },
+        { en: 'Custom', 'zh-CN': '定制' }
+      ]
+    },
+    {
+      id: 'price-per-video-second',
+      label: {
+        en: 'Price per video-second (in bundle)',
+        'zh-CN': '每视频秒价格（套餐内）'
+      },
+      cells: [
+        { en: '$0.108', 'zh-CN': '0.108 美元' },
+        { en: 'Contact sales', 'zh-CN': '联系销售' }
+      ]
+    },
+    {
+      id: 'overage',
+      label: {
+        en: 'Overage per video-second',
+        'zh-CN': '超出部分每视频秒价格'
+      },
+      cells: [
+        { en: '$0.036', 'zh-CN': '0.036 美元' },
+        { en: 'Contact sales', 'zh-CN': '联系销售' }
+      ]
+    },
+    {
+      id: 'licensed-users',
+      label: { en: 'Licensed users', 'zh-CN': '授权用户' },
+      cells: [
+        { en: 'Up to 10', 'zh-CN': '最多 10 个' },
+        { en: 'No cap', 'zh-CN': '不设上限' }
+      ]
+    },
+    {
+      id: 'domains',
+      label: { en: 'Domains', 'zh-CN': '域名数量' },
+      cells: [
+        { en: '1', 'zh-CN': '1 个' },
+        { en: 'Custom', 'zh-CN': '定制' }
+      ]
+    },
+    {
+      id: 'commercial-use',
+      label: {
+        en: 'Commercial use of outputs',
+        'zh-CN': '产出的商业使用'
+      },
+      cells: [
+        {
+          en: 'Yes, full commercial rights',
+          'zh-CN': '是，完整商业权利'
+        },
+        {
+          en: 'Yes, full commercial rights',
+          'zh-CN': '是，完整商业权利'
+        }
+      ]
+    },
+    {
+      id: 'fine-tuning',
+      label: {
+        en: 'Fine-tuning and LoRA training',
+        'zh-CN': '微调与 LoRA 训练'
+      },
+      cells: [
+        { en: 'Yes', 'zh-CN': '是' },
+        { en: 'Yes', 'zh-CN': '是' }
+      ]
+    },
+    {
+      id: 'client-work',
+      label: {
+        en: 'Client and downstream work',
+        'zh-CN': '客户与下游项目'
+      },
+      cells: [
+        { en: 'Yes', 'zh-CN': '是' },
+        { en: 'Yes', 'zh-CN': '是' }
+      ]
+    },
+    {
+      id: 'model-versions',
+      label: { en: 'Model versions', 'zh-CN': '模型版本' },
+      cells: [
+        {
+          en: 'Distilled open-weight versions',
+          'zh-CN': '蒸馏开源权重版本'
+        },
+        {
+          en: 'Every version, undistilled weights included',
+          'zh-CN': '所有版本，包括未蒸馏权重'
+        }
+      ]
+    },
+    {
+      id: 'term',
+      label: { en: 'Term', 'zh-CN': '期限' },
+      cells: [
+        { en: 'Monthly', 'zh-CN': '按月' },
+        { en: '12-month minimum', 'zh-CN': '至少 12 个月' }
+      ]
+    }
+  ]
+}
 
 export const minimaxLicensePage: ModelLaunchPage = {
   metaTitleKey: 'minimaxLicense.meta.title',
@@ -42,7 +174,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       'minimaxLicense.hero.tagGlobal'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'closingCta'],
+  sectionOrder: ['steps', 'comparison', 'faq', 'closingCta'],
   steps: {
     headingKey: 'minimaxLicense.steps.heading',
     stepLabelKey: 'minimaxLicense.steps.step',
@@ -75,6 +207,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       }
     ]
   },
+  comparison: minimaxLicenseComparison,
   // Open-weight successor models roll into an active license per the deal, but
   // that line stays OFF the page until the contract's "qualifying" language is
   // tightened (Kevin, 08-27) — stick to what's covered today.
