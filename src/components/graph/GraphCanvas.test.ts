@@ -73,7 +73,10 @@ vi.mock('@/scripts/app', () => {
     graph: null,
     onSelectionChange: null,
     setDirty: mocks.setDirty,
-    canvas: document.createElement('canvas')
+    canvas: document.createElement('canvas'),
+    // useSubgraphDragBridge wires listeners onto this the moment the store's
+    // canvas ref resolves; without it, mounting GraphCanvas throws.
+    linkConnector: { events: new EventTarget(), state: {} }
   }
   return {
     app: {
