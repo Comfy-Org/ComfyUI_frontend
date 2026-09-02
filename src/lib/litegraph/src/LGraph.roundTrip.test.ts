@@ -254,7 +254,7 @@ describe('LGraph round trip preserves the input', () => {
 
         new LGraph(subject).serialize()
 
-        expect(subject).toEqual(untouched)
+        expect(subject).toStrictEqual(untouched)
       })
 
       test('is stable when saved twice', () => {
