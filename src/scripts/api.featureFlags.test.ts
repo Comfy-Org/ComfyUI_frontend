@@ -51,14 +51,6 @@ describe('API Feature Flags', () => {
     })
   })
 
-  afterEach(() => {
-    // Restore in afterEach (not inline after assertions) so a failed
-    // assertion in a fake-timer test can't leak fake timers into later
-    // tests. Safe to call unconditionally even when a test never enabled
-    // fake timers.
-    vi.useRealTimers()
-  })
-
   describe('Feature flags negotiation', () => {
     it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
       // Clearing the map here (rather than just the received latch) would
