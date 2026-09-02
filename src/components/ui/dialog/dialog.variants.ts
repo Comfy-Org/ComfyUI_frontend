@@ -53,7 +53,7 @@ export const viewerDialogContentClass =
  * other dialog width cap.
  */
 export const HUG_CONTENT_CLASS =
-  'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)]'
+  'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)]'
 
 /**
  * Reka chrome for headless dialogs whose content draws its own panel
