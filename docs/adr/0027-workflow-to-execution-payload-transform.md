@@ -163,7 +163,7 @@ At that point:
   transform step with explicit ordering and isolation guarantees.
 - An ESLint rule or ADR compliance check can flag direct calls to `graph.serialize()`
   or `graphToPrompt()` from outside the designated transform module. This rule
-  applies to *new* call sites; existing callers in `src` (e.g. `app.ts`) and
+  applies to _new_ call sites; existing callers in `src` (e.g. `app.ts`) and
   `browser_tests` are grandfathered until they are migrated to the central
   pipeline or an adapter, not blocked retroactively. The migration path for
   those existing callers is itself deferred to the registration-contract work
@@ -173,7 +173,7 @@ At that point:
 
 ### Positive
 
-- External systems (Agent, Hub, MCP, CLI tools) can *reproduce* transform
+- External systems (Agent, Hub, MCP, CLI tools) can _reproduce_ transform
   output that satisfies the replayability contract without reimplementing
   frontend-only behavior, by following the same workflow → named-transforms →
   payload steps against the persisted replay metadata. This ADR does not
