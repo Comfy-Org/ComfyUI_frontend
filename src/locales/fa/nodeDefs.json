@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "description": "تصاویر مرجعِ مرتب‌شده را به شرطی‌سازی مثبت و منفی پیوست کنید.",
     "display_name": "تصاویر مرجع HiDream-O1",
     "inputs": {
       "images": {
         "name": "تصاویر",
-        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+        "tooltip": "تصاویر مرجع بر اساس ترتیب عددی سوکت‌ها استفاده می‌شوند."
       },
       "negative": {
         "name": "منفی"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "مثبت",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "یک MiniMax H3 Fun ControlNet را به‌عنوان patch مدل به یک مدل متن‌به‌ویدئو اعمال کنید.",
+    "display_name": "اعمال MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "۱ نواحیِ بازتولید را مشخص می‌کند."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "ویدیوی پشت ماسک؛ فقط هنگامی خوانده می‌شود که ماسک ارائه شده باشد."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21113,6 +21153,23 @@
       },
       "scale": {
         "name": "مقیاس"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "جابه‌جایی جریان SenseNova را تنظیم کنید.",
+    "display_name": "گزینه‌های نمونه‌گیری SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

@@ -62,8 +62,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const data = await resp.json()
 
     if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-      const assetsStore = useAssetsStore()
-      await assetsStore.updateInputs()
+      await useAssetsStore().inputAssets.invalidate()
     }
 
     return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
