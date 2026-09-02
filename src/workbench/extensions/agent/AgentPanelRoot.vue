@@ -407,7 +407,10 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  isBoundWorkflowActive,
+  // qa-59: same graph accessor as mintPortWiring's `getGraph` below — gives
+  // the follower a live LGraph to materialize agent-added node adapters into.
+  () => (app.isGraphReady ? app.rootGraph : null)
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,

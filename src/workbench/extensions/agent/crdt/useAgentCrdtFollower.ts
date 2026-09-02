@@ -5,6 +5,8 @@ import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
+import type { MaterializableGraph } from './agentNodeMaterializer'
+import { materializeMissingAdapters } from './agentNodeMaterializer'
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
@@ -188,7 +190,13 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  // qa-59: the live LGraph the composable materializes agent-added node
+  // adapters into. Optional (defaults to "no graph available") so existing
+  // callers/tests that don't yet care about the live-adapter bridge keep
+  // compiling; `AgentPanelRoot.vue` wires the real `app.rootGraph` the same
+  // way `mintPortWiring`'s `getGraph` already does.
+  getGraph: () => MaterializableGraph | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -399,6 +407,25 @@ export function useAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+    // qa-59: the op layer above only ever wrote the ECS stores (KEEP-ALIVE
+    // #3 — it stays litegraph-free), so a remote add_node still has no
+    // `LGraphNode` adapter at this point. Materialize one for anything the
+    // adapter just landed, so the node enters `LGraph._nodes` and survives
+    // serialize()/save. Only the ids this exact frame touched are checked —
+    // an id already carrying a live adapter (e.g. a widget-only update on an
+    // existing node) is skipped by `materializeMissingAdapters` itself.
+    const graph = getGraph()
+    if (graph) {
+      const addedIds = adapter.lastAddedNodeIds(update.workflowId)
+      if (addedIds.size > 0) {
+        const materialized = materializeMissingAdapters(graph, addedIds)
+        if (materialized.length > 0)
+          recordDevEvent('agent_node_adapters_materialized', {
+            workflowId: update.workflowId,
+            nodeIds: materialized
+          })
+      }
+    }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,

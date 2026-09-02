@@ -46,7 +46,12 @@ const adapterState = vi.hoisted(() => ({
   applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  lastAddedNodeIds: vi.fn(() => new Set<string>())
+}))
+
+const materializerState = vi.hoisted(() => ({
+  materializeMissingAdapters: vi.fn(() => [] as string[])
 }))
 
 const apiState = vi.hoisted(() => {
@@ -91,7 +96,12 @@ vi.mock('./ecsFollowerAdapter', () => ({
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
+    lastAddedNodeIds = adapterState.lastAddedNodeIds
   }
+}))
+
+vi.mock('./agentNodeMaterializer', () => ({
+  materializeMissingAdapters: materializerState.materializeMissingAdapters
 }))
 
 vi.mock('./devPanelLog', () => ({
@@ -137,7 +147,8 @@ function writeRawRecord(overrides: {
 
 function mountFollower(
   initial: string | null = null,
-  initiallyActive = true
+  initiallyActive = true,
+  getGraph: () => unknown = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -153,7 +164,9 @@ function mountFollower(
         workflowId,
         graphMutations,
         () => null,
-        isTargetActive
+        isTargetActive,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getGraph as any
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -178,6 +191,8 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    adapterState.lastAddedNodeIds.mockReset().mockReturnValue(new Set())
+    materializerState.materializeMissingAdapters.mockReset().mockReturnValue([])
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -613,6 +628,48 @@ describe('useAgentCrdtFollower', () => {
       })
       unmount()
     })
+  })
+
+  it('qa-59: materializes a live adapter for nodes the adapter just added, given a graph', () => {
+    const fakeGraph = { id: 'root', rootGraph: { id: 'root' } }
+    adapterState.lastAddedNodeIds.mockReturnValue(new Set(['1']))
+    materializerState.materializeMissingAdapters.mockReturnValue(['1'])
+
+    const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+    expect(adapterState.lastAddedNodeIds).toHaveBeenCalledWith('wf-1')
+    expect(materializerState.materializeMissingAdapters).toHaveBeenCalledWith(
+      fakeGraph,
+      new Set(['1'])
+    )
+    unmount()
+  })
+
+  it('qa-59: skips materialization when no graph is available yet', () => {
+    adapterState.lastAddedNodeIds.mockReturnValue(new Set(['1']))
+
+    // Default getGraph (no override) always returns null — mirrors the
+    // panel mounting before app.isGraphReady.
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+    expect(materializerState.materializeMissingAdapters).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('qa-59: skips materialization when the frame added no new nodes', () => {
+    const fakeGraph = { id: 'root', rootGraph: { id: 'root' } }
+    adapterState.lastAddedNodeIds.mockReturnValue(new Set())
+
+    const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+    expect(materializerState.materializeMissingAdapters).not.toHaveBeenCalled()
+    unmount()
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {

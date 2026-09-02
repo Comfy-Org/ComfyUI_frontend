@@ -118,6 +118,15 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  /**
+   * Node ids this session's mutation store learned about (added or
+   * reconciled-in) in the most recently committed `applyQueuedFrame` call.
+   * Plain string ids only — no LiteGraph/DOM dependency — so the pure op
+   * layer stays portable; a consumer (e.g. the FE-only follower composable)
+   * uses this to know which store-only nodes may still lack a live LGraph
+   * adapter, without this layer knowing LGraph exists.
+   */
+  lastAddedNodeIds: Set<string>
 }
 
 /**
@@ -174,6 +183,7 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
+    session.lastAddedNodeIds = new Set()
     return session.mutations.clearSemanticGraph(context)
   }
 
@@ -206,6 +216,7 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
+      lastAddedNodeIds: new Set<string>(),
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -246,6 +257,7 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
+    const addedNodeIds = new Set<string>()
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
@@ -260,7 +272,10 @@ export class EcsFollowerAdapter {
           nodes.map(({ id }) => toNodeId(id)),
           links.map(({ id }) => id)
         )
-        for (const payload of nodes) batch.reconcileNode(payload)
+        for (const payload of nodes) {
+          batch.reconcileNode(payload)
+          addedNodeIds.add(String(payload.id))
+        }
         for (const link of links) batch.connect(link)
         return
       }
@@ -275,6 +290,7 @@ export class EcsFollowerAdapter {
         const payload = readSemanticNode(session.follower.doc, id)
         if (!payload) continue
         batch.addNode(payload)
+        addedNodeIds.add(id)
       }
       for (const id of replacedWidgetMaps) {
         if (nodeActions.has(id)) continue
@@ -306,8 +322,24 @@ export class EcsFollowerAdapter {
     // reconcileNextFrame set so the next frame retries authoritative
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    if (committed) {
+      session.reconcileNextFrame = false
+      session.lastAddedNodeIds = addedNodeIds
+    } else {
+      session.lastAddedNodeIds = new Set()
+    }
     return committed
+  }
+
+  /**
+   * Node ids the given session's mutation store learned about (added or
+   * reconciled-in) on the most recently committed frame. Consumed by the
+   * FE-only follower composable (qa-59) to materialize a live LGraph
+   * adapter for agent-added nodes; empty when no session is bound or the
+   * last frame committed nothing.
+   */
+  lastAddedNodeIds(workflowId: string): ReadonlySet<string> {
+    return this.targets.get(workflowId)?.lastAddedNodeIds ?? new Set()
   }
 
   private discardSessionPending(session: TargetSession): void {
