@@ -64,6 +64,49 @@ describe('OnboardingCoach', () => {
     expect(Number.parseFloat(card.style.top)).toBe(108)
   })
 
+  it('repositions when the viewport narrows after mount', async () => {
+    // 1280px viewport, target left edge at x=900 (mirrors the mr2-4 T-24/
+    // T-25 repro shape: a docked panel/target whose unclamped card position
+    // is in-bounds at the wide viewport but must re-clamp once narrowed).
+    // At 1280px: 900 - 256 - 8 = 636, within [8, 1280-264]=[8,1016] --
+    // unclamped. At 700px: the same 636 would exceed 700-264=436, so the
+    // card must re-clamp to 436, a genuinely different value from 636.
+    window.innerWidth = 1280
+    window.innerHeight = 800
+    mountWithTarget({ left: 900, top: 100 })
+
+    function getCard(): HTMLElement {
+      const dialog = screen.getByRole('dialog', { name: 'Meet the agent' })
+      // eslint-disable-next-line testing-library/no-node-access -- position lands on the styled child
+      return dialog.querySelector('[style]') as HTMLElement
+    }
+
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+    const renderedWidth = Number.parseFloat(getComputedStyle(getCard()).width)
+    const initialLeft = Number.parseFloat(getCard().style.left)
+    expect(initialLeft).toBe(636)
+
+    // Narrow the viewport (e.g. panel resize) without remounting or moving
+    // the target. `useWindowSize` fires a real resize listener; the card
+    // must re-clamp into the new, narrower viewport.
+    window.innerWidth = 700
+    window.dispatchEvent(new Event('resize'))
+    // The suite runs under global fake timers (vitest.timer.setup.ts); a
+    // plain `nextTick()` only drains microtasks, not the fake-timer queue,
+    // so the position watcher's `await nextTick()` step needs an explicit
+    // timer flush to actually run.
+    await vi.advanceTimersByTimeAsync(0)
+
+    const left = Number.parseFloat(getCard().style.left)
+    // The card must re-clamp into the narrowed viewport (436), not retain
+    // its stale 1280px-viewport position (636, which would place its right
+    // edge past the new 700px edge and behind the docked panel).
+    expect(left + renderedWidth).toBeLessThanOrEqual(700 - 8)
+    expect(left).toBeGreaterThanOrEqual(8)
+    expect(left).toBe(436)
+    expect(left).not.toBe(initialLeft)
+  })
+
   it('finds a target mounted in the same render', async () => {
     render(
       {
