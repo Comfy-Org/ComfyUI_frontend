@@ -153,7 +153,7 @@ test.describe('Node library sidebar V2', () => {
     }) => {
       const tab = comfyPage.menu.nodeLibraryTabV2
 
-      await tab.expandFolder('sampling')
+      await tab.searchInput.fill('KSampler')
       const node = tab.getNode('KSampler (Advanced)')
       await expect(node).toBeVisible()
 
@@ -187,7 +187,7 @@ test.describe('Node library sidebar V2', () => {
     }) => {
       const tab = comfyPage.menu.nodeLibraryTabV2
 
-      await tab.expandFolder('sampling')
+      await tab.searchInput.fill('KSampler')
       const node = tab.getNode('KSampler (Advanced)')
       await expect(node).toBeVisible()
 
