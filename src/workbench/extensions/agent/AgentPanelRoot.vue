@@ -84,7 +84,10 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import {
+  peekPersistedDocId,
+  useAgentCrdtFollower
+} from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -375,24 +378,26 @@ const {
   }
 })
 
-// FE-1969: `boundWorkflowId` is the in-memory session binding (module-level,
-// lost whenever this composition root remounts without the module that set
-// it — e.g. a fresh page load that still has a persisted docId to rebind
-// to). Falling back to `bindingStore`'s persisted tab<->workflow binding
-// keeps `isBoundWorkflowActive` true across that gap so the CRDT follower's
-// active-tab watcher is driven with `active=true` and can reach its own
-// persisted-docId restoration path (useAgentCrdtFollower.ts) instead of
-// short-circuiting through the `!active` branch and never trying.
+// FE-1969: `boundWorkflowId` is the in-memory session binding and is reset
+// whenever the session restarts within the same page load ("New chat", or a
+// panel remount). The follower can still rebind to the doc it persisted for
+// this page load, but only if this computed drives it with `active=true`. The
+// fallback is scoped to that one doc: the active tab's persisted tab binding
+// counts only when it names the doc the follower would restore, so a tab that
+// merely carries a stale binding, or a second bound tab, never reads as
+// active and never keeps the follower projecting into a background tab. A
+// full reload is out of scope by design: the follower refuses a record from
+// another page load (FEC-5).
+function restorableWorkflowIdFor(tabPath: string): string | null {
+  const persisted = bindingStore.workflowIdFor(tabPath)
+  if (persisted === undefined) return null
+  return persisted === peekPersistedDocId() ? persisted : null
+}
 const isBoundWorkflowActive = computed(() => {
   const active = workflowStore.activeWorkflow
   if (active === null) return false
-  const bound =
-    boundWorkflowId.value ?? bindingStore.workflowIdFor(active.path)
-  return (
-    bound !== undefined &&
-    bound !== null &&
-    boundTabFor(bound)?.path === active.path
-  )
+  const bound = boundWorkflowId.value ?? restorableWorkflowIdFor(active.path)
+  return bound !== null && boundTabFor(bound)?.path === active.path
 })
 
 // The CRDT follower is the inbound content channel: subscribes to the
@@ -407,7 +412,8 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: () =>
+    isBoundWorkflowActive.value && crdtStatus.value.workflowId !== null,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),

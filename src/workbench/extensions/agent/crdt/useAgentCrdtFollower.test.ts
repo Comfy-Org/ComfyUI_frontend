@@ -104,7 +104,11 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  STALE_AFTER_MS,
+  peekPersistedDocId,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
@@ -253,6 +257,18 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: true })
 
     expect(persistedRecord()?.docId).toBe('wf-1')
+    unmount()
+  })
+
+  it('FE-1969: peekPersistedDocId mirrors what the next rebind would restore', () => {
+    const { unmount } = mountFollower('wf-1')
+    expect(peekPersistedDocId()).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(peekPersistedDocId()).toBe('wf-1')
+
+    writeRawRecord({ docId: 'wf-1', nonce: 'foreign-nonce' })
+    expect(peekPersistedDocId()).toBeNull()
     unmount()
   })
 
