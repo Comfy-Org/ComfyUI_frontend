@@ -54,7 +54,7 @@ const pillClass =
   noindex
 >
   <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
-    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray">
+    <nav aria-label="Breadcrumb" class="mb-6 text-xs text-primary-warm-gray">
       <ol class="flex flex-wrap items-center gap-2">
         <li>
           <a href={routes.workshop} class="hover:text-primary-warm-white">
@@ -67,9 +67,26 @@ const pillClass =
     </nav>
 
     <header
-      class="mb-12 flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-16"
+      class="relative mb-8 overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light"
+      data-testid="model-hero"
     >
-      <div class="flex flex-1 flex-col gap-5">
+      {
+        model.thumbnailUrl && (
+          <img
+            src={model.thumbnailUrl}
+            alt=""
+            class="absolute inset-0 size-full object-cover opacity-60"
+            decoding="async"
+          />
+        )
+      }
+      <div
+        class="absolute inset-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/75 to-primary-comfy-ink/10"
+      />
+
+      <div
+        class="relative flex min-h-56 max-w-2xl flex-col justify-end gap-3 p-8 lg:min-h-64 lg:p-10"
+      >
         <div class="flex flex-wrap items-center gap-2">
           <p
             class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
@@ -80,7 +97,7 @@ const pillClass =
           <ModelStatus status={model.status} variant="pill" client:load />
         </div>
 
-        <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+        <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
           {model.name}
         </h1>
 
@@ -88,8 +105,8 @@ const pillClass =
           {
             price ? (
               <>
-                <span class="text-2xl font-bold text-primary-comfy-yellow">{price}</span>
-                {' / '}
+                <span class="text-lg font-bold text-primary-comfy-yellow">{price}</span>
+                {' '}
                 {t('workshop.model.perRun')}
               </>
             ) : (
@@ -105,19 +122,6 @@ const pillClass =
           client:load
         />
       </div>
-
-      {
-        model.thumbnailUrl && (
-          <div class="relative aspect-4/3 w-full overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light lg:w-2/5">
-            <img
-              src={model.thumbnailUrl}
-              alt={model.name}
-              class="size-full object-cover"
-              decoding="async"
-            />
-          </div>
-        )
-      }
     </header>
 
     <ModelDetail model={model} client:load />

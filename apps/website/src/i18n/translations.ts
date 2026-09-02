@@ -8448,10 +8448,7 @@ Enterprise`
     'zh-CN': '建议改用 {successor}'
   },
   'workshop.model.degraded': { en: 'Degraded', 'zh-CN': '性能下降' },
-  'workshop.model.perRun': {
-    en: '/ run · final cost depends on settings',
-    'zh-CN': '/ 次 · 最终费用取决于设置'
-  },
+  'workshop.model.perRun': { en: 'per run', 'zh-CN': '每次运行' },
   'workshop.model.degradedBody': {
     en: 'The provider is reporting slow or failing runs right now.',
     'zh-CN': '提供方当前报告运行缓慢或失败。'
