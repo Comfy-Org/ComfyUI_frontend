@@ -225,10 +225,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   }))
 }))
 
+const mockColorPaletteState = vi.hoisted(() => ({
+  completedActivePalette: { id: 'dark', light_theme: false }
+}))
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: vi.fn(() => ({
-    completedActivePalette: { id: 'dark-default', light_theme: false }
-  }))
+  useColorPaletteStore: vi.fn(() => mockColorPaletteState)
 }))
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -452,6 +453,10 @@ describe('useCoreCommands', () => {
 
   beforeEach(() => {
     mockDistributionState.isCloud = false
+    mockColorPaletteState.completedActivePalette = {
+      id: 'dark',
+      light_theme: false
+    }
     setActivePinia(createPinia())
 
     app.canvas.subgraph = undefined
@@ -892,15 +897,24 @@ describe('useCoreCommands', () => {
   })
 
   describe('ToggleTheme command', () => {
-    it('should switch from dark to light theme', async () => {
+    it('should switch from dark to light and back', async () => {
       const mockStore = createMockSettingStore(false)
       vi.mocked(useSettingStore).mockReturnValue(mockStore)
 
-      await findCommand('Comfy.ToggleTheme').function()
+      const toggleTheme = findCommand('Comfy.ToggleTheme')
+      await toggleTheme.function()
 
-      expect(mockStore.set).toHaveBeenCalledWith(
+      expect(mockStore.set).toHaveBeenCalledWith('Comfy.ColorPalette', 'light')
+
+      mockColorPaletteState.completedActivePalette = {
+        id: 'light',
+        light_theme: true
+      }
+      await toggleTheme.function()
+
+      expect(mockStore.set).toHaveBeenLastCalledWith(
         'Comfy.ColorPalette',
-        expect.any(String)
+        'dark'
       )
     })
   })
