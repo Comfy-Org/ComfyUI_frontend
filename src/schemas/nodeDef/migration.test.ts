@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import {
+  transformInputSpecV1ToV2,
+  transformInputSpecV2ToV1,
+  transformNodeDefV1ToV2
+} from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -197,6 +201,45 @@ describe('NodeDef Migration', () => {
     const result = transformNodeDefV1ToV2(nodeDef)
     expect(result.inputs['customInput'].type).toBe('CUSTOM_TYPE')
     expect(result.inputs['customInput'].default).toBe('custom value')
+  })
+
+  it('should map CHART option type to chartType', () => {
+    const plainObject = {
+      optional: {
+        chartInput: ['CHART', { type: 'bar', data: { labels: [] } }]
+      }
+    } as ComfyNodeDefV1['input']
+
+    const nodeDef: ComfyNodeDefV1 = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: 'A test node',
+      input: plainObject,
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    }
+
+    const result = transformNodeDefV1ToV2(nodeDef)
+    const chartInput = result.inputs['chartInput']
+    expect(chartInput.type).toBe('CHART')
+    expect(chartInput).toMatchObject({ chartType: 'bar', data: { labels: [] } })
+  })
+
+  it('should preserve chartType across a V2 to V1 round trip', () => {
+    const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
+      name: 'chartInput'
+    })
+
+    const result = transformInputSpecV1ToV2(
+      transformInputSpecV2ToV1(inputSpec),
+      { name: 'chartInput' }
+    )
+
+    expect(result.chartType).toBe('bar')
   })
 
   it('should not transform hidden fields', () => {
@@ -519,7 +562,7 @@ describe('ComfyNodeDefImpl', () => {
     expect(result.inputs['floatInput']).toBeDefined()
   })
 
-  it.each([
+  it.for([
     { api_node: true, expected: true },
     { api_node: false, expected: false },
     { api_node: undefined, expected: false }

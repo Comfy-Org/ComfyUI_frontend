@@ -16,9 +16,9 @@ async function saveAndOpenPublishDialog(
   workflowName: string
 ): Promise<void> {
   await comfyPage.menu.topbar.saveWorkflow(workflowName)
-  const overwriteDialog = comfyPage.page.locator(
-    '.p-dialog:has-text("Overwrite")'
-  )
+  const overwriteDialog = comfyPage.page
+    .getByRole('dialog')
+    .filter({ hasText: 'Overwrite' })
   // Bounded wait: point-in-time isVisible() can miss dialogs that open
   // slightly after saveWorkflow() resolves.
   try {
@@ -97,7 +97,7 @@ test.describe('Publish dialog - Describe step', () => {
     await saveAndOpenPublishDialog(comfyPage, publishDialog, 'test-describe-wf')
   })
 
-  test('allows editing the workflow name', async ({ publishDialog }) => {
+  test('allows editing the Hub title', async ({ publishDialog }) => {
     await publishDialog.nameInput.clear()
     await publishDialog.nameInput.fill('My Custom Workflow')
     await expect(publishDialog.nameInput).toHaveValue('My Custom Workflow')
@@ -218,7 +218,9 @@ test.describe('Publish dialog - no profile', () => {
   }) => {
     await expect(publishDialog.profilePrompt).toBeVisible()
     await expect(
-      publishDialog.root.getByText('Create a profile to publish to ComfyHub')
+      publishDialog.root.getByText(
+        'Create a profile to publish to Comfy Workflows'
+      )
     ).toBeVisible()
   })
 
@@ -255,6 +257,34 @@ test.describe('Publish dialog - unsaved workflow', () => {
     ).toBeVisible()
     // Nav should be hidden when save is required
     await expect(publishDialog.nav).toBeHidden()
+  })
+})
+
+test.describe('Publish dialog - workflow identity', () => {
+  test.beforeEach(async ({ comfyPage, publishApi, publishDialog }) => {
+    await comfyPage.featureFlags.setFlags(PUBLISH_FEATURE_FLAGS)
+    await publishApi.setupDefaultMocks({ hasProfile: true })
+    await saveAndOpenPublishDialog(
+      comfyPage,
+      publishDialog,
+      'test-independent-title-wf'
+    )
+  })
+
+  test('keeps the saved workflow path when the Hub title differs', async ({
+    comfyPage,
+    publishDialog
+  }) => {
+    await publishDialog.nameInput.clear()
+    await publishDialog.nameInput.fill('Different Hub title')
+    await publishDialog.goToStep('Finish publishing')
+    await expect(publishDialog.finishStep).toBeVisible()
+
+    await publishDialog.publishButton.click()
+    await expect(publishDialog.root).toBeHidden({ timeout: 10_000 })
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toBe('workflows/test-independent-title-wf.json')
   })
 })
 
@@ -303,4 +333,83 @@ test.describe('Publish dialog - submission', () => {
     // Dialog should remain open
     await expect(publishDialog.root).toBeVisible()
   })
+})
+
+const BREAKPOINTS = [
+  { name: 'mobile', width: 390 },
+  { name: 'sm', width: 640 },
+  { name: 'md', width: 768 },
+  { name: 'lg', width: 1024 },
+  { name: 'xl', width: 1280 },
+  { name: '2xl', width: 1536 },
+  { name: 'wide', width: 1920 }
+] as const
+
+const VIEWPORT_HEIGHT = 800
+
+async function expectWithinViewport(
+  dialog: PublishDialog,
+  viewport: { width: number; height: number },
+  label: string
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const box = await dialog.root.boundingBox()
+        if (!box) return false
+
+        return (
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= viewport.width &&
+          box.y + box.height <= viewport.height
+        )
+      },
+      { message: `dialog escapes the viewport at ${label}` }
+    )
+    .toBe(true)
+}
+
+test.describe('Publish dialog - layout', () => {
+  test.beforeEach(async ({ comfyPage, publishApi, publishDialog }) => {
+    await comfyPage.featureFlags.setFlags(PUBLISH_FEATURE_FLAGS)
+    await publishApi.setupDefaultMocks()
+    await saveAndOpenPublishDialog(comfyPage, publishDialog, 'test-layout-wf')
+  })
+
+  test('renders fully inside the viewport at every breakpoint', async ({
+    comfyPage,
+    publishDialog
+  }) => {
+    await expect(publishDialog.describeStep).toBeVisible()
+
+    for (const { name, width } of BREAKPOINTS) {
+      await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
+      await expectWithinViewport(
+        publishDialog,
+        { width, height: VIEWPORT_HEIGHT },
+        `${name} (${width}px)`
+      )
+    }
+  })
+
+  for (const { name, width } of BREAKPOINTS) {
+    test(
+      `matches the expected layout at ${name}`,
+      { tag: ['@screenshot'] },
+      async ({ comfyPage, publishDialog }) => {
+        await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
+        await expect(publishDialog.describeStep).toBeVisible()
+        await expect(publishDialog.nameInput).toHaveValue(/test-layout-wf/)
+        await comfyPage.toast.closeToasts()
+        await comfyPage.canvas.evaluate((el) => {
+          el.style.visibility = 'hidden'
+        })
+
+        await expect(comfyPage.page).toHaveScreenshot(
+          `publish-dialog-${name}.png`
+        )
+      }
+    )
+  }
 })

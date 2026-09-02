@@ -76,7 +76,9 @@ const login = async () => {
       : selectedUser.value
 
     if (!user) {
-      throw new Error('No user selected')
+      console.error('No user selected')
+      loginError.value = 'No user selected'
+      return
     }
 
     await userStore.login(user)
@@ -89,8 +91,6 @@ const login = async () => {
 onMounted(async () => {
   document.getElementById('splash-loader')?.remove()
 
-  if (!userStore.initialized) {
-    await userStore.initialize()
-  }
+  await userStore.initialize()
 })
 </script>

@@ -9,11 +9,20 @@ import type {
 
 export type SurveyValues = Record<string, string | string[] | undefined>
 
-const hasNonEmptyValue = (current: string | string[] | undefined): boolean => {
+export const OTHER_TEXT_MAX_LENGTH = 200
+
+export const hasNonEmptyValue = (
+  current: string | string[] | undefined
+): boolean => {
   if (current === undefined || current === '') return false
   if (Array.isArray(current)) return current.length > 0
   return true
 }
+
+export const isOtherValue = (
+  current: string | string[] | undefined
+): boolean =>
+  Array.isArray(current) ? current.includes('other') : current === 'other'
 
 const conditionMatches = (
   condition: OnboardingSurveyFieldCondition | undefined,
@@ -54,7 +63,7 @@ export const prepareSurvey = (survey: OnboardingSurvey): OnboardingSurvey => ({
   fields: survey.fields.map(randomizeOptions)
 })
 
-type Translator = (key: string) => string
+type Translator = (key: string, named?: Record<string, unknown>) => string
 
 const identityTranslator: Translator = (key) => key
 
@@ -87,11 +96,19 @@ export const buildZodSchema = (
     if (
       field.allowOther &&
       field.otherFieldId &&
-      values[field.id] === 'other'
+      isOtherValue(values[field.id])
     ) {
-      shape[field.otherFieldId] = z.string().min(1, {
-        message: t('cloudOnboarding.survey.errors.describeAnswer')
-      })
+      shape[field.otherFieldId] = z
+        .string()
+        .trim()
+        .min(1, {
+          message: t('cloudOnboarding.survey.errors.describeAnswer')
+        })
+        .max(OTHER_TEXT_MAX_LENGTH, {
+          message: t('cloudOnboarding.survey.errors.answerTooLong', {
+            max: OTHER_TEXT_MAX_LENGTH
+          })
+        })
     } else if (field.otherFieldId) {
       shape[field.otherFieldId] = z.string().optional()
     }
@@ -120,17 +137,23 @@ export const buildSubmissionPayload = (
       continue
     }
     const value = values[field.id]
-    const otherRaw = field.otherFieldId ? values[field.otherFieldId] : undefined
-    if (
+    const otherFieldId = field.otherFieldId
+    const otherRaw = otherFieldId ? values[otherFieldId] : undefined
+    const otherText =
       field.allowOther &&
-      field.otherFieldId &&
-      value === 'other' &&
+      otherFieldId &&
+      isOtherValue(value) &&
       typeof otherRaw === 'string'
-    ) {
-      const other = otherRaw.trim()
-      payload[field.id] = other || 'other'
+        ? otherRaw.trim()
+        : undefined
+
+    if (otherText !== undefined && field.type !== 'multi') {
+      payload[field.id] = otherText || 'other'
     } else {
       payload[field.id] = field.type === 'multi' ? (value ?? []) : (value ?? '')
+      if (otherText !== undefined && otherFieldId) {
+        payload[otherFieldId] = otherText
+      }
     }
   }
   return payload

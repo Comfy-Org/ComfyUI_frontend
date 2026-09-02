@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
@@ -162,10 +162,6 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Load3DControls', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('category menu', () => {
     it('renders SceneControls by default', () => {
       renderControls()
@@ -251,10 +247,10 @@ describe('Load3DControls', () => {
       await user.click(screen.getByRole('button', { name: label }))
     }
 
-    it.each([
+    it.for([
       ['Model', 'model-controls'],
       ['Camera', 'camera-controls']
-    ])('%s category renders only %s', async (label, testId) => {
+    ])('%s category renders only %s', async ([label, testId]) => {
       const { user } = renderControls()
       await selectCategory(user, label)
 
@@ -315,12 +311,12 @@ describe('Load3DControls', () => {
       ).not.toBeInTheDocument()
     })
 
-    it.each([
+    it.for([
       ['Gizmo', 'gizmo-controls', 'canUseGizmo' as const],
       ['Export', 'export-controls', 'canExport' as const]
     ])(
       'hides the %s panel when its capability flips off at runtime',
-      async (label, testId, capabilityProp) => {
+      async ([label, testId, capabilityProp]) => {
         const { user, rerender } = renderControls()
 
         await openMenu(user)

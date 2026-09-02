@@ -1,90 +1,93 @@
 import { expect } from '@playwright/test'
 
-import type {
-  Asset,
-  JobsListResponse,
-  ListAssetsResponse
-} from '@comfyorg/ingest-types'
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 
-// The assets sidebar's media-type filter menu only renders in cloud mode
+// The assets sidebar's attribute filter menu only renders in cloud mode
 // (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
 // We tag tests `@cloud` so they run against the cloud Playwright project,
-// and register both `/api/assets` and `/api/jobs` route handlers as auto
-// fixtures — Playwright runs auto fixtures before the `comfyPage` fixture's
-// internal `setup()`, so the page first-loads with mocks already in place.
-// See cloud-asset-default.spec.ts for the same pattern.
+// and register `/api/assets` route handlers as auto fixtures — Playwright
+// runs auto fixtures before the `comfyPage` fixture's internal `setup()`,
+// so the page first-loads with mocks already in place.
+//
+// Use `waitForAssets()` not `waitForAssets(MIXED_ASSETS.length)`: VirtualGrid
+// can virtualize the 3D card out of the initial render (#11635). Filtering
+// reads the full store, so the per-filter count assertions still cover the
+// behavior.
 
-const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
+const now = Date.now()
+const ages = [0, 86_400_000, 8 * 86_400_000, 40 * 86_400_000]
+const MIXED_ASSETS: Asset[] = (['images', 'video', 'audio', '3D'] as const).map(
+  (kind, i) => {
+    const ext = { images: 'png', video: 'mp4', audio: 'wav', '3D': 'glb' }[kind]
+    const filename = `output_${kind}-${String(i + 1).padStart(3, '0')}.${ext}`
+    const createdAt = new Date(now - (ages[i] ?? 0)).toISOString()
+    return {
+      id: `${kind}-${String(i + 1).padStart(3, '0')}`,
+      name: filename,
+      tags: ['output'],
+      preview_url: `/api/view?filename=${filename}&type=output`,
+      created_at: createdAt,
+      updated_at: createdAt
+    }
+  }
+)
 
 // MediaAssetCard renders the filename *without* extension via
 // getFilenameDetails(...).filename, so card-text matching uses the basename.
-function expectCardText(index: number): string {
-  const filename = MIXED_JOBS[index]?.preview_output?.filename
-  if (!filename) {
-    throw new Error(
-      `MIXED_JOBS[${index}].preview_output.filename is missing — ` +
-        'createMixedMediaJobs contract changed.'
-    )
-  }
-  return filename.replace(/\.[^.]+$/, '')
-}
-
-const imageCardName = expectCardText(0)
-const videoCardName = expectCardText(1)
-const audioCardName = expectCardText(2)
-const threeDCardName = expectCardText(3)
+const imageCardName = 'output_images-001'
+const videoCardName = 'output_video-002'
+const audioCardName = 'output_audio-003'
+const threeDCardName = 'output_3D-004'
 
 function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
   return { assets, total: assets.length, has_more: false }
 }
 
-function makeJobsResponseBody() {
-  return {
-    jobs: MIXED_JOBS,
-    pagination: {
-      offset: 0,
-      limit: MIXED_JOBS.length,
-      total: MIXED_JOBS.length,
-      has_more: false
-    }
-  } satisfies {
-    jobs: unknown[]
-    pagination: JobsListResponse['pagination']
-  }
-}
-
 const test = comfyPageFixture.extend<{
   stubCloudAssets: void
-  stubJobs: void
   stubInputFiles: void
 }>({
   stubCloudAssets: [
     async ({ page }, use) => {
-      const pattern = '**/api/assets?*'
-      await page.route(pattern, (route) =>
-        route.fulfill({
+      const pattern = /\/api\/assets(?:\?.*)?$/
+      await page.route(pattern, (route) => {
+        const url = new URL(route.request().url())
+        const csv = (key: string) =>
+          (url.searchParams.get(key) ?? '').split(',').filter(Boolean)
+        const tagsAny = csv('tags_any')
+        const includeTags = csv('include_tags')
+        const tagsNone = csv('tags_none')
+
+        if (url.searchParams.get('after')) {
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(makeAssetsResponse([]))
+          })
+        }
+
+        const matches = MIXED_ASSETS.filter((asset) => {
+          if (tagsNone.some((tag) => asset.tags?.includes(tag))) return false
+          if (
+            includeTags.length &&
+            !includeTags.every((tag) => asset.tags?.includes(tag))
+          )
+            return false
+          if (
+            tagsAny.length &&
+            !tagsAny.some((tag) => asset.tags?.includes(tag))
+          )
+            return false
+          return tagsAny.length > 0 || includeTags.length > 0
+        })
+
+        return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse([]))
+          body: JSON.stringify(makeAssetsResponse(matches))
         })
-      )
-      await use()
-      await page.unroute(pattern)
-    },
-    { auto: true }
-  ],
-  stubJobs: [
-    async ({ page }, use) => {
-      const pattern = /\/api\/jobs(?:\?.*)?$/
-      await page.route(pattern, (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(makeJobsResponseBody())
-        })
-      )
+      })
       await use()
       await page.unroute(pattern)
     },
@@ -107,15 +110,20 @@ const test = comfyPageFixture.extend<{
   ]
 })
 
-test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
-  test('Filter menu opens and exposes all four media-type checkboxes', async ({
+test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
+  test('Filter menu groups media type and date under Attribute', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
+
+    await expect(tab.mediaTypeFilterMenuItem).toBeVisible()
+    await expect(tab.dateFilterMenuItem).toBeVisible()
+
+    await tab.openMediaTypeFilterMenu()
 
     await expect(tab.filterImageCheckbox).toBeVisible()
     await expect(tab.filterVideoCheckbox).toBeVisible()
@@ -136,7 +144,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('image')
@@ -148,62 +156,115 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
   })
 
-  test('Selecting only "Video" hides non-video assets', async ({
-    comfyPage
-  }) => {
+  test('Applied filters survive sidebar remounts', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
+    const imageFilter = tab.removeFilterButton('Image')
+    const dateFilter = tab.removeFilterButton('Past 7 days')
+
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
-
+    await tab.waitForAssets()
     await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('video')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
-  })
-
-  test('Selecting only "Audio" hides non-audio assets', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('audio')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
-  })
-
-  test('Selecting only "3D" hides non-3D assets', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('3d')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(threeDCardName)).toBeVisible()
-  })
-
-  test('Multiple filters combine via OR (image + video)', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
-
-    await tab.openFilterMenu()
+    await tab.selectDateFilter('Past 7 days')
     await tab.toggleMediaTypeFilter('image')
-    await tab.toggleMediaTypeFilter('video')
+    await tab.closeFilterMenu()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await comfyPage.menu.nodeLibraryTab.tabButton.click()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await tab.close()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+  })
+
+  test('Search results support arrow navigation and Enter selection', async ({
+    comfyPage,
+    page
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openFilterMenu()
+    await tab.filterSearchInput.fill('past')
+
+    const pastWeek = tab.dateFilterOption('Past 7 days')
+    const pastMonth = tab.dateFilterOption('Past 30 days')
+
+    await tab.filterSearchInput.press('ArrowDown')
+    await expect(pastWeek).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(pastMonth).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(pastWeek).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(tab.filterSearchInput).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(pastMonth).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(tab.filterSearchInput).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(pastWeek).toBeFocused()
+
+    await page.keyboard.press('Enter')
+
+    await expect(pastWeek).toHaveAttribute('aria-checked', 'true')
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'true')
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await page.keyboard.press('Escape')
+
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('Date and media filters compose and applied controls can clear them', async ({
+    comfyPage,
+    page
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openFilterMenu()
+    await tab.selectDateFilter('Past 7 days')
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'true')
+    await tab.toggleMediaTypeFilter('image')
+    await tab.closeFilterMenu()
+
+    await expect(tab.assetCards).toHaveCount(1)
+    await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
+    await expect(tab.removeFilterButton('Image')).toBeVisible()
+    await expect(tab.removeFilterButton('Past 7 days')).toBeVisible()
+
+    await tab.removeFilterButton('Image').click()
 
     await expect(tab.assetCards).toHaveCount(2)
     await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
     await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
-    await expect(tab.getAssetCardByName(audioCardName)).toHaveCount(0)
-    await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
+    await expect(tab.removeFilterButton('Image')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Clear all' }).click()
+
+    await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
+    await expect(tab.removeFilterButton('Past 7 days')).toHaveCount(0)
   })
 
   test('Unchecking the active filter restores previously hidden cards', async ({
@@ -211,7 +272,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('image')

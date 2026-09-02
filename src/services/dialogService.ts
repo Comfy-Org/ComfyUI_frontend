@@ -1,15 +1,19 @@
 import { merge } from 'es-toolkit/compat'
+import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -17,7 +21,9 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -33,6 +39,20 @@ const lazyCloudNotificationContent = () =>
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
 
+/**
+ * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
+ * like the auto-sized PrimeVue root it replaces.
+ */
+const HUG_CONTENT_CLASS =
+  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
+
+/**
+ * Reka chrome for headless dialogs whose content draws its own panel
+ * (background/border/rounding) — neutralize the DialogContent box and
+ * shrink-wrap it around the content.
+ */
+const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+
 export type ConfirmationDialogType =
   | 'default'
   | 'overwrite'
@@ -41,6 +61,38 @@ export type ConfirmationDialogType =
   | 'dirtyClose'
   | 'reinstall'
   | 'info'
+
+interface BaseConfirmOptions {
+  /** Dialog heading */
+  title: string
+  /** The main message body */
+  message: string
+  /** Displayed as an unordered list immediately below the message body */
+  itemList?: string[]
+  hint?: string
+  /**
+   * Dialog-stack key, defaulting to the shared `global-prompt`. `showDialog`
+   * reuses an existing entry with the same key and discards the new resolver,
+   * leaving the caller's promise pending forever — a flow whose confirmation
+   * must survive an already-open shared prompt passes its own key.
+   */
+  key?: string
+}
+
+type ConfirmOptions = BaseConfirmOptions &
+  (
+    | {
+        /** Pre-configured dialog type */
+        type: 'dirtyClose'
+        /** Override the deny button label. Defaults to `g.no`. */
+        denyLabel?: string
+      }
+    | {
+        /** Pre-configured dialog type */
+        type?: Exclude<ConfirmationDialogType, 'dirtyClose'>
+        denyLabel?: never
+      }
+  )
 
 /**
  * Minimal interface for execution error dialogs.
@@ -74,9 +126,12 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'error_dialog_closed'
+            button_id: 'error_dialog_closed',
+            element_group: 'error_dialog'
           })
         }
       }
@@ -138,9 +193,12 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'error_dialog_closed'
+            button_id: 'error_dialog_closed',
+            element_group: 'error_dialog'
           })
         }
       }
@@ -154,26 +212,30 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodeNames: string[]
   ): Promise<boolean> {
-    const [{ default: ApiNodesSignInContent }, { default: ComfyOrgHeader }] =
-      await Promise.all([lazyApiNodesSignInContent(), lazyComfyOrgHeader()])
+    const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
+
+    const key = 'api-nodes-signin'
 
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
-        key: 'api-nodes-signin',
+        key,
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
+          titleId: key,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
-        headerComponent: ComfyOrgHeader,
         dialogComponentProps: {
-          closable: false,
+          renderer: 'reka',
+          headless: true,
+          contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
+          closable: true,
           onClose: () => resolve(false)
         }
       })
     }).then((result) => {
-      dialogStore.closeDialog({ key: 'api-nodes-signin' })
+      dialogStore.closeDialog({ key })
       return result
     })
   }
@@ -191,6 +253,10 @@ export const useDialogService = () => {
           onSuccess: () => resolve(true)
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          // SignInContent is a fixed w-96 — size 'sm' (max-w-sm) leaves only
+          // 352px after the body padding; hug the intrinsic width instead.
+          contentClass: HUG_CONTENT_CLASS,
           closable: true,
           onClose: () => resolve(false)
         }
@@ -226,6 +292,8 @@ export const useDialogService = () => {
           placeholder
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
           onClose: () => {
             resolve(null)
           }
@@ -244,21 +312,13 @@ export const useDialogService = () => {
     message,
     type = 'default',
     itemList = [],
-    hint
-  }: {
-    /** Dialog heading */
-    title: string
-    /** The main message body */
-    message: string
-    /** Pre-configured dialog type */
-    type?: ConfirmationDialogType
-    /** Displayed as an unordered list immediately below the message body */
-    itemList?: string[]
-    hint?: string
-  }): Promise<boolean | null> {
+    hint,
+    denyLabel,
+    key = 'global-prompt'
+  }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
-        key: 'global-prompt',
+        key,
         title,
         component: ConfirmationDialogContent,
         props: {
@@ -266,9 +326,12 @@ export const useDialogService = () => {
           type,
           itemList,
           onConfirm: resolve,
-          hint
+          hint,
+          denyLabel
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
           onClose: () => resolve(null)
         }
       }
@@ -280,8 +343,14 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    const { type } = useBillingContext()
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
+      useBillingCapabilities()
+    // A capability read still in flight has to be awaited here, or a top-up
+    // triggered during that window is silently dropped with no recovery UI.
+    if (!isReady.value) await initialize()
+    if (!isReady.value) return
+    if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -289,6 +358,24 @@ export const useDialogService = () => {
       })
       return
     }
+
+    if (!canTopUp.value && type.value === 'workspace') {
+      return dialogStore.showDialog({
+        key: 'insufficient-credits-member',
+        component: InsufficientCreditsMemberDialog,
+        props: {
+          onClose: () =>
+            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+        }
+      })
+    }
+    if (!canTopUp.value) return
 
     const component =
       type.value === 'workspace'
@@ -300,12 +387,9 @@ export const useDialogService = () => {
       component,
       props: options,
       dialogComponentProps: {
+        renderer: 'reka',
         headless: true,
-        pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
-          root: { class: 'rounded-2xl' }
-        }
+        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
     })
   }
@@ -324,6 +408,10 @@ export const useDialogService = () => {
       props: {
         onSuccess: () =>
           dialogStore.closeDialog({ key: 'global-update-password' })
+      },
+      dialogComponentProps: {
+        renderer: 'reka',
+        contentClass: HUG_CONTENT_CLASS
       }
     })
   }
@@ -353,20 +441,10 @@ export const useDialogService = () => {
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
+      renderer: 'reka',
       headless: true,
       modal: true,
-      closable: true,
-      pt: {
-        root: {
-          class: 'rounded-2xl overflow-hidden'
-        },
-        header: {
-          class: 'p-0! hidden'
-        },
-        content: {
-          class: 'p-0! m-0!'
-        }
-      }
+      closable: true
     }
 
     return dialogStore.showDialog({
@@ -388,26 +466,23 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       ...rest,
       dialogComponentProps: {
+        renderer: 'reka',
         closable: true,
-        pt: {
-          root: { class: 'bg-base-background border-border-default' },
-          header: { class: '!p-0 !m-0' },
-          content: { class: '!p-0 overflow-y-hidden' },
-          footer: { class: '!p-0' },
-          pcCloseButton: {
-            root: {
-              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
-            }
-          }
-        },
+        // Contents bring their own width and separators — shrink-wrap the
+        // chrome and zero the section padding.
+        contentClass:
+          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
+        headerClass: 'p-0',
+        bodyClass: 'p-0 overflow-y-hidden',
+        footerClass: 'p-0',
         ...callerProps
       }
     })
   }
 
-  async function showSubscriptionRequiredDialog(options?: {
-    reason?: SubscriptionDialogReason
-  }) {
+  async function showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
@@ -419,13 +494,10 @@ export const useDialogService = () => {
   }
 
   // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
-  const workspaceDialogPt = {
+  const workspaceDialogProps = {
+    renderer: 'reka',
     headless: true,
-    pt: {
-      header: { class: 'p-0! hidden' },
-      content: { class: 'p-0! m-0! rounded-2xl' },
-      root: { class: 'rounded-2xl' }
-    }
+    contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
   } as const
 
   async function showDeleteWorkspaceDialog(options?: {
@@ -438,7 +510,7 @@ export const useDialogService = () => {
       key: 'delete-workspace',
       component,
       props: options,
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -452,7 +524,7 @@ export const useDialogService = () => {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -471,7 +543,7 @@ export const useDialogService = () => {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -482,7 +554,7 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       key: 'leave-workspace',
       component,
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -493,7 +565,7 @@ export const useDialogService = () => {
       key: 'edit-workspace',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -505,7 +577,38 @@ export const useDialogService = () => {
       key: 'remove-member',
       component,
       props: { memberId },
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
+  async function showChangeMemberRoleDialog(props: {
+    memberId: string
+    memberName: string
+    targetRole: WorkspaceRole
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-member-role',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed?: number
+    currentLimit?: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -516,7 +619,7 @@ export const useDialogService = () => {
       key: 'invite-member',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -528,7 +631,7 @@ export const useDialogService = () => {
       key: 'invite-member-upsell',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -540,7 +643,7 @@ export const useDialogService = () => {
       key: 'revoke-invite',
       component,
       props: { inviteId },
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -555,23 +658,143 @@ export const useDialogService = () => {
         onConfirm: () => {}
       },
       dialogComponentProps: {
-        pt: {
-          root: { class: 'max-w-[360px]' }
-        }
+        renderer: 'reka',
+        size: 'sm',
+        contentClass: 'max-w-[360px]'
       }
     })
   }
 
-  async function showCancelSubscriptionDialog(cancelAt?: string) {
+  async function showCancelSubscriptionDialog(
+    cancelAt?: string,
+    flowAlreadyOpened = false
+  ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt },
+      props: { cancelAt, flowAlreadyOpened },
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
+    })
+  }
+
+  async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const cancellationFlow =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return cancellationFlow.launchCancellationFlow({
+      cancelAt,
+      showFallback: ({ flowAlreadyOpened = false } = {}) =>
+        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
+    })
+  }
+
+  /**
+   * Downgrade a team plan to a personal plan. Skips the type-"I understand"
+   * confirm dialog only when there's nothing to confirm: no other members to
+   * remove and no reactivation charge to disclose. Failures on that fast
+   * path surface as an error toast.
+   */
+  async function showDowngradeToPersonalDialog(options: {
+    planName: string
+    planSlug: string
+  }): Promise<DowngradeToPersonalResult | null> {
+    const {
+      useDowngradeToPersonal,
+      ReactivationConfirmationRequiredError,
+      ReactivationAmountChangedError
+    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const {
+      hasOtherMembers,
+      refreshMembers,
+      previewDowngrade,
+      downgradeToPersonal
+    } = useDowngradeToPersonal()
+
+    let requiresReactivation = false
+    let chargeCents = 0
+    try {
+      await refreshMembers()
+      const preview = await previewDowngrade(options.planSlug)
+      requiresReactivation = preview.requiresReactivationConfirmation
+      chargeCents = preview.preview.cost_today_cents
+      if (!hasOtherMembers.value && !requiresReactivation) {
+        return await downgradeToPersonal(options.planSlug)
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.downgrade.failed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+      return null
+    }
+
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
+    const dialogKey = 'downgrade-remove-members'
+    dialogStore.closeDialog({ key: dialogKey })
+    return new Promise((resolve) => {
+      const stopWatching = watch(
+        () => dialogStore.isDialogOpen(dialogKey),
+        (isOpen) => {
+          if (!isOpen) resolveResult(null)
+        },
+        { flush: 'sync' }
+      )
+      function resolveResult(result: DowngradeToPersonalResult | null) {
+        stopWatching()
+        resolve(result)
+      }
+
+      dialogStore.showDialog({
+        key: dialogKey,
+        component,
+        props: {
+          planName: options.planName,
+          planSlug: options.planSlug,
+          requiresRemoval: hasOtherMembers.value,
+          requiresReactivation,
+          chargeCents,
+          onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
+            try {
+              const result = await downgradeToPersonal(
+                planSlug,
+                confirmReactivation,
+                chargeCents
+              )
+              resolveResult(result)
+            } catch (error) {
+              // A fresh preview inside downgradeToPersonal() found the
+              // dialog's captured state (open-time cancellation/charge) is
+              // stale and refused to bill it. Push the corrected values into
+              // the still-open dialog so a retry sends what these errors'
+              // own preview says is actually true, instead of repeating the
+              // same rejected request forever.
+              if (
+                error instanceof ReactivationConfirmationRequiredError ||
+                error instanceof ReactivationAmountChangedError
+              ) {
+                requiresReactivation = true
+                chargeCents = error.preview.cost_today_cents
+                dialogStore.updateDialog({
+                  key: dialogKey,
+                  contentProps: { requiresReactivation, chargeCents }
+                })
+              }
+              throw error
+            }
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onClose: () => resolveResult(null)
+        }
+      })
     })
   }
 
@@ -585,9 +808,8 @@ export const useDialogService = () => {
         props: {},
         dialogComponentProps: {
           closable: false,
-          pt: {
-            root: { class: 'w-170 max-h-[85vh]' }
-          },
+          contentClass:
+            'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
           onClose: () => resolve()
         }
       })
@@ -601,12 +823,13 @@ export const useDialogService = () => {
       key,
       component: ComfyHubPublishDialog,
       props: {
-        onClose: () => dialogStore.closeDialog({ key })
+        onClose: () => dialogStore.closeDialog({ key }),
+        // Falls through to the BaseModalLayout root — keeps the e2e
+        // publish-dialog selector working without the PrimeVue pt hook.
+        'data-testid': 'publish-dialog'
       },
       dialogComponentProps: {
-        pt: {
-          root: { 'data-testid': 'publish-dialog' }
-        }
+        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
     })
   }
@@ -632,10 +855,14 @@ export const useDialogService = () => {
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
+    showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
-    showCancelSubscriptionDialog
+    showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
+    showDowngradeToPersonalDialog
   }
 }

@@ -1,7 +1,4 @@
-import {
-  TOOLKIT_BLUEPRINT_MODULES,
-  TOOLKIT_NODE_NAMES
-} from '@/constants/toolkitNodes'
+import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
@@ -46,10 +43,7 @@ export function getExecutionContext(): ExecutionContext {
         }
       }
 
-      const isToolkitNode =
-        TOOLKIT_NODE_NAMES.has(node.type) ||
-        (nodeDef?.python_module !== undefined &&
-          TOOLKIT_BLUEPRINT_MODULES.has(nodeDef.python_module))
+      const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type

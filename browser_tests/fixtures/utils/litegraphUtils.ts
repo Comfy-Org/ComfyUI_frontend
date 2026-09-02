@@ -1,8 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
+import type { NodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -52,12 +51,7 @@ export class SubgraphSlotReference {
           throw new Error(`${type} slot '${slotName}' has no position`)
         }
 
-        // Convert from offset to canvas coordinates
-        const canvasPos = window.app!.canvas.ds.convertOffsetToCanvas([
-          slot.pos[0],
-          slot.pos[1]
-        ])
-        return canvasPos
+        return window.app!.canvasPosToClientPos([slot.pos[0], slot.pos[1]])
       },
       [this.type, this.slotName] as const
     )
@@ -87,12 +81,10 @@ export class SubgraphSlotReference {
           throw new Error(`No ${type} node found in subgraph`)
         }
 
-        // Convert from offset to canvas coordinates
-        const canvasPos = window.app!.canvas.ds.convertOffsetToCanvas([
+        return window.app!.canvasPosToClientPos([
           node.emptySlot.pos[0],
           node.emptySlot.pos[1]
         ])
-        return canvasPos
       },
       [this.type] as const
     )
@@ -118,23 +110,11 @@ class NodeSlotReference {
         if (!node) throw new Error(`Node ${id} not found.`)
 
         const rawPos = node.getConnectionPos(type === 'input', index)
-        const convertedPos =
-          window.app!.canvas.ds!.convertOffsetToCanvas(rawPos)
-
-        // Debug logging - convert Float64Arrays to regular arrays for visibility
-        console.warn(
-          `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
-          {
-            nodePos: [node.pos[0], node.pos[1]],
-            nodeSize: [node.size[0], node.size[1]],
-            rawConnectionPos: [rawPos[0], rawPos[1]],
-            convertedPos: [convertedPos[0], convertedPos[1]],
-            currentGraphType:
-              'inputNode' in window.app!.canvas.graph! ? 'Subgraph' : 'LGraph'
-          }
-        )
-
-        return convertedPos
+        // page.mouse needs page coords. canvasPosToClientPos applies the
+        // canvas transform AND the canvas element's client offset, so it
+        // survives pack JS injecting chrome above the canvas (e.g. rgthree's
+        // progress bar shifting it off (0,0)).
+        return window.app!.canvasPosToClientPos([rawPos[0], rawPos[1]])
       },
       [this.type, this.node.id, this.index] as const
     )
@@ -202,7 +182,7 @@ class NodeSlotReference {
   }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference
@@ -264,25 +244,17 @@ export class NodeWidgetReference {
   }
 
   async click() {
-    await this.node.comfyPage.canvas.click({
-      position: await this.getPosition()
-    })
+    const pos = await this.getPosition()
+    await this.node.comfyPage.page.mouse.click(pos.x, pos.y)
+    await this.node.comfyPage.nextFrame()
   }
 
   async dragHorizontal(delta: number) {
     const pos = await this.getPosition()
-    const canvas = this.node.comfyPage.canvas
-    const canvasPos = (await canvas.boundingBox())!
-    await this.node.comfyPage.canvasOps.dragAndDrop(
-      {
-        x: canvasPos.x + pos.x,
-        y: canvasPos.y + pos.y
-      },
-      {
-        x: canvasPos.x + pos.x + delta,
-        y: canvasPos.y + pos.y
-      }
-    )
+    await this.node.comfyPage.canvasOps.dragAndDrop(pos, {
+      x: pos.x + delta,
+      y: pos.y
+    })
   }
 
   async getValue() {
@@ -363,7 +335,9 @@ export class NodeReference {
       modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
     }
   ): Promise<void> {
-    const titlePos = await this.getTitlePosition()
+    const titlePos = await this.comfyPage.canvasOps.toAbsolute(
+      await this.getTitlePosition()
+    )
     const target = { x: titlePos.x + delta.x, y: titlePos.y + delta.y }
     const modifiers = options?.modifiers ?? []
     const keyboard = this.comfyPage.page.keyboard
@@ -511,19 +485,7 @@ export class NodeReference {
   }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })
-    const ctx = this.comfyPage.page.locator('.litecontextmenu')
-    await ctx.getByText(optionText).click()
-  }
-  async convertToGroupNode(groupNodeName: string = 'GroupNode') {
-    await this.clickContextMenuOption('Convert to Group Node')
-    await this.comfyPage.nodeOps.fillPromptDialog(groupNodeName)
-    const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
-      `workflow>${groupNodeName}`
-    )
-    if (nodes.length !== 1) {
-      throw new Error(`Did not find single group node (found=${nodes.length})`)
-    }
-    return nodes[0]
+    await this.comfyPage.contextMenu.clickMenuItem(optionText)
   }
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')
@@ -536,14 +498,6 @@ export class NodeReference {
       )
     }
     return nodes[0]
-  }
-  async manageGroupNode() {
-    await this.clickContextMenuOption('Manage Group Node')
-    await this.comfyPage.nextFrame()
-    return new ManageGroupNode(
-      this.comfyPage.page,
-      this.comfyPage.page.locator('.comfy-group-manage')
-    )
   }
   async navigateIntoSubgraph() {
     const titleHeight = await this.comfyPage.page.evaluate(() => {

@@ -1,4 +1,11 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { isCivitaiUrl } from '@/utils/formatUtil'
+
+// Reserved tag literals (mirror assetService's MODELS_TAG/MISSING_TAG). Kept
+// local so this leaf util doesn't pull the heavier assetService -> i18n chain.
+const MODELS_TAG = 'models'
+const MISSING_TAG = 'missing'
 
 /**
  * Type-safe utilities for extracting metadata from assets.
@@ -126,16 +133,9 @@ export function getAssetAdditionalTags(asset: AssetItem): string[] {
  * @returns Human-readable source name
  */
 export function getSourceName(url: string): string {
+  if (isCivitaiUrl(url)) return 'Civitai'
   try {
     const hostname = new URL(url).hostname.toLowerCase()
-    if (
-      hostname === 'civitai.com' ||
-      hostname.endsWith('.civitai.com') ||
-      hostname === 'civitai.red' ||
-      hostname.endsWith('.civitai.red')
-    ) {
-      return 'Civitai'
-    }
     if (hostname === 'huggingface.co' || hostname.endsWith('.huggingface.co')) {
       return 'Hugging Face'
     }
@@ -145,14 +145,268 @@ export function getSourceName(url: string): string {
   return 'Source'
 }
 
+/** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
+export const MODEL_TYPE_TAG_PREFIX = 'model_type:'
+
 /**
- * Extracts the model type from asset tags
+ * Extracts the model type from asset tags as a bare (non-namespaced) value.
+ * Never returns a raw `model_type:*` literal: this value feeds edit widgets
+ * whose save path writes tags back verbatim, so a namespaced tag leaking
+ * through here would round-trip the prefixed literal into the tag set.
  * @param asset - The asset to extract model type from
  * @returns The model type string or null if not present
  */
 export function getAssetModelType(asset: AssetItem): string | null {
-  const typeTag = asset.tags?.find((tag) => tag && tag !== 'models')
+  const typeTag = asset.tags?.find(
+    (tag) => tag && tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+  )
   return typeTag ?? null
+}
+
+/**
+ * Builds the namespaced subtype tag the backend stores in `model_type:` mode.
+ * The argument is a discovery folder_name (e.g. `checkpoints`,
+ * `ultralytics_bbox`); the backend keeps the bare directory-path twin in sync.
+ * An already-namespaced input is returned unchanged rather than silently
+ * double-prefixed.
+ */
+export function toModelTypeTag(folderName: string): string {
+  if (folderName.startsWith(MODEL_TYPE_TAG_PREFIX)) return folderName
+  return `${MODEL_TYPE_TAG_PREFIX}${folderName}`
+}
+
+/** Strips the `model_type:` prefix off each namespaced tag, dropping non-`model_type:` tags. */
+function getModelTypeTagValues(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
+    .map((tag) => tag.slice(MODEL_TYPE_TAG_PREFIX.length))
+    .filter((tag) => tag.length > 0)
+}
+
+/**
+ * The asset's primary `model_type:` membership: the lexicographically-first of
+ * its stripped `model_type:` values, or `undefined` for an uncovered asset.
+ * Sorting makes the choice deterministic because the backend does not guarantee
+ * the order of an asset's `model_type:` tags. This is the single membership a
+ * re-type replaces and the value the edit dropdown / browser title reflect.
+ */
+function getPrimaryModelType(asset: AssetItem): string | undefined {
+  return getModelTypeTagValues(asset).toSorted()[0]
+}
+
+/**
+ * Resolves the folder_name shown as the asset's current model type in the edit
+ * dropdown. In `modelTypeMode` the primary `model_type:` value is authoritative
+ * (covered assets); an uncovered asset with no `model_type:` tag falls back to
+ * its bare subtype tag, mirroring the read-side grouping. Outside the mode this
+ * is the legacy first-non-`models` tag.
+ */
+export function getEditableModelType(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string | null {
+  if (modelTypeMode) {
+    const primary = getPrimaryModelType(asset)
+    if (primary !== undefined) return primary
+  }
+  return getAssetModelType(asset)
+}
+
+/**
+ * Computes the tag set for re-typing a model asset to `newFolderName`. In
+ * `modelTypeMode` only the primary `model_type:` membership is replaced: a
+ * covered asset drops `model_type:<primary>` and its bare directory-path twin,
+ * leaving any sibling `model_type:` memberships of a multi-type asset intact;
+ * an uncovered asset drops its bare current type. The new
+ * `model_type:<folder_name>` is then added (deduped if it already exists as a
+ * sibling). Outside the mode it swaps the legacy bare subtype tag, preserving
+ * the pre-namespace behavior.
+ */
+export function buildModelTypeTagUpdate(
+  asset: AssetItem,
+  newFolderName: string,
+  modelTypeMode: boolean
+): string[] {
+  if (!modelTypeMode) {
+    const currentType = getAssetModelType(asset)
+    return asset.tags.filter((tag) => tag !== currentType).concat(newFolderName)
+  }
+
+  const primary = getPrimaryModelType(asset)
+  const currentBareType = getAssetModelType(asset)
+  const tagsToRemove =
+    primary !== undefined
+      ? new Set([toModelTypeTag(primary), primary])
+      : new Set(currentBareType ? [currentBareType] : [])
+
+  const newTag = toModelTypeTag(newFolderName)
+  const retained = asset.tags.filter((tag) => !tagsToRemove.has(tag))
+  return retained.includes(newTag) ? retained : retained.concat(newTag)
+}
+
+/**
+ * Save gate for a model-type change: returns the tag set to persist, or null
+ * when the change must not be written (the type is read-only, or unchanged).
+ * Keeps tag-set semantics in buildModelTypeTagUpdate; this only decides whether
+ * to save.
+ */
+export function resolveModelTypeTagUpdate(
+  asset: AssetItem,
+  newFolderName: string,
+  isEditable: boolean,
+  modelTypeMode: boolean
+): string[] | null {
+  if (!isEditable) return null
+  if (getEditableModelType(asset, modelTypeMode) === newFolderName) return null
+  return buildModelTypeTagUpdate(asset, newFolderName, modelTypeMode)
+}
+
+/** Legacy grouping: each non-`models` tag's top-level path segment. */
+function getBareTagCategories(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+    .map((tag) => tag.split('/')[0])
+}
+
+/**
+ * Resolves the category keys a model asset is grouped under.
+ *
+ * `modelTypeMode` reflects whether the backend declares the `model_type:` tag
+ * scheme (the `supports_model_type_tags` capability). When true, an asset's
+ * `model_type:*` values are authoritative; an asset with no `model_type:` tag
+ * still routes by its bare tags. When false (the default) categories come from
+ * the legacy bare-tag top-level grouping and `model_type:` is ignored.
+ */
+export function getAssetCategories(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string[] {
+  if (modelTypeMode) {
+    const modelTypes = getModelTypeTagValues(asset)
+    if (modelTypes.length > 0) return modelTypes
+    // Uncovered assets route by bare tags, but namespace residue (e.g. a
+    // malformed empty `model_type:`) must not surface as a raw category.
+    return getBareTagCategories(asset).filter(
+      (category) => !category.startsWith(MODEL_TYPE_TAG_PREFIX)
+    )
+  }
+
+  return getBareTagCategories(asset)
+}
+
+/**
+ * Resolves the primary tag a browser surface titles itself after. In
+ * `modelTypeMode` a covered asset uses its primary `model_type:*` value — the
+ * key it groups under — while an uncovered asset keeps the legacy selection
+ * (first non-`models` tag, verbatim, hierarchical paths intact). Outside the
+ * mode this is exactly the legacy selection.
+ */
+export function getPrimaryCategoryTag(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string | undefined {
+  if (modelTypeMode) {
+    const primary = getPrimaryModelType(asset)
+    if (primary !== undefined) return primary
+    return asset.tags.find(
+      (tag) => tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+    )
+  }
+  return asset.tags.find((tag) => tag !== MODELS_TAG)
+}
+
+/** Number of `parent/child` segments in a tag, used to pick the most specific. */
+function pathDepth(tag: string): number {
+  return tag.split('/').length
+}
+
+/** Removes the `model_type:` namespace prefix from a tag when present. */
+export function stripModelTypePrefix(tag: string): string {
+  return tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+    ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
+    : tag
+}
+
+/**
+ * Resolves the labels shown as an asset card's type badges.
+ *
+ * In `modelTypeMode` a covered asset badges every `model_type:*` value — the
+ * same keys it groups under (`getAssetCategories`) — so a shared-root asset
+ * tagged with several categories carries each of them; whichever category
+ * view the card appears in is represented on the card. Uncovered assets (and
+ * legacy mode) keep the original single selection: first non-`models` tag,
+ * with bare hierarchical tags showing the segment after the first `/`.
+ */
+export function getAssetTypeBadges(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string[] {
+  if (modelTypeMode) {
+    const modelTypes = getModelTypeTagValues(asset)
+    if (modelTypes.length > 0) return modelTypes
+  }
+  const typeTag = asset.tags.find(
+    (tag) =>
+      tag !== MODELS_TAG &&
+      !(modelTypeMode && tag.startsWith(MODEL_TYPE_TAG_PREFIX))
+  )
+  if (!typeTag) return []
+  return [
+    typeTag.includes('/') ? typeTag.slice(typeTag.indexOf('/') + 1) : typeTag
+  ]
+}
+
+/**
+ * Ordered node-category candidates for an asset, most specific first.
+ *
+ * Callers resolve a node provider by trying each candidate in order and taking
+ * the first that maps to a provider. The full (possibly hierarchical) value is
+ * kept so `modelToNodeStore`'s `parent/child` fallback still works.
+ *
+ * In `modelTypeMode` (backend declares `supports_model_type_tags`) candidates
+ * come in two tiers. Tier 1: the stripped `model_type:*` values plus bare tags
+ * *related* to one of them (equal to it, or extending it as a `parent/child`
+ * path), ordered by descending depth — so a resolvable `LLM/Qwen-VL/...` twin
+ * wins over a flat `model_type:LLM`, while ties keep `model_type:*` values
+ * ahead of bare tags. Tier 2: unrelated bare tags (e.g. a user-added
+ * `foo/bar`), tried only when nothing authoritative resolves — they can no
+ * longer pre-empt a resolvable `model_type:*` value however deep they are.
+ * An uncovered asset (no `model_type:` tag) routes by all its bare tags,
+ * deepest first. Outside `modelTypeMode` the legacy first-non-reserved tag is
+ * used verbatim.
+ */
+export function getAssetNodeCategoryCandidates(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string[] {
+  if (!modelTypeMode) {
+    const legacy = asset.tags.find(
+      (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+    )
+    return legacy ? [legacy] : []
+  }
+
+  const bareTags = asset.tags.filter(
+    (tag) =>
+      tag !== MODELS_TAG &&
+      tag !== MISSING_TAG &&
+      !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+  )
+
+  const byDepthDesc = (a: string, b: string) => pathDepth(b) - pathDepth(a)
+
+  const modelTypes = getModelTypeTagValues(asset)
+  if (modelTypes.length === 0) return bareTags.toSorted(byDepthDesc)
+
+  const isRelated = (tag: string) =>
+    modelTypes.some((type) => tag === type || tag.startsWith(`${type}/`))
+
+  return [
+    ...[...new Set([...modelTypes, ...bareTags.filter(isRelated)])].sort(
+      byDepthDesc
+    ),
+    ...bareTags.filter((tag) => !isRelated(tag)).sort(byDepthDesc)
+  ]
 }
 
 /**
@@ -178,13 +432,25 @@ export function getAssetFilename(asset: AssetItem): string {
 }
 
 /**
- * Gets the human-readable filename to render in UI surfaces.
- * Fallback chain: user_metadata.filename → metadata.filename →
- * asset.display_name → asset.name.
+ * Resolves the filename that addresses an asset's *bytes* in storage — use
+ * this to build the path a backend resolves to a real file (the
+ * `createAnnotatedPath` input behind `/view` requests and widget values),
+ * never to show the user. Cloud is content-addressed, so it returns the
+ * content hash (`hash`); OSS is filesystem-backed, so it returns `name`.
  *
- * `display_name` is populated by queue output mappers in Cloud where
- * `asset.name` is a content hash. Use this helper for labels/titles only;
- * for serialized identifiers use {@link getAssetFilename}.
+ * For a human-readable label use {@link getAssetDisplayFilename}; for a
+ * serialized identifier (matching, validation) use {@link getAssetFilename}.
+ *
+ * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
+ */
+export function getAssetStoredFilename(asset: AssetItem): string {
+  return isCloud && asset.hash ? asset.hash : asset.name
+}
+
+/**
+ * Human-readable filename for UI labels.
+ * Fallback: user_metadata.filename → metadata.filename → display_name → asset.name.
+ * For serialized identifiers use {@link getAssetFilename}.
  */
 export function getAssetDisplayFilename(asset: AssetItem): string {
   return (
@@ -197,10 +463,78 @@ export function getAssetDisplayFilename(asset: AssetItem): string {
  * Prefers a user-curated name (user_metadata.name / metadata.name) when it
  * actually differs from asset.name, so a user-renamed model keeps its
  * display name. Falls through to {@link getAssetDisplayFilename} when the
- * curated name is absent or equal to asset.name (Cloud hash case).
+ * curated name is absent or equal to asset.name (hash-keyed asset case).
  */
 export function getAssetCardTitle(asset: AssetItem): string {
   const curatedName = getStringProperty(asset, 'name')
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
+}
+
+export interface ImageDimensions {
+  width: number
+  height: number
+}
+
+/**
+ * Type guard: a pixel dimension is a finite positive integer. `metadata` is
+ * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
+ * NaN, Infinity, 0, negatives, and fractional values.
+ */
+function isValidDimension(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+/**
+ * Returns the original image dimensions from `asset.metadata.{width,height}`
+ * when both pass shape validation, otherwise `undefined`. Callers should fall
+ * back to the locally-computed `<img>.naturalWidth/Height`, which is correct
+ * on runtimes that serve the original file but reports preview size on
+ * runtimes that serve a downscaled preview.
+ */
+export function getAssetMetadataDimensions(
+  asset: AssetItem | undefined
+): ImageDimensions | undefined {
+  const w = asset?.metadata?.width
+  const h = asset?.metadata?.height
+  if (isValidDimension(w) && isValidDimension(h)) {
+    return { width: w, height: h }
+  }
+  return undefined
+}
+
+/**
+ * Resolves the image dimensions an asset card should display.
+ *
+ * Prefers the server-provided original dimensions from
+ * {@link getAssetMetadataDimensions}. Only when those are absent does it fall
+ * back to `renderedNaturalSize` — the natural size of the `<img>` the card
+ * actually rendered — and only when that rendered image was the original file.
+ *
+ * A distinct `thumbnail_url` (one that differs from `preview_url`) means the
+ * card rendered a downscaled preview, so `renderedNaturalSize` reflects the
+ * preview's dimensions rather than the asset's. In that case this returns
+ * `undefined` so the card shows no label rather than a wrong resolution.
+ * On OSS, `thumbnail_url` and `preview_url` are the same URL (full-res),
+ * so the guard correctly passes through `renderedNaturalSize`.
+ */
+export function resolveDisplayImageDimensions(
+  asset: AssetItem | undefined,
+  renderedNaturalSize: ImageDimensions | undefined
+): ImageDimensions | undefined {
+  const fromMetadata = getAssetMetadataDimensions(asset)
+  if (fromMetadata) return fromMetadata
+  if (asset?.thumbnail_url && asset.thumbnail_url !== asset.preview_url)
+    return undefined
+  return renderedNaturalSize
+}
+
+/**
+ * Returns the filename component the cloud `/api/view` endpoint resolves
+ * for this asset — `hash` when present (cloud assets are hash-keyed
+ * in storage), otherwise `asset.name`. Use this when constructing widget
+ * values or media URLs that must round-trip through the view endpoint.
+ */
+export function getAssetUrlFilename(asset: AssetItem): string {
+  return asset.hash ?? asset.name
 }

@@ -1,9 +1,12 @@
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
+import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 
 import {
+  assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
   asyncUploadResponseSchema,
@@ -17,26 +20,37 @@ import type {
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
-  ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import {
+  getAssetCategories,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 export interface PaginationOptions {
   limit?: number
   offset?: number
 }
 
-interface AssetPaginationOptions extends PaginationOptions {
+export interface AssetPaginationOptions extends PaginationOptions {
+  /**
+   * Opaque keyset cursor from a prior response's `next_cursor`. When set, the
+   * server resumes after that cursor and `offset` is ignored.
+   */
+  after?: string
   signal?: AbortSignal
 }
 
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
+  excludeTags?: string[]
   includePublic?: boolean
+  after?: string
   signal?: AbortSignal
 }
 
@@ -49,6 +63,7 @@ interface AssetExportOptions {
     | 'preserve'
     | 'asset_id'
   job_asset_name_filters?: Record<string, string[]>
+  include_previews?: boolean
 }
 
 /**
@@ -172,35 +187,29 @@ function getLocalizedErrorMessage(errorCode: string): string {
 }
 
 const ASSETS_ENDPOINT = '/assets'
+const ASSETS_SEED_ENDPOINT = '/assets/seed'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
+// Defensive backstop against a server that never signals exhaustion (e.g. an
+// unbounded stream of unique cursors); mirrors assetsStore's walk cap. At
+// DEFAULT_LIMIT per page this allows 500k assets per walk, so it only ever
+// trips on pathological pagination.
+const MAX_PAGINATION_BATCHES = 1000
 
 export const MODELS_TAG = 'models'
+export const INPUT_TAG = 'input'
+export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
+const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
+const EMPTY_PAGE: AssetResponse = { assets: [], total: 0, has_more: false }
 
-/** Result of a HEAD lookup against an exact asset hash. */
-export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
-
-const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
-const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
 const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
-
-/** Returns true for a prefixed BLAKE3 asset hash: `blake3:<64 hex>`. */
-export function isBlake3AssetHash(value: string): boolean {
-  return BLAKE3_ASSET_HASH_PATTERN.test(value)
-}
-
-/** Converts a raw 64-character BLAKE3 hex digest into an asset hash. */
-export function toBlake3AssetHash(hash: string | undefined): string | null {
-  if (!hash || !BLAKE3_HEX_PATTERN.test(hash)) return null
-  return `blake3:${hash}`
-}
 
 function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
@@ -208,6 +217,32 @@ function createAbortError(): DOMException {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw createAbortError()
+}
+
+function normalizeAssetTags(tags: string[]): string[] {
+  return tags.map((tag) => tag.trim()).filter(Boolean)
+}
+
+/**
+ * Orders loader paths as subdirectories before files at every level,
+ * alphabetical within each group. The asset API returns models in storage
+ * order, which would otherwise interleave root-level files with folder
+ * contents in the sidebar tree.
+ */
+function compareLoaderPaths(a: string, b: string): number {
+  const aSegments = a.split('/')
+  const bSegments = b.split('/')
+  const sharedDepth = Math.min(aSegments.length, bSegments.length)
+  for (let i = 0; i < sharedDepth; i++) {
+    const aIsFile = i === aSegments.length - 1
+    const bIsFile = i === bSegments.length - 1
+    if (aIsFile !== bIsFile) return aIsFile ? 1 : -1
+    const order = aSegments[i].localeCompare(bSegments[i], undefined, {
+      numeric: true
+    })
+    if (order !== 0) return order
+  }
+  return 0
 }
 
 async function withCallerAbort<T>(
@@ -270,6 +305,31 @@ function createAssetService() {
   let inputAssetsIncludingPublicRequestId = 0
   let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
 
+  /**
+   * Model assets bucketed by folder category, built from a single walk of the
+   * `models` tag rather than a fetch per category. Shared by the folder list
+   * and per-folder listings so the sidebar loads every model in one pass.
+   */
+  let modelBuckets: Map<string, AssetItem[]> | null = null
+  let modelBucketsRequestId = 0
+  let pendingModelBuckets: Promise<Map<string, AssetItem[]>> | null = null
+  // The supports_model_type_tags value the cached buckets were built under.
+  // The flag arrives asynchronously over the websocket handshake, so a cache
+  // built before it lands (or surviving a reconnect that flips it) groups tags
+  // by the wrong scheme and must be discarded.
+  let modelBucketsMode: boolean | null = null
+
+  /**
+   * Discards the cached model buckets so the next read re-walks the models
+   * tag. Bumping the request id keeps a walk that was already in flight from
+   * repopulating the cache with pre-invalidation data.
+   */
+  function invalidateModelBuckets(): void {
+    modelBucketsRequestId++
+    modelBuckets = null
+    pendingModelBuckets = null
+  }
+
   /** Invalidates the cached public-inclusive input assets without aborting in-flight readers. */
   function invalidateInputAssetsIncludingPublic(): void {
     inputAssetsIncludingPublicRequestId++
@@ -290,16 +350,28 @@ function createAssetService() {
   ): Promise<AssetResponse> {
     const {
       includeTags,
+      excludeTags = DEFAULT_EXCLUDED_ASSET_TAGS,
       limit = DEFAULT_LIMIT,
       offset,
+      after,
       includePublic,
       signal
     } = options
+    const normalizedIncludeTags = normalizeAssetTags(includeTags)
+    const normalizedExcludeTags = normalizeAssetTags(excludeTags)
+
     const queryParams = new URLSearchParams({
-      include_tags: includeTags.join(','),
+      include_tags: normalizedIncludeTags.join(','),
       limit: limit.toString()
     })
-    if (offset !== undefined && offset > 0) {
+    if (normalizedExcludeTags.length > 0) {
+      queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
+    }
+    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
+    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
+    if (after !== undefined) {
+      queryParams.set('after', after)
+    } else if (offset !== undefined && offset > 0) {
       queryParams.set('offset', offset.toString())
     }
     if (includePublic !== undefined) {
@@ -319,61 +391,162 @@ function createAssetService() {
     return validateAssetResponse(data)
   }
   /**
-   * Gets a list of model folder keys from the asset API
-   *
-   * Logic:
-   * 1. Extract directory names directly from asset tags
-   * 2. Filter out blacklisted directories
-   * 3. Return alphabetically sorted directories with assets
-   *
-   * @returns The list of model folder keys
+   * Walks every `models`-tagged asset once and buckets each into the folder
+   * categories `getAssetCategories` resolves for it. A single asset lands in
+   * every category it is tagged with (e.g. a shared-root model in both
+   * `checkpoints` and `diffusion_models`); an asset covered by `model_type:`
+   * tags is grouped by those alone, so a legacy bare-tag twin left over from a
+   * partial re-tagging cannot also cross-list it into another folder. Which
+   * folders are actually shown is decided by `/experiment/models`; models with
+   * no category tag are dropped with a warning rather than hidden silently.
    */
-  async function getAssetModelFolders(): Promise<ModelFolder[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG] },
-      'model folders'
-    )
+  async function buildModelBuckets(
+    modelTypeMode: boolean
+  ): Promise<Map<string, AssetItem[]>> {
+    // Private-only, matching the legacy per-folder listing this walk
+    // replaces: the local sidebar never surfaced public/community assets.
+    const assets = await getAllAssetsByTag(MODELS_TAG, false)
+    const buckets = new Map<string, AssetItem[]>()
 
-    // Blacklist directories we don't want to show
-    const blacklistedDirectories = new Set(['configs'])
+    for (const asset of assets) {
+      const folders = [...new Set(getAssetCategories(asset, modelTypeMode))]
 
-    // Extract directory names from assets that actually exist, exclude missing assets
-    const discoveredFolders = new Set<string>(
-      data?.assets
-        ?.filter((asset) => !asset.tags.includes(MISSING_TAG))
-        ?.flatMap((asset) => asset.tags)
-        ?.filter(
-          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag)
-        ) ?? []
-    )
+      if (folders.length === 0) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) is tagged '${MODELS_TAG}' but has no model category; skipping.`
+        )
+        continue
+      }
 
-    // Return only discovered folders in alphabetical order
-    const sortedFolders = Array.from(discoveredFolders).toSorted()
-    return sortedFolders.map((name) => ({ name, folders: [] }))
+      // On loader_path-contract backends a null loader_path marks an
+      // unloadable asset (e.g. an orphan): it must not mint a widget value,
+      // and `name` is deprecated for path semantics.
+      if (modelTypeMode && !asset.loader_path) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) has no loader_path; skipping.`
+        )
+        continue
+      }
+
+      // The loader value flows into viewMetadata URLs and widget values, so a
+      // traversal-shaped path must not pass through even if the backend's own
+      // validation ever regresses.
+      const loaderValue = asset.loader_path ?? getAssetFilename(asset)
+      if (!assetFilenameSchema.safeParse(loaderValue).success) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) has an unsafe loader path ('${loaderValue}'); skipping.`
+        )
+        continue
+      }
+
+      for (const folder of folders) {
+        const bucket = buckets.get(folder)
+        if (bucket) bucket.push(asset)
+        else buckets.set(folder, [asset])
+      }
+    }
+
+    for (const bucket of buckets.values()) {
+      bucket.sort((a, b) =>
+        compareLoaderPaths(
+          a.loader_path ?? getAssetFilename(a),
+          b.loader_path ?? getAssetFilename(b)
+        )
+      )
+    }
+
+    return buckets
+  }
+
+  /** Returns the memoized model buckets, walking the models tag on first read. */
+  async function loadModelBuckets(): Promise<Map<string, AssetItem[]>> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+    // Discard a cache (or in-flight walk) built under a different flag value:
+    // the buckets would key tags by the wrong scheme otherwise.
+    if (modelBucketsMode !== modelTypeMode) invalidateModelBuckets()
+    if (modelBuckets) return modelBuckets
+    if (pendingModelBuckets) return pendingModelBuckets
+
+    modelBucketsMode = modelTypeMode
+    const requestId = ++modelBucketsRequestId
+    const walk = async () => {
+      try {
+        const buckets = await buildModelBuckets(modelTypeMode)
+        if (requestId === modelBucketsRequestId) {
+          modelBuckets = buckets
+        }
+        return buckets
+      } finally {
+        if (requestId === modelBucketsRequestId) {
+          pendingModelBuckets = null
+        }
+      }
+    }
+
+    pendingModelBuckets = walk()
+    return pendingModelBuckets
   }
 
   /**
-   * Gets a list of models in the specified folder from the asset API
+   * Gets the models in the specified folder from the single models walk.
    * @param folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG, folder] },
-      `models for ${folder}`
-    )
+    const buckets = await loadModelBuckets()
+    return (buckets.get(folder) ?? []).map((asset) => ({
+      // `loader_path` is the category-relative path the loader widget expects
+      // and the source for the sidebar tree. Backends that predate it (bare-tag
+      // mode; today's cloud) fall back to the filename metadata — the same
+      // value the asset browser serializes — rather than `name`, which is a
+      // content hash on cloud.
+      name: asset.loader_path ?? getAssetFilename(asset),
+      // Asset records carry no root identity, so every model reports root 0.
+      // Known limitation on multi-root categories (extra_model_paths.yaml):
+      // preview reads target root 0 (wrong file or 404 for secondary-root
+      // files), and same-relative-path files in different roots collapse
+      // onto one sidebar row. Metadata is unaffected unless relative paths
+      // collide (/view_metadata searches roots in order without an index),
+      // as are loader widget values; lifting this needs the backend to carry
+      // root identity on assets.
+      pathIndex: 0
+    }))
+  }
 
-    return (
-      data?.assets
-        ?.filter(
-          (asset) =>
-            !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
-        )
-        ?.map((asset) => ({
-          name: asset.name,
-          pathIndex: 0
-        })) ?? []
-    )
+  /**
+   * Asks the backend to rescan the model roots on disk so newly added files
+   * become assets. Fire-and-forget: the scan's fast (insert) phase already
+   * writes the category tags and filenames the sidebar needs and is announced
+   * by an `assets.seed.fast_complete` websocket event. A 409 means a scan is
+   * already running, which will emit the same event, so it is not an error.
+   */
+  async function seedModelAssets(): Promise<void> {
+    const res = await api.fetchApi(ASSETS_SEED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roots: ['models'] })
+    })
+    if (!res.ok && res.status !== 409) {
+      throw new Error(
+        `Unable to start asset scan: Server returned ${res.status}`
+      )
+    }
+  }
+
+  /**
+   * Subscribes to the backend's scan fast-phase completion broadcast — the
+   * moment newly scanned files' tags and loader paths become queryable. The
+   * wire-level event name is shared via `ASSETS_SEED_FAST_COMPLETE_EVENT`;
+   * consumers receive a callback and an unsubscribe function.
+   */
+  function onModelsScanned(callback: () => void | Promise<void>): () => void {
+    const handler = () => {
+      void callback()
+    }
+    api.addCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
+    return () => {
+      api.removeCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
+    }
   }
 
   /**
@@ -428,10 +601,41 @@ function createAssetService() {
    */
   async function getAssetsForNodeType(
     nodeType: string,
-    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+    options: PaginationOptions = {}
   ): Promise<AssetItem[]> {
+    const data = await getAssetsPageForNodeType(nodeType, options)
+
+    // Return full AssetItem[] objects (don't strip like getAssetModels does)
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response for a specific node type by finding the
+   * matching category and fetching assets with that category tag.
+   *
+   * Unlike {@link getAssetsForNodeType}, the full response envelope is
+   * returned so callers can drive keyset cursor pagination from
+   * `next_cursor`/`has_more`.
+   *
+   * @param nodeType - The ComfyUI node type (e.g., 'CheckpointLoaderSimple')
+   * @param options - Pagination options
+   * @param options.limit - Maximum number of assets to return (default: 500)
+   * @param options.offset - Number of assets to skip (ignored when `after` is set)
+   * @param options.after - Keyset cursor from a prior response's `next_cursor`
+   * @param options.signal - Optional abort signal for cancelling the request
+   * @returns Promise<AssetResponse> - Page of assets plus pagination metadata
+   */
+  async function getAssetsPageForNodeType(
+    nodeType: string,
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
     if (!nodeType || typeof nodeType !== 'string') {
-      return []
+      return EMPTY_PAGE
     }
 
     // Find the category for this node type using efficient O(1) lookup
@@ -439,21 +643,13 @@ function createAssetService() {
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
     if (!category) {
-      return []
+      return EMPTY_PAGE
     }
 
     // Fetch assets for this category using same API pattern as getAssetModels
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset },
+    return await handleAssetRequest(
+      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
       `assets for ${nodeType}`
-    )
-
-    // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return (
-      data?.assets?.filter(
-        (asset) =>
-          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
-      ) ?? []
     )
   }
 
@@ -473,11 +669,8 @@ function createAssetService() {
     }
     const data = await res.json()
 
-    // Validate the single asset response against our schema
-    const result = assetResponseSchema.safeParse({ assets: [data] })
-    if (result.success && result.data.assets?.[0]) {
-      return result.data.assets[0]
-    }
+    const result = assetItemSchema.safeParse(data)
+    if (result.success) return result.data
 
     const error = result.error
       ? fromZodError(result.error)
@@ -501,20 +694,50 @@ function createAssetService() {
   async function getAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [tag], limit, offset, includePublic, signal },
-      `assets for tag ${tag}`
-    )
+    const data = await getAssetsPageByTag(tag, includePublic, {
+      limit,
+      offset,
+      after,
+      signal
+    })
 
-    return (
-      data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response filtered by a specific tag.
+   */
+  async function getAssetsPageByTag(
+    tag: string,
+    includePublic: boolean = true,
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return await handleAssetRequest(
+      { includeTags: [tag], limit, offset, after, includePublic, signal },
+      `assets for tag ${tag}`
     )
   }
 
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
+   *
+   * Uses keyset (cursor) pagination: each page is fetched with the prior
+   * response's `next_cursor`, which is stable under concurrent inserts/deletes
+   * and avoids the duplicate/skip drift that offset paging exhibits when the
+   * underlying set changes mid-walk. Falls back to terminating on `has_more`
+   * when the server omits `next_cursor`.
    *
    * @param tag - The tag to filter by (e.g., 'models', 'input')
    * @param includePublic - Whether to include public assets (default: true)
@@ -526,36 +749,43 @@ function createAssetService() {
   async function getAllAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      signal
+    }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
   ): Promise<AssetItem[]> {
     const assets: AssetItem[] = []
     const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
-    let offset = 0
+    let after: string | undefined
+    let batchCount = 0
 
     while (true) {
       if (signal?.aborted) throw createAbortError()
-
-      const data = await handleAssetRequest(
-        {
-          includeTags: [tag],
-          limit: pageSize,
-          offset,
-          includePublic,
-          signal
-        },
-        `assets for tag ${tag}`
-      )
-      const batch = data.assets ?? []
-      assets.push(...batch.filter((asset) => !asset.tags.includes(MISSING_TAG)))
-
-      const noMoreFromServer = data.has_more === false
-      const inferredLastPage =
-        data.has_more === undefined && batch.length < pageSize
-      if (batch.length === 0 || noMoreFromServer || inferredLastPage) {
+      if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+        console.warn(
+          `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
+        )
         return assets
       }
 
-      offset += batch.length
+      const data = await getAssetsPageByTag(tag, includePublic, {
+        limit: pageSize,
+        after,
+        signal
+      })
+      const batch = data.assets
+      if (batch.length === 0) {
+        return assets
+      }
+
+      assets.push(...batch)
+
+      // A server that returns a non-advancing cursor would loop forever.
+      if (!data.has_more || !data.next_cursor || data.next_cursor === after) {
+        return assets
+      }
+
+      after = data.next_cursor
     }
   }
 
@@ -596,31 +826,6 @@ function createAssetService() {
       pendingInputAssetsIncludingPublic ??
       startInputAssetsIncludingPublicRequest()
     return await withCallerAbort(request, signal)
-  }
-
-  /**
-   * Checks whether an asset exists for an exact asset hash.
-   *
-   * Uses the HEAD /assets/hash/{hash} endpoint and maps status-only responses:
-   * 200 -> exists, 404 -> missing, and 400 -> invalid hash format.
-   */
-  async function checkAssetHash(
-    assetHash: string,
-    signal?: AbortSignal
-  ): Promise<AssetHashStatus> {
-    const response = await api.fetchApi(
-      `${ASSETS_ENDPOINT}/hash/${encodeURIComponent(assetHash)}`,
-      {
-        method: 'HEAD',
-        signal
-      }
-    )
-
-    if (response.status === 200) return 'exists'
-    if (response.status === 404) return 'missing'
-    if (response.status === 400) return 'invalid'
-
-    throw new Error(`Unexpected asset hash check status: ${response.status}`)
   }
 
   /**
@@ -696,10 +901,8 @@ function createAssetService() {
     )
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(
-        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
-      )
+      const { code } = await parseErrorResponse(res)
+      throw new Error(getLocalizedErrorMessage(code))
     }
 
     const data: AssetMetadata = await res.json()
@@ -975,18 +1178,21 @@ function createAssetService() {
   }
 
   return {
-    getAssetModelFolders,
     getAssetModels,
+    invalidateModelBuckets,
+    onModelsScanned,
+    seedModelAssets,
     isAssetAPIEnabled,
     isAssetBrowserEligible,
     shouldUseAssetBrowser,
     getAssetsForNodeType,
+    getAssetsPageForNodeType,
     getAssetDetails,
     getAssetsByTag,
+    getAssetsPageByTag,
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
-    checkAssetHash,
     deleteAsset,
     updateAsset,
     addAssetTags,

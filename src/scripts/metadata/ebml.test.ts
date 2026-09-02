@@ -1,9 +1,10 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
+  EXPECTED_PROMPT_NAN_COERCED,
   EXPECTED_WORKFLOW,
   mockFileReaderAbort,
   mockFileReaderError
@@ -11,6 +12,10 @@ import {
 import { getFromWebmFile } from './ebml'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.webm')
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.webm'
+)
 
 describe('WebM/EBML metadata', () => {
   it('extracts workflow and prompt from EBML SimpleTag elements', async () => {
@@ -23,6 +28,16 @@ describe('WebM/EBML metadata', () => {
     expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath)
+    const file = new File([bytes], 'nan.webm', { type: 'video/webm' })
+
+    const result = await getFromWebmFile(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
+  })
+
   it('returns empty for non-WebM data', async () => {
     const file = new File([new Uint8Array(16)], 'fake.webm')
 
@@ -32,8 +47,6 @@ describe('WebM/EBML metadata', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     const file = new File([new Uint8Array(16)], 'test.webm')
 
     it('resolves empty when the FileReader fires error', async () => {

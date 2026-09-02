@@ -4,6 +4,9 @@ name: 'CI: Vercel Website Preview'
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches-ignore:
+      - 'core/**'
+      - 'cloud/**'
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
@@ -27,7 +30,7 @@ concurrency:
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,10 +38,10 @@ jobs:
       ALIAS_HOST: comfy-website-preview-pr-${{ github.event.pull_request.number }}.vercel.app
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -55,11 +58,12 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
+          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
         run: vercel build
 
       - name: Fetch head commit metadata
         id: head-commit
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { data } = await github.rest.repos.getCommit({
@@ -82,7 +86,7 @@ jobs:
           GIT_PR_ID: ${{ github.event.pull_request.number }}
           GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt \
+          URL=$(vercel deploy --prebuilt --archive=tgz \
             --meta githubCommitRef="$GIT_COMMIT_REF" \
             --meta githubCommitSha="$GIT_COMMIT_SHA" \
             --meta githubCommitAuthorLogin="$GIT_AUTHOR_LOGIN" \
@@ -132,10 +136,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -148,16 +152,26 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production
 
+      - name: Verify WEBSITE_CLOUD_API_KEY is present for production build
+        env:
+          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
+        run: |
+          if [ -z "${WEBSITE_CLOUD_API_KEY:-}" ]; then
+            echo "::error title=Missing WEBSITE_CLOUD_API_KEY::Production builds require WEBSITE_CLOUD_API_KEY so /cloud/supported-nodes is generated from fresh Cloud API data. Add it as a GitHub Actions repo secret and to the Vercel project environment. See apps/website/README.md."
+            exit 1
+          fi
+
       - name: Build project artifacts
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
+          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
         run: vercel build --prod
 
       - name: Deploy project artifacts to Vercel
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod)
+          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Add deployment URL to summary

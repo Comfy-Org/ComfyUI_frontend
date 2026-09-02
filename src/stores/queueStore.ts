@@ -7,7 +7,7 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   ResultItem,
   StatusWsMessageStatus,
@@ -21,6 +21,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -32,13 +33,14 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
-interface ResultItemInit extends ResultItem {
-  nodeId: NodeId
+export interface ResultItemInit extends ResultItem {
   mediaType: string
-  format?: string
-  frame_rate?: number
+  nodeId: SerializedNodeId
+  assetId?: string
   display_name?: string
   content?: string
+  format?: string
+  frame_rate?: number
 }
 
 export class ResultItemImpl {
@@ -46,18 +48,20 @@ export class ResultItemImpl {
   subfolder: string
   type: string
 
-  nodeId: NodeId
   // 'audio' | 'images' | ...
   mediaType: string
+  nodeId: SerializedNodeId
+
+  assetId?: string
+
+  // text specific field
+  content?: string
 
   display_name?: string
 
   // VHS output specific fields
   format?: string
   frame_rate?: number
-
-  // text specific field
-  content?: string
 
   constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
@@ -72,6 +76,7 @@ export class ResultItemImpl {
     this.format = obj.format
     this.frame_rate = obj.frame_rate
     this.content = obj.content
+    this.assetId = obj.assetId
   }
 
   get urlParams(): URLSearchParams {
@@ -223,7 +228,10 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
   get isText(): boolean {
-    return this.mediaType === 'text'
+    return (
+      this.mediaType === 'text' ||
+      getMediaTypeFromFilename(this.filename) === 'text'
+    )
   }
 
   get supportsPreview(): boolean {
@@ -324,6 +332,11 @@ export class TaskItemImpl {
 
   get outputsCount(): number | undefined {
     return this.job.outputs_count ?? undefined
+  }
+
+  /** Absent on backends or jobs that predate this field. */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
   }
 
   get status() {
@@ -440,10 +453,12 @@ export class TaskItemImpl {
 
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
-    for (const nodeExecutionId in rawOutputs) {
+    for (const rawNodeExecutionId in rawOutputs) {
+      const nodeExecutionId = tryNormalizeNodeExecutionId(rawNodeExecutionId)
+      if (!nodeExecutionId) continue
       nodeOutputsStore.setNodeOutputsByExecutionId(
         nodeExecutionId,
-        rawOutputs[nodeExecutionId]
+        rawOutputs[rawNodeExecutionId]
       )
     }
     useExtensionService().invokeExtensions(
@@ -525,68 +540,78 @@ export const useQueueStore = defineStore('queue', () => {
     dirty = false
     isLoading.value = true
     try {
-      const [queue, history] = await Promise.all([
-        api.getQueue(),
+      const [queueResult, historyResult] = await Promise.allSettled([
+        api.getQueue({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value)
       ])
 
-      // API returns pre-sorted data (sort_by=create_time&order=desc)
-      runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
-      pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
+      if (queueResult.status === 'fulfilled') {
+        const queue = queueResult.value
+        // API returns pre-sorted data (sort_by=create_time&order=desc)
+        runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
+        pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
 
-      const currentHistory = toValue(historyTasks)
+        const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+        const executionStore = useExecutionStore()
+        appearedTasks.forEach((task) => {
+          const jobIdString = String(task.jobId)
+          const workflowId = task.workflowId
+          if (workflowId && jobIdString) {
+            executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
+          }
+        })
 
-      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
-      const executionStore = useExecutionStore()
-      appearedTasks.forEach((task) => {
-        const jobIdString = String(task.jobId)
-        const workflowId = task.workflowId
-        if (workflowId && jobIdString) {
-          executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
-        }
-      })
-
-      // Only reconcile when the queue fetch returned data. api.getQueue()
-      // returns empty Running/Pending on transient errors, which would
-      // incorrectly clear all initializing prompts.
-      const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
-      if (queueHasData) {
         const activeJobIds = new Set([
           ...queue.Running.map((j) => j.id),
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+      } else {
+        console.error('Failed to fetch queue:', queueResult.reason)
       }
 
-      // Sort by create_time descending and limit to maxItems
-      const sortedHistory = [...history]
-        .sort((a, b) => b.create_time - a.create_time)
-        .slice(0, toValue(maxHistoryItems))
+      if (historyResult.status === 'fulfilled') {
+        const history = historyResult.value
+        const currentHistory = toValue(historyTasks)
 
-      // Reuse existing TaskItemImpl instances or create new
-      // Must recreate if outputs_count changed (e.g., API started returning it)
-      const existingByJobId = new Map(
-        currentHistory.map((impl) => [impl.jobId, impl])
-      )
+        // Sort by create_time descending and limit to maxItems
+        const sortedHistory = [...history]
+          .sort((a, b) => b.create_time - a.create_time)
+          .slice(0, toValue(maxHistoryItems))
 
-      const nextHistoryTasks = sortedHistory.map((job) => {
-        const existing = existingByJobId.get(job.id)
-        if (!existing) return new TaskItemImpl(job)
-        // Recreate if outputs_count changed to ensure lazy loading works
-        if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
-          return new TaskItemImpl(job)
+        // Reuse existing TaskItemImpl instances or create new
+        // Must recreate if outputs_count changed (e.g., API started returning it)
+        const existingByJobId = new Map(
+          currentHistory.map((impl) => [impl.jobId, impl])
+        )
+
+        const nextHistoryTasks = sortedHistory.map((job) => {
+          const existing = existingByJobId.get(job.id)
+          if (!existing) return new TaskItemImpl(job)
+          // Recreate if outputs_count changed to ensure lazy loading works
+          if (
+            existing.outputsCount !== (job.outputs_count ?? undefined) ||
+            existing.previewableOutputsCount !==
+              (job.previewable_outputs_count ?? undefined)
+          ) {
+            return new TaskItemImpl(job)
+          }
+          return existing
+        })
+
+        const isHistoryUnchanged =
+          nextHistoryTasks.length === currentHistory.length &&
+          nextHistoryTasks.every(
+            (task, index) => task === currentHistory[index]
+          )
+
+        if (!isHistoryUnchanged) {
+          historyTasks.value = nextHistoryTasks
         }
-        return existing
-      })
-
-      const isHistoryUnchanged =
-        nextHistoryTasks.length === currentHistory.length &&
-        nextHistoryTasks.every((task, index) => task === currentHistory[index])
-
-      if (!isHistoryUnchanged) {
-        historyTasks.value = nextHistoryTasks
+        hasFetchedHistorySnapshot.value = true
+      } else {
+        console.error('Failed to fetch history:', historyResult.reason)
       }
-      hasFetchedHistorySnapshot.value = true
     } finally {
       isLoading.value = false
       inFlight = false
@@ -644,28 +669,6 @@ export const useQueuePendingTaskCountStore = defineStore(
     }
   }
 )
-
-export type AutoQueueMode =
-  | 'disabled'
-  | 'change'
-  | 'instant-idle'
-  | 'instant-running'
-
-export const isInstantMode = (
-  mode: AutoQueueMode
-): mode is 'instant-idle' | 'instant-running' =>
-  mode === 'instant-idle' || mode === 'instant-running'
-
-export const isInstantRunningMode = (
-  mode: AutoQueueMode
-): mode is 'instant-running' => mode === 'instant-running'
-
-export const useQueueSettingsStore = defineStore('queueSettingsStore', {
-  state: () => ({
-    mode: 'disabled' as AutoQueueMode,
-    batchCount: 1
-  })
-})
 
 export const useQueueUIStore = defineStore('queueUIStore', () => {
   const settingStore = useSettingStore()

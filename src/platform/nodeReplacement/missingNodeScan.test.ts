@@ -1,5 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -33,12 +32,6 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => true)
-  })
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(() => true)
@@ -53,6 +46,8 @@ import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 function mockNode(
   id: number,
@@ -81,8 +76,6 @@ function getMissingNodesError(
 
 describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     // Reset registered_node_types
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     for (const key of Object.keys(reg)) {
@@ -138,7 +131,9 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 
   it('uses executionId when available for nodeId', () => {
     vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
-    vi.mocked(getExecutionIdByNode).mockReturnValue('exec-42')
+    vi.mocked(getExecutionIdByNode).mockReturnValue(
+      createNodeExecutionId([toNodeId('exec-42')])
+    )
 
     rescanAndSurfaceMissingNodes(mockGraph())
 

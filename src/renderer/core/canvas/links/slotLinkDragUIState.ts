@@ -1,9 +1,8 @@
 import { reactive, readonly } from 'vue'
 
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point, SlotLayout } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * Slot link drag UI state
@@ -16,7 +15,7 @@ import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 type SlotDragType = 'input' | 'output'
 
 interface SlotDragSource {
-  nodeId: string
+  nodeId: NodeId
   slotIndex: number
   type: SlotDragType
   direction: LinkDirection
@@ -92,11 +91,6 @@ function endDrag() {
   state.compatible.clear()
 }
 
-function getSlotLayout(nodeId: string, slotIndex: number, isInput: boolean) {
-  const slotKey = getSlotKey(nodeId, slotIndex, isInput)
-  return layoutStore.getSlotLayout(slotKey)
-}
-
 export function useSlotLinkDragUIState() {
   return {
     state: readonly(state),
@@ -104,7 +98,6 @@ export function useSlotLinkDragUIState() {
     endDrag,
     updatePointerPosition,
     setCandidate,
-    getSlotLayout,
     setCompatibleMap: (entries: Iterable<[string, boolean]>) => {
       state.compatible.clear()
       for (const [key, value] of entries) state.compatible.set(key, value)

@@ -1,0 +1,311 @@
+{
+  "map_version": "v0-frontend",
+  "_comment": [
+    "ComfyUI_frontend override for the reusable pr-risk.yml grader (Comfy-Org/github-workflows).",
+    "REPLACES the generic map wholesale with frontend-specific risk classes.",
+    "grade = worst(path_floor, provenance, reversibility); an axis can only raise a tier.",
+    "",
+    "Lane mapping to the Comfy CD risk-assessment fork:",
+    "  R0-R1 -> flagless merge lane (copy / docs / tests / storybook only)",
+    "  R2    -> feature flag required (default OFF) + ephemeral env validation",
+    "  R3    -> flag + ephemeral env + Sheriff/QA sign-off; serialization and auth/billing",
+    "           changes also need a (Feature) Test Plan entry"
+  ],
+  "tiers": ["R0", "R1", "R2", "R3"],
+  "default_tier": "R0",
+  "path_rules": [
+    {
+      "class": "risk-map",
+      "tier": "R3",
+      "why": "a PR must not be able to lower its own grade",
+      "paths": [
+        "**/risk-map.*.json",
+        "**/runbook-registry.*.json",
+        "**/pr-risk/**",
+        ".github/risk.json",
+        ".github/risk-runbooks.json",
+        "**/.github/risk.json",
+        "**/.github/risk-runbooks.json"
+      ]
+    },
+    {
+      "class": "codeowners",
+      "tier": "R3",
+      "why": "editing CODEOWNERS edits the review gate",
+      "paths": ["CODEOWNERS", ".github/CODEOWNERS", "**/CODEOWNERS"]
+    },
+    {
+      "class": "ci",
+      "tier": "R3",
+      "why": "workflows run with repo credentials",
+      "paths": [
+        ".github/workflows/**",
+        ".github/actions/**",
+        "**/.github/workflows/**"
+      ]
+    },
+    {
+      "class": "deps",
+      "tier": "R3",
+      "why": "manifests and the pnpm catalog pull in code nobody in the PR wrote",
+      "paths": [
+        "**/package.json",
+        "**/pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "**/.npmrc",
+        "**/requirements*.txt",
+        "**/pyproject.toml"
+      ]
+    },
+    {
+      "class": "secrets",
+      "tier": "R3",
+      "why": "secrets handling",
+      "paths": ["src/platform/secrets/**"]
+    },
+    {
+      "class": "auth",
+      "tier": "R3",
+      "why": "authentication / trust boundary",
+      "paths": [
+        "src/platform/auth/**",
+        "src/composables/auth/**",
+        "src/platform/cloud/oauth/**",
+        "src/platform/cloud/onboarding/auth*",
+        "src/platform/cloud/churnkey/churnkeyAuthSchema.ts",
+        "src/platform/workspace/auth/**",
+        "src/platform/workspace/stores/workspaceAuthStore*",
+        "src/stores/apiKeyAuthStore*",
+        "src/stores/authStore*"
+      ]
+    },
+    {
+      "class": "service-endpoints",
+      "tier": "R3",
+      "paths": [
+        "src/config/comfyApi.ts",
+        "src/config/firebase.ts",
+        "src/config/turnstile.ts"
+      ],
+      "why": "Baked in at build time: the api.comfy.org / platform.comfy.org base URLs, the Firebase project credentials and the Turnstile signup sitekey. Pointing a release at the wrong backend or shipping a bad key is not recoverable by a revert alone. Listed as exact files rather than src/config/** so clientFeatureFlags.json stays in the R2 flag lane."
+    },
+    {
+      "class": "billing",
+      "tier": "R3",
+      "why": "billing / credits \u2014 money moves. Scoped to the application source tree: an unscoped **/ token glob matched the marketing site, e2e specs, PNG snapshots, stories, locale files and docs on filename characters alone Churnkey is the cancellation/retention vendor flow and workspaceApi carries credit limits, credit stops and billing_rail; neither has a money token in its path, so even the scoped globs above cannot see them. workspaceApi.ts is listed exactly rather than as workspaceApi* \u2014 its sibling workspaceApiUrl.ts is a 7-line URL builder, and sweeping it in would reintroduce the over-grading #15415 just removed.",
+      "paths": [
+        "src/**/billing/**",
+        "src/**/pricing/**",
+        "src/**/credit/**",
+        "src/**/credits/**",
+        "src/**/subscription/**",
+        "src/**/*TopUp*.vue",
+        "src/platform/**/*billing*",
+        "src/platform/**/*Billing*",
+        "src/platform/**/*subscription*",
+        "src/platform/**/*Subscription*",
+        "src/platform/**/*credit*",
+        "src/platform/**/*Credit*",
+        "src/platform/**/*price*",
+        "src/platform/**/*Price*",
+        "src/platform/**/*pricing*",
+        "src/platform/**/*Pricing*",
+        "src/stores/*billing*",
+        "src/stores/*Billing*",
+        "src/stores/*credit*",
+        "src/stores/*Credit*",
+        "src/services/*billing*",
+        "src/services/*Billing*",
+        "src/services/*credit*",
+        "src/services/*Credit*",
+        "src/config/*billing*",
+        "src/config/*Billing*",
+        "src/config/*credit*",
+        "src/config/*Credit*",
+        "src/config/*price*",
+        "src/config/*Price*",
+        "src/config/*pricing*",
+        "src/config/*Pricing*",
+        "src/config/*subscription*",
+        "src/config/*Subscription*",
+        "src/platform/cloud/churnkey/**",
+        "src/platform/workspace/api/workspaceApi.ts"
+      ]
+    },
+    {
+      "class": "workflow-serialization",
+      "tier": "R3",
+      "why": "saved user workflows are persistent state \u2014 a bad schema or serialize change corrupts files on save and does not cleanly revert comfyWorkflow.ts JSON.stringify()s the active graph state and writes it via save({force:true}), so it is a writer of the on-disk format despite sitting outside the persistence tree.",
+      "paths": [
+        "src/lib/litegraph/src/serialization*",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/lib/litegraph/src/LLink.ts",
+        "src/lib/litegraph/src/subgraph/**",
+        "src/core/graph/subgraph/migration/**",
+        "src/core/schemas/**",
+        "src/extensions/core/load3d/load3dSerialize*",
+        "src/platform/workflow/core/services/workflowService.ts",
+        "src/platform/workflow/persistence/**",
+        "src/platform/workflow/validation/schemas/**",
+        "src/utils/migration/**",
+        "src/platform/workflow/management/stores/comfyWorkflow.ts"
+      ]
+    },
+    {
+      "class": "extension-contract",
+      "tier": "R3",
+      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR 0003/0008) src/lib/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types rollup (rollupTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
+      "paths": [
+        "packages/*/src/schemas/**",
+        "src/core/schemas/**",
+        "src/schemas/**",
+        "src/scripts/app.ts",
+        "src/scripts/api.ts",
+        "src/scripts/domWidget.ts",
+        "src/services/extensionService.ts",
+        "src/stores/workspaceStore.ts",
+        "src/types/index.ts",
+        "src/types/comfy.ts",
+        "src/types/extensionTypes.ts",
+        "src/types/linkId.ts",
+        "src/types/nodeId.ts",
+        "src/types/nodeIdentification.ts",
+        "src/types/rerouteId.ts",
+        "src/types/slotId.ts",
+        "src/lib/litegraph/src/interfaces.ts",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/lib/litegraph/src/LGraphCanvas.ts",
+        "src/lib/litegraph/src/subgraph/**",
+        "src/renderer/core/layout/types.ts",
+        "src/renderer/extensions/compositor/components/types.ts",
+        "src/components/curve/types.ts"
+      ]
+    },
+    {
+      "class": "api-contract",
+      "tier": "R3",
+      "why": "cross-repo API contract",
+      "paths": [
+        "packages/object-info-parser/src/schemas/**",
+        "src/schemas/apiSchema.ts",
+        "src/schemas/nodeDefSchema.ts"
+      ]
+    },
+    {
+      "class": "flag-defaults",
+      "tier": "R2",
+      "why": "the flag config and flag plumbing are the rollout lever \u2014 flipping a default changes behavior for every user at once",
+      "paths": [
+        "src/config/clientFeatureFlags.json",
+        "**/useFeatureFlags*",
+        "**/useVueFeatureFlags*",
+        "**/devFeatureFlagOverride*"
+      ]
+    },
+    {
+      "class": "build-config",
+      "tier": "R2",
+      "why": "build config decides what ships in the bundle",
+      "paths": [
+        "**/vite.config.*",
+        "tsconfig*.json",
+        "index.html",
+        "scripts/**"
+      ]
+    },
+    {
+      "class": "core-infra",
+      "tier": "R2",
+      "why": "cross-cutting state, API layer, routing, bootstrap, canvas engine and published packages \u2014 blast radius is every feature, and packages/** breaks consumers out of band",
+      "paths": [
+        "src/stores/**",
+        "src/services/**",
+        "src/router.ts",
+        "src/main.ts",
+        "src/bootstrap.ts",
+        "src/base/**",
+        "src/core/**",
+        "src/lib/litegraph/**",
+        "packages/**"
+      ]
+    },
+    {
+      "class": "website",
+      "tier": "R2",
+      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
+      "paths": ["apps/website/**"]
+    },
+    {
+      "class": "docs",
+      "tier": "R0",
+      "why": "prose only",
+      "paths": ["**/*.md", "docs/**", "**/*.mdx", "**/*.txt", "LICENSE"]
+    },
+    {
+      "class": "i18n-copy",
+      "tier": "R0",
+      "why": "translation copy",
+      "paths": ["**/locales/**"]
+    },
+    {
+      "class": "storybook",
+      "tier": "R0",
+      "why": "stories and storybook config do not ship to users",
+      "paths": ["**/*.stories.ts", "src/storybook/**", ".storybook/**"]
+    },
+    {
+      "class": "tests",
+      "tier": "R0",
+      "why": "test-only changes cannot break production behaviour",
+      "paths": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "browser_tests/**",
+        "**/test/**",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/testdata/**"
+      ]
+    }
+  ],
+  "provenance_tiers": {
+    "runbook": "R0",
+    "agent-supervised": "R1",
+    "human": "R1",
+    "external": "R3"
+  },
+  "reversibility": {
+    "irreversible_classes": ["workflow-serialization", "secrets"],
+    "delete_sensitive_classes": [
+      "workflow-serialization",
+      "extension-contract",
+      "auth",
+      "billing",
+      "api-contract"
+    ],
+    "no_green_checks_tier": "R2",
+    "no_test_touched_tier": "R1",
+    "clean_tier": "R0",
+    "test_path_patterns": [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "browser_tests/**",
+      "**/test/**",
+      "**/tests/**",
+      "**/__tests__/**",
+      "**/testdata/**"
+    ]
+  },
+  "flippable_flag_paths": [
+    "**/useFeatureFlags*",
+    "**/useVueFeatureFlags*",
+    "**/clientFeatureFlags.json",
+    "**/devFeatureFlagOverride*"
+  ]
+}

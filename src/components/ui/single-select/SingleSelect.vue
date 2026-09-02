@@ -1,22 +1,25 @@
 <template>
   <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
-      v-bind="$attrs"
+      v-bind="attrsWithoutClass"
       :aria-label="label || t('g.singleSelectDropdown')"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
-        selectTriggerVariants({
-          size,
-          border: invalid ? 'invalid' : 'none'
-        })
+        cn(
+          selectTriggerVariants({
+            size,
+            border: invalid ? 'invalid' : 'none'
+          }),
+          attrsClass
+        )
       "
     >
       <div
         :class="
           cn(
-            'flex flex-1 items-center gap-2 overflow-hidden py-2',
-            size === 'md' ? 'pl-3 text-xs' : 'pl-4 text-sm'
+            'flex flex-1 items-center gap-2 overflow-hidden py-2 pl-2',
+            size === 'md' ? 'text-xs' : 'text-sm'
           )
         "
       >
@@ -37,7 +40,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="optionStyle"
+        :style="[optionStyle, contentStyle, liftedContentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -82,6 +85,7 @@ import {
   SelectViewport
 } from 'reka-ui'
 import { ref } from 'vue'
+import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -92,12 +96,15 @@ import {
   stopEscapeToDocument
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import { useAttrsClass } from '@/composables/useAttrsClass'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
 })
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
@@ -108,7 +115,8 @@ const {
   disabled = false,
   listMaxHeight = '28rem',
   popoverMinWidth,
-  popoverMaxWidth
+  popoverMaxWidth,
+  contentStyle
 } = defineProps<{
   label?: string
   options?: SelectOption[]
@@ -126,12 +134,14 @@ const {
   popoverMinWidth?: string
   /** Maximum width of the popover (default: auto) */
   popoverMaxWidth?: string
+  contentStyle?: StyleValue
 }>()
 
 const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 const isOpen = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

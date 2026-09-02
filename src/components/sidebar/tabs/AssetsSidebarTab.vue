@@ -1,5 +1,6 @@
 <template>
   <SidebarTabTemplate
+    ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     v-bind="$attrs"
   >
@@ -8,36 +9,52 @@
         v-if="isInFolderView"
         class="flex w-full items-center justify-between gap-2"
       >
-        <div class="flex items-center gap-2">
-          <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
-          <button
-            class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
-            role="button"
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <Button
+            v-tooltip.bottom="{
+              value: $t('sideToolbar.backToAssets'),
+              showDelay: 300
+            }"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('sideToolbar.backToAssets')"
+            @click="exitFolderView"
+          >
+            <i class="icon-[lucide--arrow-left] size-4" />
+          </Button>
+          <span class="shrink-0 font-bold">
+            {{ $t('assetBrowser.jobId') }}:
+          </span>
+          <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
+          <Button
+            v-tooltip.bottom="{
+              value: $t('g.copyJobId'),
+              showDelay: 300
+            }"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('g.copyJobId')"
             @click="copyJobId"
           >
-            <i class="icon-[lucide--copy] text-sm"></i>
-          </button>
+            <i class="icon-[lucide--copy] size-4" />
+          </Button>
         </div>
-        <div>
+        <div class="shrink-0">
           <span>{{ formattedExecutionTime }}</span>
         </div>
       </div>
     </template>
     <template #header>
-      <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <Button variant="secondary" size="lg" @click="exitFolderView">
-          <i class="icon-[lucide--arrow-left] size-4" />
-          <span>{{ $t('sideToolbar.backToAssets') }}</span>
-        </Button>
-      </div>
-
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
+        v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
@@ -56,7 +73,8 @@
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 p-2"
+        class="grid gap-2 p-2"
+        :style="skeletonGridStyle"
       >
         <div
           v-for="n in skeletonCount"
@@ -100,86 +118,41 @@
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
-        <AssetsSidebarGridView
-          v-else
-          :assets="displayAssets"
-          :is-selected="isSelected"
-          :show-output-count="shouldShowOutputCount"
-          :get-output-count="getOutputCount"
-          @select-asset="handleAssetSelect"
-          @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
-          @zoom="handleZoomClick"
-          @output-count-click="enterFolderView"
-        />
+        <div v-else class="size-full">
+          <AssetsSidebarGridView
+            :assets="displayAssets"
+            :is-selected
+            :show-output-count
+            :get-output-count
+            :grid-mode
+            @select-asset="handleAssetSelect"
+            @toggle-asset-selection="handleAssetSelectionToggle"
+            @context-menu="handleAssetContextMenu"
+            @approach-end="handleApproachEnd"
+            @zoom="handleZoomClick"
+            @output-count-click="enterFolderView"
+          />
+        </div>
       </div>
     </template>
     <template #footer>
-      <div
+      <MediaAssetSelectionBar
         v-if="hasSelection"
-        ref="footerRef"
-        class="flex h-18 w-full items-center justify-between gap-1"
-      >
-        <div class="flex-1 pl-4">
-          <div ref="selectionCountButtonRef" class="inline-flex w-48">
-            <Button
-              variant="secondary"
-              :class="cn(isCompact && 'text-left')"
-              @click="handleDeselectAll"
-            >
-              {{
-                isHoveringSelectionCount
-                  ? $t('mediaAsset.selection.deselectAll')
-                  : $t('mediaAsset.selection.selectedCount', {
-                      count: totalOutputCount
-                    })
-              }}
-            </Button>
-          </div>
-        </div>
-        <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
-          <template v-if="isCompact">
-            <!-- Compact mode: Icon only -->
-            <Button
-              v-if="shouldShowDeleteButton"
-              size="icon"
-              data-testid="assets-delete-selected"
-              @click="handleDeleteSelected"
-            >
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
-            <Button
-              size="icon"
-              data-testid="assets-download-selected"
-              @click="handleDownloadSelected"
-            >
-              <i class="icon-[lucide--download] size-4" />
-            </Button>
-          </template>
-          <template v-else>
-            <!-- Normal mode: Icon + Text -->
-            <Button
-              v-if="shouldShowDeleteButton"
-              variant="secondary"
-              data-testid="assets-delete-selected"
-              @click="handleDeleteSelected"
-            >
-              <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              data-testid="assets-download-selected"
-              @click="handleDownloadSelected"
-            >
-              <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
-              <i class="icon-[lucide--download] size-4" />
-            </Button>
-          </template>
-        </div>
-      </div>
+        :count="totalOutputCount"
+        :show-delete="shouldShowDeleteButton"
+        @deselect="handleDeselectAll"
+        @download="handleDownloadSelected"
+        @delete="handleDeleteSelected"
+      />
     </template>
   </SidebarTabTemplate>
+  <Teleport to="body">
+    <div
+      v-if="marqueeStyle"
+      class="pointer-events-none fixed z-9999 border border-primary-background bg-primary-background/20"
+      :style="marqueeStyle"
+    />
+  </Teleport>
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -206,10 +179,9 @@
 
 <script setup lang="ts">
 import {
+  unrefElement,
   useAsyncState,
   useDebounceFn,
-  useElementHover,
-  useResizeObserver,
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
@@ -221,6 +193,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  toValue,
+  useTemplateRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -236,8 +210,17 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
+import {
+  getMediaAssetGridColumns,
+  MEDIA_ASSET_VIEW_MODE
+} from '@/platform/assets/components/mediaAssetViewOptions'
+import type {
+  MediaAssetGridMode,
+  MediaAssetViewMode
+} from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -246,9 +229,14 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetSubfolder,
+  getAssetUrl
+} from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import {
@@ -256,7 +244,6 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -271,11 +258,19 @@ const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
-const viewMode = useStorage<'list' | 'grid'>(
+const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
-  'grid'
+  MEDIA_ASSET_VIEW_MODE.grid
 )
-const isListView = computed(() => viewMode.value === 'list')
+const isListView = computed(() => viewMode.value === MEDIA_ASSET_VIEW_MODE.list)
+const gridMode = computed<MediaAssetGridMode>(() =>
+  viewMode.value === MEDIA_ASSET_VIEW_MODE.gridSmall
+    ? MEDIA_ASSET_VIEW_MODE.gridSmall
+    : MEDIA_ASSET_VIEW_MODE.grid
+)
+const skeletonGridStyle = computed(() => ({
+  gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)
+}))
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -295,7 +290,7 @@ const contextMenuFileKind = computed<MediaKind>(() =>
   getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
-const shouldShowOutputCount = (item: AssetItem): boolean => {
+const showOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
   }
@@ -308,14 +303,16 @@ const formattedExecutionTime = computed(() => {
 })
 
 const toast = useToast()
-
-const inputAssets = useMediaAssets('input')
-const outputAssets = useMediaAssets('output')
+const assetsStore = useAssetsStore()
 
 // Asset selection
 const {
   isSelected,
+  selectedIds,
   handleAssetClick,
+  toggleAssetSelection,
+  selectAll,
+  setSelectedIds,
   hasSelection,
   clearSelection,
   getSelectedAssets,
@@ -326,6 +323,12 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
+const panelRef = useTemplateRef('panelRef')
+const marqueePanelRef = computed(() => {
+  const el = unrefElement(panelRef)
+  return el instanceof HTMLElement ? el : undefined
+})
+
 const {
   downloadAssets,
   deleteAssets,
@@ -334,39 +337,13 @@ const {
   exportMultipleWorkflows
 } = useMediaAssetActions()
 
-// Footer responsive behavior
-const footerRef = ref<HTMLElement | null>(null)
-const footerWidth = ref(0)
-
-// Track footer width changes
-useResizeObserver(footerRef, (entries) => {
-  const entry = entries[0]
-  footerWidth.value = entry.contentRect.width
-})
-
-// Determine if we should show compact mode (icon only)
-// Threshold matches when grid switches from 2 columns to 1 column
-// 2 columns need about ~430px
-const COMPACT_MODE_THRESHOLD_PX = 430
-const isCompact = computed(
-  () => footerWidth.value > 0 && footerWidth.value <= COMPACT_MODE_THRESHOLD_PX
-)
-
-// Hover state for selection count button
-const selectionCountButtonRef = ref<HTMLElement | null>(null)
-const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
-
-// Total output count for all selected assets
-const totalOutputCount = computed(() => {
-  return getTotalOutputCount(selectedAssets.value)
-})
-
 const currentAssets = computed(() =>
-  activeTab.value === 'input' ? inputAssets : outputAssets
+  activeTab.value === 'input'
+    ? assetsStore.inputAssets
+    : assetsStore.outputAssets
 )
-const loading = computed(() => currentAssets.value.loading.value)
-const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+const loading = computed(() => toValue(currentAssets.value.isLoading))
+const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -399,7 +376,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
+const { searchQuery, sortBy, dateFilter, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
@@ -420,6 +397,16 @@ const visibleAssets = computed(() => {
   return listViewSelectableAssets.value
 })
 
+const { marqueeStyle } = useAssetGridSelection({
+  marqueeContainerRef: marqueePanelRef,
+  hoverTargetRef: marqueePanelRef,
+  getAssets: () => visibleAssets.value,
+  getSelectedIds: () => [...selectedIds.value],
+  setSelectedIds,
+  selectAll,
+  isEnabled: () => !isListView.value
+})
+
 const previewableVisibleAssets = computed(() =>
   visibleAssets.value.filter((asset) =>
     isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
@@ -427,6 +414,10 @@ const previewableVisibleAssets = computed(() =>
 )
 
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
+
+const totalOutputCount = computed(() =>
+  getTotalOutputCount(selectedAssets.value)
+)
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
@@ -469,7 +460,7 @@ const galleryItems = computed(() => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
-      subfolder: '',
+      subfolder: getAssetSubfolder(asset),
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType
@@ -487,10 +478,7 @@ const galleryItems = computed(() => {
 })
 
 const refreshAssets = async () => {
-  await currentAssets.value.fetchMediaList()
-  if (error.value) {
-    console.error('Failed to refresh assets:', error.value)
-  }
+  await currentAssets.value.invalidate()
 }
 
 watch(
@@ -510,6 +498,12 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
+}
+
+function handleAssetSelectionToggle(asset: AssetItem) {
+  const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
+  emit('assetSelected', asset)
+  toggleAssetSelection(asset, index, visibleAssets.value)
 }
 
 const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
@@ -582,10 +576,12 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || ''
+        modelUrl: asset.preview_url || getAssetUrl(asset)
       },
       dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
+        renderer: 'reka',
+        size: 'full',
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })
@@ -652,7 +648,7 @@ const handleDeselectAll = () => {
 }
 
 const handleEmptySpaceClick = () => {
-  if (hasSelection) {
+  if (hasSelection.value) {
     clearSelection()
   }
 }
@@ -678,13 +674,6 @@ const copyJobId = async () => {
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    activeTab.value === 'output' &&
-    !isInFolderView.value &&
-    outputAssets.hasMore.value &&
-    !outputAssets.isLoadingMore.value
-  ) {
-    await outputAssets.loadMore()
-  }
+  if (!isInFolderView.value) await currentAssets.value.loadMore()
 }, 300)
 </script>

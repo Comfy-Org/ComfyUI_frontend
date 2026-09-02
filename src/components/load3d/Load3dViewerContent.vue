@@ -1,8 +1,7 @@
 <template>
   <div
     ref="viewerContentRef"
-    class="flex w-full"
-    :class="[maximized ? 'h-full' : 'h-[70vh]']"
+    class="flex size-full"
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
   >
@@ -82,7 +81,10 @@
           </div>
 
           <div v-if="viewer.canExport.value" class="space-y-4 p-2">
-            <ExportControls @export-model="viewer.exportModel" />
+            <ExportControls
+              :source-format="viewer.sourceFormat.value"
+              @export-model="viewer.exportModel"
+            />
           </div>
         </div>
       </div>
@@ -125,7 +127,6 @@ const props = defineProps<{
 
 const viewerContentRef = ref<HTMLDivElement>()
 const containerRef = ref<HTMLDivElement>()
-const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
 const isStandaloneMode = !props.node && props.modelUrl
@@ -162,10 +163,6 @@ onMounted(async () => {
           mutation.type === 'attributes' &&
           mutation.attributeName === 'maximized'
         ) {
-          maximized.value =
-            (mutation.target as HTMLElement).getAttribute('maximized') ===
-            'true'
-
           setTimeout(() => {
             viewer.refreshViewport()
           }, 0)

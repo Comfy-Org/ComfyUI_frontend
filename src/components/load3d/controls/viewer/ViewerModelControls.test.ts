@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ViewerModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
@@ -9,21 +9,11 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('primevue/select', () => ({
-  default: {
-    name: 'Select',
-    props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
-    emits: ['update:modelValue'],
-    template: `
-      <select
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
-      >
-        <option v-for="opt in options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-      </select>
-    `
-  }
-}))
+vi.mock('@/components/ui/select/Select.vue')
+vi.mock('@/components/ui/select/SelectContent.vue')
+vi.mock('@/components/ui/select/SelectItem.vue')
+vi.mock('@/components/ui/select/SelectTrigger.vue')
+vi.mock('@/components/ui/select/SelectValue.vue')
 
 const i18n = createI18n({
   legacy: false,
@@ -74,10 +64,6 @@ function getOptions(select: HTMLElement) {
 }
 
 describe('ViewerModelControls', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('rendering', () => {
     it('renders both up direction and material mode selects by default', () => {
       renderControls()

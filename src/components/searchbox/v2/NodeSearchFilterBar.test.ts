@@ -14,7 +14,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     setupTestPinia()
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
@@ -55,7 +54,7 @@ describe(NodeSearchFilterBar, () => {
   const buttonTexts = () =>
     screen.getAllByRole('button').map((b) => b.textContent?.trim())
 
-  it.each([
+  it.for([
     { prop: 'hasFavorites', label: 'Bookmarked' },
     { prop: 'hasBlueprintNodes', label: 'Blueprints' },
     { prop: 'hasEssentialNodes', label: 'Essentials' },

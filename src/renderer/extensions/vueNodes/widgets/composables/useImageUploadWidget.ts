@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
@@ -52,8 +53,11 @@ export const useImageUploadWidget = () => {
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
     }
-    const formatPath = (value: string | ResultItem) =>
-      createAnnotatedPath(value, { rootFolder: image_folder })
+    function formatPath(value: string | ResultItem) {
+      return typeof value === 'string'
+        ? createAnnotatedPath(value, { rootFolder: image_folder })
+        : createAnnotatedPath(value)
+    }
 
     // Setup file upload handling
     let rollback: (() => void) | undefined
@@ -83,10 +87,18 @@ export const useImageUploadWidget = () => {
         })
 
         const newValue = allow_batch ? annotated : annotated[0]
+        const oldValue = fileComboWidget.value
 
         // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
+        node.onWidgetChanged?.(
+          fileComboWidget.name,
+          newValue,
+          oldValue,
+          fileComboWidget
+        )
+        useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
       }
     })
 
@@ -116,9 +128,10 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      if (fileComboWidget.value != null)
+        nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+          isAnimated
+        })
       showPreview({ block: false })
     })
 

@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -23,8 +22,6 @@ vi.mock('@/utils/objectUrlUtil', () => ({
 
 describe('jobPreviewStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
     previewMethodRef.value = 'latent2rgb'
   })
 

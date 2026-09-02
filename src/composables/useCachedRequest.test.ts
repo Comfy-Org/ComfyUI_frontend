@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 
@@ -10,8 +10,6 @@ describe('useCachedRequest', () => {
   let abortSpy: () => void
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Create a spy for the AbortController.abort method
     abortSpy = vi.fn()
 
@@ -34,10 +32,6 @@ describe('useCachedRequest', () => {
       // Return a result based on the params
       return { data: `Result for ${JSON.stringify(params)}` }
     })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('should cache results and not repeat calls with the same params', async () => {

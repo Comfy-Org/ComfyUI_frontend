@@ -1,5 +1,6 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
 
 /**
  * Slot link drag context
@@ -17,7 +18,7 @@ interface PendingPointerMoveData {
 export interface SlotLinkDragContext {
   preferredSlotForNode: Map<
     NodeId,
-    { index: number; key: string; layout: SlotLayout } | null
+    { index: number; key: SlotId; layout: SlotLayout } | null
   >
   lastHoverSlotKey: string | null
   lastHoverNodeId: NodeId | null

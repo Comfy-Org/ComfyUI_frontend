@@ -1,15 +1,20 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import type {
+  WorkflowExecutionContext,
+  WorkflowExecutionFailureReason,
+  WorkflowExecutionIntent
+} from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
-  ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId,
+  ComfyApiWorkflow,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -32,20 +37,70 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { AppMode } from '@/utils/appMode'
+import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { createRafCoalescer } from '@/utils/rafBatch'
+
+interface ExecutionNodeInfo {
+  title?: string | null
+  type?: string | null
+}
 
 interface QueuedJob {
   /**
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.
    */
-  nodes: Record<NodeId, boolean>
+  nodes: Record<string, boolean>
+  startTime?: number
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  outcomeTracked?: boolean
+  workflowContext?: WorkflowExecutionContext
+  workflowExecutionIntent?: WorkflowExecutionIntent
   /**
    * The workflow that is queued to be executed
    */
   workflow?: ComfyWorkflow
+  /**
+   * Queue-time node metadata keyed by execution ID.
+   * This stays stable even if the user switches workflows or edits the canvas.
+   */
+  nodeLookup?: Record<string, ExecutionNodeInfo>
+  /**
+   * Share attribution snapshotted at queue time. Read this instead of
+   * `workflow.shareId`, which can gain attribution after the job was queued.
+   */
+  shareId?: string
+  /**
+   * View-mode attribution snapshotted at queue time, so mode switches during
+   * the run don't misattribute completion events.
+   */
+  viewMode?: AppMode
+  isAppMode?: boolean
+}
+
+const defaultWorkflowExecutionIntent: WorkflowExecutionIntent = {
+  trigger_source: 'unknown'
+}
+
+function buildExecutionNodeLookup(
+  promptOutput: ComfyApiWorkflow
+): Record<string, ExecutionNodeInfo> {
+  return Object.fromEntries(
+    Object.entries(promptOutput).map(([executionId, node]) => [
+      executionId,
+      {
+        title: node._meta.title,
+        type: node.class_type
+      }
+    ])
+  )
 }
 
 /**
@@ -55,14 +110,34 @@ interface QueuedJob {
  */
 export const MAX_PROGRESS_JOBS = 1000
 
+export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
+
+interface WorkflowStatusUpdate {
+  status: WorkflowExecutionStatus
+  executionStartedAt?: number
+  endTime?: number
+  failureReason?: WorkflowExecutionFailureReason
+  showStatus?: boolean
+}
+
+export const WORKFLOW_STATUS_I18N_KEYS: Record<
+  WorkflowExecutionStatus,
+  string
+> = {
+  running: 'g.running',
+  completed: 'g.completed',
+  failed: 'g.failed'
+}
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
+  const { mode, isAppMode } = useAppMode()
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
-  const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
+  const queuedJobs = ref<Record<JobId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -79,8 +154,144 @@ export const useExecutionStore = defineStore('execution', () => {
    * Only populated for jobs that are queued in this browser tab.
    */
   const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
+  const jobIdToWorkflowInstanceId = new Map<JobId, string>()
 
   const initializingJobIds = ref<Set<JobId>>(new Set())
+
+  const workflowStatus = shallowRef<
+    Map<ComfyWorkflow, WorkflowExecutionStatus>
+  >(new Map())
+
+  const jobIdToWorkflow = new Map<string, ComfyWorkflow>()
+
+  // Buffers statuses arriving before storeJob attaches the workflow.
+  // FIFO-capped to bound growth if a matching storeJob never fires.
+  const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
+
+  function bufferPendingWorkflowStatus(
+    jobId: string,
+    update: WorkflowStatusUpdate
+  ) {
+    const existing = pendingWorkflowStatusByJobId.get(jobId)
+    const executionStartedAt =
+      update.executionStartedAt ??
+      queuedJobs.value[jobId]?.executionStartedAt ??
+      existing?.executionStartedAt
+    pendingWorkflowStatusByJobId.delete(jobId)
+    pendingWorkflowStatusByJobId.set(jobId, {
+      ...update,
+      ...(executionStartedAt !== undefined && { executionStartedAt })
+    })
+    while (pendingWorkflowStatusByJobId.size > MAX_PROGRESS_JOBS) {
+      const oldest = pendingWorkflowStatusByJobId.keys().next().value
+      if (oldest === undefined) break
+      pendingWorkflowStatusByJobId.delete(oldest)
+    }
+  }
+
+  function mutateStatus(
+    mutator: (map: Map<ComfyWorkflow, WorkflowExecutionStatus>) => void
+  ) {
+    const next = new Map(workflowStatus.value)
+    mutator(next)
+    workflowStatus.value = next
+  }
+
+  function applyWorkflowStatus(
+    workflow: ComfyWorkflow,
+    status: WorkflowExecutionStatus
+  ) {
+    // A late terminal event can arrive after the tab closed; don't resurrect
+    // an entry (which also pins the workflow ref) for a closed workflow.
+    if (!workflowStore.isOpen(workflow)) return
+    mutateStatus((m) => m.set(workflow, status))
+  }
+
+  function trackExecutionOutcome(
+    jobId: string,
+    { status, endTime, failureReason }: WorkflowStatusUpdate
+  ) {
+    if (status === 'running' || endTime === undefined) return
+    const queuedJob = queuedJobs.value[jobId]
+    const startTime = queuedJob?.startTime
+    const workflowExecutionIntent = queuedJob?.workflowExecutionIntent
+    if (
+      !queuedJob ||
+      queuedJob.outcomeTracked ||
+      startTime === undefined ||
+      workflowExecutionIntent === undefined
+    )
+      return
+
+    queuedJob.outcomeTracked = true
+    const metadata = {
+      startTime,
+      ...workflowExecutionIntent,
+      ...(queuedJob.submissionAcceptedAt !== undefined && {
+        submissionAcceptedAt: queuedJob.submissionAcceptedAt
+      }),
+      ...(queuedJob.executionStartedAt !== undefined && {
+        executionStartedAt: queuedJob.executionStartedAt
+      }),
+      endTime,
+      ...(queuedJob.workflowContext && {
+        workflowContext: queuedJob.workflowContext
+      })
+    }
+    const telemetry = useTelemetry()
+    if (status === 'completed') {
+      telemetry?.trackExecutionOutcome({
+        ...metadata,
+        success: true,
+        failureReason: ''
+      })
+      return
+    }
+    telemetry?.trackExecutionOutcome({
+      ...metadata,
+      success: false,
+      failureReason: failureReason ?? 'execution_failed'
+    })
+  }
+
+  function setWorkflowStatus(jobId: string, update: WorkflowStatusUpdate) {
+    const workflow = jobIdToWorkflow.get(jobId)
+    if (!workflow) {
+      bufferPendingWorkflowStatus(jobId, update)
+      return
+    }
+    if (update.showStatus !== false) {
+      applyWorkflowStatus(workflow, update.status)
+    }
+    trackExecutionOutcome(jobId, update)
+  }
+
+  function clearWorkflowStatus(workflow: ComfyWorkflow) {
+    if (!workflowStatus.value.has(workflow)) return
+    mutateStatus((m) => m.delete(workflow))
+  }
+
+  function getWorkflowStatus(
+    workflow: ComfyWorkflow | undefined | null
+  ): WorkflowExecutionStatus | undefined {
+    if (!workflow) return undefined
+    return workflowStatus.value.get(workflow)
+  }
+
+  // Prune statuses for workflows that have been closed.
+  watch(
+    () => workflowStore.openWorkflows,
+    (openWorkflows) => {
+      if (workflowStatus.value.size === 0) return
+      const openSet = new Set(openWorkflows)
+      const filtered = new Map(
+        [...workflowStatus.value].filter(([w]) => openSet.has(w))
+      )
+      if (filtered.size !== workflowStatus.value.size) {
+        workflowStatus.value = filtered
+      }
+    }
+  )
 
   /**
    * Cache for executionIdToNodeLocatorId lookups.
@@ -153,14 +364,14 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // Easily access all currently executing node IDs
-  const executingNodeIds = computed<NodeId[]>(() => {
+  const executingNodeIds = computed<string[]>(() => {
     return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID
-  const executingNodeId = computed<NodeId | null>(() => {
+  const executingNodeId = computed<string | null>(() => {
     return executingNodeIds.value[0] ?? null
   })
 
@@ -168,21 +379,11 @@ export const useExecutionStore = defineStore('execution', () => {
     () => new Set(executingNodeIds.value.map(String))
   )
 
-  // For backward compatibility - returns the primary executing node
-  const executingNode = computed<ComfyNode | null>(() => {
+  // For backward compatibility - returns the primary executing node info
+  const executingNode = computed<ExecutionNodeInfo | null>(() => {
     if (!executingNodeId.value) return null
 
-    const workflow: ComfyWorkflow | undefined = activeJob.value?.workflow
-    if (!workflow) return null
-
-    const canvasState: ComfyWorkflowJSON | null =
-      workflow.changeTracker?.activeState ?? null
-    if (!canvasState) return null
-
-    return (
-      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
-      null
-    )
+    return activeJob.value?.nodeLookup?.[String(executingNodeId.value)] ?? null
   })
 
   // This is the progress of the currently executing node (for backward compatibility)
@@ -244,11 +445,17 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
+
+    if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
+    pendingWorkflowStatusByJobId.clear()
+    jobIdToWorkflow.clear()
+
+    cancelPendingProgressUpdates()
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
@@ -256,9 +463,20 @@ export const useExecutionStore = defineStore('execution', () => {
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
     if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
-      const path = queuedJobs.value[activeJobId.value]?.workflow?.path
-      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+      const workflow = queuedJobs.value[activeJobId.value]?.workflow
+      if (workflow) {
+        ensureSessionWorkflowPath(
+          activeJobId.value,
+          workflow.path,
+          workflow.instanceId
+        )
+      }
     }
+    queuedJobs.value[activeJobId.value].executionStartedAt ??= performance.now()
+    setWorkflowStatus(activeJobId.value, {
+      status: 'running',
+      executionStartedAt: queuedJobs.value[activeJobId.value].executionStartedAt
+    })
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -272,6 +490,14 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
+    setWorkflowStatus(jobId, {
+      status: 'failed',
+      endTime: performance.now(),
+      failureReason: 'execution_interrupted',
+      showStatus: false
+    })
+    const workflow = jobIdToWorkflow.get(jobId)
+    if (workflow) clearWorkflowStatus(workflow)
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
     resetExecutionState(jobId)
   }
@@ -282,26 +508,40 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
-    if (isCloud && activeJobId.value) {
-      useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
-      })
-    }
     const jobId = e.detail.prompt_id
+    setWorkflowStatus(jobId, {
+      status: 'completed',
+      endTime: performance.now()
+    })
+    const queuedJob = queuedJobs.value[jobId]
+    const telemetry = useTelemetry()
+    if (queuedJob) {
+      telemetry?.trackExecutionSuccess({
+        jobId
+      })
+      if (queuedJob.shareId) {
+        telemetry?.trackSharedWorkflowRun({
+          job_id: jobId,
+          share_id: queuedJob.shareId,
+          view_mode: queuedJob.viewMode ?? mode.value,
+          is_app_mode: queuedJob.isAppMode ?? isAppMode.value
+        })
+      }
+    }
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
+  function handleExecuting(e: CustomEvent<string | number | null>): void {
+    progressCoalescer.cancel()
+    if (e.detail == null) progressStateCoalescer.cancel()
+
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
     if (!activeJob.value) return
 
     // Update the executing nodes list
-    if (typeof e.detail !== 'string') {
-      if (activeJobId.value) {
-        delete queuedJobs.value[activeJobId.value]
-      }
+    if (e.detail == null) {
       activeJobId.value = null
     }
   }
@@ -334,8 +574,17 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
+  const progressStateCoalescer = createRafCoalescer<ProgressStateWsMessage>(
+    applyProgressState,
+    'raf:progress_state'
+  )
+
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes, prompt_id: jobId } = e.detail
+    progressStateCoalescer.push(e.detail)
+  }
+
+  function applyProgressState(detail: ProgressStateWsMessage) {
+    const { nodes, prompt_id: jobId } = detail
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
@@ -347,7 +596,8 @@ export const useExecutionStore = defineStore('execution', () => {
         // here intentionally. That way, we don't clear the preview every time a new node
         // within an expanded graph starts executing.
         const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
+        const executionId = tryNormalizeNodeExecutionId(nodeId)
+        if (executionId) revokePreviewsByExecutionId(executionId)
       }
     }
 
@@ -371,8 +621,17 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
+    _executingNodeProgress.value = detail
+  }, 'raf:progress')
+
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _executingNodeProgress.value = e.detail
+    progressCoalescer.push(e.detail)
+  }
+
+  function cancelPendingProgressUpdates() {
+    progressCoalescer.cancel()
+    progressStateCoalescer.cancel()
   }
 
   function handleStatus() {
@@ -385,26 +644,61 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    if (isCloud) {
-      useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
-        nodeId: String(e.detail.node_id),
-        nodeType: e.detail.node_type,
-        error: e.detail.exception_message
-      })
+    const endTime = performance.now()
+    setWorkflowStatus(e.detail.prompt_id, {
+      status: 'failed',
+      endTime,
+      failureReason: 'execution_failed',
+      showStatus: false
+    })
+    useTelemetry()?.trackExecutionError({
+      jobId: e.detail.prompt_id,
+      nodeId: String(e.detail.node_id),
+      nodeType: e.detail.node_type,
+      error: e.detail.exception_message
+    })
 
+    if (isCloud) {
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
-      if (handleCloudValidationError(e.detail)) return
+      // Pre-flight validation isn't a runtime failure — no badge.
+      if (handleCloudValidationError(e.detail)) {
+        return
+      }
     }
 
-    // Service-level errors (e.g. "Job has stagnated") have no associated node.
-    // Route them as job errors
-    if (handleServiceLevelError(e.detail)) return
+    // Account preconditions (sign-in, subscription, credits) open their own
+    // modal and must stay out of the error panel and error count.
+    if (handleAccountPreconditionError(e.detail)) return
 
-    // OSS path / Cloud fallback (real runtime errors)
-    executionErrorStore.lastExecutionError = e.detail
+    // Service-level errors (e.g. "Job has stagnated") have no associated node.
+    if (handleServiceLevelError(e.detail)) {
+      return
+    }
+
+    setWorkflowStatus(e.detail.prompt_id, {
+      status: 'failed',
+      endTime,
+      failureReason: 'execution_failed'
+    })
+    executionErrorStore.recordExecutionError(e.detail)
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
+  }
+
+  function handleAccountPreconditionError(
+    detail: ExecutionErrorWsMessage
+  ): boolean {
+    const precondition = resolveAccountPrecondition({
+      exceptionType: detail.exception_type ?? '',
+      exceptionMessage: detail.exception_message ?? ''
+    })
+    if (!precondition) return false
+
+    const workflow = jobIdToWorkflow.get(detail.prompt_id)
+    if (workflow) clearWorkflowStatus(workflow)
+    clearInitializationByJobId(detail.prompt_id)
+    resetExecutionState(detail.prompt_id)
+    return true
   }
 
   function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
@@ -414,13 +708,13 @@ export const useExecutionStore = defineStore('execution', () => {
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.lastPromptError = {
+    executionErrorStore.recordPromptError({
       type: detail.exception_type ?? 'error',
       message: detail.exception_type
         ? `${detail.exception_type}: ${detail.exception_message}`
         : (detail.exception_message ?? ''),
       details: detail.traceback?.join('\n') ?? ''
-    }
+    })
     return true
   }
 
@@ -434,9 +728,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.lastNodeErrors = result.nodeErrors
+      executionErrorStore.recordNodeErrors(result.nodeErrors)
     } else {
-      executionErrorStore.lastPromptError = result.promptError
+      executionErrorStore.recordPromptError(result.promptError)
     }
     return true
   }
@@ -485,6 +779,16 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobIds(orphaned)
   }
 
+  /**
+   * Clears the active job if the server's queue snapshot doesn't list it.
+   * Used after WS reconnect to recover from stale state when a job finished
+   * during the disconnect window.
+   */
+  function clearActiveJobIfStale(activeJobIds: Set<JobId>) {
+    const id = activeJobId.value
+    if (id && !activeJobIds.has(id)) resetExecutionState(id)
+  }
+
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
     if (!jobId) return false
     return initializingJobIds.value.has(String(jobId))
@@ -494,6 +798,8 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: JobId | null) {
+    cancelPendingProgressUpdates()
+
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
@@ -502,10 +808,9 @@ export const useExecutionStore = defineStore('execution', () => {
       delete map[jobId]
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
+      jobIdToWorkflow.delete(jobId)
     }
-    if (activeJobId.value) {
-      delete queuedJobs.value[activeJobId.value]
-    }
+    if (jobId) delete queuedJobs.value[jobId]
     activeJobId.value = null
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError()
@@ -529,7 +834,9 @@ export const useExecutionStore = defineStore('execution', () => {
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
-    const node = canvasStore.canvas?.graph?.getNodeById(currentId)
+    const parsedCurrentId = parseNodeId(currentId)
+    if (!parsedCurrentId) return
+    const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
@@ -538,11 +845,23 @@ export const useExecutionStore = defineStore('execution', () => {
   function storeJob({
     nodes,
     id,
-    workflow
+    promptOutput,
+    startTime,
+    submissionAcceptedAt,
+    workflow,
+    mode,
+    workflowContext,
+    workflowExecutionIntent = defaultWorkflowExecutionIntent
   }: {
     nodes: string[]
     id: JobId
+    promptOutput: ComfyApiWorkflow
+    startTime?: number
+    submissionAcceptedAt?: number
     workflow: ComfyWorkflow
+    mode: AppMode
+    workflowContext?: WorkflowExecutionContext
+    workflowExecutionIntent?: WorkflowExecutionIntent
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
@@ -553,29 +872,82 @@ export const useExecutionStore = defineStore('execution', () => {
       }, {}),
       ...queuedJob.nodes
     }
+    queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
+    queuedJob.startTime = startTime
+    queuedJob.submissionAcceptedAt = submissionAcceptedAt
+    queuedJob.workflowContext = workflowContext
+    queuedJob.workflowExecutionIntent = workflowExecutionIntent
     queuedJob.workflow = workflow
+    if (workflow) jobIdToWorkflow.set(String(id), workflow)
+    queuedJob.shareId = workflow?.shareId
+    queuedJob.viewMode = mode
+    queuedJob.isAppMode = isAppModeValue(mode)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
     }
     if (workflow?.path) {
-      ensureSessionWorkflowPath(id, workflow.path)
+      ensureSessionWorkflowPath(id, workflow.path, workflow.instanceId)
     }
+    flushPendingWorkflowStatus(String(id), workflow)
+  }
+
+  function flushPendingWorkflowStatus(
+    jobId: string,
+    workflow: ComfyWorkflow | undefined
+  ) {
+    const pending = pendingWorkflowStatusByJobId.get(jobId)
+    if (pending === undefined || !workflow) return
+    pendingWorkflowStatusByJobId.delete(jobId)
+    queuedJobs.value[jobId].executionStartedAt = pending.executionStartedAt
+    // Don't let a stale 'running' overwrite a terminal status already set.
+    if (pending.status === 'running' && workflowStatus.value.has(workflow))
+      return
+    if (pending.showStatus !== false) {
+      applyWorkflowStatus(workflow, pending.status)
+    }
+    trackExecutionOutcome(jobId, pending)
+    if (pending.status === 'running' || activeJobId.value === jobId) return
+    delete queuedJobs.value[jobId]
+    jobIdToWorkflow.delete(jobId)
   }
 
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
   const MAX_SESSION_PATH_ENTRIES = 4000
 
-  function ensureSessionWorkflowPath(jobId: JobId, path: string) {
+  function ensureSessionWorkflowPath(
+    jobId: JobId,
+    path: string,
+    workflowInstanceId?: string
+  ) {
+    if (workflowInstanceId) {
+      jobIdToWorkflowInstanceId.set(jobId, workflowInstanceId)
+    }
     if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
     while (next.size > MAX_SESSION_PATH_ENTRIES) {
       const oldest = next.keys().next().value
-      if (oldest !== undefined) next.delete(oldest)
-      else break
+      if (oldest !== undefined) {
+        next.delete(oldest)
+        jobIdToWorkflowInstanceId.delete(oldest)
+      } else break
     }
     jobIdToSessionWorkflowPath.value = next
+  }
+
+  function rewriteSessionWorkflowPaths(
+    workflowInstanceId: string,
+    newPath: string
+  ) {
+    let next: Map<string, string> | undefined
+    for (const [jobId, path] of jobIdToSessionWorkflowPath.value) {
+      if (path === newPath) continue
+      if (jobIdToWorkflowInstanceId.get(jobId) !== workflowInstanceId) continue
+      next ??= new Map(jobIdToSessionWorkflowPath.value)
+      next.set(jobId, newPath)
+    }
+    if (next) jobIdToSessionWorkflowPath.value = next
   }
 
   /**
@@ -592,7 +964,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * @returns The execution ID or null if conversion fails
    */
   const nodeLocatorIdToExecutionId = (
-    locatorId: NodeLocatorId | string
+    locatorId: NodeLocatorId
   ): string | null => {
     const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
     return executionId
@@ -643,6 +1015,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
+    clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,
     storeJob,
@@ -654,6 +1027,9 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocatorIdToExecutionId,
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
-    ensureSessionWorkflowPath
+    ensureSessionWorkflowPath,
+    getWorkflowStatus,
+    clearWorkflowStatus,
+    rewriteSessionWorkflowPaths
   }
 })

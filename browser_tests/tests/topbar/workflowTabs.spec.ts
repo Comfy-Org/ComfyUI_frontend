@@ -1,14 +1,13 @@
 import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+    }
   })
 
   test('Default workflow tab is visible on load', async ({ comfyPage }) => {
@@ -120,9 +119,53 @@ test.describe('Workflow tabs', () => {
       if (graph && node) graph.add(node)
     })
 
-    // WorkflowTab renders "•" when the workflow has unsaved changes
+    // WorkflowTab renders the dirty-state dot when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
-    await expect(activeTab.locator('text=•')).toBeVisible()
+    await expect(
+      activeTab.getByTestId('workflow-dirty-indicator')
+    ).toBeVisible()
+  })
+
+  test('Can drag tab to end', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+    const [a, b, c] = await topbar.getTabNames()
+
+    await topbar.getTab(0).dragTo(topbar.getTab(2))
+
+    await expect.poll(() => topbar.getTabNames()).toEqual([b, c, a])
+  })
+
+  test('Can drag tab to start', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+    const [a, b, c] = await topbar.getTabNames()
+
+    await topbar.getTab(2).dragTo(topbar.getTab(0))
+
+    await expect.poll(() => topbar.getTabNames()).toEqual([c, a, b])
+  })
+
+  test('Drag preserves active tab', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+
+    const [, b] = await topbar.getTabNames()
+    await topbar.getTab(1).click()
+    await expect.poll(() => topbar.getActiveTabName()).toContain(b)
+
+    await topbar.getTab(0).dragTo(topbar.getTab(2))
+
+    await expect.poll(() => topbar.getActiveTabName()).toContain(b)
   })
 
   test('Multiple tabs can be created, switched, and closed', async ({
@@ -145,5 +188,110 @@ test.describe('Workflow tabs', () => {
     // Close the middle tab
     await topbar.closeWorkflowTab('Unsaved Workflow (2)')
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+  })
+
+  test(
+    'Scroll arrows navigate overflowing workflow tabs',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.page.setViewportSize({ width: 800, height: 720 })
+      const topbar = comfyPage.menu.topbar
+
+      for (let index = 0; index < 8; index++) {
+        await topbar.newWorkflowButton.click()
+      }
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(9)
+
+      const scrollLeft = topbar.workflowTabs.getByRole('button', {
+        name: 'Scroll Left'
+      })
+      const scrollRight = topbar.workflowTabs.getByRole('button', {
+        name: 'Scroll Right'
+      })
+      await expect(scrollLeft).toBeVisible()
+      await expect(scrollLeft).toBeEnabled()
+      await expect(scrollRight).toBeDisabled()
+
+      const activeTabName = await topbar.getActiveTabName()
+      await scrollLeft.dispatchEvent('mousedown')
+      await expect(scrollRight).toBeEnabled()
+      await scrollLeft.dispatchEvent('mouseup')
+      await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
+    }
+  )
+
+  test.describe('Closing a modified workflow tab (FE-419)', () => {
+    async function modifyActiveWorkflow(page: Page, activeTab: Locator) {
+      await page.evaluate(() => {
+        const graph = window.app?.graph
+        const node = window.LiteGraph?.createNode('Note')
+        if (graph && node) graph.add(node)
+      })
+      await expect(
+        activeTab.getByTestId('workflow-dirty-indicator')
+      ).toHaveCount(1)
+    }
+
+    test('shows "Close anyway" label and no Cancel button on dirtyClose dialog', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+      await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      const dialog = comfyPage.page.getByRole('dialog')
+      await expect(dialog).toBeVisible()
+      await expect(
+        dialog.getByRole('button', { name: 'Close anyway' })
+      ).toBeVisible()
+      await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
+      await expect(dialog.getByRole('button', { name: 'Cancel' })).toHaveCount(
+        0
+      )
+    })
+
+    test('clicking "Close anyway" closes the tab without saving', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+      await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      await comfyPage.page
+        .getByRole('dialog')
+        .getByRole('button', { name: 'Close anyway' })
+        .click()
+
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
+      await expect
+        .poll(() => topbar.getActiveTabName())
+        .toContain('Unsaved Workflow')
+    })
+
+    test('dismissing the dialog keeps the modified tab open', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+      await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(comfyPage.page.getByRole('dialog')).toBeHidden()
+
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+    })
   })
 })

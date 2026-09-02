@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -56,10 +56,6 @@ function renderComponent(initial: Partial<GizmoConfig> = {}) {
 }
 
 describe('GizmoControls', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('renders only the toggle button when gizmo is disabled', () => {
     renderComponent({ enabled: false })
 
@@ -97,13 +93,13 @@ describe('GizmoControls', () => {
     expect(emitted().toggleGizmo).toEqual([[false]])
   })
 
-  it.each([
+  it.for([
     ['Translate', 'translate'],
     ['Rotate', 'rotate'],
     ['Scale', 'scale']
   ] as const)(
     'sets mode to %s and emits setGizmoMode when clicked',
-    async (label, mode) => {
+    async ([label, mode]) => {
       const { user, gizmoConfig, emitted } = renderComponent({ enabled: true })
 
       await user.click(screen.getByRole('button', { name: label }))

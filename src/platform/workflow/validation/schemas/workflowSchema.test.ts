@@ -119,6 +119,31 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).toBeNull()
     })
+
+    it('accepts mixed int/string node ids and preserves linearMode', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearMode: true,
+        linearData: {
+          inputs: [
+            [3, 'file'],
+            [5, 'upscaler_model'],
+            [5, 'upscaler_resolution'],
+            ['5', 'upscaler_creativity']
+          ],
+          outputs: [4]
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearMode).toBe(true)
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [3, 'file'],
+        [5, 'upscaler_model'],
+        [5, 'upscaler_resolution'],
+        ['5', 'upscaler_creativity']
+      ])
+    })
   })
 
   it('workflow.nodes.pos', async () => {
@@ -178,6 +203,23 @@ describe('parseComfyWorkflow', () => {
     expect(validatedWorkflow!.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
 
+  it('workflow.nodes.widgets_values preserves null entries', async () => {
+    // LGraphNode.serialize writes `val ?? null`, so null reaches the schema on
+    // ordinary saves. Validation must let it through unchanged, in both the
+    // array and the object form.
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+
+    workflow.nodes[0].widgets_values = ['foo', null]
+    const arrayForm = await validateComfyWorkflow(workflow)
+    expect(arrayForm).not.toBeNull()
+    expect(arrayForm!.nodes[0].widgets_values).toEqual(['foo', null])
+
+    workflow.nodes[0].widgets_values = { foo: null }
+    const objectForm = await validateComfyWorkflow(workflow)
+    expect(objectForm).not.toBeNull()
+    expect(objectForm!.nodes[0].widgets_values).toEqual({ foo: null })
+  })
+
   it('workflow.links', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
 
@@ -199,7 +241,7 @@ describe('parseComfyWorkflow', () => {
       'valid/valid',
       'valid-username-with-dash/valid_github-repo-name-with-underscore'
     ]
-    it.each(validAuxIds)('valid aux_id: %s', async (aux_id) => {
+    it.for(validAuxIds)('valid aux_id: %s', async (aux_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.aux_id = aux_id
       await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
@@ -210,7 +252,7 @@ describe('parseComfyWorkflow', () => {
       'github-name/invalid spaces in repo',
       'not-both-names-with-slash'
     ]
-    it.each(invalidAuxIds)('invalid aux_id: %s', async (aux_id) => {
+    it.for(invalidAuxIds)('invalid aux_id: %s', async (aux_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.aux_id = aux_id
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
@@ -219,14 +261,14 @@ describe('parseComfyWorkflow', () => {
 
   describe('workflow.nodes.properties.cnr_id', () => {
     const validCnrIds = ['valid', 'valid-with-dash', 'valid_with_underscores']
-    it.each(validCnrIds)('valid cnr_id: %s', async (cnr_id) => {
+    it.for(validCnrIds)('valid cnr_id: %s', async (cnr_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.cnr_id = cnr_id
       await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
     })
 
     const invalidCnrIds = ['invalid cnr-id', 'invalid^cnr-id', 'invalid cnr id']
-    it.each(invalidCnrIds)('invalid cnr_id: %s', async (cnr_id) => {
+    it.for(invalidCnrIds)('invalid cnr_id: %s', async (cnr_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.cnr_id = cnr_id
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
@@ -248,7 +290,7 @@ describe('parseComfyWorkflow', () => {
       'v0.3.9-7-g1419dee',
       'v0.3.9-7-g1419dee-dirty'
     ]
-    it.each(validVersionStrings)('valid version: %s', async (ver) => {
+    it.for(validVersionStrings)('valid version: %s', async (ver) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.ver = ver
       await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
@@ -262,7 +304,7 @@ describe('parseComfyWorkflow', () => {
       // Git hash
       '080e6d4af809a46852d1c4b7ed85f06e8a3a72be-invalid'
     ]
-    it.each(invalidVersionStrings)('invalid version: %s', async (ver) => {
+    it.for(invalidVersionStrings)('invalid version: %s', async (ver) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.ver = ver
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()

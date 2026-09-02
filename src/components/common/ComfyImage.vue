@@ -31,9 +31,9 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -51,5 +51,5 @@ const {
   alt?: string
 }>()
 
-const { error } = useImage(computed(() => ({ src, alt })))
+const { error } = useImageQuiet(computed(() => ({ src, alt })))
 </script>

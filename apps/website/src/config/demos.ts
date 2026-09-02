@@ -15,6 +15,14 @@ interface Demo {
   readonly transcript?: TranslationKey
   readonly publishedDate: string
   readonly modifiedDate: string
+  /**
+   * Width / height of the Arcade demo's source recording (e.g. 1.93 for a
+   * landscape screencast). Sizes the embed container to match so rounded
+   * corners hug the content instead of empty letterbox space. Source from
+   * Arcade's `_serializablePublicFlow.aspectRatio` (which is height/width —
+   * invert it). Defaults to 16/9 if omitted.
+   */
+  readonly aspectRatio?: number
 }
 
 export const demos: readonly Demo[] = [
@@ -32,7 +40,8 @@ export const demos: readonly Demo[] = [
     difficulty: 'beginner',
     tags: ['templates', 'image', 'video'],
     publishedDate: '2026-04-19',
-    modifiedDate: '2026-04-19'
+    modifiedDate: '2026-04-19',
+    aspectRatio: 1.931
   },
   {
     slug: 'workflow-templates',
@@ -48,7 +57,25 @@ export const demos: readonly Demo[] = [
     difficulty: 'beginner',
     tags: ['getting-started', 'templates', 'workflow'],
     publishedDate: '2026-04-19',
-    modifiedDate: '2026-04-19'
+    modifiedDate: '2026-04-19',
+    aspectRatio: 1.931
+  },
+  {
+    slug: 'community-workflows',
+    arcadeId: 'mqZh17oWDuWIyhK0xwEV',
+    category: 'demos.category.gettingStarted',
+    title: 'demos.community-workflows.title',
+    description: 'demos.community-workflows.description',
+    transcript: 'demos.community-workflows.transcript',
+    ogImage: '/images/demos/community-workflows-og.png',
+    thumbnail: '/images/demos/community-workflows-thumb.webp',
+    estimatedTime: 'demos.duration.2min',
+    durationIso: 'PT2M',
+    difficulty: 'beginner',
+    tags: ['getting-started', 'community', 'workflow', 'hub'],
+    publishedDate: '2026-05-04',
+    modifiedDate: '2026-05-04',
+    aspectRatio: 1.931
   }
 ]
 

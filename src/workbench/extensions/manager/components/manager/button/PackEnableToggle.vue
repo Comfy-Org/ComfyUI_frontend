@@ -13,7 +13,7 @@
         class="icon-[lucide--triangle-alert] text-xl text-warning-background"
       />
     </div>
-    <ToggleSwitch
+    <Switch
       v-if="!canToggleDirectly"
       :model-value="isEnabled"
       :disabled="isLoading"
@@ -21,7 +21,7 @@
       :aria-label="$t('g.enableOrDisablePack')"
       @focus="handleToggleInteraction"
     />
-    <ToggleSwitch
+    <Switch
       v-else
       :model-value="isEnabled"
       :disabled="isLoading"
@@ -32,10 +32,10 @@
 </template>
 <script setup lang="ts">
 import { debounce } from 'es-toolkit/compat'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Switch from '@/components/ui/switch/Switch.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
@@ -120,7 +120,8 @@ const showConflictModal = (skipModalDismissed: boolean) => {
 
 const handleEnable = () => {
   if (!nodePack.id) {
-    throw new Error('Node ID is required for enabling')
+    console.error('Node ID is required for enabling')
+    return
   }
   return enablePack({
     id: nodePack.id,
@@ -132,7 +133,8 @@ const handleEnable = () => {
 
 const handleDisable = () => {
   if (!nodePack.id) {
-    throw new Error('Node ID is required for disabling')
+    console.error('Node ID is required for disabling')
+    return
   }
   return disablePack({
     id: nodePack.id,

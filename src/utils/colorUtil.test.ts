@@ -9,8 +9,12 @@ import {
   hsbToRgb,
   hsvaToHex,
   isTransparent,
+  luminance,
+  normalizeHex,
   parseToRgb,
+  readableTextColor,
   rgbToHex,
+  textOnColor,
   toHexFromFormat
 } from '@/utils/colorUtil'
 
@@ -95,6 +99,22 @@ describe('colorUtil conversions', () => {
     it('round-trips #hex -> rgb -> #hex', () => {
       const hex = '#123abc'
       expect(rgbToHex(hexToRgb(hex))).toBe('#123abc')
+    })
+  })
+
+  describe('normalizeHex', () => {
+    it('canonicalizes 3- and 6-digit hex with or without a leading #', () => {
+      expect(normalizeHex('#ff0000')).toBe('#ff0000')
+      expect(normalizeHex('ff0000')).toBe('#ff0000')
+      expect(normalizeHex('#0f0')).toBe('#0f0')
+      expect(normalizeHex(' 0f0 ')).toBe('#0f0')
+    })
+
+    it('rejects malformed input', () => {
+      expect(normalizeHex('nothex')).toBeNull()
+      expect(normalizeHex('#ff00')).toBeNull()
+      expect(normalizeHex('#ff00000')).toBeNull()
+      expect(normalizeHex('')).toBeNull()
     })
   })
 
@@ -218,7 +238,7 @@ describe('colorUtil conversions', () => {
   })
 
   describe('parseToRgb edge cases', () => {
-    it.each(['', 'not-a-color', '#GGGGGG', 'cmky(1,2,3,4)'])(
+    it.for(['', 'not-a-color', '#GGGGGG', 'cmky(1,2,3,4)'])(
       'returns black for unrecognized input %s',
       (input) => {
         expect(parseToRgb(input)).toEqual({ r: 0, g: 0, b: 0 })
@@ -284,6 +304,28 @@ describe('colorUtil conversions', () => {
       expect(toHexFromFormat('abcdef', 'hex')).toBe('#abcdef')
     })
   })
+
+  describe('luminance', () => {
+    it('computes perceptual luminance', () => {
+      expect(luminance({ r: 255, g: 0, b: 0 })).toBeCloseTo(76.245, 2)
+      expect(luminance({ r: 255, g: 255, b: 255 })).toBeCloseTo(255, 2)
+    })
+  })
+
+  describe('readableTextColor / textOnColor', () => {
+    it('lightens dark colors', () => {
+      expect(readableTextColor('#000000')).not.toBe('rgb(0,0,0)')
+    })
+
+    it('leaves already-light colors unchanged', () => {
+      expect(readableTextColor('#ffffff')).toBe('rgb(255,255,255)')
+    })
+
+    it('flips text color for contrast', () => {
+      expect(textOnColor('#ffffff')).toBe('#000')
+      expect(textOnColor('#000000')).toBe('#fff')
+    })
+  })
 })
 describe('colorUtil - adjustColor', () => {
   const runAdjustColorTests = (
@@ -309,8 +351,8 @@ describe('colorUtil - adjustColor', () => {
     })
   }
 
-  describe.each(Object.entries(colors))('%s color', (_colorName, color) => {
-    describe.each(formats)('%s format', (format) => {
+  describe.for(Object.entries(colors))('%s color', ([_colorName, color]) => {
+    describe.for(formats)('%s format', (format) => {
       runAdjustColorTests(color, format as ColorFormat)
     })
   })

@@ -8,6 +8,12 @@ export const EXPECTED_PROMPT = {
   '1': { class_type: 'KSampler', inputs: {} }
 }
 
+// API prompt as parsed from the `with_nan_metadata.*` fixtures, after the
+// loader coerces bare NaN/Infinity tokens to null.
+export const EXPECTED_PROMPT_NAN_COERCED = {
+  '1': { class_type: 'KSampler', inputs: { cfg: null, denoise: null } }
+}
+
 type ReadMethod = 'readAsText' | 'readAsArrayBuffer'
 
 export function mockFileReaderError(method: ReadMethod): void {

@@ -36,13 +36,40 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api },
-      { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
+      { label: t('nav.developerPlatform', locale), href: routes.platform },
+      { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
+      { label: t('nav.pricing', locale), href: routes.pricing },
+      { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.comfyCli', locale), href: routes.cli },
+      { label: t('nav.supportedModels', locale), href: routes.models },
+      { label: t('footer.minimaxH3', locale), href: routes.minimax },
+      {
+        label: t('footer.minimaxMusic3', locale),
+        href: routes.minimaxMusic3
+      },
+      {
+        label: t('footer.minimaxLicense', locale),
+        href: routes.minimaxLicense
+      },
+      { label: t('footer.seedance', locale), href: routes.seedance },
+      { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
+      { label: t('footer.ltx', locale), href: routes.ltx },
+      { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
+      { label: t('footer.wan3', locale), href: routes.wan3 },
+      { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },
   {
     title: t('footer.resources', locale),
     links: [
+      { label: t('nav.learning', locale), href: routes.learning },
+      { label: t('footer.workflows', locale), href: externalLinks.workflows },
+      {
+        label: t('footer.useCases', locale),
+        href: externalLinks.workflowUseCases
+      },
+      { label: t('nav.launches', locale), href: routes.launches },
+      { label: t('nav.fdct', locale), href: routes.fdct },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,
@@ -67,6 +94,25 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('nav.youtube', locale),
         href: externalLinks.youtube,
         external: true
+      },
+      {
+        label: t('nav.instagram', locale),
+        href: externalLinks.instagram,
+        external: true
+      },
+      {
+        label: t('nav.x', locale),
+        href: externalLinks.x,
+        external: true
+      },
+      {
+        label: t('nav.linkedin', locale),
+        href: externalLinks.linkedin,
+        external: true
+      },
+      {
+        label: t('footer.affiliateProgram', locale),
+        href: routes.affiliates
       }
     ]
   }
@@ -77,18 +123,30 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   links: [
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
+    { label: t('nav.brand', locale), href: routes.brand },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
-    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy }
+    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
+    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
+    {
+      label: t('footer.trustSafety', locale),
+      href: externalLinks.trustCenter,
+      external: true
+    }
   ]
 }
 
-const contactColumn = {
+const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
   links: [
     { label: t('footer.sales', locale), href: routes.contact },
     {
       label: t('footer.support', locale),
       href: externalLinks.support,
+      external: true
+    },
+    {
+      label: t('footer.cloudStatus', locale),
+      href: externalLinks.cloudStatus,
       external: true
     },
     { label: t('footer.press', locale), href: 'mailto:press@comfy.org' }
@@ -99,10 +157,10 @@ const contactColumn = {
 <template>
   <footer
     ref="footerRef"
-    class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20"
+    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="border-primary-warm-gray grid gap-12 border-t pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
     >
       <!-- Tagline -->
       <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
@@ -161,10 +219,7 @@ const contactColumn = {
       </div>
 
       <!-- Logo -->
-      <canvas
-        ref="canvasRef"
-        class="pointer-events-none size-52 opacity-80 lg:mt-28"
-      />
+      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>
 </template>

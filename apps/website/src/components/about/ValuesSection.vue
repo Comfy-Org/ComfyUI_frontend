@@ -14,20 +14,24 @@ const reasons: TranslationKey[] = [
 </script>
 
 <template>
-  <section class="px-6 py-24 lg:px-20 lg:py-32">
+  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
     <WireNodeLayout :reasons right-card-padding="p-6" :locale="locale">
       <template #right-card>
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
-          class="mt-6 w-full"
+          loading="lazy"
+          decoding="async"
+          class="mt-6 aspect-square w-full object-contain"
         />
       </template>
       <template #right-card-mobile>
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
-          class="mt-6 w-full max-w-xs"
+          loading="lazy"
+          decoding="async"
+          class="mt-6 aspect-square w-full max-w-xs object-contain"
         />
       </template>
     </WireNodeLayout>

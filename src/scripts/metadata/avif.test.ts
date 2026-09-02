@@ -1,9 +1,10 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
+  EXPECTED_PROMPT_NAN_COERCED,
   EXPECTED_WORKFLOW,
   mockFileReaderAbort,
   mockFileReaderError
@@ -11,8 +12,10 @@ import {
 import { getFromAvifFile } from './avif'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.avif')
-
-afterEach(() => vi.restoreAllMocks())
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.avif'
+)
 
 describe('AVIF metadata', () => {
   it('extracts workflow and prompt from EXIF data in ISOBMFF boxes', async () => {
@@ -23,6 +26,16 @@ describe('AVIF metadata', () => {
 
     expect(JSON.parse(result.workflow)).toEqual(EXPECTED_WORKFLOW)
     expect(JSON.parse(result.prompt)).toEqual(EXPECTED_PROMPT)
+  })
+
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath)
+    const file = new File([bytes], 'nan.avif', { type: 'image/avif' })
+
+    const result = await getFromAvifFile(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(JSON.parse(result.prompt)).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
   it('returns empty for non-AVIF data', async () => {
@@ -62,11 +75,14 @@ describe('AVIF metadata', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderError('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('resolves empty when the FileReader fires abort', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
   })
 })

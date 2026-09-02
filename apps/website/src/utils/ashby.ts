@@ -14,7 +14,7 @@ const DEFAULT_BASE_URL = 'https://api.ashbyhq.com'
 const DEFAULT_TIMEOUT_MS = 10_000
 const RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
-export interface DroppedRole {
+interface DroppedRole {
   title: string
   reason: string
 }
@@ -243,13 +243,13 @@ function groupByDepartment(jobs: readonly AshbyJobPosting[]): Department[] {
 }
 
 function toDomainRole(job: AshbyJobPosting, department: string): Role {
-  const applyUrl = job.applyUrl ?? job.jobUrl
+  const jobUrl = job.jobUrl
   return {
-    id: createHash('sha1').update(applyUrl).digest('hex').slice(0, 16),
+    id: createHash('sha1').update(jobUrl).digest('hex').slice(0, 16),
     title: job.title,
     department: capitalize(department),
     location: (job.location ?? '').trim() || DEFAULT_LOCATION,
-    applyUrl
+    jobUrl
   }
 }
 

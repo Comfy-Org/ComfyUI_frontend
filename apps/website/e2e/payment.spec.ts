@@ -8,6 +8,7 @@ const CLOUD_URL = externalLinks.cloud
 const PLATFORM_USAGE_URL = externalLinks.platformUsage
 const SUPPORT_URL = externalLinks.support
 const DOCS_SUBSCRIPTION_URL = externalLinks.docsSubscription
+const STATUS_URL = externalLinks.cloudStatus
 
 async function expectNoIndex(page: Page) {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -22,7 +23,7 @@ test.describe('Payment success page @smoke', () => {
   })
 
   test('has correct title and is noindex', async ({ page }) => {
-    await expect(page).toHaveTitle('Payment Successful — Comfy')
+    await expect(page).toHaveTitle('Payment Successful - Comfy')
     await expectNoIndex(page)
   })
 
@@ -54,14 +55,14 @@ test.describe('Payment failed page @smoke', () => {
   })
 
   test('has correct title and is noindex', async ({ page }) => {
-    await expect(page).toHaveTitle('Payment Failed — Comfy')
+    await expect(page).toHaveTitle('Payment Failed - Comfy')
     await expectNoIndex(page)
   })
 
   test('shows failure heading and subtitle', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
-        name: /Payment was not completed/i,
+        name: /Unable to complete payment/i,
         level: 1
       })
     ).toBeVisible()
@@ -79,12 +80,23 @@ test.describe('Payment failed page @smoke', () => {
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
   })
+
+  test('points at the status page so an outage can be ruled out', async ({
+    page
+  }) => {
+    const statusLink = page.getByRole('link', {
+      name: 'status page',
+      exact: true
+    })
+    await expect(statusLink).toBeVisible()
+    await expect(statusLink).toHaveAttribute('href', STATUS_URL)
+  })
 })
 
 test.describe('Payment pages zh-CN @smoke', () => {
   test('zh-CN success page renders and links correctly', async ({ page }) => {
     await page.goto('/zh-CN/payment/success')
-    await expect(page).toHaveTitle('支付成功 — Comfy')
+    await expect(page).toHaveTitle('支付成功 - Comfy')
     await expectNoIndex(page)
     await expect(
       page.getByRole('heading', { name: '支付成功', level: 1 })
@@ -99,10 +111,10 @@ test.describe('Payment pages zh-CN @smoke', () => {
 
   test('zh-CN failed page renders and links correctly', async ({ page }) => {
     await page.goto('/zh-CN/payment/failed')
-    await expect(page).toHaveTitle('支付失败 — Comfy')
+    await expect(page).toHaveTitle('支付失败 - Comfy')
     await expectNoIndex(page)
     await expect(
-      page.getByRole('heading', { name: '支付未完成', level: 1 })
+      page.getByRole('heading', { name: '无法完成支付', level: 1 })
     ).toBeVisible()
     await expect(page.getByRole('link', { name: '联系支持' })).toHaveAttribute(
       'href',
@@ -111,5 +123,8 @@ test.describe('Payment pages zh-CN @smoke', () => {
     await expect(
       page.getByRole('link', { name: '查看订阅文档' })
     ).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
+    await expect(
+      page.getByRole('link', { name: '状态页面', exact: true })
+    ).toHaveAttribute('href', STATUS_URL)
   })
 })

@@ -122,3 +122,19 @@ export async function saveAndReopenInAppMode(
 
   await comfyPage.appMode.toggleAppMode()
 }
+
+export async function saveCloseAndReopenInBuilder(
+  comfyPage: ComfyPage,
+  appMode: AppModeHelper,
+  workflowName: string
+) {
+  await appMode.steps.goToPreview()
+  await builderSaveAs(appMode, workflowName)
+  await appMode.saveAs.closeButton.click()
+  await expect(appMode.saveAs.successDialog).toBeHidden()
+
+  await appMode.footer.exitBuilder()
+  await openWorkflowFromSidebar(comfyPage, workflowName)
+  await appMode.enterBuilder()
+  await appMode.steps.goToInputs()
+}

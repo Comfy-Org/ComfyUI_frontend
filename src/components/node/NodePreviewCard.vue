@@ -2,6 +2,7 @@
   <div
     class="flex flex-col overflow-hidden rounded-lg border border-border-default bg-base-background"
     :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
+    data-testid="node-preview-card"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div
@@ -102,6 +103,7 @@ import { computed, ref } from 'vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const BASE_WIDTH_PX = 200
@@ -135,10 +137,10 @@ const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
 
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []
-  return Object.entries(nodeDef.inputs)
-    .filter(([_, input]) => !input.hidden)
-    .map(([name, input]) => ({
-      name,
+  return flattenInputSpecs(nodeDef.inputs)
+    .filter((input) => !input.hidden)
+    .map((input) => ({
+      name: input.name,
       type: input.type
     }))
 })

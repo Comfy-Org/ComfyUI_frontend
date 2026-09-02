@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -52,10 +52,6 @@ function renderComponent(
 }
 
 describe('ViewerGizmoControls', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('renders only the on/off toggle when gizmo is disabled', () => {
     renderComponent({ enabled: false })
 
@@ -94,13 +90,13 @@ describe('ViewerGizmoControls', () => {
     expect(enabled.value).toBe(false)
   })
 
-  it.each([
+  it.for([
     ['Translate', 'translate'],
     ['Rotate', 'rotate'],
     ['Scale', 'scale']
   ] as const)(
     'updates mode to %s when its toggle item is clicked',
-    async (label, expected) => {
+    async ([label, expected]) => {
       const { user, mode } = renderComponent({
         enabled: true,
         mode: 'translate'

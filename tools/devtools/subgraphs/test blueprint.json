@@ -1,0 +1,133 @@
+{
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "d0056772-3aca-4bc2-9971-8781df454c2b",
+      "pos": [470.93671874999995, 461],
+      "size": [225, 100],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "proxyWidgets": []
+      },
+      "widgets_values": [],
+      "title": "test blueprint"
+    }
+  ],
+  "links": [],
+  "version": 0.4,
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "d0056772-3aca-4bc2-9971-8781df454c2b",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 2,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "test blueprint",
+        "inputNode": {
+          "id": -10,
+          "bounding": [240.43671874999995, 435, 128, 68]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [713.43671875, 435, 128, 68]
+        },
+        "inputs": [
+          {
+            "id": "d291ee9e-b1a6-4a9b-8163-ae7980ad312d",
+            "name": "image",
+            "type": "IMAGE",
+            "linkIds": [1],
+            "pos": [344.43671874999995, 459]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "4836730c-14a8-487d-9009-594b7e745076",
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "linkIds": [2],
+            "pos": [737.43671875, 459]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "ImageInvert",
+            "pos": [428.43671874999995, 438],
+            "size": [225, 72],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "image",
+                "name": "image",
+                "type": "IMAGE",
+                "link": 1
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [2]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "ImageInvert"
+            }
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 2,
+            "origin_id": 1,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "IMAGE"
+          }
+        ],
+        "extra": {},
+        "description": "Inverts the image"
+      }
+    ]
+  },
+  "extra": {}
+}

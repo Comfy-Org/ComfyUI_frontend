@@ -39,8 +39,6 @@ describe('useAudioService', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
     mockConnect.mockResolvedValue('mock-encoder')

@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="px-6 py-24 lg:px-20 lg:py-32">
+  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
     <GlassCard
       class="mx-auto mt-20 flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >
