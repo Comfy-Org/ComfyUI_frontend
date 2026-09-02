@@ -57,6 +57,7 @@ function renderPreview(
     | {
         authenticationState: 'failed_retryable' | 'requires_action'
         canRetryAuthentication?: boolean
+        failureDetail?: string
       }
     | { reconciliationOperationId: string }
 ) {
@@ -102,6 +103,18 @@ describe('SubscriptionAddPaymentPreviewWorkspace — confirm lock', () => {
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeDisabled()
+  })
+
+  it('names the bank verdict under the failure notice when there is one', () => {
+    renderPreview({
+      authenticationState: 'failed_retryable',
+      canRetryAuthentication: true,
+      failureDetail: 'Your card has insufficient funds.'
+    })
+
+    expect(
+      screen.getByText('Your card has insufficient funds.')
+    ).toBeInTheDocument()
   })
 
   it('offers a different card from the failure notice', async () => {

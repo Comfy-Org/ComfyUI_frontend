@@ -359,6 +359,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       props: {
         tierKey: 'creator',
         embeddedCheckoutEnabled: true,
+        actionUrl: 'https://verify.example/expired-challenge',
         authenticationState: 'failed_retryable',
         canRetryAuthentication: true
       },

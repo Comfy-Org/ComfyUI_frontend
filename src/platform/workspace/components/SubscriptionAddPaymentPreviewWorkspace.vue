@@ -254,6 +254,7 @@
       <Button
         v-if="
           actionUrl &&
+          authenticationState !== 'failed_retryable' &&
           !(authenticationState === 'requires_action' && canRetryAuthentication)
         "
         variant="inverted"
@@ -283,7 +284,8 @@
           <template #useDifferentCard>
             <button
               type="button"
-              class="cursor-pointer underline underline-offset-2"
+              :disabled="interactionLocked"
+              class="cursor-pointer underline underline-offset-2 disabled:cursor-default disabled:opacity-50"
               @click="$emit('changePaymentMethod')"
             >
               {{ $t('billingOperation.challengeFailedUseDifferentCard') }}
@@ -292,6 +294,12 @@
         </i18n-t>
         <p v-else class="m-0">
           {{ $t('billingOperation.challengeFailedRetry') }}
+        </p>
+        <p
+          v-if="canRetryAuthentication && failureDetail"
+          class="m-0 mt-1 text-muted-foreground"
+        >
+          {{ failureDetail }}
         </p>
       </div>
 
@@ -394,6 +402,8 @@ interface Props {
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
   authenticationState?: BillingAuthenticationState | null
+  /** The store's mapped rendering of the bank's verdict, when it gave one. */
+  failureDetail?: string | null
   canRetryAuthentication?: boolean
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null
@@ -417,6 +427,7 @@ const {
   teamPlan = null,
   actionUrl = null,
   authenticationState = null,
+  failureDetail = null,
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,
