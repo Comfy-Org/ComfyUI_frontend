@@ -34,10 +34,22 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-function isLegacyFile(id: string): boolean {
+export function isLegacyFile(id: string): boolean {
+  if (!id.endsWith('.ts')) return false
+
+  // Resolve relative to this package's own src/ (same base transformExports
+  // uses for the shim path below), not a substring match on "src/scripts" —
+  // that substring also matches other packages' source, e.g.
+  // apps/website/src/scripts/customerio.ts, which isn't part of this shim.
+  const relativePath = path
+    .relative(path.join(process.cwd(), 'src'), id)
+    .replace(/\\/g, '/')
+
+  if (relativePath.startsWith('..')) return false
+
   return (
-    id.endsWith('.ts') &&
-    (id.includes('src/extensions/core') || id.includes('src/scripts'))
+    relativePath.startsWith('extensions/core/') ||
+    relativePath.startsWith('scripts/')
   )
 }
 
