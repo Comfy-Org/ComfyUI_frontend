@@ -477,7 +477,7 @@ describe('useAgentCrdtFollower', () => {
   it('continues minting when sessionStorage cannot persist the producer clock', () => {
     const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
     const setItem = vi
-      .spyOn(window.sessionStorage.__proto__, 'setItem')
+      .spyOn(Storage.prototype, 'setItem')
       .mockImplementation(() => {
         throw new Error('quota')
       })
