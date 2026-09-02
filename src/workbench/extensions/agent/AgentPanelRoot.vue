@@ -375,12 +375,22 @@ const {
   }
 })
 
+// FE-1969: `boundWorkflowId` is the in-memory session binding (module-level,
+// lost whenever this composition root remounts without the module that set
+// it — e.g. a fresh page load that still has a persisted docId to rebind
+// to). Falling back to `bindingStore`'s persisted tab<->workflow binding
+// keeps `isBoundWorkflowActive` true across that gap so the CRDT follower's
+// active-tab watcher is driven with `active=true` and can reach its own
+// persisted-docId restoration path (useAgentCrdtFollower.ts) instead of
+// short-circuiting through the `!active` branch and never trying.
 const isBoundWorkflowActive = computed(() => {
-  const bound = boundWorkflowId.value
   const active = workflowStore.activeWorkflow
+  if (active === null) return false
+  const bound =
+    boundWorkflowId.value ?? bindingStore.workflowIdFor(active.path)
   return (
+    bound !== undefined &&
     bound !== null &&
-    active !== null &&
     boundTabFor(bound)?.path === active.path
   )
 })
