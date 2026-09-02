@@ -424,7 +424,7 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('keeps pending observer changes when graph projection returns false', () => {
+  it('retries a failed frame before draining reentrant frames', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const projectedNodes: SemanticNodePayload[] = []
