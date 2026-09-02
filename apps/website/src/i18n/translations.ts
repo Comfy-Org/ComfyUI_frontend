@@ -7806,7 +7806,7 @@ Enterprise`
     'zh-CN': '工作节点'
   },
   'platform.products.builder.title': {
-    en: 'Builder',
+    en: 'Builds',
     'zh-CN': 'Builder'
   },
   'platform.products.builder.description': {
@@ -8296,7 +8296,7 @@ Enterprise`
       '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
   },
   'platform.builderEnterprise.heading': {
-    en: 'Builder vs. Managed Builds',
+    en: 'Builds vs. Managed Builds',
     'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {
