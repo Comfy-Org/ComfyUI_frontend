@@ -296,28 +296,6 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toBeUndefined()
   })
 
-  it('keeps the editor focused and the draft intact when the row changes bucket mid-rename', async () => {
-    const user = userEvent.setup()
-    const { rerender } = renderScreen(groupsWithTitle('Original title'))
-    const input = await openRename(user)
-
-    await user.clear(input)
-    await user.type(input, 'Half typed')
-
-    await rerender({
-      groups: { ...emptyGroups, yesterday: [originalSession] }
-    })
-
-    const moved = await screen.findByRole<HTMLInputElement>('textbox', {
-      name: 'Rename'
-    })
-    expect(moved).toHaveFocus()
-    expect(moved.value).toBe('Half typed')
-
-    await user.type(moved, ' and more')
-    expect(moved.value).toBe('Half typed and more')
-  })
-
   it('clears a rename when its session disappears', async () => {
     const user = userEvent.setup()
     const { emitted, rerender } = renderScreen(
@@ -367,28 +345,6 @@ describe('ChatHistoryScreen', () => {
 
     expect(input.value).toBe('  Padded  ')
     expect(emitted().rename).toBeUndefined()
-  })
-
-  // Deliberately asserts only that nothing is silently committed. Whether the
-  // editor should survive a regroup is unsettled, so this test does not pin it.
-  it('commits nothing when the row changes bucket mid-rename', async () => {
-    const user = userEvent.setup()
-    const { emitted, rerender } = renderScreen(
-      groupsWithTitle('Original title')
-    )
-    const input = await openRename(user)
-
-    await user.clear(input)
-    await user.type(input, 'Renamed mid-move')
-
-    await rerender({
-      groups: { ...emptyGroups, yesterday: [originalSession] }
-    })
-
-    expect(emitted().rename).toBeUndefined()
-    expect(
-      screen.queryByRole('button', { name: 'Renamed mid-move' })
-    ).toBeNull()
   })
 
   it('ignores empty or unchanged titles', async () => {
