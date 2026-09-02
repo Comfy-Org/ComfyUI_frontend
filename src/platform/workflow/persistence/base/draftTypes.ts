@@ -18,6 +18,11 @@ export interface DraftEntryMeta {
   /** Whether this is an unsaved temporary workflow */
   isTemporary: boolean
   /**
+   * Whether the persisted graph content differs from the backing workflow.
+   * Optional for indexes written by older V2 builds.
+   */
+  isModified?: boolean
+  /**
    * Last metadata update timestamp.
    * Use DraftPayloadV2.updatedAt for content freshness checks.
    */
