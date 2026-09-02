@@ -4,7 +4,6 @@ import CloudPricingSection from '../components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../components/pricing/PricingFaq.astro'
 import ResourceCostsSection from '../templates/platform/PricingSection.vue'
-import LookingForElseSection from '../components/pricing/LookingForElseSection.vue'
 import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../config/pricing'
 import { t } from '../i18n/translations'
@@ -50,6 +49,5 @@ const productId = jsonLdId(url, 'product')
     heading={t('pricing.resourceCosts.heading', locale)}
     note={t('pricing.resourceCosts.note', locale)}
   />
-  <LookingForElseSection locale={locale} />
   <PricingFaq locale={locale} />
 </BaseLayout>
