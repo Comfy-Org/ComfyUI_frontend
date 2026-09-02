@@ -1054,6 +1054,11 @@ export class LGraphNode
 
       if (j === 'type') continue
 
+      if (j === 'node_incarnation') {
+        this._state.nodeIncarnation = info.node_incarnation
+        continue
+      }
+
       if (j === 'id') {
         // Once registered, the owning graph owns the id — it may have
         // renumbered this node to resolve a collision that the serialised id
@@ -1212,7 +1217,10 @@ export class LGraphNode
       flags: LiteGraph.cloneObject(state.flags),
       order: this.order,
       mode: state.mode,
-      showAdvanced: state.showAdvanced
+      showAdvanced: state.showAdvanced,
+      ...(state.nodeIncarnation !== undefined && {
+        node_incarnation: state.nodeIncarnation
+      })
     }
 
     // special case for when there were errors
@@ -1220,7 +1228,10 @@ export class LGraphNode
       return {
         ...LiteGraph.cloneObject(state.lastSerialization),
         mode: o.mode,
-        pos: o.pos
+        pos: o.pos,
+        ...(state.nodeIncarnation !== undefined && {
+          node_incarnation: state.nodeIncarnation
+        })
       }
 
     if (state.inputs)
