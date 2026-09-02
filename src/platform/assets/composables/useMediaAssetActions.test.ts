@@ -1264,6 +1264,89 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('deleteAssets - cancellation', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('output')
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onCancel: () => void } }) => {
+          props.onCancel()
+        }
+      )
+    })
+
+    it('cancels a single deletion without mutating asset or graph state', async () => {
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-1',
+        name: 'single.png'
+      })
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(false)
+
+      const dialog = mockShowDialog.mock.calls[0][0]
+      expect(dialog.title).toBe('mediaAsset.deleteAssetTitle')
+      expect(dialog.props).toMatchObject({
+        message: 'mediaAsset.deleteAssetDescription',
+        itemList: ['single.png']
+      })
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(api.deleteItem).not.toHaveBeenCalled()
+      expect(mockSetAssetDeleting).not.toHaveBeenCalled()
+      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+      expect(mockOutputLoadNew).not.toHaveBeenCalled()
+      expect(mockInputLoadNew).not.toHaveBeenCalled()
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+
+    it('shows every grouped output before cancelling a bulk deletion', async () => {
+      mockGetOutputAssetMetadata.mockReturnValue({
+        allOutputs: [
+          {
+            assetId: 'output-1',
+            display_name: 'First output',
+            filename: 'first.png'
+          },
+          {
+            assetId: 'output-2',
+            display_name: 'Second output',
+            filename: 'second.png'
+          }
+        ]
+      })
+      const actions = useMediaAssetActions()
+
+      await expect(
+        actions.deleteAssets(
+          createMockAsset({ id: 'job-cover', name: 'cover.png' })
+        )
+      ).resolves.toBe(false)
+
+      const dialog = mockShowDialog.mock.calls[0][0]
+      expect(dialog.title).toBe('mediaAsset.deleteSelectedTitle')
+      expect(dialog.props).toMatchObject({
+        message: 'mediaAsset.deleteSelectedDescription',
+        itemList: ['First output', 'Second output']
+      })
+      expect(vi.mocked(useI18n().t)).toHaveBeenCalledWith(
+        'mediaAsset.deleteSelectedDescription',
+        { count: 2 }
+      )
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(api.deleteItem).not.toHaveBeenCalled()
+      expect(mockSetAssetDeleting).not.toHaveBeenCalled()
+      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true
