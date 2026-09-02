@@ -314,6 +314,7 @@ beforeEach(() => {
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
   hostStores.canvas.currentGraph = null
+  hostStores.canvas.canvas = undefined
   appMock.graph.nodes = []
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map() })
