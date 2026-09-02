@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
-import { createLGraphState } from '@/lib/litegraph/src/idAllocation'
+import {
+  createLGraphState,
+  isCoordinationFree,
+  setCoordinationFreeIds
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'
 
@@ -18,7 +22,11 @@ export const useEntityIdStore = defineStore('entityId', () => {
   }
 
   function set(rootGraphId: UUID, state: LGraphState): void {
-    states.set(rootGraphId, { ...state })
+    const stored = { ...state }
+    // The spread above is a new object, which drops WeakSet-tracked
+    // coordination-free arming by identity — carry it forward explicitly.
+    if (isCoordinationFree(state)) setCoordinationFreeIds(stored, true)
+    states.set(rootGraphId, stored)
   }
 
   function rekey(previousId: UUID, nextId: UUID): void {

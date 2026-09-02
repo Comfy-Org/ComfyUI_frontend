@@ -75,6 +75,16 @@ export function setCoordinationFreeIds(
   else coordinationFreeStates.delete(state)
 }
 
+/**
+ * Whether `state` mints coordination-free (shared-document-safe) ids. Callers
+ * that clone or replace an `LGraphState` object must re-arm the clone with
+ * this — arming is tracked by object identity in a `WeakSet`, so a plain
+ * `{ ...state }` spread silently drops it.
+ */
+export function isCoordinationFree(state: LGraphState): boolean {
+  return coordinationFreeStates.has(state)
+}
+
 export function mintCoordinationFreeId(
   random: () => number = defaultRandom
 ): number {

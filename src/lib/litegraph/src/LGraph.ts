@@ -730,6 +730,12 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
+    // Capture before `useEntityIdStore().clear(graphId)` below deletes this
+    // id's entry — `state` is keyed by `this.id`, so reading it after either
+    // that delete or the `this.id` rekey further down would return a fresh,
+    // unarmed state instead of carrying forward the old id's coordination-free
+    // arming (state getter creates-and-stores a new entry on a cache miss).
+    const previousState = this.isRootGraph ? this.state : undefined
     useGraphMetadataStore().clear(this.rootGraph?.id ?? graphId, graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
@@ -755,7 +761,7 @@ export class LGraph
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
-    this.state = createLGraphState(this.isRootGraph ? this.state : undefined)
+    this.state = createLGraphState(previousState)
 
     // used to detect changes
     this._version = -1
