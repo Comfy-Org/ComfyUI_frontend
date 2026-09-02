@@ -305,6 +305,29 @@ describe('ChatHistoryScreen', () => {
     expect(moved.value).toBe('Half typed and more')
   })
 
+  it('clears a rename when its session disappears', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderScreen(
+      groupsWithTwoRows('Second title')
+    )
+    const input = await openRename(user)
+
+    await user.clear(input)
+    await user.type(input, 'Stale draft')
+    await rerender({
+      groups: { ...emptyGroups, today: [secondSession] }
+    })
+
+    expect(screen.queryByRole('textbox', { name: 'Rename' })).toBeNull()
+    expect(emitted().rename).toBeUndefined()
+
+    const trigger = screen.getByRole('button', { name: 'Chat options' })
+    await user.click(trigger)
+    await screen.findByRole('menuitem', { name: 'Rename' })
+    await user.keyboard('{Escape}')
+    expect(trigger).toHaveFocus()
+  })
+
   it('caps how long a renamed title can grow', async () => {
     const user = userEvent.setup()
     renderScreen(groupsWithTitle('Original title'))

@@ -12,7 +12,7 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -91,9 +91,14 @@ function cancelRename(): void {
   renamingId.value = null
 }
 
+watch(
+  () => sections.value.flatMap(([, , sessions]) => sessions.map(({ id }) => id)),
+  (sessionIds) => {
+    if (renamingId.value && !sessionIds.includes(renamingId.value)) cancelRename()
+  }
+)
+
 function commitRename(session: ChatSession): void {
-  // Idempotence guard: commit is reachable from both Enter and blur, so a
-  // second call for an already-ended rename must not emit a duplicate.
   if (renamingId.value !== session.id) return
   renamingId.value = null
   const title = renameDraft.value.trim()
@@ -105,8 +110,8 @@ function commitRename(session: ChatSession): void {
 // (@select fires before this event, so renamingId is already set on that
 // path); otherwise let Escape/outside-click return focus to the trigger so
 // keyboard users keep their place.
-function onMenuCloseAutoFocus(event: Event): void {
-  if (renamingId.value !== null) event.preventDefault()
+function onMenuCloseAutoFocus(sessionId: string, event: Event): void {
+  if (renamingId.value === sessionId) event.preventDefault()
 }
 
 function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
@@ -222,7 +227,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                   align="end"
                   :side-offset="4"
                   class="agent-scope bg-agent-surface-raised z-1100 flex w-32 flex-col gap-1 overflow-clip rounded-[10px] p-1 shadow-md ring-1 ring-black/10 ring-inset"
-                  @close-auto-focus="onMenuCloseAutoFocus"
+                  @close-auto-focus="onMenuCloseAutoFocus(session.id, $event)"
                 >
                   <DropdownMenuItem
                     class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
