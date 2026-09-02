@@ -108,7 +108,12 @@ export function devEventReplacer(): (
   const ancestors: unknown[] = []
   return function (this: unknown, _key, value) {
     while (ancestors.length > 0 && ancestors.at(-1) !== this) ancestors.pop()
-    if (value instanceof Uint8Array) return `Uint8Array(${value.length})`
+    if (ArrayBuffer.isView(value)) {
+      return `${value.constructor.name}(${value.byteLength})`
+    }
+    if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
+      return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
+    }
     if (typeof value === 'bigint') return value.toString()
     if (typeof value === 'object' && value !== null) {
       if (ancestors.includes(value)) return '[Circular]'
