@@ -90,7 +90,7 @@ function getModuleName(id: string): string {
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }
 
-export function comfyAPIPlugin(isDev: boolean): Plugin {
+export function comfyAPIPlugin(isDev: boolean) {
   return {
     name: 'comfy-api-plugin',
     apply: 'build',
@@ -131,5 +131,5 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
         }
       }
     }
-  }
+  } satisfies Plugin
 }

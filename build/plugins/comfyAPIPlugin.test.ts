@@ -1,5 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import path from 'path'
-import type { Plugin } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
 
 import { comfyAPIPlugin, isLegacyFile } from './comfyAPIPlugin'
@@ -67,15 +67,9 @@ describe('comfyAPIPlugin transform', () => {
 
   function runTransform(isDev: boolean, id: string) {
     const emitFile = vi.fn()
-    const hook = comfyAPIPlugin(isDev).transform as NonNullable<
-      Plugin['transform']
-    >
-    const handler = typeof hook === 'function' ? hook : hook.handler
-    const context = { emitFile } as unknown as ThisParameterType<typeof handler>
-    const result = handler.call(context, source, id) as
-      | { code: string; map: null }
-      | null
-      | undefined
+    const handler = comfyAPIPlugin(isDev).transform
+    const context = fromPartial<ThisParameterType<typeof handler>>({ emitFile })
+    const result = handler.call(context, source, id)
     return { result, emitFile }
   }
 
