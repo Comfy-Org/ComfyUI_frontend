@@ -65,6 +65,11 @@ export function wireBatchSize(ops: readonly Op[]): number {
   )
 }
 
+/** UTF-8 byte length of a single op's JSON encoding, as it appears inside a batch array. */
+function opBytes(op: Op): number {
+  return new TextEncoder().encode(JSON.stringify(op)).length
+}
+
 /**
  * Split minted ops into wire batches: order-preserving, at most
  * {@link WIRE_MAX_OPS_PER_BATCH} ops and {@link WIRE_MAX_BATCH_BYTES} bytes
@@ -75,10 +80,14 @@ export function wireBatchSize(ops: readonly Op[]): number {
 export function chunkWireOps(ops: Op[]): Op[][] {
   const batches: Op[][] = []
   let current: Op[] = []
+  // Sum of per-op serialized byte lengths in `current`. The full batch size
+  // is this total plus the JSON array's 2 brackets and (length - 1) commas.
+  let currentOpBytes = 0
 
   const flush = (): void => {
     if (current.length > 0) batches.push(current)
     current = []
+    currentOpBytes = 0
   }
 
   for (const op of ops) {
@@ -88,11 +97,15 @@ export function chunkWireOps(ops: Op[]): Op[][] {
       continue
     }
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
+    const thisOpBytes = opBytes(op)
+    const candidateArrayBytes =
+      currentOpBytes + thisOpBytes + 2 + current.length
     const overBytes =
       current.length > 0 &&
-      wireBatchSize([...current, op]) > WIRE_MAX_BATCH_BYTES
+      candidateArrayBytes + WIRE_FRAME_OVERHEAD_BYTES > WIRE_MAX_BATCH_BYTES
     if (overOps || overBytes) flush()
     current.push(op)
+    currentOpBytes += thisOpBytes
   }
   flush()
   return batches
