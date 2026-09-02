@@ -20,32 +20,5 @@
       "reason": "main treats an embedded same-origin API URL as authenticated fetchApi input"
     }
   ],
-  "alreadyOnMain": [
-    "src/workbench/extensions/agent/crdt/apiTransport.test.ts",
-    "src/renderer/core/layout/store/layoutStoreMintDelivery.test.ts",
-    "src/workbench/extensions/agent/crdt/applierConformance.test.ts",
-    "src/workbench/extensions/agent/crdt/devPanelLog.test.ts",
-    "src/workbench/extensions/agent/crdt/linkMintPort.test.ts",
-    "src/workbench/extensions/agent/crdt/mintGate.test.ts",
-    "src/workbench/extensions/agent/crdt/mintSession.test.ts",
-    "src/workbench/extensions/agent/crdt/widgetMintPort.test.ts",
-    "apps/website/src/templates/fdct/HeroSection.test.ts",
-    "packages/shared-frontend-utils/src/formatUtil.test.ts",
-    "src/components/rightSidePanel/errors/TabErrors.test.ts",
-    "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
-    "src/workbench/extensions/agent/stores/agent/agentConversationEntries.test.ts",
-    "src/workbench/extensions/agent/services/agent/agentToolGlyph.test.ts",
-    "src/workbench/extensions/agent/components/agent/message/MarkdownStream.test.ts",
-    "src/workbench/extensions/agent/components/agent/message/MessageFeedback.test.ts",
-    "src/workbench/extensions/agent/components/agent/message/ReplyAudioCard.test.ts",
-    "src/workbench/extensions/agent/components/agent/message/TabLinkCard.test.ts",
-    "src/workbench/extensions/agent/components/agent/message/UserMessage.test.ts",
-    "src/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore.test.ts",
-    "src/stores/workflowTabActivityStore.test.ts",
-    "src/workbench/extensions/agent/components/agent/composer/AttachmentChip.test.ts",
-    "src/workbench/extensions/agent/composables/agent/useCanvasSelection.test.ts",
-    "src/workbench/extensions/agent/composables/agent/useComposer.test.ts",
-    "src/workbench/extensions/agent/utils/attachableFiles.test.ts"
-  ],
   "semanticTransplantQueue": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/16338"
 }
