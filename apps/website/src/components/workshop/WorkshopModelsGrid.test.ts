@@ -56,12 +56,14 @@ describe('WorkshopModelsGrid', () => {
   it('combines the use-case chips with the task menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    expect(screen.queryByTestId('use-case-create-images')).toBeNull()
+    expect(screen.queryByTestId('use-case-generate-images')).toBeNull()
 
-    await user.click(screen.getByTestId('use-case-create-videos'))
+    await user.click(screen.getByTestId('use-case-generate-videos'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     expect(
-      screen.getByTestId('use-case-create-videos').getAttribute('aria-pressed')
+      screen
+        .getByTestId('use-case-generate-videos')
+        .getAttribute('aria-pressed')
     ).toBe('true')
 
     await user.click(screen.getByTestId('workshop-filter-task'))

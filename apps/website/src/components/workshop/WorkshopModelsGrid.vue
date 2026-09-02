@@ -50,14 +50,14 @@ const { showStatuses } = usePrototypeTweaks()
 
 const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   all: 'workshop.useCase.all',
-  'create-images': 'workshop.useCase.createImages',
+  'generate-images': 'workshop.useCase.generateImages',
   'edit-images': 'workshop.useCase.editImages',
-  'create-videos': 'workshop.useCase.createVideos',
+  'generate-videos': 'workshop.useCase.generateVideos',
+  'animate-images': 'workshop.useCase.animateImages',
   'edit-videos': 'workshop.useCase.editVideos',
-  'create-3d': 'workshop.useCase.create3d',
+  '3d': 'workshop.useCase.3d',
   audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text',
-  other: 'workshop.useCase.other'
+  text: 'workshop.useCase.text'
 }
 const filterLabelKey: Record<Exclude<ModalityFilter, 'all'>, TranslationKey> = {
   image: 'workshop.filter.image',
@@ -129,12 +129,12 @@ function clearFilters() {
   providers.value = []
 }
 
-const chipClass = (current: boolean) =>
+const tabClass = (current: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 inline-flex h-9 cursor-pointer items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 pb-3 text-xs font-bold tracking-wide whitespace-nowrap uppercase transition-colors outline-none focus-visible:ring-3',
     current
-      ? 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink'
-      : 'hover:bg-transparency-white-t4 border-transparency-white-t20 text-primary-comfy-canvas'
+      ? 'border-primary-comfy-yellow text-primary-warm-white'
+      : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
   )
 
 const menuItemClass =
@@ -143,9 +143,8 @@ const menuItemClass =
 
 <template>
   <section>
-    <div
-      class="mb-6 flex flex-wrap gap-2"
-      role="group"
+    <nav
+      class="mb-8 flex gap-6 overflow-x-auto border-b border-transparency-white-t8"
       :aria-label="t('workshop.useCase.label', locale)"
       data-testid="workshop-use-cases"
     >
@@ -155,28 +154,22 @@ const menuItemClass =
         type="button"
         :aria-pressed="useCase === value"
         :data-testid="`use-case-${value}`"
-        :class="chipClass(useCase === value)"
+        :class="tabClass(useCase === value)"
         @click="useCase = value"
       >
         {{ t(useCaseLabelKey[value], locale) }}
         <span
-          :class="
-            cn(
-              'text-xs tabular-nums',
-              useCase === value
-                ? 'text-primary-comfy-ink/70'
-                : 'text-primary-warm-gray'
-            )
-          "
-          >{{ counts[value] }}</span
+          class="text-[11px] font-medium text-primary-warm-gray tabular-nums"
         >
+          {{ counts[value] }}
+        </span>
       </button>
-    </div>
+    </nav>
 
     <div
       class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
     >
-      <div class="relative w-full lg:max-w-sm">
+      <div class="relative w-full lg:max-w-md">
         <label for="workshop-search" class="sr-only">
           {{ t('workshop.search.label', locale) }}
         </label>

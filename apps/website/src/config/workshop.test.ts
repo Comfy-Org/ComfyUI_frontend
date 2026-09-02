@@ -4,6 +4,7 @@ import { models } from './models'
 import generatedModels from './workshop-models.generated.json'
 import type { GeneratedField, WorkshopModel } from './workshop'
 import {
+  USE_CASES,
   countByFacet,
   countByUseCase,
   decodeGeneratedModels,
@@ -66,23 +67,31 @@ describe('filterWorkshopModels', () => {
   })
 
   it('also matches the use case in words', () => {
-    expect(filterWorkshopModels(fixture, { query: 'create videos' })).toEqual([
-      fixture[0]
-    ])
+    expect(filterWorkshopModels(fixture, { query: 'generate videos' })).toEqual(
+      [fixture[0]]
+    )
   })
 
-  it('filters by use case and treats unknown models as other', () => {
+  it('filters by use case and lists unplaced models only under all', () => {
     expect(
-      filterWorkshopModels(fixture, { query: '', useCase: 'create-videos' })
+      filterWorkshopModels(fixture, { query: '', useCase: 'generate-videos' })
     ).toEqual([fixture[0]])
     expect(
-      filterWorkshopModels(fixture, { query: '', useCase: 'other' })
-    ).toEqual([fixture[2]])
+      filterWorkshopModels(fixture, { query: '', useCase: 'all' })
+    ).toEqual(fixture)
+    expect(
+      USE_CASES.flatMap((useCase) =>
+        filterWorkshopModels(fixture, { query: '', useCase })
+      )
+    ).not.toContain(fixture[2])
   })
 
   it('combines query and use case', () => {
     expect(
-      filterWorkshopModels(fixture, { query: 'flux', useCase: 'create-videos' })
+      filterWorkshopModels(fixture, {
+        query: 'flux',
+        useCase: 'generate-videos'
+      })
     ).toEqual([])
   })
 })
@@ -98,7 +107,7 @@ describe('filterWorkshopModels facets', () => {
     expect(
       filterWorkshopModels(fixture, {
         query: '',
-        useCase: 'create-videos',
+        useCase: 'generate-videos',
         tasks: ['image-to-image']
       })
     ).toEqual([])
@@ -182,30 +191,39 @@ describe('useCaseFor', () => {
     task
   })
 
-  it('splits creating from editing by whether the input matches the output', () => {
-    expect(useCaseFor(withTask('text-to-image'))).toBe('create-images')
+  it('names the job by what goes in and what comes out', () => {
+    expect(useCaseFor(withTask('text-to-image'))).toBe('generate-images')
     expect(useCaseFor(withTask('image-to-image'))).toBe('edit-images')
-    expect(useCaseFor(withTask('image-to-video'))).toBe('create-videos')
+    expect(useCaseFor(withTask('text-to-video'))).toBe('generate-videos')
+    expect(useCaseFor(withTask('image-to-video'))).toBe('animate-images')
     expect(useCaseFor(withTask('video-to-video'))).toBe('edit-videos')
-    expect(useCaseFor(withTask('image-to-3d'))).toBe('create-3d')
+    expect(useCaseFor(withTask('image-to-3d'))).toBe('3d')
     expect(useCaseFor(withTask('video-to-audio'))).toBe('audio')
     expect(useCaseFor(withTask('text-to-text'))).toBe('text')
   })
 
-  it('falls back to the modality when the task is unknown', () => {
+  it('falls back to the modality and leaves unknown models unplaced', () => {
     expect(useCaseFor({ ...fixture[2], modality: 'audio' })).toBe('audio')
-    expect(useCaseFor(fixture[2])).toBe('other')
+    expect(useCaseFor({ ...fixture[2], modality: 'video' })).toBe(
+      'generate-videos'
+    )
+    expect(useCaseFor(fixture[2])).toBeUndefined()
+    expect(useCaseFor(withTask('text-to-other'))).toBeUndefined()
   })
 })
 
 describe('countByUseCase', () => {
   it('counts every use case including all and other', () => {
-    expect(countByUseCase(fixture)).toMatchObject({
+    expect(countByUseCase(fixture)).toEqual({
       all: 3,
-      'create-videos': 1,
+      'generate-images': 0,
       'edit-images': 1,
-      'create-images': 0,
-      other: 1
+      'generate-videos': 1,
+      'animate-images': 0,
+      'edit-videos': 0,
+      '3d': 0,
+      audio: 0,
+      text: 0
     })
   })
 })

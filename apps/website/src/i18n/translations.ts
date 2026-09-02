@@ -8241,8 +8241,8 @@ Enterprise`
   },
   'workshop.hero.eyebrow': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
   'workshop.hero.heading': {
-    en: 'The best models in visual AI, ready to run',
-    'zh-CN': '视觉 AI 顶尖模型，即刻运行'
+    en: 'Run the best models',
+    'zh-CN': '运行顶尖模型'
   },
   'workshop.hero.subtitle': {
     en: 'Pick what you want to make and run the best partner model for it, straight from Comfy Router. No install, no setup: set your inputs, hit Run. You see the price before every run.',
@@ -8251,26 +8251,23 @@ Enterprise`
   },
   'workshop.useCase.label': { en: 'Browse by use case', 'zh-CN': '按用途浏览' },
   'workshop.useCase.all': { en: 'All', 'zh-CN': '全部' },
-  'workshop.useCase.createImages': {
-    en: 'Create images',
+  'workshop.useCase.generateImages': {
+    en: 'Generate images',
     'zh-CN': '生成图像'
   },
-  'workshop.useCase.editImages': {
-    en: 'Edit & enhance images',
-    'zh-CN': '编辑与增强图像'
-  },
-  'workshop.useCase.createVideos': {
-    en: 'Create videos',
+  'workshop.useCase.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
+  'workshop.useCase.generateVideos': {
+    en: 'Generate videos',
     'zh-CN': '生成视频'
   },
-  'workshop.useCase.editVideos': {
-    en: 'Edit & enhance videos',
-    'zh-CN': '编辑与增强视频'
+  'workshop.useCase.animateImages': {
+    en: 'Animate images',
+    'zh-CN': '让图像动起来'
   },
-  'workshop.useCase.create3d': { en: 'Create 3D', 'zh-CN': '生成 3D' },
+  'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
+  'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
   'workshop.useCase.audio': { en: 'Audio & voice', 'zh-CN': '音频与语音' },
-  'workshop.useCase.text': { en: 'Text & chat', 'zh-CN': '文本与对话' },
-  'workshop.useCase.other': { en: 'Other', 'zh-CN': '其他' },
+  'workshop.useCase.text': { en: 'Chat & text', 'zh-CN': '对话与文本' },
   'workshop.search.label': {
     en: 'Search by model, task, category and more',
     'zh-CN': '按模型、任务、类别等搜索'

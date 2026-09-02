@@ -264,37 +264,38 @@ export function splitTask(
 }
 
 // The catalog is organised around what people want to make, not around
-// model modality: a text-to-video and an image-to-video model both answer
-// "I want a video".
+// model modality: generating a video from text and animating a still are
+// different jobs even though both end in a video.
 export const USE_CASES = [
-  'create-images',
+  'generate-images',
   'edit-images',
-  'create-videos',
+  'generate-videos',
+  'animate-images',
   'edit-videos',
-  'create-3d',
+  '3d',
   'audio',
-  'text',
-  'other'
+  'text'
 ] as const
 export type UseCase = (typeof USE_CASES)[number]
 
-export function useCaseFor(model: WorkshopModel): UseCase {
+// Models the taxonomy cannot place only show up under "All".
+export function useCaseFor(model: WorkshopModel): UseCase | undefined {
   const parts = model.task ? splitTask(model.task) : undefined
-  const output = parts?.output ?? modalityOf(model)
-  const edits = parts !== undefined && parts.input === output
-  switch (output) {
+  const input = parts?.input ?? 'text'
+  switch (parts?.output ?? model.modality) {
     case 'image':
-      return edits ? 'edit-images' : 'create-images'
+      return input === 'image' ? 'edit-images' : 'generate-images'
     case 'video':
-      return edits ? 'edit-videos' : 'create-videos'
+      if (input === 'video') return 'edit-videos'
+      return input === 'image' ? 'animate-images' : 'generate-videos'
     case '3d':
-      return 'create-3d'
+      return '3d'
     case 'audio':
       return 'audio'
     case 'text':
       return 'text'
     default:
-      return 'other'
+      return undefined
   }
 }
 
@@ -399,7 +400,7 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
-    useCaseFor(model).replaceAll('-', ' '),
+    useCaseFor(model)?.replaceAll('-', ' ') ?? '',
     modalityOf(model),
     model.task?.replaceAll('-', ' ') ?? ''
   ]
@@ -458,7 +459,8 @@ export function countByUseCase(
   ) as Record<UseCase | 'all', number>
   for (const model of list) {
     counts.all += 1
-    counts[useCaseFor(model)] += 1
+    const useCase = useCaseFor(model)
+    if (useCase) counts[useCase] += 1
   }
   return counts
 }

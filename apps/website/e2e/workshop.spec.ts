@@ -21,9 +21,9 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
-    await page.getByTestId('use-case-create-3d').click()
-    await expect(cards).toHaveCount(5)
-    await expect(cards.first()).toContainText('3D')
+    await page.getByTestId('use-case-animate-images').click()
+    await expect(cards).toHaveCount(9)
+    await expect(cards.first()).toContainText('Video')
     await page.getByTestId('use-case-all').click()
 
     await page.getByTestId('workshop-search').fill('kling')
