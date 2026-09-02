@@ -29,6 +29,8 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,7 +41,12 @@ jobs:
         env:
           COLLECT_COVERAGE: 'true'
 
-      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Verify localhost Assets default
+        run: pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: localhost
+
+      # Upload only verified dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
@@ -47,8 +54,18 @@ jobs:
           path: dist/
           retention-days: 1
 
+      - name: Build and verify desktop Assets default
+        run: |
+          DISTRIBUTION=desktop pnpm build
+          pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: desktop
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
+        with:
+          expected_commit: ${{ github.sha }}
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
@@ -229,18 +246,11 @@ jobs:
       ${{
         always() &&
         needs.changes.outputs.should-run == 'true' &&
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false &&
-        github.event.pull_request.user.login != 'dependabot[bot]' &&
         needs.playwright-tests-chromium-sharded.result != 'cancelled'
       }}
-    uses: ./.github/workflows/ci-tests-e2e-coverage.yaml
+    uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
-      source_branch: ${{ github.head_ref || github.ref_name }}
-      source_pr: ${{ format('{0}', github.event.pull_request.number) }}
-      source_run_id: ${{ format('{0}', github.run_id) }}
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
-    secrets: inherit
 
   # Records video only for spec files newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:

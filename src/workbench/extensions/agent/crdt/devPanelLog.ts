@@ -55,8 +55,15 @@ export function clearDevEvents(): void {
 export function stringifyDevEvents(events: readonly DevEvent[]): string {
   return JSON.stringify(
     events,
-    (_key, value) =>
-      value instanceof Uint8Array ? `Uint8Array(${value.length})` : value,
+    (_key, value) => {
+      if (ArrayBuffer.isView(value)) {
+        return `${value.constructor.name}(${value.byteLength})`
+      }
+      if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
+        return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
+      }
+      return value
+    },
     2
   )
 }

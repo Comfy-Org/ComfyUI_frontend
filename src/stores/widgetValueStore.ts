@@ -9,6 +9,7 @@ import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
   advanced?: boolean
@@ -149,12 +150,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
    * @returns The existing state for the same widget type, replacement state
    * for a different type, or `undefined` for an invalid widget ID.
    */
-  function registerWidget<TValue extends WidgetValue = WidgetValue>(
+  function registerWidget<
+    TValue extends WidgetValue = WidgetValue,
+    TType extends string = string,
+    TOptions extends IWidgetOptions = IWidgetOptions
+  >(
     widgetId: WidgetId,
-    init: WidgetStateInit<TValue>,
+    init: WidgetStateInit<TValue, TType, TOptions>,
     renderState: WidgetRenderState = {},
     _context?: RemoteMutationContext
-  ): WidgetState<TValue> | undefined {
+  ): WidgetState<TValue, TType, TOptions> | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
         'widgetValueStore.registerWidget: ignoring un-keyable widget id',
@@ -184,10 +189,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         y: init.y ?? existing.y
       })
       appendNodeWidgetOrder(widgetId)
-      return existing as WidgetState<TValue>
+      return existing as WidgetState<TValue, TType, TOptions>
     }
 
-    const state: WidgetState<TValue> = {
+    const state: WidgetState<TValue, TType, TOptions> = {
       ...init,
       nodeId,
       name: init.name ?? storageName,
@@ -196,7 +201,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
     appendNodeWidgetOrder(widgetId)
-    return widgetStates.get(widgetId) as WidgetState<TValue>
+    return widgetStates.get(widgetId) as WidgetState<TValue, TType, TOptions>
   }
 
   function registerWidgetRenderState(

@@ -32,6 +32,48 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
 }
 
 describe('AgentMessage thinking narration', () => {
+  it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
+    const message: AssistantMessage = {
+      ...createAssistantMessage('msg-link' as TurnId),
+      streaming: false,
+      parts: [
+        {
+          type: 'text',
+          text: '[Download result](https://assets.example/result.png)',
+          state: 'done'
+        }
+      ]
+    }
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('link', { name: 'Download result' })
+    ).toHaveAttribute('href', 'https://assets.example/result.png')
+  })
+
+  it('T-32 / PM-663 / FE-1292 opens the Markdown copy action menu', async () => {
+    const message: AssistantMessage = {
+      ...createAssistantMessage('msg-actions' as TurnId),
+      streaming: false,
+      parts: [{ type: 'text', text: '**Ready**', state: 'done' }]
+    }
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /copy as markdown/i })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', { name: /copy as markdown/i })
+    ).toBeVisible()
+  })
+
   it('shows the live narration text while thinking', () => {
     render(AgentMessage, {
       props: { message: thinkingMessage('Reading the graph') },
@@ -75,9 +117,9 @@ describe('AgentMessage thinking narration', () => {
     transport.ingest({
       type: 'agent_tool_call',
       data: {
+        tool_call_id: 'call-set-widget',
         tool_name: 'set_widget',
-        status: 'ok',
-        args: [],
+        status: 'success',
         message_id: 'msg-0',
         thread_id: 'thread-0'
       }
@@ -237,5 +279,68 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('List slots')).toBeInTheDocument()
     expect(screen.getByText('Set widget')).toBeInTheDocument()
     expect(screen.getByText('Checking the result')).toBeInTheDocument()
+  })
+})
+
+describe('AgentMessage fallback content', () => {
+  it('groups adjacent workflow links and renders notice severities', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        { type: 'tabLink', workflowId: 'workflow-1', name: 'First workflow' },
+        { type: 'tabLink', workflowId: 'workflow-2', name: 'Second workflow' },
+        { type: 'notice', level: 'info', text: 'Saved locally' },
+        { type: 'notice', level: 'error', text: 'Could not publish' }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          TabLinkCard: {
+            props: ['workflowId', 'name'],
+            template:
+              '<span data-testid="tab-link">{{ workflowId }}:{{ name }}</span>'
+          }
+        }
+      }
+    })
+
+    expect(screen.getAllByTestId('tab-link')).toHaveLength(2)
+    expect(screen.getByText('workflow-1:First workflow')).toBeInTheDocument()
+    expect(screen.getByText('workflow-2:Second workflow')).toBeInTheDocument()
+    expect(screen.getByText('Saved locally')).toBeInTheDocument()
+    expect(screen.getByText('Could not publish')).toBeInTheDocument()
+  })
+
+  it('forwards feedback from a completed text response', async () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [{ type: 'text', text: 'Finished', state: 'done' }]
+    }
+
+    const { emitted } = render(AgentMessage, {
+      props: { message },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          MessageFeedback: {
+            emits: ['feedback'],
+            template:
+              '<button type="button" @click="$emit(\'feedback\', \'up\')">Vote up</button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vote up' }))
+
+    expect(emitted().feedback).toEqual([['up']])
   })
 })

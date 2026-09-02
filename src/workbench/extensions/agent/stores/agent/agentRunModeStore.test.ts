@@ -10,7 +10,7 @@ describe('agentRunModeStore', () => {
     setActivePinia(createPinia())
   })
 
-  it('defaults to asking before every run with a 300 credit limit', () => {
+  it('T-01 / PM-647 / FE-1313 defaults to asking before every run with a 300 credit limit', () => {
     const store = useAgentRunModeStore()
     expect(store.mode).toBe('ask')
     expect(store.creditLimit).toBe(300)

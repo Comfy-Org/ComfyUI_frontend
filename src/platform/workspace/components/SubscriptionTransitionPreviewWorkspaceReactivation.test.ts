@@ -545,7 +545,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm gating on load state', () => {
-    it('shows unavailable exact quote fields', () => {
+    it('prices a preview that carries no exact quote from the legacy costs', () => {
       mockSubscription.value = { isCancelled: false, endDate: null }
       renderComponent(
         makePreview({
@@ -558,9 +558,10 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         })
       )
 
+      expect(screen.getByText('$15.00')).toBeInTheDocument()
       expect(
-        screen.getAllByText('subscription.preview.quoteUnavailable')
-      ).toHaveLength(2)
+        screen.queryByText('subscription.preview.quoteUnavailable')
+      ).toBeNull()
     })
 
     it('does not confirm without a current quote', async () => {
