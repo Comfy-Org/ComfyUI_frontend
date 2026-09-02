@@ -17,7 +17,9 @@ export function createInputSlotView(
 ): INodeInputSlot[] {
   const assignedViews = new WeakMap<INodeInputSlot, INodeInputSlot>()
   const view = createSlotView(node, inputs, (value) => {
-    const input = isInputSlot(value) ? toClass(NodeInputSlot, value, node) : value
+    const input = isInputSlot(value)
+      ? toClass(NodeInputSlot, value, node)
+      : value
     if (isInputSlot(value) && isInputSlot(input) && value !== input)
       assignedViews.set(value, input)
     return input
