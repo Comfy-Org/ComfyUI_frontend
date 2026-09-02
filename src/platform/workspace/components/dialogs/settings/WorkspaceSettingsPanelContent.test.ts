@@ -41,8 +41,7 @@ const stubs = {
   BillingStatusBanner,
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
-  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' },
-  WorkspaceProfilePic: { template: '<div />' }
+  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' }
 }
 
 describe('WorkspaceSettingsPanelContent', () => {
