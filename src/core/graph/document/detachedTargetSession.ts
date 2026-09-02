@@ -95,6 +95,7 @@ export function createDetachedTargetSession(
   /** `null` accepts any sequence (fresh session or just resynced). */
   let expectedSeq: number | null = null
   let queue: TargetFrame[] = []
+  let destroyed = false
 
   function assertTarget(frameWorkflowId: string): void {
     if (frameWorkflowId !== workflowId) {
@@ -106,6 +107,7 @@ export function createDetachedTargetSession(
   }
 
   function enqueue(frame: TargetFrame): EnqueueResult {
+    if (destroyed) return { status: 'resync-required' }
     assertTarget(frame.workflowId)
     if (needsResync) return { status: 'resync-required' }
 
@@ -133,6 +135,7 @@ export function createDetachedTargetSession(
   }
 
   function commitNext(port: TargetFrameApplyPort): CommitResult {
+    if (destroyed) return { status: 'idle' }
     if (needsResync) return { status: 'resync-required' }
     const frame = queue[0]
     if (!frame) return { status: 'idle' }
@@ -242,6 +245,7 @@ export function createDetachedTargetSession(
   }
 
   function destroy(): void {
+    destroyed = true
     committedDoc.destroy()
     queue = []
   }

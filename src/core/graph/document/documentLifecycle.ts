@@ -59,7 +59,7 @@ export function reduceDocument(
       if (event.atRevision > state.revision) return state
       if (
         state.savedRevision !== null &&
-        event.atRevision < state.savedRevision
+        event.atRevision <= state.savedRevision
       )
         return state
       return { ...state, savedRevision: event.atRevision }

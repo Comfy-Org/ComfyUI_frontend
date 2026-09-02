@@ -159,11 +159,13 @@ describe('document activation persistence (ADR-0024 seam)', () => {
       'detach:nodes2'
     ])
 
+    expect(registry.markMutated(documentId)).toBe(true)
     const ticket = registry.beginSave(documentId)
     expect(ticket).not.toBeNull()
     const savedBytes = serializeDocumentScope(scope)
+    expect(registry.markMutated(documentId)).toBe(true)
     expect(registry.completeSave(ticket!)).toBe(true)
-    expect(registry.persistenceStateOf(documentId)).toBe('clean')
+    expect(registry.persistenceStateOf(documentId)).toBe('dirty')
 
     const reloadSession = createDetachedTargetSession('wf')
     reloadSession.enqueue({

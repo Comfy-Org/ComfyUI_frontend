@@ -190,6 +190,19 @@ describe('createDetachedTargetSession', () => {
     expect(session.snapshot().committedSeq).toBeNull()
   })
 
+  it('cannot enqueue or commit after destruction', () => {
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    const source = createFrameSource()
+    session.destroy()
+
+    expect(
+      session.enqueue(
+        source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+      )
+    ).toEqual({ status: 'resync-required' })
+    expect(session.commitNext(acceptAll)).toEqual({ status: 'idle' })
+  })
+
   it('skips duplicate frames at or below the last accepted sequence', () => {
     const source = createFrameSource()
     const session = createDetachedTargetSession(WORKFLOW_ID)

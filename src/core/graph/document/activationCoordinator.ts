@@ -144,7 +144,11 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     // in-flight activate of a different document, which must proceed.
     const previous = active
     active = null
-    previous.binding.detach(documentId)
+    try {
+      previous.binding.detach(documentId)
+    } catch {
+      /* treated as detached (DocumentViewBinding contract) */
+    }
     return true
   }
 

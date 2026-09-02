@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 
 vi.mock('@/scripts/api', () => ({
   api: {
     getUserData: vi.fn(),
-    storeUserData: vi.fn()
+    storeUserData: vi.fn(),
+    dispatchCustomEvent: vi.fn()
   }
 }))
 
@@ -161,6 +163,7 @@ describe('ComfyWorkflow document identity (ADR-0024)', () => {
     'leaves the document dirty when a mutation commits mid-save',
     async () => {
       const workflow = await createLoadedWorkflow()
+      useWorkflowStore().attachWorkflow(workflow)
       const store = useGraphDocumentStore()
       const documentId = workflow.documentId!
 
@@ -180,10 +183,33 @@ describe('ComfyWorkflow document identity (ADR-0024)', () => {
       )
 
       const savePromise = workflow.save()
-      store.markMutated(documentId)
+      const previousState = workflow.changeTracker!.activeState
+      workflow.changeTracker!.activeState = {
+        ...previousState,
+        nodes: [
+          {
+            id: 1,
+            type: 'KSampler',
+            pos: [0, 0],
+            size: [100, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            inputs: [],
+            outputs: [],
+            properties: {}
+          }
+        ]
+      }
+      workflow.changeTracker!.updateModified(previousState)
       resolveSave({ json: () => Promise.resolve('workflows/test.json') })
       await savePromise
 
+      expect(api.storeUserData).toHaveBeenCalledWith(
+        workflow.path,
+        JSON.stringify(previousState),
+        expect.anything()
+      )
       expect(store.persistenceStateOf(documentId)).toBe('dirty')
     },
     LOAD_TIMEOUT

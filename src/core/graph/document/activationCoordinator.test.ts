@@ -317,4 +317,18 @@ describe('createActivationCoordinator', () => {
     expect(coordinator.deactivate(docB)).toBe(false)
     expect(coordinator.activeDocumentId()).toBe(docA)
   })
+
+  it('treats a throwing detach during deactivate as detached', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const docA = toDocumentId('doc-a')
+    await coordinator.activate(docA, {
+      attach: () => {},
+      detach: () => {
+        throw new Error('detach boom')
+      }
+    })
+
+    expect(coordinator.deactivate(docA)).toBe(true)
+    expect(coordinator.activeDocumentId()).toBeNull()
+  })
 })

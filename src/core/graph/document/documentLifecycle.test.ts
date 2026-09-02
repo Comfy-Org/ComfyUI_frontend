@@ -69,6 +69,9 @@ describe('reduceDocument', () => {
     expect(
       reduceDocument(state, { type: 'saveCompleted', atRevision: 0 })
     ).toEqual(state)
+    expect(
+      reduceDocument(state, { type: 'saveCompleted', atRevision: 1 })
+    ).toBe(state)
   })
 
   it('remote or human mutations after a save make a loaded document dirty again', () => {
