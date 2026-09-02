@@ -129,12 +129,21 @@ export class PrimitiveNode extends LGraphNode {
 
   override onConfigure(serialisedNode: ISerialisedNode) {
     super.onConfigure?.(serialisedNode)
-    const values = serialisedNode.widgets_values
+    const positionalValues = serialisedNode.widgets_values
+    const namedValues = serialisedNode.widgets_values_named
     const type = serialisedNode.outputs?.[0]?.type
+    const values =
+      LiteGraph.namedValuesRestore && namedValues
+        ? ['value', 'control_after_generate', 'control_filter_list'].reduce<
+            NonNullable<ISerialisedNode['widgets_values']>
+          >((restored, name, index) => {
+            if (Object.hasOwn(namedValues, name))
+              restored[index] = namedValues[name]
+            return restored
+          }, [])
+        : Array.from(positionalValues ?? [])
     this.configuredWidgetValues =
-      values && typeof type === 'string'
-        ? { type, values: Array.from(values) }
-        : undefined
+      typeof type === 'string' ? { type, values } : undefined
   }
 
   override onAfterGraphConfigured() {

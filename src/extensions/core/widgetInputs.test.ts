@@ -86,6 +86,7 @@ function widgetSlot(
 describe('PrimitiveNode', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.namedValuesRestore = false
   })
 
   it('keeps its serialized value when the target widget has a stale value', () => {
@@ -170,6 +171,40 @@ describe('PrimitiveNode', () => {
 
     primitive.onAfterGraphConfigured()
 
+    expect(primitive.widgets?.[1].value).toBe('fixed')
+  })
+
+  it('prefers named serialized values when named restoration is enabled', () => {
+    LiteGraph.namedValuesRestore = true
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222, 'randomize'],
+        widgets_values_named: {
+          value: 333,
+          control_after_generate: 'fixed'
+        },
+        outputs: [{ type: 'INT' }]
+      })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe(333)
     expect(primitive.widgets?.[1].value).toBe('fixed')
   })
 
