@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import type { ActiveTab } from '../../types/activeTab'
@@ -255,18 +256,22 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <Button
-          id="agent-chat-history"
-          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
-          type="button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0"
-          @click="onOpenHistory"
+        <Tooltip
+          :config="buildTooltipConfig(t('agent.showChatHistory'))"
+          side="bottom"
         >
-          <span class="icon-[lucide--history] size-4 shrink-0" />
-        </Button>
+          <Button
+            id="agent-chat-history"
+            type="button"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="t('agent.showChatHistory')"
+            class="size-6 shrink-0"
+            @click="onOpenHistory"
+          >
+            <span class="icon-[lucide--history] size-4 shrink-0" />
+          </Button>
+        </Tooltip>
         <template v-if="renaming">
           <Input
             ref="renameInput"
@@ -298,17 +303,21 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             }}</span>
           </Button>
           <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger as-child>
-              <Button
-                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="t('agent.chatOptions')"
-                class="size-6 shrink-0"
-              >
-                <span class="icon-[lucide--chevron-down] size-3" />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip
+              :config="buildTooltipConfig(t('agent.chatOptions'))"
+              side="bottom"
+            >
+              <DropdownMenuTrigger as-child>
+                <Button
+                  variant="muted-textonly"
+                  size="icon-sm"
+                  :aria-label="t('agent.chatOptions')"
+                  class="size-6 shrink-0"
+                >
+                  <span class="icon-[lucide--chevron-down] size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+            </Tooltip>
             <DropdownMenuPortal>
               <DropdownMenuContent
                 side="bottom"

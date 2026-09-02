@@ -15,7 +15,7 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
@@ -405,19 +405,20 @@ defineExpose({
               >#{{ tag.id }}</span
             >
           </span>
-          <Button
-            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
-            type="button"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="size-3.5"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
-          >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </Button>
+          <Tooltip :config="buildTooltipConfig(t('agent.remove'))" side="top">
+            <Button
+              type="button"
+              variant="muted-textonly"
+              size="unset"
+              :aria-label="
+                t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+              "
+              class="size-3.5"
+              @click.stop="emit('removeTag', selectedNodeKey(tag))"
+            >
+              <span class="icon-[lucide--x] size-3.5 shrink-0" />
+            </Button>
+          </Tooltip>
         </span>
       </div>
 
@@ -482,49 +483,51 @@ defineExpose({
             class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
-            <AccessibleTooltip
-              :label="nodeReferenceDisabledReason ?? ''"
+            <Tooltip
+              :config="nodeReferenceDisabledReason ?? ''"
               :disabled="!nodeReferenceDisabledReason"
-              :skip-delay-duration="0"
-              disable-hoverable-content
+              side="top"
+              :delay-duration="300"
+              :ignore-non-keyboard-focus="false"
               :collision-padding="8"
             >
-              <template #trigger>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="unset"
-                  :aria-disabled="!!nodeReferenceDisabledReason || undefined"
-                  :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                  @click="onSelectNodes"
-                >
-                  <span
-                    class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
-                  />
-                  <span
-                    class="underline decoration-dashed underline-offset-2"
-                    >{{ placeholderHint.mentionNodes }}</span
-                  >
-                </Button>
-              </template>
-            </AccessibleTooltip>
+              <Button
+                type="button"
+                variant="link"
+                size="unset"
+                :aria-disabled="!!nodeReferenceDisabledReason || undefined"
+                :aria-description="nodeReferenceDisabledReason"
+                class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                @click="onSelectNodes"
+              >
+                <span
+                  class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
+                />
+                <span class="underline decoration-dashed underline-offset-2">{{
+                    placeholderHint.mentionNodes
+                  }}</span>
+              </Button>
+            </Tooltip>
           </div>
         </div>
       </div>
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger as-child>
-            <Button
-              v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-              variant="muted-textonly"
-              size="icon"
-              :aria-label="t('agent.addToPrompt')"
-            >
-              <span class="icon-[lucide--plus] size-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <Tooltip
+            :config="buildTooltipConfig(t('agent.addToPrompt'))"
+            side="top"
+          >
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="muted-textonly"
+                size="icon"
+                :aria-label="t('agent.addToPrompt')"
+              >
+                <span class="icon-[lucide--plus] size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </Tooltip>
           <DropdownMenuPortal>
             <DropdownMenuContent
               side="top"
@@ -532,27 +535,26 @@ defineExpose({
               :side-offset="4"
               class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
             >
-              <AccessibleTooltip
-                :label="nodeReferenceDisabledReason ?? ''"
+              <Tooltip
+                :config="nodeReferenceDisabledReason ?? ''"
                 :disabled="!nodeReferenceDisabledReason"
-                :skip-delay-duration="0"
-                disable-hoverable-content
+                side="top"
+                :delay-duration="300"
+                :ignore-non-keyboard-focus="false"
                 :collision-padding="8"
               >
-                <template #trigger>
-                  <DropdownMenuItem
-                    :disabled="!!nodeReferenceDisabledReason"
-                    :aria-description="nodeReferenceDisabledReason"
-                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
-                    @select="onSelectNodes"
-                  >
-                    <span class="icon-[comfy--node] size-4 shrink-0" />
-                    <span class="whitespace-nowrap">
-                      {{ t('agent.nodes') }}
-                    </span>
-                  </DropdownMenuItem>
-                </template>
-              </AccessibleTooltip>
+                <DropdownMenuItem
+                  :disabled="!!nodeReferenceDisabledReason"
+                  :aria-description="nodeReferenceDisabledReason"
+                  class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+                  @select="onSelectNodes"
+                >
+                  <span class="icon-[comfy--node] size-4 shrink-0" />
+                  <span class="whitespace-nowrap">
+                    {{ t('agent.nodes') }}
+                  </span>
+                </DropdownMenuItem>
+              </Tooltip>
               <DropdownMenuSub
                 v-model:open="workflowSubmenuOpen"
                 @update:open="onWorkflowSubmenuOpenChange"
@@ -634,34 +636,33 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AccessibleTooltip
-            :label="primaryActionTooltip"
-            :skip-delay-duration="0"
-            disable-hoverable-content
+          <Tooltip
+            :config="primaryActionTooltip"
+            side="top"
+            :delay-duration="300"
+            :ignore-non-keyboard-focus="false"
             :collision-padding="8"
           >
-            <template #trigger>
-              <Button
-                type="button"
-                :variant="running ? 'secondary' : 'inverted'"
-                size="icon"
-                :aria-label="running ? t('agent.stop') : t('agent.send')"
-                :disabled="
-                  !running && (workflowSelecting || !composer.canSend.value)
-                "
-                @click="onPrimaryAction"
-              >
-                <i-lucide:square v-if="running" class="size-4" />
-                <i-lucide:arrow-up v-else class="size-4" />
-              </Button>
-            </template>
+            <Button
+              type="button"
+              :variant="running ? 'secondary' : 'inverted'"
+              size="icon"
+              :aria-label="running ? t('agent.stop') : t('agent.send')"
+              :disabled="
+                !running && (workflowSelecting || !composer.canSend.value)
+              "
+              @click="onPrimaryAction"
+            >
+              <i-lucide:square v-if="running" class="size-4" />
+              <i-lucide:arrow-up v-else class="size-4" />
+            </Button>
             <template #content>
               {{ primaryActionTooltip }}
               <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
                 primaryActionShortcut
               }}</span>
             </template>
-          </AccessibleTooltip>
+          </Tooltip>
         </div>
       </div>
     </div>
