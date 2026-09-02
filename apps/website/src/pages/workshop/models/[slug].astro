@@ -36,12 +36,12 @@ const modalityLabel = {
 
 const price =
   model.priceUsdFrom !== undefined
-    ? `${t('workshop.card.from')} ${new Intl.NumberFormat('en', {
+    ? new Intl.NumberFormat('en', {
         style: 'currency',
         currency: 'USD'
-      }).format(model.priceUsdFrom)}`
+      }).format(model.priceUsdFrom)
     : model.creditsPerRun !== undefined
-      ? `${t('workshop.card.from')} ${model.creditsPerRun} ${t('nav.credits')}`
+      ? `${model.creditsPerRun} ${t('nav.credits')}`
       : undefined
 
 const pillClass =
@@ -102,12 +102,17 @@ const pillClass =
           {model.name}
         </h1>
 
-        <p class="text-sm text-primary-comfy-canvas/70" data-testid="model-price">
+        <p
+          class="flex items-baseline gap-1.5 text-sm text-primary-comfy-canvas/70"
+          data-testid="model-price"
+        >
           {
             price ? (
               <>
+                <span class="text-[11px] tracking-wider uppercase">
+                  {t('workshop.card.from')}
+                </span>
                 <span class="text-lg font-bold text-primary-comfy-yellow">{price}</span>
-                {' '}
                 {t('workshop.model.perRun')}
               </>
             ) : (
@@ -126,6 +131,7 @@ const pillClass =
       </div>
     </header>
 
+    <div class="px-8 lg:px-10">
     <ModelDetail model={model} client:load />
 
     <section
@@ -153,6 +159,7 @@ const pillClass =
         }
       </ul>
     </section>
+    </div>
   </div>
   <PrototypeTweaks show-run-controls client:load />
 </BaseLayout>
