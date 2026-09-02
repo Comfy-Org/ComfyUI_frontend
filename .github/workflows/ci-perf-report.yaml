@@ -125,6 +125,10 @@ jobs:
           echo "::error::Performance tests failed; partial metrics were saved when available."
           exit 1
 
+      - name: Warn if performance tests failed on a PR
+        if: steps.perf.outcome == 'failure' && github.event_name == 'pull_request'
+        run: echo "::warning::Performance tests failed; the metrics may be incomplete."
+
   perf-baseline-freshness:
     if: github.event_name == 'schedule' && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
