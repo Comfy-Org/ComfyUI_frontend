@@ -284,7 +284,7 @@ describe('EcsFollowerAdapter integration', () => {
     // reconciliation must not be consumed — local-only node 99 survives.
     scopeAvailable = false
     deleteLayouts.mockClear()
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
