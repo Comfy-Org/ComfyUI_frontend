@@ -189,6 +189,15 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('heading', { name: 'Enterprise' })
     ).toBeVisible()
+    await expect(content.getByTestId('plan-status-badge')).toHaveText(
+      'Inactive'
+    )
+    await expect(
+      content.getByText(
+        "You can't run workflows or add new members. Contact your Comfy account manager to restore access."
+      )
+    ).toBeVisible()
+    await expect(content.getByText(/left of/)).toHaveCount(0)
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()

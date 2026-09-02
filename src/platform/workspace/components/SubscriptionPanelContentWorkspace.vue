@@ -220,6 +220,7 @@
                   </h3>
                   <StatusBadge
                     v-if="planStatusBadge"
+                    data-testid="plan-status-badge"
                     :label="planStatusBadge.label"
                     :severity="planStatusBadge.severity"
                   />

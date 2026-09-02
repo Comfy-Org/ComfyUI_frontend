@@ -253,6 +253,7 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
+  error: billingError,
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   fetchBalance,
@@ -293,8 +294,13 @@ const creditPoolTotalCredits = computed<number | null>(() => {
 
 const showsInactivePlanState = computed(() => inactivePlan === true)
 
+// A missing customer answers the lookup rather than failing it: the legacy
+// endpoint returns null on 404, and that is a real zero. Only a fetch still in
+// flight or one that errored leaves the balance genuinely unknown.
 const balanceIsKnown = computed(
-  () => !isLoadingBalance.value && balance.value != null
+  () =>
+    !isLoadingBalance.value &&
+    (balance.value != null || billingError.value == null)
 )
 
 const totalIsKnown = computed(() => zeroState || balanceIsKnown.value)
@@ -351,9 +357,14 @@ const creditPoolTotalCompact = computed(() => {
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
-const displayTotal = computed(() =>
-  zeroState ? formatCreditCount(0) : totalCredits.value
-)
+const displayTotal = computed(() => {
+  if (zeroState) return formatCreditCount(0)
+  // The monthly allowance ends with the plan, so the aggregate would count a
+  // pool the tile no longer shows. Only the prepaid balance survives.
+  return showsInactivePlanState.value
+    ? prepaidCredits.value
+    : totalCredits.value
+})
 const displayPrepaid = computed(() =>
   zeroState ? formatCreditCount(0) : prepaidCredits.value
 )

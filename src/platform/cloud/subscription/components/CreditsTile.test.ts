@@ -41,6 +41,7 @@ const state = vi.hoisted(() => ({
     async (): Promise<CustomerEventsResult> => ({ events: [] })
   ),
   customerEventsError: null as string | null,
+  billingError: null as string | null,
   toastErrorHandler: vi.fn()
 }))
 
@@ -63,6 +64,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     balance: computed(() => state.balance),
+    error: computed(() => state.billingError),
     subscription: computed(() => state.subscription),
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
@@ -216,6 +218,7 @@ describe('CreditsTile', () => {
     state.canSubscribeSelfServe = false
     state.type = 'workspace'
     state.customerEventsError = null
+    state.billingError = null
     state.telemetryUnavailable = false
     mockIsCloud.value = true
   })
@@ -406,7 +409,7 @@ describe('CreditsTile', () => {
     state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
-    expect(container.textContent).toContain('1,055remaining')
+    expect(container.textContent).toContain('633remaining')
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
     expect(container.textContent).toContain(
@@ -433,9 +436,30 @@ describe('CreditsTile', () => {
     )
   })
 
+  it('settles a missing-customer lookup at zero rather than a skeleton', () => {
+    activeProSubscription()
+    state.balance = null
+    state.billingError = null
+    renderTile()
+
+    expect(screen.queryAllByRole('status')).toHaveLength(0)
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
+  })
+
+  it('keeps the placeholders up when the balance lookup failed', () => {
+    activeProSubscription()
+    state.balance = null
+    state.billingError = 'Failed to fetch balance'
+    renderTile()
+
+    expect(screen.getAllByRole('status')).not.toHaveLength(0)
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+  })
+
   it('withholds the credit note on an inactive plan until the balance is read', () => {
     activeProSubscription()
     state.balance = null
+    state.billingError = 'Failed to fetch balance'
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).not.toContain(
@@ -451,6 +475,7 @@ describe('CreditsTile', () => {
   it('withholds the breakdown figures on an active plan until the balance is read', () => {
     activeProSubscription()
     state.balance = null
+    state.billingError = 'Failed to fetch balance'
     const { container } = renderTile()
 
     expect(container.textContent).not.toContain('left of')
