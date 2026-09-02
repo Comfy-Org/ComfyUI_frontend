@@ -320,13 +320,13 @@ function useInCode() {
         </div>
 
         <div
-          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-5"
+          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-3"
         >
           <Button
             v-if="isRunning"
             variant="outline"
             size="lg"
-            class="w-full"
+            class="w-full px-5"
             data-testid="run-button"
             @click="cancel"
           >
@@ -337,7 +337,7 @@ function useInCode() {
             as="a"
             :href="signInHref"
             size="lg"
-            class="w-full"
+            class="w-full px-5"
             data-testid="run-button"
             data-gate="signedOut"
           >
@@ -348,7 +348,7 @@ function useInCode() {
             as="a"
             :href="externalLinks.platform"
             size="lg"
-            class="w-full"
+            class="w-full px-5"
             data-testid="run-button"
             data-gate="noCredits"
           >
@@ -359,7 +359,7 @@ function useInCode() {
             as="a"
             :href="routes.pricing"
             size="lg"
-            class="w-full"
+            class="w-full px-5"
             data-testid="run-button"
             data-gate="noCredits"
           >
@@ -368,7 +368,7 @@ function useInCode() {
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
-            class="w-full"
+            class="w-full px-5"
             data-testid="run-button"
             data-gate="ready"
             @click="run"
@@ -390,7 +390,7 @@ function useInCode() {
           <Button
             v-else
             size="lg"
-            class="w-full"
+            class="w-full px-5"
             disabled
             data-testid="run-button"
             :data-gate="gate"
