@@ -331,6 +331,12 @@ describe('workflowPlanSchema', () => {
     })
 
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({
+        message: 'Batch unitCount must match the number of units'
+      })
+    )
   })
 
   it.for([

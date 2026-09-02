@@ -53,7 +53,7 @@ export function selectWorkflowRoute(
     return { status: 'needs-input' }
   const ranked = candidates
     .filter((candidate) => isEligible(candidate, plan))
-    .toSorted((left, right) => compareRoutes(left, right, plan.qualityGoal))
+    .sort((left, right) => compareRoutes(left, right, plan.qualityGoal))
   const route = ranked[0]
   if (route === undefined) return { status: 'no-match' }
 

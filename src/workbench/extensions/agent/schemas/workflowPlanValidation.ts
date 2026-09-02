@@ -1,3 +1,4 @@
+import { sumBy } from 'es-toolkit'
 import { z } from 'zod'
 
 import type {
@@ -130,9 +131,7 @@ function addSequenceDurationIssues(
 }
 
 function sumDurations(durations: readonly (number | undefined)[]): number {
-  let totalDuration = 0
-  for (const duration of durations) totalDuration += duration ?? 0
-  return totalDuration
+  return sumBy(durations, (duration) => duration ?? 0)
 }
 
 function addPipelineIssues(plan: WorkflowPlan, context: z.RefinementCtx): void {

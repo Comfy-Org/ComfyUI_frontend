@@ -323,6 +323,8 @@ describe('selectWorkflowRoute', () => {
         intents: ['image-to-video'],
         inputCapacity: { image: 2 },
         outputMediaType: 'video',
+        supportedStructures: ['sequence'],
+        maxWorkUnits: 8,
         maxDurationSeconds: 5,
         qualityScore: 100
       }),
