@@ -78,7 +78,10 @@ import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
+import type {
+  DraftSnapshot,
+  OpenTabsSnapshot
+} from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -289,6 +292,24 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   return bound === undefined ? undefined : { id: bound, tabPath: active.path }
 }
 
+// PM-813 / ecw-128: send the active tab's live canvas on every turn so the
+// agent can answer "what's on my canvas" from what the user actually sees,
+// instead of falling back to an empty/stale server-side draft when the CRDT
+// doc connection never delivered the user's edits. `version` is always
+// omitted: the backend's SeedFromClient CAS treats a nil version as "the
+// user's canvas is authoritative for this send" (no conflict check), which
+// is the correct default here since the client has no prior draft version to
+// echo back yet.
+function activeWorkflowDraft(): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = workflowStore.activeWorkflow
+  if (!active) return undefined
+  active.changeTracker?.captureCanvasState()
+  const content = active.activeState
+  if (!content) return undefined
+  return { content }
+}
+
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
   return active
@@ -371,7 +392,8 @@ const {
     adopted: onWorkflowAdopted,
     prepare: refreshCloudWorkflowIds,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab
+    activeTab: enqueueActiveTab,
+    draft: activeWorkflowDraft
   }
 })
 

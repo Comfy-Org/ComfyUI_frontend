@@ -1334,6 +1334,80 @@ describe('AgentPanelRoot attach flow', () => {
   })
 })
 
+// PM-813 / ecw-128: the agent reported the canvas as empty despite the active
+// tab having nodes, because no live canvas snapshot was ever sent on a turn —
+// the backend only had whatever draft content had separately synced
+// server-side (e.g. via CRDT), which can be stale or entirely absent. These
+// pin that the active tab's activeState is now forwarded as `draft.content`
+// on every send.
+describe('AgentPanelRoot canvas draft on send', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  it('sends the active tab activeState as draft.content (PM-813/ecw-128)', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+    const activeState = {
+      nodes: [
+        { id: 1, type: 'LoadImage' },
+        { id: 2, type: 'MiniMaxH3I2V' }
+      ],
+      links: []
+    } as unknown as FakeTab['activeState']
+    hostStores.workflow.activeWorkflow = {
+      path: 'workflows/video_minimax_h3_i2v.json',
+      directory: 'workflows',
+      filename: 'video_minimax_h3_i2v',
+      isTemporary: false,
+      isModified: false,
+      activeState
+    }
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), "what's on my canvas")
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({
+      content: "what's on my canvas",
+      draft: { content: activeState }
+    })
+  })
+
+  it('omits draft when there is no active tab', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+    hostStores.workflow.activeWorkflow = null
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'hello')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).not.toHaveProperty('draft')
+  })
+})
+
 describe('AgentPanelRoot history', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -2169,9 +2243,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
-    // Content sync is the CRDT follower's job now: no draft ever rides the
-    // turn and nothing re-loads the canvas from the ack path.
-    expect(bodies[0]).not.toHaveProperty('draft')
+    // PM-813 / ecw-128: the outgoing turn now carries the active tab's live
+    // canvas as `draft.content` so the agent can answer canvas-content
+    // questions without depending on server-side sync. Content sync back INTO
+    // the canvas is still the CRDT follower's job: nothing re-loads the
+    // canvas from the ack path.
+    expect(bodies[0]).toMatchObject({ draft: { content: { id: 'wf-42' } } })
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 

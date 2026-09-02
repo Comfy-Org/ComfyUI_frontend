@@ -45,12 +45,28 @@ export interface OpenTabsSnapshot {
   current_tab?: string
 }
 
+/**
+ * The client's live canvas for the active tab, mirroring the backend's
+ * draftInput{Content, Version} shape (services/agent/server/agent_handler.go).
+ * `version` is the draft version this client last saw `undefined` on a
+ * client's first send for a session, which the backend's CAS treats as "the
+ * user's canvas is authoritative for this send" (no conflict check). Sending
+ * this on every turn is what lets the agent answer canvas-content questions
+ * from what the user actually sees instead of falling back to an empty or
+ * stale server-side draft — see PM-813 / ecw-128.
+ */
+export interface DraftSnapshot {
+  content: Record<string, unknown>
+  version?: number
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
   tabs?: OpenTabsSnapshot
+  draft?: DraftSnapshot
 }
 
 interface IngestErrorBody {
@@ -116,6 +132,7 @@ export function createAgentRestClient() {
     }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
+    if (req.draft !== undefined) body.draft = req.draft
     return request(
       `/agent/threads/${threadId}/messages`,
       jsonInit('POST', body),

@@ -6,6 +6,7 @@ import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -50,6 +51,14 @@ export interface AgentSessionDeps {
     prepare?(): Promise<void>
     tabs?(): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
+    /**
+     * The active tab's live canvas, captured fresh at send time. Sent as
+     * `draft` on every turn so the agent answers canvas-content questions
+     * (e.g. "what's on my canvas") from what the user actually sees, rather
+     * than an empty/stale server-side draft when e.g. the CRDT doc connection
+     * never delivered the user's edits. See PM-813 / ecw-128.
+     */
+    draft?(): DraftSnapshot | undefined
   }
 }
 
@@ -191,7 +200,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ])
     const wfContext = workflow?.current()
     const tabs = workflow?.tabs?.()
+    // Captured fresh per send (not hoisted with wfContext/tabs above) so the
+    // draft reflects the canvas at the moment of sending, not at prepare time.
     async function postTurn(threadId: string) {
+      const draft = workflow?.draft?.()
       const input = {
         content: text,
         tabs,
@@ -199,7 +211,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
             : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref)
+        attachments: attachments?.map((attachment) => attachment.ref),
+        // Omit the key entirely (not just an undefined value) when there is
+        // no draft to send, so a turn with no active/detached workflow is
+        // indistinguishable from a pre-draft-support client.
+        ...(draft !== undefined ? { draft } : {})
       }
       return rest.postMessage(
         threadId,
