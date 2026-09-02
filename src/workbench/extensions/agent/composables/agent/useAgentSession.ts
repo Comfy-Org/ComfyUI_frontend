@@ -1,7 +1,9 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentErrorClass } from '@/platform/telemetry/types'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
@@ -110,6 +112,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  /**
+   * `app:agent_error` (TEL-8): fires at every FE-visible agent failure site,
+   * pre- or post-acceptance, that is not already covered by the backend's
+   * `agent_turn_failed`. `retryable` defaults from `failure_stage` — a
+   * pre-acceptance failure never started a turn, so retrying is always safe;
+   * a post-acceptance failure may have left server-side state the caller
+   * cannot fully retry — override per call site when that default is wrong.
+   */
+  function trackAgentError(
+    errorClass: AgentErrorClass,
+    stage: 'pre_acceptance' | 'post_acceptance',
+    uiTreatment: 'inline_notice' | 'error_overlay' | 'toast',
+    turnAccepted: boolean,
+    retryable: boolean = stage === 'pre_acceptance'
+  ): void {
+    useTelemetry()?.trackAgentError({
+      error_class: errorClass,
+      failure_stage: stage,
+      retryable,
+      turn_accepted: turnAccepted,
+      ui_treatment: uiTreatment
+    })
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
@@ -169,6 +195,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
+      trackAgentError(
+        'history_load_failed',
+        'pre_acceptance',
+        'error_overlay',
+        false
+      )
       return false
     }
   }
@@ -197,6 +229,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         i18n.global.t('agent.sendBusy')
       )
+      trackAgentError('send_busy', 'pre_acceptance', 'inline_notice', false)
       return false
     }
     promptEditState.value = { phase: 'idle' }
@@ -265,6 +298,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         `${i18n.global.t('agent.sendFailed')}: ${message}`
       )
+      trackAgentError(
+        'request_failed',
+        'pre_acceptance',
+        'inline_notice',
+        false
+      )
       return false
     } finally {
       sending.value = false
@@ -289,10 +328,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
         if (error.status === 409) return
         promptEditState.value = { phase: 'idle' }
         pushError(error.message)
+        trackAgentError(
+          'cancel_failed',
+          'post_acceptance',
+          'error_overlay',
+          true
+        )
         return
       }
       promptEditState.value = { phase: 'idle' }
       pushError(error instanceof Error ? error.message : String(error))
+      trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', true)
     }
   }
 
@@ -377,6 +423,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ) {
           conversationStore.abortActiveTurn()
           pushError(i18n.global.t('agent.malformedEvent'))
+          trackAgentError(
+            'malformed_stream_event',
+            'post_acceptance',
+            'error_overlay',
+            true
+          )
         } else {
           conversationStore.settleBackgroundTurn(messageId)
         }
