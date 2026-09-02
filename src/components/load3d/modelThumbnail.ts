@@ -78,7 +78,10 @@ async function renderThumbnailWithTimeout(
       : renderPromise)
     return { status: 'rendered', dataUrl }
   } catch (error) {
-    if (callerSignal?.aborted) return { status: 'cancelled' }
+    // Classify on the sentinel, not on `callerSignal.aborted`: one signal
+    // covers every model in a group, so an unrelated abort landing in the
+    // same tick must not mask a genuine render fault.
+    if (error === cancelError) return { status: 'cancelled' }
     reportError(error, {
       errorType: 'agent_model_thumbnail_generation_failure'
     })

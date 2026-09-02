@@ -17,6 +17,7 @@ import { SplatModelAdapter } from './SplatModelAdapter'
 import type {
   EventManagerInterface,
   LoadModelOptions,
+  LoadModelOutcome,
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
@@ -92,8 +93,8 @@ export class LoaderManager implements LoaderManagerInterface {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
-    if (this.disposed) return
+  ): Promise<LoadModelOutcome> {
+    if (this.disposed) return 'cancelled'
     const loadId = ++this.currentLoadId
 
     try {
@@ -120,46 +121,48 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
-        if (options?.silent) throw new Error(`Unknown model file type: ${url}`)
+        if (options?.silent) throw new Error('Unknown model file type')
         useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
-        return
+        return 'empty'
       }
 
-      const result = await this.loadModelInternal(url, fileExtension)
+      const result = await this.loadModelInternal(url, fileExtension, loadId)
 
       if (loadId !== this.currentLoadId) {
-        // A newer load on a live manager may already have published this
-        // object as originalModel, so only dispose once the manager is
-        // torn down and nothing can reach it.
-        if (result && this.disposed) this.disposeLoadResult(result)
-        // A newer loadModel has superseded us — do not publish our adapter
-        // and do not setup the model. Whichever load is current owns the
-        // shared state.
-        return
+        // The load context refuses writes from a superseded load, so nothing
+        // reachable references this result and it is ours alone to free.
+        if (result) this.disposeLoadResult(result)
+        return 'cancelled'
       }
 
-      if (!result && options?.silent) {
-        throw new Error(`No model could be loaded from: ${url}`)
+      if (!result) {
+        if (options?.silent) {
+          throw new Error(`No model was produced for type: ${fileExtension}`)
+        }
+        this.eventManager.emitEvent('modelLoadingEnd', null)
+        return 'empty'
       }
 
-      if (result) {
-        // Publish only after the staleness check so a slow older load
-        // can't clobber adapterRef.current that a newer load already
-        // wrote (or cleared).
-        this.adapterRef.current = result.adapter
-        this.adapterRef.capabilities = result.capabilities
-        await this.modelManager.setupModel(result.object)
-      }
+      // Publish only after the staleness check so a slow older load
+      // can't clobber adapterRef.current that a newer load already
+      // wrote (or cleared).
+      this.adapterRef.current = result.adapter
+      this.adapterRef.capabilities = result.capabilities
+      await this.modelManager.setupModel(result.object)
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
+      return 'loaded'
     } catch (error) {
-      if (loadId !== this.currentLoadId) return
+      if (loadId !== this.currentLoadId) return 'cancelled'
       this.eventManager.emitEvent('modelLoadingEnd', null)
-      console.error('Error loading model:', error)
+      // A silent caller owns the reporting; the URL may be untrusted, so
+      // don't echo it to the console on its behalf.
       if (options?.silent) throw error
+      console.error('Error loading model:', error)
       if (!(options?.silentOnNotFound && isNotFoundError(error))) {
         useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
       }
+      return 'failed'
     }
   }
 
@@ -194,12 +197,16 @@ export class LoaderManager implements LoaderManagerInterface {
     return null
   }
 
-  private createLoadContext(): ModelLoadContext {
+  private createLoadContext(loadId: number): ModelLoadContext {
     const mm = this.modelManager
+    const isCurrent = () => loadId === this.currentLoadId
     return {
-      setOriginalModel: (model) => mm.setOriginalModel(model),
-      registerOriginalMaterial: (mesh, material) =>
-        mm.originalMaterials.set(mesh, material),
+      setOriginalModel: (model) => {
+        if (isCurrent()) mm.setOriginalModel(model)
+      },
+      registerOriginalMaterial: (mesh, material) => {
+        if (isCurrent()) mm.originalMaterials.set(mesh, material)
+      },
       get standardMaterial() {
         return mm.standardMaterial
       },
@@ -211,7 +218,8 @@ export class LoaderManager implements LoaderManagerInterface {
 
   private async loadModelInternal(
     url: string,
-    fileExtension: string
+    fileExtension: string,
+    loadId: number
   ): Promise<{
     object: THREE.Object3D
     adapter: ModelAdapter
@@ -245,7 +253,7 @@ export class LoaderManager implements LoaderManagerInterface {
     if (!adapter) return null
 
     const loadResult = await adapter.load(
-      this.createLoadContext(),
+      this.createLoadContext(loadId),
       path,
       filename,
       fetchBytes

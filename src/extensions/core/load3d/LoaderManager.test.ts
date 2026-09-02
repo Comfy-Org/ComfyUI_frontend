@@ -618,7 +618,7 @@ describe('LoaderManager', () => {
         lm.loadModel('api/view?filename=scene.usdz', undefined, {
           silent: true
         })
-      ).rejects.toThrow(/No model could be loaded/)
+      ).rejects.toThrow(/No model was produced for type/)
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(addAlert).not.toHaveBeenCalled()
     })
@@ -629,7 +629,7 @@ describe('LoaderManager', () => {
 
       await expect(
         lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
-      ).rejects.toThrow(/No model could be loaded/)
+      ).rejects.toThrow(/No model was produced for type/)
       expect(addAlert).not.toHaveBeenCalled()
     })
 
@@ -665,6 +665,41 @@ describe('LoaderManager', () => {
       expect(endEmits).toHaveLength(1)
     })
 
+    it('disposes a stale result and ignores its writes on a live manager', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.MeshBasicMaterial()
+      const staleModel = new THREE.Mesh(geometry, material)
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeMaterial = vi.spyOn(material, 'dispose')
+      const freshModel = new THREE.Object3D()
+
+      meshLoad
+        .mockImplementationOnce((ctx: ModelLoadContext) =>
+          firstLoad.then((model) => {
+            ctx.setOriginalModel(model)
+            return loadResult(model)
+          })
+        )
+        .mockResolvedValueOnce(loadResult(freshModel))
+
+      const stale = lm.loadModel('api/view?filename=stale.glb')
+      const fresh = lm.loadModel('api/view?filename=fresh.glb')
+      resolveFirst(staleModel)
+
+      await expect(stale).resolves.toBe('cancelled')
+      await expect(fresh).resolves.toBe('loaded')
+
+      expect(disposeGeometry).toHaveBeenCalledOnce()
+      expect(disposeMaterial).toHaveBeenCalledOnce()
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(staleModel)
+    })
+
     it('drops and disposes an in-flight load when disposed', async () => {
       const { lm, modelManager } = makeLoaderManager()
       let resolveLoad!: (value: ReturnType<typeof loadResult>) => void
@@ -684,7 +719,7 @@ describe('LoaderManager', () => {
       lm.dispose()
       resolveLoad(loadResult(model))
 
-      await expect(load).resolves.toBeUndefined()
+      await expect(load).resolves.toBe('cancelled')
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(disposeGeometry).toHaveBeenCalledOnce()
       expect(disposeMaterial).toHaveBeenCalledOnce()
@@ -704,7 +739,7 @@ describe('LoaderManager', () => {
       lm.dispose()
       rejectLoad(new Error('connection reset'))
 
-      await expect(load).resolves.toBeUndefined()
+      await expect(load).resolves.toBe('cancelled')
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(addAlert).not.toHaveBeenCalled()
     })
@@ -713,9 +748,9 @@ describe('LoaderManager', () => {
       const { lm, modelManager } = makeLoaderManager()
       lm.dispose()
 
-      await expect(
-        lm.loadModel('api/view?filename=cube.glb')
-      ).resolves.toBeUndefined()
+      await expect(lm.loadModel('api/view?filename=cube.glb')).resolves.toBe(
+        'cancelled'
+      )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
       expect(addAlert).not.toHaveBeenCalled()

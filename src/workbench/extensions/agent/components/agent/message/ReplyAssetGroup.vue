@@ -73,23 +73,29 @@ const galleryIndex = ref(-1)
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
-const thumbnailAbort = new AbortController()
+const retriedThumbnails = new Set<string>()
+const thumbnailAborts = new Map<string, AbortController>()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
-  thumbnailAbort.abort()
+  for (const controller of thumbnailAborts.values()) controller.abort()
+  thumbnailAborts.clear()
   for (const timeout of refreshTimeouts) clearTimeout(timeout)
   refreshTimeouts.clear()
 })
 
 /**
  * Look up a server-rendered preview, falling back to an offscreen render.
- * A model that does not render keeps its placeholder: a retry would race
- * the abandoned transfer, which is not abortable. Reopening the 3D dialog
- * still refreshes the tile through `refreshModelThumbnail`.
+ *
+ * The placeholder is what stops the watcher re-entering, so both giving-up
+ * paths clear it deliberately: a cancelled render was never attempted and
+ * is retried whenever the tile comes back on screen, while a failed one
+ * gets a single retry, because `failed` also covers a transient deadline.
  */
 function loadModelThumbnail(url: string, filename: string): void {
   modelThumbnails.value[url] = ''
+  const controller = new AbortController()
+  thumbnailAborts.set(url, controller)
   void findServerPreviewUrl(filename)
     .then(async (preview) => {
       if (!mounted) return
@@ -100,17 +106,26 @@ function loadModelThumbnail(url: string, filename: string): void {
       const result = await generateModelThumbnail(
         url,
         filename,
-        thumbnailAbort.signal
+        controller.signal
       )
       if (!mounted) return
-      if (result.status === 'rendered')
+      if (result.status === 'rendered') {
         modelThumbnails.value[url] = result.dataUrl
+      } else if (result.status === 'cancelled') {
+        delete modelThumbnails.value[url]
+      } else if (!retriedThumbnails.has(url)) {
+        retriedThumbnails.add(url)
+        delete modelThumbnails.value[url]
+      }
     })
     .catch((error) => {
       if (mounted) delete modelThumbnails.value[url]
       reportError(error, {
         errorType: 'agent_reply_asset_preview_failure'
       })
+    })
+    .finally(() => {
+      if (thumbnailAborts.get(url) === controller) thumbnailAborts.delete(url)
     })
 }
 
@@ -121,6 +136,10 @@ watch(
   ],
   (lookups) => {
     if (!isAssetPreviewSupported()) return
+    const onScreen = new Set(lookups.map((asset) => asset.url))
+    for (const [url, controller] of thumbnailAborts) {
+      if (!onScreen.has(url)) controller.abort()
+    }
     for (const { url, filename, kind } of lookups) {
       if (kind === '3D' && !(url in modelThumbnails.value)) {
         loadModelThumbnail(url, filename)

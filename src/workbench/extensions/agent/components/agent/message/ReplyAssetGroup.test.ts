@@ -283,8 +283,9 @@ describe('ReplyAssetGroup', () => {
     expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
   })
 
-  it('aborts queued generation when unmounted', async () => {
+  it('aborts an in-flight generation when unmounted', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockReturnValue(new Promise(() => {}))
     const { unmount } = renderGroup([model])
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
 
@@ -294,6 +295,48 @@ describe('ReplyAssetGroup', () => {
     unmount()
 
     expect(signal?.aborted).toBe(true)
+  })
+
+  it('aborts a generation for a model hidden by Show less', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockReturnValue(new Promise(() => {}))
+    const models = Array.from({ length: 13 }, (_, n) => ({
+      ...model,
+      url: `https://x/mesh-${n}.glb`,
+      filename: `mesh-${n}.glb`
+    }))
+    renderGroup(models)
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(12)
+    )
+
+    await userEvent.click(toggle()!)
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(13)
+    )
+    const hidden = generateModelThumbnail.mock.calls.find(
+      (call) => call[0] === 'https://x/mesh-12.glb'
+    )
+    expect(hidden?.[2]?.aborted).toBe(false)
+
+    await userEvent.click(toggle()!)
+
+    expect(hidden?.[2]?.aborted).toBe(true)
+  })
+
+  it('retries a failed model once, then leaves the placeholder', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const { rerender } = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    await rerender({ assets: [{ ...model }] })
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledTimes(2))
+
+    await rerender({ assets: [{ ...model }] })
+    await rerender({ assets: [{ ...model }] })
+
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
   })
 
   it('clears a pending thumbnail refresh when unmounted', async () => {
@@ -389,6 +432,9 @@ describe('ReplyAssetGroup', () => {
         expect.any(AbortSignal)
       )
     )
-    expect(generateModelThumbnail).toHaveBeenCalledTimes(13)
+    const generated = new Set(
+      generateModelThumbnail.mock.calls.map((call) => call[0])
+    )
+    expect(generated.size).toBe(13)
   })
 })

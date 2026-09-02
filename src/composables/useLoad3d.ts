@@ -834,7 +834,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       )
 
       loadingMessage.value = t('load3d.loadingModel')
-      await load3d.loadModel(modelUrl)
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome !== 'loaded') return
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 

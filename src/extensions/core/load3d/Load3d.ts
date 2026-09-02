@@ -18,6 +18,7 @@ import type {
   GizmoMode,
   Load3DOptions,
   LoadModelOptions,
+  LoadModelOutcome,
   MaterialMode,
   Model3DTransform,
   UpDirection
@@ -62,7 +63,7 @@ class Load3d extends Viewport3d {
   gizmoManager: GizmoManager
   adapterRef: AdapterRef
 
-  private loadingPromise: Promise<void> | null = null
+  private loadingPromise: Promise<LoadModelOutcome> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
 
@@ -331,7 +332,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<LoadModelOutcome> {
     this._loadGeneration += 1
 
     if (this.loadingPromise) {
@@ -349,7 +350,7 @@ class Load3d extends Viewport3d {
   }
 
   async whenLoadIdle(): Promise<void> {
-    let last: Promise<void> | null = null
+    let last: Promise<LoadModelOutcome> | null = null
     while (this.loadingPromise && this.loadingPromise !== last) {
       last = this.loadingPromise
       try {
@@ -362,7 +363,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<LoadModelOutcome> {
     const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
@@ -376,29 +377,40 @@ class Load3d extends Viewport3d {
     this.modelManager.clearModel()
     this.animationManager.dispose()
 
-    await this.loaderManager.loadModel(url, originalFileName, options)
-
-    if (this.modelManager.currentModel) {
-      this.animationManager.setupModelAnimations(
-        this.modelManager.currentModel,
-        this.modelManager.originalModel
+    try {
+      const outcome = await this.loaderManager.loadModel(
+        url,
+        originalFileName,
+        options
       )
-      this.hasLoadedModel = true
-    }
 
-    if (savedCameraState) {
-      if (
-        savedCameraState.cameraType !==
-        this.cameraManager.getCurrentCameraType()
-      ) {
-        this.toggleCamera(savedCameraState.cameraType)
+      // A cancelled load leaves the managers torn down or owned by a newer
+      // load; touching the camera or renderer here would act on both.
+      if (outcome === 'cancelled') return outcome
+
+      if (this.modelManager.currentModel) {
+        this.animationManager.setupModelAnimations(
+          this.modelManager.currentModel,
+          this.modelManager.originalModel
+        )
+        this.hasLoadedModel = true
       }
-      this.cameraManager.setCameraState(savedCameraState)
+
+      if (savedCameraState) {
+        if (
+          savedCameraState.cameraType !==
+          this.cameraManager.getCurrentCameraType()
+        ) {
+          this.toggleCamera(savedCameraState.cameraType)
+        }
+        this.cameraManager.setCameraState(savedCameraState)
+      }
+
+      this.handleResize()
+      return outcome
+    } finally {
+      this.loadingPromise = null
     }
-
-    this.handleResize()
-
-    this.loadingPromise = null
   }
 
   isSplatModel(): boolean {

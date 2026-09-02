@@ -258,6 +258,13 @@ export interface LoadModelOptions {
   silent?: boolean
 }
 
+/**
+ * Why a load stopped. `cancelled` means the viewer was disposed or a newer
+ * load superseded this one; `empty` means nothing claimed the URL. Both
+ * leave the viewer untouched, so callers must not run success work on them.
+ */
+export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
+
 export interface SceneOverlay {
   attach(scene: THREE.Scene): void
   detach(): void
@@ -273,5 +280,5 @@ export interface LoaderManagerInterface {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void>
+  ): Promise<LoadModelOutcome>
 }
