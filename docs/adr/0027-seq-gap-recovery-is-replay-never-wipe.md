@@ -50,22 +50,10 @@ frame may have been `doc_reset`. Both an inferred lineage break and an explicit
 `doc_reset` use the same ordered reset-before-replacement lifecycle. The transport-cursor
 and replacement-completion-barrier details remain deferred to DQ-24.
 
-### Governing ADR-019 tradeoffs
+### Deferred contracts
 
-[ADR-019](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-019-crdt-weekend-final-call.md)
-is the governing weekend final call:
-
-- **Bounded scalar-v1:** scalar-v1 is frozen for weekend dogfood as a bounded
-  exception; the Lamport clock remains the committed V1 migration before
-  Local/Desktop.
-- **Reset/remint deferral:** reset/remint semantics are excluded from weekend
-  acceptance, durable lineage remains a pre-public gate before MS21 planning, and
-  remint is disabled while followers are connected.
-- **Deployed-proof bar:** only deployed browser proof establishes dogfood readiness;
-  local-only results remain local-only.
-
-These tradeoffs bound the decision recorded here. They do not settle the deferred
-lineage, cursor, reset-precedence, or replacement-barrier contracts.
+This ADR does not define transport-cursor recovery, reset precedence, or the
+replacement-completion barrier. Those contracts remain deferred to DQ-24.
 
 ## Consequences
 
