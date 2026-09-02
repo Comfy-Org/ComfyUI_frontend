@@ -1,4 +1,4 @@
-# 26. Link Presentation Store Owns Hidden/Label State
+# 27. Link Presentation Store Owns Hidden/Label State
 
 Date: 2026-08-29
 
