@@ -217,7 +217,7 @@ function hasValidDiagnostics(data: WireData): boolean {
  * protocol violation.
  */
 function parseOptionalStringArray(value: unknown): string[] | null {
-  if (value === undefined) return []
+  if (isAbsent(value)) return []
   return isStringArray(value) ? value : null
 }
 
@@ -273,7 +273,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   ) {
     const update = decodeBase64(data.update_b64)
     if (update === null) return null
-    if (data.op_ids !== undefined && !isStringArray(data.op_ids)) return null
+    if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
     const actor =
       typeof data.actor === 'string' && isValidActor(data.actor)
         ? data.actor

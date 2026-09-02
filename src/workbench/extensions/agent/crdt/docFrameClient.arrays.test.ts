@@ -28,6 +28,28 @@ describe('document frame result arrays and acknowledgements', () => {
     ).toBeNull()
   })
 
+  it('treats null doc_update op ids as absent', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 1,
+          update_b64: 'AQ==',
+          op_ids: null
+        }
+      })
+    ).toEqual({
+      type: 'doc_update',
+      data: {
+        workflowId: 'wf-1',
+        seq: 1,
+        update: new Uint8Array([1])
+      }
+    })
+  })
+
   it('rejects a non-string element in applied', () => {
     expect(resultFrame({ ok: true, seq: 1, applied: ['op-1', 2] })).toBeNull()
   })
@@ -159,7 +181,19 @@ describe('document frame result arrays and acknowledgements', () => {
 
   it('rejects present but malformed applied and skipped', () => {
     expect(resultFrame({ ok: true, seq: 1, applied: 'op-1' })).toBeNull()
-    expect(resultFrame({ ok: true, seq: 1, skipped: null })).toBeNull()
+  })
+
+  it('treats null result arrays as absent', () => {
+    expect(resultFrame({ ok: true, seq: 1, skipped: null })).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: true,
+        seq: 1,
+        applied: [],
+        skipped: []
+      }
+    })
   })
 
   it('accepts strictly typed result arrays and failure data', () => {
