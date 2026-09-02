@@ -5,6 +5,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -29,6 +30,25 @@ describe('updateAttributionSettings', () => {
       expect(
         statSync(join(home, '.config', 'amp', 'settings.json')).mode & 0o777
       ).toBe(0o600)
+    } finally {
+      rmSync(home, { recursive: true, force: true })
+    }
+  })
+
+  it('does not follow a symlink at the old predictable temporary path', () => {
+    const home = mkdtempSync(join(tmpdir(), 'update-ai-attribution-'))
+    try {
+      const claudeDirectory = join(home, '.claude')
+      const claudePath = join(claudeDirectory, 'settings.json')
+      const targetPath = join(home, 'target')
+      mkdirSync(claudeDirectory, { recursive: true })
+      writeFileSync(targetPath, 'unchanged')
+      symlinkSync(targetPath, `${claudePath}.${process.pid}.tmp`)
+
+      const [claudeResult] = updateAttributionSettings(home)
+
+      expect(claudeResult.outcome).toBe('updated')
+      expect(readFileSync(targetPath, 'utf8')).toBe('unchanged')
     } finally {
       rmSync(home, { recursive: true, force: true })
     }
