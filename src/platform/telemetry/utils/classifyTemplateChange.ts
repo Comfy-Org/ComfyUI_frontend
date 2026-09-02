@@ -10,12 +10,12 @@ import type { TemplateChangeType } from '../types'
 const SEED_WIDGET_NAME_PATTERN = /(^|_)seed($|_)|noise_seed/i
 const PROMPT_WIDGET_NAME_PATTERN = /(^|_)(prompt|text|positive|negative)($|_)/i
 
-export type LiveWidgetInfo = {
+type LiveWidgetInfo = {
   name?: string
   type?: string
 }
 
-export type LiveNodeInfo = {
+type LiveNodeInfo = {
   widgets?: LiveWidgetInfo[]
 }
 
