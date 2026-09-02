@@ -7,7 +7,7 @@ import { usdToCredits } from './credits'
 const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
 
-export const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
+const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
 export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 
 export type ModelStatus = 'deprecated' | 'degraded'
@@ -198,6 +198,41 @@ export function splitTask(
   return input && output && output !== 'all' ? { input, output } : undefined
 }
 
+// The catalog is organised around what people want to make, not around
+// model modality: a text-to-video and an image-to-video model both answer
+// "I want a video".
+export const USE_CASES = [
+  'create-images',
+  'edit-images',
+  'create-videos',
+  'edit-videos',
+  'create-3d',
+  'audio',
+  'text',
+  'other'
+] as const
+export type UseCase = (typeof USE_CASES)[number]
+
+export function useCaseFor(model: WorkshopModel): UseCase {
+  const parts = model.task ? splitTask(model.task) : undefined
+  const output = parts?.output ?? modalityOf(model)
+  const edits = parts !== undefined && parts.input === output
+  switch (output) {
+    case 'image':
+      return edits ? 'edit-images' : 'create-images'
+    case 'video':
+      return edits ? 'edit-videos' : 'create-videos'
+    case '3d':
+      return 'create-3d'
+    case 'audio':
+      return 'audio'
+    case 'text':
+      return 'text'
+    default:
+      return 'other'
+  }
+}
+
 function toWorkshopModel(model: Model): WorkshopModel {
   const overrides = display[model.slug] ?? {}
   const data = generated[model.slug]
@@ -265,7 +300,7 @@ export function modalityOf(
 
 export interface WorkshopFilter {
   readonly query: string
-  readonly modalities?: readonly string[]
+  readonly useCase?: UseCase | 'all'
   readonly providers?: readonly string[]
   readonly tasks?: readonly string[]
 }
@@ -281,23 +316,25 @@ function matchesFacet(
 
 export function filterWorkshopModels(
   list: readonly WorkshopModel[],
-  { query, modalities = [], providers = [], tasks = [] }: WorkshopFilter
+  { query, useCase = 'all', providers = [], tasks = [] }: WorkshopFilter
 ): WorkshopModel[] {
   const needle = query.trim().toLowerCase()
   return list.filter(
     (model) =>
-      matchesFacet(modalities, modalityOf(model)) &&
+      (useCase === 'all' || useCaseFor(model) === useCase) &&
       matchesFacet(providers, model.provider) &&
       matchesFacet(tasks, model.task) &&
       (needle === '' || searchText(model).includes(needle))
   )
 }
 
-// Name, provider, category and task ("image to video") are all searchable.
+// Name, provider, use case ("create videos"), category and task ("image to
+// video") are all searchable.
 function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
+    useCaseFor(model).replaceAll('-', ' '),
     modalityOf(model),
     model.task?.replaceAll('-', ' ') ?? ''
   ]
@@ -348,15 +385,15 @@ export function countByFacet(
     .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
 }
 
-export function countByModality(
+export function countByUseCase(
   list: readonly WorkshopModel[]
-): Record<ModalityFilter, number> {
+): Record<UseCase | 'all', number> {
   const counts = Object.fromEntries(
-    MODALITY_FILTERS.map((filter) => [filter, 0])
-  ) as Record<ModalityFilter, number>
+    ['all', ...USE_CASES].map((useCase) => [useCase, 0])
+  ) as Record<UseCase | 'all', number>
   for (const model of list) {
     counts.all += 1
-    counts[modalityOf(model)] += 1
+    counts[useCaseFor(model)] += 1
   }
   return counts
 }

@@ -4,13 +4,14 @@ import { models } from './models'
 import type { GeneratedField, WorkshopModel } from './workshop'
 import {
   countByFacet,
-  countByModality,
+  countByUseCase,
   decodeGeneratedModels,
   filterWorkshopModels,
   isRouterModel,
   sortWorkshopModels,
   splitTask,
   taskFor,
+  useCaseFor,
   workshopModels
 } from './workshop'
 
@@ -63,18 +64,24 @@ describe('filterWorkshopModels', () => {
     ])
   })
 
-  it('filters by modality and treats missing modality as other', () => {
+  it('also matches the use case in words', () => {
+    expect(filterWorkshopModels(fixture, { query: 'create videos' })).toEqual([
+      fixture[0]
+    ])
+  })
+
+  it('filters by use case and treats unknown models as other', () => {
     expect(
-      filterWorkshopModels(fixture, { query: '', modalities: ['video'] })
+      filterWorkshopModels(fixture, { query: '', useCase: 'create-videos' })
     ).toEqual([fixture[0]])
     expect(
-      filterWorkshopModels(fixture, { query: '', modalities: ['other'] })
+      filterWorkshopModels(fixture, { query: '', useCase: 'other' })
     ).toEqual([fixture[2]])
   })
 
-  it('combines query and modality', () => {
+  it('combines query and use case', () => {
     expect(
-      filterWorkshopModels(fixture, { query: 'flux', modalities: ['video'] })
+      filterWorkshopModels(fixture, { query: 'flux', useCase: 'create-videos' })
     ).toEqual([])
   })
 })
@@ -90,7 +97,7 @@ describe('filterWorkshopModels facets', () => {
     expect(
       filterWorkshopModels(fixture, {
         query: '',
-        modalities: ['video'],
+        useCase: 'create-videos',
         tasks: ['image-to-image']
       })
     ).toEqual([])
@@ -167,13 +174,35 @@ describe('taskFor', () => {
   })
 })
 
-describe('countByModality', () => {
-  it('counts every filter bucket including all and other', () => {
-    expect(countByModality(fixture)).toMatchObject({
+describe('useCaseFor', () => {
+  const withTask = (task: WorkshopModel['task']): WorkshopModel => ({
+    ...fixture[2],
+    task
+  })
+
+  it('splits creating from editing by whether the input matches the output', () => {
+    expect(useCaseFor(withTask('text-to-image'))).toBe('create-images')
+    expect(useCaseFor(withTask('image-to-image'))).toBe('edit-images')
+    expect(useCaseFor(withTask('image-to-video'))).toBe('create-videos')
+    expect(useCaseFor(withTask('video-to-video'))).toBe('edit-videos')
+    expect(useCaseFor(withTask('image-to-3d'))).toBe('create-3d')
+    expect(useCaseFor(withTask('video-to-audio'))).toBe('audio')
+    expect(useCaseFor(withTask('text-to-text'))).toBe('text')
+  })
+
+  it('falls back to the modality when the task is unknown', () => {
+    expect(useCaseFor({ ...fixture[2], modality: 'audio' })).toBe('audio')
+    expect(useCaseFor(fixture[2])).toBe('other')
+  })
+})
+
+describe('countByUseCase', () => {
+  it('counts every use case including all and other', () => {
+    expect(countByUseCase(fixture)).toMatchObject({
       all: 3,
-      video: 1,
-      image: 1,
-      audio: 0,
+      'create-videos': 1,
+      'edit-images': 1,
+      'create-images': 0,
       other: 1
     })
   })

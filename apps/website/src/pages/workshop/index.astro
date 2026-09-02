@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
 import WorkshopHero from '../../components/workshop/WorkshopHero.astro'
 import WorkshopModelsGrid from '../../components/workshop/WorkshopModelsGrid.vue'
-import WorkshopTabs from '../../components/workshop/WorkshopTabs.vue'
+import WorkshopWorkflowsPreview from '../../components/workshop/WorkshopWorkflowsPreview.vue'
 import { workshopModels } from '../../config/workshop'
 import { t } from '../../i18n/translations'
 ---
@@ -15,8 +15,8 @@ import { t } from '../../i18n/translations'
 >
   <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
     <WorkshopHero />
-    <WorkshopTabs active="models" client:load />
     <WorkshopModelsGrid models={workshopModels} client:load />
+    <WorkshopWorkflowsPreview client:load />
   </div>
   <PrototypeTweaks client:load />
 </BaseLayout>

@@ -8245,32 +8245,43 @@ Enterprise`
     'zh-CN': '视觉 AI 顶尖模型，即刻运行'
   },
   'workshop.hero.subtitle': {
-    en: 'Image, video, audio and 3D from every partner on Comfy Router. No install, no setup: pick a model, set your inputs, hit Run. You see the price before every run.',
+    en: 'Pick what you want to make and run the best partner model for it, straight from Comfy Router. No install, no setup: set your inputs, hit Run. You see the price before every run.',
     'zh-CN':
-      'Comfy Router 全部合作伙伴的图像、视频、音频与 3D 模型。无需安装配置：选择模型、设置输入、点击运行。每次运行前都会显示价格。'
+      '选择想要创作的内容，直接通过 Comfy Router 运行最合适的合作伙伴模型。无需安装配置：设置输入、点击运行。每次运行前都会显示价格。'
   },
-  'workshop.tabs.models': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.tabs.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.useCase.label': { en: 'Browse by use case', 'zh-CN': '按用途浏览' },
+  'workshop.useCase.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.useCase.createImages': {
+    en: 'Create images',
+    'zh-CN': '生成图像'
+  },
+  'workshop.useCase.editImages': {
+    en: 'Edit & enhance images',
+    'zh-CN': '编辑与增强图像'
+  },
+  'workshop.useCase.createVideos': {
+    en: 'Create videos',
+    'zh-CN': '生成视频'
+  },
+  'workshop.useCase.editVideos': {
+    en: 'Edit & enhance videos',
+    'zh-CN': '编辑与增强视频'
+  },
+  'workshop.useCase.create3d': { en: 'Create 3D', 'zh-CN': '生成 3D' },
+  'workshop.useCase.audio': { en: 'Audio & voice', 'zh-CN': '音频与语音' },
+  'workshop.useCase.text': { en: 'Text & chat', 'zh-CN': '文本与对话' },
+  'workshop.useCase.other': { en: 'Other', 'zh-CN': '其他' },
   'workshop.search.label': {
     en: 'Search by model, task, category and more',
     'zh-CN': '按模型、任务、类别等搜索'
   },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
-  'workshop.filter.label': { en: 'Filter by modality', 'zh-CN': '按模态筛选' },
-  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
   'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
   'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
   'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
-  'workshop.filter.providerLabel': {
-    en: 'Filter by provider',
-    'zh-CN': '按提供方筛选'
-  },
-  'workshop.filter.provider': { en: 'Any provider', 'zh-CN': '任意提供方' },
-  'workshop.filter.taskLabel': { en: 'Filter by task', 'zh-CN': '按任务筛选' },
-  'workshop.filter.task': { en: 'Any task', 'zh-CN': '任意任务' },
   'workshop.input.title': { en: 'Input', 'zh-CN': '输入' },
   'workshop.input.estimate': { en: 'Estimated cost', 'zh-CN': '预计费用' },
   'workshop.input.estimateNote': {
@@ -8285,7 +8296,6 @@ Enterprise`
   'workshop.input.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.filter.search': { en: 'Search', 'zh-CN': '搜索' },
   'workshop.filter.clearOne': { en: 'Clear', 'zh-CN': '清除' },
-  'workshop.filter.modality': { en: 'Modality', 'zh-CN': '模态' },
   'workshop.filter.providerGroup': { en: 'Provider', 'zh-CN': '提供方' },
   'workshop.filter.taskGroup': { en: 'Task', 'zh-CN': '任务' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
@@ -8397,27 +8407,15 @@ Enterprise`
     'zh-CN': '换个关键词或清除筛选条件。'
   },
   'workshop.empty.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
-  'workshop.workflows.eyebrow': { en: 'Milestone 2', 'zh-CN': '里程碑 2' },
+  'workshop.workflows.eyebrow': { en: 'Coming in V2', 'zh-CN': 'V2 即将推出' },
   'workshop.workflows.heading': {
-    en: 'Curated workflows are on the way',
-    'zh-CN': '精选工作流即将上线'
+    en: 'Curated workflows land here next',
+    'zh-CN': '精选工作流即将在此上线'
   },
   'workshop.workflows.body': {
-    en: 'Apps built from models and workflows, with presets, one-click Run, and Deploy to Developer Platform.',
+    en: 'Workflows will sit next to models in every use case, with presets, one-click Run, and Deploy to Developer Platform.',
     'zh-CN':
-      '由模型和工作流构建的应用，支持预设、一键运行以及部署到开发者平台。'
-  },
-  'workshop.workflows.categories.create': {
-    en: 'Create images & videos',
-    'zh-CN': '创作图像与视频'
-  },
-  'workshop.workflows.categories.edit': {
-    en: 'Edit & enhance',
-    'zh-CN': '编辑与增强'
-  },
-  'workshop.workflows.categories.specialized': {
-    en: 'Specialized outcomes',
-    'zh-CN': '专项成果'
+      '工作流将与模型一起出现在每个用途下，支持预设、一键运行以及部署到开发者平台。'
   },
 
   // Workshop – model detail

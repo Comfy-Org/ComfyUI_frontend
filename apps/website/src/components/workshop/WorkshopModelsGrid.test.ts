@@ -53,18 +53,17 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('combines the modality and task menus', async () => {
+  it('combines the use-case chips with the task menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
+    expect(screen.queryByTestId('use-case-create-images')).toBeNull()
 
-    await user.click(screen.getByTestId('workshop-filter-modality'))
-    await user.click(await screen.findByTestId('filter-modality-video'))
+    await user.click(screen.getByTestId('use-case-create-videos'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     expect(
-      screen.getByTestId('workshop-filter-modality-count').textContent
-    ).toBe('1')
+      screen.getByTestId('use-case-create-videos').getAttribute('aria-pressed')
+    ).toBe('true')
 
-    await user.keyboard('{Escape}')
     await user.click(screen.getByTestId('workshop-filter-task'))
     await user.click(await screen.findByTestId('filter-task-image-to-image'))
     expect(cardNames()).toHaveLength(0)

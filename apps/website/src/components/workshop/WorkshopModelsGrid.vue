@@ -12,17 +12,20 @@ import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type {
   ModalityFilter,
   SortOrder,
   TaskInput,
+  UseCase,
   WorkshopModel
 } from '../../config/workshop'
 import {
-  MODALITY_FILTERS,
   SORT_ORDERS,
+  USE_CASES,
   countByFacet,
-  countByModality,
+  countByUseCase,
   filterWorkshopModels,
   sortWorkshopModels,
   splitTask
@@ -39,14 +42,24 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const query = ref('')
-const modalities = ref<string[]>([])
+const useCase = ref<UseCase | 'all'>('all')
 const tasks = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 const { showStatuses } = usePrototypeTweaks()
 
-const filterLabelKey: Record<ModalityFilter, TranslationKey> = {
-  all: 'workshop.filter.all',
+const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
+  all: 'workshop.useCase.all',
+  'create-images': 'workshop.useCase.createImages',
+  'edit-images': 'workshop.useCase.editImages',
+  'create-videos': 'workshop.useCase.createVideos',
+  'edit-videos': 'workshop.useCase.editVideos',
+  'create-3d': 'workshop.useCase.create3d',
+  audio: 'workshop.useCase.audio',
+  text: 'workshop.useCase.text',
+  other: 'workshop.useCase.other'
+}
+const filterLabelKey: Record<Exclude<ModalityFilter, 'all'>, TranslationKey> = {
   image: 'workshop.filter.image',
   video: 'workshop.filter.video',
   audio: 'workshop.filter.audio',
@@ -74,15 +87,9 @@ function taskLabel(value: string): string {
     : value
 }
 
-const counts = computed(() => countByModality(models))
-const modalityOptions = computed<FacetMenuOption[]>(() =>
-  MODALITY_FILTERS.filter(
-    (filter) => filter !== 'all' && counts.value[filter] > 0
-  ).map((filter) => ({
-    value: filter,
-    label: t(filterLabelKey[filter], locale),
-    count: counts.value[filter]
-  }))
+const counts = computed(() => countByUseCase(models))
+const useCases = computed(() =>
+  (['all', ...USE_CASES] as const).filter((value) => counts.value[value] > 0)
 )
 const taskOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'task').map((option) => ({
@@ -101,7 +108,7 @@ const visible = computed(() =>
   sortWorkshopModels(
     filterWorkshopModels(models, {
       query: query.value,
-      modalities: modalities.value,
+      useCase: useCase.value,
       providers: providers.value,
       tasks: tasks.value
     }),
@@ -111,15 +118,24 @@ const visible = computed(() =>
 const isFiltered = computed(
   () =>
     query.value !== '' ||
-    modalities.value.length + tasks.value.length + providers.value.length > 0
+    useCase.value !== 'all' ||
+    tasks.value.length + providers.value.length > 0
 )
 
 function clearFilters() {
   query.value = ''
-  modalities.value = []
+  useCase.value = 'all'
   tasks.value = []
   providers.value = []
 }
+
+const chipClass = (current: boolean) =>
+  cn(
+    'focus-visible:ring-primary-comfy-yellow/50 inline-flex h-9 cursor-pointer items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
+    current
+      ? 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink'
+      : 'hover:bg-transparency-white-t4 border-transparency-white-t20 text-primary-comfy-canvas'
+  )
 
 const menuItemClass =
   'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t8'
@@ -127,6 +143,36 @@ const menuItemClass =
 
 <template>
   <section>
+    <div
+      class="mb-6 flex flex-wrap gap-2"
+      role="group"
+      :aria-label="t('workshop.useCase.label', locale)"
+      data-testid="workshop-use-cases"
+    >
+      <button
+        v-for="value in useCases"
+        :key="value"
+        type="button"
+        :aria-pressed="useCase === value"
+        :data-testid="`use-case-${value}`"
+        :class="chipClass(useCase === value)"
+        @click="useCase = value"
+      >
+        {{ t(useCaseLabelKey[value], locale) }}
+        <span
+          :class="
+            cn(
+              'text-xs tabular-nums',
+              useCase === value
+                ? 'text-primary-comfy-ink/70'
+                : 'text-primary-warm-gray'
+            )
+          "
+          >{{ counts[value] }}</span
+        >
+      </button>
+    </div>
+
     <div
       class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
     >
@@ -159,13 +205,6 @@ const menuItemClass =
       </div>
 
       <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
-        <WorkshopFacetMenu
-          v-model="modalities"
-          facet="modality"
-          :label="t('workshop.filter.modality', locale)"
-          :options="modalityOptions"
-          :locale
-        />
         <WorkshopFacetMenu
           v-model="tasks"
           facet="task"

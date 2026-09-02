@@ -42,7 +42,6 @@ const baseRoutes = {
   wan3: '/wan-3.0',
   brand: '/brand',
   workshop: '/workshop',
-  workshopWorkflows: '/workshop/workflows',
   workshopSignIn: '/workshop/sign-in'
 } as const
 
@@ -70,7 +69,7 @@ type Routes = typeof baseRoutes
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopWorkflows: prototype pages, English only for now.
+// workshop, workshopSignIn: prototype pages, English only for now.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -81,7 +80,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
-  'workshopWorkflows',
   'workshopSignIn'
 ])
 

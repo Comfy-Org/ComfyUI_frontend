@@ -12,15 +12,21 @@ async function useAccount(page: Page, kind: 'new' | 'existing') {
 }
 
 test.describe('Workshop catalog', () => {
-  test('lists partner models and filters by search and modality', async ({
+  test('lists partner models by use case and filters by search', async ({
     page
   }) => {
     await page.goto('/workshop/')
     const grid = page.getByTestId('workshop-models-grid')
-    await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
+    const cards = grid.getByTestId('workshop-model-card')
+    await expect(cards.first()).toBeVisible()
+    await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
+
+    await page.getByTestId('use-case-create-3d').click()
+    await expect(cards).toHaveCount(5)
+    await expect(cards.first()).toContainText('3D')
+    await page.getByTestId('use-case-all').click()
 
     await page.getByTestId('workshop-search').fill('kling')
-    const cards = grid.getByTestId('workshop-model-card')
     await expect(cards.first()).toContainText('Kling')
 
     await page.getByTestId('workshop-search').fill('no such model')
