@@ -45,6 +45,120 @@ describe('agent graph build playback', () => {
     vi.runAllTimers()
   })
 
+  it('selects a node from the library before dragging it to the canvas', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const present = vi.fn()
+    const pickup = { x: 48, y: 160 }
+    const target = { x: 620, y: 120 }
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow:library-pick',
+      label: 'KSampler',
+      source: { x: 400, y: 700 },
+      pickup,
+      target,
+      present,
+      toClient: (position) => position,
+      durationMs: 0,
+      gapMs: 0,
+      wait: async () => {}
+    })
+
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(present).toHaveBeenCalledWith(pickup)
+    expect(present).toHaveBeenCalledWith(target)
+    expect(present).toHaveBeenLastCalledWith(null)
+    vi.runAllTimers()
+  })
+
+  it('opens the real library result before starting the node drag', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const present = vi.fn()
+    const libraryButton = { x: 48, y: 160 }
+    const libraryResult = { x: 180, y: 260 }
+    const target = { x: 620, y: 120 }
+    const selectFromLibrary = vi.fn(
+      async (_signal: AbortSignal) => libraryResult
+    )
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow:real-library-pick',
+      label: 'KSampler',
+      source: { x: 400, y: 700 },
+      pickup: libraryButton,
+      selectFromLibrary,
+      target,
+      present,
+      toClient: (position) => position,
+      durationMs: 0,
+      gapMs: 0,
+      wait: async () => {}
+    })
+
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(selectFromLibrary).toHaveBeenCalledOnce()
+    expect(selectFromLibrary.mock.calls[0][0]).toBeInstanceOf(AbortSignal)
+    expect(present).toHaveBeenCalledWith(libraryResult)
+    expect(present).toHaveBeenCalledWith(target)
+    vi.runAllTimers()
+  })
+
+  it('draws a connection between output and input sockets', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const fallbackSource = { x: 200, y: 100 }
+    const fallbackTarget = { x: 480, y: 240 }
+    const source = { x: 240, y: 120 }
+    const target = { x: 520, y: 260 }
+    const resolveEndpoints = vi.fn(() => ({ source, target }))
+    let resolveFrame: ((time: number) => void) | undefined
+
+    stageAgentGraphNodeBuild({
+      key: 'workflow:link-1',
+      kind: 'connection',
+      label: 'Model → Sampler',
+      source: fallbackSource,
+      target: fallbackTarget,
+      resolveEndpoints,
+      present: vi.fn(),
+      toClient: (position) => position,
+      durationMs: 1_000,
+      gapMs: 0,
+      now: () => 0,
+      nextFrame: () =>
+        new Promise<number>((resolve) => {
+          resolveFrame = resolve
+        })
+    })
+
+    await vi.waitFor(() => expect(resolveFrame).toBeTypeOf('function'))
+    expect(resolveEndpoints).toHaveBeenCalledOnce()
+    expect(agentGraphBuildPlaybackState.value).toMatchObject({
+      phase: 'playing',
+      action: 'connecting',
+      cursorX: source.x,
+      cursorY: source.y,
+      activeConnection: {
+        startX: source.x,
+        startY: source.y,
+        endX: source.x,
+        endY: source.y
+      }
+    })
+
+    resolveFrame?.(1_000)
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    vi.runAllTimers()
+  })
+
   it('bypasses presentation animation for reduced-motion users', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
     const target = { x: 620, y: 120 }

@@ -21,7 +21,7 @@
           </div>
           <div class="border-b border-border-default bg-comfy-menu-bg py-2">
             <div class="flex items-center gap-2 px-4 py-2">
-              <div class="min-w-0 flex-1">
+              <div class="min-w-0 flex-1" data-testid="node-library-search">
                 <SearchInput
                   ref="searchBoxRef"
                   v-model="searchQuery"

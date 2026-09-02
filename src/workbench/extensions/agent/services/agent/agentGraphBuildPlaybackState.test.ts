@@ -23,9 +23,10 @@ describe('agent graph build playback state', () => {
     const state = transition([
       { type: 'staged' },
       { type: 'staged' },
-      { type: 'started', nodeLabel: 'Load Image' },
+      { type: 'started', nodeLabel: 'Load Image', action: 'selecting' },
       { type: 'cursorMoved', x: 120, y: 480 },
-      { type: 'started', nodeLabel: 'KSampler' },
+      { type: 'actionChanged', action: 'dragging' },
+      { type: 'started', nodeLabel: 'KSampler', action: 'selecting' },
       { type: 'paused' }
     ])
 
@@ -34,15 +35,18 @@ describe('agent graph build playback state', () => {
       current: 2,
       total: 2,
       nodeLabel: 'KSampler',
+      action: 'selecting',
       cursorX: 120,
-      cursorY: 480
+      cursorY: 480,
+      activeConnection: null,
+      completedConnections: []
     })
   })
 
   it('starts a newly staged batch after the previous batch completed', () => {
     const state = transition([
       { type: 'staged' },
-      { type: 'started', nodeLabel: 'Save Image' },
+      { type: 'started', nodeLabel: 'Save Image', action: 'dragging' },
       { type: 'completed' },
       { type: 'staged' }
     ])
@@ -53,11 +57,33 @@ describe('agent graph build playback state', () => {
   it('ignores transitions that are invalid for the current phase', () => {
     const state = transition([
       { type: 'paused' },
-      { type: 'started', nodeLabel: 'Unexpected' },
+      { type: 'started', nodeLabel: 'Unexpected', action: 'dragging' },
       { type: 'cursorMoved', x: 10, y: 20 },
       { type: 'completed' }
     ])
 
     expect(state).toBe(initialAgentGraphBuildPlaybackState)
+  })
+
+  it('tracks a hand-drawn connection from its source socket to its target', () => {
+    const state = transition([
+      { type: 'staged' },
+      {
+        type: 'started',
+        nodeLabel: 'Model → Sampler',
+        action: 'connecting'
+      },
+      { type: 'cursorMoved', x: 100, y: 120 },
+      { type: 'connectionStarted', x: 100, y: 120 },
+      { type: 'cursorMoved', x: 480, y: 260 },
+      { type: 'connectionCompleted' }
+    ])
+
+    expect(state).toMatchObject({
+      phase: 'playing',
+      action: 'connecting',
+      activeConnection: null,
+      completedConnections: [{ startX: 100, startY: 120, endX: 480, endY: 260 }]
+    })
   })
 })

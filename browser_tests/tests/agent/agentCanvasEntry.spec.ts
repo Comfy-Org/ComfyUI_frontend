@@ -239,8 +239,9 @@ test.describe('Agent canvas entry', { tag: ['@cloud', '@ui'] }, () => {
 
     await deliverGraphBuild(ws)
 
-    await expect(page.getByText(/Building \d of 3:/)).toBeVisible()
-    await expect(page.getByText(/Adding /)).toBeVisible()
+    await expect(page.getByText(/Choosing \d+ of \d+:/)).toBeVisible()
+    await expect(page.getByText(/Find and select /)).toBeVisible()
+    await expect(page.getByTestId('node-library-search')).toBeVisible()
     const firstNode = page.locator('.lg-node[data-node-id="101"]')
     await expect(firstNode).toHaveCSS('will-change', 'translate')
     await page
@@ -261,7 +262,10 @@ test.describe('Agent canvas entry', { tag: ['@cloud', '@ui'] }, () => {
     await expect(
       page.getByText('Preview result', { exact: true })
     ).toBeVisible()
-    await expect(page.getByText(/Building \d of 3:/)).toBeHidden()
+    await expect(page.getByText(/Connecting \d+ of \d+:/)).toBeVisible({
+      timeout: 12_000
+    })
+    await expect(page.getByText(/Choosing|Placing|Connecting/)).toBeHidden()
     await expect
       .poll(() =>
         firstNode.evaluate((node) => node.style.getPropertyValue('translate'))
@@ -298,7 +302,7 @@ test.describe('Agent canvas entry', { tag: ['@cloud', '@ui'] }, () => {
     await expect(
       page.getByText('Load references', { exact: true })
     ).toBeVisible()
-    await expect(page.getByText(/Building \d of 3:/)).toBeHidden()
+    await expect(page.getByText(/Choosing|Placing|Connecting/)).toBeHidden()
     await expect(page.locator('.lg-node[data-node-id="101"]')).not.toHaveCSS(
       'will-change',
       'translate'

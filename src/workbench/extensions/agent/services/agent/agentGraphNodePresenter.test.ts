@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 
 import {
   createAgentGraphNodePresenter,
@@ -99,18 +103,20 @@ describe('agent graph node presenter', () => {
     expect(node.style.visibility).toBe('collapse')
   })
 
-  it('temporarily hides final-position links without overwriting a newer style', () => {
-    const overlay = document.createElement('canvas')
-    overlay.style.visibility = 'collapse'
-    const restore = suspendAgentGraphConnections(overlay)
+  it('temporarily hides final-position links without overwriting a newer mode', () => {
+    const canvas = fromPartial<LGraphCanvas>({
+      links_render_mode: LinkRenderType.SPLINE_LINK,
+      setDirty: () => {}
+    })
+    const restore = suspendAgentGraphConnections(canvas)
 
-    expect(overlay.style.visibility).toBe('hidden')
+    expect(canvas.links_render_mode).toBe(LinkRenderType.HIDDEN_LINK)
     restore()
-    expect(overlay.style.visibility).toBe('collapse')
+    expect(canvas.links_render_mode).toBe(LinkRenderType.SPLINE_LINK)
 
-    const restoreAgain = suspendAgentGraphConnections(overlay)
-    overlay.style.visibility = 'visible'
+    const restoreAgain = suspendAgentGraphConnections(canvas)
+    canvas.links_render_mode = LinkRenderType.STRAIGHT_LINK
     restoreAgain()
-    expect(overlay.style.visibility).toBe('visible')
+    expect(canvas.links_render_mode).toBe(LinkRenderType.STRAIGHT_LINK)
   })
 })

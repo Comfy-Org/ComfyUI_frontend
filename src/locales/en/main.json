@@ -5117,8 +5117,14 @@
       "open": "Open the full Agent panel"
     },
     "graphBuild": {
-      "progress": "Building {current} of {total}: {node}",
-      "dragging": "Adding {node}",
+      "progress": {
+        "selecting": "Choosing {current} of {total}: {node}",
+        "dragging": "Placing {current} of {total}: {node}",
+        "connecting": "Connecting {current} of {total}: {node}"
+      },
+      "selecting": "Find and select {node}",
+      "dragging": "Drag {node} onto the canvas",
+      "connecting": "Connect {node}",
       "node": "workflow node",
       "pause": "Pause",
       "resume": "Resume",

@@ -1,4 +1,6 @@
 import type { AgentGraphBuildPoint } from './agentGraphBuildPlayback'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 
 export interface AgentGraphNodePresenter {
   prepare(): void
@@ -74,13 +76,15 @@ export function createAgentGraphNodePresenter(
 }
 
 export function suspendAgentGraphConnections(
-  overlay: HTMLElement | null
+  canvas: LGraphCanvas | null
 ): () => void {
-  if (!overlay) return () => {}
-  const previousVisibility = overlay.style.visibility
-  overlay.style.visibility = 'hidden'
+  if (!canvas) return () => {}
+  const previousMode = canvas.links_render_mode
+  canvas.links_render_mode = LinkRenderType.HIDDEN_LINK
+  canvas.setDirty(true, true)
   return () => {
-    if (overlay.style.visibility === 'hidden')
-      overlay.style.visibility = previousVisibility
+    if (canvas.links_render_mode === LinkRenderType.HIDDEN_LINK)
+      canvas.links_render_mode = previousMode
+    canvas.setDirty(true, true)
   }
 }

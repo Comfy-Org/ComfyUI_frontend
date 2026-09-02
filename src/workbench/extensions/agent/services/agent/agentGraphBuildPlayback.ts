@@ -14,8 +14,17 @@ export interface AgentGraphBuildPoint {
 interface AgentGraphBuildRequest {
   key: string
   label: string
+  kind?: 'node' | 'connection'
   source: AgentGraphBuildPoint
+  pickup?: AgentGraphBuildPoint
+  selectFromLibrary?: (
+    signal: AbortSignal
+  ) => Promise<AgentGraphBuildPoint | null>
   target: AgentGraphBuildPoint
+  resolveEndpoints?: () => {
+    source: AgentGraphBuildPoint
+    target: AgentGraphBuildPoint
+  } | null
   isPresentable?: () => boolean
   prepare?: () => void
   present(position: AgentGraphBuildPoint | null): void
@@ -30,6 +39,7 @@ interface AgentGraphBuildRequest {
 
 interface QueuedBuild extends AgentGraphBuildRequest {
   cancelled: boolean
+  abortController: AbortController
 }
 
 const state = shallowRef(initialAgentGraphBuildPlaybackState)
@@ -74,6 +84,11 @@ function present(item: QueuedBuild, position: AgentGraphBuildPoint): void {
   updateCursor(item, position)
 }
 
+function actionFor(item: QueuedBuild) {
+  if (item.kind === 'connection') return 'connecting' as const
+  return item.pickup ? ('selecting' as const) : ('dragging' as const)
+}
+
 function easeInOutCubic(progress: number): number {
   return progress < 0.5
     ? 4 * progress * progress * progress
@@ -112,13 +127,18 @@ function interruptActiveWait(): void {
   interruptWait = null
 }
 
-async function animate(item: QueuedBuild): Promise<void> {
-  const durationMs = Math.max(0, item.durationMs ?? 460)
+async function animateSegment(
+  item: QueuedBuild,
+  source: AgentGraphBuildPoint,
+  target: AgentGraphBuildPoint,
+  durationMs: number,
+  update: (position: AgentGraphBuildPoint) => void
+): Promise<void> {
   const now = item.now ?? (() => performance.now())
   const nextFrame = item.nextFrame ?? defaultNextFrame
-  present(item, item.source)
+  update(source)
   if (durationMs === 0 || item.cancelled) {
-    present(item, item.target)
+    update(target)
     return
   }
 
@@ -144,12 +164,78 @@ async function animate(item: QueuedBuild): Promise<void> {
     elapsed += Math.max(0, frameTime - previousFrameTime)
     previousFrameTime = frameTime
     const progress = easeInOutCubic(Math.min(1, elapsed / durationMs))
-    present(item, {
-      x: item.source.x + (item.target.x - item.source.x) * progress,
-      y: item.source.y + (item.target.y - item.source.y) * progress
+    update({
+      x: source.x + (target.x - source.x) * progress,
+      y: source.y + (target.y - source.y) * progress
     })
   }
-  present(item, item.target)
+  update(target)
+}
+
+async function animate(item: QueuedBuild): Promise<void> {
+  const durationMs = Math.max(0, item.durationMs ?? 520)
+
+  if (item.kind === 'connection') {
+    const endpoints = item.resolveEndpoints?.() ?? {
+      source: item.source,
+      target: item.target
+    }
+    dispatch({ type: 'actionChanged', action: 'connecting' })
+    updateCursor(item, endpoints.source)
+    const start = item.toClient(endpoints.source)
+    dispatch({ type: 'connectionStarted', x: start.x, y: start.y })
+    await animateSegment(
+      item,
+      endpoints.source,
+      endpoints.target,
+      durationMs,
+      (position) => updateCursor(item, position)
+    )
+    dispatch({ type: 'connectionCompleted' })
+    return
+  }
+
+  if (item.pickup) {
+    dispatch({ type: 'actionChanged', action: 'selecting' })
+    let pickup = item.pickup
+    await animateSegment(
+      item,
+      item.source,
+      pickup,
+      Math.min(360, durationMs),
+      (position) => updateCursor(item, position)
+    )
+    if (!skipRequested && !item.cancelled)
+      await waitForInterrupt((item.wait ?? defaultWait)(240))
+    if (!skipRequested && !item.cancelled && item.selectFromLibrary) {
+      const selected = await waitForInterrupt(
+        item.selectFromLibrary(item.abortController.signal)
+      )
+      if (selected !== interrupted && selected) {
+        await animateSegment(
+          item,
+          pickup,
+          selected,
+          Math.min(320, durationMs),
+          (position) => updateCursor(item, position)
+        )
+        pickup = selected
+        if (!skipRequested && !item.cancelled)
+          await waitForInterrupt((item.wait ?? defaultWait)(180))
+      }
+    }
+    if (skipRequested || item.cancelled) return
+    dispatch({ type: 'actionChanged', action: 'dragging' })
+    await animateSegment(item, pickup, item.target, durationMs, (position) =>
+      present(item, position)
+    )
+    return
+  }
+
+  dispatch({ type: 'actionChanged', action: 'dragging' })
+  await animateSegment(item, item.source, item.target, durationMs, (position) =>
+    present(item, position)
+  )
 }
 
 function finishPlayback(): void {
@@ -174,7 +260,11 @@ async function drainQueue(): Promise<void> {
       }
       active = item
       restoreConnections ??= item.suspendConnections?.()
-      dispatch({ type: 'started', nodeLabel: item.label })
+      dispatch({
+        type: 'started',
+        nodeLabel: item.label,
+        action: actionFor(item)
+      })
       try {
         await animate(item)
       } finally {
@@ -231,7 +321,11 @@ export function stageAgentGraphNodeBuild(
     clearTimeout(completionTimer)
     completionTimer = undefined
   }
-  queue.push({ ...request, cancelled: false })
+  queue.push({
+    ...request,
+    cancelled: false,
+    abortController: new AbortController()
+  })
   const item = queue.at(-1)
   if (item?.prepare)
     queueMicrotask(() => {
@@ -244,12 +338,14 @@ export function stageAgentGraphNodeBuild(
 export function cancelAgentGraphNodeBuild(key: string): void {
   if (active?.key === key) {
     active.cancelled = true
+    active.abortController.abort()
     interruptActiveWait()
     wake()
   }
   for (const item of queue) {
     if (item.key === key) {
       item.cancelled = true
+      item.abortController.abort()
       item.present(null)
     }
   }
@@ -269,6 +365,7 @@ export function resumeAgentGraphBuild(): void {
 export function skipAgentGraphBuild(): void {
   if (!draining && queue.length === 0) return
   skipRequested = true
+  active?.abortController.abort()
   dispatch({ type: 'resumed' })
   interruptActiveWait()
   wake()

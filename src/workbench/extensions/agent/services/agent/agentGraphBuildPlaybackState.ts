@@ -1,3 +1,12 @@
+interface AgentGraphBuildConnectionSegment {
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+}
+
+type AgentGraphBuildAction = 'selecting' | 'dragging' | 'connecting'
+
 export type AgentGraphBuildPlaybackState =
   | { phase: 'idle' }
   | { phase: 'queued'; total: number }
@@ -6,15 +15,25 @@ export type AgentGraphBuildPlaybackState =
       current: number
       total: number
       nodeLabel: string
+      action: AgentGraphBuildAction
       cursorX: number
       cursorY: number
+      activeConnection: AgentGraphBuildConnectionSegment | null
+      completedConnections: AgentGraphBuildConnectionSegment[]
     }
   | { phase: 'complete'; current: number; total: number }
 
 export type AgentGraphBuildPlaybackEvent =
   | { type: 'staged' }
-  | { type: 'started'; nodeLabel: string }
+  | {
+      type: 'started'
+      nodeLabel: string
+      action: AgentGraphBuildAction
+    }
+  | { type: 'actionChanged'; action: AgentGraphBuildAction }
   | { type: 'cursorMoved'; x: number; y: number }
+  | { type: 'connectionStarted'; x: number; y: number }
+  | { type: 'connectionCompleted' }
   | { type: 'paused' }
   | { type: 'resumed' }
   | { type: 'completed' }
@@ -39,18 +58,63 @@ export function reduceAgentGraphBuildPlayback(
           current: 1,
           total: state.total,
           nodeLabel: event.nodeLabel,
+          action: event.action,
           cursorX: 0,
-          cursorY: 0
+          cursorY: 0,
+          activeConnection: null,
+          completedConnections: []
         }
       if (state.phase !== 'playing') return state
       return {
         ...state,
         current: state.current + 1,
-        nodeLabel: event.nodeLabel
+        nodeLabel: event.nodeLabel,
+        action: event.action,
+        activeConnection: null
       }
+    case 'actionChanged':
+      if (state.phase !== 'playing' && state.phase !== 'paused') return state
+      return { ...state, action: event.action }
     case 'cursorMoved':
       if (state.phase !== 'playing' && state.phase !== 'paused') return state
-      return { ...state, cursorX: event.x, cursorY: event.y }
+      return {
+        ...state,
+        cursorX: event.x,
+        cursorY: event.y,
+        activeConnection:
+          state.activeConnection === null
+            ? null
+            : {
+                ...state.activeConnection,
+                endX: event.x,
+                endY: event.y
+              }
+      }
+    case 'connectionStarted':
+      if (state.phase !== 'playing' && state.phase !== 'paused') return state
+      return {
+        ...state,
+        activeConnection: {
+          startX: event.x,
+          startY: event.y,
+          endX: event.x,
+          endY: event.y
+        }
+      }
+    case 'connectionCompleted':
+      if (
+        (state.phase !== 'playing' && state.phase !== 'paused') ||
+        state.activeConnection === null
+      )
+        return state
+      return {
+        ...state,
+        completedConnections: [
+          ...state.completedConnections,
+          state.activeConnection
+        ],
+        activeConnection: null
+      }
     case 'paused':
       return state.phase === 'playing' ? { ...state, phase: 'paused' } : state
     case 'resumed':

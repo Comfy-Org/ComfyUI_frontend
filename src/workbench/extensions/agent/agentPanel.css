@@ -7,6 +7,19 @@
   }
 }
 
+[data-agent-teaching-selected='true'] {
+  position: relative;
+  z-index: 1;
+  border-radius: 0.5rem;
+  outline: 2px solid var(--color-brand-yellow, #e8ff00);
+  outline-offset: 2px;
+  background: color-mix(
+    in srgb,
+    var(--color-brand-yellow, #e8ff00) 12%,
+    transparent
+  );
+}
+
 @keyframes agent-collapsible-up {
   from {
     height: var(--reka-collapsible-content-height);
