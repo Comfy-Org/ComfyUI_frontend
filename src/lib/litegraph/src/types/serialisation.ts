@@ -2,7 +2,7 @@ import type { UUID } from '@/utils/uuid'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
-import type { NodeProperty } from '../LGraphNode'
+import type { NodeProperty } from '@/types/nodeState'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot } from '../Reroute'
@@ -45,6 +45,7 @@ interface BaseExportedGraph {
     /** The base definition of subgraphs used in this workflow. That is, what you see when you open / edit a subgraph. */
     subgraphs?: ExportedSubgraph[]
   }
+  extensions?: ExtensionPayload
 }
 
 interface SerialisableGraphState {
@@ -66,6 +67,8 @@ export interface SerialisableGraph extends BaseExportedGraph {
   reroutes?: SerialisableReroute[]
   extra?: LGraphExtra
 }
+
+type ExtensionPayload = Record<string, unknown>
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
@@ -108,6 +111,7 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  extensions?: ExtensionPayload
 }
 
 /** Properties of nodes that are used by subgraph instances. */

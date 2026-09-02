@@ -1,6 +1,8 @@
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
+import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { escapeI18nMessage } from '@/utils/formatUtil'
 
 import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
@@ -15,6 +17,41 @@ function render(message: string): string {
 }
 
 describe('serializeNodeDefLocales', () => {
+  it('preserves raw backend text across the collector boundary', () => {
+    const backendNodeDef: ComfyNodeDefV1 = {
+      name: 'SerializationProbe',
+      display_name: 'Live Display Name',
+      description: 'Live description',
+      category: 'testing',
+      python_module: 'nodes',
+      input: {
+        required: {
+          seed: ['INT', { tooltip: 'Live input tooltip' }]
+        }
+      },
+      output: ['IMAGE'],
+      output_name: ['image'],
+      output_tooltips: ['Live output tooltip'],
+      output_node: false
+    }
+
+    const crossedBoundary = structuredClone(
+      transformNodeDefV1ToV2(backendNodeDef)
+    )
+    const { nodeDefinitions } = serializeNodeDefLocales([crossedBoundary])
+
+    expect(nodeDefinitions.SerializationProbe).toEqual({
+      display_name: 'Live Display Name',
+      description: 'Live description',
+      inputs: {
+        seed: { name: 'seed', tooltip: 'Live input tooltip' }
+      },
+      outputs: {
+        0: { name: 'image', tooltip: 'Live output tooltip' }
+      }
+    })
+  })
+
   it('escapes compiled fields and preserves raw tooltips', () => {
     const syntax = '@ $ {value} | 50%{done}'
     const inputName = `Input ${syntax}`

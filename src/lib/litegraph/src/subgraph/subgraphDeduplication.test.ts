@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
 import type { LGraphState } from '../LGraph'
 import type {
@@ -175,6 +176,34 @@ describe('deduplicateSubgraphLinkIds', () => {
 })
 
 describe('normalizeSubgraphDefinitions', () => {
+  it('maps repeated legacy definition IDs and their references to one UUID', () => {
+    const first = makeSubgraph('legacy-id')
+    first.name = 'first'
+    const duplicate = makeSubgraph('legacy-id')
+    duplicate.name = 'duplicate'
+    const parent = makeSubgraph('parent', ['legacy-id'])
+    const rootNode = makeSubgraph('root', ['legacy-id']).nodes![0]
+
+    const result = normalizeSubgraphDefinitions(
+      [first, duplicate, parent],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      freshState(),
+      [rootNode]
+    )
+    const normalizedLegacyId = result.subgraphs[0].id
+
+    expect(result.subgraphs).toHaveLength(2)
+    expect(result.subgraphs[0].name).toBe('first')
+    expect(isUuidShapedSubgraphId(normalizedLegacyId)).toBe(true)
+    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedLegacyId)
+    expect(result.rootNodes![0].type).toBe(normalizedLegacyId)
+  })
+
   it('keeps the first same-owner link across regular and floating links', () => {
     const subgraph = makeSubgraph('sg')
     subgraph.links = [chainedLink(1)]

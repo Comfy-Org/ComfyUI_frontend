@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
@@ -32,8 +31,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -54,8 +55,7 @@ type ActiveRow = PromotedRow | PreviewRow
 
 const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const activeNode = computed(() => {
@@ -123,7 +123,8 @@ const activePromotedRows = computed<PromotedRow[]>({
 })
 
 function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
-  const hostLocator = String(node.id)
+  const hostLocator = getPreviewExposureHostLocator(node)
+  if (!hostLocator) return []
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
@@ -291,9 +292,11 @@ function demoteRow(row: ActiveRow) {
     demoteWidget(row.node, row.realWidget, [subgraphNode])
     return
   }
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return
   previewExposureStore.removeExposure(
     subgraphNode.rootGraph.id,
-    String(subgraphNode.id),
+    hostLocator,
     row.exposure.name
   )
   refreshActiveNodeRendering()

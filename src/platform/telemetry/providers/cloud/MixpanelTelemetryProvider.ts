@@ -3,12 +3,6 @@ import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
   AuthMetadata,
@@ -263,19 +257,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
-  }
-
-  // Credit top-up tracking methods (composition with utility functions)
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
   }
 
   trackRunButton(properties: RunButtonProperties): void {

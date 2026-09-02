@@ -58,6 +58,13 @@ system's pricing dependencies. Badge rows remain transient: they are
 not serialized, transmitted through CRDT, or included in undo history. See
 [Node Badge Store](../architecture/node-badge-store.md) for the design history.
 
+### Amendment (2026-08-23): registration and collision contract
+
+Entity registration collision and recovery policy is defined by
+[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+Node ID reminting policy is defined by
+[ADR 0018](0018-node-id-reminting-at-the-merge-boundary.md).
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.
@@ -115,11 +122,78 @@ type GraphId = string & { readonly __brand: 'GraphId' }
 ```
 
 > **Amended (PR 12617):** Widgets are keyed by a branded composite **string**,
-> `WidgetId = graphId:nodeId:name` (`src/types/widgetId.ts`), rather than a
-> synthetic numeric `WidgetEntityId`. The composite stays self-documenting and
-> survives renames at the store layer. The numeric per-kind brands above for
-> Node/Link/Reroute/Group remain aspirational and unshipped; treat them as
-> design intent. Slots have no independent ID yet.
+> `WidgetId = graphId:nodeId:name` (`src/types/widgetId.ts`). See
+> [Widget identity keys on `name`](#widget-identity-keys-on-name) for why the
+> tail segment is the widget's name rather than a minted id. The numeric
+> per-kind brands above for Node/Link/Reroute/Group remain aspirational and
+> unshipped; treat them as design intent. Slots have no independent ID yet.
+
+#### Widget identity keys on `name`
+
+`WidgetId` is **derived**, not minted: any holder of a graph id, a node id and a
+widget name can compute it without consulting a registry. Every other entity
+kind here is the opposite — a minted id whose value carries no information.
+"Just give widgets a synthetic id" is re-proposed often enough that the reason
+belongs here rather than in a thread.
+
+**The prior art was built, shipped, and deleted.** Two rounds:
+
+- PR 8856 (`proto-widget-v2`) introduced `PromotedWidgetView` — synthetic widget
+  _objects_ with identities held stable across re-derivation by a
+  `PromotedWidgetViewManager` cache.
+- PR 12617 deleted that manager, the view class, the `world/widgetValueIO`
+  indirection layer, and `IBaseWidget.entityId`, and declared `WidgetId` the
+  single canonical widget identity.
+
+Note that the deleted `WidgetEntityId` (`src/world/entityIds.ts`) was **not** a
+synthetic id. It was `Brand<string, 'WidgetEntityId'>` over the same
+`graphId:nodeId:name` composite — the same key under a different brand, removed
+as a duplicate. What PR 12617 actually retired was the synthetic _widget-object
+identity_ layer, not a competing id scheme. An earlier revision of this
+amendment described `WidgetEntityId` as "synthetic numeric", which made the
+alternative look untried; it was not.
+
+**Why the name segment:**
+
+- **A widget has no independent lifetime to hang an id on.** Widgets are
+  re-derived from the node definition on every load and every definition
+  refresh. A minted id would have to be persisted and then re-attached to the
+  right widget on each re-derivation, and the only stable thing to match on is
+  the name. That does not remove the dependency on `name`; it adds a lookup
+  table keyed by `name` on top of it.
+- **`name` is already the durable identity in the serialization format.**
+  Workflow JSON addresses widget values by position and name. A minted id needs
+  a migration and still has to fall back to `name` for every workflow authored
+  before it.
+- **`name` is not user-mutable.** `label` is display-only and is the only field
+  a rename changes — see the `// Do NOT change input.widget.name` guard in
+  `SubgraphNode`'s rename handler and both user-facing rename paths
+  (`src/services/litegraphService.ts`, `SubgraphNode.ts`).
+- **Addressability without a registry.** `widgetId(graphId, nodeId, name)` is
+  computable from data already in hand at every call site. A minted id requires
+  a lookup before anything can be addressed, which is the indirection layer
+  PR 12617 deleted.
+
+**Costs accepted:** renaming a widget in a node definition orphans its stored
+state; two widgets on one node cannot share a name; and because the key is
+derived, re-registering an existing `WidgetId` with a different `type` is a
+legitimate re-mint rather than an identity collision — which is why
+`widgetValueStore.registerWidget` overwrites where the minted-id stores reject.
+
+#### Future work
+
+The current slot/widget identity split remains the contract. A future proposal
+to unify those identities must demonstrate all four of the following before it
+can supersede this decision:
+
+1. Slot and widget lifecycle equivalence, including promotion and demotion.
+2. A migration story for persisted workflows.
+3. Compatibility with the collision contracts above: minted identity keys
+   reject collisions, while structural keys resolve them.
+4. A net reduction in implementation and maintenance complexity.
+
+This bar records the outcome of the
+[#15762 review discussion](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15762#discussion_r3848938262).
 
 ### Component Decomposition
 
@@ -327,7 +401,9 @@ only the Yjs-backed `layoutStore` uses serializable operations.
 - Additional indirection: reading a node's position requires a store lookup instead of `node.pos`
 - Learning curve for contributors unfamiliar with ECS patterns
 - Migration period where both OOP and ECS patterns coexist, increasing cognitive load
-- Widgets and Slots need synthetic IDs, adding ID management complexity
+- Slots need synthetic IDs, adding ID management complexity. Widgets no longer
+  do — see [Widget identity keys on `name`](#widget-identity-keys-on-name) —
+  but the derived key trades that away for renames orphaning stored state
 
 ### Render-Loop Performance Implications and Mitigations
 

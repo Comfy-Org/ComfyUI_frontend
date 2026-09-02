@@ -123,11 +123,11 @@ onUnmounted(() => {
       <!-- Close button -->
       <button
         :aria-label="t('gallery.detail.close', locale)"
-        class="border-primary-comfy-yellow bg-primary-comfy-ink hover:bg-primary-comfy-yellow group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 transition-colors lg:top-8 lg:right-26"
+        class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:top-8 lg:right-26"
         @click="emit('close')"
       >
         <span
-          class="bg-primary-comfy-yellow group-hover:bg-primary-comfy-ink size-5 transition-colors"
+          class="bg-primary-comfy-yellow size-5 transition-colors group-hover:bg-primary-comfy-ink"
           style="mask: url('/icons/close.svg') center / contain no-repeat"
         />
       </button>
@@ -136,7 +136,7 @@ onUnmounted(() => {
       <div class="relative hidden min-h-0 w-full flex-1 pt-12 lg:flex">
         <!-- Left: info card -->
         <div
-          class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-5xl relative z-10 flex w-80 shrink-0 flex-col justify-between self-start p-8"
+          class="bg-primary-comfy-yellow rounded-5xl relative z-10 flex w-80 shrink-0 flex-col justify-between self-start p-8 text-primary-comfy-ink"
         >
           <div
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
@@ -170,7 +170,7 @@ onUnmounted(() => {
 
         <!-- Right: large image -->
         <div
-          class="border-primary-comfy-yellow bg-primary-comfy-ink rounded-5xl flex max-h-full min-h-0 flex-1 items-center justify-center overflow-hidden border-2 p-4"
+          class="border-primary-comfy-yellow rounded-5xl flex max-h-full min-h-0 flex-1 items-center justify-center overflow-hidden border-2 bg-primary-comfy-ink p-4"
         >
           <component
             :is="activeItem.video ? 'video' : 'img'"
@@ -197,7 +197,7 @@ onUnmounted(() => {
       >
         <!-- Image -->
         <div
-          class="border-primary-comfy-yellow bg-primary-comfy-ink flex w-full flex-1 items-center overflow-hidden rounded-4xl border-2 p-3"
+          class="border-primary-comfy-yellow flex w-full flex-1 items-center overflow-hidden rounded-4xl border-2 bg-primary-comfy-ink p-3"
         >
           <component
             :is="activeItem.video ? 'video' : 'img'"
@@ -223,7 +223,7 @@ onUnmounted(() => {
 
         <!-- Info card -->
         <div
-          class="bg-primary-comfy-yellow text-primary-comfy-ink w-full rounded-4xl p-6"
+          class="bg-primary-comfy-yellow w-full rounded-4xl p-6 text-primary-comfy-ink"
         >
           <div
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
@@ -278,6 +278,8 @@ onUnmounted(() => {
               v-else
               :src="item.image"
               :alt="item.title"
+              loading="lazy"
+              decoding="async"
               class="size-full object-cover"
             />
           </button>

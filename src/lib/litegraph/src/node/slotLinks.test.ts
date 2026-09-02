@@ -271,7 +271,13 @@ describe('slotLinks', () => {
 
     expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
-    ).toEqual([])
+    ).toEqual({
+      ok: false,
+      error: {
+        code: 'unowned-topology',
+        message: `Link ${stale.id} does not own its current placement`
+      }
+    })
     expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
       code: 'unowned-topology',
       message: `Link ${stale.id} does not own its current placement`

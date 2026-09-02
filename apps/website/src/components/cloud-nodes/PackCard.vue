@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pack } from '../../data/cloudNodes'
+import type { GridPack } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
@@ -8,13 +8,13 @@ import PackBanner from './PackBanner.vue'
 
 const { locale = 'en', pack } = defineProps<{
   locale?: Locale
-  pack: Pack
+  pack: GridPack
 }>()
 
 const detailHref =
   locale === 'zh-CN'
-    ? `/zh-CN/cloud/supported-nodes/${pack.id}`
-    : `/cloud/supported-nodes/${pack.id}`
+    ? `/zh-CN/cloud/supported-nodes/${pack.id}/`
+    : `/cloud/supported-nodes/${pack.id}/`
 
 function nodeCountLabel(nodeCount: number): string {
   const key =
@@ -27,7 +27,7 @@ function nodeCountLabel(nodeCount: number): string {
 
 <template>
   <article
-    class="bg-transparency-white-t5 border-primary-warm-gray/20 flex h-full flex-col overflow-hidden rounded-3xl border"
+    class="bg-transparency-white-t5 flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20"
     data-testid="cloud-node-pack-card"
   >
     <PackBanner
@@ -38,7 +38,7 @@ function nodeCountLabel(nodeCount: number): string {
 
     <div class="flex flex-1 flex-col gap-5 p-5 md:p-6">
       <div class="flex flex-col gap-2">
-        <h3 class="text-primary-comfy-canvas text-2xl/tight font-semibold">
+        <h3 class="text-2xl/tight font-semibold text-primary-comfy-canvas">
           <a
             :href="detailHref"
             class="hover:text-primary-comfy-yellow"
@@ -47,7 +47,7 @@ function nodeCountLabel(nodeCount: number): string {
             {{ pack.displayName }}
           </a>
         </h3>
-        <p class="text-primary-warm-gray text-sm/relaxed">
+        <p class="text-sm/relaxed text-primary-warm-gray">
           {{
             pack.description ||
             t('cloudNodes.card.unavailableDescription', locale)

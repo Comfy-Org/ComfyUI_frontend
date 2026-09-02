@@ -742,7 +742,7 @@ describe('PartnerNodeAccessPanel', () => {
     await options.footerProps.onConfirm()
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://www.comfy.org/enterprise',
+      'https://comfy.org/cloud/enterprise/',
       '_blank'
     )
     expect(mockCloseDialog).toHaveBeenCalled()

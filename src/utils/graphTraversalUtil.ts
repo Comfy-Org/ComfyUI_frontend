@@ -356,6 +356,44 @@ export function findSubgraphPathById(
 }
 
 /**
+ * Iteratively finds the path of subgraph NODE ids (not subgraph UUIDs) to a
+ * target subgraph - the address form node-scoped consumers need (e.g. the
+ * agent write leg's interior `set_widget`, whose wire `path` is a resolved
+ * node-id chain).
+ * @param rootGraph The graph to start searching from.
+ * @param targetUuid The UUID of the subgraph to find.
+ * @returns Subgraph-node ids from the root down to the node whose definition
+ * is the target, or `null` if not found.
+ */
+export function findSubgraphNodePathById(
+  rootGraph: LGraph,
+  targetUuid: string
+): string[] | null {
+  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
+    { graph: rootGraph, path: [] }
+  ]
+
+  while (stack.length > 0) {
+    const { graph, path } = stack.pop()!
+    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
+      continue
+    }
+
+    for (const node of graph._nodes) {
+      if (node.isSubgraphNode?.() && node.subgraph) {
+        const newPath = [...path, String(node.id)]
+        if (node.subgraph.id === targetUuid) {
+          return newPath
+        }
+        stack.push({ graph: node.subgraph, path: newPath })
+      }
+    }
+  }
+
+  return null
+}
+
+/**
  * Gets the root parent node associated with a hierarchical execution ID.
  * Both Group Nodes and Subgraph Nodes use hierarchical IDs (e.g. "rootId:childId:...").
  * The root parent is always located in the rootGraph.
@@ -585,10 +623,11 @@ export function executionIdFromState(
 
 /**
  * Get a node by its locator ID from anywhere in the graph hierarchy.
- * Locator IDs use UUID format like "uuid:nodeId" for subgraph nodes.
+ * For subgraph nodes, the format is `<subgraph-definition-uuid>:<node-id>` where
+ * the node ID is a sequential integer, not a UUID.
  *
  * @param rootGraph - The root graph to search from
- * @param locatorId - The locator ID (e.g., "uuid:123" or "123")
+ * @param locatorId - The locator ID (e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890:123" or "123")
  * @returns The node if found, null otherwise
  */
 export function getNodeByLocatorId(

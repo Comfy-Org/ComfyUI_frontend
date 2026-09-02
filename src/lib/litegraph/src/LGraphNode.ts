@@ -10,18 +10,28 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
-  moveNodeLayout,
-  resizeNodeLayout
+  nodeGeometryBuffer,
+  nodePositionBuffer,
+  nodePositionView,
+  nodeSizeBuffer,
+  nodeSizeView,
+  refreshNodeGeometry,
+  setNodePosition,
+  setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeProperty, NodeState } from '@/types/nodeState'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
+import { zeroUuid } from '@/utils/uuid'
 import {
   commonType,
   isNodeBindable,
@@ -51,12 +61,21 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
+import {
+  createInputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
+import {
+  extensionConfigureView,
+  hydrateExtensionPayload,
+  NODE_CANONICAL_FIELDS,
+  runExtensionSerializeHook
+} from './extensionPersistence'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
-import { createMutationView } from './infrastructure/createMutationView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -131,9 +150,7 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeProperty = string | number | boolean | object | null
-
-const storedRectScratch = new Float64Array(4)
+export type { NodeProperty } from '@/types/nodeState'
 
 interface INodePropertyInfo {
   name?: string
@@ -148,6 +165,22 @@ interface IMouseOverData {
   inputId?: number
   outputId?: number
   overWidget?: IBaseWidget
+}
+
+function serialiseWidgetValues(widgets: IBaseWidget[]) {
+  const positional: TWidgetValue[] = []
+  const named: Record<string, TWidgetValue> = {}
+  for (const widget of widgets) {
+    if (widget.serialize === false) continue
+    const value = widget.value
+    const serialisedValue =
+      value != null && typeof value === 'object'
+        ? JSON.parse(JSON.stringify(value))
+        : (value ?? null)
+    positional.push(serialisedValue)
+    named[widget.name] = serialisedValue
+  }
+  return { widgets_values: positional, widgets_values_named: named }
 }
 
 interface ConnectByTypeOptions {
@@ -266,6 +299,8 @@ const NAMED_SHAPES = {
  * @param type a type for the node
  */
 
+const wireExecutionOrders = new WeakMap<LGraphNode, number>()
+
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
@@ -350,28 +385,39 @@ export class LGraphNode
 
   /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
   get inputs(): INodeInputSlot[] {
-    return this._state.inputs
+    return this._inputs
   }
 
   set inputs(value: INodeInputSlot[] | null | undefined) {
-    const { inputs } = this._state
-    inputs.splice(0, inputs.length, ...(value ?? []))
+    this._inputs.splice(0, this._inputs.length, ...(value ?? []))
   }
 
   /** @see {@link inputs} */
   get outputs(): INodeOutputSlot[] {
-    return this._state.outputs
+    return this._outputs
   }
 
   set outputs(value: INodeOutputSlot[] | null | undefined) {
-    const { outputs } = this._state
-    outputs.splice(0, outputs.length, ...(value ?? []))
+    this._outputs.splice(0, this._outputs.length, ...(value ?? []))
   }
+
+  private readonly _inputs: INodeInputSlot[]
+  private readonly _outputs: INodeOutputSlot[]
 
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
 
-  properties: Dictionary<NodeProperty | undefined> = {}
+  get properties(): Dictionary<NodeProperty | undefined> {
+    return this._state.properties
+  }
+
+  set properties(value: Dictionary<NodeProperty | undefined>) {
+    if (value === this._state.properties) return
+    for (const key of Object.keys(this._state.properties))
+      delete this._state.properties[key]
+    Object.assign(this._state.properties, value)
+  }
+
   properties_info: INodePropertyInfo[] = []
 
   get flags(): INodeFlags {
@@ -399,7 +445,21 @@ export class LGraphNode
   locked?: boolean
 
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
-  order: number = 0
+  get order(): number {
+    return this.graph
+      ? (useExecutionOrderStore().get(graphScopeOf(this.graph), this.id) ??
+          wireExecutionOrders.get(this) ??
+          0)
+      : (wireExecutionOrders.get(this) ?? 0)
+  }
+
+  set order(value: number) {
+    if (this.graph) {
+      useExecutionOrderStore().set(graphScopeOf(this.graph), this.id, value)
+    } else {
+      wireExecutionOrders.set(this, value)
+    }
+  }
   get mode(): LGraphEventMode {
     return this._state.mode
   }
@@ -407,7 +467,13 @@ export class LGraphNode
   set mode(value: LGraphEventMode) {
     setTrackedNodeState(this, 'mode', value)
   }
-  last_serialization?: ISerialisedNode
+  get last_serialization(): ISerialisedNode | undefined {
+    return this._state.lastSerialization
+  }
+
+  set last_serialization(value: ISerialisedNode | undefined) {
+    this._state.lastSerialization = value
+  }
   serialize_widgets?: boolean
   /**
    * The overridden fg color used to render the node.
@@ -435,7 +501,13 @@ export class LGraphNode
    * The overridden box color used to render the node.
    * @see {@link renderingBoxColor}
    */
-  boxcolor?: string
+  get boxcolor(): string | undefined {
+    return this._state.boxcolor
+  }
+
+  set boxcolor(value: string | undefined) {
+    setTrackedNodeState(this, 'boxcolor', value)
+  }
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
@@ -623,69 +695,27 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  _posSize = new Rectangle()
-  _pos: Point = this._posSize.pos
-  _size: Size = this._posSize.size
-  private readonly _renderedSize: Size = [0, 0]
-  private readonly posView = createMutationView(this._pos, {
-    commit: () => this._positionUpdated(),
-    synchronize: () => this.refreshGeometry()
-  })
-  private readonly sizeView = createMutationView(this._size, {
-    commit: () => this._sizeUpdated(),
-    synchronize: () => this.refreshGeometry()
-  })
-
-  _geometryVersion = -1
-
-  _layoutRegistered = false
-
-  private refreshGeometry(): void {
-    const rootGraphId = this.graph?.rootGraph.id
-    if (this._layoutRegistered && rootGraphId) {
-      const { geometryVersion } = layoutStore
-      if (geometryVersion !== this._geometryVersion) {
-        this._geometryVersion = geometryVersion
-        layoutStore.readNodeRect(rootGraphId, this.id, this._posSize)
-      }
-    }
-
-    const contentSize = rootGraphId
-      ? layoutStore.contentSizeOf(rootGraphId, this.id)
-      : undefined
-    this._renderedSize[0] = Math.max(this._size[0], contentSize?.width ?? 0)
-    this._renderedSize[1] = Math.max(this._size[1], contentSize?.height ?? 0)
+  get _posSize(): Rectangle {
+    return nodeGeometryBuffer(this)
   }
 
-  public get pos() {
-    return this.posView
+  get _pos(): Point {
+    return nodePositionBuffer(this)
+  }
+
+  get _size(): Size {
+    return nodeSizeBuffer(this)
+  }
+
+  public get pos(): Point {
+    return nodePositionView(this)
   }
 
   /** Node position does not necessarily correlate to the top-left corner. */
   public set pos(value) {
     if (!value || value.length < 2) return
 
-    this._pos[0] = value[0]
-    this._pos[1] = value[1]
-    this._positionUpdated()
-  }
-
-  private _positionUpdated(): void {
-    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
-
-    const rootGraphId = this.graph.rootGraph.id
-    const position = { x: this._pos[0], y: this._pos[1] }
-    if (
-      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
-      storedRectScratch[0] === position.x &&
-      storedRectScratch[1] === position.y
-    ) {
-      return
-    }
-
-    moveNodeLayout(this, position)
-    this._geometryVersion = -1
-    this.refreshGeometry()
+    setNodePosition(this, value)
   }
 
   /**
@@ -696,44 +726,21 @@ export class LGraphNode
   }
 
   public get size(): Size {
-    return this.sizeView
+    return nodeSizeView(this)
   }
 
   public set size(value) {
     if (!value || value.length < 2) return
 
-    this._size[0] = value[0]
-    this._size[1] = value[1]
-    this._sizeUpdated()
-  }
-
-  /** Mirror the current {@link _size} into the layout store for Vue nodes. */
-  private _sizeUpdated(): void {
-    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
-
-    const rootGraphId = this.graph.rootGraph.id
-    if (
-      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
-      storedRectScratch[2] === this._size[0] &&
-      storedRectScratch[3] === this._size[1]
-    ) {
-      return
-    }
-
-    resizeNodeLayout(this, {
-      width: this._size[0],
-      height: this._size[1]
-    })
-    this._geometryVersion = -1
-    this.refreshGeometry()
+    setNodeSize(this, value)
   }
 
   /**
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    this.refreshGeometry()
-    if (!this.flags.collapsed) return this._renderedSize
+    const renderedSize = refreshNodeGeometry(this)
+    if (!this.flags.collapsed) return renderedSize
 
     const contentSize = this.graph
       ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
@@ -1003,7 +1010,16 @@ export class LGraphNode
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
     this._state = createNodeShellState(title, type, this.title_mode)
-    for (const property of ['inputs', 'outputs'] as const) {
+    this._inputs = createInputSlotView(this, this._state.inputs)
+    this._outputs = this._state.outputs
+    for (const property of [
+      'inputs',
+      'outputs',
+      'properties',
+      'order',
+      'boxcolor',
+      'last_serialization'
+    ] as const) {
       Object.defineProperty(this, property, {
         ...Object.getOwnPropertyDescriptor(LGraphNode.prototype, property),
         enumerable: true
@@ -1024,10 +1040,12 @@ export class LGraphNode
    * configure a node from an object containing the serialized info
    */
   configure(info: ISerialisedNode): void {
+    hydrateExtensionPayload(this, info, NODE_CANONICAL_FIELDS)
     if (this.graph) {
       this.graph.incrementVersion()
     }
     for (const j in info) {
+      if (!NODE_CANONICAL_FIELDS.has(j)) continue
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
@@ -1103,35 +1121,70 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
-    if (this.widgets) {
-      for (const w of this.widgets) {
-        if (!w) continue
+    const positionalValues = Array.from(info.widgets_values ?? [])
+    const getNamedValues = () => {
+      if (info.widgets_values_named) return info.widgets_values_named
 
-        const input = this.inputs.find((i) => i.widget?.name === w.name)
-        if (input?.label) w.label = input.label
+      const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
+      if (!info.widgets_values || !map) return
 
-        if (
-          w.options?.property &&
-          this.properties[w.options.property] != undefined
-        )
-          w.value = JSON.parse(
-            JSON.stringify(this.properties[w.options.property])
+      return Object.fromEntries(
+        positionalValues.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
+      )
+    }
+    const namedValues = getNamedValues()
+    const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    const shouldRestoreNamed =
+      LiteGraph.namedValuesRestore ||
+      this.constructor.nodeData?.fallbackWidgetsValuesNames
+    try {
+      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
+        positional: positionalValues,
+        named: namedValues ? { ...namedValues } : undefined,
+        restoreNamed: Boolean(namedValues && shouldRestoreNamed)
+      })
+
+      if (this.widgets) {
+        for (const w of this.widgets) {
+          if (!w) continue
+
+          const input = this.inputs.find((i) => i.widget?.name === w.name)
+          if (input?.label) w.label = input.label
+
+          if (
+            w.options?.property &&
+            this.properties[w.options.property] != undefined
           )
+            w.value = JSON.parse(
+              JSON.stringify(this.properties[w.options.property])
+            )
+        }
+
+        let positionalIndex = 0
+        for (const widget of this.widgets) {
+          if (widget.serialize === false) continue
+          const restored = useWidgetValueStore().getRestoredWidgetValue(
+            graphId,
+            this.id,
+            widget.name,
+            positionalIndex++
+          )
+          if (restored) widget.value = restored.value
+        }
       }
+      // Sync the state of this.resizable.
+      if (this.pinned) this.resizable = false
 
-      const getNamedValues = () => {
-        if (info.widgets_values_named) return info.widgets_values_named
-
-        const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
-        if (!info.widgets_values || !map) return
-
-        return Object.fromEntries(
-          info.widgets_values.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
+      if (this.widgets_up) {
+        console.warn(
+          `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+            'This property is unsupported and will be removed. ' +
+            'Use "widgets_start_y" or a custom arrange() override instead.'
         )
       }
 
-      const namedValues = getNamedValues()
-      if (namedValues) {
+      this.onConfigure?.(extensionConfigureView(this, info))
+      if (this.widgets && namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(
           this.widgets,
           info.widgets_values
@@ -1142,101 +1195,81 @@ export class LGraphNode
           Boolean(info.widgets_values_named)
         )
       }
-
-      if (namedValues && LiteGraph.namedValuesRestore) {
-        for (const widget of this.widgets) {
-          if (widget.serialize === false || !(widget.name in namedValues))
-            continue
-
-          widget.value = namedValues[widget.name]
-        }
-      } else if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
-        }
-      }
+    } finally {
+      useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
-
-    // Sync the state of this.resizable.
-    if (this.pinned) this.resizable = false
-
-    if (this.widgets_up) {
-      console.warn(
-        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
-          'This property is unsupported and will be removed. ' +
-          'Use "widgets_start_y" or a custom arrange() override instead.'
-      )
-    }
-
-    this.onConfigure?.(info)
   }
 
   /**
    * serialize the content
    */
   serialize(): ISerialisedNode {
+    return this.serializeFromStoreState(this._state)
+  }
+
+  serializeFromStoreState(state: NodeState): ISerialisedNode {
     // create serialization object
     const o: ISerialisedNode = {
-      id: serializeNodeId(this.id),
-      type: this.type,
+      id: serializeNodeId(state.id),
+      type: state.type,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
-      flags: LiteGraph.cloneObject(this.flags),
+      flags: LiteGraph.cloneObject(state.flags),
       order: this.order,
-      mode: this.mode,
-      showAdvanced: this.showAdvanced
+      mode: state.mode,
+      showAdvanced: state.showAdvanced
     }
 
     // special case for when there were errors
-    if (this.constructor === LGraphNode && this.last_serialization)
-      return { ...this.last_serialization, mode: o.mode, pos: o.pos }
+    if (this.constructor === LGraphNode && state.lastSerialization)
+      return {
+        ...LiteGraph.cloneObject(state.lastSerialization),
+        mode: o.mode,
+        pos: o.pos
+      }
 
-    if (this.inputs)
-      o.inputs = this.inputs.map((input, i) =>
+    if (state.inputs)
+      o.inputs = state.inputs.map((input, i) =>
         inputAsSerialisable(input, this, i)
       )
-    if (this.outputs)
-      o.outputs = this.outputs.map((output, i) =>
+    if (state.outputs)
+      o.outputs = state.outputs.map((output, i) =>
         outputAsSerialisable(output, this, i)
       )
 
-    if (this.title && this.title != this.constructor.title) o.title = this.title
+    if (state.title && state.title != this.constructor.title)
+      o.title = state.title
 
-    if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
+    if (state.properties) o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
-    if (widgets?.length && this.serialize_widgets) {
-      o.widgets_values = []
-      o.widgets_values_named = {}
-      for (const [i, widget] of widgets.entries()) {
-        if (widget.serialize === false) continue
-        const val = widget.value
-        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        const serialisedVal =
-          val != null && typeof val === 'object'
-            ? JSON.parse(JSON.stringify(val))
-            : (val ?? null)
-        o.widgets_values[i] = serialisedVal
-        o.widgets_values_named[widget.name] = serialisedVal
-      }
-    }
+    if (widgets?.length && this.serialize_widgets)
+      Object.assign(o, serialiseWidgetValues(widgets))
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
-    if (this.color) o.color = this.color
-    if (this.bgcolor) o.bgcolor = this.bgcolor
-    if (this.boxcolor) o.boxcolor = this.boxcolor
-    if (this.shape) o.shape = this.shape
+    if (state.color) o.color = state.color
+    if (state.bgcolor) o.bgcolor = state.bgcolor
+    if (state.boxcolor) o.boxcolor = state.boxcolor
+    if (state.shape) o.shape = state.shape
 
-    if (this.onSerialize?.(o))
+    let hookResult: unknown
+    const serialised = runExtensionSerializeHook(
+      this,
+      o,
+      NODE_CANONICAL_FIELDS,
+      this.onSerialize
+        ? (data) => {
+            hookResult = this.onSerialize?.(data)
+          }
+        : undefined
+    )
+    if (hookResult)
       console.warn(
         "node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter"
       )
 
-    return o
+    return serialised
   }
 
   clone(): LGraphNode | null {
@@ -1853,14 +1886,15 @@ export class LGraphNode
 
     this.outputs ||= []
     this.outputs.push(output)
-    this.onOutputAdded?.(output)
+    const added = this.outputs.at(-1) as NodeOutputSlot & TProperties
+    this.onOutputAdded?.(added)
 
     if (LiteGraph.auto_load_slot_types)
       LiteGraph.registerNodeAndSlotType(this, type, true)
 
     this.expandToFitContent()
     this.setDirtyCanvas(true, true)
-    return output
+    return added
   }
 
   /**
@@ -1919,13 +1953,14 @@ export class LGraphNode
 
     this.inputs ||= []
     this.inputs.push(input)
+    const added = this.inputs.at(-1) as NodeInputSlot & TProperties
     this.expandToFitContent()
 
-    this.onInputAdded?.(input)
+    this.onInputAdded?.(added)
     LiteGraph.registerNodeAndSlotType(this, type)
 
     this.setDirtyCanvas(true, true)
-    return input
+    return added
   }
 
   /**
@@ -1938,14 +1973,14 @@ export class LGraphNode
 
     if (graph) {
       const previous = captureInputLayout(this)
-      replaceNodeInputs(
+      const result = replaceNodeInputs(
         this,
         previous,
         previous.inputs.toSpliced(slot, 1),
         previous.links,
         true
       )
-      if (this.inputs.includes(slotInfo)) return
+      if (!result.ok) return
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&
@@ -2221,7 +2256,7 @@ export class LGraphNode
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
-    const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
+    const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
 
     // Only register with store if node has a valid ID (is already in a graph).
@@ -2230,6 +2265,19 @@ export class LGraphNode
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
+
+    if (widget.serialize === false) return widget
+
+    const positionalIndex =
+      this.widgets.filter((candidate) => candidate.serialize !== false).length -
+      1
+    const restored = useWidgetValueStore().getRestoredWidgetValue(
+      this.graph?.rootGraph.id ?? zeroUuid,
+      this.id,
+      widget.name,
+      positionalIndex
+    )
+    if (restored) widget.value = restored.value
 
     return widget
   }
@@ -2250,11 +2298,17 @@ export class LGraphNode
   }
 
   removeWidget(widget: IBaseWidget): void {
-    if (!this.widgets)
-      throw new Error('removeWidget called on node without widgets')
+    if (!this.widgets) {
+      console.error('removeWidget called on node without widgets')
+      return
+    }
 
     const widgetIndex = this.widgets.indexOf(widget)
-    if (widgetIndex === -1) throw new Error('Widget not found on this node')
+    if (widgetIndex === -1) {
+      console.error('Widget not found on this node')
+      return
+    }
+    const id = widget.widgetId
 
     // Clean up slot references to prevent memory leaks
     if (this.inputs) {
@@ -2268,6 +2322,7 @@ export class LGraphNode
     }
 
     widget.onRemove?.()
+    if (id) useWidgetValueStore().deleteWidget(id)
     this.widgets.splice(widgetIndex, 1)
   }
 
@@ -2282,7 +2337,7 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
-    this.refreshGeometry()
+    refreshNodeGeometry(this)
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
@@ -3233,7 +3288,10 @@ export class LGraphNode
     // Assertion: It's either there or it isn't.
     const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
     const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
-    if (inputIndex === -1 && outputIndex === -1) throw new Error('Invalid slot')
+    if (inputIndex === -1 && outputIndex === -1) {
+      console.error('Invalid slot')
+      return
+    }
 
     const slotType = outputIndex === -1 ? 'input' : 'output'
 
@@ -3302,7 +3360,8 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return false
 
-    if (this.graph) {
+    let removedFloating = false
+    if (!target_node && this.graph) {
       for (const link of slotFloatingLinks(
         this.graph,
         'output',
@@ -3310,21 +3369,27 @@ export class LGraphNode
         slot
       )) {
         this.graph.removeFloatingLink(link)
+        removedFloating = true
       }
     }
 
     const graph = this.graph
     if (!graph) return false
-    if (!outputHasLinks(graph, this.id, slot)) return false
+    if (!outputHasLinks(graph, this.id, slot) && !removedFloating) return false
 
     const onlyTarget =
       typeof target_node === 'number'
         ? graph.getNodeById(target_node)
         : target_node
     if (target_node && !onlyTarget) throw 'Target Node not found'
-
+    let disconnected = false
     for (const link_info of outputLinks(graph, this.id, slot)) {
       if (onlyTarget && link_info.target_id != onlyTarget.id) continue
+
+      if (!disconnected && output instanceof NodeOutputSlot) {
+        output._setLegacyLinksPresent(Boolean(onlyTarget))
+      }
+      disconnected = true
 
       if (
         link_info.target_id === SUBGRAPH_OUTPUT_ID &&
@@ -3363,6 +3428,8 @@ export class LGraphNode
 
       if (onlyTarget) break
     }
+
+    if (!disconnected && !removedFloating) return false
 
     this.setDirtyCanvas(false, true)
     return true
@@ -3408,7 +3475,11 @@ export class LGraphNode
     // Break floating links, except the one whose reroute chain is being
     // reconnected (its reroute would be pruned before the new link is added).
     for (const link of slotFloatingLinks(graph, 'input', this.id, slot)) {
-      if (link.parentId === keepFloatingReroute) continue
+      if (
+        keepFloatingReroute !== undefined &&
+        link.parentId === keepFloatingReroute
+      )
+        continue
       graph.removeFloatingLink(link)
     }
 
@@ -3576,7 +3647,10 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    return calculateInputSlotPosFromSlot(this._getSlotPositionContext(), input)
+    return calculateInputSlotPosFromSlot(
+      this._getSlotPositionContext(),
+      resolveInputSlotView(this.inputs, input)
+    )
   }
 
   /**
@@ -3604,7 +3678,7 @@ export class LGraphNode
   snapToGrid(snapTo: number): boolean {
     if (this.pinned || !snapTo) return false
 
-    this.refreshGeometry()
+    refreshNodeGeometry(this)
     const snapped: Point = [this._pos[0], this._pos[1]]
     snapPoint(snapped, snapTo)
     if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
@@ -4369,37 +4443,32 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      const pos: [number, number] = [offset, widget.y + offset]
-      slot.pos = pos
-      this.inputs[i].pos = pos
+      const x = offset
+      const y = widget.y + offset
+      if (slot.pos?.[0] !== x || slot.pos[1] !== y) slot.pos = [x, y]
       this._measureSlot(slot, i, true)
     }
   }
 
   /**
-   * @internal Sets the internal concrete slot arrays, ensuring they are instances of
-   * {@link NodeInputSlot} or {@link NodeOutputSlot}.
-   *
-   * Upgraded slots are written back into {@link inputs} / {@link outputs}:
-   * the concrete instances resolve their own slot index by identity, so a
-   * wrapper that is not the array entry would always read as disconnected.
-   *
-   * A temporary workaround until duck-typed inputs and outputs
-   * have been removed from the ecosystem.
+   * @internal Projects input and output descriptors into concrete slot
+   * instances, upgrading duck-typed entries in {@link inputs}/{@link outputs}
+   * in place so identity-based lookups (e.g. `indexOf(slot)`) keep working.
+   * Already-concrete entries are left untouched, so per-frame calls do not
+   * invalidate slot-array subscribers.
    */
   _setConcreteSlots(): void {
-    this._concreteInputs = this.inputs.map((slot) =>
-      toClass(NodeInputSlot, slot, this)
-    )
-    this._concreteOutputs = this.outputs.map((slot) =>
-      toClass(NodeOutputSlot, slot, this)
-    )
-    for (const [i, slot] of this._concreteInputs.entries()) {
-      this.inputs[i] = slot
-    }
-    for (const [i, slot] of this._concreteOutputs.entries()) {
-      this.outputs[i] = slot
-    }
+    const { inputs, outputs } = this
+    this._concreteInputs = inputs.map((slot, i) => {
+      const concrete = toClass(NodeInputSlot, slot, this)
+      if (concrete !== slot) inputs[i] = concrete
+      return concrete
+    })
+    this._concreteOutputs = outputs.map((slot, i) => {
+      const concrete = toClass(NodeOutputSlot, slot, this)
+      if (concrete !== slot) outputs[i] = concrete
+      return concrete
+    })
   }
 
   /**

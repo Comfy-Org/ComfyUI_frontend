@@ -1,5 +1,5 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb } from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
@@ -16,9 +16,12 @@ import {
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -221,7 +224,8 @@ function isPreviewExposed(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
 ): boolean {
-  const hostLocator = String(subgraphNode.id)
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return false
   return usePreviewExposureStore()
     .getExposures(subgraphNode.rootGraph.id, hostLocator)
     .some(
@@ -300,11 +304,8 @@ export function promoteValueWidgetViaSubgraphInput(
   )
   if (hostInput) {
     hostInput.label = sourceSlot.label
-    const promotedState = hostInput.widgetId
-      ? useWidgetValueStore().getWidget(hostInput.widgetId)
-      : undefined
-    if (promotedState && sourceSlot.label)
-      promotedState.label = sourceSlot.label
+    if (hostInput.widgetId && sourceSlot.label)
+      useWidgetValueStore().setLabel(hostInput.widgetId, sourceSlot.label)
   }
 
   seedNestedPromotedInputState(subgraphNode, subgraphInput.name, sourceSlot)
@@ -312,12 +313,13 @@ export function promoteValueWidgetViaSubgraphInput(
   return { ok: true }
 }
 
-function seedNestedPromotedInputState(
+export function seedNestedPromotedInputState(
   subgraphNode: SubgraphNode,
   inputName: string,
   sourceSlot: { widgetId?: WidgetId; label?: string }
 ): void {
   if (!sourceSlot.widgetId) return
+  if (subgraphNode.id === UNASSIGNED_NODE_ID) return
 
   const hostInput = subgraphNode.inputs.find(
     (input) => input._subgraphSlot?.name === inputName
@@ -331,8 +333,7 @@ function seedNestedPromotedInputState(
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
-  hostInput.widgetId = id
-  store.registerWidget(
+  const registered = store.registerWidget(
     id,
     {
       type: sourceState.type,
@@ -344,6 +345,14 @@ function seedNestedPromotedInputState(
     },
     store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
   )
+  if (!registered) {
+    delete hostInput.widget
+    delete hostInput.widgetId
+    hostInput._widget = undefined
+    return
+  }
+
+  hostInput.widgetId = id
 }
 
 function promotePreviewViaExposure(
@@ -353,7 +362,8 @@ function promotePreviewViaExposure(
 ): void {
   const store = usePreviewExposureStore()
   const rootGraphId = subgraphNode.rootGraph.id
-  const hostLocator = String(subgraphNode.id)
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return
   const existing = store
     .getExposures(rootGraphId, hostLocator)
     .some(
@@ -394,7 +404,7 @@ export function promoteWidget(
     }
     const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
     if (!result.ok) {
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
         message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
@@ -402,7 +412,7 @@ export function promoteWidget(
     }
   }
   refreshPromotedWidgetRendering(parents)
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: 'subgraph',
     message: `Promoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
@@ -450,7 +460,8 @@ export function demoteWidget(
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
-      const hostLocator = String(parent.id)
+      const hostLocator = getPreviewExposureHostLocator(parent)
+      if (!hostLocator) continue
       const exposure = previewStore
         .getExposures(parent.rootGraph.id, hostLocator)
         .find(
@@ -469,7 +480,7 @@ export function demoteWidget(
     }
   }
   refreshPromotedWidgetRendering(parents)
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: 'subgraph',
     message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
@@ -630,7 +641,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   for (const [n, w] of filteredWidgets) {
     const result = promoteValueWidgetViaSubgraphInput(subgraphNode, n, w)
     if (!result.ok) {
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
         message: `Failed to promote widget "${w.name}" on node ${n.id}: ${result.reason}`
@@ -676,7 +687,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   refreshPromotedWidgetRendering([subgraphNode])
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: 'subgraph',
     message: `Pruned ${removedEntries.length} disconnected promoted widget input(s) from subgraph node ${subgraphNode.id}`,
     level: 'info'

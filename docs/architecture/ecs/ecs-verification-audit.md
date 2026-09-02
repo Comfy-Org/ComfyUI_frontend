@@ -65,8 +65,8 @@ Representative evidence:
   floating-link teardown; shared subgraph definitions remain registered.
 - `src/lib/litegraph/src/Reroute.store.test.ts` and
   `src/lib/litegraph/src/LGraphGroup.test.ts`: registration and clear behavior.
-- `src/renderer/extensions/vueNodes/layout/useNodeLayout.test.ts`: workflow
-  replacement releases the originally retained graph.
+- `src/renderer/extensions/vueNodes/layout/useNodeLayout.test.ts`: layout
+  values follow root graph ID changes when the workflow changes.
 
 ### Subgraph identity: Strong
 
@@ -135,8 +135,9 @@ reactively changes controls.
 
 Representative evidence:
 
-- `src/stores/widgetValueStore.graphReactivity.test.ts`: graph isolation,
-  nested promotions, duplicate names, and input-link reactivity.
+- `src/stores/widgetValueStore.test.ts:301`: graph isolation.
+- `src/stores/widgetValueStore.graphReactivity.test.ts`: nested promotions,
+  duplicate names, and input-link reactivity.
 - `src/lib/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts`: `null`
   through promotion, reorder, serialization, and reload.
 - `src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts` and
@@ -181,7 +182,8 @@ Representative evidence:
   `workflowToClipboardItems.integration.test.ts`: recursive conversion,
   flattening, and identity remapping without a temporary graph.
 - `src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts`:
-  direct insertion preserves topology and subgraph definitions.
+  direct insertion does not revert live widget edits or change widget rows in
+  the live bucket; reroute geometry is passed through to the destination canvas.
 - `browser_tests/tests/copyPaste.spec.ts`: pinned-node paste lands at the cursor.
 - `browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts`:
   floating-reroute interaction.
@@ -245,17 +247,20 @@ Representative evidence:
 - `src/lib/litegraph/src/node/NodeInputSlot.test.ts` and
   `NodeOutputSlot.test.ts`: deprecation reads/writes and store-derived values.
 - `src/lib/litegraph/src/node/slotEcosystemPatterns.test.ts`: duck-typed slots,
-  unknown keys, legacy `extra_info`, and collapsed rendering.
+  legacy `extra_info`, and collapsed rendering.
+- `src/lib/litegraph/src/node/NodeInputSlot.test.ts:135` and
+  `NodeOutputSlot.test.ts:128`: serialized slots carrying unknown keys.
 - `src/lib/litegraph/src/LGraphNode.test.ts` and
   `src/lib/litegraph/src/node/slotLinks.test.ts`: callback-time committed state.
 - `src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts`: normal internal
   drawing and serialization do not emit deprecation warnings.
 - `src/extensions/core/widgetInputs.test.ts`: stale extension-facing link state
   recovers through the graph/store boundary.
-- `src/lib/litegraph/src/LGraphNode.test.ts`: prototype enumeration and
-  deprecated `type` mutation behavior.
-- `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: fixed top-right badge placement
-  and retained extension badge rows.
+- `src/lib/litegraph/src/LGraphNode.nodeState.test.ts:48-67,121-138` and
+  `src/lib/litegraph/src/LGraphNode.ownCollectionFields.test.ts:14-19`:
+  collection enumeration and deprecated `type` mutation behavior.
+- `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: badge text, colours, icon, and
+  draw-object identity; retained extension badge rows.
 
 ## Prioritized missing behavioral scenarios
 
