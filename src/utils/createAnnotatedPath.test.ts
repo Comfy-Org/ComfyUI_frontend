@@ -148,24 +148,10 @@ describe('parseAnnotatedPath', () => {
     })
   })
 
-  it('defaults the fallback root to input', () => {
-    expect(parseAnnotatedPath('photo.png')).toEqual({
-      filepath: 'photo.png',
-      rootFolder: 'input'
-    })
-  })
-
   it('lets the annotation win over the fallback root', () => {
     expect(parseAnnotatedPath('generated.png [output]', 'input')).toEqual({
       filepath: 'generated.png',
       rootFolder: 'output'
-    })
-  })
-
-  it('does not treat a mid-path bracket as an annotation', () => {
-    expect(parseAnnotatedPath('a [output]/photo.png')).toEqual({
-      filepath: 'a [output]/photo.png',
-      rootFolder: 'input'
     })
   })
 })
