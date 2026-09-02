@@ -24,7 +24,6 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 ]
 
 export const useExtensionStore = defineStore('extension', () => {
-  // For legacy reasons, the name uniquely identifies an extension.
   const extensionByName = ref<Map<string, ComfyExtension>>(new Map())
   const extensions = computed(() => [...extensionByName.value.values()])
   // Not using computed because disable extension requires reloading of the page.
