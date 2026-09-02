@@ -366,7 +366,12 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
-import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import {
+  formatAmountDueToday,
+  formatQuoteMoney,
+  formatRenewalAmount,
+  resolveRenewalDate
+} from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   BillingAuthenticationState,
@@ -560,35 +565,21 @@ const creditsRefillLabelKey = computed(() =>
 )
 
 const totalDueToday = computed(() =>
-  previewData?.amount_due_cents === undefined
-    ? ''
-    : formatQuoteMoney(
-        previewData.amount_due_cents,
-        previewData.currency,
-        locale.value
-      )
+  previewData ? formatAmountDueToday(previewData, locale.value) : ''
 )
 
 const renewalTerms = computed(() => {
-  if (
-    previewData?.renewal_amount_cents === undefined ||
-    !previewData.renewal_at
-  ) {
-    return ''
-  }
-  const date = new Date(previewData.renewal_at).toLocaleDateString(undefined, {
+  if (!previewData) return ''
+  const amount = formatRenewalAmount(previewData, locale.value)
+  if (!amount) return ''
+  const renewsAt = resolveRenewalDate(previewData)
+  if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
+  const date = new Date(renewsAt).toLocaleDateString(locale.value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC'
   })
-  return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(
-      previewData.renewal_amount_cents,
-      previewData.currency,
-      locale.value
-    ),
-    date
-  })
+  return t('subscription.preview.renewsAt', { amount, date })
 })
 </script>
