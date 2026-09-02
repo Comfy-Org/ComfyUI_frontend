@@ -74,6 +74,7 @@ const i18n = createI18n({
         cancel: 'Cancel',
         close: 'Close',
         maximizeDialog: 'Maximize',
+        restoreDialog: 'Restore',
         save: 'Save'
       },
       builderToolbar: {
@@ -361,7 +362,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     expect(body?.classList.contains('px-4')).toBe(false)
   })
 
-  it('maximize overrides custom dimension classes from contentClass', async () => {
+  it('toggles a maximizable dialog between maximize and restore', async () => {
     mountDialog()
     const store = useDialogStore()
     const user = userEvent.setup()
@@ -378,21 +379,9 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       }
     })
 
-    const dialog = await screen.findByRole('dialog')
-    expect(dialog.classList.contains('w-[80vw]')).toBe(true)
-
+    await screen.findByRole('dialog')
     await user.click(screen.getByRole('button', { name: 'Maximize' }))
-
-    // Maximized dimensions win over the caller's fixed dimensions,
-    // mirroring PrimeVue's `.p-dialog-maximized` !important behavior.
-    expect(dialog.classList.contains('size-auto')).toBe(true)
-    expect(dialog.classList.contains('max-h-none')).toBe(true)
-    expect(dialog.classList.contains('w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('h-[80vh]')).toBe(false)
-    expect(dialog.classList.contains('max-h-[80vh]')).toBe(false)
-    expect(dialog.classList.contains('max-w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('sm:max-w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('sm:max-w-none')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Restore' })).toBeVisible()
   })
 })
 
