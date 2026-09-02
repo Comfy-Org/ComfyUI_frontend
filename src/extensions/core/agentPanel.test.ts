@@ -105,6 +105,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.notifyBeforeGraphLoad.mockClear()
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
+    mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
