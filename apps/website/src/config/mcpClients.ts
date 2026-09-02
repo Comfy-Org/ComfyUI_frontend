@@ -129,11 +129,17 @@ export function createMcpConnections(locale: Locale) {
   }
 }
 
-export type McpConnections = ReturnType<typeof createMcpConnections>
-export type ConnectionId = keyof McpConnections
+type McpConnectionData = ReturnType<typeof createMcpConnections>
+export type ConnectionId = keyof McpConnectionData
 export type McpClientId =
-  | keyof McpConnections['cloud']['clients']
-  | keyof McpConnections['local']['clients']
+  | keyof McpConnectionData['cloud']['clients']
+  | keyof McpConnectionData['local']['clients']
+
+type McpConnection = Omit<McpConnectionData[ConnectionId], 'clients'> & {
+  clients: Record<string, McpClient>
+}
+
+export type McpConnections = Record<ConnectionId, McpConnection>
 
 export function isConnectionId(
   value: unknown,
