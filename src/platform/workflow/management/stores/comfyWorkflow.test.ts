@@ -11,16 +11,13 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock(
-  '@/platform/workflow/persistence/stores/workflowDraftStoreV2',
-  () => ({
-    useWorkflowDraftStoreV2: vi.fn(() => ({
-      getDraft: vi.fn(() => undefined),
-      markDraftUsed: vi.fn(),
-      removeDraft: vi.fn()
-    }))
-  })
-)
+vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
+  useWorkflowDraftStoreV2: vi.fn(() => ({
+    getDraft: vi.fn(() => undefined),
+    markDraftUsed: vi.fn(),
+    removeDraft: vi.fn()
+  }))
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
