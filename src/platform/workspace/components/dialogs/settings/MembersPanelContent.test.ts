@@ -162,7 +162,18 @@ vi.mock('@/components/button/MoreButton.vue', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      workspacePanel: {
+        members: {
+          noMembers: 'No members',
+          noMembersMatch: 'No members match "{query}"',
+          noInvites: 'No pending invites',
+          noInvitesMatch: 'No invites match "{query}"'
+        }
+      }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -614,6 +625,34 @@ describe('MembersPanelContent', () => {
       expect(
         screen.getByText(/workspacePanel\.members\.totalMembersCount/)
       ).toBeTruthy()
+    })
+  })
+
+  describe('empty states', () => {
+    it('tells the owner the active list is empty', () => {
+      renderComponent()
+      expect(screen.getByText('No members')).toBeInTheDocument()
+    })
+
+    it('names the query when no member matches the search', () => {
+      mockSearchQuery.value = 'nobody'
+      renderComponent()
+      expect(screen.getByText('No members match "nobody"')).toBeInTheDocument()
+    })
+
+    it('names the query when no invite matches the search', () => {
+      mockActiveView.value = 'pending'
+      mockSearchQuery.value = 'nobody'
+      renderComponent()
+      expect(screen.getByText('No invites match "nobody"')).toBeInTheDocument()
+    })
+
+    it('shows the personal row instead of empty copy on a single-seat plan', () => {
+      mockMaxSeats.value = 1
+      mockIsInPersonalWorkspace.value = true
+      renderComponent()
+      expect(screen.getByText('Owner User')).toBeInTheDocument()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
     })
   })
 

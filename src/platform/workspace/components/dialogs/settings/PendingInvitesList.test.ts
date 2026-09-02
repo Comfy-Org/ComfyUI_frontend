@@ -19,7 +19,16 @@ vi.mock('@/components/button/MoreButton.vue', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      workspacePanel: {
+        members: {
+          noInvites: 'No pending invites',
+          noInvitesMatch: 'No invites match "{query}"'
+        }
+      }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -36,11 +45,15 @@ function createInvite(
   }
 }
 
-function renderComponent(invites: WorkspacePendingInvite[]) {
+function renderComponent(
+  invites: WorkspacePendingInvite[],
+  props: { searchQuery?: string } = {}
+) {
   return render(PendingInvitesList, {
     props: {
       invites,
-      gridCols: 'grid-cols-[50%_20%_20%_10%]'
+      gridCols: 'grid-cols-[50%_20%_20%_10%]',
+      ...props
     },
     global: { plugins: [i18n] }
   })
@@ -50,8 +63,15 @@ describe('PendingInvitesList', () => {
   it('shows the empty state without action buttons when there are no invites', () => {
     renderComponent([])
 
-    expect(screen.getByText('workspacePanel.members.noInvites')).toBeTruthy()
+    expect(screen.getByText('No pending invites')).toBeInTheDocument()
     expect(screen.queryAllByRole('button')).toHaveLength(0)
+  })
+
+  it('names the query when a search matches no invite', () => {
+    renderComponent([], { searchQuery: 'nobody' })
+
+    expect(screen.getByText('No invites match "nobody"')).toBeInTheDocument()
+    expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
   })
 
   it('emits resend with the invite and closes the menu', async () => {
