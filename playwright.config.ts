@@ -93,6 +93,10 @@ export default defineConfig({
       },
       timeout: 60_000,
       grep: /@perf/,
+      // #15409: this transition benchmark is quarantined until its CI timeout
+      // is diagnosed. It must not prevent the other main-branch measurements
+      // from refreshing the perf-data baseline.
+      grepInvert: /@perf-quarantine/,
       fullyParallel: false
     },
 

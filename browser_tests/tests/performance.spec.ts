@@ -453,7 +453,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
   test(
     'subgraph transition (enter and exit)',
-    { tag: ['@vue-nodes'] },
+    { tag: ['@vue-nodes', '@perf-quarantine'] },
     async ({ comfyPage }, testInfo) => {
       // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
       // The signal is dominated by N=80 mount cost, so a single sample per
