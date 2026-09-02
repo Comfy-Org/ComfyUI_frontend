@@ -17,6 +17,8 @@ const HERO_POSTER_SRC =
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
 const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
+const MINIMAX_H3_DESIGN_HREF =
+  'https://design.minimax.io/tools/minimax-h3-comfyui'
 
 // Rows and figures come from the tier table supplied for this page
 // (2026-09-02); the pricing numbers live only here, so a deal change means
@@ -200,9 +202,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
         id: 'enterprise',
         title: { en: 'Enterprise', 'zh-CN': '企业版' },
         description: {
-          en: 'An annual agreement for teams building MiniMax into their product. Custom volume pricing, no user cap, and every model version, undistilled weights included.',
-          'zh-CN':
-            '面向将 MiniMax 构建进自家产品的团队的年度协议。定制批量定价，不限用户数，涵盖所有模型版本，包括未蒸馏权重。'
+          en: `An annual agreement for teams building [MiniMax](${MINIMAX_H3_DESIGN_HREF}) into their product. Custom volume pricing, no user cap, and every model version, undistilled weights included.`,
+          'zh-CN': `面向将 [MiniMax](${MINIMAX_H3_DESIGN_HREF}) 构建进自家产品的团队的年度协议。定制批量定价，不限用户数，涵盖所有模型版本，包括未蒸馏权重。`
         }
       }
     ]
