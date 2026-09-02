@@ -256,8 +256,8 @@ function isHSBObject(v: unknown): v is HSB {
     Number.isFinite(rec.h) &&
     typeof rec.s === 'number' &&
     Number.isFinite(rec.s) &&
-    typeof (rec as Record<string, unknown>).b === 'number' &&
-    Number.isFinite((rec as Record<string, number>).b!)
+    typeof rec.b === 'number' &&
+    Number.isFinite((rec as Record<string, number>).b)
   )
 }
 
@@ -269,8 +269,8 @@ function isHSVObject(v: unknown): v is HSV {
     Number.isFinite(rec.h) &&
     typeof rec.s === 'number' &&
     Number.isFinite(rec.s) &&
-    typeof (rec as Record<string, unknown>).v === 'number' &&
-    Number.isFinite((rec as Record<string, number>).v!)
+    typeof rec.v === 'number' &&
+    Number.isFinite((rec as Record<string, number>).v)
   )
 }
 

@@ -178,58 +178,61 @@ const {
   mockCanReactivatePlan,
   mockCapabilities,
   mockSubscription
-} = vi.hoisted(() => ({
-  mockSubscribe: vi.fn(),
-  mockPreviewSubscribe: vi.fn(),
-  mockFetchPlans: vi.fn(),
-  mockFetchStatus: vi.fn(),
-  mockFetchBalance: vi.fn(),
-  mockOpen: vi.fn(),
-  mockGetBillingStatus: vi.fn(),
-  mockGetPaymentPortalUrl: vi.fn(),
-  mockPlans: { value: [] as Plan[] },
-  mockResubscribe: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockStartOperation: vi.fn(),
-  mockRetryPaymentAuthentication: vi.fn(),
-  mockGetOperation: vi.fn(),
-  mockSubscriptionActionOperation: {
-    value: undefined as MockSubscriptionActionOperation | undefined
-  },
-  mockListSavedPaymentMethods: vi.fn(),
-  mockTrackBeginCheckout: vi.fn(),
-  mockTrackBillingEvent: vi.fn(),
-  mockShowDowngradeToPersonalDialog: vi.fn(),
-  mockUserId: { value: 'user-1' as string | null },
-  mockIsTeamPlan: { value: false },
-  mockShouldUseWorkspaceBilling: { value: true },
-  mockIncompleteEmbeddedPreview: { value: false },
-  mockSetActiveWorkspaceIdImpl: {
-    value: undefined as ((workspaceId: string) => void) | undefined
-  },
-  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
-    (workspaceId) => {
-      mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
-    }
-  ),
-  mockPermissions: {
-    value: {
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: true,
-      canDowngradeToPersonal: true
-    }
-  },
-  mockCanReactivatePlan: { value: true },
-  mockCapabilities: {
-    value: {
-      canSubscribeSelfServe: true,
-      canReactivate: true,
-      canChangeSeats: true,
-      canDowngradeToPersonal: true
-    }
-  },
-  mockSubscription: { value: null as { isCancelled: boolean } | null }
-}))
+} = vi.hoisted(() => {
+  const nullableString = (value: string | null) => ({ value })
+  return {
+    mockSubscribe: vi.fn(),
+    mockPreviewSubscribe: vi.fn(),
+    mockFetchPlans: vi.fn(),
+    mockFetchStatus: vi.fn(),
+    mockFetchBalance: vi.fn(),
+    mockOpen: vi.fn(),
+    mockGetBillingStatus: vi.fn(),
+    mockGetPaymentPortalUrl: vi.fn(),
+    mockPlans: { value: [] as Plan[] },
+    mockResubscribe: vi.fn(),
+    mockToastAdd: vi.fn(),
+    mockStartOperation: vi.fn(),
+    mockRetryPaymentAuthentication: vi.fn(),
+    mockGetOperation: vi.fn(),
+    mockSubscriptionActionOperation: {
+      value: undefined as MockSubscriptionActionOperation | undefined
+    },
+    mockListSavedPaymentMethods: vi.fn(),
+    mockTrackBeginCheckout: vi.fn(),
+    mockTrackBillingEvent: vi.fn(),
+    mockShowDowngradeToPersonalDialog: vi.fn(),
+    mockUserId: nullableString('user-1'),
+    mockIsTeamPlan: { value: false },
+    mockShouldUseWorkspaceBilling: { value: true },
+    mockIncompleteEmbeddedPreview: { value: false },
+    mockSetActiveWorkspaceIdImpl: {
+      value: undefined as ((workspaceId: string) => void) | undefined
+    },
+    mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
+      (workspaceId) => {
+        mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
+      }
+    ),
+    mockPermissions: {
+      value: {
+        canManageSubscription: true,
+        canManageSubscriptionLifecycle: true,
+        canDowngradeToPersonal: true
+      }
+    },
+    mockCanReactivatePlan: { value: true },
+    mockCapabilities: {
+      value: {
+        canSubscribeSelfServe: true,
+        canReactivate: true,
+        canChangeSeats: true,
+        canDowngradeToPersonal: true
+      }
+    },
+    mockSubscription: { value: null as { isCancelled: boolean } | null }
+  }
+})
 
 async function previewSubscribe(...args: unknown[]) {
   const response = await mockPreviewSubscribe(...args)
@@ -485,7 +488,7 @@ describe('useSubscriptionCheckout', () => {
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
-    mockOpen.mockReturnValue({} as Window)
+    mockOpen.mockReturnValue({})
     mockGetBillingStatus.mockResolvedValue({ billing_status: 'paid' })
     mockGetPaymentPortalUrl.mockResolvedValue({
       url: 'https://billing.stripe.com/portal'

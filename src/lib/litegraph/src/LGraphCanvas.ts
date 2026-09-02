@@ -384,7 +384,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     type: T,
     detail?: LGraphCanvasEventMap[T]
   ) {
-    const event = new CustomEvent(type as string, { detail, bubbles: true })
+    const event = new CustomEvent(type, { detail, bubbles: true })
     return this.canvas.dispatchEvent(event)
   }
 
@@ -932,22 +932,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           if ('shiftKey' in e && e.shiftKey) {
             if (this.allow_searchbox) {
-              this.showSearchBox(
-                e as MouseEvent,
-                linkReleaseContext as IShowSearchOptions
-              )
+              this.showSearchBox(e, linkReleaseContext as IShowSearchOptions)
             }
           } else if (this.linkConnector.state.connectingTo === 'input') {
             this.showConnectionMenu({
               nodeFrom: firstLink.node as LGraphNode,
-              slotFrom: firstLink.fromSlot as INodeOutputSlot,
+              slotFrom: firstLink.fromSlot,
               e,
               afterRerouteId
             })
           } else {
             this.showConnectionMenu({
               nodeTo: firstLink.node as LGraphNode,
-              slotTo: firstLink.fromSlot as INodeInputSlot,
+              slotTo: firstLink.fromSlot,
               e,
               afterRerouteId
             })
@@ -3736,7 +3733,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (dragEvent) {
       this.adjustMouseEvent(dragEvent)
-      const e = dragEvent as CanvasPointerEvent
+      const e = dragEvent
       node.setPos(e.canvasX - node.size[0] / 2, e.canvasY + 10)
       // Update last_mouse to prevent jump on first drag move
       this.last_mouse = [e.clientX, e.clientY]
@@ -5858,9 +5855,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!node.collapsed) {
       node.arrange()
       node.drawSlots(ctx, {
-        fromSlot: this.linkConnector.renderLinks[0]?.fromSlot as
-          | INodeOutputSlot
-          | INodeInputSlot,
+        fromSlot: this.linkConnector.renderLinks[0]?.fromSlot,
         colorContext: this.colourGetter,
         editorAlpha: this.editor_alpha,
         lowQuality: this.low_quality
@@ -6945,14 +6940,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ? LiteGraph.slot_types_default_out
       : LiteGraph.slot_types_default_in
     if (slotTypesDefault?.[fromSlotType]) {
-      let nodeNewType: string | Record<string, unknown> | false = false
+      const defaultNode = (value: string | SlotTypeDefaultNodeOpts) => value
+      let nodeNewType: string | SlotTypeDefaultNodeOpts | false = false
       if (typeof slotTypesDefault[fromSlotType] == 'object') {
         for (const typeX in slotTypesDefault[fromSlotType]) {
           if (
             opts.nodeType == slotTypesDefault[fromSlotType][typeX] ||
             opts.nodeType == 'AUTO'
           ) {
-            nodeNewType = slotTypesDefault[fromSlotType][typeX]
+            nodeNewType = defaultNode(slotTypesDefault[fromSlotType][typeX])
             break
           }
         }
@@ -6960,13 +6956,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         opts.nodeType == slotTypesDefault[fromSlotType] ||
         opts.nodeType == 'AUTO'
       ) {
-        nodeNewType = slotTypesDefault[fromSlotType]
+        nodeNewType = defaultNode(slotTypesDefault[fromSlotType])
       }
       if (nodeNewType) {
         let nodeNewOpts: SlotTypeDefaultNodeOpts | undefined
         let nodeTypeStr: string
         if (typeof nodeNewType == 'object') {
-          nodeNewOpts = nodeNewType as SlotTypeDefaultNodeOpts
+          nodeNewOpts = nodeNewType
           nodeTypeStr = nodeNewOpts.node ?? ''
         } else {
           nodeTypeStr = nodeNewType
@@ -8329,7 +8325,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (type == 'number' && typeof value === 'number')
         str_value = value.toFixed(3)
 
-      const elem: PanelWidget = document.createElement('div') as PanelWidget
+      const elem: PanelWidget = document.createElement('div')
       elem.className = 'property'
       elem.innerHTML =
         "<span class='property_name'></span><span class='property_value'></span>"

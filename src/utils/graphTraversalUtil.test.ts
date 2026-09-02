@@ -58,7 +58,7 @@ function createMockNode(
     subgraph: options.subgraph,
     onExecutionStart: options.callback,
     graph: options.graph
-  }) satisfies Partial<LGraphNode> as LGraphNode
+  }) satisfies Partial<LGraphNode>
   options.graph?.nodes?.push(node)
   return node
 }
@@ -788,7 +788,7 @@ describe('graphTraversalUtil', () => {
           subgraph
         })
         const rootGraph = createMockGraph([subgraphNode])
-        interior.graph = null as unknown as LGraph
+        interior.graph = null
 
         expect(
           getExecutionIdForNodeInGraph(rootGraph, subgraph, interior.id)
@@ -838,7 +838,7 @@ describe('graphTraversalUtil', () => {
           isSubgraphNode: () => true,
           subgraph,
           mode: LGraphEventMode.BYPASS
-        }) satisfies Partial<LGraphNode> as LGraphNode
+        }) satisfies Partial<LGraphNode>
         const rootGraph = createMockGraph([container])
 
         expect(isAncestorPathActive(rootGraph, '65:63')).toBe(false)
@@ -857,7 +857,7 @@ describe('graphTraversalUtil', () => {
           isSubgraphNode: () => true,
           subgraph: mid,
           mode: LGraphEventMode.NEVER
-        }) satisfies Partial<LGraphNode> as LGraphNode
+        }) satisfies Partial<LGraphNode>
         const rootGraph = createMockGraph([topNode])
 
         expect(isAncestorPathActive(rootGraph, '123:456:999')).toBe(false)
@@ -880,7 +880,7 @@ describe('graphTraversalUtil', () => {
         const node = createMockLGraphNode({
           id: 42,
           mode: LGraphEventMode.BYPASS
-        }) satisfies Partial<LGraphNode> as LGraphNode
+        }) satisfies Partial<LGraphNode>
         const rootGraph = createMockGraph([node])
 
         expect(isExecutionPathActive(rootGraph, '42')).toBe(false)
@@ -894,7 +894,7 @@ describe('graphTraversalUtil', () => {
           isSubgraphNode: () => true,
           subgraph,
           mode: LGraphEventMode.BYPASS
-        }) satisfies Partial<LGraphNode> as LGraphNode
+        }) satisfies Partial<LGraphNode>
         const rootGraph = createMockGraph([container])
 
         expect(isExecutionPathActive(rootGraph, '65:63')).toBe(false)
@@ -910,7 +910,7 @@ describe('graphTraversalUtil', () => {
           isSubgraphNode: () => true,
           subgraph,
           mode: LGraphEventMode.BYPASS
-        }) satisfies Partial<LGraphNode> as LGraphNode
+        }) satisfies Partial<LGraphNode>
         return createMockGraph([container])
       }
 
@@ -987,7 +987,7 @@ describe('graphTraversalUtil', () => {
         const sourceNode = createMockLGraphNode({
           id: 42,
           mode: LGraphEventMode.BYPASS
-        }) satisfies Partial<LGraphNode> as LGraphNode
+        }) satisfies Partial<LGraphNode>
         const rootGraph = createMockGraph([rootNode, sourceNode])
 
         expect(

@@ -501,7 +501,7 @@ describe('Composer', () => {
     first.unmount()
 
     mount()
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe(
       'keep me'
     )
   })
