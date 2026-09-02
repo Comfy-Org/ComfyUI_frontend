@@ -280,18 +280,28 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('preserves the bounded subscribe retry budget across reconnects', () => {
+  it('preserves the retry budget across reconnects but leaves bridge recovery active', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
 
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
     dispatchFrame('doc_subscribed', { ok: false })
-    vi.advanceTimersByTime(500)
-    dispatchFrame('doc_subscribed', { ok: false })
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ retryable: true })
+    )
 
+    bridge().resubscribe.mockClear()
     apiState.target.dispatchEvent(new Event('reconnected'))
-    vi.advanceTimersByTime(1_000)
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(60_000)
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
 
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    bridge().reconcile.mockClear()
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).toHaveBeenCalledOnce()
     unmount()
   })
 
