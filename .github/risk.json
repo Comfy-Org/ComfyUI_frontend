@@ -1,5 +1,5 @@
 {
-  "map_version": "v0-frontend",
+  "map_version": "v0-frontend-2",
   "_comment": [
     "ComfyUI_frontend override for the reusable pr-risk.yml grader (Comfy-Org/github-workflows).",
     "REPLACES the generic map wholesale with frontend-specific risk classes.",
@@ -99,6 +99,7 @@
         "src/**/credit/**",
         "src/**/credits/**",
         "src/**/subscription/**",
+        "src/components/ui/credit-slider/**",
         "src/**/*TopUp*.vue",
         "src/platform/**/*billing*",
         "src/platform/**/*Billing*",

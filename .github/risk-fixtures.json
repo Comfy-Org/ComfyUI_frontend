@@ -1,0 +1,55 @@
+{
+  "map_version": "v0-frontend-2",
+  "cases": [
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/components/dialog/content/credit/CreditTopUpOption.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/workspace/composables/useSubscriptionCheckout.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/workspace/api/workspaceApi.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/config/subscriptionPricesConfig.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "apps/website/src/components/pricing/PricingCard.vue",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
+      "path": "browser_tests/tests/priceBadge.spec.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "src/locales/en/pricing.json",
+      "tier": "R0",
+      "classes": ["i18n-copy"]
+    },
+    {
+      "path": "docs/pricing-faq.md",
+      "tier": "R0",
+      "classes": ["docs"]
+    }
+  ]
+}
