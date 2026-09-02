@@ -167,13 +167,31 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
-    // Graph restoration is complete; any serialized value that was not
-    // consumed while rebuilding the widget must not leak into later links.
-    this._clearConfiguredWidgetValues()
+    this._scheduleConfiguredWidgetValuesClear()
   }
 
   private _restorationGraphId() {
     return this.graph?.rootGraph.id ?? zeroUuid
+  }
+
+  private _scheduleConfiguredWidgetValuesClear() {
+    const graphId = this._restorationGraphId()
+    const widgetValueStore = useWidgetValueStore()
+    const restoration = widgetValueStore.getPrimitiveWidgetRestoration(
+      graphId,
+      this.id
+    )
+    if (!restoration) return
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (
+          widgetValueStore.getPrimitiveWidgetRestoration(graphId, this.id) ===
+          restoration
+        ) {
+          widgetValueStore.clearPrimitiveWidgetRestoration(graphId, this.id)
+        }
+      })
+    })
   }
 
   private _clearConfiguredWidgetValues() {

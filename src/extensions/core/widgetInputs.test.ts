@@ -483,6 +483,53 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(222)
   })
 
+  it('restores its serialized value after a reroute resolves its widget config', () => {
+    const animationFrames: FrameRequestCallback[] = []
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        animationFrames.push(callback)
+        return animationFrames.length
+      })
+    )
+    const graph = new LGraph()
+    const reroute = new LGraphNode('Reroute')
+    graph.add(reroute)
+    reroute.addInput('', '*')
+    reroute.inputs[0].widget = { name: 'value' }
+    reroute.addOutput('', '*')
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, reroute, 0)
+    reroute.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+    expect(
+      useWidgetValueStore().getPrimitiveWidgetRestoration(
+        graph.rootGraph.id,
+        primitive.id
+      )
+    ).toEqual({ type: 'INT', values: [222] })
+    reroute.inputs[0].widget![GET_CONFIG] =
+      target.inputs[0].widget?.[GET_CONFIG]
+    primitive.recreateWidget()
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+  })
+
   it('resets itself when the store reports a link the graph cannot resolve', () => {
     const graph = new LGraph()
     const node = new PrimitiveNode('Primitive')
@@ -539,6 +586,14 @@ describe('PrimitiveNode', () => {
   })
 
   it('clears an unconsumed serialized value once graph restoration ends', () => {
+    const animationFrames: FrameRequestCallback[] = []
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        animationFrames.push(callback)
+        return animationFrames.length
+      })
+    )
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -562,6 +617,10 @@ describe('PrimitiveNode', () => {
     ).toEqual({ type: 'INT', values: [222] })
 
     primitive.onAfterGraphConfigured()
+    const firstFrame = animationFrames.splice(0)
+    firstFrame.forEach((callback) => callback(0))
+    const secondFrame = animationFrames.splice(0)
+    secondFrame.forEach((callback) => callback(0))
 
     expect(
       useWidgetValueStore().getPrimitiveWidgetRestoration(
