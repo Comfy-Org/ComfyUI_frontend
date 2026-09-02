@@ -510,6 +510,17 @@ describe('useAgentCrdtFollower', () => {
       })
     ).toBe(false)
     expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    expect(
+      enqueue({
+        target,
+        operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 2 }]
+      })
+    ).toBe(true)
+    expect(clientState.sendOps.mock.calls[0][2][0].stamp).toEqual([
+      42,
+      expect.any(String)
+    ])
     unmount()
   })
 

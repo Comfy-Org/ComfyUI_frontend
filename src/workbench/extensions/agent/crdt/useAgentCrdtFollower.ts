@@ -108,7 +108,12 @@ function createProducerClock() {
       count: number
     ): number | null {
       const persisted = readProducerVersion(workflowId)
-      if (persisted === null) return null
+      if (persisted === null) {
+        const floor = Math.max(versions.get(workflowId) ?? 0, observed)
+        persistProducerVersion(workflowId, floor)
+        versions.set(workflowId, floor)
+        return null
+      }
       const previous = Math.max(
         versions.get(workflowId) ?? 0,
         persisted,
