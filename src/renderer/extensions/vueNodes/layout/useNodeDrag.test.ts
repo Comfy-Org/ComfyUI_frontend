@@ -135,14 +135,41 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
+function pointerCancelEvent(clientX: number, clientY: number) {
+  const target = document.createElement('div')
+  target.hasPointerCapture = vi.fn(() => true)
+  target.setPointerCapture = vi.fn()
+  target.releasePointerCapture = vi.fn()
+  const event = fromPartial<PointerEvent>({
+    type: 'pointercancel',
+    clientX,
+    clientY,
+    target,
+    pointerId: 1
+  })
+  return Object.assign(event, {
+    target: Object.assign(target, {
+      releasePointerCapture: target.releasePointerCapture as ReturnType<
+        typeof vi.fn
+      >
+    })
+  })
+}
+
 beforeEach(() => {
   testState.selectedNodeIds = ref(new Set<NodeId>())
   testState.selectedItems = ref<unknown[]>([])
   testState.nodeLayouts.clear()
+  testState.mutationFns.moveNode.mockReset()
+  testState.mutationFns.batchMoveNodes.mockReset()
+  testState.batchUpdateNodeBounds.mockReset()
+  testState.nodeSnap.shouldSnap.mockReset()
   testState.nodeSnap.shouldSnap.mockReturnValue(false)
+  testState.nodeSnap.applySnapToPosition.mockReset()
   testState.nodeSnap.applySnapToPosition.mockImplementation(
     (pos: { x: number; y: number }) => pos
   )
+  testState.cancelAnimationFrame.mockReset()
   testState.requestAnimationFrameCallback = null
   testState.capturedOnPan.current = null
   testState.capturedAutoPanInstance.current = null
@@ -397,6 +424,19 @@ describe('useNodeDrag auto-pan', () => {
     onPan(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+  })
+
+  it('releases pointer capture on pointercancel', () => {
+    const drag = useNodeDrag()
+    drag.startDrag(pointerEvent(400, 300), node1)
+
+    // Create pointercancel event with target that has pointer capture
+    const cancelEvent = pointerCancelEvent(400, 300)
+
+    drag.endDrag(cancelEvent, node1)
+
+    // releasePointerCapture should be called for pointercancel
+    expect(cancelEvent.target.releasePointerCapture).toHaveBeenCalledWith(1)
   })
 })
 

@@ -118,6 +118,7 @@ const createMouseEvent = (
 
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
+    layoutStore.isDraggingVueNodes.value = false
     setActivePinia(createTestingPinia())
   })
 

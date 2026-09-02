@@ -83,6 +83,7 @@ export function useNodePointerInteractions(
     if (
       lmbDown &&
       multiSelect &&
+      hasDraggingStarted &&
       !layoutStore.isDraggingVueNodes.value &&
       dragGuard.wasDragged(event)
     ) {
@@ -158,8 +159,9 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
-    if (!layoutStore.isDraggingVueNodes.value) return
-    safeDragEnd(event)
+    if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+      safeDragEnd(event)
+    }
   }
 
   /**
