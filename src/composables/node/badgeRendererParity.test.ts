@@ -174,10 +174,6 @@ describe('badge renderer parity (I2)', () => {
     })
   })
 
-  // The one place the two renderers are deliberately allowed to disagree. The
-  // legacy canvas has no logo badge — a core node's source is the fox as text —
-  // so it cannot tell a Comfy Cloud node from any other partner node. These two
-  // are expected to fail when BE-11449 lands; delete them then.
   describe('Comfy Cloud mark is Vue-only until BE-11449', () => {
     const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
     const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
