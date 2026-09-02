@@ -406,23 +406,37 @@ export function useAgentCrdtFollower(
     }
     if (staleProbeTimer !== null) armStaleProbe()
     refreshPersistedDocId()
-    const applied = adapter.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (!applied) {
-      connected.value = false
-      lastFrameType.value = 'projection_error'
-      clearStaleProbe()
-      recordDevEvent('projection_error', {
-        workflowId: update.workflowId,
-        seq: update.seq,
-        actor: update.actor
-      })
-      return
+    const projection = adapter.applyFrame(update)
+    switch (projection.status) {
+      case 'queued':
+      case 'unbound':
+        outcomes.value = {
+          ...outcomes.value,
+          skipped: outcomes.value.skipped + 1
+        }
+        return
+      case 'failed':
+        outcomes.value = {
+          ...outcomes.value,
+          skipped: outcomes.value.skipped + 1
+        }
+        connected.value = false
+        lastFrameType.value = 'projection_error'
+        clearStaleProbe()
+        recordDevEvent('projection_error', {
+          workflowId: update.workflowId,
+          seq: projection.sequence,
+          actor: update.actor
+        })
+        return
+      case 'projected':
+        outcomes.value = {
+          ...outcomes.value,
+          applied: outcomes.value.applied + 1
+        }
+        projectedSequence.value = projection.sequence
     }
     reconcileLiveGraph(update.workflowId)
-    projectedSequence.value = update.seq
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     recordDevEvent('doc_update', {

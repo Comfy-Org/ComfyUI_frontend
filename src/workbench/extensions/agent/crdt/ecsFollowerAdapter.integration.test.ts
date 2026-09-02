@@ -128,7 +128,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['bootstrap']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 1 })
 
     const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(nodes.map(({ id }) => id)).toEqual([toNodeId(1), toNodeId(2)])
@@ -411,7 +411,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['prefix']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 1 })
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -486,7 +486,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['node-1']
       })
-    ).toBe(false)
+    ).toEqual({ status: 'failed', sequence: 1 })
     expect(projectedNodes).toEqual([])
 
     expect(
@@ -497,7 +497,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['retry-drain']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 2 })
     expect(projectedNodes.map(({ id }) => id)).toEqual(['1'])
 
     adapter.destroy()
@@ -542,7 +542,7 @@ describe('EcsFollowerAdapter integration', () => {
           actor: 'agent:test',
           opIds: [operationId]
         })
-      ).toBe(true)
+      ).toEqual({ status: 'projected', sequence: seq })
     }
 
     deliver({
@@ -642,7 +642,10 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: [operationId]
       }
-      expect(adapter.applyFrame(frame)).toBe(true)
+      expect(adapter.applyFrame(frame)).toEqual({
+        status: 'projected',
+        sequence: seq
+      })
     }
 
     deliver({
@@ -1051,7 +1054,10 @@ describe('EcsFollowerAdapter integration', () => {
     followerA.applyRemoteUpdate(updateA)
     followerB.applyRemoteUpdate(updateB)
 
-    expect(adapter.applyFrame(frameA)).toBe(true)
+    expect(adapter.applyFrame(frameA)).toEqual({
+      status: 'projected',
+      sequence: 1
+    })
     expect(events).toEqual(['wf-a:start', 'wf-b:start', 'wf-b:end', 'wf-a:end'])
     expect(followerA.doc.getMap('nodes').has('101')).toBe(true)
     expect(followerA.doc.getMap('nodes').has('202')).toBe(false)

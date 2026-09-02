@@ -202,7 +202,10 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
-    adapterState.applyFrame.mockReturnValue(true)
+    adapterState.applyFrame.mockImplementation((update: { seq: number }) => ({
+      status: 'projected',
+      sequence: update.seq
+    }))
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
@@ -816,7 +819,10 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: true })
     bridge().lastSequence = 42
     bridge().follower.updatesApplied = 3
-    adapterState.applyFrame.mockReturnValueOnce(false)
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'failed',
+      sequence: 42
+    })
 
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
 

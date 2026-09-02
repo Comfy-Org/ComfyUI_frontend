@@ -22,6 +22,12 @@ export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
 
+export type FrameProjectionResult =
+  | { status: 'projected'; sequence: number }
+  | { status: 'queued' }
+  | { status: 'unbound' }
+  | { status: 'failed'; sequence: number }
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
@@ -149,26 +155,26 @@ export class EcsFollowerAdapter {
   }
 
   /** Queue and drain only the target addressed by this frame. */
-  applyFrame(update: DocUpdate): boolean {
+  applyFrame(update: DocUpdate): FrameProjectionResult {
     const session = this.targets.get(update.workflowId)
-    if (!session) return false
+    if (!session) return { status: 'unbound' }
 
     session.frameQueue.push(update)
-    if (session.applying) return true
+    if (session.applying) return { status: 'queued' }
     session.applying = true
-    let updateCommitted = false
+    let projectedSequence = update.seq
     try {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
-        if (!frame) continue
-        const committed = this.applyQueuedFrame(session, frame)
-        if (frame === update) updateCommitted = committed
-        if (!committed) return false
+        if (frame && !this.applyQueuedFrame(session, frame)) {
+          return { status: 'failed', sequence: frame.seq }
+        }
+        if (frame) projectedSequence = frame.seq
       }
     } finally {
       session.applying = false
     }
-    return updateCommitted
+    return { status: 'projected', sequence: projectedSequence }
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
