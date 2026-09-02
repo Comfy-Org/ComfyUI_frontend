@@ -399,11 +399,12 @@ export function useAgentCrdtFollower(
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    let projected: boolean
+    let projected = false
+    let threw = false
     try {
       projected = adapter.applyFrame(update)
     } catch (error) {
-      projected = false
+      threw = true
       reportError(error, { errorType: 'agent_crdt_apply_frame_failure' })
     }
     outcomes.value = projected
@@ -421,12 +422,17 @@ export function useAgentCrdtFollower(
         workflowId: update.workflowId,
         seq: update.seq
       })
-      // Keep the same follower and request state-vector recovery; the adapter
-      // retains the unprojected mutations for the next delivered frame.
-      reportError(new Error('agent CRDT frame dropped, forcing resubscribe'), {
-        errorType: 'agent_crdt_frame_dropped'
-      })
-      bridge.resubscribe()
+      // No resubscribe: the follower doc already holds these bytes, so a
+      // state-vector Resync returns only an ack and would reset the seq gap
+      // detector. The adapter retains transiently unprojected mutations and
+      // retries them on the next delivered frame.
+      if (!threw) {
+        reportError(new Error('agent CRDT frame dropped'), {
+          errorType: 'agent_crdt_frame_dropped',
+          level: 'warning',
+          context: { workflowId: update.workflowId, seq: update.seq }
+        })
+      }
     }
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))

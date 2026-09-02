@@ -300,17 +300,22 @@ export class EcsFollowerAdapter {
       }
     })
 
-    // Only clear the reconciliation flag and the pending node/widget/link
-    // work once the batch actually commits. A rejected batch (no scope, or
-    // validation failure) must leave reconcileNextFrame set so the next
-    // frame retries authoritative cleanup, and must leave the dropped
-    // work in session state so the next frame retries it instead of
-    // silently losing it.
-    if (committed) {
+    // A false batch has two causes with opposite remedies: no scope yet
+    // (transient, retain the pending mutations for the next frame) or a
+    // prepare() rejection (deterministic, retrying would poison every later
+    // frame for this target). An empty batch is true iff the scope exists.
+    // Either way, only clear reconcileNextFrame and the pending node/widget/
+    // link work once we know the batch committed or was deterministically
+    // rejected — never on a transient no-scope drop, which must retry.
+    if (committed || this.scopeAvailable(session, update)) {
       session.reconcileNextFrame = false
       this.discardSessionPending(session)
     }
     return committed
+  }
+
+  private scopeAvailable(session: TargetSession, update: DocUpdate): boolean {
+    return session.mutations.batch(frameContext(update), () => {})
   }
 
   private discardSessionPending(session: TargetSession): void {

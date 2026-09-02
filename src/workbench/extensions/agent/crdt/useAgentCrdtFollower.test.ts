@@ -98,12 +98,18 @@ vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
 }))
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
+import { reportError } from '@/platform/telemetry/reportError'
+
+import { recordDevEvent } from './devPanelLog'
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -615,7 +621,7 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  it('records and resubscribes after a dropped doc_update', () => {
+  it('records a dropped doc_update without resubscribing', () => {
     const { unmount } = mountFollower('wf-1')
     adapterState.applyFrame.mockReturnValueOnce(false)
 
@@ -630,8 +636,38 @@ describe('useAgentCrdtFollower', () => {
       workflowId: 'wf-1',
       seq: 7
     })
-    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_frame_dropped',
+        level: 'warning',
+        context: { workflowId: 'wf-1', seq: 7 }
+      })
+    )
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(adapterState.bind).toHaveBeenCalledOnce()
+    unmount()
+  })
+
+  it('reports a throwing applyFrame once and still records the drop', () => {
+    const { unmount } = mountFollower('wf-1')
+    const failure = new Error('boom')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw failure
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 8 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
+      workflowId: 'wf-1',
+      seq: 8
+    })
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'agent_crdt_apply_frame_failure'
+    })
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
     unmount()
   })
 

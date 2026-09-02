@@ -895,6 +895,89 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  // A prepare() rejection is deterministic: retaining it would re-include the
+  // rejected action in every later batch and no frame for this target would
+  // project again. Only a missing scope earns a retry.
+  it('discards a deterministically rejected frame instead of poisoning later ones', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
+    const context = {
+      source: 'agent-remote',
+      actor: 'test',
+      opId: 'seed'
+    } as const
+    // Node 1 already lives in a different owning graph of the same root, so
+    // add_node 1 into root/root is rejected with "belongs to graph sub".
+    expect(
+      createGraphMutations({
+        getScope: () => ({
+          rootGraphId: toRootGraphId('root'),
+          owningGraphId: toOwningGraphId('sub')
+        }),
+        layout
+      }).addNode({ id: 1, type: 'Source', inputs: [], outputs: [] }, context)
+    ).toBe(true)
+    const mutations = createGraphMutations({ getScope: () => scope, layout })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    let seq = 0
+    let first = true
+
+    const deliver = (operationId: string, operation: object) => {
+      const before = Y.encodeStateVector(host)
+      seq += 1
+      const result = applyOps(
+        host,
+        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: operationId, outcome: 'applied' }
+      ])
+      const update = first
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, before)
+      first = false
+      follower.applyRemoteUpdate(update)
+      return adapter.applyFrame({
+        workflowId: 'wf',
+        seq,
+        update,
+        actor: 'agent:test',
+        opIds: [operationId]
+      })
+    }
+
+    expect(
+      deliver('rejected-add', {
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Source',
+        pos: [0, 0],
+        node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+      })
+    ).toBe(false)
+    expect(
+      deliver('unrelated-add', {
+        op: 'add_node',
+        node_id: 2,
+        class_type: 'Sink',
+        pos: [100, 0],
+        node: { id: 2, type: 'Sink', inputs: [], outputs: [] }
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['2'])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('keeps follower docs and apply queues isolated by workflow target', () => {
     const followerA = new FollowerDoc()
     const followerB = new FollowerDoc()
