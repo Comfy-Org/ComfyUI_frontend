@@ -1296,12 +1296,13 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
         mockSetAssetDeleting.mock.invocationCallOrder[1]
       )
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'mediaAsset.assetDelete.success',
-        detail: 'mediaAsset.assetsDeleted',
-        life: 2000
-      })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'mediaAsset.assetDelete.success',
+        {
+          description: 'mediaAsset.assetsDeleted',
+          duration: 2000
+        }
+      )
 
       unmount()
     })
