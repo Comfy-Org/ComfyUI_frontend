@@ -47,12 +47,13 @@ function createInvite(
 
 function renderComponent(
   invites: WorkspacePendingInvite[],
-  props: { searchQuery?: string } = {}
+  props: { searchQuery?: string; loaded?: boolean } = {}
 ) {
   return render(PendingInvitesList, {
     props: {
       invites,
       gridCols: 'grid-cols-[50%_20%_20%_10%]',
+      loaded: true,
       ...props
     },
     global: { plugins: [i18n] }
@@ -72,6 +73,15 @@ describe('PendingInvitesList', () => {
 
     expect(screen.getByText('No invites match "nobody"')).toBeInTheDocument()
     expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
+  })
+
+  it('renders no empty copy before the first request completes', () => {
+    renderComponent([], { loaded: false })
+
+    expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('No invites match "nobody"')
+    ).not.toBeInTheDocument()
   })
 
   it('emits resend with the invite and closes the menu', async () => {

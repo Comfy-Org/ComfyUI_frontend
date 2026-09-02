@@ -170,6 +170,7 @@
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
             :search-query="searchQuery"
+            :loaded="pendingInvitesLoaded"
             @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
@@ -229,6 +230,8 @@ const TEAM_PLAN_REQUEST_URL =
 
 const {
   searchQuery,
+  membersLoaded,
+  pendingInvitesLoaded,
   activeView,
   maxSeats,
   isInPersonalWorkspace,
@@ -262,6 +265,7 @@ const {
 const { t } = useI18n()
 
 const emptyStateMessage = computed(() => {
+  if (!membersLoaded.value) return null
   if (activeView.value !== 'active') return null
   if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
   if (filteredMembers.value.length > 0) return null

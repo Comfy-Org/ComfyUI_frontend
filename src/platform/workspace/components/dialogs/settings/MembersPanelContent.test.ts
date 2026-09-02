@@ -38,6 +38,8 @@ const {
   mockIsInviteDisabled,
   mockActiveView,
   mockSearchQuery,
+  mockMembersLoaded,
+  mockPendingInvitesLoaded,
   mockPermissions,
   mockUiConfig
 } = vi.hoisted(() => {
@@ -63,6 +65,8 @@ const {
     mockIsOnTeamPlan: ref(true),
     mockActiveView: ref<'active' | 'pending'>('active'),
     mockSearchQuery: ref(''),
+    mockMembersLoaded: ref(true),
+    mockPendingInvitesLoaded: ref(true),
     mockPermissions: ref({
       canViewOtherMembers: true,
       canViewPendingInvites: true,
@@ -138,7 +142,9 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
         )
     ),
     members: mockMembers,
+    membersLoaded: mockMembersLoaded,
     pendingInvites: mockPendingInvites,
+    pendingInvitesLoaded: mockPendingInvitesLoaded,
     permissions: mockPermissions,
     uiConfig: mockUiConfig,
     userPhotoUrl: ref(null),
@@ -255,6 +261,8 @@ describe('MembersPanelContent', () => {
     mockIsInviteDisabled.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
+    mockMembersLoaded.value = true
+    mockPendingInvitesLoaded.value = true
     mockPermissions.value = {
       canViewOtherMembers: true,
       canViewPendingInvites: true,
@@ -653,6 +661,19 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.getByText('Owner User')).toBeInTheDocument()
       expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
+
+    it('stays silent until the members request has completed', () => {
+      mockMembersLoaded.value = false
+      renderComponent()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
+
+    it('stays silent until the invites request has completed', () => {
+      mockActiveView.value = 'pending'
+      mockPendingInvitesLoaded.value = false
+      renderComponent()
+      expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
     })
   })
 
