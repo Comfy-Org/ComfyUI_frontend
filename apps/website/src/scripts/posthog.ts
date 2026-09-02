@@ -22,15 +22,28 @@ const ANALYTICS_EVENT = {
   mcpClientTabClicked: 'website:mcp_client_tab_clicked'
 } as const
 
-export type CliClientId =
-  | 'claude-code'
-  | 'codex'
-  | 'cursor'
-  | 'gemini-cli'
-  | 'openclaw'
-  | 'hermes'
-  | 'terminal'
-  | 'ci'
+const CLI_CLIENT_IDS = [
+  'claude-code',
+  'codex',
+  'cursor',
+  'gemini-cli',
+  'openclaw',
+  'hermes',
+  'terminal',
+  'ci'
+] as const
+
+export type CliClientId = (typeof CLI_CLIENT_IDS)[number]
+
+// Mirrors isMcpClientId (@/config/mcpClients): CliClientId is a static
+// union rather than data-derived, so the guard checks against the id list
+// directly instead of taking a connections record.
+export function isCliClientId(value: unknown): value is CliClientId {
+  return (
+    typeof value === 'string' &&
+    (CLI_CLIENT_IDS as readonly string[]).includes(value)
+  )
+}
 
 type AnalyticsEvent =
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }

@@ -11,7 +11,8 @@ import { t } from '../../i18n/translations'
 import type { CliClientId } from '../../scripts/posthog'
 import {
   captureCliClientTabClick,
-  captureCliConnectionTabClick
+  captureCliConnectionTabClick,
+  isCliClientId
 } from '../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -141,10 +142,6 @@ function agentDescriptionFor(connId: ConnectionId): string {
 
 function isConnectionId(value: unknown): value is ConnectionId {
   return typeof value === 'string' && Object.hasOwn(connections, value)
-}
-
-function isCliClientId(value: unknown): value is CliClientId {
-  return typeof value === 'string' && Object.hasOwn(clients, value)
 }
 
 // reka-ui re-emits update:modelValue even when the value is unchanged

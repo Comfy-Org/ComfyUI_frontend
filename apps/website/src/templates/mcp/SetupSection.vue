@@ -45,6 +45,17 @@ function activeClientFor(connId: ConnectionId): McpClient {
   return conn.clients[activeClientIds.value[connId]]!
 }
 
+// `clients` is `Partial<Record<McpClientId, McpClient>>` (cloud and local
+// don't share the same client id space), but every entry a connection
+// actually enumerates its own keys with is present by construction. Narrow
+// away the `| undefined` here once instead of asserting at each template
+// read site.
+function clientEntriesFor(connId: ConnectionId): [McpClientId, McpClient][] {
+  return Object.entries(connections[connId].clients).filter(
+    (entry): entry is [McpClientId, McpClient] => entry[1] !== undefined
+  )
+}
+
 function manualTitleFor(connId: ConnectionId): string {
   return activeClientFor(connId).manualTitle ?? connections[connId].manualTitle
 }
@@ -166,7 +177,7 @@ const copiedLabel = t('ui.copied', locale)
             class="grid grid-cols-1 gap-px rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 min-[360px]:grid-cols-2 lg:inline-flex lg:flex-nowrap"
           >
             <TabsTrigger
-              v-for="(client, clientId) in conn.clients"
+              v-for="[clientId, client] in clientEntriesFor(connId)"
               :key="clientId"
               :value="clientId"
               class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
@@ -195,7 +206,7 @@ const copiedLabel = t('ui.copied', locale)
                 />
               </div>
               <TabsContent
-                v-for="(client, clientId) in conn.clients"
+                v-for="[clientId, client] in clientEntriesFor(connId)"
                 :key="clientId"
                 :value="clientId"
                 class="mt-6 flex min-h-36 flex-col gap-3"

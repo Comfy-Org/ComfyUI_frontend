@@ -141,6 +141,34 @@ describe('captureCliClientTabClick', () => {
   })
 })
 
+describe('isCliClientId', () => {
+  it.for([
+    { value: 'claude-code' },
+    { value: 'codex' },
+    { value: 'cursor' },
+    { value: 'gemini-cli' },
+    { value: 'openclaw' },
+    { value: 'hermes' },
+    { value: 'terminal' },
+    { value: 'ci' }
+  ])('accepts $value', async ({ value }) => {
+    const { isCliClientId } = await import('./posthog')
+    expect(isCliClientId(value)).toBe(true)
+  })
+
+  it.for([
+    { label: 'an unknown client id', value: 'claude-desktop' },
+    { label: 'an empty string', value: '' },
+    { label: 'null', value: null },
+    { label: 'undefined', value: undefined },
+    { label: 'a number', value: 0 },
+    { label: 'an inherited Object property', value: 'toString' }
+  ])('rejects $label', async ({ label: _label, value }) => {
+    const { isCliClientId } = await import('./posthog')
+    expect(isCliClientId(value)).toBe(false)
+  })
+})
+
 describe('captureMcpClientTabClick', () => {
   beforeEach(() => {
     vi.resetModules()

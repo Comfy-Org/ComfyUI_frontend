@@ -11,10 +11,14 @@ const { connectionSpy, clientSpy } = vi.hoisted(() => ({
   clientSpy: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', () => ({
-  captureCliConnectionTabClick: connectionSpy,
-  captureCliClientTabClick: clientSpy
-}))
+vi.mock('../../scripts/posthog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../scripts/posthog')>()
+  return {
+    ...actual,
+    captureCliConnectionTabClick: connectionSpy,
+    captureCliClientTabClick: clientSpy
+  }
+})
 
 // reka-ui tab triggers activate on the pointer sequence, not a bare synthetic
 // click, so drive them through userEvent.
