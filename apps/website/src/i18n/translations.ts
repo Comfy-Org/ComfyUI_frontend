@@ -3469,6 +3469,7 @@ Enterprise`
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   'nav.badgeBeta': { en: 'BETA', 'zh-CN': 'BETA' },
+  'nav.badgeComingSoon': { en: 'COMING SOON', 'zh-CN': '即将推出' },
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
