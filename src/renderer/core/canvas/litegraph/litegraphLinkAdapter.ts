@@ -228,7 +228,7 @@ export class LitegraphLinkAdapter {
       endPoint: { x: b[0], y: b[1] },
       startDirection: this.convertDirection(startDir),
       endDirection: this.convertDirection(endDir),
-      color: color !== null && color !== undefined ? String(color) : undefined,
+      color: color !== null ? String(color) : undefined,
       type: link?.type !== undefined ? String(link.type) : undefined,
       flow: flowBool,
       disabled: extras.disabled || false
@@ -313,7 +313,7 @@ export class LitegraphLinkAdapter {
       // Copy calculated center position back to litegraph object
       // This is needed for hit detection and menu interaction
       if (linkData.centerPos) {
-        linkSegment._pos = linkSegment._pos || [0, 0]
+        linkSegment._pos = [0, 0]
         linkSegment._pos[0] = linkData.centerPos.x
         linkSegment._pos[1] = linkData.centerPos.y
 

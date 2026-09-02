@@ -188,7 +188,7 @@ const candidateIndex = computed(() =>
 )
 const candidateLabel = computed(() => {
   const candidate = sortedItems.value[candidateIndex.value]
-  return candidate?.label ?? candidate?.name
+  return candidate.label ?? candidate.name
 })
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
@@ -198,7 +198,7 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 const toggleDropdown = (event: Event) => {
   if (disabled) return
   if (popoverRef.value && triggerAnchorRef.value) {
-    popoverRef.value.toggle?.(event, triggerAnchorRef.value)
+    popoverRef.value.toggle(event, triggerAnchorRef.value)
     isOpen.value = !isOpen.value
   }
 }
@@ -209,7 +209,7 @@ function focusTrigger() {
 
 const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (popoverRef.value) {
-    popoverRef.value.hide?.()
+    popoverRef.value.hide()
     isOpen.value = false
   }
 
@@ -306,7 +306,7 @@ async function getTopSearchResult() {
     return
   }
 
-  return selectedSorter.value({ items: matches })?.[0]
+  return selectedSorter.value({ items: matches })[0]
 }
 
 async function selectTopSearchResult() {

@@ -22,7 +22,7 @@ export const useNodePreviewState = (
     const key = locatorId.value
     if (!key) return undefined
     const urls = nodePreviewImages.value[key]
-    return urls?.length ? urls : undefined
+    return urls.length ? urls : undefined
   })
 
   const hasPreview = computed(() => !!previewUrls.value?.length)

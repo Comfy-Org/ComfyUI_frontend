@@ -126,13 +126,16 @@ function wrapNode(
   return ref(node) as MaybeRefOrGetter<LGraphNode | null>
 }
 
+function ensureImageBitmap(global: { ImageBitmap?: typeof ImageBitmap }): void {
+  global.ImageBitmap ??= class ImageBitmap {} as unknown as typeof ImageBitmap
+}
+
 describe('useGLSLPreview', () => {
   beforeEach(() => {
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
-    globalThis.ImageBitmap ??=
-      class ImageBitmap {} as unknown as typeof globalThis.ImageBitmap
+    ensureImageBitmap(globalThis)
   })
 
   it('does not activate for non-GLSLShader nodes', () => {

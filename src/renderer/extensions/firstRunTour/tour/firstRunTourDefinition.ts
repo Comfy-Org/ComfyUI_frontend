@@ -131,7 +131,7 @@ export async function firstRunTourSteps(
 ): Promise<TourResolution> {
   releaseFirstRunTargets()
   const graph = app.rootGraph
-  const roles = graph ? resolveTourRoles(graph, templateId) : null
+  const roles = resolveTourRoles(graph, templateId)
   if (!roles) return { steps: [], reason: 'no_roles' }
 
   const sequence = sequenceBuilder(roles)
