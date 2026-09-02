@@ -5,22 +5,37 @@ export interface MockAccount {
   readonly email: string
   readonly workspace: string
   readonly credits: number
+  readonly subscribed: boolean
 }
 
 export type MockSession =
   | { readonly status: 'signedOut' }
   | { readonly status: 'signedIn'; readonly account: MockAccount }
 
+export type AccountKind = 'new' | 'existing'
+
 export type MockSessionEvent =
-  | { type: 'signIn' }
+  | { type: 'signIn'; kind: AccountKind }
   | { type: 'signOut' }
   | { type: 'setCredits'; credits: number }
+  | { type: 'addCredits'; credits: number }
+  | { type: 'setSubscribed'; subscribed: boolean }
 
-export const DEFAULT_ACCOUNT: MockAccount = {
+// New Cloud accounts start with a small welcome balance; existing ones
+// carry whatever they bought.
+export const WELCOME_CREDITS = 35
+export const EXISTING_CREDITS = 5840
+
+const BASE_ACCOUNT = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
-  workspace: "Ada's Studio",
-  credits: 1250
+  workspace: "Ada's Studio"
+}
+
+export function accountFor(kind: AccountKind): MockAccount {
+  return kind === 'new'
+    ? { ...BASE_ACCOUNT, credits: WELCOME_CREDITS, subscribed: false }
+    : { ...BASE_ACCOUNT, credits: EXISTING_CREDITS, subscribed: true }
 }
 
 const SIGNED_OUT: MockSession = { status: 'signedOut' }
@@ -32,18 +47,22 @@ export function transition(
 ): MockSession {
   switch (event.type) {
     case 'signIn':
-      return session.status === 'signedIn'
-        ? session
-        : { status: 'signedIn', account: DEFAULT_ACCOUNT }
+      return { status: 'signedIn', account: accountFor(event.kind) }
     case 'signOut':
       return SIGNED_OUT
     case 'setCredits':
-      return session.status === 'signedIn'
-        ? {
-            status: 'signedIn',
-            account: { ...session.account, credits: event.credits }
-          }
-        : session
+    case 'addCredits':
+    case 'setSubscribed': {
+      if (session.status !== 'signedIn') return session
+      const account = session.account
+      const patch =
+        event.type === 'setCredits'
+          ? { credits: Math.max(0, event.credits) }
+          : event.type === 'addCredits'
+            ? { credits: Math.max(0, account.credits + event.credits) }
+            : { subscribed: event.subscribed }
+      return { status: 'signedIn', account: { ...account, ...patch } }
+    }
   }
 }
 
@@ -63,9 +82,15 @@ function readStoredSession(): MockSession {
       'credits' in parsed.account &&
       typeof parsed.account.credits === 'number'
     ) {
+      const subscribed =
+        'subscribed' in parsed.account && parsed.account.subscribed === true
       return {
         status: 'signedIn',
-        account: { ...DEFAULT_ACCOUNT, credits: parsed.account.credits }
+        account: {
+          ...BASE_ACCOUNT,
+          credits: parsed.account.credits,
+          subscribed
+        }
       }
     }
     return SIGNED_OUT
@@ -99,8 +124,12 @@ export function useMockSession() {
 
   return {
     session: readonly(session),
-    signIn: () => dispatch({ type: 'signIn' }),
+    signIn: (kind: AccountKind = 'existing') =>
+      dispatch({ type: 'signIn', kind }),
     signOut: () => dispatch({ type: 'signOut' }),
-    setCredits: (credits: number) => dispatch({ type: 'setCredits', credits })
+    setCredits: (credits: number) => dispatch({ type: 'setCredits', credits }),
+    addCredits: (credits: number) => dispatch({ type: 'addCredits', credits }),
+    setSubscribed: (subscribed: boolean) =>
+      dispatch({ type: 'setSubscribed', subscribed })
   }
 }

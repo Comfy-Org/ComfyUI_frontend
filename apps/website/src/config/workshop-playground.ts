@@ -51,7 +51,7 @@ export type FieldSchema =
       readonly required: boolean
     }
 
-export interface FileValue {
+interface FileValue {
   readonly name: string
   readonly size: number
   readonly type: string

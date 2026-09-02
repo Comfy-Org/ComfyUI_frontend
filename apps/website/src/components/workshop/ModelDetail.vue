@@ -6,8 +6,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
-import { useSignInDialog } from '../../composables/useSignInDialog'
-import { externalLinks } from '../../config/routes'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import { useTopUpDialog } from '../../composables/useTopUpDialog'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
   FieldErrors,
@@ -52,27 +53,15 @@ const revealed = ref(false)
 const signedInNotice = ref(false)
 
 const { session, setCredits } = useMockSession()
-const { open: openSignIn } = useSignInDialog()
-
-type SimOutcome = 'success' | 'nsfw' | 'validation' | 'provider' | 'rateLimit'
-type SimGate = 'none' | 'policy' | 'unavailable'
-const simOutcome = ref<SimOutcome>('success')
-const simGate = ref<SimGate>('none')
-const simOutcomeLabel: Record<SimOutcome, TranslationKey> = {
-  success: 'workshop.proto.outcome.success',
-  nsfw: 'workshop.proto.outcome.nsfw',
-  validation: 'workshop.proto.outcome.validation',
-  provider: 'workshop.proto.outcome.provider',
-  rateLimit: 'workshop.proto.outcome.rateLimit'
-}
-const simGateLabel: Record<SimGate, TranslationKey> = {
-  none: 'workshop.proto.gate.none',
-  policy: 'workshop.proto.gate.policy',
-  unavailable: 'workshop.proto.gate.unavailable'
-}
+const { outcome: simOutcome, modelState: simGate } = usePrototypeTweaks()
+const { open: openTopUp } = useTopUpDialog()
+const routes = getRoutes(locale)
 
 const credits = computed(() =>
   session.value.status === 'signedIn' ? session.value.account.credits : 0
+)
+const subscribed = computed(
+  () => session.value.status === 'signedIn' && session.value.account.subscribed
 )
 const creditsPerRun = computed(() => model.creditsPerRun ?? 0)
 const gate = computed(() =>
@@ -283,26 +272,35 @@ function useInCode() {
           </Button>
           <Button
             v-else-if="gate === 'signedOut'"
+            as="a"
+            :href="externalLinks.cloudLogin"
             size="lg"
             class="w-full"
             data-testid="run-button"
             data-gate="signedOut"
-            @click="openSignIn"
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>
           <Button
+            v-else-if="gate === 'noCredits' && subscribed"
+            size="lg"
+            class="w-full"
+            data-testid="run-button"
+            data-gate="noCredits"
+            @click="openTopUp({ insufficient: true })"
+          >
+            {{ t('workshop.run.buyCredits', locale) }}
+          </Button>
+          <Button
             v-else-if="gate === 'noCredits'"
             as="a"
-            :href="externalLinks.platform"
-            target="_blank"
-            rel="noopener noreferrer"
+            :href="routes.pricing"
             size="lg"
             class="w-full"
             data-testid="run-button"
             data-gate="noCredits"
           >
-            {{ t('workshop.run.buyCredits', locale) }}
+            {{ t('nav.upgradeToAddCredits', locale) }}
           </Button>
           <Button
             v-else-if="gate === 'ready'"
@@ -335,57 +333,6 @@ function useInCode() {
             {{ t('workshop.error.noCredits', locale) }}
           </p>
         </div>
-
-        <details
-          class="border-primary-comfy-orange/40 rounded-2xl border text-xs"
-          data-testid="prototype-controls"
-        >
-          <summary
-            class="text-primary-comfy-orange cursor-pointer px-4 py-2 font-bold tracking-widest uppercase"
-          >
-            {{ t('nav.prototypeControls', locale) }}
-          </summary>
-          <div class="flex flex-col gap-3 px-4 pb-4">
-            <label class="flex flex-col gap-1">
-              <span class="text-primary-warm-gray">
-                {{ t('workshop.proto.outcome', locale) }}
-              </span>
-              <select
-                v-model="simOutcome"
-                data-testid="sim-outcome"
-                class="bg-transparency-white-t4 h-9 rounded-xl border border-transparency-white-t20 px-3 text-primary-warm-white"
-              >
-                <option
-                  v-for="(label, key) in simOutcomeLabel"
-                  :key
-                  :value="key"
-                  class="bg-primary-comfy-ink"
-                >
-                  {{ t(label, locale) }}
-                </option>
-              </select>
-            </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-primary-warm-gray">
-                {{ t('workshop.proto.gate', locale) }}
-              </span>
-              <select
-                v-model="simGate"
-                data-testid="sim-gate"
-                class="bg-transparency-white-t4 h-9 rounded-xl border border-transparency-white-t20 px-3 text-primary-warm-white"
-              >
-                <option
-                  v-for="(label, key) in simGateLabel"
-                  :key
-                  :value="key"
-                  class="bg-primary-comfy-ink"
-                >
-                  {{ t(label, locale) }}
-                </option>
-              </select>
-            </label>
-          </div>
-        </details>
       </div>
 
       <div class="lg:col-span-7">

@@ -2,6 +2,7 @@ import type { Model } from './models'
 import { models } from './models'
 import displayOverrides from './workshop-model-display.json'
 import generatedModels from './workshop-models.generated.json'
+import { usdToCredits } from './credits'
 
 const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -111,9 +112,6 @@ export interface WorkshopModelDetail extends WorkshopModel {
 const display = displayOverrides as Record<string, WorkshopModelDisplay>
 const generated = generatedModels as unknown as Record<string, GeneratedModel>
 
-// Placeholder until Router bills the playground: 100 credits per USD.
-export const CREDITS_PER_USD = 100
-
 function modelDetailHref(slug: string): string {
   return `/workshop/models/${slug}/`
 }
@@ -134,7 +132,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
   const provider = overrides.provider ?? data?.provider
   const creditsPerRun =
     data?.priceUsdFrom !== undefined
-      ? Math.round(data.priceUsdFrom * CREDITS_PER_USD)
+      ? usdToCredits(data.priceUsdFrom)
       : overrides.creditsPerRun
   return {
     slug: model.slug,

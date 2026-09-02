@@ -23,16 +23,17 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../../composables/useMockSession'
-import { useSignInDialog } from '../../../composables/useSignInDialog'
+import { useTopUpDialog } from '../../../composables/useTopUpDialog'
 import { PRICING_URL } from '../../../config/model-pricing'
-import { externalLinks } from '../../../config/routes'
+import { externalLinks, getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const { session, signOut, setCredits } = useMockSession()
-const { open: openSignIn } = useSignInDialog()
+const { session, signOut } = useMockSession()
+const { open: openTopUp } = useTopUpDialog()
+const routes = getRoutes(locale)
 
 const account = computed(() =>
   session.value.status === 'signedIn' ? session.value.account : undefined
@@ -72,20 +73,19 @@ const itemClass =
 <template>
   <Button
     v-if="!account"
+    as="a"
+    :href="externalLinks.cloudLogin"
     variant="outline"
     data-testid="header-sign-in"
-    @click="openSignIn"
   >
     {{ t('nav.signIn', locale) }}
   </Button>
 
   <div v-else class="flex items-center gap-2">
-    <a
-      :href="externalLinks.platform"
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      type="button"
       data-testid="header-credits"
-      :title="t('nav.buyCredits', locale)"
+      :title="t('nav.addCredits', locale)"
       :class="
         cn(
           'hover:bg-transparency-white-t4 flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm font-bold whitespace-nowrap transition-colors',
@@ -94,6 +94,7 @@ const itemClass =
             : 'border-primary-comfy-orange/60 text-primary-comfy-orange'
         )
       "
+      @click="openTopUp()"
     >
       <Coins
         :class="
@@ -113,7 +114,7 @@ const itemClass =
         </span>
       </template>
       <template v-else>{{ t('nav.noCredits', locale) }}</template>
-    </a>
+    </button>
 
     <DropdownMenuRoot>
       <DropdownMenuTrigger
@@ -181,6 +182,31 @@ const itemClass =
               :title="t('nav.creditsInfo', locale)"
             />
           </div>
+          <div class="px-3 pt-1 pb-2">
+            <DropdownMenuItem as-child>
+              <Button
+                v-if="account.subscribed"
+                variant="outline"
+                size="sm"
+                class="w-full"
+                data-testid="account-add-credits"
+                @click="openTopUp()"
+              >
+                {{ t('nav.addCredits', locale) }}
+              </Button>
+              <Button
+                v-else
+                as="a"
+                :href="routes.pricing"
+                variant="outline"
+                size="sm"
+                class="w-full"
+                data-testid="account-upgrade"
+              >
+                {{ t('nav.upgradeToAddCredits', locale) }}
+              </Button>
+            </DropdownMenuItem>
+          </div>
 
           <DropdownMenuSeparator class="my-2 h-px bg-transparency-white-t8" />
 
@@ -231,18 +257,6 @@ const itemClass =
               </button>
             </DropdownMenuItem>
           </div>
-
-          <DropdownMenuItem
-            class="text-primary-comfy-orange hover:bg-transparency-white-t4 mt-1 cursor-pointer rounded-xl px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase outline-none"
-            data-testid="account-simulate-balance"
-            @select="setCredits(hasCredits ? 0 : 1250)"
-          >
-            {{
-              hasCredits
-                ? t('nav.simulateZeroBalance', locale)
-                : t('nav.restoreBalance', locale)
-            }}
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>

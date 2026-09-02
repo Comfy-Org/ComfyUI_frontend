@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
 import WorkshopHero from '../../components/workshop/WorkshopHero.astro'
 import WorkshopModelsGrid from '../../components/workshop/WorkshopModelsGrid.vue'
 import WorkshopTabs from '../../components/workshop/WorkshopTabs.astro'
@@ -17,4 +18,5 @@ import { t } from '../../i18n/translations'
     <WorkshopTabs active="models" />
     <WorkshopModelsGrid models={workshopModels} client:load />
   </div>
+  <PrototypeTweaks client:load />
 </BaseLayout>

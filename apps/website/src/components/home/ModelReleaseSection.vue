@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getRoutes } from '../../config/routes'
+import { getWorkshopModel } from '../../config/workshop'
 import { modelReleaseSlides } from '../../data/modelRelease'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -8,6 +9,10 @@ import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
+
+function workshopHref(slug: string | undefined): string | undefined {
+  return slug ? getWorkshopModel(slug)?.href : undefined
+}
 
 const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({
   id: slide.id,
@@ -22,12 +27,12 @@ const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({
   body: t(slide.bodyKey, locale),
   primaryCta: {
     label: t(slide.exploreLabelKey, locale),
-    href: routes[slide.exploreRoute]
+    href: workshopHref(slide.workshopSlug) ?? routes[slide.exploreRoute]
   },
   secondaryCta: {
     label: t(slide.tryCta.labelKey, locale),
-    href: slide.tryCta.href,
-    newTab: true
+    href: workshopHref(slide.workshopSlug) ?? slide.tryCta.href,
+    newTab: !workshopHref(slide.workshopSlug)
   },
   tags: slide.tagKeys.map((key) => t(key, locale)),
   autoplayMs: slide.autoplayMs

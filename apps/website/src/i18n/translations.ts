@@ -8223,12 +8223,68 @@ Enterprise`
   },
   'nav.workspaceSettings': { en: 'Workspace settings', 'zh-CN': '工作区设置' },
   'nav.accountSettings': { en: 'Account settings', 'zh-CN': '账户设置' },
-  'nav.prototypeControls': { en: 'Prototype controls', 'zh-CN': '原型控制' },
-  'nav.simulateZeroBalance': {
-    en: 'Simulate zero balance',
-    'zh-CN': '模拟零余额'
+  'nav.addCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
+  'nav.upgradeToAddCredits': {
+    en: 'Upgrade to add credits',
+    'zh-CN': '升级以添加积分'
   },
-  'nav.restoreBalance': { en: 'Restore balance', 'zh-CN': '恢复余额' },
+
+  // Workshop – top-up dialog (mirrors credits.topUp in the Cloud app)
+  'workshop.topUp.addMoreCredits': {
+    en: 'Add more credits',
+    'zh-CN': '添加更多积分'
+  },
+  'workshop.topUp.addMoreCreditsToRun': {
+    en: 'Add more credits to run',
+    'zh-CN': '添加更多积分以运行'
+  },
+  'workshop.topUp.insufficientMessage': {
+    en: "You don't have enough credits to run this model.",
+    'zh-CN': '你的积分不足以运行该模型。'
+  },
+  'workshop.topUp.selectAmount': { en: 'Select amount', 'zh-CN': '选择金额' },
+  'workshop.topUp.youPay': { en: 'Amount (USD)', 'zh-CN': '金额（美元）' },
+  'workshop.topUp.youGet': { en: 'Credits', 'zh-CN': '积分' },
+  'workshop.topUp.minRequired': {
+    en: '{credits} credits minimum',
+    'zh-CN': '最少 {credits} 积分'
+  },
+  'workshop.topUp.maxAllowed': {
+    en: '{credits} credits maximum.',
+    'zh-CN': '最多 {credits} 积分。'
+  },
+  'workshop.topUp.addCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
+  'workshop.topUp.viewPricing': {
+    en: 'View pricing details',
+    'zh-CN': '查看定价详情'
+  },
+  'workshop.topUp.confirmTitle': { en: 'Confirm', 'zh-CN': '确认' },
+  'workshop.topUp.confirmSubtitle': {
+    en: 'Credits are added to this workspace as soon as payment completes.',
+    'zh-CN': '付款完成后积分会立即添加到该工作区。'
+  },
+  'workshop.topUp.totalDueToday': {
+    en: 'Total due today',
+    'zh-CN': '今日应付总额'
+  },
+  'workshop.topUp.chargedImmediatelyNote': {
+    en: 'Your saved payment method is charged immediately.',
+    'zh-CN': '将立即从你保存的付款方式扣款。'
+  },
+  'workshop.topUp.payAmount': { en: 'Pay {amount}', 'zh-CN': '支付 {amount}' },
+  'workshop.topUp.processing': {
+    en: 'Confirming your payment…',
+    'zh-CN': '正在确认付款…'
+  },
+  'workshop.topUp.purchaseSuccess': {
+    en: 'Credits added successfully!',
+    'zh-CN': '积分添加成功！'
+  },
+  'workshop.topUp.doneBody': {
+    en: 'Your balance is updated. Hit Run when ready.',
+    'zh-CN': '余额已更新。准备好后点击运行。'
+  },
+  'workshop.topUp.done': { en: 'Done', 'zh-CN': '完成' },
 
   // Workshop – catalog pages
   'workshop.title': { en: 'Workshop', 'zh-CN': '工作坊' },
@@ -8249,10 +8305,6 @@ Enterprise`
     en: 'Every partner model on Comfy Router, ready to run. Sign in, pick a model, hit Run.',
     'zh-CN':
       'Comfy Router 上的每个合作伙伴模型都可直接运行。登录、选择模型、点击运行。'
-  },
-  'workshop.hero.prototype': {
-    en: 'Prototype · mock data',
-    'zh-CN': '原型 · 模拟数据'
   },
   'workshop.tabs.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.tabs.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
@@ -8309,31 +8361,6 @@ Enterprise`
   'workshop.workflows.categories.specialized': {
     en: 'Specialized outcomes',
     'zh-CN': '专项成果'
-  },
-
-  // Workshop – sign-in dialog
-  'workshop.signIn.title': { en: 'Sign in to run', 'zh-CN': '登录以运行' },
-  'workshop.signIn.description': {
-    en: 'Use your Comfy Cloud account. Your settings stay on this page.',
-    'zh-CN': '使用你的 Comfy Cloud 账户。你的设置会保留在本页。'
-  },
-  'workshop.signIn.google': {
-    en: 'Continue with Google',
-    'zh-CN': '使用 Google 继续'
-  },
-  'workshop.signIn.github': {
-    en: 'Continue with GitHub',
-    'zh-CN': '使用 GitHub 继续'
-  },
-  'workshop.signIn.or': { en: 'or', 'zh-CN': '或' },
-  'workshop.signIn.email': { en: 'Email', 'zh-CN': '邮箱' },
-  'workshop.signIn.continue': {
-    en: 'Continue with email',
-    'zh-CN': '使用邮箱继续'
-  },
-  'workshop.signIn.footnote': {
-    en: 'Prototype: every option signs you in with a mock account.',
-    'zh-CN': '原型：任意选项都会以模拟账户登录。'
   },
 
   // Workshop – model detail
@@ -8522,6 +8549,22 @@ Enterprise`
   'workshop.examples.brief': { en: 'Taglines', 'zh-CN': '标语' },
 
   // Workshop – prototype controls
+  'workshop.proto.title': {
+    en: 'Prototype controls · mock data',
+    'zh-CN': '原型控制 · 模拟数据'
+  },
+  'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
+  'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
+  'workshop.proto.session.new': {
+    en: 'New account (35 welcome credits)',
+    'zh-CN': '新账户（35 赠送积分）'
+  },
+  'workshop.proto.session.existing': {
+    en: 'Existing account',
+    'zh-CN': '已有账户'
+  },
+  'workshop.proto.subscribed': { en: 'Subscribed', 'zh-CN': '已订阅' },
+  'workshop.proto.zeroBalance': { en: 'Zero balance', 'zh-CN': '零余额' },
   'workshop.proto.outcome': {
     en: 'Simulate run outcome',
     'zh-CN': '模拟运行结果'

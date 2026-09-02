@@ -1,8 +1,15 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
 const MODEL_PATH = '/workshop/models/openai-dall-e/'
+
+async function useAccount(page: Page, kind: 'new' | 'existing') {
+  await page.getByTestId('prototype-tweaks').click()
+  await page.getByTestId('tweak-session').selectOption(kind)
+  await page.keyboard.press('Escape')
+}
 
 test.describe('Workshop catalog', () => {
   test('lists partner models and filters by search and modality', async ({
@@ -32,38 +39,41 @@ test.describe('Workshop catalog', () => {
     await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kling AI')
   })
+
+  test('homepage model releases open their Workshop model', async ({
+    page
+  }) => {
+    await page.goto('/')
+    const explore = page.getByRole('link', { name: /Explore Seedance/i })
+    await expect(explore).toHaveAttribute(
+      'href',
+      /\/workshop\/models\/seedance-2\//
+    )
+  })
 })
 
 test.describe('Model playground', () => {
-  test('asks to sign in before running and does not auto-run', async ({
-    page
-  }) => {
+  test('sends signed-out visitors to the Cloud login', async ({ page }) => {
     await page.goto(MODEL_PATH)
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'signedOut')
-
-    await run.click()
-    const dialog = page.getByTestId('sign-in-dialog')
-    await expect(dialog).toBeVisible()
-    await dialog.getByTestId('sign-in-google').click()
-
-    await expect(dialog).toBeHidden()
-    await expect(page.getByTestId('signed-in-notice')).toBeVisible()
-    await expect(page.getByTestId('playground-output')).toHaveAttribute(
-      'data-state',
-      'idle'
+    await expect(run).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/cloud/login'
     )
-    await expect(run).toHaveAttribute('data-gate', 'ready')
+    await expect(
+      page.getByTestId('desktop-nav-cta').getByTestId('header-sign-in')
+    ).toHaveAttribute('href', 'https://cloud.comfy.org/cloud/login')
   })
 
   test('validates the prompt, runs, cancels and completes', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
-    await page.getByTestId('run-button').click()
-    await page.getByTestId('sign-in-github').click()
+    await useAccount(page, 'existing')
 
     const run = page.getByTestId('run-button')
+    await expect(run).toHaveAttribute('data-gate', 'ready')
     await page.getByTestId('field-prompt').fill('')
     await run.click()
     await expect(page.getByTestId('error-prompt')).toBeVisible()
@@ -86,23 +96,48 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('output-download')).toBeVisible()
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toContainText('1,242')
+    ).toContainText('5,832')
   })
 
-  test('asks to buy credits when the balance is too low', async ({ page }) => {
+  test('a new account starts with welcome credits', async ({ page }) => {
     await page.goto(MODEL_PATH)
-    await page.getByTestId('run-button').click()
-    await page.getByTestId('sign-in-google').click()
-
+    await useAccount(page, 'new')
+    await expect(
+      page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
+    ).toContainText('35')
     await page
       .getByTestId('desktop-nav-cta')
       .getByTestId('header-account')
       .click()
-    await page.getByTestId('account-simulate-balance').click()
+    await expect(page.getByTestId('account-upgrade')).toBeVisible()
+  })
+
+  test('tops up credits in place when the balance is too low', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    await useAccount(page, 'existing')
+    await page.getByTestId('prototype-tweaks').click()
+    await page.getByTestId('tweak-zero-balance').click()
+    await page.keyboard.press('Escape')
 
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
-    await expect(run).toHaveAttribute('href', /platform\.comfy\.org/)
+    await run.click()
+    const dialog = page.getByTestId('top-up-dialog')
+    await expect(dialog.getByTestId('top-up-insufficient')).toBeVisible()
+    await dialog.getByTestId('top-up-preset-25').click()
+    await expect(dialog.getByTestId('top-up-credits')).toHaveValue('5275')
+    await dialog.getByTestId('top-up-continue').click()
+    await dialog.getByTestId('top-up-pay').click()
+    await expect(dialog.getByTestId('top-up-done')).toBeVisible({
+      timeout: 10_000
+    })
+    await page.getByRole('button', { name: 'Done' }).click()
+    await expect(run).toHaveAttribute('data-gate', 'ready')
+    await expect(
+      page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
+    ).toContainText('5,275')
   })
 
   test('API tab mirrors the form values', async ({ page }) => {

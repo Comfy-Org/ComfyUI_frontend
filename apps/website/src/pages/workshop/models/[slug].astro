@@ -2,6 +2,7 @@
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
+import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
 import { getRoutes } from '../../../config/routes'
 import {
   getWorkshopModel,
@@ -161,4 +162,5 @@ const pillClass =
 
     <ModelDetail model={model} client:load />
   </div>
+  <PrototypeTweaks show-run-controls client:load />
 </BaseLayout>

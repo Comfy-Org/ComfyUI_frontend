@@ -19,6 +19,8 @@ export type ModelReleaseSlide = {
   exploreLabelKey: TranslationKey
   /** Locale-aware model page route for the primary CTA. */
   exploreRoute: RouteKey
+  /** Workshop model that both CTAs open while the Workshop prototype is on. */
+  workshopSlug?: string
   tryCta: {
     labelKey: TranslationKey
     href: string
@@ -34,6 +36,7 @@ export type ModelReleaseSlide = {
 export const modelReleaseSlides: ModelReleaseSlide[] = [
   {
     id: 'seedance-2-5',
+    workshopSlug: 'seedance-2',
     media: {
       type: 'video',
       src: 'https://media.comfy.org/website/seedance-2.5/hero.mp4',
@@ -53,6 +56,7 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
   },
   {
     id: 'ltx-2-5',
+    workshopSlug: 'ltx-2',
     media: {
       type: 'video',
       src: 'https://media.comfy.org/website/ltx-2.5/hero.mp4',
@@ -72,6 +76,7 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
   },
   {
     id: 'wan-animate-2',
+    workshopSlug: 'wan-api',
     media: {
       type: 'video',
       src: 'https://media.comfy.org/website/wan-animate-2/hero.mp4',
@@ -91,6 +96,7 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
   },
   {
     id: 'minimax-h3',
+    workshopSlug: 'minimax',
     media: {
       type: 'video',
       src: 'https://media.comfy.org/website/minimax/hero.mp4',
