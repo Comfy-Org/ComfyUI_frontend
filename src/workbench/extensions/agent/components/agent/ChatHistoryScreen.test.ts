@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -321,13 +321,14 @@ describe('ChatHistoryScreen', () => {
 
   it('caps how long a renamed title can grow', async () => {
     const user = userEvent.setup()
-    renderScreen(groupsWithTitle('Original title'))
+    const { emitted } = renderScreen(groupsWithTitle('Original title'))
     const input = await openRename(user)
+    const longTitle = 'x'.repeat(250)
 
-    await user.clear(input)
-    await user.paste('x'.repeat(250))
+    await fireEvent.update(input, longTitle)
+    await user.keyboard('{Enter}')
 
-    expect(input.value).toHaveLength(200)
+    expect(emitted().rename).toEqual([['thread-1', longTitle.slice(0, 200)]])
   })
 
   it('falls back to the untitled label for a whitespace-only title', () => {

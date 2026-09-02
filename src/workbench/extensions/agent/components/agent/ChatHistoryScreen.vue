@@ -103,7 +103,7 @@ watch(
 function commitRename(session: ChatSession): void {
   if (renamingId.value !== session.id) return
   renamingId.value = null
-  const title = renameDraft.value.trim()
+  const title = renameDraft.value.trim().slice(0, MAX_TITLE_LENGTH)
   if (title !== '' && title !== renameOriginalTitle.value.trim())
     emit('rename', session.id, title)
 }
