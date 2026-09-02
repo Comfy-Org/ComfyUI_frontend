@@ -113,6 +113,32 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
   })
 
+  it('resetClock lets a new lineage mint at a lower base_version after a doc_reset', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    // A doc_reset broke the lineage; the follower's observed sequence drops.
+    baseVersion = 3
+    sender.resetClock(WORKFLOW)
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(3)
+    expect(sent[1].ops[0].stamp).toEqual([3, ACTOR])
+  })
+
+  it('resetClock only clears the named workflow, leaving other workflows clamped', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    sender.resetClock('some-other-workflow')
+
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])

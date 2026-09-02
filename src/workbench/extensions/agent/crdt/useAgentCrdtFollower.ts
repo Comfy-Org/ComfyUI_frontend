@@ -296,8 +296,12 @@ export function useAgentCrdtFollower(
       actor: detail?.actor ?? 'agent-reset',
       opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       adapter.clearForReset(detail.workflowId, context)
+      // Lineage broke: a stale-high base_version clock from the old lineage
+      // must not carry forward and outrank the new lineage's writes (DQ-11).
+      sender.resetClock(detail.workflowId)
+    }
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type

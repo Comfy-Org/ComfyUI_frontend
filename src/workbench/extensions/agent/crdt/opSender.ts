@@ -62,6 +62,13 @@ export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
+  /**
+   * Clear the remembered `base_version` clock for `workflowId` (all actors).
+   * Call this on `doc_reset`: the lineage broke, so a stale-high clock from
+   * the old lineage must not carry forward and outrank the new lineage's
+   * writes (DQ-11 sender-side mitigation, see opEnvelope.property.test.ts).
+   */
+  resetClock(workflowId: string): void
   detach(): void
 }
 
@@ -191,6 +198,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
+    },
+    resetClock(workflowId) {
+      const prefix = `${workflowId}\u0000`
+      for (const clockKey of lastMintedVersion.keys()) {
+        if (clockKey.startsWith(prefix)) lastMintedVersion.delete(clockKey)
+      }
     },
     detach() {
       detached = true
