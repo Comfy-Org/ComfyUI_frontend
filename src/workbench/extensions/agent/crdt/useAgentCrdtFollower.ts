@@ -596,6 +596,17 @@ export function useAgentCrdtFollower(
    */
   const onSocketActivity: EventListener = () => {
     bridge.reconcile()
+    // KA-10 (scope-hydration recovery): also probe here so a tab that stays
+    // active the whole time (scope hydrates asynchronously after subscribe,
+    // with no later doc_update) still gets drained — not just on activation.
+    // Guarded on `hasPending` so a healthy idle channel doesn't emit a dev
+    // event on every heartbeat.
+    const target = subscribedWorkflowId.value
+    if (isTargetActive.value && target !== null && adapter.hasPending(target))
+      recordDevEvent('scope_retry', {
+        workflowId: target,
+        projected: adapter.retryPending(target)
+      })
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -653,6 +664,10 @@ export function useAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
+          recordDevEvent('scope_retry', {
+            workflowId: persisted,
+            projected: adapter.retryPending(persisted)
+          })
           return
         }
         clearPersistedDocId()
@@ -672,6 +687,14 @@ export function useAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
+      // KA-10 (scope-hydration recovery): the tab's scope can finish
+      // hydrating with no further doc_update to trigger the normal drain in
+      // `onUpdate`/`applyQueuedFrame`. Probe once on every activation; a no-op
+      // when nothing is pending or the scope still isn't ready.
+      recordDevEvent('scope_retry', {
+        workflowId: next,
+        projected: adapter.retryPending(next)
+      })
     },
     { immediate: true }
   )

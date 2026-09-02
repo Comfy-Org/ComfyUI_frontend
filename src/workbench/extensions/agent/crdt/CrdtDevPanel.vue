@@ -166,7 +166,8 @@ const EVENT_KIND_FILTERS = {
   stale_probe: true,
   rebind: true,
   doc_gap: true,
-  doc_stale: true
+  doc_stale: true,
+  scope_retry: true
 } satisfies Record<DevEventKind, true>
 
 function isDevEventKind(value: string): value is DevEventKind {

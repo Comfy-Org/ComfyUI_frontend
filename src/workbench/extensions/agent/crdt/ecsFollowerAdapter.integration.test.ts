@@ -895,6 +895,73 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  // KA-10: the scope can hydrate with NO later doc_update to trigger the
+  // retry inside applyFrame — retryPending must drain the same retained
+  // mutations from a scope-ready signal alone, with no new frame delivered.
+  it('drains a dropped add via retryPending when the scope hydrates with no later frame', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    let activeScope: typeof scope | null = null
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const result = applyOps(
+      host,
+      [
+        op('dropped-add', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [0, 0],
+          node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([
+      { op_id: 'dropped-add', outcome: 'applied' }
+    ])
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['dropped-add']
+      })
+    ).toBe(false)
+    expect(adapter.hasPending('wf')).toBe(true)
+
+    // No later frame arrives — only the scope becomes available.
+    expect(adapter.retryPending('unbound-target')).toBe(false)
+    activeScope = null
+    expect(adapter.retryPending('wf')).toBe(false)
+    expect(adapter.hasPending('wf')).toBe(true)
+
+    activeScope = scope
+    expect(adapter.retryPending('wf')).toBe(true)
+    expect(adapter.hasPending('wf')).toBe(false)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1'])
+
+    // Idempotent once drained: nothing left to retry.
+    expect(adapter.retryPending('wf')).toBe(false)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   // A prepare() rejection is deterministic: retaining it would re-include the
   // rejected action in every later batch and no frame for this target would
   // project again. Only a missing scope earns a retry.
