@@ -36,4 +36,18 @@ describe('parseServerDocFrame doc_update base64 validation', () => {
     expect(() => parseServerDocFrame(docUpdate(''))).not.toThrow()
     expect(parseServerDocFrame(docUpdate(''))).toBeNull()
   })
+
+  it('rejects non-canonical padding bits (RFC 4648 §3.5)', () => {
+    // `YR==` and the canonical `YQ==` both decode to the same single byte
+    // (0x61) because the low 4 unused pad bits are non-zero; accepting both
+    // strings for one byte value is a malleability hole.
+    expect(() => parseServerDocFrame(docUpdate('YR=='))).not.toThrow()
+    expect(parseServerDocFrame(docUpdate('YR=='))).toBeNull()
+  })
+
+  it('accepts canonical padding for the same byte', () => {
+    const parsed = parseServerDocFrame(docUpdate('YQ=='))
+    expect(parsed).not.toBeNull()
+    expect(parsed?.type).toBe('doc_update')
+  })
 })

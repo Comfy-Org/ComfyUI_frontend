@@ -135,7 +135,15 @@ function decodeBase64(value: string): Uint8Array | null {
 
   try {
     const binary = atob(value)
-    return Uint8Array.from(binary, (character) => character.charCodeAt(0))
+    const bytes = Uint8Array.from(binary, (character) =>
+      character.charCodeAt(0)
+    )
+    // The regex above only checks alphabet and padding shape, not unused pad
+    // bits (RFC 4648 §3.5): `YR==` and `YQ==` both pass it and decode to the
+    // same byte, which is a malleability hole for an op_id-derived digest.
+    // Re-encoding canonically and requiring an exact match rejects that.
+    if (encodeBase64(bytes) !== value) return null
+    return bytes
   } catch {
     return null
   }
@@ -244,6 +252,9 @@ function parseDocOpFailure(value: unknown): DocOpFailure | null {
   }
 }
 
+// Defence in depth behind the server's identical cap. The counts are not
+// byte-identical: Go's json.Marshal HTML-escapes `<`, `>` and `&`, so the
+// server always counts >= this and is the stricter of the two.
 function encodedJsonSize(value: Record<string, unknown>): number | null {
   try {
     const encoded = JSON.stringify(value)
