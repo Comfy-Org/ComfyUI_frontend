@@ -123,9 +123,9 @@ describe('MediaAssetCard', () => {
     })
 
     it('offers the preview URL as a uri-list flavour for external drop targets', () => {
-      const { container } = renderCard()
+      renderCard()
 
-      const { add } = dispatchDragStart(container)
+      const { add } = dispatchDragStart()
 
       expect(add).toHaveBeenNthCalledWith(
         2,
