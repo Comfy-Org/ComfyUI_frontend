@@ -105,6 +105,38 @@ describe('TabSubgraphInputs', () => {
     expect(seedRow?.widget.value).toBe(7)
   })
 
+  it('omits promoted widgets hidden by connections or panel visibility', () => {
+    const { host: connectedHost } = buildHostWithPromotedSeed()
+    const graph = connectedHost.graph as LGraph
+    const outerSource = new LGraphNode('Outer Source')
+    outerSource.addOutput('seed', 'INT')
+    graph.add(outerSource)
+    outerSource.connect(0, connectedHost, 0)
+
+    renderPanel(connectedHost)
+    const connectedRow = captured.rows.find((row) => row.widget.name === 'seed')
+
+    const { host: panelHiddenHost } = buildHostWithPromotedSeed()
+    const id = widgetId(
+      panelHiddenHost.rootGraph.id,
+      panelHiddenHost.id,
+      'seed'
+    )
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing promoted widget visibility')
+    visibility.display.panel = 'never'
+
+    renderPanel(panelHiddenHost)
+    const panelHiddenRow = captured.rows.find(
+      (row) => row.widget.name === 'seed'
+    )
+
+    expect({ connectedRow, panelHiddenRow }).toEqual({
+      connectedRow: undefined,
+      panelHiddenRow: undefined
+    })
+  })
+
   it('reflects value changes through the same descriptor without rebuilding it', () => {
     const { host } = buildHostWithPromotedSeed()
     renderPanel(host)
