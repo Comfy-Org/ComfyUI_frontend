@@ -62,7 +62,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     }
 
     if (uploadedPaths.length > 0 && folder === 'input') {
-      await useAssetsStore().updateInputs()
+      await useAssetsStore().inputAssets.invalidate()
     }
 
     return uploadedPaths
