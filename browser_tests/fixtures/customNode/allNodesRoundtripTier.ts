@@ -446,25 +446,22 @@ export async function assertRoundtripTier({
               JSON.stringify(afterNormalized)
             )
           }
-          const widgetNamesById = () =>
+          const namesByIdWhere = (
+            keep: (widget: { serialize?: boolean }) => boolean
+          ) =>
             new Map(
               window.app!.graph.nodes.map((node) => [
                 String(node.id),
-                (node.widgets ?? []).map((widget) => widget.name)
+                (node.widgets ?? []).filter(keep).map((widget) => widget.name)
               ])
             )
-          // Positional widgets_values omits widgets with serialize === false,
-          // so names taken from the full widget list do not line up with it.
-          // This map applies the same filter the serializer does.
+          // Live topology wants every widget; anything indexing positional
+          // widgets_values wants only the ones the serializer keeps, since it
+          // omits serialize === false and the full list misaligns after the
+          // first omission.
+          const widgetNamesById = () => namesByIdWhere(() => true)
           const serializedWidgetNamesById = () =>
-            new Map(
-              window.app!.graph.nodes.map((node) => [
-                String(node.id),
-                (node.widgets ?? [])
-                  .filter((widget) => widget.serialize !== false)
-                  .map((widget) => widget.name)
-              ])
-            )
+            namesByIdWhere((widget) => widget.serialize !== false)
           let namesBefore = new Map<string, string[]>()
           let serializedNamesBefore = new Map<string, string[]>()
           let firstPass: ReturnType<
@@ -665,7 +662,9 @@ export async function assertRoundtripTier({
                     )
                   : !strict && Array.isArray(before.widgets_values)
                     ? before.widgets_values.filter((_, index) =>
-                        declaredNames.has(beforeNames[index] ?? '')
+                        declaredNames.has(
+                          (serializedNamesBefore.get(id) ?? [])[index] ?? ''
+                        )
                       )
                     : before.widgets_values
                 const comparedAfterValues = shapesDiffer
@@ -675,7 +674,9 @@ export async function assertRoundtripTier({
                     )
                   : !strict && Array.isArray(after.widgets_values)
                     ? after.widgets_values.filter((_, index) =>
-                        declaredNames.has(afterNames[index] ?? '')
+                        declaredNames.has(
+                          (serializedNamesAfter.get(id) ?? [])[index] ?? ''
+                        )
                       )
                     : after.widgets_values
                 if (!preserves(comparedBeforeValues, comparedAfterValues))

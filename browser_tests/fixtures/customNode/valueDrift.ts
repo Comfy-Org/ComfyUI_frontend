@@ -304,6 +304,25 @@ export function declaredInputNamesForTypes(
  * The save/reload tier mirrors this rule inside its page.evaluate closure,
  * which cannot import; these cases are the contract both sides implement.
  */
+/**
+ * Widget names aligned to positional widgets_values.
+ *
+ * The serializer skips widgets with `serialize === false`, so a name list
+ * taken from the full widget set misaligns every entry after the first skipped
+ * one - a declared widget then gets checked against its neighbour's name, and
+ * a real value drift can be filtered away as undeclared.
+ *
+ * The save/reload tier mirrors this inside its page.evaluate closure, which
+ * cannot import; these cases are the contract both sides implement.
+ */
+export function serializedWidgetNames(
+  widgets: readonly { name: string; serialize?: boolean }[]
+): string[] {
+  return widgets
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
+}
+
 export function isWidgetValuesReshape(
   before: unknown,
   after: unknown

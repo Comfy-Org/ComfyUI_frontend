@@ -4,6 +4,7 @@ import {
   initializationSignalsForTypes,
   isCanvasPreviewImagePath,
   isWidgetValuesReshape,
+  serializedWidgetNames,
   matchesTopologyExpectation,
   namedWidgetValueDrifts,
   pendingRestoredPreviewWidgets,
@@ -295,5 +296,29 @@ describe('isWidgetValuesReshape', () => {
   it('ignores pairs that share a container', () => {
     expect(isWidgetValuesReshape([1], [1])).toBe(false)
     expect(isWidgetValuesReshape({ a: 1 }, { a: 1 })).toBe(false)
+  })
+})
+
+describe('serializedWidgetNames', () => {
+  it('drops a leading non-serialized widget so names line up with values', () => {
+    const widgets = [
+      { name: 'hidden_state', serialize: false as const },
+      { name: 'steps' },
+      { name: 'cfg' }
+    ]
+
+    const names = serializedWidgetNames(widgets)
+
+    expect(names).toEqual(['steps', 'cfg'])
+    // widgets_values for this node is [20, 8]: index 0 must resolve to
+    // 'steps', not the omitted 'hidden_state'.
+    expect(names[0]).toBe('steps')
+  })
+
+  it('keeps every widget when none opts out', () => {
+    expect(serializedWidgetNames([{ name: 'a' }, { name: 'b' }])).toEqual([
+      'a',
+      'b'
+    ])
   })
 })
