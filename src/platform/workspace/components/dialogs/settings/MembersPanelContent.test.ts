@@ -690,37 +690,36 @@ describe('MembersPanelContent', () => {
       expect(screen.queryByText('No members')).not.toBeInTheDocument()
     })
 
-    describe.for([
-      { showMembersList: true, hasMembers: true },
-      { showMembersList: true, hasMembers: false },
-      { showMembersList: false, hasMembers: true },
-      { showMembersList: false, hasMembers: false }
-    ])(
-      'showMembersList=$showMembersList hasMembers=$hasMembers',
-      ({ showMembersList, hasMembers }) => {
-        const wantsEmptyCopy = showMembersList && !hasMembers
+    function showMembers(members: WorkspaceMember[], showMembersList = true) {
+      mockUiConfig.value = { ...mockUiConfig.value, showMembersList }
+      mockFilteredMembers.value = members
+      mockMembers.value = members
+    }
 
-        beforeEach(() => {
-          mockUiConfig.value = { ...mockUiConfig.value, showMembersList }
-          mockFilteredMembers.value = hasMembers ? [createMember()] : []
-          mockMembers.value = mockFilteredMembers.value
-        })
+    it('shows the list, not the empty copy, with members visible', () => {
+      showMembers([createMember()])
+      renderComponent()
+      expect(screen.getByText('member1@example.com')).toBeInTheDocument()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
 
-        it(`${wantsEmptyCopy ? 'shows' : 'hides'} the empty copy`, () => {
-          renderComponent()
-          const emptyCopy = screen.queryByText('No members')
-          if (wantsEmptyCopy) expect(emptyCopy).toBeInTheDocument()
-          else expect(emptyCopy).not.toBeInTheDocument()
-        })
+    it('shows the empty copy with no members and a visible list', () => {
+      showMembers([])
+      renderComponent()
+      expect(screen.getByText('No members')).toBeInTheDocument()
+    })
 
-        it(`${hasMembers ? 'renders' : 'omits'} the member row`, () => {
-          renderComponent()
-          const row = screen.queryByText('member1@example.com')
-          if (hasMembers) expect(row).toBeInTheDocument()
-          else expect(row).not.toBeInTheDocument()
-        })
-      }
-    )
+    it('shows no empty copy with members and a hidden list', () => {
+      showMembers([createMember()], false)
+      renderComponent()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
+
+    it('shows no empty copy with no members and a hidden list', () => {
+      showMembers([], false)
+      renderComponent()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
   })
 
   describe('card header actions', () => {
