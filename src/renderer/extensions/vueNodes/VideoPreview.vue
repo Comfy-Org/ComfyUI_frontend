@@ -152,6 +152,7 @@ interface VideoPreviewProps {
 const props = defineProps<VideoPreviewProps>()
 
 const { t } = useI18n()
+const toast = useToast()
 const nodeOutputStore = useNodeOutputStore()
 const {
   isLoading: downloading,
@@ -161,7 +162,7 @@ const {
 
 watch(downloadError, (err) => {
   if (err) {
-    useToast().add({
+    toast.add({
       severity: 'error',
       summary: t('g.error'),
       detail: t('g.failedToDownloadVideo'),
