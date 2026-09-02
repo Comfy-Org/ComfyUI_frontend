@@ -177,6 +177,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     )
     if (isDefault && unset) {
       userUnsetKeybindings.value = without(userUnsetKeybindings.value, unset)
+      userKeybindings.value = userKeybindings.value.filter(
+        (binding) => !conflicts(binding, keybinding)
+      )
       return
     }
     if (isDefault) return

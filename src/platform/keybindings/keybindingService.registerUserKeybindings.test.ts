@@ -119,10 +119,18 @@ describe('keybindingService - registerUserKeybindings', () => {
 
     expect(setMany).toHaveBeenCalledWith({
       'Comfy.Keybinding.NewBindings': [
-        expect.objectContaining({ dialogKey: 'global-mask-editor' })
+        expect.objectContaining({
+          commandId: 'Comfy.Test.MaskUndo',
+          combo: expect.objectContaining({ key: 'u', ctrl: true }),
+          dialogKey: 'global-mask-editor'
+        })
       ],
       'Comfy.Keybinding.UnsetBindings': [
-        expect.objectContaining({ dialogKey: 'global-mask-editor' })
+        expect.objectContaining({
+          commandId: 'Comfy.Test.MaskUndo',
+          combo: expect.objectContaining({ key: 'z', ctrl: true }),
+          dialogKey: 'global-mask-editor'
+        })
       ]
     })
   })

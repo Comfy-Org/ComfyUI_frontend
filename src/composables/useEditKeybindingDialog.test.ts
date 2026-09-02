@@ -21,7 +21,7 @@ const showSmallLayoutDialog = vi.hoisted(() =>
   vi.fn<(options: { props: DialogProps; footerProps: FooterProps }) => void>()
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showSmallLayoutDialog })
 }))
 
