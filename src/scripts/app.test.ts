@@ -848,6 +848,43 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('records a rejected submission on the workflow that queued it', async () => {
+      prepareEmptyPromptQueue()
+      const executionErrorStore = useExecutionErrorStore()
+      const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
+      const recordPromptError = vi.spyOn(
+        executionErrorStore,
+        'recordPromptError'
+      )
+      let rejectQueue: (error: PromptExecutionError) => void = () => {}
+      vi.spyOn(api, 'queuePrompt').mockImplementation(
+        () =>
+          new Promise((_, reject) => {
+            rejectQueue = reject
+          })
+      )
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledOnce())
+      executionErrorStore.setActiveGraph('22222222-2222-4222-8222-222222222222')
+      rejectQueue(
+        new PromptExecutionError({
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      )
+
+      await expect(submission).resolves.toBe(true)
+      expect(recordPromptError).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'prompt_no_outputs' }),
+        queuedRunErrorKey
+      )
+      expect(executionErrorStore.lastPromptError).toBeNull()
+    })
+
     it('tracks prompt construction failures at the submission stage', async () => {
       prepareEmptyPromptQueue()
       const trackExecutionOutcome = vi.fn()
@@ -1773,6 +1810,7 @@ describe('ComfyApp', () => {
 
       await app.loadApiJson({}, 'api-b')
       const importedBId = mockWorkspaceWorkflow.activeWorkflow?.activeState?.id
+      expect(importedBId).not.toBe(zeroUuid)
       expect(importedBId).not.toBe(importedAId)
       expect(executionErrorStore.lastNodeErrors).toBeNull()
 
@@ -1809,9 +1847,10 @@ describe('ComfyApp', () => {
       )
 
       await app.loadApiJson({}, 'repeat')
+      const activeWorkflow = mockWorkspaceWorkflow.activeWorkflow
       await app.loadApiJson({}, 'repeat')
 
-      expect(mockWorkspaceWorkflow.createNewTemporary).toHaveBeenCalledOnce()
+      expect(mockWorkspaceWorkflow.activeWorkflow).toBe(activeWorkflow)
     })
   })
 

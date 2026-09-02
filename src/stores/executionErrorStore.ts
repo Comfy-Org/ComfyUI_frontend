@@ -110,6 +110,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
   }
 
+  function captureRunErrorKey() {
+    return activeRunErrorKey.value
+  }
+
   /**
    * Point the store at the run errors of `graphId`. `null` detaches it, so a
    * discarded graph shows nothing until the next one is loaded. The overlay is
@@ -670,6 +674,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     recordPromptError,
 
     // Workflow scoping
+    captureRunErrorKey,
     runErrorKey,
     setActiveGraph,
 

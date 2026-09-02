@@ -1,4 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -915,7 +916,7 @@ describe('setActiveGraph', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('keeps each graph run errors separate and restores them on return', () => {
