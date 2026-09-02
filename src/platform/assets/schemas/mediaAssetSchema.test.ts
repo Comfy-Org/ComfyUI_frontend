@@ -33,6 +33,10 @@ describe('parseAssetInfo', () => {
     })
   })
 
+  it('parses a plain result item without asset fields', () => {
+    expect(parseAssetInfo(transferWith(BASE_ITEM))).toEqual(BASE_ITEM)
+  })
+
   it.for([
     ['attachment_ref', { attachment_ref: '' }],
     ['media_kind', { media_kind: 'hologram' }],
