@@ -105,16 +105,17 @@
         </span>
       </Button>
 
-      <Button
+      <LocateNodeButton
         v-if="primaryLocatableNodeType"
-        variant="textonly"
-        size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-        :aria-label="locateNodeLabel"
-        @click="handleLocateNode(primaryLocatableNodeType)"
-      >
-        <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-      </Button>
+        :label="
+          t(
+            'rightSidePanel.locateNodeFor',
+            { item: getLabel(primaryLocatableNodeType) },
+            { escapeParameter: false }
+          )
+        "
+        @locate="handleLocateNode(primaryLocatableNodeType)"
+      />
     </div>
 
     <TransitionCollapse>
@@ -141,16 +142,17 @@
                 {{ getLabel(nodeType) }}
               </span>
             </span>
-            <Button
+            <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
-              variant="textonly"
-              size="icon-sm"
-              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-              :aria-label="locateNodeLabel"
-              @click="handleLocateNode(nodeType)"
-            >
-              <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-            </Button>
+              :label="
+                t(
+                  'rightSidePanel.locateNodeFor',
+                  { item: getLabel(nodeType) },
+                  { escapeParameter: false }
+                )
+              "
+              @locate="handleLocateNode(nodeType)"
+            />
           </div>
         </li>
       </ul>
@@ -165,6 +167,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
+import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingNodeType } from '@/types/comfy'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
@@ -186,9 +189,6 @@ const expanded = ref(false)
 const hasMultipleNodeTypes = computed(() => group.nodeTypes.length > 1)
 const replacementLabel = computed(
   () => group.newNodeId ?? t('nodeReplacement.unknownNode', 'Unknown')
-)
-const locateNodeLabel = computed(() =>
-  t('rightSidePanel.locateNode', 'Locate node on canvas')
 )
 const titleToggleAriaLabel = computed(
   () =>
