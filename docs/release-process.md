@@ -278,7 +278,10 @@ object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
 `api.datadoghq.com` returns 403.
 
 Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
-`on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`.
+`on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`. The manual tags-only API
+procedure additionally requires a local `DATADOG_WRITE_APP_KEY` scoped to
+`on_call_write`; request it from a Datadog organization administrator and never
+store it as a repo secret.
 
 If the on-call user cannot be mapped — a missing directory entry, a directory
 secret that is absent or not valid JSON, missing Datadog credentials, an
