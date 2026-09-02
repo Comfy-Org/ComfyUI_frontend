@@ -14,21 +14,14 @@ import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  ModalityFilter,
-  SortOrder,
-  TaskInput,
-  UseCase,
-  WorkshopModel
-} from '../../config/workshop'
+import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
 import {
   SORT_ORDERS,
   USE_CASES,
   countByFacet,
   countByUseCase,
   filterWorkshopModels,
-  sortWorkshopModels,
-  splitTask
+  sortWorkshopModels
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -43,7 +36,7 @@ const { models, locale = 'en' } = defineProps<{
 
 const query = ref('')
 const useCase = ref<UseCase | 'all'>('all')
-const tasks = ref<string[]>([])
+const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 const { showStatuses } = usePrototypeTweaks()
@@ -59,20 +52,6 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   audio: 'workshop.useCase.audio',
   text: 'workshop.useCase.text'
 }
-const filterLabelKey: Record<Exclude<ModalityFilter, 'all'>, TranslationKey> = {
-  image: 'workshop.filter.image',
-  video: 'workshop.filter.video',
-  audio: 'workshop.filter.audio',
-  '3d': 'workshop.filter.3d',
-  text: 'workshop.filter.text',
-  other: 'workshop.filter.other'
-}
-const inputLabelKey: Record<TaskInput, TranslationKey> = {
-  text: 'workshop.input.text',
-  image: 'workshop.input.image',
-  video: 'workshop.input.video',
-  audio: 'workshop.input.audio'
-}
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -80,21 +59,14 @@ const sortLabelKey: Record<SortOrder, TranslationKey> = {
   priceDesc: 'workshop.sort.priceDesc'
 }
 
-function taskLabel(value: string): string {
-  const parts = splitTask(value)
-  return parts
-    ? `${t(inputLabelKey[parts.input], locale)} → ${t(filterLabelKey[parts.output], locale)}`
-    : value
-}
-
 const counts = computed(() => countByUseCase(models))
 const useCases = computed(() =>
   (['all', ...USE_CASES] as const).filter((value) => counts.value[value] > 0)
 )
-const taskOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(models, 'task').map((option) => ({
+const capabilityOptions = computed<FacetMenuOption[]>(() =>
+  countByFacet(models, 'capabilities').map((option) => ({
     ...option,
-    label: taskLabel(option.value)
+    label: option.value
   }))
 )
 const providerOptions = computed<FacetMenuOption[]>(() =>
@@ -110,7 +82,7 @@ const visible = computed(() =>
       query: query.value,
       useCase: useCase.value,
       providers: providers.value,
-      tasks: tasks.value
+      capabilities: capabilities.value
     }),
     sort.value
   )
@@ -119,13 +91,13 @@ const isFiltered = computed(
   () =>
     query.value !== '' ||
     useCase.value !== 'all' ||
-    tasks.value.length + providers.value.length > 0
+    capabilities.value.length + providers.value.length > 0
 )
 
 function clearFilters() {
   query.value = ''
   useCase.value = 'all'
-  tasks.value = []
+  capabilities.value = []
   providers.value = []
 }
 
@@ -199,10 +171,10 @@ const menuItemClass =
 
       <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
         <WorkshopFacetMenu
-          v-model="tasks"
-          facet="task"
-          :label="t('workshop.filter.taskGroup', locale)"
-          :options="taskOptions"
+          v-model="capabilities"
+          facet="capability"
+          :label="t('workshop.filter.capabilityGroup', locale)"
+          :options="capabilityOptions"
           :locale
         />
         <WorkshopFacetMenu

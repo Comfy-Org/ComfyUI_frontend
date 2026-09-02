@@ -25,6 +25,7 @@ const model: WorkshopModelDetail = {
   workflowCount: 1,
   href: '/workshop/models/demo/',
   routerId: 'demo/demo',
+  capabilities: [],
   provider: 'Demo',
   modality: 'image',
   task: 'text-to-image',

@@ -11,6 +11,7 @@ const base: WorkshopModel = {
   workflowCount: 2,
   href: '/workshop/models/flux/',
   routerId: 'bfl/flux',
+  capabilities: [],
   provider: 'Black Forest Labs',
   modality: 'image'
 }

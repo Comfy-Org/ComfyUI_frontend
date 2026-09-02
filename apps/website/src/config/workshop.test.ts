@@ -12,6 +12,7 @@ import {
   isRouterModel,
   sortWorkshopModels,
   splitTask,
+  capabilitiesFor,
   taskFor,
   useCaseFor,
   workshopModels
@@ -24,6 +25,7 @@ const fixture: WorkshopModel[] = [
     workflowCount: 3,
     href: '/a',
     routerId: 'kling/a',
+    capabilities: [],
     provider: 'Kling',
     modality: 'video',
     task: 'text-to-video'
@@ -34,6 +36,7 @@ const fixture: WorkshopModel[] = [
     workflowCount: 2,
     href: '/b',
     routerId: 'bfl/b',
+    capabilities: ['Upscale', 'Inpainting'],
     provider: 'Black Forest Labs',
     modality: 'image',
     task: 'image-to-image'
@@ -43,7 +46,8 @@ const fixture: WorkshopModel[] = [
     name: 'Mystery',
     workflowCount: 1,
     href: '/c',
-    routerId: 'comfy/c'
+    routerId: 'comfy/c',
+    capabilities: []
   }
 ]
 
@@ -97,18 +101,21 @@ describe('filterWorkshopModels', () => {
 })
 
 describe('filterWorkshopModels facets', () => {
-  it('filters by provider and by task', () => {
+  it('filters by provider and by capability', () => {
     expect(
       filterWorkshopModels(fixture, { query: '', providers: ['Kling'] })
     ).toEqual([fixture[0]])
     expect(
-      filterWorkshopModels(fixture, { query: '', tasks: ['image-to-image'] })
+      filterWorkshopModels(fixture, { query: '', capabilities: ['Upscale'] })
     ).toEqual([fixture[1]])
+    expect(filterWorkshopModels(fixture, { query: 'inpaint' })).toEqual([
+      fixture[1]
+    ])
     expect(
       filterWorkshopModels(fixture, {
         query: '',
         useCase: 'generate-videos',
-        tasks: ['image-to-image']
+        capabilities: ['Upscale']
       })
     ).toEqual([])
   })
@@ -152,9 +159,9 @@ describe('countByFacet', () => {
       { value: 'Black Forest Labs', count: 2 },
       { value: 'Kling', count: 1 }
     ])
-    expect(countByFacet(list, 'task')).toEqual([
-      { value: 'image-to-image', count: 2 },
-      { value: 'text-to-video', count: 1 }
+    expect(countByFacet(list, 'capabilities')).toEqual([
+      { value: 'Inpainting', count: 2 },
+      { value: 'Upscale', count: 2 }
     ])
   })
 })
@@ -209,6 +216,26 @@ describe('useCaseFor', () => {
     )
     expect(useCaseFor(fixture[2])).toBeUndefined()
     expect(useCaseFor(withTask('text-to-other'))).toBeUndefined()
+  })
+})
+
+describe('capabilitiesFor', () => {
+  it('keeps the tags that describe a capability, merged and sorted', () => {
+    const example = (tags: string[]) => ({
+      name: 'x',
+      title: 'x',
+      description: '',
+      tags,
+      thumbnailUrl: '',
+      values: {}
+    })
+    expect(
+      capabilitiesFor([
+        example(['API', 'Image Upscale', 'Image']),
+        example(['Video Upscale', 'Lip Sync', 'Text to Video'])
+      ])
+    ).toEqual(['Lip sync', 'Upscale'])
+    expect(capabilitiesFor([])).toEqual([])
   })
 })
 

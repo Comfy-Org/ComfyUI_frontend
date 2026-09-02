@@ -14,6 +14,7 @@ function model(
     workflowCount,
     href: `/${slug}`,
     routerId: `x/${slug}`,
+    capabilities: [],
     modality
   }
 }

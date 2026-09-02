@@ -13,6 +13,7 @@ const models: WorkshopModel[] = [
     workflowCount: 3,
     href: '/workshop/models/kling-ai/',
     routerId: 'kling/kling-ai',
+    capabilities: [],
     provider: 'Kling',
     modality: 'video',
     task: 'text-to-video',
@@ -24,6 +25,7 @@ const models: WorkshopModel[] = [
     workflowCount: 2,
     href: '/workshop/models/flux/',
     routerId: 'bfl/flux',
+    capabilities: ['Upscale'],
     provider: 'Black Forest Labs',
     modality: 'image',
     task: 'image-to-image',
@@ -34,7 +36,8 @@ const models: WorkshopModel[] = [
     name: 'Mystery',
     workflowCount: 1,
     href: '/workshop/models/mystery/',
-    routerId: 'comfy/mystery'
+    routerId: 'comfy/mystery',
+    capabilities: []
   }
 ]
 
@@ -53,7 +56,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('combines the use-case chips with the task menu', async () => {
+  it('combines the use-case tabs with the capability menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     expect(screen.queryByTestId('use-case-generate-images')).toBeNull()
@@ -66,12 +69,12 @@ describe('WorkshopModelsGrid', () => {
         .getAttribute('aria-pressed')
     ).toBe('true')
 
-    await user.click(screen.getByTestId('workshop-filter-task'))
-    await user.click(await screen.findByTestId('filter-task-image-to-image'))
+    await user.click(screen.getByTestId('workshop-filter-capability'))
+    await user.click(await screen.findByTestId('filter-capability-Upscale'))
     expect(cardNames()).toHaveLength(0)
     expect(screen.getByTestId('workshop-empty')).toBeTruthy()
 
-    await user.click(screen.getByTestId('workshop-filter-task-clear'))
+    await user.click(screen.getByTestId('workshop-filter-capability-clear'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 

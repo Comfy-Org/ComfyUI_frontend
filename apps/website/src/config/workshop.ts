@@ -13,7 +13,7 @@ export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 export type ModelStatus = 'deprecated' | 'degraded'
 
 const TASK_INPUTS = ['text', 'image', 'video', 'audio'] as const
-export type TaskInput = (typeof TASK_INPUTS)[number]
+type TaskInput = (typeof TASK_INPUTS)[number]
 export type WorkshopTask = `${TaskInput}-to-${Exclude<ModalityFilter, 'all'>}`
 
 // Hand-maintained overrides on top of workshop-models.generated.json:
@@ -102,6 +102,7 @@ export interface WorkshopModel {
   readonly provider?: string
   readonly modality?: Modality
   readonly task?: WorkshopTask
+  readonly capabilities: readonly string[]
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
@@ -299,6 +300,39 @@ export function useCaseFor(model: WorkshopModel): UseCase | undefined {
   }
 }
 
+// Example tags that say what a model can do beyond its use case. Tags that
+// only repeat the modality or the task are left out.
+const CAPABILITY_LABELS: Readonly<Record<string, string>> = {
+  'Image Upscale': 'Upscale',
+  'Video Upscale': 'Upscale',
+  'Image Edit': 'Image editing',
+  'Video Edit': 'Video editing',
+  Inpainting: 'Inpainting',
+  Outpainting: 'Outpainting',
+  'Lip Sync': 'Lip sync',
+  FLF2V: 'First and last frame',
+  'Reference to Video': 'Reference video',
+  'Style Reference': 'Style reference',
+  'Character Reference': 'Character reference',
+  'Motion Control': 'Motion control',
+  Relight: 'Relighting',
+  'Virtual Try-On': 'Virtual try-on',
+  Vector: 'Vector output',
+  'Text to Speech': 'Text to speech',
+  'Voice Cloning': 'Voice cloning',
+  Music: 'Music',
+  'Text to Music': 'Music'
+}
+
+export function capabilitiesFor(
+  examples: readonly GeneratedExample[]
+): string[] {
+  const labels = examples.flatMap((example) =>
+    example.tags.flatMap((tag) => CAPABILITY_LABELS[tag] ?? [])
+  )
+  return [...new Set(labels)].sort()
+}
+
 function toWorkshopModel(model: Model): WorkshopModel {
   const overrides = display[model.slug] ?? {}
   const data = generated[model.slug]
@@ -317,6 +351,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
     ...(provider ? { provider } : {}),
     ...(modality ? { modality } : {}),
     ...(data ? { task: taskFor(data.fields, modality) } : {}),
+    capabilities: capabilitiesFor(data?.examples ?? []),
     ...(creditsPerRun !== undefined ? { creditsPerRun } : {}),
     ...(data?.priceUsdFrom !== undefined
       ? { priceUsdFrom: data.priceUsdFrom }
@@ -368,7 +403,7 @@ export interface WorkshopFilter {
   readonly query: string
   readonly useCase?: UseCase | 'all'
   readonly providers?: readonly string[]
-  readonly tasks?: readonly string[]
+  readonly capabilities?: readonly string[]
 }
 
 function matchesFacet(
@@ -382,25 +417,27 @@ function matchesFacet(
 
 export function filterWorkshopModels(
   list: readonly WorkshopModel[],
-  { query, useCase = 'all', providers = [], tasks = [] }: WorkshopFilter
+  { query, useCase = 'all', providers = [], capabilities = [] }: WorkshopFilter
 ): WorkshopModel[] {
   const needle = query.trim().toLowerCase()
   return list.filter(
     (model) =>
       (useCase === 'all' || useCaseFor(model) === useCase) &&
       matchesFacet(providers, model.provider) &&
-      matchesFacet(tasks, model.task) &&
+      (capabilities.length === 0 ||
+        capabilities.some((value) => model.capabilities.includes(value))) &&
       (needle === '' || searchText(model).includes(needle))
   )
 }
 
-// Name, provider, use case ("create videos"), category and task ("image to
-// video") are all searchable.
+// Name, provider, use case ("generate videos"), capabilities ("upscale"),
+// category and task ("image to video") are all searchable.
 function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
     useCaseFor(model)?.replaceAll('-', ' ') ?? '',
+    ...model.capabilities,
     modalityOf(model),
     model.task?.replaceAll('-', ' ') ?? ''
   ]
@@ -439,12 +476,13 @@ export interface FacetOption {
 
 export function countByFacet(
   list: readonly WorkshopModel[],
-  facet: 'provider' | 'task'
+  facet: 'provider' | 'capabilities'
 ): FacetOption[] {
   const counts = new Map<string, number>()
   for (const model of list) {
-    const value = model[facet]
-    if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+    const raw = model[facet]
+    const values = raw === undefined ? [] : Array.isArray(raw) ? raw : [raw]
+    for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
   }
   return [...counts]
     .map(([value, count]) => ({ value, count }))
