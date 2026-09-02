@@ -1,0 +1,38 @@
+name: 'Lint and format verify'
+description: >
+  Runs the lint/format/knip verification suite plus the browser-tests,
+  scripts and tools typechecks. Shared by ci-lint-format.yaml (PR) and
+  ci-lint-format-queue.yaml (merge queue) so both paths run the exact
+  same checks. The caller is responsible for checkout and frontend setup
+  before invoking this action.
+
+runs:
+  using: composite
+  steps:
+    - name: Typecheck application
+      shell: bash
+      run: pnpm typecheck
+
+    - name: Verify lint and format
+      shell: bash
+      run: |
+        pnpm lint
+        pnpm stylelint
+        pnpm format:check
+        pnpm knip
+
+    - name: Verify locale integrity
+      shell: bash
+      run: pnpm locale:check
+
+    - name: Typecheck browser tests
+      shell: bash
+      run: pnpm typecheck:browser
+
+    - name: Typecheck scripts
+      shell: bash
+      run: pnpm typecheck:scripts
+
+    - name: Typecheck tools
+      shell: bash
+      run: pnpm typecheck:tools

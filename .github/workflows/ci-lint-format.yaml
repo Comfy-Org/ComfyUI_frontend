@@ -1,4 +1,7 @@
-# Description: Linting and code formatting validation for pull requests
+# Description: Linting and code formatting validation for pull requests.
+# Paired with ci-lint-format-queue.yaml - workflow name and job name must
+# match so branch protection resolves a single required check in both the
+# pull_request and merge_group contexts.
 name: 'CI: Lint Format'
 
 on:
@@ -18,21 +21,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.PR_GH_TOKEN || github.token }}
+          # Blobless full history: pnpm locale:check (lint-format-verify)
+          # fetches the English source blobs recorded in
+          # src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
-
-      - name: Detect browser_tests changes
-        id: changed-paths
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        with:
-          filters: |
-            browser_tests:
-              - 'browser_tests/**'
 
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
@@ -77,21 +77,13 @@ jobs:
           echo "See CONTRIBUTING.md for more details."
           exit 1
 
-      - name: Final validation
-        run: |
-          pnpm lint
-          pnpm stylelint
-          pnpm format:check
-          pnpm knip
-
-      - name: Typecheck browser tests
-        if: steps.changed-paths.outputs.browser_tests == 'true'
-        run: pnpm typecheck:browser
+      - name: Verify lint and format
+        uses: ./.github/actions/lint-format-verify
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({

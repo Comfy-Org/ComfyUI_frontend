@@ -1,4 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 
 const {
   capturedOnPan,
@@ -51,15 +56,21 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   }
 }))
 
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ isReadOnly: false })
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
       ds: mockDs,
       graph: {
+        rootGraph: { id: 'autopan-graph' },
+        nodes: [],
         getNodeById: (id: string) => ({
           id,
           inputs: [],
-          outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
+          outputs: [{ name: 'out', type: '*', links: [] }]
         }),
         getLink: () => null,
         getReroute: () => null
@@ -127,16 +138,18 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getSlotLayout: (_key: string) => ({
-      nodeId: 'node1',
-      index: 0,
-      type: 'output',
-      position: { x: 100, y: 200 }
-    }),
-    getAllSlotKeys: () => [],
     getRerouteLayout: () => null,
     queryRerouteAtPoint: () => null
   }
+}))
+
+vi.mock('@/renderer/core/canvas/litegraph/slotCalculations', () => ({
+  getGraphSlotLayout: () => ({
+    nodeId: 'node1',
+    index: 0,
+    type: 'output',
+    position: { x: 100, y: 200 }
+  })
 }))
 
 vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
@@ -183,7 +196,8 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 vi.mock('@/lib/litegraph/src/LLink', () => ({
-  LLink: { getReroutes: () => [] }
+  LLink: { getReroutes: () => [] },
+  slotFloatingLinks: () => []
 }))
 
 vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
@@ -205,7 +219,7 @@ function pointerEvent(
   clientY: number,
   pointerId = 1
 ): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     clientX,
     clientY,
     button: 0,
@@ -217,12 +231,12 @@ function pointerEvent(
     target: document.createElement('div'),
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 function startDrag() {
   const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: 'node1',
+    nodeId: toNodeId('node1'),
     index: 0,
     type: 'output'
   })
@@ -231,6 +245,7 @@ function startDrag() {
 
 describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {
@@ -238,13 +253,7 @@ describe('useSlotLinkInteraction auto-pan', () => {
     }
     mockDs.offset = [0, 0]
     mockDs.scale = 1
-    mockSetDirty.mockClear()
-    mockAdapter.beginFromOutput.mockClear()
     mockLinkConnector.state.snapLinksPos = null
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('starts auto-pan when link drag begins', () => {

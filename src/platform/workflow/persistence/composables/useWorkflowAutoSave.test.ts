@@ -1,5 +1,5 @@
-import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
@@ -40,21 +40,12 @@ let mockActiveWorkflow: { isModified: boolean; isPersisted?: boolean } | null =
   null
 
 describe('useWorkflowAutoSave', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('should auto-save workflow after delay when modified and autosave enabled', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: true, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -75,7 +66,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: false, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -96,7 +87,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: true, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -115,7 +106,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 2000
     mockActiveWorkflow = { isModified: true, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -138,7 +129,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 2000
     mockActiveWorkflow = { isModified: true, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -173,7 +164,7 @@ describe('useWorkflowAutoSave', () => {
       .mockImplementation(() => {})
 
     try {
-      mount({
+      render({
         template: `<div></div>`,
         setup() {
           useWorkflowAutoSave()
@@ -202,7 +193,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: true, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -234,7 +225,7 @@ describe('useWorkflowAutoSave', () => {
   it('should clean up event listeners on component unmount', async () => {
     mockAutoSaveSetting = 'after delay'
 
-    const wrapper = mount({
+    const { unmount } = render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -242,7 +233,7 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    wrapper.unmount()
+    unmount()
 
     expect(api.removeEventListener).toHaveBeenCalled()
   })
@@ -252,7 +243,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 0
     mockActiveWorkflow = { isModified: true, isPersisted: true }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()
@@ -282,7 +273,7 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: true, isPersisted: false }
 
-    mount({
+    render({
       template: `<div></div>`,
       setup() {
         useWorkflowAutoSave()

@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
@@ -10,6 +13,11 @@ function makeOutput(
 }
 
 describe(parseNodeOutput, () => {
+  it('returns empty array for nullish node output', () => {
+    expect(parseNodeOutput('1', null)).toEqual([])
+    expect(parseNodeOutput('1', undefined)).toEqual([])
+  })
+
   it('returns empty array for output with no known media types', () => {
     const result = parseNodeOutput('1', makeOutput({ text: 'hello' }))
     expect(result).toEqual([])
@@ -77,6 +85,21 @@ describe(parseNodeOutput, () => {
     expect(types).toContain('3d')
   })
 
+  it('flattens files outputs (e.g. SaveText)', () => {
+    const output = makeOutput({
+      files: [{ filename: 'result.txt', subfolder: '', type: 'output' }],
+      text: 'some generated text'
+    })
+
+    const result = parseNodeOutput('9', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('result.txt')
+    expect(result[0].mediaType).toBe('files')
+    expect(result[0].isText).toBe(true)
+    expect(result[0].supportsPreview).toBe(true)
+  })
+
   it('ignores empty arrays', () => {
     const output = makeOutput({ images: [], audio: [] })
     const result = parseNodeOutput('1', output)
@@ -108,10 +131,10 @@ describe(parseNodeOutput, () => {
   })
 
   it('excludes non-ResultItem array items', () => {
-    const output = {
+    const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
       custom_data: [{ randomKey: 123 }]
-    } as unknown as NodeExecutionOutput
+    })
 
     const result = parseNodeOutput('1', output)
 
@@ -120,12 +143,12 @@ describe(parseNodeOutput, () => {
   })
 
   it('accepts items with filename but no subfolder', () => {
-    const output = {
+    const output = fromPartial<NodeExecutionOutput>({
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
         { filename: 'no-subfolder.png' }
       ]
-    } as unknown as NodeExecutionOutput
+    })
 
     const result = parseNodeOutput('1', output)
 
@@ -136,12 +159,12 @@ describe(parseNodeOutput, () => {
   })
 
   it('excludes items missing filename', () => {
-    const output = {
+    const output = fromPartial<NodeExecutionOutput>({
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
         { subfolder: '', type: 'output' }
       ]
-    } as unknown as NodeExecutionOutput
+    })
 
     const result = parseNodeOutput('1', output)
 
@@ -151,6 +174,22 @@ describe(parseNodeOutput, () => {
 })
 
 describe(parseTaskOutput, () => {
+  it('ignores nullish node outputs', () => {
+    const taskOutput: Record<string, NodeExecutionOutput | null | undefined> = {
+      '1': null,
+      '2': undefined,
+      '3': makeOutput({
+        images: [{ filename: 'a.png', subfolder: '', type: 'output' }]
+      })
+    }
+
+    const result = parseTaskOutput(taskOutput)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].nodeId).toBe('3')
+    expect(result[0].filename).toBe('a.png')
+  })
+
   it('flattens across multiple nodes', () => {
     const taskOutput: Record<string, NodeExecutionOutput> = {
       '1': makeOutput({

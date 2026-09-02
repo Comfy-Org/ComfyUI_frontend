@@ -2,7 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+        !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -10,7 +11,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-xxs text-muted-foreground"
+      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
     >
       {{ displayName }}
     </label>
@@ -22,8 +23,10 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-xs',
-          !hideLayoutField && 'pt-5'
+          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
+          !hideLayoutField && 'pt-5',
+          // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
+          'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
       :placeholder
@@ -58,7 +61,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

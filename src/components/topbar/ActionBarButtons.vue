@@ -1,5 +1,8 @@
 <template>
-  <div class="flex h-full shrink-0 items-center gap-1 empty:hidden">
+  <div
+    data-testid="action-bar-buttons"
+    class="flex h-full shrink-0 items-center gap-1 empty:hidden"
+  >
     <Button
       v-for="(button, index) in actionBarButtonStore.buttons"
       :key="index"

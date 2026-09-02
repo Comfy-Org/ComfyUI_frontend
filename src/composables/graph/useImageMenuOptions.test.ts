@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-
 import { useImageMenuOptions } from './useImageMenuOptions'
 
 vi.mock('vue-i18n', async (importOriginal) => {
@@ -45,10 +45,6 @@ function createImageNode(
 }
 
 describe('useImageMenuOptions', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
@@ -101,6 +97,36 @@ describe('useImageMenuOptions', () => {
       expect(copyIdx).toBeLessThan(pasteIdx)
       expect(pasteIdx).toBeLessThan(saveIdx)
     })
+
+    it('gives the Open in Mask Editor option the mask icon', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
+
+      expect(maskOption?.icon).toBe('icon-[comfy--mask]')
+    })
+
+    it('gives every image action option an icon so labels stay aligned', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+
+      expect(options.every((o) => !!o.icon)).toBe(true)
+    })
+
+    it('keeps output preview actions when the local image input is unavailable', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const labels = getImageMenuOptions(node, {
+        input: false,
+        preview: true
+      }).map((option) => option.label)
+
+      expect(labels).toContain('Open Image')
+      expect(labels).toContain('Save Image')
+      expect(labels).not.toContain('Paste Image')
+    })
   })
 
   describe('pasteImage action', () => {
@@ -112,9 +138,11 @@ describe('useImageMenuOptions', () => {
         getType: vi.fn().mockResolvedValue(mockBlob)
       }
 
-      mockClipboard({
-        read: vi.fn().mockResolvedValue([mockClipboardItem])
-      } as unknown as Clipboard)
+      mockClipboard(
+        fromPartial<Clipboard>({
+          read: vi.fn().mockResolvedValue([mockClipboardItem])
+        })
+      )
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)
@@ -131,7 +159,7 @@ describe('useImageMenuOptions', () => {
 
     it('handles missing clipboard API gracefully', async () => {
       const node = createImageNode()
-      mockClipboard({ read: undefined } as unknown as Clipboard)
+      mockClipboard(fromPartial<Clipboard>({ read: undefined }))
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)
@@ -148,9 +176,11 @@ describe('useImageMenuOptions', () => {
         getType: vi.fn()
       }
 
-      mockClipboard({
-        read: vi.fn().mockResolvedValue([mockClipboardItem])
-      } as unknown as Clipboard)
+      mockClipboard(
+        fromPartial<Clipboard>({
+          read: vi.fn().mockResolvedValue([mockClipboardItem])
+        })
+      )
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)

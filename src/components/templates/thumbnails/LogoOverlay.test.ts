@@ -1,18 +1,10 @@
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { nextTick, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
 
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) =>
-      key === 'templates.logoProviderSeparator' ? ' & ' : key,
-    locale: ref('en')
-  })
-}))
 
 type LogoOverlayProps = ComponentProps<typeof LogoOverlay>
 
@@ -21,137 +13,123 @@ describe('LogoOverlay', () => {
     return `/logos/${provider}.png`
   }
 
-  function mountOverlay(
+  function renderOverlay(
     logos: LogoInfo[],
     props: Partial<LogoOverlayProps> = {}
   ) {
-    return mount(LogoOverlay, {
-      props: {
-        logos,
-        getLogoUrl: mockGetLogoUrl,
-        ...props
-      }
+    return render(LogoOverlay, {
+      props: { logos, getLogoUrl: mockGetLogoUrl, ...props }
     })
   }
 
   it('renders nothing when logos array is empty', () => {
-    const wrapper = mountOverlay([])
-    expect(wrapper.findAll('img')).toHaveLength(0)
+    renderOverlay([])
+    expect(screen.queryAllByTestId('logo-badge')).toHaveLength(0)
   })
 
-  it('renders a single logo with correct src and alt', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const img = wrapper.find('img')
-    expect(img.attributes('src')).toBe('/logos/Google.png')
-    expect(img.attributes('alt')).toBe('Google')
+  it('renders one badge per provider', () => {
+    renderOverlay([{ provider: ['Google', 'OpenAI'] }])
+    expect(screen.getAllByTestId('logo-badge')).toHaveLength(2)
   })
 
-  it('renders multiple separate logo entries', () => {
-    const wrapper = mountOverlay([
-      { provider: 'Google' },
-      { provider: 'OpenAI' },
-      { provider: 'Stability' }
-    ])
-    expect(wrapper.findAll('img')).toHaveLength(3)
+  it('renders a monochrome comfy icon when the provider has one', () => {
+    renderOverlay([{ provider: 'Google' }])
+    expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument()
+    expect(screen.getByTestId('logo-icon')).toHaveClass(
+      'icon-mask-[comfy--gemini]'
+    )
   })
 
-  it('displays provider name as label for single provider', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const span = wrapper.find('span')
-    expect(span.text()).toBe('Google')
+  it('falls back to the raster logo when no comfy icon exists', () => {
+    renderOverlay([{ provider: 'Unknown Brand' }])
+    expect(
+      screen.getByRole('button', { name: 'Unknown Brand' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('logo-img')).toHaveAttribute(
+      'src',
+      '/logos/Unknown Brand.png'
+    )
   })
 
-  it('images are not draggable', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const img = wrapper.find('img')
-    expect(img.attributes('draggable')).toBe('false')
+  it('renders an icon-backed provider that has no logo url', () => {
+    render(LogoOverlay, {
+      props: { logos: [{ provider: 'Google' }], getLogoUrl: () => '' }
+    })
+    expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument()
+    expect(screen.getByTestId('logo-icon')).toHaveClass(
+      'icon-mask-[comfy--gemini]'
+    )
   })
 
-  it('filters out logos with empty URLs', () => {
-    function getLogoUrl(provider: string) {
-      return provider === 'Google' ? '/logos/Google.png' : ''
-    }
-    const wrapper = mount(LogoOverlay, {
+  it('filters out providers with no logo url and no icon', () => {
+    render(LogoOverlay, {
       props: {
-        logos: [{ provider: 'Google' }, { provider: 'Unknown' }],
-        getLogoUrl
+        logos: [{ provider: ['Google', 'Nothing'] }],
+        getLogoUrl: (provider: string) =>
+          provider === 'Google' ? '/logos/Google.png' : ''
       }
     })
-    expect(wrapper.findAll('img')).toHaveLength(1)
+    expect(screen.getAllByTestId('logo-badge')).toHaveLength(1)
   })
 
-  it('renders one logo per unique provider', () => {
-    const wrapper = mountOverlay([
-      { provider: 'Google' },
-      { provider: 'OpenAI' }
+  it('collapses providers beyond the visible limit into a +N chip', () => {
+    renderOverlay([
+      {
+        provider: ['Google', 'OpenAI', 'Kling', 'Luma', 'Runway', 'Veo', 'Vidu']
+      }
     ])
-    expect(wrapper.findAll('img')).toHaveLength(2)
+
+    expect(screen.getAllByTestId('logo-badge')).toHaveLength(5)
+    expect(screen.getByText('+2')).toBeInTheDocument()
   })
 
-  describe('stacked logos', () => {
-    it('renders multiple providers as stacked overlapping logos', () => {
-      const wrapper = mountOverlay([{ provider: ['WaveSpeed', 'Hunyuan'] }])
-      const images = wrapper.findAll('img')
-      expect(images).toHaveLength(2)
-      expect(images[0].attributes('alt')).toBe('WaveSpeed')
-      expect(images[1].attributes('alt')).toBe('Hunyuan')
-    })
+  it('shows no +N chip when every provider fits', () => {
+    renderOverlay([{ provider: ['Google', 'OpenAI'] }])
+    expect(screen.queryByText(/^\+\d+$/)).not.toBeInTheDocument()
+  })
 
-    it('joins provider names with locale-aware conjunction for default label', () => {
-      const wrapper = mountOverlay([{ provider: ['WaveSpeed', 'Hunyuan'] }])
-      const span = wrapper.find('span')
-      expect(span.text()).toBe('WaveSpeed and Hunyuan')
-    })
-
-    it('uses custom label when provided', () => {
-      const wrapper = mountOverlay([
-        { provider: ['WaveSpeed', 'Hunyuan'], label: 'Custom Label' }
-      ])
-      const span = wrapper.find('span')
-      expect(span.text()).toBe('Custom Label')
-    })
-
-    it('applies negative gap for overlap effect', () => {
-      const wrapper = mountOverlay([
-        { provider: ['WaveSpeed', 'Hunyuan'], gap: -8 }
-      ])
-      const images = wrapper.findAll('img')
-      expect(images[1].attributes('style')).toContain('margin-left: -8px')
-    })
-
-    it('applies default gap when not specified', () => {
-      const wrapper = mountOverlay([{ provider: ['WaveSpeed', 'Hunyuan'] }])
-      const images = wrapper.findAll('img')
-      expect(images[1].attributes('style')).toContain('margin-left: -6px')
-    })
-
-    it('filters out invalid providers from stacked logos', () => {
-      function getLogoUrl(provider: string) {
-        return provider === 'WaveSpeed' ? '/logos/WaveSpeed.png' : ''
-      }
-      const wrapper = mount(LogoOverlay, {
-        props: {
-          logos: [{ provider: ['WaveSpeed', 'Unknown'] }],
-          getLogoUrl
+  it('discloses the hidden providers when the +N chip is activated', async () => {
+    const user = userEvent.setup()
+    renderOverlay(
+      [
+        {
+          provider: [
+            'Google',
+            'OpenAI',
+            'Kling',
+            'Luma',
+            'Runway',
+            'Veo',
+            'Vidu'
+          ]
         }
-      })
-      expect(wrapper.findAll('img')).toHaveLength(1)
-      expect(wrapper.find('span').text()).toBe('WaveSpeed')
-    })
+      ],
+      {}
+    )
+
+    const extras = screen.getByTestId('logo-extra')
+    const extraLabel = extras.getAttribute('aria-label') ?? ''
+    expect(extraLabel).toMatch(/,/)
+
+    await user.click(extras)
+    expect(await screen.findAllByText(extraLabel)).not.toHaveLength(0)
   })
 
-  describe('error handling', () => {
-    it('keeps showing remaining providers when one image fails in stacked logos', async () => {
-      const wrapper = mountOverlay([{ provider: ['Google', 'OpenAI'] }])
-      const images = wrapper.findAll('[data-testid="logo-img"]')
-      expect(images).toHaveLength(2)
+  it('keeps the pill visible when its only image fails but an icon remains', async () => {
+    renderOverlay([{ provider: ['Google', 'Unknown Brand'] }])
 
-      await images[0].trigger('error')
-      await nextTick()
+    await fireEvent.error(screen.getByTestId('logo-img'))
 
-      const remainingImages = wrapper.findAll('[data-testid="logo-img"]')
-      expect(remainingImages).toHaveLength(2)
-      expect(remainingImages[1].attributes('alt')).toBe('OpenAI')
-    })
+    expect(screen.getByRole('button', { name: 'Google' })).toBeVisible()
+  })
+
+  it('keeps remaining providers when one raster logo fails to load', async () => {
+    renderOverlay([{ provider: ['Unknown One', 'Unknown Two'] }])
+    const images = screen.getAllByTestId('logo-img')
+    expect(images).toHaveLength(2)
+
+    await fireEvent.error(images[0])
+
+    expect(screen.getAllByTestId('logo-badge')).toHaveLength(2)
   })
 })

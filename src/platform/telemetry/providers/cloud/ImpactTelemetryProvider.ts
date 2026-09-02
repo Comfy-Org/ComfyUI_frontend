@@ -1,6 +1,7 @@
 import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type { PageViewMetadata, TelemetryProvider } from '../../types'
 
@@ -17,7 +18,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
   private initialized = false
   private stores: {
     apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
-    firebaseAuthStore: ReturnType<typeof useFirebaseAuthStore>
+    authStore: ReturnType<typeof useAuthStore>
   } | null = null
 
   constructor() {
@@ -85,7 +86,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     if (typeof window === 'undefined') return
 
     const { customerId, customerEmail } = this.resolveCustomerIdentity()
-    const normalizedEmail = customerEmail.trim().toLowerCase()
+    const normalizedEmail = normalizeEmail(customerEmail)
     // Impact's Identify spec requires customerEmail to be sent as a SHA1 hash.
     const hashedEmail = normalizedEmail
       ? await this.hashSha1(normalizedEmail)
@@ -109,12 +110,11 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
       }
     }
 
-    if (stores.firebaseAuthStore.currentUser) {
+    if (stores.authStore.currentUser) {
       return {
-        customerId:
-          stores.firebaseAuthStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
+        customerId: stores.authStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
         customerEmail:
-          stores.firebaseAuthStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+          stores.authStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
       }
     }
 
@@ -135,7 +135,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
   private resolveAuthStores(): {
     apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
-    firebaseAuthStore: ReturnType<typeof useFirebaseAuthStore>
+    authStore: ReturnType<typeof useAuthStore>
   } | null {
     if (this.stores) {
       return this.stores
@@ -144,7 +144,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     try {
       const stores = {
         apiKeyAuthStore: useApiKeyAuthStore(),
-        firebaseAuthStore: useFirebaseAuthStore()
+        authStore: useAuthStore()
       }
       this.stores = stores
       return stores

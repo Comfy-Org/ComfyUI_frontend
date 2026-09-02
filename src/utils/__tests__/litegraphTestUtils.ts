@@ -3,18 +3,49 @@ import type {
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasPointerEvent,
+  ISerialisedGraph,
   LGraph,
   LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
-  LLink
+  LLink,
+  SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { LinkId } from '@/types/linkId'
+import { toGroupId } from '@/types/groupId'
+import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { zeroUuid } from '@/utils/uuid'
+
+/** Creates a node shell state with minimal required fields. */
+export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
+  return {
+    flags: {},
+    graphId: zeroUuid,
+    id: toNodeId(1),
+    inputs: [],
+    mode: LGraphEventMode.ALWAYS,
+    outputs: [],
+    title: 'Test Node',
+    type: 'TestNode',
+    ...overrides,
+    properties: overrides.properties ?? {}
+  }
+}
 
 /**
  * Creates a mock LGraphNode with minimal required properties
@@ -22,15 +53,17 @@ import type { ChangeTracker } from '@/scripts/changeTracker'
 export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
-  const partial: Partial<LGraphNode> = {
-    id: 1,
+  const nodeOverrides = overrides as Partial<LGraphNode>
+  const size = nodeOverrides.size ?? [100, 100]
+  return fromPartial<LGraphNode>({
+    id: toNodeId(1),
     pos: [0, 0],
-    size: [100, 100],
+    size,
+    renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
-    ...(overrides as Partial<LGraphNode>)
-  }
-  return partial as Partial<LGraphNode> as LGraphNode
+    ...nodeOverrides
+  })
 }
 
 /**
@@ -40,7 +73,7 @@ export function createMockPositionable(
   overrides: Partial<Positionable> = {}
 ): Positionable {
   const partial: Partial<Positionable> = {
-    id: 1,
+    id: toGroupId(1),
     pos: [0, 0],
     ...overrides
   }
@@ -54,7 +87,7 @@ export function createMockLGraphGroup(
   overrides: Partial<LGraphGroup> = {}
 ): LGraphGroup {
   const partial: Partial<LGraphGroup> = {
-    id: 1,
+    id: toGroupId(1),
     pos: [0, 0],
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
@@ -97,10 +130,19 @@ export function createMockCanvas(
  * Creates a mock LGraph with trigger function
  */
 export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
-  return {
+  const nodes = overrides._nodes ?? []
+  const byId = new Map(nodes.map((node) => [String(node.id), node]))
+  const graph = fromPartial<LGraph>({
     trigger: vi.fn(),
+    // A real dispatcher: node lifecycle subscribers listen on `graph.events`.
+    events: new CustomEventTarget<LGraphEventMap>(),
+    _nodes: nodes,
+    _groups: [],
+    links: createMockLinks([]),
+    getNodeById: (id: NodeId) => byId.get(String(id)) ?? null,
     ...overrides
-  } as LGraph
+  })
+  return Object.assign(graph, { rootGraph: overrides.rootGraph ?? graph })
 }
 
 /**
@@ -178,8 +220,12 @@ export function createMockNodeInputSlot(
   overrides: Partial<INodeInputSlot> = {}
 ): INodeInputSlot {
   return {
+    name: 'input',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    link: null,
     ...overrides
-  } as INodeInputSlot
+  }
 }
 
 /**
@@ -189,8 +235,12 @@ export function createMockNodeOutputSlot(
   overrides: Partial<INodeOutputSlot> = {}
 ): INodeOutputSlot {
   return {
+    name: 'output',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    links: null,
     ...overrides
-  } as INodeOutputSlot
+  }
 }
 
 /**
@@ -255,13 +305,28 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    captureCanvasState: vi.fn(),
     checkState: vi.fn(),
+    deactivate: vi.fn(),
+    prepareForSave: vi.fn(),
     reset: vi.fn(),
     restore: vi.fn(),
     store: vi.fn(),
     ...overrides
   }
   return partial as Partial<ChangeTracker> as ChangeTracker
+}
+
+/**
+ * Creates a mock LoadedComfyWorkflow with sensible defaults
+ */
+export function createMockLoadedWorkflow(
+  overrides: Partial<LoadedComfyWorkflow> | Record<string, unknown> = {}
+): LoadedComfyWorkflow {
+  return fromPartial<LoadedComfyWorkflow>({
+    changeTracker: createMockChangeTracker(),
+    ...overrides
+  })
 }
 
 /**
@@ -314,11 +379,11 @@ export function createMockCanvas2DContext(
 
 export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
   const partial: Partial<LLink> = {
-    id: 1,
+    id: toLinkId(1),
     type: '*',
-    origin_id: 1,
+    origin_id: toNodeId(1),
     origin_slot: 0,
-    target_id: 2,
+    target_id: toNodeId(2),
     target_slot: 0,
     _pos: [0, 0],
     ...overrides
@@ -327,11 +392,23 @@ export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
 }
 
 export function createMockLinks(links: LLink[]): LGraph['links'] {
-  const map = new Map<number, LLink>()
+  const map = new Map<LinkId, LLink>()
   const record: Record<number, LLink> = {}
   for (const link of links) {
     map.set(link.id, link)
     record[link.id] = link
   }
   return Object.assign(map, record) as LGraph['links']
+}
+export function reloadSerializedGraph(
+  serialized: ISerialisedGraph | SerialisableGraph,
+  graphFactory: () => LGraph
+): LGraph {
+  const payload = JSON.parse(JSON.stringify(serialized)) as typeof serialized
+  const reloaded = graphFactory()
+  payload.id = reloaded.id
+  useWidgetValueStore().clearGraph(payload.id)
+  usePreviewExposureStore().clearGraph(payload.id)
+  reloaded.configure(payload)
+  return reloaded
 }

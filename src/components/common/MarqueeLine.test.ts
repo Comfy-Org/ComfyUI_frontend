@@ -1,22 +1,22 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
 
 import MarqueeLine from './MarqueeLine.vue'
 
 describe(MarqueeLine, () => {
   it('renders slot content', () => {
-    const wrapper = mount(MarqueeLine, {
+    render(MarqueeLine, {
       slots: { default: 'Hello World' }
     })
-    expect(wrapper.text()).toBe('Hello World')
+    expect(screen.getByText('Hello World')).toBeInTheDocument()
   })
 
   it('renders content inside a span within the container', () => {
-    const wrapper = mount(MarqueeLine, {
+    render(MarqueeLine, {
       slots: { default: 'Test Text' }
     })
-    const span = wrapper.find('span')
-    expect(span.exists()).toBe(true)
-    expect(span.text()).toBe('Test Text')
+    const el = screen.getByText('Test Text')
+    expect(el.tagName).toBe('SPAN')
   })
 })

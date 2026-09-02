@@ -75,8 +75,23 @@
             >
               @
             </span>
-            <Input id="profile-username" v-model="username" class="pl-7" />
+            <Input
+              id="profile-username"
+              v-model="username"
+              class="pl-7"
+              :aria-invalid="showUsernameError ? 'true' : 'false'"
+              :aria-describedby="
+                showUsernameError ? 'profile-username-error' : undefined
+              "
+            />
           </div>
+          <p
+            v-if="showUsernameError"
+            id="profile-username-error"
+            class="text-xs text-destructive-background"
+          >
+            {{ $t('comfyHubProfile.usernameError') }}
+          </p>
         </div>
 
         <div class="flex flex-col gap-2">
@@ -105,7 +120,7 @@
       <Button
         variant="primary"
         size="lg"
-        :disabled="!username.trim() || isCreating"
+        :disabled="!isUsernameValid || isCreating"
         @click="handleCreate"
       >
         {{
@@ -124,7 +139,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -155,6 +170,16 @@ const description = ref('')
 const profilePictureFile = ref<File | null>(null)
 const profilePreviewUrl = useObjectUrl(profilePictureFile)
 const isCreating = ref(false)
+
+const VALID_USERNAME_PATTERN = /^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$/
+
+const isUsernameValid = computed(() =>
+  VALID_USERNAME_PATTERN.test(username.value)
+)
+
+const showUsernameError = computed(
+  () => username.value.length > 0 && !isUsernameValid.value
+)
 
 const profileInitial = computed(() => {
   const source = name.value.trim() || username.value.trim()

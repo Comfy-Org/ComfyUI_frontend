@@ -1,7 +1,4 @@
-import {
-  TOOLKIT_BLUEPRINT_MODULES,
-  TOOLKIT_NODE_NAMES
-} from '@/constants/toolkitNodes'
+import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
@@ -46,10 +43,7 @@ export function getExecutionContext(): ExecutionContext {
         }
       }
 
-      const isToolkitNode =
-        TOOLKIT_NODE_NAMES.has(node.type) ||
-        (nodeDef?.python_module !== undefined &&
-          TOOLKIT_BLUEPRINT_MODULES.has(nodeDef.python_module))
+      const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type
@@ -80,20 +74,21 @@ export function getExecutionContext(): ExecutionContext {
   )
 
   if (activeWorkflow?.filename) {
-    const isTemplate = templatesStore.knownTemplateNames.has(
-      activeWorkflow.filename
-    )
+    // Use fullFilename minus .json to reconstruct the template name, which
+    // preserves compound suffixes like ".app" (e.g. "foo.app.json" → "foo.app").
+    // Using just `filename` strips ".app.json" entirely (e.g. "foo"), which
+    // won't match knownTemplateNames entries like "foo.app".
+    const templateName = activeWorkflow.fullFilename.replace(/\.json$/i, '')
+    const isTemplate = templatesStore.knownTemplateNames.has(templateName)
 
     if (isTemplate) {
-      const template = templatesStore.getTemplateByName(activeWorkflow.filename)
+      const template = templatesStore.getTemplateByName(templateName)
 
-      const englishMetadata = templatesStore.getEnglishMetadata(
-        activeWorkflow.filename
-      )
+      const englishMetadata = templatesStore.getEnglishMetadata(templateName)
 
       return {
         is_template: true,
-        workflow_name: activeWorkflow.filename,
+        workflow_name: templateName,
         template_source: template?.sourceModule,
         template_category: englishMetadata?.category ?? template?.category,
         template_tags: englishMetadata?.tags ?? template?.tags,

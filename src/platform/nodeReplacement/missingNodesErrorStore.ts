@@ -5,6 +5,12 @@ import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  dedupeMissingNodeTypes,
+  removePendingMissingNodeTypesByExecutionIdPrefix,
+  removePendingMissingNodeTypesByNodeId,
+  removePendingMissingNodeTypesByType
+} from '@/platform/workflow/core/utils/pendingWarnings'
 import { app } from '@/scripts/app'
 import type { MissingNodeType } from '@/types/comfy'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
@@ -26,24 +32,7 @@ export const useMissingNodesErrorStore = defineStore(
         missingNodesError.value = null
         return
       }
-      const seen = new Set<string>()
-      const uniqueTypes = types.filter((node) => {
-        // For string entries (group nodes), deduplicate by the string itself.
-        // For object entries, prefer nodeId so multiple instances of the same
-        // type are kept as separate rows; fall back to type if nodeId is absent.
-        const isString = typeof node === 'string'
-        let key: string
-        if (isString) {
-          key = node
-        } else if (node.nodeId != null) {
-          key = String(node.nodeId)
-        } else {
-          key = node.type
-        }
-        if (seen.has(key)) return false
-        seen.add(key)
-        return true
-      })
+      const uniqueTypes = dedupeMissingNodeTypes(types)
       missingNodesError.value = {
         message: isCloud
           ? st(
@@ -64,14 +53,39 @@ export const useMissingNodesErrorStore = defineStore(
       )
     }
 
+    function removeMissingNodesByNodeId(nodeId: string) {
+      if (!missingNodesError.value) return
+      const remaining = removePendingMissingNodeTypesByNodeId(
+        missingNodesError.value.nodeTypes,
+        nodeId
+      )
+      setMissingNodeTypes(remaining)
+    }
+
+    /**
+     * Remove all object-type entries whose nodeId starts with `prefix`.
+     * String entries (group nodes) have no nodeId and are preserved.
+     *
+     * Intended for clearing all interior errors when a subgraph container
+     * is removed. Callers are expected to pass `${execId}:` (with trailing
+     * colon) so that sibling IDs sharing a numeric prefix are not matched.
+     */
+    function removeMissingNodesByPrefix(prefix: string) {
+      if (!missingNodesError.value) return
+      const remaining = removePendingMissingNodeTypesByExecutionIdPrefix(
+        missingNodesError.value.nodeTypes,
+        prefix
+      )
+      setMissingNodeTypes(remaining)
+    }
+
     /** Remove specific node types from the missing nodes list (e.g. after replacement). */
     function removeMissingNodesByType(typesToRemove: string[]) {
       if (!missingNodesError.value) return
-      const removeSet = new Set(typesToRemove)
-      const remaining = missingNodesError.value.nodeTypes.filter((node) => {
-        const nodeType = typeof node === 'string' ? node : node.type
-        return !removeSet.has(nodeType)
-      })
+      const remaining = removePendingMissingNodeTypesByType(
+        missingNodesError.value.nodeTypes,
+        typesToRemove
+      )
       setMissingNodeTypes(remaining)
     }
 
@@ -115,6 +129,8 @@ export const useMissingNodesErrorStore = defineStore(
       missingNodesError,
       setMissingNodeTypes,
       surfaceMissingNodes,
+      removeMissingNodesByNodeId,
+      removeMissingNodesByPrefix,
       removeMissingNodesByType,
       hasMissingNodes,
       missingNodeCount,

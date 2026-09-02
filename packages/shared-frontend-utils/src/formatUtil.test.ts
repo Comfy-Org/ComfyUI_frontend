@@ -2,16 +2,42 @@ import { describe, expect, it } from 'vitest'
 
 import {
   appendWorkflowJsonExt,
+  downloadUrlToHfRepoUrl,
   ensureWorkflowSuffix,
+  escapeI18nMessage,
+  formatLocalizedMediumDate,
+  formatLocalizedNumber,
+  generateUUID,
+  getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
+  isCivitaiModelUrl,
+  isCivitaiUrl,
   isPreviewableMediaType,
+  isValidUuid,
+  joinFilePath,
   truncateFilename
 } from './formatUtil'
 
 describe('formatUtil', () => {
+  describe('downloadUrlToHfRepoUrl', () => {
+    it('converts a download URL to its Hugging Face repository URL', () => {
+      expect(
+        downloadUrlToHfRepoUrl(
+          'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+        )
+      ).toBe('https://huggingface.co/bfl/FLUX.1')
+    })
+
+    it('returns the Hugging Face root for malformed input', () => {
+      expect(downloadUrlToHfRepoUrl('not a url')).toBe(
+        'https://huggingface.co/'
+      )
+    })
+  })
+
   describe('truncateFilename', () => {
     it('should not truncate short filenames', () => {
       expect(truncateFilename('test.png')).toBe('test.png')
@@ -62,7 +88,8 @@ describe('formatUtil', () => {
         { filename: 'animation.gif', expected: 'image' },
         { filename: 'web.webp', expected: 'image' },
         { filename: 'bitmap.bmp', expected: 'image' },
-        { filename: 'modern.avif', expected: 'image' }
+        { filename: 'modern.avif', expected: 'image' },
+        { filename: 'logo.svg', expected: 'image' }
       ]
 
       it.for(imageTestCases)(
@@ -81,9 +108,11 @@ describe('formatUtil', () => {
     describe('video files', () => {
       it('should identify video extensions correctly', () => {
         expect(getMediaTypeFromFilename('video.mp4')).toBe('video')
+        expect(getMediaTypeFromFilename('apple.m4v')).toBe('video')
         expect(getMediaTypeFromFilename('clip.webm')).toBe('video')
         expect(getMediaTypeFromFilename('movie.mov')).toBe('video')
         expect(getMediaTypeFromFilename('film.avi')).toBe('video')
+        expect(getMediaTypeFromFilename('episode.mkv')).toBe('video')
       })
     })
 
@@ -93,6 +122,8 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('sound.wav')).toBe('audio')
         expect(getMediaTypeFromFilename('music.ogg')).toBe('audio')
         expect(getMediaTypeFromFilename('audio.flac')).toBe('audio')
+        expect(getMediaTypeFromFilename('music.opus')).toBe('audio')
+        expect(getMediaTypeFromFilename('voice.m4a')).toBe('audio')
       })
     })
 
@@ -102,7 +133,15 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('scene.fbx')).toBe('3D')
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
+        expect(getMediaTypeFromFilename('print.stl')).toBe('3D')
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
+      })
+
+      it('should identify Gaussian splat extensions that Load3D accepts', () => {
+        expect(getMediaTypeFromFilename('scene.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
       })
     })
 
@@ -165,40 +204,74 @@ describe('formatUtil', () => {
   })
 
   describe('highlightQuery', () => {
-    it('should return text unchanged when query is empty', () => {
-      expect(highlightQuery('Hello World', '')).toBe('Hello World')
+    it('should return one plain-text part when query is empty', () => {
+      expect(highlightQuery('Hello World', '')).toEqual([
+        { text: 'Hello World', highlighted: false }
+      ])
     })
 
-    it('should wrap matching text in highlight span', () => {
-      const result = highlightQuery('Hello World', 'World')
-      expect(result).toBe('Hello <span class="highlight">World</span>')
+    it('should mark matching text for highlighting', () => {
+      expect(highlightQuery('Hello World', 'World')).toEqual([
+        { text: 'Hello ', highlighted: false },
+        { text: 'World', highlighted: true }
+      ])
     })
 
     it('should be case-insensitive', () => {
-      const result = highlightQuery('Hello World', 'hello')
-      expect(result).toBe('<span class="highlight">Hello</span> World')
+      expect(highlightQuery('Hello World', 'hello')).toEqual([
+        { text: 'Hello', highlighted: true },
+        { text: ' World', highlighted: false }
+      ])
     })
 
-    it('should sanitize text by default', () => {
-      const result = highlightQuery('<script>alert("xss")</script>', 'alert')
-      expect(result).not.toContain('<script>')
-    })
-
-    it('should skip sanitization when sanitize is false', () => {
-      const result = highlightQuery('<b>bold</b>', 'bold', false)
-      expect(result).toContain('<b>')
+    it('should preserve markup as text parts', () => {
+      expect(highlightQuery('<script>alert("xss")</script>', 'alert')).toEqual([
+        { text: '<script>', highlighted: false },
+        { text: 'alert', highlighted: true },
+        { text: '("xss")</script>', highlighted: false }
+      ])
     })
 
     it('should escape special regex characters in query', () => {
-      const result = highlightQuery('price is $10.00', '$10')
-      expect(result).toContain('<span class="highlight">$10</span>')
+      expect(highlightQuery('price is $10.00', '$10')).toEqual([
+        { text: 'price is ', highlighted: false },
+        { text: '$10', highlighted: true },
+        { text: '.00', highlighted: false }
+      ])
     })
 
     it('should highlight multiple occurrences', () => {
-      const result = highlightQuery('foo bar foo', 'foo')
-      expect(result).toBe(
-        '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
-      )
+      expect(highlightQuery('foo bar foo', 'foo')).toEqual([
+        { text: 'foo', highlighted: true },
+        { text: ' bar ', highlighted: false },
+        { text: 'foo', highlighted: true }
+      ])
+    })
+
+    it('should highlight cross-word matches', () => {
+      expect(highlightQuery('convert image to mask', 'geto')).toEqual([
+        { text: 'convert ima', highlighted: false },
+        { text: 'ge to', highlighted: true },
+        { text: ' mask', highlighted: false }
+      ])
+    })
+
+    it('should not match across line breaks', () => {
+      expect(highlightQuery('ge\nto', 'geto')).toEqual([
+        { text: 'ge\nto', highlighted: false }
+      ])
+    })
+
+    it('should not match across tabs', () => {
+      expect(highlightQuery('ge\tto', 'geto')).toEqual([
+        { text: 'ge\tto', highlighted: false }
+      ])
+    })
+
+    it('should not match across multiple spaces', () => {
+      expect(highlightQuery('ge  to', 'geto')).toEqual([
+        { text: 'ge  to', highlighted: false }
+      ])
     })
   })
 
@@ -275,6 +348,42 @@ describe('formatUtil', () => {
     })
   })
 
+  describe('joinFilePath', () => {
+    it('joins subfolder and filename with normalized slash separators', () => {
+      expect(joinFilePath('nested\\folder', 'child\\file.png')).toBe(
+        'nested/folder/child/file.png'
+      )
+    })
+
+    it('trims boundary separators without changing the filename body', () => {
+      expect(joinFilePath('/nested/folder/', '/file.png')).toBe(
+        'nested/folder/file.png'
+      )
+    })
+
+    it('returns the normalized filename when no subfolder is provided', () => {
+      expect(joinFilePath('', 'nested\\file.png')).toBe('nested/file.png')
+    })
+
+    it('returns the normalized subfolder without a trailing slash when no filename is provided', () => {
+      expect(joinFilePath('nested\\folder', '')).toBe('nested/folder')
+      expect(joinFilePath('nested\\folder', null)).toBe('nested/folder')
+    })
+  })
+
+  describe('getFilePathSeparatorVariants', () => {
+    it('returns slash and backslash variants for nested paths', () => {
+      expect(getFilePathSeparatorVariants('nested\\folder/file.png')).toEqual([
+        'nested/folder/file.png',
+        'nested\\folder\\file.png'
+      ])
+    })
+
+    it('returns a single value when no separator is present', () => {
+      expect(getFilePathSeparatorVariants('file.png')).toEqual(['file.png'])
+    })
+  })
+
   describe('appendWorkflowJsonExt', () => {
     it('appends .app.json when isApp is true', () => {
       expect(appendWorkflowJsonExt('test', true)).toBe('test.app.json')
@@ -344,16 +453,123 @@ describe('formatUtil', () => {
   })
 
   describe('isPreviewableMediaType', () => {
-    it('returns true for image/video/audio/3D', () => {
+    it('returns true for image/video/audio/3D/text', () => {
       expect(isPreviewableMediaType('image')).toBe(true)
       expect(isPreviewableMediaType('video')).toBe(true)
       expect(isPreviewableMediaType('audio')).toBe(true)
       expect(isPreviewableMediaType('3D')).toBe(true)
+      expect(isPreviewableMediaType('text')).toBe(true)
     })
 
-    it('returns false for text/other', () => {
-      expect(isPreviewableMediaType('text')).toBe(false)
+    it('returns false for other', () => {
       expect(isPreviewableMediaType('other')).toBe(false)
+    })
+  })
+
+  describe('isCivitaiUrl', () => {
+    it.for([
+      { url: 'https://civitai.com/models/123', expected: true },
+      { url: 'https://civitai.red/models/123', expected: true },
+      { url: 'https://sub.civitai.com/models/123', expected: true },
+      { url: 'https://sub.civitai.red/models/123', expected: true },
+      { url: 'https://example.com/model', expected: false },
+      { url: 'not-a-url', expected: false }
+    ])('$url → $expected', ({ url, expected }) => {
+      expect(isCivitaiUrl(url)).toBe(expected)
+    })
+  })
+
+  describe('isCivitaiModelUrl', () => {
+    it('recognizes civitai.red model URLs', () => {
+      expect(
+        isCivitaiModelUrl('https://civitai.red/api/download/models/123456')
+      ).toBe(true)
+    })
+  })
+
+  describe('formatLocalizedNumber', () => {
+    it('formats numbers using the given locale', () => {
+      expect(formatLocalizedNumber(2618646, 'en')).toBe('2,618,646')
+      expect(formatLocalizedNumber(2618646, 'de')).toBe('2.618.646')
+    })
+
+    it('returns an em-dash for undefined / NaN / Infinity', () => {
+      expect(formatLocalizedNumber(undefined, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.NaN, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.POSITIVE_INFINITY, 'en')).toBe('—')
+    })
+
+    it('formats zero as "0"', () => {
+      expect(formatLocalizedNumber(0, 'en')).toBe('0')
+    })
+  })
+
+  describe('formatLocalizedMediumDate', () => {
+    it('formats an ISO date with the medium style', () => {
+      expect(formatLocalizedMediumDate('2026-04-19T00:00:00Z', 'en')).toMatch(
+        /Apr \d{1,2}, 2026/
+      )
+    })
+
+    it('returns an em-dash for undefined or unparseable input', () => {
+      expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
+      expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('isValidUuid', () => {
+    it.for([
+      ['lowercase', '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['uppercase', '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F'],
+      ['nil', '00000000-0000-0000-0000-000000000000'],
+      ['arbitrary version and variant', 'ffffffff-ffff-7fff-ffff-ffffffffffff'],
+      ['generated', generateUUID()]
+    ])('accepts a %s UUID', ([, value]) => {
+      expect(isValidUuid(value)).toBe(true)
+    })
+
+    it.for([
+      ['legacy slug', 'video-point-prompt-example'],
+      ['missing value', undefined],
+      ['null', null],
+      ['empty string', ''],
+      ['non-string', 123],
+      ['wrong length', '9cea40bb-b0cf-4b40-a758-8935cfe8d52'],
+      ['missing separators', '9cea40bbb0cf4b40a7588935cfe8d52f'],
+      ['surrounding whitespace', ' 9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['non-hex character', 'gcea40bb-b0cf-4b40-a758-8935cfe8d52f']
+    ])('rejects a %s', ([, value]) => {
+      expect(isValidUuid(value)).toBe(false)
+    })
+  })
+
+  describe('escapeI18nMessage', () => {
+    it('wraps message-syntax characters in literal interpolations', () => {
+      expect(escapeI18nMessage('a@b')).toBe("a{'@'}b")
+      expect(escapeI18nMessage('{x}')).toBe("{'{'}x{'}'}")
+      expect(escapeI18nMessage('a|b')).toBe("a{'|'}b")
+      expect(escapeI18nMessage('50%')).toBe("50{'%'}")
+      expect(escapeI18nMessage('$5')).toBe("{'$'}5")
+    })
+
+    it('doubles backslashes rather than interpolating them', () => {
+      expect(escapeI18nMessage('\\')).toBe('\\\\')
+      expect(escapeI18nMessage('C:\\@home')).toBe("C:\\\\{'@'}home")
+    })
+
+    it('leaves text without message syntax untouched', () => {
+      expect(escapeI18nMessage('plain name')).toBe('plain name')
+      expect(escapeI18nMessage('')).toBe('')
+    })
+
+    it('is not idempotent, so it must be applied exactly once', () => {
+      const once = escapeI18nMessage('a@b')
+      expect(escapeI18nMessage(once)).not.toBe(once)
+    })
+
+    it('returns an empty string for non-string input', () => {
+      expect(escapeI18nMessage(42 as unknown as string)).toBe('')
+      expect(escapeI18nMessage(null as unknown as string)).toBe('')
     })
   })
 })

@@ -1,17 +1,12 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import Button from '@/components/ui/button/Button.vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserButton from './CurrentUserButton.vue'
-
-const mockFeatureFlags = vi.hoisted(() => ({
-  teamWorkspacesEnabled: false
-}))
 
 const mockTeamWorkspaceStore = vi.hoisted(() => ({
   workspaceName: { value: '' },
@@ -38,14 +33,7 @@ vi.mock('firebase/auth', () => ({
 
 // Mock pinia
 vi.mock('pinia', () => ({
-  storeToRefs: vi.fn((store) => store)
-}))
-
-// Mock the useFeatureFlags composable
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: vi.fn(() => ({
-    flags: mockFeatureFlags
-  }))
+  storeToRefs: vi.fn((store: Record<string, unknown>) => store)
 }))
 
 // Mock the useTeamWorkspaceStore
@@ -89,106 +77,165 @@ vi.mock('@/platform/workspace/components/WorkspaceProfilePic.vue', () => ({
   }
 }))
 
+const CurrentUserPopoverWorkspaceStub = defineComponent({
+  name: 'CurrentUserPopoverWorkspace',
+  props: {
+    accountActionsOnly: Boolean
+  },
+  setup(props) {
+    return () =>
+      h('div', [
+        h('span', 'Workspace Popover Content'),
+        props.accountActionsOnly ? h('span', 'Account Actions Only') : ''
+      ])
+  }
+})
+
 // Mock the CurrentUserPopoverLegacy component
 vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
-  default: {
+  default: defineComponent({
     name: 'CurrentUserPopoverLegacyMock',
-    render() {
-      return h('div', 'Popover Content')
-    },
-    emits: ['close']
-  }
+    emits: ['close'],
+    setup(_, { emit }) {
+      return () =>
+        h('div', [
+          h('span', 'Popover Content'),
+          h(
+            'button',
+            {
+              'data-testid': 'close-popover',
+              onClick: () => emit('close')
+            },
+            'Close'
+          )
+        ])
+    }
+  })
 }))
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockFeatureFlags.teamWorkspacesEnabled = false
     mockTeamWorkspaceStore.workspaceName.value = ''
     mockTeamWorkspaceStore.initState.value = 'idle'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
     mockIsCloud.value = false
   })
 
-  const mountComponent = (options?: { stubButton?: boolean }): VueWrapper => {
-    const { stubButton = true } = options ?? {}
+  function renderComponent() {
+    const user = userEvent.setup()
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
       messages: { en: enMessages }
     })
 
-    return mount(CurrentUserButton, {
+    const result = render(CurrentUserButton, {
       global: {
         plugins: [i18n],
         stubs: {
-          // Use shallow mount for popover to make testing easier
-          Popover: {
-            template: '<div><slot></slot></div>',
-            methods: {
-              toggle: vi.fn(),
-              hide: vi.fn()
+          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
+          Popover: defineComponent({
+            setup(_, { slots, expose }) {
+              const shown = ref(false)
+              expose({
+                toggle: () => {
+                  shown.value = !shown.value
+                },
+                hide: () => {
+                  shown.value = false
+                }
+              })
+              return () => (shown.value ? h('div', slots.default?.()) : null)
             }
-          },
-          ...(stubButton ? { Button: true } : {})
+          })
         }
       }
     })
+
+    return { user, ...result }
   }
 
   it('renders correctly when user is logged in', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.findComponent(Button).exists()).toBe(true)
+    renderComponent()
+    expect(
+      screen.getByRole('button', { name: 'Current user' })
+    ).toBeInTheDocument()
   })
 
   it('toggles popover on button click', async () => {
-    const wrapper = mountComponent()
-    const popoverToggleSpy = vi.fn()
+    const { user } = renderComponent()
 
-    // Override the ref with a mock implementation
-    // @ts-expect-error - accessing internal Vue component vm
-    wrapper.vm.popover = { toggle: popoverToggleSpy }
+    expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
 
-    await wrapper.findComponent(Button).trigger('click')
-    expect(popoverToggleSpy).toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+    expect(screen.getByText('Popover Content')).toBeInTheDocument()
   })
 
+  it.for(['loading', 'error'])(
+    'shows account actions while Cloud workspace initialization is %s',
+    async (initState) => {
+      mockIsCloud.value = true
+      mockTeamWorkspaceStore.initState.value = initState
+      const { user } = renderComponent()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+      expect(screen.getByText('Account Actions Only')).toBeInTheDocument()
+    }
+  )
+
   it('hides popover when closePopover is called', async () => {
-    const wrapper = mountComponent()
+    const { user } = renderComponent()
 
-    // Replace the popover.hide method with a spy
-    const popoverHideSpy = vi.fn()
-    // @ts-expect-error - accessing internal Vue component vm
-    wrapper.vm.popover = { hide: popoverHideSpy }
+    await user.click(screen.getByRole('button', { name: 'Current user' }))
+    expect(screen.getByText('Popover Content')).toBeInTheDocument()
 
-    // Directly call the closePopover method through the component instance
-    // @ts-expect-error - accessing internal Vue component vm
-    wrapper.vm.closePopover()
+    await user.click(screen.getByTestId('close-popover'))
 
-    // Verify that popover.hide was called
-    expect(popoverHideSpy).toHaveBeenCalled()
+    expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
   })
 
   it('shows UserAvatar in personal workspace', () => {
     mockIsCloud.value = true
-    mockFeatureFlags.teamWorkspacesEnabled = true
     mockTeamWorkspaceStore.initState.value = 'ready'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = true
 
-    const wrapper = mountComponent({ stubButton: false })
-    expect(wrapper.html()).toContain('Avatar')
-    expect(wrapper.html()).not.toContain('WorkspaceProfilePic')
+    renderComponent()
+    expect(screen.getByText('Avatar')).toBeInTheDocument()
+    expect(screen.queryByText('WorkspaceProfilePic')).not.toBeInTheDocument()
   })
 
   it('shows WorkspaceProfilePic in team workspace', () => {
     mockIsCloud.value = true
-    mockFeatureFlags.teamWorkspacesEnabled = true
     mockTeamWorkspaceStore.initState.value = 'ready'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
     mockTeamWorkspaceStore.workspaceName.value = 'My Team'
 
-    const wrapper = mountComponent({ stubButton: false })
-    expect(wrapper.html()).toContain('WorkspaceProfilePic')
-    expect(wrapper.html()).not.toContain('Avatar')
+    renderComponent()
+    expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
+    expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it('shows WorkspaceProfilePic for an active local team workspace', () => {
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
+    mockTeamWorkspaceStore.workspaceName.value = 'My Team'
+
+    renderComponent()
+
+    expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
+    expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it('shows workspace actions after local workspace initialization', async () => {
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    const { user } = renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+    expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+    expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
   })
 })

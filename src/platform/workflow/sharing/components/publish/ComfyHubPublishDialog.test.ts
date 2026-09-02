@@ -1,6 +1,24 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
+
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    useI18n: () => ({
+      t: (key: string, params?: Record<string, unknown>) =>
+        params ? `${key} ${Object.values(params).join(' ')}` : key
+    })
+  }
+})
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
+
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({ add: mockToastAdd })
+}))
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
@@ -10,6 +28,15 @@ const mockGoNext = vi.hoisted(() => vi.fn())
 const mockGoBack = vi.hoisted(() => vi.fn())
 const mockOpenProfileCreationStep = vi.hoisted(() => vi.fn())
 const mockCloseProfileCreationStep = vi.hoisted(() => vi.fn())
+const mockApplyPrefill = vi.hoisted(() => vi.fn())
+const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
+const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
+const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
+const mockGetPublishStatus = vi.hoisted(() => vi.fn())
+const mockRenameWorkflow = vi.hoisted(() => vi.fn())
+const mockFormDataHolder = vi.hoisted(
+  () => ({ value: null }) as { value: Record<string, unknown> | null }
+)
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
@@ -22,42 +49,130 @@ vi.mock(
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
-  () => ({
-    useComfyHubPublishWizard: () => ({
-      currentStep: ref('finish'),
-      formData: ref({
-        name: '',
-        description: '',
-        workflowType: '',
-        tags: [],
-        thumbnailType: 'image',
-        thumbnailFile: null,
-        comparisonBeforeFile: null,
-        comparisonAfterFile: null,
-        exampleImages: [],
-        selectedExampleIds: []
+  () => {
+    mockFormDataHolder.value = {
+      name: '',
+      description: '',
+      tags: [],
+      models: [],
+      customNodes: [],
+      thumbnailType: 'image',
+      thumbnailFile: null,
+      thumbnailUrl: null,
+      existingThumbnailType: null,
+      comparisonBeforeFile: null,
+      comparisonAfterFile: null,
+      comparisonAfterUrl: null,
+      exampleImages: [],
+      tutorialUrl: '',
+      metadata: {}
+    }
+    return {
+      useComfyHubPublishWizard: () => ({
+        currentStep: ref('finish'),
+        formData: ref(mockFormDataHolder.value),
+        isFirstStep: ref(false),
+        isLastStep: ref(true),
+        goToStep: mockGoToStep,
+        goNext: mockGoNext,
+        goBack: mockGoBack,
+        openProfileCreationStep: mockOpenProfileCreationStep,
+        closeProfileCreationStep: mockCloseProfileCreationStep,
+        applyPrefill: mockApplyPrefill
       }),
-      isFirstStep: ref(false),
-      isLastStep: ref(true),
-      goToStep: mockGoToStep,
-      goNext: mockGoNext,
-      goBack: mockGoBack,
-      openProfileCreationStep: mockOpenProfileCreationStep,
-      closeProfileCreationStep: mockCloseProfileCreationStep
+      cachePublishPrefill: mockCachePublishPrefill,
+      getCachedPrefill: mockGetCachedPrefill
+    }
+  }
+)
+
+vi.mock(
+  '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission',
+  () => ({
+    useComfyHubPublishSubmission: () => ({
+      submitToComfyHub: mockSubmitToComfyHub
     })
   })
 )
+
+vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
+  useWorkflowShareService: () => ({
+    getPublishStatus: mockGetPublishStatus
+  })
+}))
+
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => ({
+    renameWorkflow: mockRenameWorkflow,
+    saveWorkflow: vi.fn()
+  })
+}))
+
+const mockWorkflowStore = vi.hoisted(() => {
+  return {
+    instance: null as { activeWorkflow: Record<string, unknown> | null } | null
+  }
+})
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
+  const { reactive } = await import('vue')
+  mockWorkflowStore.instance = reactive({
+    activeWorkflow: {
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    } as Record<string, unknown> | null
+  })
+  return {
+    useWorkflowStore: () => ({
+      ...mockWorkflowStore.instance,
+      get activeWorkflow() {
+        return mockWorkflowStore.instance?.activeWorkflow ?? null
+      },
+      saveWorkflow: vi.fn()
+    })
+  }
+})
+
+function setActiveWorkflow(workflow: Record<string, unknown> | null) {
+  if (mockWorkflowStore.instance) {
+    mockWorkflowStore.instance.activeWorkflow = workflow
+  }
+}
+
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
 
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    setActiveWorkflow({
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    })
     mockFetchProfile.mockResolvedValue(null)
+    mockSubmitToComfyHub.mockResolvedValue(undefined)
+    mockRenameWorkflow.mockResolvedValue(undefined)
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
+    mockGetCachedPrefill.mockReturnValue(null)
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: false,
+      shareId: null,
+      shareUrl: null,
+      publishedAt: null,
+      prefill: null
+    })
   })
 
-  function createWrapper() {
-    return mount(ComfyHubPublishDialog, {
+  function renderComponent() {
+    return render(ComfyHubPublishDialog, {
       props: { onClose },
       global: {
         mocks: {
@@ -78,14 +193,16 @@ describe('ComfyHubPublishDialog', () => {
           },
           ComfyHubPublishWizardContent: {
             template:
-              '<div><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /></div>',
+              '<div :data-is-publishing="$props.isPublishing"><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /><button data-testid="publish" @click="$props.onPublish()" /></div>',
             props: [
               'currentStep',
               'formData',
               'isFirstStep',
               'isLastStep',
+              'isPublishing',
               'onGoNext',
               'onGoBack',
+              'onPublish',
               'onRequireProfile',
               'onGateComplete',
               'onGateClose'
@@ -97,27 +214,27 @@ describe('ComfyHubPublishDialog', () => {
   }
 
   it('starts in publish wizard mode and prefetches profile asynchronously', async () => {
-    createWrapper()
+    renderComponent()
     await flushPromises()
 
     expect(mockFetchProfile).toHaveBeenCalledWith()
   })
 
   it('switches to profile creation step when final-step publish requires profile', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="require-profile"]').trigger('click')
+    await userEvent.click(screen.getByTestId('require-profile'))
 
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
   })
 
   it('returns to finish state after gate complete and does not auto-close', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="require-profile"]').trigger('click')
-    await wrapper.find('[data-testid="gate-complete"]').trigger('click')
+    await userEvent.click(screen.getByTestId('require-profile'))
+    await userEvent.click(screen.getByTestId('gate-complete'))
 
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
     expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
@@ -126,14 +243,268 @@ describe('ComfyHubPublishDialog', () => {
   })
 
   it('returns to finish state when profile gate is closed', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="require-profile"]').trigger('click')
-    await wrapper.find('[data-testid="gate-close"]').trigger('click')
+    await userEvent.click(screen.getByTestId('require-profile'))
+    await userEvent.click(screen.getByTestId('gate-close'))
 
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
     expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes dialog after successful publish', async () => {
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the local workflow name when the Hub title differs', async () => {
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) {
+      mockFormDataHolder.value.name = 'Published title'
+    }
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Published title' })
+    )
+    expect(mockRenameWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('does not close when publish submission fails', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(new Error('submit failed'))
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(mockToastAdd).not.toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('shows the backend error message when publish rejects with an Error', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(
+      new Error(
+        'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+      )
+    )
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: expect.stringContaining(
+          'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+        )
+      })
+    )
+  })
+
+  it('shows a generic error toast without crashing when publish rejects with a non-Error value', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(undefined)
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'comfyHubPublish.publishFailedDescription'
+      })
+    )
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('caches the Hub title under the unchanged workflow path', async () => {
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) {
+      mockFormDataHolder.value.name = 'Published title'
+    }
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockCachePublishPrefill).toHaveBeenCalledWith(
+      'workflows/test.json',
+      expect.objectContaining({ name: 'Published title' })
+    )
+  })
+
+  it('applies prefill when workflow is already published with metadata', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc123',
+      shareUrl: 'http://localhost/?share=abc123',
+      publishedAt: new Date(),
+      prefill: {
+        name: 'Published title',
+        description: 'Existing description',
+        tags: ['art', 'upscale'],
+        thumbnailType: 'video',
+        sampleImageUrls: ['https://example.com/img1.png']
+      }
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).toHaveBeenCalledWith({
+      name: 'Published title',
+      description: 'Existing description',
+      tags: ['art', 'upscale'],
+      thumbnailType: 'video',
+      sampleImageUrls: ['https://example.com/img1.png']
+    })
+  })
+
+  it('does not apply prefill when workflow is not published', async () => {
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalled()
+  })
+
+  it('does not apply prefill when status has no prefill data', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc123',
+      shareUrl: 'http://localhost/?share=abc123',
+      publishedAt: new Date(),
+      prefill: null
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalled()
+  })
+
+  it('silently ignores prefill fetch errors', async () => {
+    mockGetPublishStatus.mockRejectedValue(new Error('Network error'))
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('falls back to cached prefill when the status fetch fails', async () => {
+    mockGetPublishStatus.mockRejectedValue(new Error('Network error'))
+    const cached = { description: 'cached' }
+    mockGetCachedPrefill.mockReturnValue(cached)
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).toHaveBeenCalledWith(cached)
+  })
+
+  it('refetches prefill when the active workflow path changes (e.g. rename)', async () => {
+    renderComponent()
+    await flushPromises()
+    expect(mockGetPublishStatus).toHaveBeenLastCalledWith('workflows/test.json')
+
+    mockGetPublishStatus.mockClear()
+    setActiveWorkflow({
+      path: 'workflows/renamed.json',
+      filename: 'renamed.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    })
+    await nextTick()
+    await flushPromises()
+
+    expect(mockGetPublishStatus).toHaveBeenCalledWith('workflows/renamed.json')
+  })
+
+  it('does not refetch prefill when the active workflow path is unchanged', async () => {
+    renderComponent()
+    await flushPromises()
+
+    mockGetPublishStatus.mockClear()
+    setActiveWorkflow({
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: true
+    })
+    await nextTick()
+    await flushPromises()
+
+    expect(mockGetPublishStatus).not.toHaveBeenCalled()
+  })
+
+  it('ignores a stale prefill response after the workflow path changes', async () => {
+    const stalePrefill = { description: 'stale' }
+    let resolveStale: (value: unknown) => void = () => {}
+    mockGetPublishStatus.mockImplementation((path: string) => {
+      if (path === 'workflows/test.json') {
+        return new Promise((resolve) => {
+          resolveStale = resolve
+        })
+      }
+      return Promise.resolve({
+        isPublished: true,
+        shareId: 'fresh',
+        shareUrl: null,
+        publishedAt: new Date(),
+        prefill: { description: 'fresh' }
+      })
+    })
+
+    renderComponent()
+    await nextTick()
+
+    setActiveWorkflow({
+      path: 'workflows/renamed.json',
+      filename: 'renamed.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    })
+    await nextTick()
+    await flushPromises()
+
+    resolveStale({
+      isPublished: true,
+      shareId: 'stale',
+      shareUrl: null,
+      publishedAt: new Date(),
+      prefill: stalePrefill
+    })
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalledWith(stalePrefill)
   })
 })

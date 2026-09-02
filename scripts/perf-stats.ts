@@ -31,12 +31,28 @@ export function zScore(value: number, stats: MetricStats): number | null {
 
 export type Significance = 'regression' | 'improvement' | 'neutral' | 'noisy'
 
+/**
+ * Classify a metric change as regression/improvement/neutral/noisy.
+ *
+ * Uses both statistical significance (z-score) and practical significance
+ * (effect size gate via minAbsDelta) to reduce false positives from
+ * integer-quantized metrics with near-zero variance.
+ */
 export function classifyChange(
   z: number | null,
-  historicalCV: number
+  historicalCV: number,
+  absDelta?: number,
+  minAbsDelta?: number
 ): Significance {
   if (historicalCV > 50) return 'noisy'
   if (z === null) return 'neutral'
+
+  // Effect size gate: require minimum absolute change for count metrics
+  // to avoid flagging e.g. 11→12 style recalcs as z=7.2 regression.
+  if (minAbsDelta !== undefined && absDelta !== undefined) {
+    if (Math.abs(absDelta) < minAbsDelta) return 'neutral'
+  }
+
   if (z > 2) return 'regression'
   if (z < -2) return 'improvement'
   return 'neutral'

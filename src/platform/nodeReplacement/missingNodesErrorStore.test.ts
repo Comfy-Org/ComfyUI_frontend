@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -22,10 +21,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 
 describe('missingNodesErrorStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('setMissingNodeTypes', () => {
     it('sets missingNodesError with provided types', () => {
       const store = useMissingNodesErrorStore()
@@ -210,6 +205,162 @@ describe('missingNodesErrorStore', () => {
       store.removeMissingNodesByType(['StringNodeA'])
 
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+    })
+  })
+
+  describe('removeMissingNodesByNodeId', () => {
+    it('removes entries matching the nodeId', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: '1', isReplaceable: false },
+        { type: 'NodeB', nodeId: '2', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      const remaining = store.missingNodesError?.nodeTypes[0]
+      expect(typeof remaining !== 'string' && remaining?.nodeId).toBe('2')
+    })
+
+    it('keeps string entries (they have no nodeId)', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        'StringNode',
+        { type: 'NodeA', nodeId: '1', isReplaceable: false }
+      ] as MissingNodeType[])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      expect(store.missingNodesError?.nodeTypes[0]).toBe('StringNode')
+    })
+
+    it('matches numeric node IDs against string execution IDs', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: 1, isReplaceable: false },
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
+    })
+
+    it('keeps entries with different nodeIds', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: '1', isReplaceable: false },
+        { type: 'NodeB', nodeId: '2', isReplaceable: false },
+        { type: 'NodeC', nodeId: '3', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('2')
+
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+    })
+
+    it('clears missingNodesError when all object entries are removed', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: '1', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError).toBeNull()
+      expect(store.hasMissingNodes).toBe(false)
+    })
+
+    it('does nothing when missingNodesError is null', () => {
+      const store = useMissingNodesErrorStore()
+      store.removeMissingNodesByNodeId('1')
+      expect(store.missingNodesError).toBeNull()
+    })
+  })
+
+  describe('removeMissingNodesByPrefix', () => {
+    it('removes object entries whose nodeId starts with the prefix', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'A', nodeId: '65:70:63', isReplaceable: false },
+        { type: 'B', nodeId: '65:70:64', isReplaceable: false },
+        { type: 'C', nodeId: '65:80:5', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByPrefix('65:70:')
+
+      const remaining = store.missingNodesError?.nodeTypes ?? []
+      expect(remaining).toHaveLength(1)
+      const first = remaining[0]
+      expect(typeof first !== 'string' && first.nodeId).toBe('65:80:5')
+    })
+
+    it('removes deeply nested interior entries', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'A', nodeId: '65:70:63', isReplaceable: false },
+        { type: 'B', nodeId: '65:70:80:5', isReplaceable: false },
+        { type: 'C', nodeId: '65:71:63', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByPrefix('65:70:')
+
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+    })
+
+    it('does not match siblings sharing a numeric prefix (trailing colon)', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'A', nodeId: '65:70:1', isReplaceable: false },
+        { type: 'B', nodeId: '65:705:1', isReplaceable: false },
+        { type: 'C', nodeId: '65:70', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByPrefix('65:70:')
+
+      const remaining = store.missingNodesError?.nodeTypes ?? []
+      expect(remaining).toHaveLength(2)
+      const remainingIds = remaining.map((n) =>
+        typeof n === 'string' ? n : String(n.nodeId)
+      )
+      expect(remainingIds).toContain('65:705:1')
+      expect(remainingIds).toContain('65:70')
+    })
+
+    it('preserves string entries (no nodeId)', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        'StringNode',
+        { type: 'A', nodeId: '65:70:1', isReplaceable: false }
+      ] as MissingNodeType[])
+
+      store.removeMissingNodesByPrefix('65:70:')
+
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      expect(store.missingNodesError?.nodeTypes[0]).toBe('StringNode')
+    })
+
+    it('clears missingNodesError when all matching entries are removed and none remain', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'A', nodeId: '65:70:63', isReplaceable: false },
+        { type: 'B', nodeId: '65:70:64', isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByPrefix('65:70:')
+
+      expect(store.missingNodesError).toBeNull()
+      expect(store.hasMissingNodes).toBe(false)
+    })
+
+    it('does nothing when missingNodesError is null', () => {
+      const store = useMissingNodesErrorStore()
+      store.removeMissingNodesByPrefix('65:70:')
+      expect(store.missingNodesError).toBeNull()
     })
   })
 })

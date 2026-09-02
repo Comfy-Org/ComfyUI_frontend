@@ -1,241 +1,210 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import RadioButton from 'primevue/radiobutton'
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createApp } from 'vue'
+import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { SettingOption } from '@/platform/settings/types'
 
 import FormRadioGroup from './FormRadioGroup.vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
+
+type FormRadioGroupProps = ComponentProps<typeof FormRadioGroup>
 
 describe('FormRadioGroup', () => {
-  beforeAll(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
-  })
-
-  type FormRadioGroupProps = ComponentProps<typeof FormRadioGroup>
-  const mountComponent = (props: FormRadioGroupProps, options = {}) => {
-    return mount(FormRadioGroup, {
-      global: {
-        plugins: [PrimeVue],
-        components: { RadioButton }
-      },
-      props,
-      ...options
+  function renderComponent(props: FormRadioGroupProps) {
+    return render(FormRadioGroup, {
+      global: { plugins: [PrimeVue] },
+      props
     })
   }
 
   describe('normalizedOptions computed property', () => {
     it('handles string array options', () => {
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'option1',
         options: ['option1', 'option2', 'option3'],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(3)
+      const radios = screen.getAllByRole('radio')
+      expect(radios).toHaveLength(3)
 
-      expect(radioButtons[0].props('value')).toBe('option1')
-      expect(radioButtons[1].props('value')).toBe('option2')
-      expect(radioButtons[2].props('value')).toBe('option3')
+      expect(radios[0]).toHaveAttribute('value', 'option1')
+      expect(radios[1]).toHaveAttribute('value', 'option2')
+      expect(radios[2]).toHaveAttribute('value', 'option3')
 
-      const labels = wrapper.findAll('label')
-      expect(labels[0].text()).toBe('option1')
-      expect(labels[1].text()).toBe('option2')
-      expect(labels[2].text()).toBe('option3')
+      expect(screen.getByText('option1')).toBeInTheDocument()
+      expect(screen.getByText('option2')).toBeInTheDocument()
+      expect(screen.getByText('option3')).toBeInTheDocument()
     })
 
     it('handles SettingOption array', () => {
-      const options: SettingOption[] = [
-        { text: 'Small', value: 'sm' },
-        { text: 'Medium', value: 'md' },
-        { text: 'Large', value: 'lg' }
-      ]
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'md',
-        options,
+        options: [
+          { text: 'Small', value: 'sm' },
+          { text: 'Medium', value: 'md' },
+          { text: 'Large', value: 'lg' }
+        ] satisfies SettingOption[],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(3)
+      const radios = screen.getAllByRole('radio')
+      expect(radios).toHaveLength(3)
 
-      expect(radioButtons[0].props('value')).toBe('sm')
-      expect(radioButtons[1].props('value')).toBe('md')
-      expect(radioButtons[2].props('value')).toBe('lg')
+      expect(radios[0]).toHaveAttribute('value', 'sm')
+      expect(radios[1]).toHaveAttribute('value', 'md')
+      expect(radios[2]).toHaveAttribute('value', 'lg')
 
-      const labels = wrapper.findAll('label')
-      expect(labels[0].text()).toBe('Small')
-      expect(labels[1].text()).toBe('Medium')
-      expect(labels[2].text()).toBe('Large')
+      expect(screen.getByText('Small')).toBeInTheDocument()
+      expect(screen.getByText('Medium')).toBeInTheDocument()
+      expect(screen.getByText('Large')).toBeInTheDocument()
     })
 
     it('handles SettingOption with undefined value (uses text as value)', () => {
-      const options: SettingOption[] = [
-        { text: 'Option A', value: undefined },
-        { text: 'Option B' }
-      ]
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'Option A',
-        options,
+        options: [
+          { text: 'Option A', value: undefined },
+          { text: 'Option B' }
+        ] satisfies SettingOption[],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-
-      expect(radioButtons[0].props('value')).toBe('Option A')
-      expect(radioButtons[1].props('value')).toBe('Option B')
+      const radios = screen.getAllByRole('radio')
+      expect(radios[0]).toHaveAttribute('value', 'Option A')
+      expect(radios[1]).toHaveAttribute('value', 'Option B')
     })
 
     it('handles custom object with optionLabel and optionValue', () => {
-      const options = [
-        { name: 'First Option', id: '1' },
-        { name: 'Second Option', id: '2' },
-        { name: 'Third Option', id: '3' }
-      ]
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 2,
-        options,
+        options: [
+          { name: 'First Option', id: '1' },
+          { name: 'Second Option', id: '2' },
+          { name: 'Third Option', id: '3' }
+        ],
         optionLabel: 'name',
         optionValue: 'id',
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(3)
+      const radios = screen.getAllByRole('radio')
+      expect(radios).toHaveLength(3)
 
-      expect(radioButtons[0].props('value')).toBe('1')
-      expect(radioButtons[1].props('value')).toBe('2')
-      expect(radioButtons[2].props('value')).toBe('3')
+      expect(radios[0]).toHaveAttribute('value', '1')
+      expect(radios[1]).toHaveAttribute('value', '2')
+      expect(radios[2]).toHaveAttribute('value', '3')
 
-      const labels = wrapper.findAll('label')
-      expect(labels[0].text()).toBe('First Option')
-      expect(labels[1].text()).toBe('Second Option')
-      expect(labels[2].text()).toBe('Third Option')
+      expect(screen.getByText('First Option')).toBeInTheDocument()
+      expect(screen.getByText('Second Option')).toBeInTheDocument()
+      expect(screen.getByText('Third Option')).toBeInTheDocument()
     })
 
     it('handles mixed array with strings and SettingOptions', () => {
-      const options: (string | SettingOption)[] = [
-        'Simple String',
-        { text: 'Complex Option', value: 'complex' },
-        'Another String'
-      ]
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'complex',
-        options,
+        options: [
+          'Simple String',
+          { text: 'Complex Option', value: 'complex' },
+          'Another String'
+        ] as (string | SettingOption)[],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(3)
+      const radios = screen.getAllByRole('radio')
+      expect(radios).toHaveLength(3)
 
-      expect(radioButtons[0].props('value')).toBe('Simple String')
-      expect(radioButtons[1].props('value')).toBe('complex')
-      expect(radioButtons[2].props('value')).toBe('Another String')
+      expect(radios[0]).toHaveAttribute('value', 'Simple String')
+      expect(radios[1]).toHaveAttribute('value', 'complex')
+      expect(radios[2]).toHaveAttribute('value', 'Another String')
 
-      const labels = wrapper.findAll('label')
-      expect(labels[0].text()).toBe('Simple String')
-      expect(labels[1].text()).toBe('Complex Option')
-      expect(labels[2].text()).toBe('Another String')
+      expect(screen.getByText('Simple String')).toBeInTheDocument()
+      expect(screen.getByText('Complex Option')).toBeInTheDocument()
+      expect(screen.getByText('Another String')).toBeInTheDocument()
     })
 
     it('handles empty options array', () => {
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: null,
         options: [],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(0)
+      expect(screen.queryAllByRole('radio')).toHaveLength(0)
     })
 
     it('handles undefined options gracefully', () => {
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: null,
         options: undefined,
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(0)
+      expect(screen.queryAllByRole('radio')).toHaveLength(0)
     })
 
     it('handles object with missing properties gracefully', () => {
-      const options = [{ label: 'Option 1', val: 'opt1' }]
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'opt1',
-        options,
+        options: [{ label: 'Option 1', val: 'opt1' }],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(1)
-
-      const labels = wrapper.findAll('label')
-      expect(labels[0].text()).toBe('Unknown')
+      expect(screen.getAllByRole('radio')).toHaveLength(1)
+      expect(screen.getByText('Unknown')).toBeInTheDocument()
     })
   })
 
   describe('component functionality', () => {
-    it('sets correct input-id and name attributes', () => {
-      const options = ['A', 'B']
-
-      const wrapper = mountComponent({
+    it('sets correct id and name attributes on inputs', () => {
+      renderComponent({
         modelValue: 'A',
-        options,
+        options: ['A', 'B'],
         id: 'my-radio-group'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
+      const radios = screen.getAllByRole('radio')
 
-      expect(radioButtons[0].props('inputId')).toBe('my-radio-group-A')
-      expect(radioButtons[0].props('name')).toBe('my-radio-group')
-      expect(radioButtons[1].props('inputId')).toBe('my-radio-group-B')
-      expect(radioButtons[1].props('name')).toBe('my-radio-group')
+      expect(radios[0]).toHaveAttribute('id', 'my-radio-group-A')
+      expect(radios[0]).toHaveAttribute('name', 'my-radio-group')
+      expect(radios[1]).toHaveAttribute('id', 'my-radio-group-B')
+      expect(radios[1]).toHaveAttribute('name', 'my-radio-group')
     })
 
     it('associates labels with radio buttons correctly', () => {
-      const options = ['Yes', 'No']
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'Yes',
-        options,
+        options: ['Yes', 'No'],
         id: 'confirm-radio'
       })
 
-      const labels = wrapper.findAll('label')
-
-      expect(labels[0].attributes('for')).toBe('confirm-radio-Yes')
-      expect(labels[1].attributes('for')).toBe('confirm-radio-No')
+      expect(screen.getByText('Yes')).toHaveAttribute(
+        'for',
+        'confirm-radio-Yes'
+      )
+      expect(screen.getByText('No')).toHaveAttribute('for', 'confirm-radio-No')
     })
 
     it('sets aria-describedby attribute correctly', () => {
-      const options: SettingOption[] = [
-        { text: 'Option 1', value: 'opt1' },
-        { text: 'Option 2', value: 'opt2' }
-      ]
-
-      const wrapper = mountComponent({
+      renderComponent({
         modelValue: 'opt1',
-        options,
+        options: [
+          { text: 'Option 1', value: 'opt1' },
+          { text: 'Option 2', value: 'opt2' }
+        ] satisfies SettingOption[],
         id: 'test-radio'
       })
 
-      const radioButtons = wrapper.findAllComponents(RadioButton)
-
-      expect(radioButtons[0].attributes('aria-describedby')).toBe(
+      const radios = screen.getAllByRole('radio')
+      // PrimeVue RadioButton places aria-describedby on its root <div>, not the <input>
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(radios[0].closest('[aria-describedby]')).toHaveAttribute(
+        'aria-describedby',
         'Option 1-label'
       )
-      expect(radioButtons[1].attributes('aria-describedby')).toBe(
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(radios[1].closest('[aria-describedby]')).toHaveAttribute(
+        'aria-describedby',
         'Option 2-label'
       )
     })

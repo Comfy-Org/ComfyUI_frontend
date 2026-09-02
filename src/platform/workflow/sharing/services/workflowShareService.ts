@@ -1,10 +1,18 @@
 import type {
+  HubWorkflowDetail,
+  ImportPublishedAssetsRequest
+} from '@comfyorg/ingest-types'
+import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
+
+import type {
+  PublishPrefill,
   SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import { useAssetsStore } from '@/stores/assetsStore'
+import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   zPublishRecordResponse,
@@ -28,6 +36,52 @@ class SharedWorkflowLoadError extends Error {
   }
 }
 
+function mapApiThumbnailType(
+  value: 'image' | 'video' | 'image_comparison' | null | undefined
+): ThumbnailType | undefined {
+  if (!value) return undefined
+  if (value === 'image_comparison') return 'imageComparison'
+  return value
+}
+
+function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
+  const name = fields.name
+  const description = fields.description
+  const tags = fields.tags?.map((tag) => tag.display_name)
+  const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
+  const thumbnailUrl = fields.thumbnail_url
+  const thumbnailComparisonUrl = fields.thumbnail_comparison_url
+  const sampleImageUrls = fields.sample_image_urls
+
+  if (
+    !name &&
+    !description &&
+    !tags?.length &&
+    !thumbnailType &&
+    !thumbnailUrl &&
+    !thumbnailComparisonUrl &&
+    !sampleImageUrls?.length
+  ) {
+    return null
+  }
+
+  return {
+    name,
+    description,
+    tags,
+    thumbnailType,
+    thumbnailUrl,
+    thumbnailComparisonUrl,
+    sampleImageUrls
+  }
+}
+
+function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {
+  const result = zGetHubWorkflowResponse.safeParse(payload)
+  if (!result.success) return null
+  return extractPrefill(result.data)
+}
+
 function decodePublishRecord(payload: unknown) {
   const result = zPublishRecordResponse.safeParse(payload)
   if (!result.success) return null
@@ -37,7 +91,8 @@ function decodePublishRecord(payload: unknown) {
     shareId: r.share_id ?? undefined,
     listed: r.listed,
     publishedAt: parsePublishedAt(r.publish_time),
-    shareUrl: r.share_id ? normalizeShareUrl(r.share_id) : undefined
+    shareUrl: r.share_id ? normalizeShareUrl(r.share_id) : undefined,
+    prefill: null
   }
 }
 
@@ -81,10 +136,27 @@ const UNPUBLISHED = {
   isPublished: false,
   shareId: null,
   shareUrl: null,
-  publishedAt: null
+  publishedAt: null,
+  prefill: null
 } as const satisfies WorkflowPublishStatus
 
 export function useWorkflowShareService() {
+  async function fetchHubWorkflowPrefill(
+    shareId: string
+  ): Promise<PublishPrefill | null> {
+    const response = await api.fetchApi(
+      `/hub/workflows/${encodeURIComponent(shareId)}`
+    )
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch hub workflow details: ${response.status}`
+      )
+    }
+
+    const prefill = decodeHubWorkflowPrefill(await response.json())
+    return prefill
+  }
+
   async function publishWorkflow(
     workflowPath: string,
     shareableAssets: AssetInfo[]
@@ -132,11 +204,21 @@ export function useWorkflowShareService() {
     const record = decodePublishRecord(json)
     if (!record || !record.shareId || !record.publishedAt) return UNPUBLISHED
 
+    let prefill: PublishPrefill | null = record.prefill
+    if (!prefill && record.listed) {
+      try {
+        prefill = await fetchHubWorkflowPrefill(record.shareId)
+      } catch {
+        prefill = null
+      }
+    }
+
     return {
       isPublished: true,
       shareId: record.shareId,
       shareUrl: normalizeShareUrl(record.shareId),
-      publishedAt: record.publishedAt
+      publishedAt: record.publishedAt,
+      prefill
     }
   }
 
@@ -176,25 +258,29 @@ export function useWorkflowShareService() {
       throw new Error('Failed to load shared workflow: invalid response')
     }
 
-    const validated = await validateComfyWorkflow(workflow.workflowJson)
-    if (!validated) {
-      throw new Error('Failed to load shared workflow: invalid workflow data')
-    }
-    workflow.workflowJson = validated
-
     return workflow
   }
 
-  async function importPublishedAssets(assetIds: string[]): Promise<void> {
+  async function importPublishedAssets(
+    assetIds: string[],
+    shareId?: string
+  ): Promise<void> {
+    const body: ImportPublishedAssetsRequest = {
+      published_asset_ids: assetIds,
+      ...(shareId ? { share_id: shareId } : {})
+    }
+
     const response = await api.fetchApi('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published_asset_ids: assetIds })
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
+
+    await useAssetsStore().inputAssets.invalidate()
   }
 
   return {

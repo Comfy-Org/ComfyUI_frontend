@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
@@ -10,6 +13,11 @@ function makeOutput(
 }
 
 describe(flattenNodeOutput, () => {
+  it('returns empty array for nullish node output', () => {
+    expect(flattenNodeOutput(['1', null])).toEqual([])
+    expect(flattenNodeOutput(['1', undefined])).toEqual([])
+  })
+
   it('returns empty array for output with no known media types', () => {
     const result = flattenNodeOutput(['1', makeOutput({ unknown: 'hello' })])
     expect(result).toEqual([])
@@ -84,10 +92,12 @@ describe(flattenNodeOutput, () => {
   })
 
   it('flattens non-standard output keys with ResultItem-like values', () => {
-    const output = makeOutput({
-      a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
-      b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
-    } as unknown as Partial<NodeExecutionOutput>)
+    const output = makeOutput(
+      fromPartial<NodeExecutionOutput>({
+        a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
+        b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
+      })
+    )
 
     const result = flattenNodeOutput(['10', output])
 
@@ -109,10 +119,10 @@ describe(flattenNodeOutput, () => {
   })
 
   it('excludes non-ResultItem array items', () => {
-    const output = {
+    const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
       custom_data: [{ randomKey: 123 }]
-    } as unknown as NodeExecutionOutput
+    })
 
     const result = flattenNodeOutput(['1', output])
 
@@ -121,12 +131,12 @@ describe(flattenNodeOutput, () => {
   })
 
   it('accepts items with filename but no subfolder', () => {
-    const output = {
+    const output = fromPartial<NodeExecutionOutput>({
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
         { filename: 'no-subfolder.png' }
       ]
-    } as unknown as NodeExecutionOutput
+    })
 
     const result = flattenNodeOutput(['1', output])
 
@@ -137,12 +147,12 @@ describe(flattenNodeOutput, () => {
   })
 
   it('excludes items missing filename', () => {
-    const output = {
+    const output = fromPartial<NodeExecutionOutput>({
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
         { subfolder: '', type: 'output' }
       ]
-    } as unknown as NodeExecutionOutput
+    })
 
     const result = flattenNodeOutput(['1', output])
 

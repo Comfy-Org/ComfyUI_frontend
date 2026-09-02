@@ -1,6 +1,98 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { isPLYAsciiFormat, parseASCIIPLY } from '@/scripts/metadata/ply'
+// Override the global @sparkjsdev/spark mock from vitest.setup.ts (the real
+// PlyReader pulls in WASM that doesn't run under Node) with a thin stub
+// driven by per-test fixtures — see `mockNextParseHeader` below. Keeping the
+// PLY-format parsing out of the test file because (a) it would be a parallel
+// implementation that can drift from sparkjs, and (b) sparkjs's PlyReader
+// already has its own coverage. We're only testing what isGaussianSplatPLY
+// does with the parsed result.
+type StubProperty = { isList: boolean; type: string }
+type StubElement = {
+  name: string
+  count: number
+  properties: Record<string, StubProperty>
+}
+
+const {
+  nextHeaderResultMock,
+  resetParseHeaderMock,
+  mockNextParseHeader,
+  mockNextParseHeaderError
+} = vi.hoisted(() => {
+  let next: { elements?: Record<string, StubElement>; error?: Error } = {}
+  return {
+    nextHeaderResultMock: () => next,
+    resetParseHeaderMock: () => {
+      next = {}
+    },
+    mockNextParseHeader: (elements: Record<string, StubElement>) => {
+      next = { elements }
+    },
+    mockNextParseHeaderError: (error: Error) => {
+      next = { error }
+    }
+  }
+})
+
+vi.mock('@sparkjsdev/spark', () => ({
+  PlyReader: class {
+    elements: Record<string, StubElement> = {}
+    constructor(_: unknown) {}
+    parseHeader(): Promise<void> {
+      const { elements, error } = nextHeaderResultMock()
+      if (error) return Promise.reject(error)
+      this.elements = elements ?? {}
+      return Promise.resolve()
+    }
+  }
+}))
+
+import {
+  isGaussianSplatPLY,
+  isPLYAsciiFormat,
+  parseASCIIPLY
+} from '@/scripts/metadata/ply'
+
+const FLOAT = { isList: false, type: 'float' }
+const UCHAR = { isList: false, type: 'uchar' }
+const vertex = (
+  props: Record<string, StubProperty>
+): Record<string, StubElement> => ({
+  vertex: { name: 'vertex', count: 1, properties: props }
+})
+const GAUSSIAN_SPLAT_PROPS = {
+  x: FLOAT,
+  y: FLOAT,
+  z: FLOAT,
+  f_dc_0: FLOAT,
+  f_dc_1: FLOAT,
+  f_dc_2: FLOAT,
+  opacity: FLOAT,
+  scale_0: FLOAT,
+  scale_1: FLOAT,
+  scale_2: FLOAT,
+  rot_0: FLOAT,
+  rot_1: FLOAT,
+  rot_2: FLOAT,
+  rot_3: FLOAT
+}
+const POINT_CLOUD_PROPS = {
+  x: FLOAT,
+  y: FLOAT,
+  z: FLOAT,
+  red: UCHAR,
+  green: UCHAR,
+  blue: UCHAR
+}
+const DC_ONLY_PROPS = {
+  x: FLOAT,
+  y: FLOAT,
+  z: FLOAT,
+  f_dc_0: FLOAT,
+  f_dc_1: FLOAT,
+  f_dc_2: FLOAT
+}
 
 function createPLYBuffer(content: string): ArrayBuffer {
   return new TextEncoder().encode(content).buffer
@@ -50,6 +142,35 @@ end_header`
     it('should handle empty buffer', () => {
       const buffer = new ArrayBuffer(0)
       expect(isPLYAsciiFormat(buffer)).toBe(false)
+    })
+  })
+
+  describe('isGaussianSplatPLY', () => {
+    beforeEach(resetParseHeaderMock)
+
+    it('detects a 3DGS PLY by scale_0..2 + rot_0..3 properties on the vertex element', async () => {
+      mockNextParseHeader(vertex(GAUSSIAN_SPLAT_PROPS))
+      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(true)
+    })
+
+    it('returns false for a point-cloud PLY with no scale/rot properties', async () => {
+      mockNextParseHeader(vertex(POINT_CLOUD_PROPS))
+      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
+    })
+
+    it('returns false when only the f_dc_* DC term is present (no scale/rot)', async () => {
+      mockNextParseHeader(vertex(DC_ONLY_PROPS))
+      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
+    })
+
+    it('returns false when parseHeader rejects (malformed / unsupported PLY)', async () => {
+      mockNextParseHeaderError(new Error('Failed to read header'))
+      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
+    })
+
+    it('returns false when the vertex element is missing entirely', async () => {
+      mockNextParseHeader({})
+      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
     })
   })
 

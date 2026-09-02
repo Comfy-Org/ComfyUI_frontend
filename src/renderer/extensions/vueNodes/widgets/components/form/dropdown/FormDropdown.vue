@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { computedAsync, refDebounced } from '@vueuse/core'
+import {
+  computedAsync,
+  refDebounced,
+  unrefElement,
+  useEventListener
+} from '@vueuse/core'
 import Popover from 'primevue/popover'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import type {
   FilterOption,
@@ -15,7 +21,11 @@ import type {
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import { defaultSearcher, getDefaultSortOptions } from './shared'
+import {
+  DROPDOWN_PANEL_CLASS,
+  defaultSearcher,
+  getDefaultSortOptions
+} from './shared'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
@@ -38,11 +48,13 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  loadingMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
     index: number
   ) => boolean
+  isUploading?: boolean
   searcher?: (
     query: string,
     items: FormDropdownItem[],
@@ -51,7 +63,6 @@ interface Props {
 }
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 const {
   placeholder,
@@ -65,10 +76,15 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
+  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
 } = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'approach-end'): void
+}>()
 
 const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
@@ -96,28 +112,48 @@ const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
-const triggerRef = useTemplateRef('triggerRef')
+const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
+const triggerRef =
+  useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
+const displayedSearchQuery = ref('')
+const isFiltering = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
   if (typeof multiple === 'number') return multiple
   return 1
 })
+const isSingleSelect = computed(() => maxSelectable.value === 1)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
-const filteredItems = computedAsync(async (onCancel) => {
-  if (!isOpen.value) {
-    return items
-  }
+const filteredItems = computedAsync(
+  async (onCancel) => {
+    if (!isOpen.value) {
+      displayedSearchQuery.value = ''
+      return items
+    }
 
-  let cleanupFn: (() => void) | undefined
-  onCancel(() => cleanupFn?.())
-  const result = await searcher(debouncedSearchQuery.value, items, (cb) => {
-    cleanupFn = cb
-  })
-  return result
-}, items)
+    const query = debouncedSearchQuery.value
+    let cancelled = false
+    let cleanupFn: (() => void) | undefined
+    onCancel(() => {
+      cancelled = true
+      cleanupFn?.()
+    })
+
+    const result = await searcher(query, items, (cb) => {
+      cleanupFn = cb
+    })
+    if (!cancelled) displayedSearchQuery.value = query
+    return result
+  },
+  items,
+  {
+    evaluating: isFiltering
+  }
+)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
@@ -137,6 +173,23 @@ const sortedItems = computed(() => {
 
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
+const isShowingCurrentSearchResults = computed(
+  () =>
+    isOpen.value &&
+    isSingleSelect.value &&
+    !isFiltering.value &&
+    searchQuery.value.trim() !== '' &&
+    displayedSearchQuery.value === searchQuery.value &&
+    sortedItems.value.length > 0
+)
+
+const candidateIndex = computed(() =>
+  isShowingCurrentSearchResults.value ? 0 : -1
+)
+const candidateLabel = computed(() => {
+  const candidate = sortedItems.value[candidateIndex.value]
+  return candidate?.label ?? candidate?.name
+})
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
@@ -144,18 +197,61 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 
 const toggleDropdown = (event: Event) => {
   if (disabled) return
-  if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle?.(event, triggerRef.value)
+  if (popoverRef.value && triggerAnchorRef.value) {
+    popoverRef.value.toggle?.(event, triggerAnchorRef.value)
     isOpen.value = !isOpen.value
   }
 }
 
-const closeDropdown = () => {
+function focusTrigger() {
+  triggerRef.value?.focus()
+}
+
+const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (popoverRef.value) {
     popoverRef.value.hide?.()
     isOpen.value = false
   }
+
+  if (restoreFocus) focusTrigger()
 }
+
+/**
+ * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so
+ * the dropdown closes the instant an outside press lands, and a focused inner
+ * scrollbar cannot swallow the first outside click. Presses on the trigger and
+ * on the menu's body-teleported sub-popovers (Sort / Ownership / Base-model)
+ * are excluded so they keep working instead of closing the parent.
+ */
+useEventListener(
+  window,
+  'pointerdown',
+  (event) => {
+    if (!isOpen.value) return
+    const menuEl = unrefElement(menuRef)
+    const triggerEl = triggerAnchorRef.value
+    const path = event.composedPath()
+    if (menuEl && path.includes(menuEl)) return
+    if (triggerEl && path.includes(triggerEl)) return
+    if (path.some(isInsideDropdownPanel)) return
+    closeDropdown()
+  },
+  { capture: true }
+)
+
+function isInsideDropdownPanel(target: EventTarget): boolean {
+  return (
+    target instanceof HTMLElement &&
+    target.classList.contains(DROPDOWN_PANEL_CLASS)
+  )
+}
+
+/**
+ * The popover is teleported to `document.body`, so canvas gestures (pan, zoom,
+ * box select — any input device) move the node while the popover stays put.
+ * Dismiss as soon as such a gesture begins.
+ */
+useDismissOnCanvasGesture(isOpen, () => closeDropdown())
 
 function handleFileChange(event: Event) {
   if (disabled) return
@@ -169,8 +265,14 @@ function handleFileChange(event: Event) {
 
 function handleSelection(item: FormDropdownItem, index: number) {
   if (disabled) return
+  const itemIsSelected = internalIsSelected(item, index)
+  if (isSingleSelect.value && itemIsSelected) {
+    closeDropdown({ restoreFocus: true })
+    return
+  }
+
   const sel = selected.value
-  if (internalIsSelected(item, index)) {
+  if (itemIsSelected) {
     sel.delete(item.id)
   } else {
     if (sel.size < maxSelectable.value) {
@@ -185,15 +287,53 @@ function handleSelection(item: FormDropdownItem, index: number) {
   }
   selected.value = new Set(sel)
 
-  if (maxSelectable.value === 1) {
-    closeDropdown()
+  if (isSingleSelect.value) {
+    closeDropdown({ restoreFocus: true })
   }
+}
+
+async function getTopSearchResult() {
+  const query = searchQuery.value
+  if (query.trim() === '') return
+
+  const sourceItems = items
+  const matches =
+    isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
+      ? filteredItems.value
+      : await searcher(query, sourceItems, () => {})
+
+  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
+    return
+  }
+
+  return selectedSorter.value({ items: matches })?.[0]
+}
+
+async function selectTopSearchResult() {
+  try {
+    if (disabled || !isOpen.value || !isSingleSelect.value) return
+    const topResult = await getTopSearchResult()
+    if (!topResult) return
+    handleSelection(topResult, 0)
+  } catch (error) {
+    console.error('[FormDropdown] search selection failed', error)
+  }
+}
+
+function handleSearchEnter() {
+  void selectTopSearchResult()
+}
+
+function showPicker() {
+  triggerRef.value!.showPicker()
+  closeDropdown()
 }
 </script>
 
 <template>
-  <div ref="triggerRef">
+  <div ref="triggerAnchorRef">
     <FormDropdownInput
+      ref="triggerRef"
       :files
       :is-open
       :placeholder="placeholderText"
@@ -204,14 +344,14 @@ function handleSelection(item: FormDropdownItem, index: number) {
       :uploadable
       :disabled
       :accept
+      :is-uploading
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
     <Popover
       ref="popoverRef"
-      :dismissable="true"
+      :dismissable="false"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
@@ -224,12 +364,14 @@ function handleSelection(item: FormDropdownItem, index: number) {
       @hide="isOpen = false"
     >
       <FormDropdownMenu
+        ref="menuRef"
         v-model:filter-selected="filterSelected"
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
         v-model:ownership-selected="ownershipSelected"
         v-model:base-model-selected="baseModelSelected"
+        :uploadable
         :filter-options
         :sort-options
         :show-ownership-filter
@@ -238,10 +380,16 @@ function handleSelection(item: FormDropdownItem, index: number) {
         :base-model-options
         :disabled
         :items="sortedItems"
+        :candidate-index
+        :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
+        :loading-more="loadingMore"
         @close="closeDropdown"
+        @search-enter="handleSearchEnter"
         @item-click="handleSelection"
+        @show-picker="showPicker"
+        @approach-end="emit('approach-end')"
       />
     </Popover>
   </div>

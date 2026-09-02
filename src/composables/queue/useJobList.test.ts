@@ -1,7 +1,8 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
@@ -19,35 +20,30 @@ type TestTask = {
   workflowId?: string
 }
 
-const translations: Record<string, string> = {
-  'queue.jobList.undated': 'Undated',
-  'g.emDash': '--',
-  'g.untitled': 'Untitled'
-}
-let localeRef: Ref<string>
-let tMock: ReturnType<typeof vi.fn>
-const ensureLocaleMocks = () => {
-  if (!localeRef) {
-    localeRef = ref('en-US') as Ref<string>
-  }
-  if (!tMock) {
-    tMock = vi.fn((key: string) => translations[key] ?? key)
-  }
-  return { localeRef, tMock }
-}
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => {
-    ensureLocaleMocks()
-    return {
-      t: tMock,
-      locale: localeRef
+const createTestI18n = () =>
+  createI18n({
+    legacy: false,
+    locale: 'en-US',
+    messages: {
+      'en-US': {
+        queue: {
+          jobList: {
+            undated: 'Undated'
+          }
+        },
+        g: {
+          emDash: '--',
+          untitled: 'Untitled'
+        }
+      }
     }
-  }
-}))
+  })
 
 vi.mock('@/i18n', () => ({
-  st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`)
+  st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`),
+  resolveNodeDefText: vi.fn(
+    (field: string, nodeName: string) => `i18n(${nodeName}.${field})`
+  )
 }))
 
 let totalPercent: Ref<number>
@@ -184,14 +180,21 @@ const createTask = (
 
 const mountUseJobList = () => {
   let composable: ReturnType<typeof useJobList>
-  const wrapper = mount({
-    template: '<div />',
-    setup() {
-      composable = useJobList()
-      return {}
+  const result = render(
+    {
+      template: '<div />',
+      setup() {
+        composable = useJobList()
+        return {}
+      }
+    },
+    {
+      global: {
+        plugins: [createTestI18n()]
+      }
     }
-  })
-  return { wrapper, composable: composable! }
+  )
+  return { ...result, composable: composable! }
 }
 
 const resetStores = () => {
@@ -215,10 +218,6 @@ const resetStores = () => {
   totalPercent.value = 0
   currentNodePercent.value = 0
 
-  ensureLocaleMocks()
-  localeRef.value = 'en-US'
-  tMock.mockClear()
-
   if (isJobInitializingMock) {
     vi.mocked(isJobInitializingMock).mockReset()
     vi.mocked(isJobInitializingMock).mockReturnValue(false)
@@ -230,33 +229,30 @@ const flush = async () => {
 }
 
 describe('useJobList', () => {
-  let wrapper: ReturnType<typeof mount> | null = null
+  let unmount: (() => void) | null = null
   let api: ReturnType<typeof useJobList> | null = null
 
   beforeEach(() => {
-    vi.resetAllMocks()
     resetStores()
-    wrapper?.unmount()
-    wrapper = null
+    unmount?.()
+    unmount = null
     api = null
   })
 
   afterEach(() => {
-    wrapper?.unmount()
-    wrapper = null
+    unmount?.()
+    unmount = null
     api = null
-    vi.useRealTimers()
   })
 
   const initComposable = () => {
     const mounted = mountUseJobList()
-    wrapper = mounted.wrapper
+    unmount = mounted.unmount
     api = mounted.composable
     return api!
   }
 
   it('tracks recently added pending jobs and clears the hint after expiry', async () => {
-    vi.useFakeTimers()
     queueStoreMock.pendingTasks = [
       createTask({ jobId: '1', job: { priority: 1 }, mockState: 'pending' })
     ]
@@ -284,7 +280,6 @@ describe('useJobList', () => {
   })
 
   it('removes pending hint immediately when the task leaves the queue', async () => {
-    vi.useFakeTimers()
     const taskId = '2'
     queueStoreMock.pendingTasks = [
       createTask({ jobId: taskId, job: { priority: 1 }, mockState: 'pending' })
@@ -312,7 +307,6 @@ describe('useJobList', () => {
   })
 
   it('cleans up timeouts on unmount', async () => {
-    vi.useFakeTimers()
     queueStoreMock.pendingTasks = [
       createTask({ jobId: '3', job: { priority: 1 }, mockState: 'pending' })
     ]
@@ -321,8 +315,8 @@ describe('useJobList', () => {
     await flush()
     expect(vi.getTimerCount()).toBeGreaterThan(0)
 
-    wrapper?.unmount()
-    wrapper = null
+    unmount?.()
+    unmount = null
     await flush()
     expect(vi.getTimerCount()).toBe(0)
   })
@@ -422,7 +416,6 @@ describe('useJobList', () => {
   })
 
   it('filters jobs by search query', async () => {
-    vi.useFakeTimers()
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'alpha',
@@ -557,13 +550,38 @@ describe('useJobList', () => {
     }
     await flush()
     expect(instance.currentNodeName.value).toBe(
-      'i18n(nodeDefs.My Node Type.display_name)-My Node Type'
+      'i18n(My Node Type.display_name)'
     )
   })
 
+  it('groups terminal jobs without an execution end timestamp by create time', async () => {
+    queueStoreMock.historyTasks = [
+      createTask({
+        jobId: 'failed-before-execution',
+        job: { priority: 1 },
+        mockState: 'failed',
+        createTime: Date.now()
+      }),
+      createTask({
+        jobId: 'completed-without-end-time',
+        job: { priority: 1 },
+        mockState: 'completed',
+        createTime: Date.now() - 1_000
+      })
+    ]
+
+    const instance = initComposable()
+    await flush()
+
+    const groups = instance.groupedJobItems.value
+    expect(groups.map((g) => g.label)).toEqual(['Today'])
+    expect(groups[0].items.map((item) => item.id)).toEqual([
+      'failed-before-execution',
+      'completed-without-end-time'
+    ])
+  })
+
   it('groups job items by date label and sorts by total generation time when requested', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'today-small',

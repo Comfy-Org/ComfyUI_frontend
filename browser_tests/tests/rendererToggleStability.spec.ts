@@ -1,18 +1,19 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import type { Position } from '../fixtures/types'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position } from '@e2e/fixtures/types'
+import type { NodeId } from '@/types/nodeId'
 
-type NodeSnapshot = { id: number } & Position
+type NodeSnapshot = { id: NodeId } & Position
 
 async function getAllNodePositions(
   comfyPage: ComfyPage
 ): Promise<NodeSnapshot[]> {
   return comfyPage.page.evaluate(() =>
     window.app!.graph.nodes.map((n) => ({
-      id: n.id as number,
+      id: n.id,
       x: n.pos[0],
       y: n.pos[1]
     }))
@@ -21,7 +22,7 @@ async function getAllNodePositions(
 
 async function getNodePosition(
   comfyPage: ComfyPage,
-  nodeId: number
+  nodeId: NodeId
 ): Promise<Position | undefined> {
   return comfyPage.page.evaluate((targetNodeId) => {
     const node = window.app!.graph.nodes.find((n) => n.id === targetNodeId)

@@ -1,18 +1,29 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
 import type {
   CanvasPointerEvent,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
-import type { NodeReference } from '../utils/litegraphUtils'
-import { SubgraphSlotReference } from '../utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position, Size } from '@e2e/fixtures/types'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 export class SubgraphHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly editor: SubgraphEditor
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.editor = new SubgraphEditor(comfyPage)
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -74,72 +85,81 @@ export class SubgraphHelper {
           )
         }
 
-        // Handle the interaction based on action type
-        if (action === 'rightClick') {
-          // Right-click: try each slot until one works
+        type SlotInteractionResult =
+          | { success: true; slotName: string; x: number; y: number }
+          | { success: false }
+
+        const createCanvasPointerEvent = (
+          canvasX: number,
+          canvasY: number,
+          button: number
+        ): CanvasPointerEvent =>
+          Object.assign(new PointerEvent('pointerdown', { button }), {
+            canvasX,
+            canvasY,
+            deltaX: 0,
+            deltaY: 0,
+            safeOffsetX: 0,
+            safeOffsetY: 0
+          })
+
+        const tryRightClick = (): SlotInteractionResult => {
           for (const slot of slotsToTry) {
-            if (!slot.pos) continue
+            if (!slot.pos || !node.onPointerDown) continue
 
-            const event = {
-              canvasX: slot.pos[0],
-              canvasY: slot.pos[1],
-              button: 2, // Right mouse button
-              preventDefault: () => {},
-              stopPropagation: () => {}
-            }
+            const event = createCanvasPointerEvent(
+              slot.pos[0],
+              slot.pos[1],
+              2 // Right mouse button
+            )
 
-            if (node.onPointerDown) {
-              node.onPointerDown(
-                event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-                app.canvas.pointer,
-                app.canvas.linkConnector
-              )
-              return {
-                success: true,
-                slotName: slot.name,
-                x: slot.pos[0],
-                y: slot.pos[1]
-              }
+            node.onPointerDown(
+              event,
+              app.canvas.pointer,
+              app.canvas.linkConnector
+            )
+            return {
+              success: true,
+              slotName: slot.name,
+              x: slot.pos[0],
+              y: slot.pos[1]
             }
           }
-        } else if (action === 'doubleClick') {
-          // Double-click: use first slot with bounding rect center
+          return { success: false }
+        }
+
+        const tryDoubleClick = (): SlotInteractionResult => {
           const slot = slotsToTry[0]
           if (!slot.boundingRect) {
             throw new Error(`${slotType} slot bounding rect not found`)
           }
+          if (!node.onPointerDown) return { success: false }
 
           const rect = slot.boundingRect
           const testX = rect[0] + rect[2] / 2 // x + width/2
           const testY = rect[1] + rect[3] / 2 // y + height/2
 
-          const event = {
-            canvasX: testX,
-            canvasY: testY,
-            button: 0, // Left mouse button
-            preventDefault: () => {},
-            stopPropagation: () => {}
-          }
+          const event = createCanvasPointerEvent(
+            testX,
+            testY,
+            0 // Left mouse button
+          )
 
-          if (node.onPointerDown) {
-            node.onPointerDown(
-              event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-              app.canvas.pointer,
-              app.canvas.linkConnector
-            )
+          node.onPointerDown(
+            event,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
 
-            // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(
-                event as Partial<CanvasPointerEvent> as CanvasPointerEvent
-              )
-            }
+          // Trigger double-click
+          if (app.canvas.pointer.onDoubleClick) {
+            app.canvas.pointer.onDoubleClick(event)
           }
 
           return { success: true, slotName: slot.name, x: testX, y: testY }
         }
 
-        return { success: false }
+        return action === 'rightClick' ? tryRightClick() : tryDoubleClick()
       },
       { slotType, action, targetSlotName: slotName }
     )
@@ -156,7 +176,7 @@ export class SubgraphHelper {
 
     // Wait for the appropriate UI element to appear
     if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
+      await this.page.locator('.litemenu-entry').first().waitFor({
         state: 'visible',
         timeout: 5000
       })
@@ -232,6 +252,17 @@ export class SubgraphHelper {
    */
   getOutputSlot(slotName?: string): SubgraphSlotReference {
     return new SubgraphSlotReference('output', slotName || '', this.comfyPage)
+  }
+
+  async getInputBounds(): Promise<Position & Size> {
+    return await this.comfyPage.page.evaluate(() => {
+      const graph = app!.canvas.graph as Subgraph
+      const inputNode = graph.inputNode
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
+      const width = inputNode.size[0] * app!.canvas.ds.scale
+      const height = inputNode.size[1] * app!.canvas.ds.scale
+      return { x, y, width, height }
+    })
   }
 
   /**
@@ -325,11 +356,127 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
   }
 
+  /**
+   * Disconnects and reconnects the interior link feeding a promoted subgraph
+   * input, forcing every host node of this definition to re-resolve the
+   * promoted widget through `SubgraphNode._setWidget`.
+   *
+   * Must be called from inside the subgraph.
+   */
+  async rebindPromotedInput(
+    interiorNode: NodeReference,
+    inputName: string
+  ): Promise<void> {
+    const slotIndex = await this.page.evaluate(
+      ([nodeId, name]) => {
+        const node = window.app!.canvas.graph!.getNodeById(nodeId)
+        if (!node) throw new Error(`Node ${nodeId} not found`)
+        const index = node.inputs.findIndex((input) => input.name === name)
+        if (index === -1) {
+          throw new Error(`Input '${name}' not found on node ${nodeId}`)
+        }
+        return index
+      },
+      [interiorNode.id, inputName] as const
+    )
+
+    const slot = await interiorNode.getInput(slotIndex)
+    await slot.removeLinks()
+    await this.comfyPage.nextFrame()
+    await expect
+      .poll(() => slot.getLinkCount(), 'Interior link should be detached')
+      .toBe(0)
+
+    await this.connectFromInput(interiorNode, slotIndex, inputName)
+    await expect
+      .poll(() => slot.getLinkCount(), 'Interior link should be restored')
+      .toBe(1)
+  }
+
+  async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
+  }
+
+  async unpromoteWidget(
+    nodeLocator: Locator,
+    widgetName: string
+  ): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openForDisabledElement(widget)
+      .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
+  }
+
+  /**
+   * Converts the current canvas selection via the selection toolbox and returns
+   * the id of the subgraph node it produced.
+   */
+  async convertSelectionToSubgraph(): Promise<string> {
+    const findSubgraphNodeIds = async () =>
+      (await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')).map(
+        (node) => String(node.id)
+      )
+    const existingIds = new Set(await findSubgraphNodeIds())
+
+    await this.page
+      .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+      .click()
+
+    const findAddedIds = async () =>
+      (await findSubgraphNodeIds()).filter((id) => !existingIds.has(id))
+    await expect.poll(findAddedIds).toHaveLength(1)
+    const [addedId] = await findAddedIds()
+    return addedId
+  }
+
+  async enterSubgraphWithFallback(nodeId: string): Promise<void> {
+    const targetNodeId = parseNodeId(nodeId)
+    if (!targetNodeId) {
+      throw new Error(`Expected a subgraph node id, got ${nodeId}`)
+    }
+
+    const enterButton =
+      this.comfyPage.vueNodes.getSubgraphEnterButton(targetNodeId)
+    if ((await enterButton.count()) > 0) {
+      await this.comfyPage.vueNodes.enterSubgraph(targetNodeId)
+    } else {
+      await this.page.evaluate((id) => {
+        const graph = window.app?.canvas.graph
+        const node = graph?.getNodeById(id)
+        if (!node?.isSubgraphNode()) {
+          throw new Error(`Expected visible subgraph node ${id}`)
+        }
+        window.app!.canvas.setGraph(node.subgraph)
+      }, targetNodeId)
+    }
+
+    await this.comfyPage.nextFrame()
+    await expect.poll(async () => this.isInSubgraph()).toBe(true)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
       return !!graph && 'inputNode' in graph
     })
+  }
+
+  /** ID of the graph currently shown on the canvas (root graph or subgraph). */
+  async getActiveGraphId(): Promise<string | null> {
+    return this.page.evaluate(() => window.app!.canvas.graph?.id ?? null)
+  }
+
+  /** ID of the root graph of the active workflow. */
+  async getRootGraphId(): Promise<string | null> {
+    return this.page.evaluate(
+      () => window.app!.canvas.graph?.rootGraph?.id ?? null
+    )
   }
 
   async exitViaBreadcrumb(): Promise<void> {
@@ -348,6 +495,9 @@ export class SubgraphHelper {
 
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async countGraphPseudoPreviewEntries(): Promise<number> {
@@ -372,39 +522,9 @@ export class SubgraphHelper {
   }
 
   async getHostPromotedTupleSnapshot(): Promise<
-    { hostNodeId: string; promotedWidgets: [string, string][] }[]
+    { hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]
   > {
-    return this.page.evaluate(() => {
-      const graph = window.app!.canvas.graph!
-      return graph._nodes
-        .filter(
-          (node) =>
-            typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
-        )
-        .map((node) => {
-          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
-            ? node.properties.proxyWidgets
-            : []
-          const promotedWidgets = proxyWidgets
-            .filter(
-              (entry): entry is [string, string] =>
-                Array.isArray(entry) &&
-                entry.length >= 2 &&
-                typeof entry[0] === 'string' &&
-                typeof entry[1] === 'string'
-            )
-            .map(
-              ([interiorNodeId, widgetName]) =>
-                [interiorNodeId, widgetName] as [string, string]
-            )
-
-          return {
-            hostNodeId: String(node.id),
-            promotedWidgets
-          }
-        })
-        .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
-    })
+    return getAllHostPromotedWidgets(this.comfyPage)
   }
 
   /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
@@ -412,5 +532,220 @@ export class SubgraphHelper {
     return this.page.evaluate(() => {
       return window.app!.canvas.graph!.nodes?.length || 0
     })
+  }
+
+  async getSlotCount(type: 'input' | 'output'): Promise<number> {
+    return this.page.evaluate((slotType: 'input' | 'output') => {
+      const graph = window.app!.canvas.graph
+      if (!graph || !('inputNode' in graph)) return 0
+      return graph[`${slotType}s`]?.length ?? 0
+    }, type)
+  }
+
+  async getSlotLabel(
+    type: 'input' | 'output',
+    index = 0
+  ): Promise<string | null> {
+    return this.page.evaluate(
+      ([slotType, idx]) => {
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        const slot = graph[`${slotType}s`]?.[idx]
+        return slot?.label ?? slot?.name ?? null
+      },
+      [type, index] as const
+    )
+  }
+
+  async removeSlot(type: 'input' | 'output', slotName?: string): Promise<void> {
+    if (type === 'input') {
+      await this.rightClickInputSlot(slotName)
+    } else {
+      await this.rightClickOutputSlot(slotName)
+    }
+    await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+    await this.comfyPage.contextMenu.waitForHidden()
+  }
+
+  /** Promoted-widget name order as the subgraph host node exposes it. */
+  async getPromotedWidgetOrder(subgraphNodeId: string): Promise<string[]> {
+    return this.page.evaluate((id) => {
+      const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+      return (node?.widgets ?? []).map((w) => w.name)
+    }, subgraphNodeId)
+  }
+
+  async findSubgraphNodeId(): Promise<string> {
+    const id = await this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const node = graph.nodes.find(
+        (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+      )
+      return node ? String(node.id) : null
+    })
+    if (!id) throw new Error('No subgraph node found in current graph')
+    return id
+  }
+
+  async getBoundaryLinkSnapshot() {
+    return this.page.evaluate(() => {
+      const graph = window.app!.graph!
+      const host = graph.nodes.find((node) => node.isSubgraphNode())
+      if (!host) {
+        return {
+          rootLinks: ['no subgraph node'],
+          incompatibleHostInputLinks: ['no subgraph node'],
+          incompatibleHostOutputLinks: ['no subgraph node']
+        }
+      }
+
+      const hostId = host.id
+      function label(id: string | number) {
+        return id === hostId ? 'HOST' : String(id)
+      }
+
+      const links = [...graph.links.values()]
+      return {
+        rootLinks: links
+          .map(
+            (link) =>
+              `${label(link.origin_id)}:${link.origin_slot}->${label(link.target_id)}:${link.target_slot}`
+          )
+          .sort(),
+        incompatibleHostInputLinks: links
+          .filter((link) => link.target_id === host.id)
+          .filter((link) => host.inputs[link.target_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link landed on slot ${link.target_slot} typed ${host.inputs[link.target_slot]?.type}`
+          ),
+        incompatibleHostOutputLinks: links
+          .filter((link) => link.origin_id === host.id)
+          .filter((link) => host.outputs[link.origin_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link left slot ${link.origin_slot} typed ${host.outputs[link.origin_slot]?.type}`
+          )
+      }
+    })
+  }
+
+  async serializeAndReload(): Promise<void> {
+    const serialized = await this.page.evaluate(() =>
+      window.app!.graph!.serialize()
+    )
+    await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
+  }
+
+  async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {
+    await this.comfyPage.workflow.loadWorkflow('default')
+    const ksampler = await this.comfyPage.nodeOps.getNodeRefById('3')
+    await ksampler.click('title')
+    const subgraphNode = await ksampler.convertToSubgraph()
+    return subgraphNode
+  }
+
+  async packAllInteriorNodes(hostNodeId: string): Promise<void> {
+    await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
+    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.press('Control+a')
+    await this.comfyPage.nextFrame()
+    await this.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.graph!.convertToSubgraph(canvas.selectedItems)
+    })
+    await this.comfyPage.nextFrame()
+    await this.exitViaBreadcrumb()
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.nextFrame()
+  }
+  async publishSubgraph(name: string = 'test blueprint') {
+    await this.comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
+      name
+    })
+  }
+
+  //Blueprints will show an overwrite confirmation dialogue if they have not
+  //already been saved during the active session.
+  //Forcibly reset this flag without an expensive reload operation.
+  async setSaveUnpromptedOnActiveBlueprint() {
+    await this.page.evaluate(() => {
+      const { activeWorkflow } = window.app!.extensionManager.workflow
+      ;(
+        activeWorkflow as ComfyWorkflow & { hasPromptedSave: boolean }
+      ).hasPromptedSave = false
+    })
+  }
+
+  static getTextSlotPosition(page: Page, nodeId: string) {
+    const localNodeId = toNodeId(nodeId)
+    return page.evaluate((id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)
+      if (!node) return null
+
+      const titleHeight = window.LiteGraph!.NODE_TITLE_HEIGHT
+
+      for (const input of node.inputs) {
+        if (!input.widget || input.type !== 'STRING') continue
+        return {
+          hasPos: !!input.pos,
+          posY: input.pos?.[1] ?? null,
+          widgetName: input.widget.name,
+          titleHeight
+        }
+      }
+      return null
+    }, localNodeId)
+  }
+
+  static async expectWidgetBelowHeader(
+    nodeLocator: Locator,
+    widgetLocator: Locator
+  ): Promise<void> {
+    const headerBox = await nodeLocator
+      .locator('[data-testid^="node-header-"]')
+      .boundingBox()
+    const widgetBox = await widgetLocator.boundingBox()
+    if (!headerBox || !widgetBox)
+      throw new Error('Header or widget bounding box not found')
+    expect(widgetBox.y).toBeGreaterThan(headerBox.y + headerBox.height)
+  }
+
+  static collectConsoleWarnings(
+    page: Page,
+    patterns: string[] = [
+      'No link found',
+      'Failed to resolve legacy -1',
+      'No inner link found'
+    ]
+  ): { warnings: string[]; dispose: () => void } {
+    const warnings: string[] = []
+    const handler = (msg: ConsoleMessage) => {
+      const text = msg.text()
+      if (patterns.some((p) => text.includes(p))) {
+        warnings.push(text)
+      }
+    }
+    page.on('console', handler)
+    return { warnings, dispose: () => page.off('console', handler) }
   }
 }

@@ -1,9 +1,16 @@
 import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
+import type { SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode, NodeId, NodeProperty } from './LGraphNode'
+import type { GroupId } from '@/types/groupId'
+
+import type { LGraphGroup } from './LGraphGroup'
+import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
@@ -85,7 +92,7 @@ interface Parent<TChild> {
  * May contain other {@link Positionable} objects.
  */
 export interface Positionable extends Parent<Positionable>, HasBoundingRect {
-  readonly id: NodeId | RerouteId | number
+  readonly id: NodeId | RerouteId | GroupId
   /**
    * Position in graph coordinates. This may be the top-left corner,
    * the centre, or another point depending on concrete type.
@@ -158,6 +165,7 @@ export interface IPinnable {
 }
 
 export interface ReadonlyLinkNetwork {
+  readonly rootGraph: { readonly id: UUID }
   readonly links: ReadonlyMap<LinkId, LLink>
   readonly reroutes: ReadonlyMap<RerouteId, Reroute>
   readonly floatingLinks: ReadonlyMap<LinkId, LLink>
@@ -177,8 +185,10 @@ export interface ReadonlyLinkNetwork {
 export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly links: Map<LinkId, LLink>
   readonly reroutes: Map<RerouteId, Reroute>
-  addFloatingLink(link: LLink): LLink
-  removeReroute(id: number): unknown
+  addFloatingLink(link: LLink): LLink | undefined
+  removeReroute(id: RerouteId): unknown
+  /** Removes a reroute from the map and its stores, without chain splicing. */
+  _removeReroute(id: RerouteId): void
   removeFloatingLink(link: LLink): void
 }
 
@@ -218,7 +228,7 @@ export interface LinkSegment {
   /** Output node ID */
   readonly origin_id: NodeId | undefined
   /** Output slot index */
-  readonly origin_slot: number | undefined
+  readonly origin_slot: SlotIndex | undefined
 }
 
 interface IInputOrOutput {
@@ -230,10 +240,12 @@ interface IInputOrOutput {
 
 export interface IFoundSlot extends IInputOrOutput {
   // Slot index
-  slot: number
+  slot: SlotIndex
   // Centre point of the rendered slot connection
   link_pos: Point
 }
+
+export type { SlotIndex } from '@/types/slotId'
 
 /** A point represented as `[x, y]` co-ordinates */
 export type Point = [x: number, y: number]
@@ -324,11 +336,6 @@ export interface INodeSlot extends HasBoundingRect {
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
   /**
-   * A list of floating link IDs that are connected to this slot.
-   * This is calculated at runtime; it is **not** serialized.
-   */
-  _floatingLinks?: Set<LLink>
-  /**
    * Whether the slot has errors. It is **not** serialized.
    */
   hasErrors?: boolean
@@ -357,8 +364,15 @@ export interface IWidgetLocator {
 }
 
 export interface INodeInputSlot extends INodeSlot {
-  link: LinkId | null
+  /**
+   * @deprecated Id of the link targeting this slot, derived from the link
+   * store by a warning getter. Read via `node.isInputConnected(slot)` /
+   * `node.getInputLink(slot)`; mutate via `node.connect()` /
+   * `node.disconnectInput()`.
+   */
+  link?: LinkId | null
   widget?: IWidgetLocator
+  widgetId?: WidgetId
   alwaysVisible?: boolean
 
   /**
@@ -372,9 +386,15 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 }
 
 export interface INodeOutputSlot extends INodeSlot {
-  links: LinkId[] | null
+  /**
+   * @deprecated Ids of the links leaving this slot, derived from the link
+   * store by a warning getter. Read via `node.isOutputConnected(slot)` /
+   * `node.getOutputNodes(slot)`; mutate via `node.connect()` /
+   * `node.disconnectOutput()`.
+   */
+  links?: LinkId[] | null
   _data?: unknown
-  slot_index?: number
+  slot_index?: SlotIndex
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -396,7 +416,7 @@ export interface CreateNodeOptions {
 /** Links */
 export interface ConnectingLink extends IInputOrOutput {
   node: LGraphNode
-  slot: number
+  slot: SlotIndex
   pos: Point
   direction?: LinkDirection
   afterRerouteId?: RerouteId

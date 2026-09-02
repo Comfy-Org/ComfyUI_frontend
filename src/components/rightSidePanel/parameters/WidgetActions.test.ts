@@ -1,20 +1,35 @@
+import { render, screen } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import userEvent from '@testing-library/user-event'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
-
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import WidgetActions from './WidgetActions.vue'
 
-const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn()
+const {
+  mockGetInputSpecForWidget,
+  mockIsFavorited,
+  mockToggleFavorite,
+  mockTrackWidgetFavoriteToggled
+} = vi.hoisted(() => ({
+  mockGetInputSpecForWidget: vi.fn(),
+  mockIsFavorited: vi.fn().mockReturnValue(false),
+  mockToggleFavorite: vi.fn(),
+  mockTrackWidgetFavoriteToggled: vi.fn()
+}))
+
+vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+  promoteWidget: vi.fn()
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -31,8 +46,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
   useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
+    isFavorited: mockIsFavorited,
+    toggleFavorite: mockToggleFavorite
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
   })
 }))
 
@@ -57,7 +78,6 @@ const i18n = createI18n({
         enterNewName: 'Enter new name'
       },
       rightSidePanel: {
-        hideInput: 'Hide input',
         showInput: 'Show input',
         addFavorite: 'Favorite',
         removeFavorite: 'Unfavorite',
@@ -70,7 +90,7 @@ const i18n = createI18n({
 describe('WidgetActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
+    mockIsFavorited.mockReturnValue(false)
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',
       default: 42
@@ -93,67 +113,81 @@ describe('WidgetActions', () => {
   }
 
   function createMockNode(): LGraphNode {
-    return {
+    return fromAny<LGraphNode, unknown>({
       id: 1,
       type: 'TestNode',
       rootGraph: { id: 'graph-test' },
       computeSize: vi.fn(),
-      size: [200, 100]
-    } as unknown as LGraphNode
+      size: [200, 100],
+      isSubgraphNode: () => false
+    })
   }
 
-  function mountWidgetActions(widget: IBaseWidget, node: LGraphNode) {
-    return mount(WidgetActions, {
+  function renderWidgetActions(
+    widget: IBaseWidget,
+    node: LGraphNode,
+    extraProps: Record<string, unknown> = {}
+  ) {
+    const user = userEvent.setup()
+    const onResetToDefault = vi.fn()
+    render(WidgetActions, {
       props: {
         widget,
         node,
-        label: 'Test Widget'
+        label: 'Test Widget',
+        onResetToDefault,
+        ...extraProps
       },
       global: {
         plugins: [i18n]
       }
     })
+    return { user, onResetToDefault }
   }
 
   it('shows reset button when widget has default value', () => {
     const widget = createMockWidget()
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
-    expect(resetButton).toBeDefined()
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeInTheDocument()
   })
 
   it('emits resetToDefault with default value when reset button clicked', async () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    const { user, onResetToDefault } = renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-    await resetButton?.trigger('click')
-
-    expect(wrapper.emitted('resetToDefault')).toHaveLength(1)
-    expect(wrapper.emitted('resetToDefault')![0]).toEqual([42])
+    expect(onResetToDefault).toHaveBeenCalledTimes(1)
+    expect(onResetToDefault).toHaveBeenCalledWith(42)
   })
 
   it('disables reset button when value equals default', () => {
     const widget = createMockWidget(42)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeDisabled()
+  })
 
-    expect(resetButton?.attributes('disabled')).toBeDefined()
+  it('keeps reset enabled when the store value is null and differs from the default', () => {
+    const node = createMockNode()
+    const id = widgetId('graph-test', node.id, 'test_widget')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: null,
+      options: {}
+    })
+    const widget = { ...createMockWidget(42), widgetId: id } as IBaseWidget
+
+    renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeEnabled()
   })
 
   it('does not show reset button when no default value exists', () => {
@@ -164,13 +198,11 @@ describe('WidgetActions', () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
-
-    expect(resetButton).toBeUndefined()
+    expect(
+      screen.queryByRole('button', { name: /Reset/ })
+    ).not.toBeInTheDocument()
   })
 
   it('uses fallback default for INT type without explicit default', async () => {
@@ -181,15 +213,11 @@ describe('WidgetActions', () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    const { user, onResetToDefault } = renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-    await resetButton?.trigger('click')
-
-    expect(wrapper.emitted('resetToDefault')![0]).toEqual([0])
+    expect(onResetToDefault).toHaveBeenCalledWith(0)
   })
 
   it('uses first option as default for combo without explicit default', async () => {
@@ -201,76 +229,105 @@ describe('WidgetActions', () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    const { user, onResetToDefault } = renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-    await resetButton?.trigger('click')
-
-    expect(wrapper.emitted('resetToDefault')![0]).toEqual(['option1'])
+    expect(onResetToDefault).toHaveBeenCalledWith('option1')
   })
 
-  it('demotes promoted widgets by immediate interior node identity when shown from parent context', async () => {
-    mockGetInputSpecForWidget.mockReturnValue({
-      type: 'CUSTOM'
-    })
-    const parentSubgraphNode = {
-      id: 4,
-      rootGraph: { id: 'graph-test' },
-      computeSize: vi.fn(),
-      size: [300, 150]
-    } as unknown as SubgraphNode
-    const node = {
-      id: 4,
-      type: 'SubgraphNode',
-      rootGraph: { id: 'graph-test' }
-    } as unknown as LGraphNode
-    const widget = {
-      name: 'text',
-      type: 'text',
-      value: 'value',
-      label: 'Text',
-      options: {},
-      y: 0,
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
-    } as IBaseWidget
+  it('tracks widget favorite toggled with is_favorited true when favoriting', async () => {
+    mockIsFavorited.mockReturnValue(false)
 
-    const promotionStore = usePromotionStore()
-    promotionStore.promote('graph-test', 4, {
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
-    })
+    const widget = createMockWidget()
+    const node = createMockNode()
 
-    const wrapper = mount(WidgetActions, {
-      props: {
-        widget,
-        node,
-        label: 'Text',
-        parents: [parentSubgraphNode],
-        isShownOnParents: true
-      },
-      global: {
-        plugins: [i18n]
-      }
-    })
+    const { user } = renderWidgetActions(widget, node)
 
-    const hideButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Hide input'))
-    expect(hideButton).toBeDefined()
-    await hideButton?.trigger('click')
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: true,
+      source: 'right_side_panel'
+    })
+    expect(mockToggleFavorite).toHaveBeenCalledExactlyOnceWith(
+      node,
+      'test_widget'
+    )
+  })
+
+  it('tracks widget favorite toggled with is_favorited false when unfavoriting', async () => {
+    mockIsFavorited.mockReturnValue(true)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: false,
+      source: 'right_side_panel'
+    })
+  })
+
+  it('promotes the widget into the host when "Show input" is clicked', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Show input/ }))
+
+    expect(promoteWidget).toHaveBeenCalledWith(node, widget, [host])
+  })
+
+  it('does not offer "Show input" without a host', () => {
+    renderWidgetActions(createMockWidget(), createMockNode())
 
     expect(
-      promotionStore.isPromoted('graph-test', 4, {
-        sourceNodeId: '3',
-        sourceWidgetName: 'text',
-        disambiguatingSourceNodeId: '1'
-      })
-    ).toBe(false)
+      screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not offer "Show input" when the host input is already linked', () => {
+    const widget = createMockWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
+    })
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    renderWidgetActions(widget, node, { host })
+
+    expect(
+      screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it("toggles the favorite for the row's node", async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockToggleFavorite).toHaveBeenCalledWith(node, 'test_widget')
   })
 })

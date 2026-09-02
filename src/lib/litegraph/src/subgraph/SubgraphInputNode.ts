@@ -1,6 +1,8 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { mintLinkId } from '../idAllocation'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -106,8 +108,10 @@ export class SubgraphInputNode
     if (outputIndex === -1 || inputIndex === -1)
       throw new Error('Invalid slot indices.')
 
+    const linkId = mintLinkId(subgraph.state)
+
     return new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       input.type || fromSlot.type,
       this.id,
       outputIndex,
@@ -174,20 +178,23 @@ export class SubgraphInputNode
     const { subgraph } = this
 
     // Break floating links
-    if (input._floatingLinks?.size) {
-      for (const link of input._floatingLinks) {
-        subgraph.removeFloatingLink(link)
-      }
+    const inputIndex = node.inputs.indexOf(input)
+    for (const floatingLink of slotFloatingLinks(
+      subgraph,
+      'input',
+      node.id,
+      inputIndex
+    )) {
+      subgraph.removeFloatingLink(floatingLink)
     }
 
-    input.link = null
     subgraph.setDirtyCanvas(false, true)
 
     if (!link) return
 
     const subgraphInputIndex = link.origin_slot
     link.disconnect(subgraph, 'output')
-    subgraph._version++
+    subgraph.incrementVersion()
 
     const subgraphInput = this.slots.at(subgraphInputIndex)
     if (!subgraphInput) {
@@ -209,11 +216,18 @@ export class SubgraphInputNode
         link.id
       )
     }
-    const slotIndex = node.inputs.findIndex((inp) => inp === input)
-    if (slotIndex !== -1) {
+
+    if (subgraphInput.linkIds.length === 0) {
+      subgraphInput._widget = undefined
+    }
+    subgraphInput.events.dispatch('input-disconnected', {
+      input: subgraphInput
+    })
+
+    if (inputIndex !== -1) {
       node.onConnectionsChange?.(
         NodeSlotType.INPUT,
-        slotIndex,
+        inputIndex,
         false,
         link,
         subgraphInput

@@ -1,7 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
-
 import {
   AutoPanController,
   calculateEdgePanSpeed
@@ -72,9 +72,7 @@ describe('AutoPanController', () => {
   let controller: AutoPanController
 
   beforeEach(() => {
-    vi.useFakeTimers()
-
-    mockCanvas = {
+    mockCanvas = fromPartial<HTMLCanvasElement>({
       getBoundingClientRect: () => ({
         left: 0,
         top: 0,
@@ -86,12 +84,9 @@ describe('AutoPanController', () => {
         y: 0,
         toJSON: () => {}
       })
-    } as unknown as HTMLCanvasElement
+    })
 
-    mockDs = {
-      offset: [0, 0],
-      scale: 1
-    } as unknown as DragAndScale
+    mockDs = fromPartial<DragAndScale>({ offset: [0, 0], scale: 1 })
 
     onPanMock = vi.fn<(dx: number, dy: number) => void>()
     controller = new AutoPanController({
@@ -104,7 +99,6 @@ describe('AutoPanController', () => {
 
   afterEach(() => {
     controller.stop()
-    vi.useRealTimers()
   })
 
   it('does not pan when pointer is in the center', () => {

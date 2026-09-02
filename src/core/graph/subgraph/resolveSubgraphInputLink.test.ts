@@ -1,5 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
@@ -61,9 +60,7 @@ function addLinkedInteriorInput(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
-  vi.clearAllMocks()
 })
 
 describe('resolveSubgraphInputLink', () => {
@@ -101,14 +98,14 @@ describe('resolveSubgraphInputLink', () => {
     vi.spyOn(subgraph, 'getLink').mockImplementation((linkId) => {
       if (typeof linkId !== 'number') return originalGetLink(linkId)
       if (linkId === stale.linkId) {
-        return {
+        return fromPartial<ReturnType<typeof subgraph.getLink>>({
           resolve: () => ({
             inputNode: {
               inputs: undefined,
               getWidgetFromSlot: () => ({ name: 'ignored' })
             }
           })
-        } as unknown as ReturnType<typeof subgraph.getLink>
+        })
       }
 
       return originalGetLink(linkId)

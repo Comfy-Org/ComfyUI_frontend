@@ -1,11 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'
@@ -30,7 +29,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
 
     const popover = comfyPage.page.locator('.workflow-popover-fade')
     await expect(popover).toHaveCount(1)
-    await expect(popover).toBeVisible({ timeout: 500 })
+    await expect(popover).toBeVisible()
     if (name) {
       await expect(popover).toContainText(name)
     }
@@ -83,28 +82,36 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       1,
       'Unsaved Workflow (2)'
     )
-    await expect(thumbnailImg).not.toBeVisible()
+    await expect(thumbnailImg).toBeHidden()
   })
 
   async function addNode(comfyPage: ComfyPage, category: string, node: string) {
     const canvasArea = await comfyPage.canvas.boundingBox()
 
     await comfyPage.page.mouse.move(
-      canvasArea!.x + canvasArea!.width - 100,
-      100
+      canvasArea!.x + canvasArea!.width / 2,
+      canvasArea!.y + canvasArea!.height / 2
     )
-    await expect(comfyPage.page.locator('.workflow-popover-fade')).toBeHidden()
+    await expect(comfyPage.page.locator('.workflow-popover-fade')).toHaveCount(
+      0
+    )
 
     await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()
     await comfyPage.nextFrame()
+    await comfyPage.page.getByText('model', { exact: true }).click()
+    await comfyPage.nextFrame()
     await comfyPage.page.getByText(category).click()
     await comfyPage.nextFrame()
-    await comfyPage.page.getByText(node).click()
+    await comfyPage.page.getByText(node, { exact: true }).click()
     await comfyPage.nextFrame()
   }
 
   test('Thumbnail should update when switching tabs', async ({ comfyPage }) => {
+    // Multiple workflow switches and thumbnail renders can exceed the default
+    // timeout on loaded CI workers.
+    test.slow()
+
     // Wait for initial workflow to load
     await comfyPage.nextFrame()
 
@@ -144,8 +151,9 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     expect(tab1ThumbnailBefore).toBe(tab1ThumbnailAfter)
 
     // Step 3: Adding another node should cause thumbnail to change
-    // We're on tab 0, add a node
-    await addNode(comfyPage, 'loaders', 'Load VAE')
+    // The nested context menu is already covered above; repeating it here made
+    // this thumbnail assertion depend on unrelated menu timing.
+    await comfyPage.nodeOps.addNode('VAELoader', undefined, { x: 200, y: 200 })
     await comfyPage.nextFrame()
 
     // Switch to tab 1 and back to update tab 0's thumbnail

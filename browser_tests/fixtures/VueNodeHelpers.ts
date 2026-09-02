@@ -3,17 +3,29 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from './selectors'
-import { VueNodeFixture } from './utils/vueNodeFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { toNodeId } from '@/types/nodeId'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
 
 export class VueNodeHelpers {
-  constructor(private page: Page) {}
-
   /**
    * Get locator for all Vue node components in the DOM
    */
-  get nodes(): Locator {
-    return this.page.locator('[data-node-id]')
+  public readonly nodes: Locator
+  /**
+   * Get locator for selected Vue node components (using visual selection indicators)
+   */
+  public readonly selectedNodes: Locator
+
+  constructor(private page: Page) {
+    this.nodes = page.locator('[data-node-id]')
+    this.selectedNodes = page.locator(
+      '[data-node-id].outline-node-component-outline'
+    )
   }
 
   /**
@@ -24,17 +36,53 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Get locator for selected Vue node components (using visual selection indicators)
+   * Get the inner wrapper element of a Vue node.
    */
-  get selectedNodes(): Locator {
-    return this.page.locator('[data-node-id].outline-node-component-outline')
+  getNodeInnerWrapper(nodeId: string): Locator {
+    return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  getInputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--input')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, true)}"]`
+        )
+      })
+  }
+
+  getInputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getInputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
+  }
+
+  getOutputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--output')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, false)}"]`
+        )
+      })
+  }
+
+  getOutputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
   }
 
   /**
-   * Get locator for a Vue node by the node's title (displayed name in the header)
+   * Get locator for Vue nodes by the node's title (displayed name in the header).
+   * Matches against the actual title element, not the full node body.
+   * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
-  getNodeByTitle(title: string): Locator {
-    return this.page.locator(`[data-node-id]`).filter({ hasText: title })
+  getNodeByTitle(title: string | RegExp): Locator {
+    return this.page.locator('[data-node-id]').filter({
+      has: this.page.getByTestId('node-title').filter({ hasText: title })
+    })
   }
 
   /**
@@ -42,13 +90,6 @@ export class VueNodeHelpers {
    */
   async getNodeCount(): Promise<number> {
     return await this.nodes.count()
-  }
-
-  /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
   }
 
   /**
@@ -60,6 +101,32 @@ export class VueNodeHelpers {
         .map((n) => n.getAttribute('data-node-id'))
         .filter((id): id is string => id !== null)
     )
+  }
+
+  async expectGraphSizeGrowth(nodeId: string, label: string): Promise<void> {
+    const node = this.getNodeLocator(nodeId)
+    const before = await node.boundingBox()
+    if (!before) throw new Error(`${label}: node is not rendered`)
+
+    const scale = await this.page.evaluate(
+      ({ id, growth }) => {
+        const node = window.app?.canvas.graph?.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        node.setSize([
+          node.renderingSize[0] + growth[0],
+          node.renderingSize[1] + growth[1]
+        ])
+        return window.app!.canvas.ds.scale
+      },
+      { id: toNodeId(nodeId), growth: GRAPH_SIZE_GROWTH }
+    )
+
+    await expect(node, label).toHaveBounds({
+      ...before,
+      width: before.width + GRAPH_SIZE_GROWTH[0] * scale,
+      height: before.height + GRAPH_SIZE_GROWTH[1] * scale
+    })
   }
 
   /**
@@ -106,6 +173,14 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Select a node by ID and delete it.
+   */
+  async deleteNode(nodeId: string): Promise<void> {
+    await this.selectNode(nodeId)
+    await this.deleteSelected()
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
@@ -114,10 +189,9 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Return a DOM-focused VueNodeFixture for the first node matching the title.
-   * Resolves the node id up front so subsequent interactions survive title changes.
+   * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getNodeIdByTitle(title: string | RegExp): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -128,6 +202,15 @@ export class VueNodeHelpers {
       )
     }
 
+    return nodeId
+  }
+
+  /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
+   */
+  async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
+    const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 
@@ -141,7 +224,7 @@ export class VueNodeHelpers {
         expectedCount
       )
     } else {
-      await this.page.waitForSelector('[data-node-id]')
+      await this.page.locator('[data-node-id]').first().waitFor()
     }
   }
 
@@ -154,6 +237,38 @@ export class VueNodeHelpers {
     })
   }
 
+  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+    const widgetLabel = this.page
+      .getByTestId(TestIds.widgets.layoutFieldLabel)
+      .and(this.page.getByText(widgetName, { exact: true }))
+
+    return this.getNodeByTitle(nodeTitle)
+      .getByTestId(TestIds.widgets.widget)
+      .filter({ has: widgetLabel })
+  }
+
+  /**
+   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
+   */
+  getVisibleWidgetTooltip(): Locator {
+    return this.page.locator('.p-tooltip-text:visible')
+  }
+
+  /**
+   * Select an option from a combo widget on a node.
+   */
+  async selectComboOption(
+    nodeTitle: string,
+    widgetName: string,
+    optionName: string
+  ): Promise<void> {
+    const node = this.getNodeByTitle(nodeTitle)
+    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
+    await this.page
+      .getByRole('option', { name: optionName, exact: true })
+      .click()
+  }
+
   /**
    * Get controls for input number widgets (increment/decrement buttons and input)
    */
@@ -161,8 +276,17 @@ export class VueNodeHelpers {
     return {
       input: widget.locator('input'),
       decrementButton: widget.getByTestId(TestIds.widgets.decrement),
-      incrementButton: widget.getByTestId(TestIds.widgets.increment)
+      incrementButton: widget.getByTestId(TestIds.widgets.increment),
+      valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
+  }
+
+  /**
+   * Locator for the Enter Subgraph footer button.
+   */
+  getSubgraphEnterButton(nodeId?: string): Locator {
+    const root = nodeId ? this.getNodeLocator(nodeId) : this.page
+    return root.getByTestId(TestIds.widgets.subgraphEnterButton).first()
   }
 
   /**
@@ -170,8 +294,7 @@ export class VueNodeHelpers {
    * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
    */
   async enterSubgraph(nodeId?: string): Promise<void> {
-    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
-    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
+    const editButton = this.getSubgraphEnterButton(nodeId)
 
     // The footer tab button extends below the node body (visible area),
     // but its bounding box center overlaps the node body div.
@@ -186,5 +309,23 @@ export class VueNodeHelpers {
     await editButton.click({
       position: { x: box.width / 2, y: box.height * 0.75 }
     })
+  }
+  async isSlotConnected(slot: Locator) {
+    const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
+    if (!key) return false
+
+    const [rawNodeId, type, slotId] = key.split('-')
+    const nodeId = toNodeId(rawNodeId)
+    return await this.page.evaluate(
+      ([nodeId, type, slotId]) => {
+        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        if (!node) return false
+
+        return type === 'in'
+          ? node.inputs[Number(slotId)]?.link !== null
+          : !!node.outputs[Number(slotId)]?.links?.length
+      },
+      [nodeId, type, slotId] as const
+    )
   }
 }

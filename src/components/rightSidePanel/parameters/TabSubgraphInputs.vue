@@ -1,33 +1,21 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  getSourceNodeId,
-  getWidgetName
+  isWidgetPromotedOnSubgraphNode,
+  reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { node } = defineProps<{
@@ -36,7 +24,6 @@ const { node } = defineProps<{
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const promotionStore = usePromotionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
@@ -54,13 +41,7 @@ const isAllCollapsed = computed({
     advancedInputsCollapsed.value = collapse
   }
 })
-const draggableList = ref<DraggableList | undefined>(undefined)
-const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
-
-const promotionEntries = computed(() =>
-  promotionStore.getPromotions(node.rootGraph.id, node.id)
-)
 
 watch(
   focusedSection,
@@ -84,37 +65,7 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  const entries = promotionEntries.value
-  const { widgets = [] } = node
-
-  const result: NodeWidgetsList = []
-  for (const {
-    sourceNodeId: entryNodeId,
-    sourceWidgetName,
-    disambiguatingSourceNodeId
-  } of entries) {
-    const widget = widgets.find((w) => {
-      if (isPromotedWidgetView(w)) {
-        if (
-          String(w.sourceNodeId) !== entryNodeId ||
-          w.sourceWidgetName !== sourceWidgetName
-        )
-          return false
-
-        if (!disambiguatingSourceNodeId) return true
-
-        return (
-          (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
-          disambiguatingSourceNodeId
-        )
-      }
-      return w.name === sourceWidgetName
-    })
-    if (widget) {
-      result.push({ node, widget })
-    }
-  }
-  return result
+  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
@@ -123,21 +74,18 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled)
+      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
-      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
-        sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: getWidgetName(widget),
-        disambiguatingSourceNodeId: getSourceNodeId(widget)
+      !isWidgetPromotedOnSubgraphNode(node, {
+        sourceNodeId: interiorNode.id,
+        sourceWidgetName: widget.name
       })
   )
 })
-
-const parents = computed<SubgraphNode[]>(() => [node])
 
 const searchedWidgetsList = shallowRef<NodeWidgetsList>(widgetsList.value)
 const isSearching = ref(false)
@@ -147,65 +95,21 @@ async function searcher(query: string) {
   searchedWidgetsList.value = searchWidgets(widgetsList.value, query)
 }
 
-const isMounted = useMounted()
+function handleReorder({
+  fromIndex,
+  toIndex
+}: {
+  fromIndex: number
+  toIndex: number
+}) {
+  const widgets = searchedWidgetsList.value.map((row) => row.widget)
+  const [moved] = widgets.splice(fromIndex, 1)
+  if (!moved) return
+  widgets.splice(toIndex, 0, moved)
 
-function setDraggableState() {
-  if (!isMounted.value) return
-
-  draggableList.value?.dispose()
-  const container = sectionWidgetsRef.value?.widgetsContainer
-  if (isSearching.value || !container?.children?.length) return
-
-  draggableList.value = new DraggableList(container, '.draggable-item')
-
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    if (oldPosition === -1) {
-      console.error('[TabSubgraphInputs] draggableItem not found in items')
-      return
-    }
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
-    )
-
-    promotionStore.movePromotion(
-      node.rootGraph.id,
-      node.id,
-      oldPosition,
-      newPosition
-    )
-    canvasStore.canvas?.setDirty(true, true)
-  }
+  reorderSubgraphInputsByWidgetOrder(node, widgets)
+  canvasStore.canvas?.setDirty(true, true)
 }
-
-watchDebounced(searchedWidgetsList, () => setDraggableState(), {
-  debounce: 100
-})
-onMounted(() => setDraggableState())
-onBeforeUnmount(() => draggableList.value?.dispose())
 
 const label = computed(() => {
   return searchedWidgetsList.value.length !== 0
@@ -215,26 +119,17 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
-  >
-    <FormSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsList"
-      class="flex-1"
-    />
+  <PanelSearchHeader v-model="searchQuery" :searcher :update-key="widgetsList">
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="!isSearching && advancedInputsWidgets.length > 0"
     />
-  </div>
+  </PanelSearchHeader>
   <SectionWidgets
-    ref="sectionWidgetsRef"
     :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
-    :parents
+    :host="node"
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
     :enable-empty-state="isSearching"
@@ -244,12 +139,8 @@ const label = computed(() => {
         : t('rightSidePanel.inputsNoneTooltip')
     "
     class="border-b border-interface-stroke"
-    @update:collapse="
-      (v) => {
-        firstSectionCollapsed = v
-        nextTick(setDraggableState)
-      }
-    "
+    @update:collapse="(v) => (firstSectionCollapsed = v)"
+    @reorder="handleReorder"
   >
     <template #empty>
       <div class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground">
@@ -262,7 +153,7 @@ const label = computed(() => {
     ref="advancedInputsSectionRef"
     v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
-    :parents="parents"
+    :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
     class="border-b border-interface-stroke"

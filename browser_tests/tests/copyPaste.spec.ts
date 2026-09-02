@@ -1,11 +1,58 @@
-import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
+test.describe(
+  'Pinned node copy and paste',
+  { tag: ['@node', '@workflow'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
+
+    test('lands at the cursor', async ({ comfyPage }) => {
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      if (!node) throw new Error('KSampler node not found')
+      await node.centerOnNode()
+      await node.clickContextMenuOption('Pin')
+      await comfyPage.contextMenu.waitForHidden()
+      await expect(node).toBePinned()
+
+      const nodeType = await node.getType()
+      const originalNodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
+      const originalIds = new Set(originalNodes.map(({ id }) => id))
+      const originalGraphNodeCount =
+        await comfyPage.nodeOps.getGraphNodesCount()
+      await comfyPage.page.mouse.move(400, 300)
+      await comfyPage.nextFrame()
+      await comfyPage.clipboard.copy(comfyPage.canvas)
+      await comfyPage.clipboard.paste(comfyPage.canvas)
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(originalGraphNodeCount + 1)
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
+      const pasted = nodes.find(({ id }) => !originalIds.has(id))
+      if (!pasted) throw new Error('Pasted node not found')
+      await expect
+        .poll(async () => {
+          const { x, y } = await pasted.getPosition()
+          return Math.hypot(x - 400, y - 300)
+        })
+        .toBeLessThanOrEqual(2)
+    })
+  }
+)
 
 test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can copy and paste node', async ({ comfyPage }) => {
@@ -38,8 +85,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.clipboard.copy(null)
     await comfyPage.clipboard.paste(null)
     await comfyPage.clipboard.paste(null)
-    const resultString = await textBox.inputValue()
-    expect(resultString).toBe(originalString + originalString)
+    await expect
+      .poll(() => textBox.inputValue())
+      .toBe(originalString + originalString)
   })
 
   test('Can copy and paste widget value', async ({ comfyPage }) => {
@@ -114,20 +162,24 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(1)
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(initialCount).toBeGreaterThan(1)
     await comfyPage.canvas.click()
     await comfyPage.keyboard.selectAll()
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.clipboard.copy()
     await comfyPage.clipboard.paste()
 
-    const pasteCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(pasteCount).toBe(initialCount * 2)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount * 2)
 
     await comfyPage.keyboard.undo()
-    const undoCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(undoCount).toBe(initialCount)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount)
   })
 
   test(
@@ -135,26 +187,23 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     { tag: ['@node'] },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
 
       // Step 1: Copy a KSampler node with Ctrl+C and paste with Ctrl+V
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await ksamplerNodes[0].copy()
-      await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.emptyCanvasClick
+      })
       await comfyPage.nextFrame()
       await comfyPage.clipboard.paste()
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5_000
-        })
-        .toBe(3)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
 
       // Step 2: Paste image onto selected LoadImage node
       const loadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       await loadImageNodes[0].click('title')
-      await comfyPage.nextFrame()
 
       const uploadPromise = comfyPage.page.waitForResponse(
         (resp) => resp.url().includes('/upload/') && resp.status() === 200,
@@ -166,18 +215,17 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       await uploadPromise
 
       await expect
-        .poll(
-          async () => {
-            const fileWidget = await loadImageNodes[0].getWidget(0)
-            return fileWidget.getValue()
-          },
-          { timeout: 5_000 }
-        )
+        .poll(async () => {
+          const fileWidget = await loadImageNodes[0].getWidget(0)
+          return fileWidget.getValue()
+        })
         .toContain('image32x32')
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
 
       // Step 3: Click empty canvas area, paste image → creates new LoadImage
-      await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.emptyCanvasClick
+      })
       await comfyPage.nextFrame()
 
       const uploadPromise2 = comfyPage.page.waitForResponse(
@@ -189,11 +237,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       )
       await uploadPromise2
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5_000
-        })
-        .toBe(4)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
       const allLoadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       expect(allLoadImageNodes).toHaveLength(2)

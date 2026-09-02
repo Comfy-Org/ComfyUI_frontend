@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type MockApiKeyUser = {
   id: string
   email?: string
 } | null
 
-type MockFirebaseUser = {
+type MockAuthUser = {
   uid: string
   email?: string | null
 } | null
@@ -14,19 +14,19 @@ type MockFirebaseUser = {
 const {
   mockCaptureCheckoutAttributionFromSearch,
   mockUseApiKeyAuthStore,
-  mockUseFirebaseAuthStore,
+  mockUseAuthStore,
   mockApiKeyAuthStore,
-  mockFirebaseAuthStore
+  mockAuthStore
 } = vi.hoisted(() => ({
   mockCaptureCheckoutAttributionFromSearch: vi.fn(),
   mockUseApiKeyAuthStore: vi.fn(),
-  mockUseFirebaseAuthStore: vi.fn(),
+  mockUseAuthStore: vi.fn(),
   mockApiKeyAuthStore: {
     isAuthenticated: false,
     currentUser: null as MockApiKeyUser
   },
-  mockFirebaseAuthStore: {
-    currentUser: null as MockFirebaseUser
+  mockAuthStore: {
+    currentUser: null as MockAuthUser
   }
 }))
 
@@ -38,8 +38,8 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: mockUseApiKeyAuthStore
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: mockUseFirebaseAuthStore
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: mockUseAuthStore
 }))
 
 import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
@@ -62,16 +62,11 @@ function toUint8Array(data: BufferSource): Uint8Array {
 
 describe('ImpactTelemetryProvider', () => {
   beforeEach(() => {
-    mockCaptureCheckoutAttributionFromSearch.mockReset()
-    mockUseApiKeyAuthStore.mockReset()
-    mockUseFirebaseAuthStore.mockReset()
     mockApiKeyAuthStore.isAuthenticated = false
     mockApiKeyAuthStore.currentUser = null
-    mockFirebaseAuthStore.currentUser = null
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
+    mockAuthStore.currentUser = null
     mockUseApiKeyAuthStore.mockReturnValue(mockApiKeyAuthStore)
-    mockUseFirebaseAuthStore.mockReturnValue(mockFirebaseAuthStore)
+    mockUseAuthStore.mockReturnValue(mockAuthStore)
 
     const queueFn: NonNullable<Window['ire']> = (...args: unknown[]) => {
       ;(queueFn.a ??= []).push(args)
@@ -88,12 +83,8 @@ describe('ImpactTelemetryProvider', () => {
     })
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('captures attribution and invokes identify with hashed email', async () => {
-    mockFirebaseAuthStore.currentUser = {
+    mockAuthStore.currentUser = {
       uid: 'user-123',
       email: ' User@Example.com '
     }
@@ -153,7 +144,7 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('invokes identify on each page view even with identical identity payloads', async () => {
-    mockFirebaseAuthStore.currentUser = {
+    mockAuthStore.currentUser = {
       uid: 'user-123',
       email: 'user@example.com'
     }
@@ -189,7 +180,7 @@ describe('ImpactTelemetryProvider', () => {
       id: 'api-key-user-123',
       email: 'apikey@example.com'
     }
-    mockFirebaseAuthStore.currentUser = {
+    mockAuthStore.currentUser = {
       uid: 'firebase-user-123',
       email: 'firebase@example.com'
     }
@@ -228,7 +219,7 @@ describe('ImpactTelemetryProvider', () => {
       id: 'api-key-user-123',
       email: 'apikey@example.com'
     }
-    mockFirebaseAuthStore.currentUser = null
+    mockAuthStore.currentUser = null
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(

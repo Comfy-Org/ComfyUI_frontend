@@ -5,19 +5,17 @@
 </template>
 
 <script setup lang="ts">
-import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
-import { useDialogService } from '@/services/dialogService'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -51,11 +49,9 @@ function handleResourceError(url: string, tagName: string) {
   console.error('[resource:loadError]', { url, tagName })
 
   if (__DISTRIBUTION__ === 'cloud') {
-    captureException(new Error(`Resource load failed: ${url}`), {
-      tags: {
-        error_type: 'resource_load_error',
-        tag_name: tagName
-      }
+    reportError(new Error(`Resource load failed: ${url}`), {
+      errorType: 'resource_load_error',
+      tags: { tag_name: tagName }
     })
   }
 }
@@ -79,18 +75,16 @@ onMounted(() => {
       message: info.message
     })
     if (__DISTRIBUTION__ === 'cloud') {
-      captureException(event.payload, {
+      reportError(event.payload, {
+        errorType: 'vite_preload_error',
         tags: {
-          error_type: 'vite_preload_error',
           file_type: info.fileType,
           chunk_name: info.chunkName ?? undefined
         },
-        contexts: {
-          preload: {
-            url: info.url,
-            fileType: info.fileType,
-            chunkName: info.chunkName
-          }
+        context: {
+          url: info.url,
+          fileType: info.fileType,
+          chunkName: info.chunkName
         }
       })
     }
@@ -129,26 +123,5 @@ onMounted(() => {
   // Initialize conflict detection in background
   // This runs async and doesn't block UI setup
   void conflictDetection.initializeConflictDetection()
-
-  // Show cloud notification for macOS desktop users (one-time)
-  if (isDesktop && electronAPI()?.getPlatform() === 'darwin') {
-    const settingStore = useSettingStore()
-    if (!settingStore.get('Comfy.Desktop.CloudNotificationShown')) {
-      const dialogService = useDialogService()
-      cloudNotificationTimer = setTimeout(async () => {
-        try {
-          await dialogService.showCloudNotification()
-        } catch (e) {
-          console.warn('[CloudNotification] Failed to show', e)
-        }
-        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
-      }, 2000)
-    }
-  }
-})
-
-let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
-onUnmounted(() => {
-  if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
 })
 </script>

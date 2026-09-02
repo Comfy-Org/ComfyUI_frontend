@@ -1,8 +1,7 @@
-import { mount } from '@vue/test-utils'
-import type { VueWrapper } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { formatPercent0 } from '@/utils/numberUtil'
@@ -32,19 +31,16 @@ vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => createExecutionStoreMock()
 }))
 
-const mountedWrappers: VueWrapper[] = []
-
 const mountUseQueueProgress = () => {
   let composable: ReturnType<typeof useQueueProgress>
-  const wrapper = mount({
+  render({
     template: '<div />',
     setup() {
       composable = useQueueProgress()
       return {}
     }
   })
-  mountedWrappers.push(wrapper)
-  return { wrapper, composable: composable! }
+  return { composable: composable! }
 }
 
 const setExecutionProgress = (value?: number | null) => {
@@ -62,11 +58,7 @@ describe('useQueueProgress', () => {
     setExecutingNodeProgress(null)
   })
 
-  afterEach(() => {
-    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount())
-  })
-
-  it.each([
+  it.for([
     {
       description: 'defaults to 0% when execution store values are missing',
       execution: undefined,
@@ -142,11 +134,11 @@ describe('useQueueProgress', () => {
     const { composable } = mountUseQueueProgress()
 
     expect(composable.totalProgressStyle.value).toEqual({
-      width: '10%',
+      transform: 'scaleX(0.1)',
       background: 'var(--color-interface-panel-job-progress-primary)'
     })
     expect(composable.currentNodeProgressStyle.value).toEqual({
-      width: '25%',
+      transform: 'scaleX(0.25)',
       background: 'var(--color-interface-panel-job-progress-secondary)'
     })
 
@@ -154,7 +146,9 @@ describe('useQueueProgress', () => {
     setExecutingNodeProgress(0.02)
     await nextTick()
 
-    expect(composable.totalProgressStyle.value.width).toBe('76%')
-    expect(composable.currentNodeProgressStyle.value.width).toBe('2%')
+    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(0.76)')
+    expect(composable.currentNodeProgressStyle.value.transform).toBe(
+      'scaleX(0.02)'
+    )
   })
 })

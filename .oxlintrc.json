@@ -1,8 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": [
-    ".i18nrc.cjs",
-    ".nx/*",
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
     "components.d.ts",
@@ -10,6 +8,9 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/patch-playwright-agents.js",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -26,7 +27,10 @@
     "vitest",
     "vue"
   ],
+  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
+    "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
@@ -64,7 +68,9 @@
         ]
       }
     ],
+    "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
+    "no-unreachable": "error",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
@@ -73,16 +79,30 @@
     "import/namespace": "error",
     "import/no-duplicates": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
-    "jest/expect-expect": "off",
-    "jest/no-conditional-expect": "off",
-    "jest/no-disabled-tests": "off",
-    "jest/no-standalone-expect": "off",
-    "jest/valid-title": "off",
+    "vitest/expect-expect": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/no-disabled-tests": "off",
+    "vitest/no-standalone-expect": "off",
+    "vitest/valid-title": "off",
+    "vitest/require-to-throw-message": "off",
     "typescript/no-this-alias": "off",
+    "typescript/no-useless-default-assignment": "off",
     "typescript/no-unnecessary-parameter-property-assignment": "off",
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/no-unused-vars": "off",
     "unicorn/no-empty-file": "off",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/hoisted-apis-on-top": "error",
+    "typescript/no-misused-spread": "error",
+    "vitest/consistent-each-for": [
+      "error",
+      {
+        "test": "for",
+        "it": "for",
+        "describe": "for",
+        "suite": "for"
+      }
+    ],
     "unicorn/no-new-array": "off",
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
@@ -104,8 +124,7 @@
         "allowInterfaces": "always"
       }
     ],
-    "vue/no-import-compiler-macros": "error",
-    "vue/no-dupe-keys": "error"
+    "vue/no-import-compiler-macros": "error"
   },
   "overrides": [
     {
@@ -115,14 +134,86 @@
       }
     },
     {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-module-scope-vitest-mocks": "error",
+        "comfy/no-persistent-litegraph-registration": "error",
+        "comfy/no-redundant-litegraph-cleanup": "error",
+        "comfy/no-redundant-vitest-cleanup": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/**/*.test.{ts,tsx}",
+        "packages/object-info-parser/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-persistent-litegraph-registration": "off",
+        "comfy/no-redundant-litegraph-cleanup": "off"
+      }
+    },
+    {
+      "files": ["tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
+      "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
         "typescript/no-explicit-any": "error",
         "no-async-promise-executor": "error",
         "no-control-regex": "error",
         "no-useless-rename": "error",
         "no-unused-private-class-members": "error",
-        "unicorn/no-empty-file": "error"
+        "unicorn/no-empty-file": "error",
+        "playwright/consistent-spacing-between-blocks": "error",
+        "playwright/expect-expect": [
+          "error",
+          {
+            "assertFunctionNames": [
+              "recordMeasurement",
+              "logMeasurement",
+              "builderSaveAs"
+            ],
+            "assertFunctionPatterns": [
+              "^expect",
+              "^assert",
+              "^verify",
+              "^searchAndExpect",
+              "waitForOpen",
+              "waitForClosed",
+              "waitForRequest"
+            ]
+          }
+        ],
+        "playwright/max-nested-describe": "error",
+        "playwright/no-duplicate-hooks": "error",
+        "playwright/no-element-handle": "error",
+        "playwright/no-eval": "error",
+        "playwright/no-focused-test": "error",
+        "playwright/no-force-option": "error",
+        "playwright/no-networkidle": "error",
+        "playwright/no-page-pause": "error",
+        "playwright/no-skipped-test": "error",
+        "playwright/no-unsafe-references": "error",
+        "playwright/no-unused-locators": "error",
+        "playwright/no-useless-await": "error",
+        "playwright/no-useless-not": "error",
+        "playwright/no-wait-for-navigation": "error",
+        "playwright/no-wait-for-selector": "error",
+        "playwright/no-wait-for-timeout": "error",
+        "playwright/prefer-hooks-on-top": "error",
+        "playwright/prefer-locator": "error",
+        "playwright/prefer-to-have-count": "error",
+        "playwright/prefer-to-have-length": "error",
+        "playwright/prefer-web-first-assertions": "error",
+        "playwright/prefer-native-locators": "error",
+        "playwright/require-to-pass-timeout": "error",
+        "playwright/valid-expect": "error",
+        "playwright/valid-expect-in-promise": "error",
+        "playwright/valid-title": "error"
       }
     }
   ]

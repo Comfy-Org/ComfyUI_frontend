@@ -43,7 +43,7 @@ export function checkVersionCompatibility(
   const cleanCurrent = cleanVersion(currentVersion)
 
   // Check if version satisfies the range
-  let isCompatible = false
+  let isCompatible: boolean
   try {
     isCompatible = satisfies(cleanCurrent, supportedVersion)
   } catch {

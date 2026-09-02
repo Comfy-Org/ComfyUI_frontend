@@ -8,27 +8,31 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
-import { st } from '@/i18n'
 import { app } from '@/scripts/app'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import {
+  getActiveGraphNodeIds,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
+import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import {
@@ -37,10 +41,12 @@ import {
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
+import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingMediaStore = useMissingMediaStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
@@ -58,6 +64,7 @@ const activeMissingNodeGraphIds = computed<Set<string>>(() => {
 })
 
 const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
+const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -103,13 +110,25 @@ const isSingleSubgraphNode = computed(() => {
 })
 
 function closePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_closed',
+    element_group: 'right_side_panel'
+  })
   rightSidePanelStore.closePanel()
+}
+
+function handleTabChange(newTab: RightSidePanelTab) {
+  trackRightSidePanelTabOpened(newTab)
+  rightSidePanelStore.openPanel(newTab)
 }
 
 type RightSidePanelTabList = Array<{
   label: () => string
   value: RightSidePanelTab
-  icon?: string
+  icon?: {
+    className: string
+    label: () => string
+  }
 }>
 
 const hasDirectNodeError = computed(() =>
@@ -121,7 +140,7 @@ const hasDirectNodeError = computed(() =>
 const hasContainerInternalError = computed(() => {
   if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
-    if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
+    if (!(node instanceof SubgraphNode)) return false
     return executionErrorStore.isContainerWithInternalError(node)
   })
 })
@@ -142,27 +161,69 @@ const hasMissingModelSelected = computed(
     )
 )
 
+const hasMissingMediaSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingMediaGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
     hasMissingNodeSelected.value ||
-    hasMissingModelSelected.value
+    hasMissingModelSelected.value ||
+    hasMissingMediaSelected.value
   )
 })
+
+const hasPendingErrorScanSelected = computed(() => {
+  const nodes = selectedNodes.value
+  if (!app.isGraphReady) return false
+  const rootGraph = app.rootGraph
+  return nodes.some((node) => {
+    const executionId = getExecutionIdByNode(rootGraph, node)
+    return (
+      executionId !== null &&
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
+    )
+  })
+})
+
+const hasBlockingError = useHasBlockingError()
 
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-    hasRelevantErrors.value
+    (hasRelevantErrors.value ||
+      (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+      // No icon while the tab is only retained by a pending scan: with both
+      // severities absent there is no state for it to describe.
+      icon: hasRelevantErrors.value
+        ? {
+            className: cn(
+              'ml-1',
+              hasBlockingError.value
+                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
+                : 'icon-[lucide--triangle-alert] bg-warning-foreground'
+            ),
+            label: () =>
+              t(
+                hasBlockingError.value
+                  ? 'rightSidePanel.severityErrorLabel'
+                  : 'rightSidePanel.severitySetupLabel'
+              )
+          }
+        : undefined
     })
   }
 
@@ -201,12 +262,15 @@ const tabs = computed<RightSidePanelTabList>(() => {
   return list
 })
 
-// Use global state for activeTab and ensure it's valid
+function isActiveTabAvailable() {
+  return (
+    tabs.value.some((tab) => tab.value === activeTab.value) ||
+    (activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
+  )
+}
+
 watchEffect(() => {
-  if (
-    !tabs.value.some((tab) => tab.value === activeTab.value) &&
-    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
-  ) {
+  if (!isActiveTabAvailable()) {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
@@ -227,8 +291,7 @@ function resolveTitle() {
       const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
       return resolveNodeDisplayName(nodes[0], {
         emptyLabel: fallbackNodeTitle,
-        untitledLabel: fallbackNodeTitle,
-        st
+        untitledLabel: fallbackNodeTitle
       })
     }
   }
@@ -287,11 +350,16 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <i
+            <Button
               v-if="!isEditing"
-              class="relative top-[2px] ml-2 icon-[lucide--pencil] size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              variant="link"
+              size="unset"
+              :aria-label="t('rightSidePanel.editTitle')"
+              class="relative top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
-            />
+            >
+              <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
+            </Button>
           </template>
           <template v-else>
             {{ panelTitle }}
@@ -303,6 +371,8 @@ function handleTitleCancel() {
             v-if="isSingleSubgraphNode"
             variant="secondary"
             size="icon"
+            data-testid="subgraph-editor-toggle"
+            :aria-label="t('rightSidePanel.editSubgraph')"
             :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(
@@ -324,25 +394,21 @@ function handleTitleCancel() {
         </div>
       </div>
       <nav class="overflow-x-auto px-4 pt-1 pb-2">
-        <TabList
-          :model-value="activeTab"
-          @update:model-value="
-            (newTab: RightSidePanelTab) => {
-              rightSidePanelStore.openPanel(newTab)
-            }
-          "
-        >
+        <TabList :model-value="activeTab" @update:model-value="handleTabChange">
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
             class="px-2 py-1 font-inter text-sm transition-all active:scale-95"
             :value="tab.value"
+            :data-testid="`panel-tab-${tab.value}`"
           >
             {{ tab.label() }}
             <i
               v-if="tab.icon"
-              aria-hidden="true"
-              :class="cn(tab.icon, 'size-4')"
+              role="img"
+              :aria-label="tab.icon.label()"
+              data-testid="panel-tab-icon"
+              :class="cn(tab.icon.className, 'size-4')"
             />
           </Tab>
         </TabList>
@@ -350,7 +416,7 @@ function handleTitleCancel() {
     </section>
 
     <!-- Panel Content -->
-    <div class="scrollbar-thin flex-1 overflow-y-auto">
+    <div class="flex-1 scrollbar-thin overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />

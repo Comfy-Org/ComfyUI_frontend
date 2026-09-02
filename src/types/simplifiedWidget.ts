@@ -3,18 +3,16 @@
  * Removes all DOM manipulation and positioning concerns
  */
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
+import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 /** Valid types for widget values */
-export type WidgetValue =
-  | string
-  | number
-  | boolean
-  | object
-  | undefined
-  | null
-  | void
-  | File[]
+export type WidgetValue = string | number | boolean | object | undefined | null
 
 export const CONTROL_OPTIONS = [
   'fixed',
@@ -28,7 +26,7 @@ function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
 
-export function normalizeControlOption(val: WidgetValue): ControlOptions {
+function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val
   return 'randomize'
 }
@@ -38,8 +36,19 @@ export type SafeControlWidget = {
   update: (value: WidgetValue) => void
 }
 
+export function getControlWidget(
+  widget: IBaseWidget
+): SafeControlWidget | undefined {
+  const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
+  if (!controlWidget) return
+  return {
+    value: normalizeControlOption(controlWidget.value),
+    update: (value) => (controlWidget.value = normalizeControlOption(value))
+  }
+}
+
 export interface LinkedUpstreamInfo {
-  nodeId: string
+  nodeId: NodeId
   outputName?: string
 }
 
@@ -75,6 +84,9 @@ export interface SimplifiedWidget<
 
   /** Optional serialization method for custom value handling */
   serializeValue?: () => unknown
+
+  /** NodeLocatorId for the node that owns this widget's execution outputs */
+  nodeLocatorId?: NodeLocatorId
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2

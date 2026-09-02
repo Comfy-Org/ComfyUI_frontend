@@ -9,6 +9,7 @@ import {
 } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 
 /**
  * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
@@ -47,7 +48,7 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   const duplicateSelection = () => {
@@ -73,11 +74,14 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   const deleteSelection = () => {
     const canvas = app.canvas
+    // Picking nodes for the agent is not editing: deleting stays off until the
+    // mode ends.
+    if (isSelectOnly(canvas)) return
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
@@ -92,7 +96,7 @@ export function useSelectionOperations() {
     canvas.setDirty(true, true)
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   const renameSelection = async () => {
@@ -122,7 +126,7 @@ export function useSelectionOperations() {
           const titledItem = item as { title: string }
           titledItem.title = newTitle
           app.canvas.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.checkState()
+          workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
         }
       }
       return
@@ -145,7 +149,7 @@ export function useSelectionOperations() {
           }
         })
         app.canvas.setDirty(true, true)
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
       return
     }

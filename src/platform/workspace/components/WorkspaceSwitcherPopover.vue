@@ -1,6 +1,9 @@
 <template>
-  <div class="flex w-80 flex-col overflow-hidden rounded-lg">
-    <div class="flex flex-col overflow-y-auto">
+  <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
+    <div
+      class="flex scrollbar-custom min-h-0 flex-1 flex-col"
+      data-testid="workspace-switcher-list"
+    >
       <!-- Loading state -->
       <div v-if="isFetchingWorkspaces" class="flex flex-col gap-2 p-2">
         <div
@@ -30,25 +33,25 @@
               "
             >
               <button
-                class="flex flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                :disabled="!isCloud && isSwitching"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
-                  class="size-8 text-sm"
+                  class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-sm text-base-foreground">
-                      {{
-                        workspace.type === 'personal'
-                          ? $t('workspaceSwitcher.personal')
-                          : workspace.name
-                      }}
+                  <div class="flex max-w-full min-w-0 items-center gap-1.5">
+                    <span
+                      :title="workspace.name"
+                      class="min-w-0 truncate text-sm text-base-foreground"
+                    >
+                      {{ workspace.name }}
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
-                      class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                      class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                     >
                       {{ resolveTierLabel(workspace) }}
                     </span>
@@ -59,48 +62,59 @@
                 </div>
                 <i
                   v-if="isCurrentWorkspace(workspace)"
-                  class="pi pi-check text-sm text-base-foreground"
+                  class="pi pi-check shrink-0 text-sm text-base-foreground"
                 />
               </button>
             </div>
           </div>
         </template>
       </template>
+    </div>
 
-      <!-- Create workspace button -->
-      <div class="p-2">
+    <div
+      v-if="!isCloud"
+      class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
+    >
+      <i
+        v-tooltip.left="{
+          value: $t('workspaceSwitcher.scopeTooltip'),
+          showDelay: 300
+        }"
+        class="pi pi-info-circle text-xs"
+      />
+      <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
+    </div>
+
+    <!-- Create workspace button -->
+    <div v-if="isCloud" class="shrink-0 border-t border-border-default p-2">
+      <div
+        :class="
+          cn(
+            'flex h-12 w-full items-center gap-2 rounded-sm p-2',
+            canCreateWorkspace
+              ? 'cursor-pointer hover:bg-secondary-background-hover'
+              : 'cursor-default'
+          )
+        "
+        @click="canCreateWorkspace && handleCreateWorkspace()"
+      >
         <div
           :class="
             cn(
-              'flex h-12 w-full items-center gap-2 rounded-sm p-2',
-              canCreateWorkspace
-                ? 'cursor-pointer hover:bg-secondary-background-hover'
-                : 'cursor-default'
+              'flex size-8 items-center justify-center rounded-full bg-secondary-background',
+              !canCreateWorkspace && 'opacity-50'
             )
           "
-          @click="canCreateWorkspace && handleCreateWorkspace()"
         >
-          <div
-            :class="
-              cn(
-                'flex size-8 items-center justify-center rounded-full bg-secondary-background',
-                !canCreateWorkspace && 'opacity-50'
-              )
-            "
-          >
-            <i class="pi pi-plus text-sm text-muted-foreground" />
-          </div>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <span
-              v-if="canCreateWorkspace"
-              class="text-sm text-muted-foreground"
-            >
-              {{ $t('workspaceSwitcher.createWorkspace') }}
-            </span>
-            <span v-else class="text-sm text-muted-foreground">
-              {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
-            </span>
-          </div>
+          <i class="pi pi-plus text-sm text-muted-foreground" />
+        </div>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span v-if="canCreateWorkspace" class="text-sm text-muted-foreground">
+            {{ $t('workspaceSwitcher.createWorkspace') }}
+          </span>
+          <span v-else class="text-sm text-muted-foreground">
+            {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
+          </span>
         </div>
       </div>
     </div>
@@ -114,6 +128,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
@@ -122,7 +137,7 @@ import type {
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface AvailableWorkspace {
   id: string
@@ -152,8 +167,13 @@ const currentSubscriptionTierName = computed(() => {
 })
 
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceId,
+  workspaces,
+  canCreateWorkspace,
+  isFetchingWorkspaces,
+  isSwitching
+} = storeToRefs(workspaceStore)
 
 const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
   workspaces.value.map((w) => ({
@@ -178,6 +198,8 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 function resolveTierLabel(workspace: AvailableWorkspace): string | null {
+  if (workspace.type !== 'personal') return null
+
   if (isCurrentWorkspace(workspace)) {
     return currentSubscriptionTierName.value || null
   }

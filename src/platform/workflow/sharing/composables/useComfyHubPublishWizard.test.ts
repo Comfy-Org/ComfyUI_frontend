@@ -12,11 +12,11 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-const { useComfyHubPublishWizard } = await import('./useComfyHubPublishWizard')
+const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
+  await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockActiveWorkflow.value = { filename: 'my-workflow.json' }
   })
 
@@ -35,14 +35,12 @@ describe('useComfyHubPublishWizard', () => {
     it('initialises all other form fields to defaults', () => {
       const { formData } = useComfyHubPublishWizard()
       expect(formData.value.description).toBe('')
-      expect(formData.value.workflowType).toBe('')
       expect(formData.value.tags).toEqual([])
       expect(formData.value.thumbnailType).toBe('image')
       expect(formData.value.thumbnailFile).toBeNull()
       expect(formData.value.comparisonBeforeFile).toBeNull()
       expect(formData.value.comparisonAfterFile).toBeNull()
       expect(formData.value.exampleImages).toEqual([])
-      expect(formData.value.selectedExampleIds).toEqual([])
     })
   })
 
@@ -143,5 +141,89 @@ describe('useComfyHubPublishWizard', () => {
       closeProfileCreationStep()
       expect(currentStep.value).toBe('finish')
     })
+  })
+
+  describe('applyPrefill', () => {
+    it('restores the published Hub title instead of the workflow filename', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('Published title')
+    })
+
+    it('does not overwrite a Hub title edited before prefill resolves', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.name = 'New title'
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('New title')
+    })
+
+    it('restores the existing thumbnail URL into the form', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
+      expect(formData.value.thumbnailUrl).toBe(
+        'https://cdn.example.com/thumb.png'
+      )
+    })
+
+    it('restores the comparison-after URL into the form', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        thumbnailType: 'imageComparison',
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        thumbnailComparisonUrl: 'https://cdn.example.com/after.png'
+      })
+      expect(formData.value.thumbnailUrl).toBe(
+        'https://cdn.example.com/before.png'
+      )
+      expect(formData.value.comparisonAfterUrl).toBe(
+        'https://cdn.example.com/after.png'
+      )
+      expect(formData.value.existingThumbnailType).toBe('imageComparison')
+    })
+
+    it('does not overwrite a freshly attached thumbnail file with the prefill URL', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      const file = new File(['x'], 'thumb.png', { type: 'image/png' })
+      formData.value = { ...formData.value, thumbnailFile: file }
+
+      applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
+
+      expect(formData.value.thumbnailFile?.name).toBe('thumb.png')
+      expect(formData.value.thumbnailUrl).toBeNull()
+    })
+
+    it('restores description, tags, and sample images alongside the thumbnail', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        description: 'Restored description',
+        tags: ['art'],
+        thumbnailUrl: 'https://cdn.example.com/thumb.png',
+        sampleImageUrls: ['https://cdn.example.com/sample.png']
+      })
+      expect(formData.value.description).toBe('Restored description')
+      expect(formData.value.tags).toEqual(['art'])
+      expect(formData.value.thumbnailUrl).toBe(
+        'https://cdn.example.com/thumb.png'
+      )
+      expect(formData.value.exampleImages).toHaveLength(1)
+      expect(formData.value.exampleImages[0].url).toBe(
+        'https://cdn.example.com/sample.png'
+      )
+    })
+  })
+
+  it('caches the published Hub title by workflow path', () => {
+    const { formData } = useComfyHubPublishWizard()
+    formData.value.name = 'Published title'
+
+    cachePublishPrefill('workflows/cache-title.json', formData.value)
+
+    expect(getCachedPrefill('workflows/cache-title.json')).toEqual(
+      expect.objectContaining({ name: 'Published title' })
+    )
   })
 })

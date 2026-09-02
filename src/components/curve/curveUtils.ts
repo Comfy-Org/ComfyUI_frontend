@@ -149,28 +149,6 @@ export function createMonotoneInterpolator(
   }
 }
 
-/**
- * Convert a 256-bin histogram into an SVG path string.
- * Normalizes using the 99.5th percentile to avoid outlier spikes.
- */
-export function histogramToPath(histogram: Uint32Array): string {
-  if (!histogram.length) return ''
-
-  const sorted = Array.from(histogram).sort((a, b) => a - b)
-  const max = sorted[Math.floor(255 * 0.995)]
-  if (max === 0) return ''
-
-  const invMax = 1 / max
-  const parts: string[] = ['M0,1']
-  for (let i = 0; i < 256; i++) {
-    const x = i / 255
-    const y = 1 - Math.min(1, histogram[i] * invMax)
-    parts.push(`L${x},${y}`)
-  }
-  parts.push('L1,1 Z')
-  return parts.join(' ')
-}
-
 export function curvesToLUT(
   points: CurvePoint[],
   interpolation: CurveInterpolation = 'monotone_cubic'
@@ -184,5 +162,17 @@ export function curvesToLUT(
     lut[i] = Math.max(0, Math.min(255, Math.round(y * 255)))
   }
 
+  return lut
+}
+
+export function curveDataToFloatLUT(
+  curve: CurveData,
+  size: number = 256
+): Float32Array {
+  const lut = new Float32Array(size)
+  const interpolate = createInterpolator(curve.points, curve.interpolation)
+  for (let i = 0; i < size; i++) {
+    lut[i] = interpolate(i / (size - 1))
+  }
   return lut
 }

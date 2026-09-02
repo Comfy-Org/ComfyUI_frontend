@@ -1,31 +1,60 @@
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
+import type { WatchStopHandle } from 'vue'
 
-import { useAppMode } from '@/composables/useAppMode'
+import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
+  AddCreditsClickMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
+  ImageLoadFailureMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
+  BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
-  ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
+  NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -36,13 +65,23 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
-import { getExecutionContext } from '../../utils/getExecutionContext'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload,
+  OnboardingTourEvents,
+  TelemetryEvents
+} from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+
+const EXECUTION_EVENT_SOURCE = 'web-sdk'
 
 const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
@@ -50,13 +89,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
-  TelemetryEvents.TEMPLATE_FILTER_CHANGED,
-  TelemetryEvents.SETTING_CHANGED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
   TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED,
-  TelemetryEvents.UI_BUTTON_CLICKED
+  TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -66,6 +102,20 @@ const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
 interface QueuedEvent {
   eventName: TelemetryEventName
   properties?: TelemetryEventProperties
+}
+
+interface DesktopEntryProps {
+  source_app: 'desktop'
+  desktop_device_id?: string
+}
+
+function readDesktopEntryProps(): DesktopEntryProps | null {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('utm_source') !== 'comfy.desktop') return null
+  const props: DesktopEntryProps = { source_app: 'desktop' }
+  const deviceId = params.get('desktop_device_id')
+  if (deviceId) props.desktop_device_id = deviceId
+  return props
 }
 
 /**
@@ -81,9 +131,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
+  private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
+  private desktopEntryProps: DesktopEntryProps | null = null
+  private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
     this.configureDisabledEvents(
@@ -97,7 +150,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       { immediate: true }
     )
 
-    const apiKey = window.__CONFIG__?.posthog_project_token
+    const apiKey =
+      window.__CONFIG__?.posthog_project_token ??
+      import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
@@ -109,20 +164,44 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
-              capture_pageview: false,
+              capture_pageview: 'history_change',
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              ...serverConfig
+              person_profiles: 'identified_only',
+              ...serverConfig,
+              // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
+              // automatically when persistence includes 'cookie' (the default).
+              // Explicit override interacts badly with posthog-js#3578 where reset() fails
+              // to clear localStorage on other subdomains, causing identity bleed on logout.
+              before_send: createPostHogBeforeSend()
             })
             this.isInitialized = true
+            // Before flushEventQueue so pre-init events also carry the
+            // platform super properties.
+            this.registerPlatformProps()
             this.flushEventQueue()
+            this.registerDesktopEntryProps()
 
-            useCurrentUser().onUserResolved((user) => {
+            const currentUser = useCurrentUser()
+            currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
+                this.setDesktopEntryPersonProperties()
                 this.setSubscriptionProperties()
               }
+            })
+            // Anchored to session state rather than the logout button so it
+            // also covers token revocation, account deletion, and cross-tab
+            // sign-out (browserLocalPersistence). A logout that lands during
+            // the posthog-js dynamic-import window will not be observed here:
+            // events buffered pre-init are intentionally NOT queue-cleared on
+            // logout, which leaves a narrow race where a logout + different
+            // login both inside the import window would flush pre-init events
+            // under the new identity. Accepted as a known edge — re-adding
+            // pre-init logout handling would defeat the simplification.
+            currentUser.onUserLogout(() => {
+              this.posthog?.reset(true)
             })
           })
           .catch((error) => {
@@ -142,6 +221,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private flushEventQueue(): void {
     if (!this.isInitialized || !this.posthog) return
 
+    this.flushPendingFirstAuthAt()
+
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
       try {
@@ -149,6 +230,33 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       } catch (error) {
         console.error('Failed to track queued PostHog event:', error)
       }
+    }
+  }
+
+  private flushPendingFirstAuthAt(): void {
+    for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
+      this.setFirstAuthAt(userId, firstAuthAt)
+    }
+    this.pendingFirstAuthAt.clear()
+  }
+
+  private setFirstAuthAt(
+    userId: string,
+    firstAuthAt = new Date().toISOString()
+  ): void {
+    if (!this.isEnabled) return
+
+    if (this.isInitialized && this.posthog) {
+      try {
+        this.posthog.identify(userId, undefined, { first_auth_at: firstAuthAt })
+      } catch (error) {
+        console.error('Failed to set PostHog first auth timestamp:', error)
+      }
+      return
+    }
+
+    if (!this.pendingFirstAuthAt.has(userId)) {
+      this.pendingFirstAuthAt.set(userId, firstAuthAt)
     }
   }
 
@@ -214,13 +322,54 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  private registerPlatformProps(): void {
+    if (!this.posthog) return
+    try {
+      this.posthog.register({
+        client: window.__comfyDesktop2 ? 'desktop' : 'web',
+        deployment: 'cloud'
+      })
+    } catch (error) {
+      console.error('Failed to register platform props:', error)
+    }
+  }
+
+  private registerDesktopEntryProps(): void {
+    if (!this.posthog) return
+    const props = readDesktopEntryProps()
+    if (!props) return
+    this.desktopEntryProps = props
+    try {
+      this.posthog.register(props)
+    } catch (error) {
+      console.error('Failed to register desktop entry props:', error)
+    }
+  }
+
+  // Persisted onto the person so backend-fired billing events inherit
+  // desktop_device_id via person-on-events at ingest.
+  private setDesktopEntryPersonProperties(): void {
+    if (!this.posthog || !this.desktopEntryProps) return
+    const now = new Date().toISOString()
+    try {
+      this.posthog.people.set({
+        ...this.desktopEntryProps,
+        last_seen_via_desktop: now
+      })
+      this.posthog.people.set_once({ first_seen_via_desktop: now })
+    } catch (error) {
+      console.error('Failed to set desktop entry person properties:', error)
+    }
+  }
+
   private setSubscriptionProperties(): void {
-    const { subscriptionTier } = useSubscription()
-    watch(
-      subscriptionTier,
-      (tier) => {
-        if (tier && this.posthog) {
-          this.posthog.people.set({ subscription_tier: tier })
+    if (this.stopSubscriptionTierWatch) return
+    const { tier } = useBillingContext()
+    this.stopSubscriptionTierWatch = watch(
+      tier,
+      (value) => {
+        if (value && this.posthog) {
+          this.posthog.people.set({ subscription_tier: value })
         }
       },
       { immediate: true }
@@ -232,7 +381,36 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    if (metadata.is_new_user && metadata.user_id) {
+      this.setFirstAuthAt(metadata.user_id)
+    }
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+  }
+
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
   trackUserLoggedIn(): void {
@@ -251,16 +429,33 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName, metadata)
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
+    this.trackEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
+  }
+
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED, metadata)
   }
 
   trackMonthlySubscriptionCancelled(): void {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.trackEvent(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.trackEvent(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -273,31 +468,31 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = getExecutionContext()
-    const { mode, isAppMode } = useAppMode()
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
+  }
 
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      has_toolkit_nodes: executionContext.has_toolkit_nodes,
-      toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source,
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value
-    }
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_FAILED, metadata)
+  }
 
-    this.lastTriggerSource = options?.trigger_source
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.trackEvent(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackRunButton(properties: RunButtonProperties): void {
+    this.lastTriggerSource = properties.trigger_source
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(
@@ -384,6 +579,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_LINK_OPENED, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -392,12 +591,24 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
   }
 
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.trackEvent(TelemetryEvents.SHELL_LAYOUT, metadata)
+  }
+
   trackNodeSearch(metadata: NodeSearchMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_SEARCH, metadata)
   }
 
   trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.trackEvent(TelemetryEvents.SEARCH_QUERY, metadata)
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.trackEvent(TelemetryEvents.NODE_ADDED, metadata)
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
@@ -420,22 +631,31 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARED_WORKFLOW_RUN, metadata)
+  }
+
   trackWorkflowExecution(): void {
-    const context = getExecutionContext()
-    const eventContext: ExecutionContext = {
-      ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown'
-    }
-    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
+    this.captureRaw(TelemetryEvents.EXECUTION_START, {
+      ...getExecutionContext(),
+      trigger_source: this.lastTriggerSource ?? 'unknown',
+      event_source: EXECUTION_EVENT_SOURCE
+    })
     this.lastTriggerSource = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_ERROR, metadata)
+    this.captureRaw(TelemetryEvents.EXECUTION_ERROR, {
+      ...metadata,
+      event_source: EXECUTION_EVENT_SOURCE
+    })
   }
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+    this.captureRaw(TelemetryEvents.EXECUTION_SUCCESS, {
+      ...metadata,
+      event_source: EXECUTION_EVENT_SOURCE
+    })
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {
@@ -444,6 +664,64 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentAttachButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, {})
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.trackEvent(TelemetryEvents.LINK_DEDUP_DROP, metadata)
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

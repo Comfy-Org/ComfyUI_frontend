@@ -1,10 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeState } from '@/types/nodeState'
+import type { UUID } from '@/utils/uuid'
 
 const mockIsNodeInViewport = vi.fn()
+const mockGetNodeLayout = vi.fn()
 
 vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
   useTransformState: () => ({
@@ -13,18 +15,34 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
   })
 }))
 
+vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+  layoutStore: {
+    getNodeLayout: (...args: unknown[]) => mockGetNodeLayout(...args),
+    get nodeGeometryVersion() {
+      return mockGeometryVersion.value
+    }
+  }
+}))
+
+const mockGeometryVersion = ref(0)
+
 // Must import after mock setup
 const { useViewportCulling } =
   await import('@/composables/graph/useViewportCulling')
 
-function makeNode(id: string): VueNodeData {
+const ROOT_GRAPH_ID = 'root-graph' as UUID
+
+function makeNode(id: string): NodeState {
   return {
     id: id as NodeId,
+    graphId: ROOT_GRAPH_ID as unknown as NodeState['graphId'],
     title: `Node ${id}`,
     type: 'test',
     mode: 0,
-    executing: false,
-    selected: false
+    flags: {},
+    inputs: [],
+    outputs: [],
+    properties: {}
   }
 }
 
@@ -32,7 +50,7 @@ let layoutCounter = 0
 
 function makeLayout(x: number, y: number, w = 200, h = 100): NodeLayout {
   return {
-    id: `layout-${layoutCounter++}`,
+    id: `layout-${layoutCounter++}` as NodeId,
     position: { x, y },
     size: { width: w, height: h },
     bounds: { x, y, width: w, height: h },
@@ -41,32 +59,39 @@ function makeLayout(x: number, y: number, w = 200, h = 100): NodeLayout {
   }
 }
 
+/** Wires the getNodeLayout mock to look up layouts from a plain id->layout map. */
+function useLayouts(layouts: Map<string, NodeLayout>) {
+  mockGetNodeLayout.mockImplementation((_graphId: UUID, nodeId: NodeId) =>
+    layouts.get(nodeId as unknown as string)
+  )
+}
+
 describe('useViewportCulling', () => {
   const isTransforming = ref(false)
   const viewport = { width: 1000, height: 600 }
+  const rootGraphId = computed<UUID | undefined>(() => ROOT_GRAPH_ID)
 
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.clearAllMocks()
     isTransforming.value = false
+    mockGeometryVersion.value = 0
     mockIsNodeInViewport.mockReturnValue(true)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
+    mockGetNodeLayout.mockReturnValue(undefined)
   })
 
   it('mounts all nodes when all are visible', () => {
     const nodes = [makeNode('1'), makeNode('2'), makeNode('3')]
-    const layouts = new Map<NodeId, NodeLayout>([
-      ['1', makeLayout(100, 100)],
-      ['2', makeLayout(300, 100)],
-      ['3', makeLayout(500, 100)]
-    ])
+    useLayouts(
+      new Map([
+        ['1', makeLayout(100, 100)],
+        ['2', makeLayout(300, 100)],
+        ['3', makeLayout(500, 100)]
+      ])
+    )
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => nodes),
-      nodeLayouts: computed(() => layouts),
+      rootGraphId,
       getViewportSize: () => viewport,
       isTransforming
     })
@@ -79,10 +104,12 @@ describe('useViewportCulling', () => {
 
   it('culls nodes outside the viewport after debounce', async () => {
     const nodes = [makeNode('1'), makeNode('2')]
-    const layouts = new Map<NodeId, NodeLayout>([
-      ['1', makeLayout(100, 100)],
-      ['2', makeLayout(5000, 5000)]
-    ])
+    useLayouts(
+      new Map([
+        ['1', makeLayout(100, 100)],
+        ['2', makeLayout(5000, 5000)]
+      ])
+    )
 
     mockIsNodeInViewport.mockImplementation(
       (pos: [number, number]) => pos[0] < 2000 && pos[1] < 2000
@@ -90,7 +117,7 @@ describe('useViewportCulling', () => {
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => nodes),
-      nodeLayouts: computed(() => layouts),
+      rootGraphId,
       getViewportSize: () => viewport,
       isTransforming
     })
@@ -104,16 +131,18 @@ describe('useViewportCulling', () => {
 
   it('mounts nodes without layout data', () => {
     const nodes = [makeNode('1'), makeNode('2')]
-    const layouts = new Map<NodeId, NodeLayout>([
-      ['1', makeLayout(100, 100)]
-      // Node '2' has no layout
-    ])
+    useLayouts(
+      new Map([
+        ['1', makeLayout(100, 100)]
+        // Node '2' has no layout
+      ])
+    )
 
     mockIsNodeInViewport.mockReturnValue(true)
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => nodes),
-      nodeLayouts: computed(() => layouts),
+      rootGraphId,
       getViewportSize: () => viewport,
       isTransforming
     })
@@ -124,16 +153,18 @@ describe('useViewportCulling', () => {
 
   it('mounts all nodes when viewport size is zero', () => {
     const nodes = [makeNode('1'), makeNode('2')]
-    const layouts = new Map<NodeId, NodeLayout>([
-      ['1', makeLayout(100, 100)],
-      ['2', makeLayout(5000, 5000)]
-    ])
+    useLayouts(
+      new Map([
+        ['1', makeLayout(100, 100)],
+        ['2', makeLayout(5000, 5000)]
+      ])
+    )
 
     mockIsNodeInViewport.mockReturnValue(false)
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => nodes),
-      nodeLayouts: computed(() => layouts),
+      rootGraphId,
       getViewportSize: () => ({ width: 0, height: 0 }),
       isTransforming
     })
@@ -143,19 +174,19 @@ describe('useViewportCulling', () => {
 
   it('delays unmounting nodes that leave the viewport', async () => {
     const nodes = [makeNode('1'), makeNode('2')]
-    const layouts = new Map<NodeId, NodeLayout>([
+    const layouts = new Map([
       ['1', makeLayout(100, 100)],
       ['2', makeLayout(300, 100)]
     ])
+    useLayouts(layouts)
 
     mockIsNodeInViewport.mockReturnValue(true)
 
     const rawNodes = ref(nodes)
-    const nodeLayouts = ref(layouts)
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => rawNodes.value),
-      nodeLayouts: computed(() => nodeLayouts.value),
+      rootGraphId,
       getViewportSize: () => viewport,
       isTransforming
     })
@@ -167,8 +198,8 @@ describe('useViewportCulling', () => {
       (pos: [number, number]) => pos[0] < 200
     )
 
-    // Trigger a refresh by updating layouts
-    nodeLayouts.value = new Map(layouts)
+    // Trigger a refresh by bumping the geometry version
+    mockGeometryVersion.value++
     await nextTick()
 
     // Node 2 should still be mounted (debounce hasn't fired)
@@ -183,21 +214,21 @@ describe('useViewportCulling', () => {
 
   it('immediately mounts nodes entering the viewport', async () => {
     const nodes = [makeNode('1'), makeNode('2')]
-    const layouts = new Map<NodeId, NodeLayout>([
+    const layouts = new Map([
       ['1', makeLayout(100, 100)],
       ['2', makeLayout(5000, 5000)]
     ])
+    useLayouts(layouts)
 
     mockIsNodeInViewport.mockImplementation(
       (pos: [number, number]) => pos[0] < 2000
     )
 
     const rawNodes = ref(nodes)
-    const nodeLayouts = ref(layouts)
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => rawNodes.value),
-      nodeLayouts: computed(() => nodeLayouts.value),
+      rootGraphId,
       getViewportSize: () => viewport,
       isTransforming
     })
@@ -206,7 +237,7 @@ describe('useViewportCulling', () => {
 
     // Node 2 enters viewport
     mockIsNodeInViewport.mockReturnValue(true)
-    nodeLayouts.value = new Map(layouts)
+    mockGeometryVersion.value++
     await nextTick()
 
     // Should be immediately mounted without waiting for debounce
@@ -215,15 +246,14 @@ describe('useViewportCulling', () => {
 
   it('handles new nodes being added to the graph', async () => {
     const nodes = ref([makeNode('1')])
-    const layouts = ref(
-      new Map<NodeId, NodeLayout>([['1', makeLayout(100, 100)]])
-    )
+    const layouts = new Map([['1', makeLayout(100, 100)]])
+    useLayouts(layouts)
 
     mockIsNodeInViewport.mockReturnValue(true)
 
     const { mountedNodeIds } = useViewportCulling({
       rawNodes: computed(() => nodes.value),
-      nodeLayouts: computed(() => layouts.value),
+      rootGraphId,
       getViewportSize: () => viewport,
       isTransforming
     })
@@ -232,7 +262,7 @@ describe('useViewportCulling', () => {
 
     // Add a new node
     nodes.value = [...nodes.value, makeNode('2')]
-    layouts.value = new Map([...layouts.value, ['2', makeLayout(200, 200)]])
+    layouts.set('2', makeLayout(200, 200))
     await nextTick()
 
     expect(mountedNodeIds.value.has('2')).toBe(true)

@@ -4,15 +4,18 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
+import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
-import { st, t } from '@/i18n'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { setBackendNodeText, st, t } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
+  inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
@@ -20,26 +23,47 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
+import type {
+  ExecutionContext,
+  WorkflowExecutionContext,
+  WorkflowExecutionIntent,
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  ModelFile,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
-  isSubgraphDefinition,
+  collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@/platform/workflow/core/utils/workflowFlattening'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -56,6 +80,9 @@ import {
   ComponentWidgetImpl,
   DOMWidgetImpl
 } from '@/scripts/domWidget'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -65,47 +92,54 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import {
+  getAncestorExecutionIds,
+  tryNormalizeNodeExecutionId
+} from '@/types/nodeIdentification'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { graphToPrompt } from '@/utils/executionUtil'
+import { normalizePromptError } from '@/utils/executionErrorUtil'
+import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
-  scanAllModelCandidates,
-  enrichWithEmbeddedMetadata,
-  verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/missingModel/missingModelPipeline'
+import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { assetService } from '@/platform/assets/services/assetService'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
+import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
+  isAncestorPathActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
   createNode,
-  fixLinkInputSlots,
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
@@ -117,12 +151,12 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
+import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -136,6 +170,8 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -146,6 +182,11 @@ import {
 } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+
+function isMeshModelFile(file: File): boolean {
+  const name = file.name.toLowerCase()
+  return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
+}
 
 export function sanitizeNodeName(string: string) {
   let entityMap = {
@@ -162,6 +203,34 @@ export function sanitizeNodeName(string: string) {
   })
 }
 
+function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  const widgetValueStore = useWidgetValueStore()
+  forEachNode(rootGraph, (node) => {
+    if (!node.isSubgraphNode()) return
+    for (const input of node.inputs) {
+      if (!input.widgetId) continue
+
+      const source = promotedInputSource(node, input)
+      if (!source) continue
+
+      const resolution = resolveConcretePromotedWidget(
+        node,
+        source.nodeId,
+        source.widgetName
+      )
+      if (resolution.status !== 'resolved') continue
+
+      const sourceWidget = resolution.resolved.widget
+      if (sourceWidget.type !== 'combo') continue
+
+      const state = widgetValueStore.getWidget(input.widgetId)
+      if (!state) continue
+
+      state.options = { ...(sourceWidget.options ?? {}) }
+    }
+  })
+}
+
 type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
@@ -173,6 +242,56 @@ type Clipspace = {
   combinedIndex: number
 }
 
+/**
+ * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
+ * attribution only and never affects what gets executed.
+ */
+export interface QueuePromptOptions {
+  queueNodeIds?: NodeExecutionId[]
+  intent?: WorkflowQueueIntent
+}
+
+function createNodeOutputsMutationView(
+  outputs: Record<string, NodeExecutionOutput>,
+  commit: (id: string, output: NodeExecutionOutput | undefined) => void
+): Record<string, NodeExecutionOutput> {
+  const views = new WeakMap<object, Map<string, object>>()
+  const wrapNestedValue = (id: string, value: unknown): unknown => {
+    if (value === null || typeof value !== 'object') return value
+    const existing = views.get(value)?.get(id)
+    if (existing) return existing
+    const view = createMutationView(value, {
+      commit: () => commit(id, outputs[id]),
+      mapValue: (_property, nestedValue) => wrapNestedValue(id, nestedValue)
+    })
+    const viewsById = views.get(value) ?? new Map<string, object>()
+    viewsById.set(id, view)
+    views.set(value, viewsById)
+    return view
+  }
+  return new Proxy(outputs, {
+    get(target, property) {
+      const value = Reflect.get(target, property, target)
+      if (typeof value === 'function') return value.bind(target)
+      return wrapNestedValue(String(property), value)
+    },
+    set(target, property, value) {
+      const previous = Reflect.get(target, property, target)
+      const updated = Reflect.set(target, property, value, target)
+      if (updated && previous !== value) {
+        commit(String(property), value as NodeExecutionOutput)
+      }
+      return updated
+    },
+    deleteProperty(target, property) {
+      const existed = Reflect.has(target, property)
+      const deleted = Reflect.deleteProperty(target, property)
+      if (deleted && existed) commit(String(property), undefined)
+      return deleted
+    }
+  })
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -182,6 +301,7 @@ export class ComfyApp {
     batchCount: number
     requestId: number
     queueNodeIds?: NodeExecutionId[]
+    workflowQueueIntent?: WorkflowQueueIntent
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -203,7 +323,16 @@ export class ComfyApp {
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private _nodeOutputs!: Record<string, NodeExecutionOutput>
+  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly _nodeOutputs = createNodeOutputsMutationView(
+    this.nodeOutputsData,
+    (id, output) => {
+      if (!this.vueAppReady) return
+      const store = useNodeOutputStore()
+      if (output === undefined) store.removeOutputFromLegacy(id)
+      else store.setOutputFromLegacy(id, output)
+    }
+  )
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -227,7 +356,7 @@ export class ComfyApp {
   }
 
   canvas!: LGraphCanvas
-  dragOverNode: LGraphNode | null = null
+  dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
@@ -257,7 +386,7 @@ export class ComfyApp {
    * The node errors from the previous execution.
    * @deprecated Use app.extensionManager.lastNodeErrors instead
    */
-  get lastNodeErrors(): Record<NodeId, NodeError> | null {
+  get lastNodeErrors(): Record<string, NodeError> | null {
     return useExecutionErrorStore().lastNodeErrors
   }
 
@@ -274,7 +403,7 @@ export class ComfyApp {
    * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
    * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
    */
-  get runningNodeId(): NodeId | null {
+  get runningNodeId(): SerializedNodeId | null {
     return useExecutionStore().executingNodeId
   }
 
@@ -368,9 +497,15 @@ export class ComfyApp {
   }
 
   set nodeOutputs(value) {
-    this._nodeOutputs = value
-    if (this.vueAppReady)
+    if (value !== this._nodeOutputs) {
+      for (const key of Object.keys(this.nodeOutputsData))
+        delete this.nodeOutputsData[key]
+      Object.assign(this.nodeOutputsData, value)
+    }
+    if (this.vueAppReady) {
+      useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
       useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
+    }
   }
 
   /**
@@ -432,8 +567,7 @@ export class ComfyApp {
     const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
-    const images =
-      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+    const images = useNodeOutputStore().getNodeOutputs(node)?.images
 
     ComfyApp.clipspace = {
       widgets: widgets,
@@ -468,16 +602,11 @@ export class ComfyApp {
       if (ComfyApp.clipspace.imgs && node.imgs) {
         // Update node.images even if it's initially undefined (vueNodes mode)
         if (ComfyApp.clipspace.images) {
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
-          } else {
-            node.images = ComfyApp.clipspace.images
-          }
-
-          if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images
+          const images =
+            ComfyApp.clipspace['img_paste_mode'] == 'selected'
+              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
+              : ComfyApp.clipspace.images
+          useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
         if (ComfyApp.clipspace.imgs) {
@@ -568,8 +697,6 @@ export class ComfyApp {
       }
 
       app.canvas.setDirty(true)
-
-      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
@@ -580,8 +707,18 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
+        // Skip if already handled (e.g. file drop onto publish dialog tiles)
+        if (event.defaultPrevented) return
+
         event.preventDefault()
         event.stopPropagation()
+
+        // graph_mouse is only updated on mousemove, so when files are dragged
+        // in from another window the canvas-space cursor is stale. Sync it
+        // from the drop event so nodes created below land at the cursor.
+        this.canvas.adjustMouseEvent(event)
+        this.canvas.graph_mouse[0] = event.canvasX
+        this.canvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -602,6 +739,12 @@ export class ComfyApp {
             imageFiles.length + audioFiles.length + videoFiles.length
           const hasMultipleMedia = totalMedia > 1
 
+          const createdNodes: LGraphNode[] = []
+          const handleFileOptions = {
+            deferWarnings: true,
+            onNodeCreated: (node: LGraphNode) => createdNodes.push(node)
+          }
+
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
               await this.handleFileList(imageFiles)
@@ -613,17 +756,15 @@ export class ComfyApp {
               await this.handleVideoFileList(videoFiles)
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           } else {
             for (const file of files) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           }
+
+          this.positionNodes(createdNodes)
         } finally {
           workspace.spinner = false
         }
@@ -720,7 +861,10 @@ export class ComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const nodeOutputStore = useNodeOutputStore()
-      const executionId = String(detail.display_node || detail.node)
+      const executionId = tryNormalizeNodeExecutionId(
+        detail.display_node || detail.node
+      )
+      if (!executionId) return
 
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge
@@ -737,20 +881,13 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      // Check if this is an auth-related error or credits-related error
-      if (
-        detail.exception_message?.includes(
-          'Unauthorized: Please login first to use this node.'
-        )
-      ) {
-        useDialogService().showApiNodesSignInDialog([detail.node_type])
-      } else if (
-        detail.exception_message?.includes(
-          'Payment Required: Please add credits to your account to use this node.'
-        )
-      ) {
-        useDialogService().showTopUpCreditsDialog({
-          isInsufficientCredits: true
+      const precondition = resolveAccountPrecondition({
+        exceptionType: detail.exception_type ?? '',
+        exceptionMessage: detail.exception_message ?? ''
+      })
+      if (precondition) {
+        useAccountPreconditionDialog().open(precondition, {
+          nodeType: detail.node_type
         })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
@@ -765,16 +902,17 @@ export class ComfyApp {
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
+      if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       // Ensure clean up if `executing` event is missed.
-      revokePreviewsByExecutionId(displayNodeId)
+      revokePreviewsByExecutionId(displayNodeExecutionId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
-      const nodeParents = displayNodeId.split(':')
-      for (let i = 1; i <= nodeParents.length; i++) {
-        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
-          blobUrl
-        ])
+      for (const executionId of getAncestorExecutionIds(
+        displayNodeExecutionId
+      )) {
+        setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
       releaseSharedObjectUrl(blobUrl)
     })
@@ -803,31 +941,15 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      // Set pending sync flag to suppress link rendering until slots are synced
-      if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
-      }
+      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      try {
-        fixLinkInputSlots(this)
+      const r = onConfigure?.apply(this, args)
 
-        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-        const r = onConfigure?.apply(this, args)
-
-        // Fire after onConfigure, used by primitives to generate widget using input nodes config
-        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-        return r
-      } finally {
-        // Flush pending slot layout syncs to fix link alignment after undo/redo
-        // Using finally ensures links aren't permanently suppressed if an error occurs
-        if (LiteGraph.vueNodesMode) {
-          flushScheduledSlotLayoutSync()
-          app.canvas?.setDirty(true, true)
-        }
-      }
+      return r
     }
   }
 
@@ -872,6 +994,7 @@ export class ComfyApp {
     this.addAfterConfigureHandler(graph)
 
     this.rootGraphInternal = graph
+    installNodeAddedTelemetry(graph)
     this.canvas = new LGraphCanvas(canvasEl, graph)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
@@ -1011,26 +1134,36 @@ export class ComfyApp {
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      // Use object info display_name as fallback before using name
-      const objectInfoDisplayName = def.display_name || def.name
-
       return {
         ...def,
-        display_name: st(
-          `nodeDefs.${def.name}.display_name`,
-          objectInfoDisplayName
-        ),
-        description: def.description
-          ? st(`nodeDefs.${def.name}.description`, def.description)
-          : '',
-        category: def.category
+        category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
-          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .map((category: string) =>
+            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+          )
           .join('/')
       }
     }
 
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { name?: unknown }).name === 'string'
+
+    const response: unknown = await api.getNodeDefs()
+    const entries =
+      typeof response === 'object' &&
+      response !== null &&
+      !Array.isArray(response)
+        ? Object.entries(response)
+        : []
+    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+        isNodeDef(entry[1])
+      )
+    )
+    setBackendNodeText(Object.values(defs))
+    return _.mapValues(defs, (def) => translateNodeDef(def))
   }
 
   /**
@@ -1076,7 +1209,7 @@ export class ComfyApp {
       }
 
       // Check for old clipboard format
-      const data = JSON.parse(template.data)
+      const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, app.canvas)
       } else {
@@ -1105,9 +1238,14 @@ export class ComfyApp {
     }
   }
 
-  private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    if (useMissingNodesErrorStore().surfaceMissingNodes(missingNodeTypes)) {
-      useExecutionErrorStore().showErrorOverlay()
+  private showMissingNodesError(
+    missingNodeTypes: MissingNodeType[],
+    options?: { deferWarnings?: boolean }
+  ) {
+    const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
+    updatePendingWarnings(activeWorkflow, { missingNodeTypes })
+    if (!options?.deferWarnings) {
+      useWorkflowService().showPendingWarnings(activeWorkflow)
     }
   }
 
@@ -1117,23 +1255,40 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodes?: boolean
-      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      shareId?: string
       deferWarnings?: boolean
+      skipAssetScans?: boolean
+      silentAssetErrors?: boolean
+      workflowNavigationId?: number
     } = {}
-  ) {
+  ): Promise<LoadedComfyWorkflow | boolean> {
     const {
-      showMissingNodes = true,
-      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
-      deferWarnings = false
+      shareId,
+      deferWarnings = false,
+      skipAssetScans = false,
+      silentAssetErrors = false,
+      workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph(clean !== false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    useMissingModelStore().clearMissingModels()
+    if (skipAssetScans) {
+      // Only reset candidates; preserve UI state (fileSizes, etc.)
+      // so cached results restored by showPendingWarnings still display sizes.
+      // Abort any in-flight verification from the outgoing workflow so a late
+      // result cannot repopulate the store after we've switched workflows.
+      useMissingModelStore().createVerificationAbortController().abort()
+      useMissingMediaStore().createVerificationAbortController().abort()
+      useMissingModelStore().setMissingModels([])
+      useMissingMediaStore().setMissingMedia([])
+    } else {
+      useMissingModelStore().clearMissingModels()
+      useMissingMediaStore().clearMissingMedia()
+    }
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI
@@ -1196,7 +1351,7 @@ export class ComfyApp {
 
     // Collect missing node types from all nodes (root + subgraphs)
     const collectMissingNodes = (
-      nodes: ComfyWorkflowJSON['nodes'],
+      nodes: readonly FlattenableWorkflowNode[],
       pathPrefix: string = '',
       displayName: string = ''
     ) => {
@@ -1209,24 +1364,31 @@ export class ComfyApp {
       }
       for (let n of nodes) {
         if (!(n.type in LiteGraph.registered_node_types)) {
-          const replacement = nodeReplacementStore.getReplacementFor(n.type)
-          const cnrId = getCnrIdFromProperties(
-            n.properties as Record<string, unknown> | undefined
-          )
-          const executionId = pathPrefix
-            ? `${pathPrefix}:${n.id}`
-            : String(n.id)
+          // Always sanitize so configure() can handle unregistered types,
+          // but only report as missing if the node is active.
+          const isMuted =
+            n.mode === LGraphEventMode.NEVER ||
+            n.mode === LGraphEventMode.BYPASS
+          if (!isMuted) {
+            const replacement = nodeReplacementStore.getReplacementFor(n.type)
+            const cnrId = getCnrIdFromProperties(
+              n.properties as Record<string, unknown> | undefined
+            )
+            const executionId = pathPrefix
+              ? `${pathPrefix}:${n.id}`
+              : String(n.id)
 
-          missingNodeTypes.push({
-            type: n.type,
-            nodeId: executionId,
-            cnrId,
-            ...(displayName && {
-              hint: t('g.inSubgraph', { name: displayName })
-            }),
-            isReplaceable: replacement !== null,
-            replacement: replacement ?? undefined
-          })
+            missingNodeTypes.push({
+              type: n.type,
+              nodeId: executionId,
+              cnrId,
+              ...(displayName && {
+                hint: t('g.inSubgraph', { name: displayName })
+              }),
+              isReplaceable: replacement !== null,
+              replacement: replacement ?? undefined
+            })
+          }
 
           n.type = sanitizeNodeName(n.type)
         }
@@ -1234,21 +1396,21 @@ export class ComfyApp {
     }
 
     collectMissingNodes(graphData.nodes)
-    const subgraphDefs = graphData.definitions?.subgraphs ?? []
+    const subgraphDefs = collectSubgraphDefinitions(
+      graphData.definitions?.subgraphs ?? []
+    )
     const subgraphContainerIdMap = buildSubgraphExecutionPaths(
       graphData.nodes,
       subgraphDefs
     )
     for (const subgraph of subgraphDefs) {
-      if (isSubgraphDefinition(subgraph)) {
-        const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
-        for (const pathPrefix of paths) {
-          collectMissingNodes(
-            subgraph.nodes,
-            pathPrefix,
-            subgraph.name || subgraph.id
-          )
-        }
+      const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+      for (const pathPrefix of paths) {
+        collectMissingNodes(
+          subgraph.nodes,
+          pathPrefix,
+          subgraph.name || subgraph.id
+        )
       }
     }
 
@@ -1284,8 +1446,8 @@ export class ComfyApp {
     }
 
     ChangeTracker.isLoadingGraph = true
+    let activatedWorkflow: LoadedComfyWorkflow | undefined
     try {
-      let normalizedMainGraph = false
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
@@ -1295,10 +1457,7 @@ export class ComfyApp {
           this.rootGraph.extra.workflowRendererVersion
 
         // Scale main graph
-        normalizedMainGraph = ensureCorrectLayoutScale(
-          originalMainGraphRenderer,
-          this.rootGraph
-        )
+        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)
@@ -1316,7 +1475,12 @@ export class ComfyApp {
           reportType: 'loadWorkflowError'
         })
         console.error(error)
-        return
+        await useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          error
+        )
+        // Resolves rather than throws: the close/replacement guards read this outcome.
+        return false
       }
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
@@ -1376,28 +1540,34 @@ export class ComfyApp {
         useExtensionService().invokeExtensions('loadedGraphNode', node)
       })
 
-      if (normalizedMainGraph) {
-        syncLayoutStoreNodeBoundsFromGraph(this.rootGraph)
-      }
-
       await useExtensionService().invokeExtensionsAsync(
         'afterConfigureGraph',
         missingNodeTypes
       )
 
+      const effectiveShareId =
+        shareId ??
+        (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
-        open_source: openSource ?? 'unknown'
+        missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
+        open_source: openSource ?? 'unknown',
+        ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        effectiveShareId
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      // Capture the workflow this load activated before the asset-scan awaits
+      // below can hand control back and let the user switch to another one.
+      activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -1406,160 +1576,62 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      await this.runMissingModelPipeline(
-        graphData,
-        missingNodeTypes,
-        showMissingNodes,
-        showMissingModels
+      // Drop missing-node entries whose enclosing subgraph is
+      // muted/bypassed. The initial JSON scan only checks each node's
+      // own mode; the cascade from an inactive container is applied here
+      // using the now-configured live graph.
+      const activeMissingNodeTypes = missingNodeTypes.filter(
+        (n) =>
+          typeof n === 'string' ||
+          n.nodeId == null ||
+          isAncestorPathActive(this.rootGraph, String(n.nodeId))
       )
 
-      if (!deferWarnings) {
-        useWorkflowService().showPendingWarnings()
+      if (!skipAssetScans) {
+        await runMissingModelPipeline({
+          graph: this.rootGraph,
+          graphData,
+          missingModelStore: useMissingModelStore(),
+          missingNodeTypes: activeMissingNodeTypes,
+          silent: silentAssetErrors
+        })
+
+        await runMissingMediaPipeline({
+          rootGraph: this.rootGraph,
+          silent: silentAssetErrors
+        })
       }
 
-      void useSubgraphNavigationStore().updateHash()
+      if (!deferWarnings) {
+        useWorkflowService().showPendingWarnings(undefined, {
+          silent: silentAssetErrors
+        })
+      }
+
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
+      return activatedWorkflow ?? true
     } finally {
+      // Finally: a throwing load still repairs the URL.
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
       ChangeTracker.isLoadingGraph = false
     }
   }
 
-  private async runMissingModelPipeline(
-    graphData: ComfyWorkflowJSON,
-    missingNodeTypes: MissingNodeType[],
-    showMissingNodes: boolean,
-    showMissingModels: boolean
-  ): Promise<{ missingModels: ModelFile[] }> {
-    const missingModelStore = useMissingModelStore()
-
-    const getDirectory = (nodeType: string) =>
-      useModelToNodeStore().getCategoryForNodeType(nodeType)
-
-    const candidates = scanAllModelCandidates(
-      this.rootGraph,
-      isCloud
-        ? (nodeType, widgetName) =>
-            assetService.shouldUseAssetBrowser(nodeType, widgetName)
-        : () => false,
-      getDirectory
-    )
-
-    const modelStore = useModelStore()
-    await modelStore.loadModelFolders()
-    const enrichedCandidates = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      async (name, directory) => {
-        const folder = await modelStore.getLoadedModelFolder(directory)
-        const models = folder?.models
-        return !!(
-          models && Object.values(models).some((m) => m.file_name === name)
-        )
-      },
-      isCloud
-        ? (nodeType, widgetName) =>
-            assetService.shouldUseAssetBrowser(nodeType, widgetName)
-        : undefined
-    )
-
-    const missingModels: ModelFile[] = enrichedCandidates
-      .filter((c) => c.isMissing === true && c.url)
-      .map((c) => ({
-        name: c.name,
-        url: c.url ?? '',
-        directory: c.directory ?? '',
-        hash: c.hash,
-        hash_type: c.hashType
-      }))
-
-    const confirmedCandidates = enrichedCandidates.filter(
-      (c) => c.isMissing === true
-    )
-
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    if (activeWf) {
-      const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodes) {
-        warnings.missingNodeTypes = missingNodeTypes
-      }
-      if (confirmedCandidates.length && showMissingModels) {
-        warnings.missingModelCandidates = confirmedCandidates
-      }
-      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
-        activeWf.pendingWarnings = warnings
-      }
-    }
-
-    // Intentionally runs on every graph load (including tab switches and
-    // undo/redo) because missing model state depends on external asset data
-    // that may change between workflow activations.
-    if (enrichedCandidates.length) {
-      if (isCloud) {
-        const controller = missingModelStore.createVerificationAbortController()
-        verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
-          .then(() => {
-            if (controller.signal.aborted) return
-            const confirmed = enrichedCandidates.filter(
-              (c) => c.isMissing === true
-            )
-            if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
-            }
-          })
-          .catch((err) => {
-            console.warn(
-              '[Missing Model Pipeline] Asset verification failed:',
-              err
-            )
-            useToastStore().add({
-              severity: 'warn',
-              summary: st(
-                'toastMessages.missingModelVerificationFailed',
-                'Failed to verify missing models. Some models may not be shown in the Errors tab.'
-              ),
-              life: 5000
-            })
-          })
-      } else {
-        const controller = missingModelStore.createVerificationAbortController()
-        const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
-        if (confirmed.length) {
-          api
-            .getFolderPaths()
-            .then((paths) => {
-              if (controller.signal.aborted) return
-              missingModelStore.setFolderPaths(paths)
-            })
-            .catch((err) => {
-              console.warn(
-                '[Missing Model Pipeline] Failed to fetch folder paths:',
-                err
-              )
-            })
-            .finally(() => {
-              if (controller.signal.aborted) return
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
-            })
-
-          void Promise.allSettled(
-            confirmed
-              .filter((c) => c.url)
-              .map(async (c) => {
-                const { fetchModelMetadata } =
-                  await import('@/platform/missingModel/missingModelDownload')
-                const metadata = await fetchModelMetadata(c.url!)
-                if (!controller.signal.aborted && metadata.fileSize !== null) {
-                  missingModelStore.setFileSize(c.url!, metadata.fileSize)
-                }
-              })
-          )
-        }
-      }
-    }
-
-    return { missingModels }
+  async refreshMissingModels(
+    options: { silent?: boolean; reloadDefs?: boolean } = {}
+  ): Promise<MissingModelPipelineResult> {
+    return refreshMissingModelPipeline({
+      graph: this.rootGraph,
+      reloadNodeDefs:
+        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
+      missingModelStore: useMissingModelStore(),
+      silent: options.silent ?? true
+    })
   }
 
   async graphToPrompt(graph = this.rootGraph) {
@@ -1570,11 +1642,37 @@ export class ComfyApp {
 
   async queuePrompt(
     number: number,
+    batchCount?: number,
+    options?: QueuePromptOptions
+  ): Promise<boolean>
+  async queuePrompt(
+    number: number,
+    batchCount: number,
+    queueNodeIds: NodeExecutionId[]
+  ): Promise<boolean>
+  async queuePrompt(
+    number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeExecutionId[]
+    optionsOrQueueNodeIds: QueuePromptOptions | NodeExecutionId[] = {}
   ): Promise<boolean> {
+    const options = Array.isArray(optionsOrQueueNodeIds)
+      ? { queueNodeIds: optionsOrQueueNodeIds }
+      : optionsOrQueueNodeIds
+    const { queueNodeIds, intent } = options
+    if (
+      intent?.trigger_source === 'auto_queue' &&
+      partnerRunGateBlocksAutoQueue()
+    ) {
+      return false
+    }
     const requestId = this.nextQueueRequestId++
-    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    this.queueItems.push({
+      number,
+      batchCount,
+      queueNodeIds,
+      requestId,
+      workflowQueueIntent: intent
+    })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
       batchCount
@@ -1588,37 +1686,146 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearAllErrors()
+    const telemetry = useTelemetry()
+    executionErrorStore.clearRunErrors()
+    let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    try {
+      await teamWorkspaceStore.waitForWorkspaceSwitch()
+    } catch (error) {
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.promptExecutionError'),
+        reportType: 'promptExecutionError'
+      })
+      this.queueItems.length = 0
+      this.processingQueue = false
+      return false
+    }
+    const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
+    const workspaceGenerationBeforeAuthentication =
+      teamWorkspaceStore.workspaceTransitionGeneration
+    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
+    const executionWorkspaceGeneration =
+      teamWorkspaceStore.workspaceTransitionGeneration
+    const workspaceChangedWhileAuthenticating =
+      (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
+        workspaceGenerationBeforeAuthentication !==
+          executionWorkspaceGeneration) &&
+      (isCloud || workspaceIdBeforeAuthentication !== null)
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // An API-key session mints no workspace JWT: the key itself is the
+    // execution credential and the server resolves its bound workspace. Only a
+    // key-authenticated session may pass without a token — a Firebase session
+    // whose token mint failed must still fail closed rather than fall back to
+    // a stored key and charge the key's workspace.
+    const isApiKeySessionExecution =
+      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+    if (
+      executionWorkspaceId &&
+      !comfyOrgAuthToken &&
+      !isApiKeySessionExecution
+    ) {
+      useDialogService().showErrorDialog(
+        new Error(t('toastMessages.userNotAuthenticated')),
+        {
+          title: t('errorDialog.promptExecutionError'),
+          reportType: 'promptExecutionError'
+        }
+      )
+      this.queueItems.length = 0
+      this.processingQueue = false
+      return false
+    }
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds, requestId } =
-          this.queueItems.pop()!
+        const {
+          number,
+          batchCount,
+          queueNodeIds,
+          requestId,
+          workflowQueueIntent
+        } = this.queueItems.pop()!
         let queuedCount = 0
+        const workflowExecutionIntent: WorkflowExecutionIntent = {
+          trigger_source: normalizeExecutionTriggerSource(
+            workflowQueueIntent?.trigger_source
+          )
+        }
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          let executionContext: ExecutionContext | undefined
+          if (telemetry) {
+            try {
+              executionContext = getExecutionContext()
+            } catch (error) {
+              console.error(
+                '[Telemetry] Workflow context collection failed',
+                error
+              )
+            }
+          }
+
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
+            applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
+          // Capture workflow and mode before await — both may change if the
+          // user switches tabs or toggles app/graph mode while the request is
+          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
-          const p = await this.graphToPrompt(this.rootGraph)
+          const queuedMode = getWorkflowMode(queuedWorkflow)
+          const startTime = performance.now()
+          const p = await this.graphToPrompt(this.rootGraph).catch(
+            (error: unknown) => {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: performance.now(),
+                success: false,
+                failureReason: 'prompt_build_failed',
+                ...workflowExecutionIntent
+              })
+              throw error
+            }
+          )
           const queuedNodes = collectAllNodes(this.rootGraph)
+          let workflowContext: WorkflowExecutionContext | undefined
+          if (executionContext) {
+            workflowContext = toWorkflowExecutionContext(executionContext, {
+              executableNodeCount: Object.keys(p.output).length,
+              executionScope: isPartialExecution ? 'partial' : 'full',
+              viewMode: queuedMode
+            })
+          }
+          if (
+            workspaceChangedWhileAuthenticating ||
+            executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
+            executionWorkspaceGeneration !==
+              teamWorkspaceStore.workspaceTransitionGeneration
+          ) {
+            useDialogService().showErrorDialog(
+              new Error(t('errorDialog.workspaceChangedDuringExecution')),
+              {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              }
+            )
+            queueResultOverride = false
+            break
+          }
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
@@ -1626,23 +1833,80 @@ export class ComfyApp {
               partialExecutionTargets: queueNodeIds,
               previewMethod
             })
+            const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
-            executionErrorStore.lastNodeErrors = res.node_errors ?? null
-            if (executionErrorStore.lastNodeErrors?.length) {
+            if (!res.prompt_id) {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: responseReceivedAt,
+                success: false,
+                failureReason: 'submission_rejected',
+                ...workflowExecutionIntent,
+                ...(workflowContext && { workflowContext })
+              })
+            }
+            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            queueResultOverride = null
+            try {
+              if (res.prompt_id) {
+                executionStore.storeJob({
+                  id: res.prompt_id,
+                  nodes: Object.keys(p.output),
+                  promptOutput: p.output,
+                  startTime,
+                  submissionAcceptedAt: responseReceivedAt,
+                  workflow: queuedWorkflow,
+                  mode: queuedMode,
+                  workflowContext,
+                  workflowExecutionIntent
+                })
+              }
+            } catch (error) {
+              console.warn('Failed to store queued job metadata', {
+                promptId: res.prompt_id,
+                error
+              })
+            }
+            if (executionErrorStore.hasNodeError) {
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                executionErrorStore.showErrorOverlay()
+              }
               this.canvas.draw(true, true)
-            } else {
-              try {
-                if (res.prompt_id) {
-                  executionStore.storeJob({
-                    id: res.prompt_id,
-                    nodes: Object.keys(p.output),
-                    workflow: queuedWorkflow
-                  })
-                }
-              } catch (error) {}
             }
           } catch (error: unknown) {
+            telemetry?.trackExecutionOutcome({
+              startTime,
+              endTime: performance.now(),
+              success: false,
+              failureReason:
+                error instanceof PromptExecutionError
+                  ? 'submission_rejected'
+                  : 'submission_failed',
+              ...workflowExecutionIntent,
+              ...(workflowContext && { workflowContext })
+            })
+            const hasPromptNodeErrors =
+              error instanceof PromptExecutionError &&
+              Object.keys(error.response.node_errors ?? {}).length > 0
+            const preconditionResponseError =
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object'
+                ? error.response.error
+                : undefined
+            const promptPrecondition = preconditionResponseError
+              ? resolveAccountPrecondition({
+                  exceptionType: preconditionResponseError.type,
+                  exceptionMessage: preconditionResponseError.message
+                })
+              : undefined
+            // Account preconditions (sign-in, subscription, credits) open their
+            // own modal and must stay out of the error panel and error count.
+            if (promptPrecondition) {
+              useAccountPreconditionDialog().open(promptPrecondition)
+              console.error(error)
+              break
+            }
             if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
@@ -1652,7 +1916,8 @@ export class ComfyApp {
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               error instanceof PromptExecutionError &&
-              error.status === 403
+              error.status === 403 &&
+              !hasPromptNodeErrors
             ) {
               // User is authenticated but not authorized (e.g. not whitelisted).
               // Show a clear message instead of a generic error or sign-in prompt.
@@ -1690,30 +1955,18 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              executionErrorStore.lastNodeErrors =
-                error.response.node_errors ?? null
+              // Keep the legacy result before empty node errors are normalized.
+              const nodeErrors = error.response.node_errors
+              queueResultOverride = !nodeErrors
+              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              const nodeErrors = error.response.node_errors
-              const hasNodeErrors =
-                nodeErrors && Object.keys(nodeErrors).length > 0
-
-              if (!hasNodeErrors) {
-                const respError = error.response.error
-                if (respError && typeof respError === 'object') {
-                  executionErrorStore.lastPromptError = {
-                    type: respError.type,
-                    message: respError.message,
-                    details: respError.details ?? ''
-                  }
-                } else if (typeof respError === 'string') {
-                  executionErrorStore.lastPromptError = {
-                    type: 'error',
-                    message: respError,
-                    details: ''
-                  }
+              if (!executionErrorStore.hasNodeError) {
+                const promptError = normalizePromptError(error.response.error)
+                if (promptError) {
+                  executionErrorStore.recordPromptError(promptError)
                 }
               }
 
@@ -1732,6 +1985,10 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
+          for (const node of queuedNodes) {
+            applyPromotedWidgetControl(node, 'afterQueued')
+          }
+          useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1747,7 +2004,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    return !executionErrorStore.lastNodeErrors
+    return queueResultOverride ?? !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {
@@ -1763,7 +2020,10 @@ export class ComfyApp {
   async handleFile(
     file: File,
     openSource?: WorkflowOpenSource,
-    options?: { deferWarnings?: boolean }
+    options?: {
+      deferWarnings?: boolean
+      onNodeCreated?: (node: LGraphNode) => void
+    }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
@@ -1785,6 +2045,13 @@ export class ComfyApp {
         transfer.items.add(file)
         const node = await createNode(this.canvas, nodeType)
         await pasteFn(this.canvas, transfer.items, node)
+        if (node) options?.onNodeCreated?.(node)
+        return
+      }
+
+      if (isMeshModelFile(file)) {
+        const node = await this.handleMeshFile(file)
+        if (node) options?.onNodeCreated?.(node)
         return
       }
 
@@ -1808,7 +2075,9 @@ export class ComfyApp {
       let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
         workflowObj =
-          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+          typeof workflow === 'string'
+            ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
+            : (workflow as ComfyWorkflowJSON)
 
         // Only load workflow if parsing succeeded AND validation passed
         if (
@@ -1825,11 +2094,9 @@ export class ComfyApp {
           console.error(
             'Invalid workflow structure, trying parameters fallback'
           )
-          this.showErrorOnFileLoad(file)
         }
       } catch (err) {
         console.error('Failed to parse workflow:', err)
-        this.showErrorOnFileLoad(file)
         // Fall through to check parameters as fallback
       }
     }
@@ -1837,9 +2104,13 @@ export class ComfyApp {
     if (prompt) {
       try {
         const promptObj =
-          typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+          typeof prompt === 'string'
+            ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
+            : prompt
         if (this.isApiJson(promptObj)) {
-          this.loadApiJson(promptObj, fileName)
+          await this.loadApiJson(promptObj, fileName, {
+            deferWarnings: options?.deferWarnings
+          })
           return
         }
       } catch (err) {
@@ -1850,16 +2121,81 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.rootGraph, parameters)
-      useWorkflowService().afterLoadNewGraph(
+      const outcome = await importA1111(
+        this.rootGraph,
+        parameters,
+        async () => {
+          try {
+            // false: final destination; no later load republishes the hash.
+            useWorkflowService().beforeLoadNewGraph(false)
+            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+          } finally {
+            useMissingNodesErrorStore().setMissingNodeTypes([])
+          }
+          this.canvas.setGraph(this.rootGraph)
+        }
+      )
+      switch (outcome) {
+        case 'core-nodes-unavailable':
+          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          return
+        case 'not-a1111':
+          this.showErrorOnFileLoad(file)
+          return
+        case 'imported-without-embeddings':
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('g.warning'),
+            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          })
+          break
+        case 'imported':
+          break
+        default: {
+          const unexpectedOutcome: never = outcome
+          throw new Error(
+            `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+          )
+        }
+      }
+      // Intentionally no beforeConfigureGraph: A1111 has no mutable
+      // workflow JSON before graph construction, so there is no payload.
+      await useExtensionService().invokeExtensionsAsync(
+        'afterConfigureGraph',
+        []
+      )
+      await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+  /**
+   * Uploads a mesh model file and creates a Load3DAdvanced node displaying it
+   * @param {File} file
+   */
+  private async handleMeshFile(file: File): Promise<LGraphNode | null> {
+    const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
+    if (!uploadedPath) return null
+
+    const node = await createNode(this.canvas, 'Load3DAdvanced')
+    if (!node) return null
+
+    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+    if (!modelWidget) return node
+
+    const values = (modelWidget.options as { values?: string[] } | undefined)
+      ?.values
+    if (values && !values.includes(uploadedPath)) {
+      values.push(uploadedPath)
+    }
+    modelWidget.value = uploadedPath
+    return node
   }
 
   /**
@@ -1961,37 +2297,113 @@ export class ComfyApp {
     })
   }
 
-  loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
-    useWorkflowService().beforeLoadNewGraph()
-
-    const missingNodeTypes = Object.values(apiData).filter(
-      (n) => !LiteGraph.registered_node_types[n.class_type]
-    )
-    if (missingNodeTypes.length) {
-      this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
-    }
+  async loadApiJson(
+    apiData: ComfyApiWorkflow,
+    fileName: string,
+    options: { deferWarnings?: boolean } = {}
+  ): Promise<void> {
+    // false: no workflow load follows to republish the hash.
+    useWorkflowService().beforeLoadNewGraph(false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    this.canvas.setGraph(this.rootGraph)
+    this.clean()
 
     const ids = Object.keys(apiData)
-    app.rootGraph.clear()
+    // Export (API) flattens subgraph nodes to ids like "194:45". At the root
+    // graph a colon reads as an execution-id path: Locate walks into node
+    // 194's subgraph and finds nothing, and deleting an unrelated node 194
+    // retires every "194:"-prefixed missing report. Remap such ids to
+    // colon-free local ids before creating nodes.
+    const importedNodeIds = new Map<string, NodeId>()
+    {
+      const taken = new Set(ids.filter((id) => !id.includes(':')))
+      for (const id of ids) {
+        if (!id.includes(':')) {
+          importedNodeIds.set(id, toNodeId(isNaN(+id) ? id : +id))
+          continue
+        }
+        let candidate = id.replaceAll(':', '_')
+        while (taken.has(candidate)) candidate = `${candidate}_`
+        taken.add(candidate)
+        importedNodeIds.set(id, toNodeId(candidate))
+      }
+    }
+    const missingNodeTypes: MissingNodeType[] = []
+    const nodeReplacementStore = useNodeReplacementStore()
+    await nodeReplacementStore.load()
     for (const id of ids) {
       const data = apiData[id]
-      const node = LiteGraph.createNode(data.class_type)
-      if (!node) continue
-      node.id = isNaN(+id) ? id : +id
+      const nodeId = importedNodeIds.get(id) ?? toNodeId(id)
+      let node = LiteGraph.createNode(data.class_type)
+      let placeholderEntry:
+        | Extract<MissingNodeType, { type: string }>
+        | undefined
+      if (!node) {
+        const missingNode = new LGraphNode(
+          data._meta?.title ?? data.class_type,
+          sanitizeNodeName(data.class_type)
+        )
+        node = missingNode
+        node.has_errors = true
+        const widgetValues: TWidgetValue[] = []
+        const widgetValuesNamed: Record<string, TWidgetValue> =
+          Object.create(null)
+        for (const [input, value] of Object.entries(data.inputs ?? {})) {
+          if (value instanceof Array) {
+            node.addInput(input, '*')
+          } else {
+            const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
+            widgetValues.push(widgetValue)
+            widgetValuesNamed[input] = widgetValue
+          }
+        }
+        node.last_serialization = {
+          id: nodeId,
+          type: data.class_type,
+          pos: [node.pos[0], node.pos[1]],
+          size: [node.size[0], node.size[1]],
+          flags: {},
+          order: 0,
+          mode: node.mode,
+          title: data._meta?.title ?? data.class_type,
+          inputs: node.inputs.map((input, i) =>
+            inputAsSerialisable(input, missingNode, i)
+          ),
+          widgets_values: widgetValues,
+          widgets_values_named: widgetValuesNamed
+        }
+        const replacement = nodeReplacementStore.getReplacementFor(
+          data.class_type
+        )
+        placeholderEntry = {
+          type: data.class_type,
+          isReplaceable: replacement !== null,
+          replacement: replacement ?? undefined
+        }
+        missingNodeTypes.push(placeholderEntry)
+      }
+      node.id = nodeId
       node.title = data._meta?.title ?? node.title
       app.rootGraph.add(node)
+      if (placeholderEntry && node.last_serialization) {
+        node.last_serialization.id = node.id
+        placeholderEntry.nodeId = String(node.id)
+      }
     }
 
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
-      const node = app.rootGraph.getNodeById(id)
+      const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
+      const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
 
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(fromId)
+          const fromNode = app.rootGraph.getNodeById(
+            importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
+          )
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
@@ -2018,10 +2430,16 @@ export class ComfyApp {
         } else {
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
-            widget.value = value
-            widget.callback?.(value)
+            const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
+            widget.value = widgetValue
+            widget.callback?.(widgetValue)
           }
         }
+      }
+      if (node.last_serialization) {
+        node.last_serialization.inputs = node.inputs.map((input, i) =>
+          inputAsSerialisable(input, node, i)
+        )
       }
     }
 
@@ -2030,10 +2448,20 @@ export class ComfyApp {
     for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
 
-    useWorkflowService().afterLoadNewGraph(
+    // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
+    // and never passes a ComfyWorkflowJSON through the configure stage.
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      missingNodeTypes
+    )
+    await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    if (missingNodeTypes.length) {
+      this.showMissingNodesError(missingNodeTypes, options)
+    }
   }
 
   /**
@@ -2067,18 +2495,9 @@ export class ComfyApp {
   }
 
   /**
-   * Refresh combo list on whole nodes
+   * Reload node definitions and refresh combo lists on all nodes.
    */
-  async refreshComboInNodes() {
-    const requestToastMessage: ToastMessageOptions = {
-      severity: 'info',
-      summary: t('g.update'),
-      detail: t('toastMessages.updateRequested')
-    }
-    if (this.vueAppReady) {
-      useToastStore().add(requestToastMessage)
-    }
-
+  async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
@@ -2130,15 +2549,51 @@ export class ComfyApp {
       defs
     )
 
+    // Promoted widgets keep hosted option snapshots; sync them after source refresh hooks run.
+    syncPromotedComboHostOptions(this.rootGraph)
+
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
-      useToastStore().remove(requestToastMessage)
-      useToastStore().add({
-        severity: 'success',
-        summary: t('g.updated'),
-        detail: t('toastMessages.nodeDefinitionsUpdated'),
-        life: 1000
-      })
+    }
+  }
+
+  /**
+   * Refresh combo list on whole nodes
+   */
+  async refreshComboInNodes() {
+    const requestToastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: t('g.update'),
+      detail: t('toastMessages.updateRequested')
+    }
+    if (this.vueAppReady) {
+      useToastStore().add(requestToastMessage)
+    }
+
+    try {
+      await this.reloadNodeDefs()
+
+      if (this.vueAppReady) {
+        useToastStore().add({
+          severity: 'success',
+          summary: t('g.updated'),
+          detail: t('toastMessages.nodeDefinitionsUpdated'),
+          life: 1000
+        })
+      }
+    } catch (error) {
+      if (this.vueAppReady) {
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('toastMessages.nodeDefinitionsUpdateFailed')
+        })
+      }
+      throw error
+    } finally {
+      if (this.vueAppReady) {
+        useToastStore().remove(requestToastMessage)
+      }
     }
   }
 
@@ -2149,7 +2604,8 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
+    useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
 

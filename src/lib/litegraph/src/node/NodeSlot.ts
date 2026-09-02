@@ -1,3 +1,6 @@
+import { shallowReactive } from 'vue'
+
+import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
@@ -90,6 +93,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     Object.assign(this, rest)
     this._node = node
+
+    // Return the proxy so in-place field writes (rename, retype) reach Vue.
+    return shallowReactive(this)
   }
 
   /**
@@ -172,17 +178,16 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
           path.arc(pos[0], pos[1], highlight ? 2.5 : 1.5, 0, Math.PI * 2)
           ctx.clip(path, 'evenodd')
         }
+
         const radius = highlight ? 5 : 4
-        const typesSet = new Set(
-          `${this.type}`
-            .split(',')
-            .map(
-              this.isConnected
-                ? (type) => colorContext.getConnectedColor(type)
-                : (type) => colorContext.getDisconnectedColor(type)
-            )
-        )
-        const types = [...typesSet].slice(0, 3)
+        const colorMapper = this.isConnected
+          ? colorContext.getConnectedColor
+          : colorContext.getDisconnectedColor
+        const types = `${this.type}`
+          .split(',')
+          .map(colorMapper)
+          .slice(0, MAX_MULTITYPE_SLICES)
+
         if (types.length > 1) {
           doFill = false
           const arcLen = (Math.PI * 2) / types.length

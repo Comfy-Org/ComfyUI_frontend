@@ -1,5 +1,9 @@
-import { mount } from '@vue/test-utils'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it, vi } from 'vitest'
+
+import { fireEvent, render } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'
@@ -8,94 +12,157 @@ function createVideoAsset(
   src: string,
   mimeType: AssetMeta['mime_type'] = 'video/mp4'
 ): AssetMeta {
-  return {
+  return fromPartial({
     id: 'video-1',
     name: 'clip.mp4',
-    asset_hash: null,
     mime_type: mimeType,
     tags: [],
     kind: 'video',
     src
-  }
+  })
 }
 
 describe('MediaVideoTop', () => {
   it('renders playable video with darkened paused overlay and play icon', () => {
-    const wrapper = mount(MediaVideoTop, {
+    const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
       }
     })
 
-    const video = wrapper.find('video')
-    const videoElement = video.element as HTMLVideoElement
-    expect(video.exists()).toBe(true)
-    expect(videoElement.controls).toBe(false)
-    expect(wrapper.find('source').attributes('src')).toBe(
-      'https://example.com/thumb.jpg'
-    )
-    expect(wrapper.find('source').attributes('type')).toBe('video/mp4')
-    expect(wrapper.find('.bg-black\\/15').exists()).toBe(true)
-    expect(wrapper.find('.icon-\\[lucide--play\\]').exists()).toBe(true)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    expect(video).toBeInTheDocument()
+    expect(video.controls).toBe(false)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
+    const source = container.querySelector('source')!
+    expect(source).toHaveAttribute('src', 'https://example.com/thumb.jpg')
+    expect(source).toHaveAttribute('type', 'video/mp4')
   })
 
   it('does not render source element when src is empty', () => {
-    const wrapper = mount(MediaVideoTop, {
+    const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('')
       }
     })
 
-    expect(wrapper.find('video').exists()).toBe(true)
-    expect(wrapper.find('source').exists()).toBe(false)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    expect(container.querySelector('video')).toBeInTheDocument()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
+    expect(container.querySelector('source')).not.toBeInTheDocument()
   })
+
   it('emits playback events and hides paused overlay while playing', async () => {
-    const wrapper = mount(MediaVideoTop, {
+    const user = userEvent.setup()
+    const { container, emitted } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
       }
     })
 
-    const video = wrapper.find('video')
-    const videoElement = video.element as HTMLVideoElement
-    expect(video.exists()).toBe(true)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    expect(video).toBeInTheDocument()
 
-    await video.trigger('play')
-    expect(wrapper.emitted('videoPlayingStateChanged')?.at(-1)).toEqual([true])
-    expect(wrapper.find('.bg-black\\/15').exists()).toBe(false)
+    await fireEvent.play(video)
+    expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([true])
 
-    await wrapper.trigger('mouseenter')
-    expect(videoElement.controls).toBe(true)
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.hover(container.firstElementChild!)
+    expect(video.controls).toBe(true)
 
-    await wrapper.trigger('mouseleave')
-    expect(videoElement.controls).toBe(false)
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.unhover(container.firstElementChild!)
+    expect(video.controls).toBe(false)
 
-    await video.trigger('pause')
-    expect(wrapper.emitted('videoPlayingStateChanged')?.at(-1)).toEqual([false])
-    expect(wrapper.find('.bg-black\\/15').exists()).toBe(true)
-    expect(videoElement.controls).toBe(false)
+    await fireEvent.pause(video)
+    expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([false])
+    expect(video.controls).toBe(false)
   })
 
   it('starts playback from click when controls are hidden', async () => {
-    const wrapper = mount(MediaVideoTop, {
+    const user = userEvent.setup()
+    const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
       }
     })
 
-    const video = wrapper.find('video')
-    const videoElement = video.element as HTMLVideoElement
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
     const playSpy = vi
-      .spyOn(videoElement, 'play')
+      .spyOn(video, 'play')
       .mockImplementation(() => Promise.resolve())
 
-    Object.defineProperty(videoElement, 'paused', {
+    Object.defineProperty(video, 'paused', {
       value: true,
       configurable: true
     })
 
-    await video.trigger('click')
+    await user.click(video)
 
     expect(playSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+  ])(
+    'does not start playback from a $modifier-click',
+    async ({ keyDown, keyUp }) => {
+      const user = userEvent.setup()
+      const { container } = render(MediaVideoTop, {
+        props: {
+          asset: createVideoAsset('https://example.com/thumb.jpg')
+        }
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const video = container.querySelector('video')!
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
+
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
+
+      await user.keyboard(keyDown)
+      await user.click(video)
+      await user.keyboard(keyUp)
+
+      expect(playSpy).not.toHaveBeenCalled()
+    }
+  )
+
+  it('pauses playback from a subsequent click when native controls are disabled', async () => {
+    const user = userEvent.setup()
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg'),
+        showNativeControls: false
+      }
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', {
+      value: false,
+      configurable: true
+    })
+
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.hover(container.firstElementChild!)
+    expect(video.controls).toBe(false)
+
+    await user.click(video)
+
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
   })
 })

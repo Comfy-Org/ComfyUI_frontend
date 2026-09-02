@@ -1,0 +1,270 @@
+---
+import { ClientRouter } from 'astro:transitions'
+import Analytics from '@vercel/analytics/astro'
+import '../styles/global.css'
+import SiteFooter from '../components/common/SiteFooter.vue'
+import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { bannerConfig, getBannerData } from '../config/banner'
+import { isNoindexPathname } from '../config/indexing'
+import { hreflangAlternates } from '../lib/hreflang'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
+import { isHrefActive } from '../composables/useCurrentPath'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  createBannerVersion,
+  evaluateBannerVisibility
+} from '../utils/banner'
+import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
+import JsonLdGraph from '../components/common/JsonLdGraph.astro'
+
+interface Props {
+  title: string
+  description?: string
+  keywords?: string[]
+  ogImage?: string
+  noindex?: boolean
+  pageType?: WebPageType
+  breadcrumbs?: Crumb[]
+  mainEntityId?: string
+  extraJsonLd?: (JsonLdNode | null | undefined)[]
+}
+
+const {
+  title,
+  description = 'Comfy is the AI creation engine for visual professionals who demand control.',
+  keywords,
+  ogImage = 'https://media.comfy.org/website/comfy.webp',
+  noindex = false,
+  pageType,
+  breadcrumbs,
+  mainEntityId,
+  extraJsonLd,
+} = Astro.props
+
+const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const canonicalURL = new URL(url)
+const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const alternates = shouldNoindex
+  ? []
+  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
+const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
+// Announcement banner — build-time visibility gate + content-hash version key.
+// A promo never advertises the page you are already on, so the banner is
+// suppressed when its CTA points at the current path.
+const bannerData = getBannerData(bannerConfig, locale)
+const bannerVisible =
+  evaluateBannerVisibility(bannerConfig, {
+    currentLocale: locale,
+    currentSection: 'sitewide',
+    now: new Date(),
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+const bannerVersion = createBannerVersion(bannerData, locale)
+
+const gtmId = 'GTM-NP9JM6K7'
+const gtmEnabled = import.meta.env.PROD
+
+const structuredData = shouldNoindex
+  ? undefined
+  : buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: title,
+        description,
+        imageUrl: ogImageURL.href,
+        type: pageType,
+        crumbs: breadcrumbs,
+        mainEntityId,
+      },
+      ...(extraJsonLd ?? []),
+    )
+---
+
+<!doctype html>
+{
+  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+     dialog scroll lock) only propagates to the viewport when the root is
+     visible. The horizontal clip lives on <body>. */
+}
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    {keywordsContent && <meta name="keywords" content={keywordsContent} />}
+    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
+    <title>{title}</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#211927" />
+    <link rel="canonical" href={canonicalURL.href} />
+    {
+      !shouldNoindex && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={markdownTwinPath(canonicalURL.pathname)}
+        />
+      )
+    }
+    {
+      alternates.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={alternate.hreflang}
+          href={alternate.href}
+        />
+      ))
+    }
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content={canonicalURL.href} />
+    <meta property="og:locale" content={locale} />
+    <meta property="og:site_name" content="Comfy" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@comaboratory" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL.href} />
+
+    <!-- Structured Data -->
+    {structuredData && <JsonLdGraph graph={structuredData} />}
+    <slot name="head" />
+
+    <!-- Google Tag Manager -->
+    {gtmEnabled && (
+      <script is:inline define:vars={{ gtmId }}>
+        ;(function (w, d, s, l, i) {
+          w[l] = w[l] || []
+          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+          var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s),
+            dl = l != 'dataLayer' ? '&l=' + l : ''
+          j.async = true
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+          f.parentNode.insertBefore(j, f)
+        })(window, document, 'script', 'dataLayer', gtmId)
+      </script>
+    )}
+
+    <ClientRouter />
+
+    <!-- Chrome initializes a video's muted state from the `muted` attribute
+         only during document parsing, not for the DOMParser-built pages the
+         ClientRouter swaps in — re-assert it before paint or autoplaying
+         videos come back with sound. -->
+    <script>
+      document.addEventListener('astro:after-swap', () => {
+        document.querySelectorAll('video').forEach((video) => {
+          if (video.hasAttribute('muted')) video.muted = true
+        })
+      })
+    </script>
+
+    <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
+    {bannerVisible && (
+      <script
+        is:inline
+        define:vars={{
+          bannerVersion,
+          storageKey: BANNER_STORAGE_KEY,
+          dismissAttr: BANNER_DISMISS_ATTR
+        }}
+      >
+        try {
+          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+          if (dismissed && dismissed[bannerVersion] === true) {
+            document.documentElement.setAttribute(dismissAttr, '')
+          }
+        } catch (e) {}
+      </script>
+    )}
+  </head>
+  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
+    {gtmEnabled && (
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+          height="0"
+          width="0"
+          style="display:none;visibility:hidden"
+        ></iframe>
+      </noscript>
+    )}
+
+    {bannerVisible && (
+      <AnnouncementBanner
+        data={bannerData}
+        version={bannerVersion}
+        locale={locale}
+        client:load
+      />
+    )}
+    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
+         visible for reka-ui's dialog scroll lock). <body>'s clip does not
+         contain overflow once <html> is visible, because the root propagates
+         body overflow to the viewport; clipping <main> keeps the page from
+         exceeding the viewport width. -->
+    <main class="overflow-x-clip">
+      <slot />
+    </main>
+    <SiteFooter locale={locale} client:load />
+
+    <Analytics />
+
+    <script>
+      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
+      import { ScrollTrigger } from '../scripts/gsapSetup'
+      import { initPostHog, capturePageview } from '../scripts/posthog'
+      import { reifyMediaElements } from '../scripts/reifyMediaElements'
+
+      initSmoothScroll()
+
+      if (import.meta.env.PROD) {
+        initPostHog()
+        document.addEventListener('astro:page-load', capturePageview)
+      }
+
+      document.addEventListener('astro:page-load', () => {
+        ScrollTrigger.refresh()
+      })
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelScroll()
+      })
+
+      // Synchronous, so it runs before island hydration touches the DOM.
+      document.addEventListener('astro:after-swap', () => {
+        reifyMediaElements(document.body)
+      })
+    </script>
+  </body>
+</html>

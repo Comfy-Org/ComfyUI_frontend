@@ -98,6 +98,7 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const emit = defineEmits<{
@@ -107,6 +108,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
+const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
@@ -119,6 +121,7 @@ const onClearHistoryFromMenu = (close: () => void) => {
 }
 
 const onToggleDockedJobHistory = async (close: () => void) => {
+  trackFeatureUsed()
   close()
 
   try {
@@ -138,6 +141,7 @@ const onToggleDockedJobHistory = async (close: () => void) => {
 }
 
 const onToggleRunProgressBar = async () => {
+  trackFeatureUsed()
   await settingStore.set(
     'Comfy.Queue.ShowRunProgressBar',
     !isRunProgressBarEnabled.value

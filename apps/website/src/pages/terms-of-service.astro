@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ContentSection from '../components/common/ContentSection.vue'
+import HeroSection from '../components/legal/HeroSection.vue'
+import { t } from '../i18n/translations'
+---
+
+<BaseLayout
+  title="Terms of Service - Comfy"
+  description="Terms of Service governing use of the Comfy Products, including Comfy Cloud, Comfy API, and Comfy Enterprise."
+  noindex
+>
+  <HeroSection title="Terms of Service" />
+  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+    {t('tos.effectiveDateLabel')}: {t('tos.effectiveDate')}
+  </p>
+  <ContentSection prefix="tos" client:load />
+</BaseLayout>

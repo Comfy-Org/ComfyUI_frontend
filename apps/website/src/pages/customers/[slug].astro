@@ -1,0 +1,68 @@
+---
+import CustomerArticle from '../../components/customers/CustomerArticle.astro'
+import DetailHeroSection from '../../components/customers/DetailHeroSection.vue'
+import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { t } from '../../i18n/translations'
+import { nextStory, storySlug } from '../../utils/customers'
+import { loadStories } from '../../utils/loadStories'
+import {
+  absoluteUrl,
+  articleNode,
+  jsonLdId,
+  pageContext
+} from '../../utils/jsonLd'
+
+export async function getStaticPaths() {
+  const stories = await loadStories('en')
+  return stories.map((entry) => ({
+    params: { slug: storySlug(entry.id) },
+    props: { entry, next: nextStory(stories, storySlug(entry.id)) }
+  }))
+}
+
+const { entry, next } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const article = articleNode({
+  siteUrl,
+  pageUrl: url,
+  title: entry.data.title,
+  description: entry.data.description,
+  imageUrl: entry.data.cover,
+  locale
+})
+---
+
+<BaseLayout
+  title={`${entry.data.title} - Comfy`}
+  description={entry.data.description}
+  ogImage={entry.data.cover}
+  mainEntityId={jsonLdId(url, 'article')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('nav.customerStories', locale),
+      url: absoluteUrl(Astro.site, '/customers')
+    },
+    { name: entry.data.title }
+  ]}
+  extraJsonLd={[article]}
+>
+  <DetailHeroSection
+    label={entry.data.category}
+    title={entry.data.title}
+    description={entry.data.description}
+    image={entry.data.cover}
+  />
+  <CustomerArticle entry={entry} />
+  <WhatsNextSection
+    title={next.data.title}
+    image={next.data.cover}
+    href={`/customers/${storySlug(next.id)}`}
+  />
+</BaseLayout>

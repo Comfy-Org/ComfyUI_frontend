@@ -18,9 +18,10 @@ import {
 import { shallowRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { NodeState } from '@/types/nodeState'
+import type { UUID } from '@/utils/uuid'
 
 /** Viewport margin as a fraction of viewport dimensions (0.75 = 75% extra) */
 const VIEWPORT_MARGIN = 0.75
@@ -32,8 +33,8 @@ const HIDE_DELAY_MS = 250
 const CULL_THROTTLE_MS = 96
 
 interface UseViewportCullingOptions {
-  rawNodes: ComputedRef<VueNodeData[]>
-  nodeLayouts: ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
+  rawNodes: ComputedRef<NodeState[]>
+  rootGraphId: ComputedRef<UUID | undefined>
   getViewportSize: () => { width: number; height: number }
   isTransforming: Ref<boolean>
   canvasElement?: Ref<HTMLElement | undefined | null>
@@ -41,7 +42,7 @@ interface UseViewportCullingOptions {
 
 export function useViewportCulling({
   rawNodes,
-  nodeLayouts,
+  rootGraphId,
   getViewportSize,
   isTransforming,
   canvasElement
@@ -51,16 +52,16 @@ export function useViewportCulling({
 
   function computeVisibleNodeIds(): Set<string> {
     const viewport = getViewportSize()
-    const layouts = nodeLayouts.value
+    const graphId = rootGraphId.value
     const visible = new Set<string>()
 
-    if (!viewport.width || !viewport.height) {
+    if (!viewport.width || !viewport.height || !graphId) {
       for (const node of rawNodes.value) visible.add(node.id)
       return visible
     }
 
     for (const node of rawNodes.value) {
-      const layout = layouts.get(node.id)
+      const layout = layoutStore.getNodeLayout(graphId, node.id)
 
       if (!layout) {
         visible.add(node.id)
@@ -120,7 +121,11 @@ export function useViewportCulling({
 
   const refreshThrottled = useThrottleFn(refreshMountedNodes, CULL_THROTTLE_MS)
 
-  watch([rawNodes, nodeLayouts], refreshMountedNodes, { immediate: true })
+  watch(
+    [rawNodes, rootGraphId, () => layoutStore.nodeGeometryVersion],
+    refreshMountedNodes,
+    { immediate: true }
+  )
 
   const { camera } = useTransformState()
   watch(

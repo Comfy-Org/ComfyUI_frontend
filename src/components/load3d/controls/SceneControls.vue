@@ -11,55 +11,57 @@
       <i class="pi pi-table text-lg text-base-foreground" />
     </Button>
 
-    <div v-if="!hasBackgroundImage">
-      <Button
-        v-tooltip.right="{
-          value: $t('load3d.backgroundColor'),
-          showDelay: 300
-        }"
-        variant="textonly"
-        size="icon"
-        class="rounded-full"
-        :aria-label="$t('load3d.backgroundColor')"
-        @click="openColorPicker"
-      >
-        <i class="pi pi-palette text-lg text-base-foreground" />
-        <input
-          ref="colorPickerRef"
-          type="color"
-          :value="backgroundColor"
-          class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
-          @input="
-            updateBackgroundColor(($event.target as HTMLInputElement).value)
-          "
-        />
-      </Button>
-    </div>
+    <template v-if="!hdriActive">
+      <div v-if="!hasBackgroundImage">
+        <Button
+          v-tooltip.right="{
+            value: $t('load3d.backgroundColor'),
+            showDelay: 300
+          }"
+          variant="textonly"
+          size="icon"
+          class="rounded-full"
+          :aria-label="$t('load3d.backgroundColor')"
+          @click="openColorPicker"
+        >
+          <i class="pi pi-palette text-lg text-base-foreground" />
+          <input
+            ref="colorPickerRef"
+            type="color"
+            :value="backgroundColor"
+            class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
+            @input="
+              updateBackgroundColor(($event.target as HTMLInputElement).value)
+            "
+          />
+        </Button>
+      </div>
 
-    <div v-if="!hasBackgroundImage">
-      <Button
-        v-tooltip.right="{
-          value: $t('load3d.uploadBackgroundImage'),
-          showDelay: 300
-        }"
-        variant="textonly"
-        size="icon"
-        class="rounded-full"
-        :aria-label="$t('load3d.uploadBackgroundImage')"
-        @click="openImagePicker"
-      >
-        <i class="pi pi-image text-lg text-base-foreground" />
-        <input
-          ref="imagePickerRef"
-          type="file"
-          accept="image/*"
-          class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
-          @change="uploadBackgroundImage"
-        />
-      </Button>
-    </div>
+      <div v-if="showBackgroundImage && !hasBackgroundImage">
+        <Button
+          v-tooltip.right="{
+            value: $t('load3d.uploadBackgroundImage'),
+            showDelay: 300
+          }"
+          variant="textonly"
+          size="icon"
+          class="rounded-full"
+          :aria-label="$t('load3d.uploadBackgroundImage')"
+          @click="openImagePicker"
+        >
+          <i class="pi pi-image text-lg text-base-foreground" />
+          <input
+            ref="imagePickerRef"
+            type="file"
+            accept="image/*"
+            class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
+            @change="uploadBackgroundImage"
+          />
+        </Button>
+      </div>
+    </template>
 
-    <div v-if="hasBackgroundImage">
+    <div v-if="showBackgroundImage && hasBackgroundImage">
       <Button
         v-tooltip.right="{
           value: $t('load3d.panoramaMode'),
@@ -81,12 +83,16 @@
     </div>
 
     <PopupSlider
-      v-if="hasBackgroundImage && backgroundRenderMode === 'panorama'"
+      v-if="
+        showBackgroundImage &&
+        hasBackgroundImage &&
+        backgroundRenderMode === 'panorama'
+      "
       v-model="fov"
       :tooltip-text="$t('load3d.fov')"
     />
 
-    <div v-if="hasBackgroundImage">
+    <div v-if="showBackgroundImage && hasBackgroundImage">
       <Button
         v-tooltip.right="{
           value: $t('load3d.removeBackgroundImage'),
@@ -110,7 +116,12 @@ import { computed, ref } from 'vue'
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { hdriActive = false, showBackgroundImage = true } = defineProps<{
+  hdriActive?: boolean
+  showBackgroundImage?: boolean
+}>()
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void

@@ -1,51 +1,71 @@
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
+import { widgetId } from '@/types/widgetId'
+
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
-  if (!this.outputs[0].links?.length || !this.graph) return
+  applyFirstWidgetValueToGraph(this, extraLinks)
+}
 
-  const links = [
-    ...this.outputs[0].links.map((l) => this.graph!.links[l]),
-    ...extraLinks
-  ]
-  let v = this.widgets?.[0].value
-  // For each output link copy our value over the original widget value
-  for (const linkInfo of links) {
-    const node = this.graph?.getNodeById(linkInfo.target_id)
-    const input = node?.inputs[linkInfo.target_slot]
-    if (!input) {
-      console.warn('Unable to resolve node or input for link', linkInfo)
-      continue
-    }
+/**
+ * `node.resolveInput` only exists on the `ExecutableNodeDTO` used while
+ * building the API prompt (see `executionUtil.ts`), not on `LGraphNode`
+ * itself. Prompt serialization is the only place that can resolve a
+ * promoted widget's per-host value, so this is a runtime duck-type check
+ * rather than a static one.
+ */
+type LinkedInputResolver = {
+  resolveInput: (
+    slot: number
+  ) => { widgetInfo?: { value: unknown } } | undefined
+}
 
-    const widgetName = input.widget?.name
-    if (!widgetName) {
-      console.warn('Invalid widget or widget name', input.widget)
-      continue
-    }
+function hasLinkedInputResolver(
+  node: LGraphNode
+): node is LGraphNode & LinkedInputResolver {
+  return (
+    typeof (node as Partial<LinkedInputResolver>).resolveInput === 'function'
+  )
+}
 
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (!widget) {
-      console.warn(`Unable to find widget "${widgetName}" on node [${node.id}]`)
-      continue
-    }
-
-    widget.value = v
-    widget.callback?.(
-      widget.value,
-      app.canvas,
-      node,
-      app.canvas.graph_mouse,
-      {} as CanvasPointerEvent
-    )
+/**
+ * Resolves the choice widget's current effective value.
+ *
+ * Per ADR 0009, a promoted widget's host value is not mirrored back onto
+ * the interior widget, so `comboWidget.value` is only accurate when
+ * `choice` hasn't been converted to a linked subgraph input. When it has,
+ * the live value must be resolved the same way prompt serialization
+ * resolves any other linked widget input: `resolverNode` is the
+ * execution-scoped node passed into `serializeValue`, which is what's
+ * actually able to walk the link to the promoted host value.
+ */
+function resolveChoiceValue(
+  interiorNode: LGraphNode,
+  comboWidget: IBaseWidget,
+  resolverNode: LGraphNode = interiorNode
+) {
+  const choiceInputIndex = interiorNode.inputs.findIndex(
+    (input) => input.widget?.name === comboWidget.name
+  )
+  if (choiceInputIndex < 0 || !hasLinkedInputResolver(resolverNode)) {
+    return comboWidget.value
   }
+
+  const resolved = resolverNode.resolveInput(choiceInputIndex)
+  // `resolved.widgetInfo` is only set when the link resolves back to a
+  // promoted widget. When `choice` is linked to a real node's output
+  // instead, there is no widget to read a value from here -- resolving that
+  // upstream execution-time value is out of scope for this fix, so this
+  // falls back to the (possibly stale) interior widget value.
+  return resolved?.widgetInfo ? resolved.widgetInfo.value : comboWidget.value
 }
 
 function onCustomComboCreated(this: LGraphNode) {
@@ -63,7 +83,7 @@ function onCustomComboCreated(this: LGraphNode) {
         (w) => w.name.startsWith('option') && w.value
       ).map((w) => `${w.value}`)
     )
-    if (app.configuringGraph) return
+    if (app.configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -71,6 +91,9 @@ function onCustomComboCreated(this: LGraphNode) {
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
     this.applyToGraph!()
   )
+  this.onAdded = useChainCallback(this.onAdded, function () {
+    updateCombo()
+  })
 
   function addOption(node: LGraphNode) {
     if (!node.widgets) return
@@ -78,20 +101,20 @@ function onCustomComboCreated(this: LGraphNode) {
     const widgetName = `option${newCount}`
     const widget = node.addWidget('string', widgetName, '', () => {})
     if (!widget) return
+    let localValue = `${widget.value ?? ''}`
 
     Object.defineProperty(widget, 'value', {
       get() {
-        return useWidgetValueStore().getWidget(
-          app.rootGraph.id,
-          node.id,
-          widgetName
-        )?.value
+        return (
+          useWidgetValueStore().getWidget(
+            widgetId(app.rootGraph.id, node.id, widgetName)
+          )?.value ?? localValue
+        )
       },
       set(v: string) {
+        localValue = v
         const state = useWidgetValueStore().getWidget(
-          app.rootGraph.id,
-          node.id,
-          widgetName
+          widgetId(app.rootGraph.id, node.id, widgetName)
         )
         if (state) state.value = v
         updateCombo()
@@ -109,6 +132,7 @@ function onCustomComboCreated(this: LGraphNode) {
     })
   }
   const widgets = this.widgets!
+  const node = this
   widgets.push({
     name: 'index',
     type: 'hidden',
@@ -119,7 +143,13 @@ function onCustomComboCreated(this: LGraphNode) {
     draw: () => undefined,
     computeSize: () => [0, -4],
     options: { hidden: true },
-    y: 0
+    y: 0,
+    serializeValue: (resolverNode: LGraphNode, _index: number) =>
+      widgets
+        .slice(2)
+        .findIndex(
+          (w) => w.value === resolveChoiceValue(node, comboWidget, resolverNode)
+        )
   })
   addOption(this)
 }

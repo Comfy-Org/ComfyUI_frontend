@@ -1,5 +1,6 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useEventListener } from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useServerLogs } from '@/composables/useServerLogs'
@@ -19,10 +20,6 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 describe('useServerLogs', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should initialize with empty logs array', () => {
     const { logs } = useServerLogs()
     expect(logs.value).toEqual([])
@@ -79,10 +76,10 @@ describe('useServerLogs', () => {
 
     // Simulate receiving a log event
     const mockEvent = new CustomEvent('logs', {
-      detail: {
+      detail: fromAny<LogsWsMessage, unknown>({
         type: 'logs',
         entries: [{ m: 'Log message 1' }, { m: 'Log message 2' }]
-      } as unknown as LogsWsMessage
+      })
     }) as CustomEvent<LogsWsMessage>
 
     eventCallback(mockEvent)
@@ -103,14 +100,14 @@ describe('useServerLogs', () => {
     ) => void
 
     const mockEvent = new CustomEvent('logs', {
-      detail: {
+      detail: fromAny<LogsWsMessage, unknown>({
         type: 'logs',
         entries: [
           { m: 'Log message 1 dont remove me' },
           { m: 'remove me' },
           { m: '' }
         ]
-      } as unknown as LogsWsMessage
+      })
     }) as CustomEvent<LogsWsMessage>
 
     eventCallback(mockEvent)

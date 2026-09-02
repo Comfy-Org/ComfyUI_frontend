@@ -53,7 +53,6 @@ const COMFY_HUB_TAG_FREQUENCIES = [
   { tag: 'Lip Sync', count: 2 },
   { tag: 'Multiple Angles', count: 2 },
   { tag: 'Remove Background', count: 2 },
-  { tag: 'Text-to-Image', count: 2 },
   { tag: 'Vector', count: 2 },
   { tag: 'Brand', count: 1 },
   { tag: 'Canny', count: 1 },

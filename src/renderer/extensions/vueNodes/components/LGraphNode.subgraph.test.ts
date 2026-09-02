@@ -2,32 +2,37 @@
  * Tests for NodeHeader subgraph functionality
  */
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setActivePinia } from 'pinia'
+import { render, screen, fireEvent } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 
+import { toNodeId } from '@/types/nodeId'
+import { nextTick } from 'vue'
+
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
+const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
 const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
 // Mock dependencies
 vi.mock('@/scripts/app', () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: vi.fn(),
-  getLocatorIdFromNodeData: vi.fn((nodeData) =>
-    nodeData.subgraphId
-      ? `${nodeData.subgraphId}:${String(nodeData.id)}`
-      : String(nodeData.id)
-  )
-}))
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    getNodeByLocatorId: vi.fn()
+  }
+})
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
@@ -57,9 +62,12 @@ vi.mock('@/i18n', () => ({
 }))
 
 describe('Vue Node - Subgraph Functionality', () => {
+  let rootGraph: LGraph
+  let pinia: ReturnType<typeof createTestingPinia>
+
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
-    if (hasGraph) mockApp.rootGraph = {}
+    if (hasGraph) mockApp.rootGraph = rootGraph
     else mockApp.rootGraph = undefined
 
     vi.mocked(getNodeByLocatorId).mockReturnValue({
@@ -68,32 +76,29 @@ describe('Vue Node - Subgraph Functionality', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    setActivePinia(pinia)
+    rootGraph = new LGraph()
   })
 
-  const createMockNodeData = (
-    id: string,
-    subgraphId?: string
-  ): VueNodeData => ({
-    id,
+  const createMockNodeData = (id: string, subgraphId?: string): NodeState => ({
+    id: toNodeId(id),
+    graphId: subgraphId ?? rootGraph.id,
     title: 'Test Node',
     type: 'TestNode',
     mode: 0,
-    selected: false,
-    executing: false,
-    subgraphId,
-    widgets: [],
+    flags: {},
     inputs: [],
     outputs: [],
-    hasErrors: false,
-    flags: {}
+    properties: {}
   })
 
-  const createWrapper = (props: { nodeData: VueNodeData }) => {
-    return mount(LGraphNode, {
+  const renderComponent = (props: { nodeData: NodeState }) => {
+    useCanvasStore().currentGraph = rootGraph
+    return render(LGraphNode, {
       props,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn })],
+        plugins: [pinia],
         mocks: {
           $t: vi.fn((key: string) => key),
           $primevue: { config: {} }
@@ -105,69 +110,65 @@ describe('Vue Node - Subgraph Functionality', () => {
   it('should show subgraph button for subgraph nodes', async () => {
     await setupMocks(true) // isSubgraph = true
 
-    const wrapper = createWrapper({
+    renderComponent({
       nodeData: createMockNodeData('test-node-1')
     })
 
-    await wrapper.vm.$nextTick()
+    await nextTick()
 
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
-    expect(subgraphButton.exists()).toBe(true)
+    expect(screen.getByTestId('subgraph-enter-button')).toBeInTheDocument()
   })
 
   it('should not show subgraph button for regular nodes', async () => {
     await setupMocks(false) // isSubgraph = false
 
-    const wrapper = createWrapper({
+    renderComponent({
       nodeData: createMockNodeData('test-node-1')
     })
 
-    await wrapper.vm.$nextTick()
+    await nextTick()
 
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
-    expect(subgraphButton.exists()).toBe(false)
+    expect(
+      screen.queryByTestId('subgraph-enter-button')
+    ).not.toBeInTheDocument()
   })
 
   it('should handle subgraph context correctly', async () => {
     await setupMocks(true) // isSubgraph = true
 
-    const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1', 'subgraph-id')
+    renderComponent({
+      nodeData: createMockNodeData('test-node-1', SUBGRAPH_ID)
     })
 
-    await wrapper.vm.$nextTick()
+    await nextTick()
 
     // Should call getNodeByLocatorId with correct locator ID
     expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
       expect.anything(),
-      'subgraph-id:test-node-1'
+      `${SUBGRAPH_ID}:test-node-1`
     )
 
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
-    expect(subgraphButton.exists()).toBe(true)
+    expect(screen.getByTestId('subgraph-enter-button')).toBeInTheDocument()
   })
 
-  it('should prevent event propagation on double click', async () => {
+  it('should prevent click event propagation on subgraph button', async () => {
     await setupMocks(true) // isSubgraph = true
 
-    const wrapper = createWrapper({
+    const { container } = renderComponent({
       nodeData: createMockNodeData('test-node-1')
     })
 
-    await wrapper.vm.$nextTick()
+    await nextTick()
 
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
+    const parentListener = vi.fn()
+    // eslint-disable-next-line testing-library/no-container
+    container.addEventListener('click', parentListener)
 
-    // Mock event object
-    const mockEvent = {
-      stopPropagation: vi.fn()
-    }
+    const subgraphButton = screen.getByTestId('subgraph-enter-button')
 
-    // Trigger dblclick event
-    await subgraphButton.trigger('dblclick', mockEvent)
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.click(subgraphButton)
 
-    // Should prevent propagation (handled by @dblclick.stop directive)
-    // This is tested by ensuring the component doesn't error and renders correctly
-    expect(subgraphButton.exists()).toBe(true)
+    expect(parentListener).not.toHaveBeenCalled()
   })
 })

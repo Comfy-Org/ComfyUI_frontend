@@ -1,0 +1,8 @@
+/*
+ * Design System Base — Brand tokens + fonts only.
+ * For marketing sites that don't use PrimeVue or the node editor.
+ * Import the full style.css instead for the desktop app.
+ */
+
+@import './fonts.css';
+@import './_palette.css';

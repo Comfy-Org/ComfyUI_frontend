@@ -39,6 +39,7 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -173,21 +174,21 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         droppable: !node.leaf,
         async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
+          if (!nodeDefToAdd) return
           // Remove bookmark if the source is the top level bookmarked node.
-          // @ts-expect-error fixme ts strict error
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
-            // @ts-expect-error fixme ts strict error
             await nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
-          // @ts-expect-error fixme ts strict error
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           await nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {
-          if (this.leaf) {
-            // @ts-expect-error fixme ts strict error
-            useLitegraphService().addNodeOnGraph(this.data)
+          const nodeDef = this.data
+          if (this.leaf && nodeDef) {
+            withNodeAddSource('sidebar_drag', () =>
+              useLitegraphService().addNodeOnGraph(nodeDef)
+            )
           } else {
             toggleNodeOnEvent(e, node)
           }
@@ -205,7 +206,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
                 }
               },
               async handleDelete() {
-                // @ts-expect-error fixme ts strict error
+                if (!this.data) return
                 await nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })

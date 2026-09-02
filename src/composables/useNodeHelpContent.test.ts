@@ -1,9 +1,15 @@
-import { flushPromises } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
 
 function createMockNode(
   overrides: Partial<ComfyNodeDefImpl>
@@ -67,12 +73,7 @@ describe('useNodeHelpContent', () => {
   const mockFetch = vi.fn()
 
   beforeEach(() => {
-    mockFetch.mockReset()
     vi.stubGlobal('fetch', mockFetch)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('should generate correct baseUrl for core nodes', async () => {

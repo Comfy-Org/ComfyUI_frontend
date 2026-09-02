@@ -56,7 +56,7 @@
             </a>
             <span class="mx-1">•</span>
             <a
-              href="https://docs.comfy.org/tutorials/api-nodes/overview#log-in-with-api-key-on-non-whitelisted-websites"
+              href="https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites"
               target="_blank"
               class="cursor-pointer text-blue-500"
             >
@@ -100,9 +100,9 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
-const authStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
 const comfyPlatformBaseUrl = computed(() =>

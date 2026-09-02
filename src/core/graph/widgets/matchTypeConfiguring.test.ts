@@ -1,13 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
+import { effect, stop } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
-setActivePinia(createTestingPinia())
+setActivePinia(createTestingPinia({ stubActions: false }))
 
 const { addNodeInput } = useLitegraphService()
 
@@ -52,10 +54,6 @@ function createSourceNode(graph: LGraph, type: string) {
 }
 
 describe('MatchType during configure', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   test('skips type recalculation when configuringGraph is true', () => {
     const graph = new LGraph()
     const switchNode = createMatchTypeNode(graph)
@@ -72,8 +70,8 @@ describe('MatchType during configure', () => {
     const link2Id = switchNode.inputs[1].link!
 
     const outputTypeBefore = switchNode.outputs[0].type
-    ;(
-      app as unknown as { configuringGraphLevel: number }
+    fromAny<{ configuringGraphLevel: number }, unknown>(
+      app
     ).configuringGraphLevel = 1
 
     try {
@@ -92,8 +90,8 @@ describe('MatchType during configure', () => {
       expect(graph.links[link2Id]).toBeDefined()
       expect(switchNode.outputs[0].type).toBe(outputTypeBefore)
     } finally {
-      ;(
-        app as unknown as { configuringGraphLevel: number }
+      fromAny<{ configuringGraphLevel: number }, unknown>(
+        app
       ).configuringGraphLevel = 0
     }
   })
@@ -102,13 +100,23 @@ describe('MatchType during configure', () => {
     const graph = new LGraph()
     const switchNode = createMatchTypeNode(graph)
     const source1 = createSourceNode(graph, 'IMAGE')
+    let recalculationCount = 0
+    const runner = effect(() => {
+      void switchNode.outputs[0].type
+      recalculationCount++
+    })
 
-    expect(app.configuringGraph).toBe(false)
+    try {
+      expect(app.configuringGraph).toBe(false)
 
-    source1.connect(0, switchNode, 0)
+      source1.connect(0, switchNode, 0)
 
-    expect(switchNode.inputs[0].link).not.toBeNull()
-    expect(switchNode.outputs[0].type).toBe('IMAGE')
+      expect(switchNode.inputs[0].link).not.toBeNull()
+      expect(switchNode.outputs[0].type).toBe('IMAGE')
+      expect(recalculationCount).toBeGreaterThan(1)
+    } finally {
+      stop(runner)
+    }
   })
 
   test('connects both inputs with same type', () => {

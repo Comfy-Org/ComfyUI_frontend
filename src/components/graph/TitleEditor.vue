@@ -7,6 +7,7 @@
     <EditableText
       :is-editing="showInput"
       :model-value="editedTitle"
+      :input-attrs="{ 'data-testid': 'node-title-input' }"
       @edit="onEdit"
     />
   </div>

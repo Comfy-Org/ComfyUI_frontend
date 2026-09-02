@@ -1,5 +1,7 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -13,8 +15,11 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        nodesCount: '{count} node | {count} nodes'
+      },
       rightSidePanel: {
-        locateNode: 'Locate Node',
+        locateNode: 'Locate node on canvas',
         missingNodePacks: {
           collapse: 'Collapse',
           expand: 'Expand'
@@ -43,16 +48,16 @@ function makeGroup(overrides: Partial<SwapNodeGroup> = {}): SwapNodeGroup {
   }
 }
 
-function mountRow(
+function renderRow(
   props: Partial<{
     group: SwapNodeGroup
-    showNodeIdBadge: boolean
+    'onLocate-node': (nodeId: string) => void
+    onReplace: (group: SwapNodeGroup) => void
   }> = {}
 ) {
-  return mount(SwapNodeGroupRow, {
+  return render(SwapNodeGroupRow, {
     props: {
       group: makeGroup(),
-      showNodeIdBadge: false,
       ...props
     },
     global: {
@@ -67,17 +72,19 @@ function mountRow(
 describe('SwapNodeGroupRow', () => {
   describe('Basic Rendering', () => {
     it('renders the group type name', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('OldNodeType')
+      const { container } = renderRow()
+      expect(container.textContent).toContain('OldNodeType')
     })
 
-    it('renders node count in parentheses', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('(2)')
+    it('renders node count as a badge', () => {
+      renderRow()
+      const badge = screen.getByLabelText('2 nodes')
+      expect(badge).toBeInTheDocument()
+      expect(within(badge).getByText('2')).toBeInTheDocument()
     })
 
     it('renders node count of 5 for 5 nodeTypes', () => {
-      const wrapper = mountRow({
+      renderRow({
         group: makeGroup({
           nodeTypes: Array.from({ length: 5 }, (_, i) => ({
             type: 'OldNodeType',
@@ -86,159 +93,286 @@ describe('SwapNodeGroupRow', () => {
           }))
         })
       })
-      expect(wrapper.text()).toContain('(5)')
+      const badge = screen.getByLabelText('5 nodes')
+      expect(badge).toBeInTheDocument()
+      expect(within(badge).getByText('5')).toBeInTheDocument()
     })
 
     it('renders the replacement target name', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('NewNodeType')
+      const { container } = renderRow()
+      expect(container.textContent).toContain('NewNodeType')
     })
 
     it('shows "Unknown" when newNodeId is undefined', () => {
-      const wrapper = mountRow({
+      const { container } = renderRow({
         group: makeGroup({ newNodeId: undefined })
       })
-      expect(wrapper.text()).toContain('Unknown')
+      expect(container.textContent).toContain('Unknown')
     })
 
     it('renders "Replace Node" button', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('Replace Node')
+      renderRow()
+      expect(
+        screen.getByRole('button', { name: /Replace Node/ })
+      ).toBeInTheDocument()
     })
   })
 
   describe('Expand / Collapse', () => {
     it('starts collapsed — node list not visible', () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      expect(wrapper.text()).not.toContain('#1')
+      renderRow()
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
 
-    it('expands when chevron is clicked', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.text()).toContain('#1')
-      expect(wrapper.text()).toContain('#2')
+    it('expands when title is clicked', async () => {
+      const user = userEvent.setup()
+      renderRow()
+      await user.click(
+        screen.getByRole('button', { name: 'Expand OldNodeType' })
+      )
+      expect(
+        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+      ).toHaveLength(2)
     })
 
-    it('collapses when chevron is clicked again', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.text()).toContain('#1')
-      await wrapper.get('button[aria-label="Collapse"]').trigger('click')
-      expect(wrapper.text()).not.toContain('#1')
+    it('collapses when title is clicked again', async () => {
+      const user = userEvent.setup()
+      renderRow()
+      await user.click(
+        screen.getByRole('button', { name: 'Expand OldNodeType' })
+      )
+      expect(
+        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+      ).toHaveLength(2)
+      await user.click(
+        screen.getByRole('button', { name: 'Collapse OldNodeType' })
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
 
     it('updates the toggle control state when expanded', async () => {
-      const wrapper = mountRow()
-      expect(wrapper.find('button[aria-label="Expand"]').exists()).toBe(true)
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.find('button[aria-label="Collapse"]').exists()).toBe(true)
+      const user = userEvent.setup()
+      renderRow()
+      const titleButton = screen.getByRole('button', {
+        name: 'Expand OldNodeType'
+      })
+      expect(titleButton).toHaveAttribute('aria-expanded', 'false')
+
+      await user.click(titleButton)
+
+      const collapseButton = screen.getByRole('button', {
+        name: 'Collapse OldNodeType'
+      })
+      expect(collapseButton).toHaveAttribute('aria-expanded', 'true')
     })
   })
 
   describe('Node Type List (Expanded)', () => {
-    async function expand(wrapper: ReturnType<typeof mountRow>) {
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
+    async function expand() {
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /^Expand / }))
     }
 
     it('renders all nodeTypes when expanded', async () => {
-      const wrapper = mountRow({
+      renderRow({
         group: makeGroup({
+          type: 'GroupedNodeType',
           nodeTypes: [
-            { type: 'OldNodeType', nodeId: '10', isReplaceable: true },
-            { type: 'OldNodeType', nodeId: '20', isReplaceable: true },
-            { type: 'OldNodeType', nodeId: '30', isReplaceable: true }
+            { type: 'GroupedNodeType', nodeId: '10', isReplaceable: true },
+            { type: 'GroupedNodeType', nodeId: '20', isReplaceable: true },
+            { type: 'GroupedNodeType', nodeId: '30', isReplaceable: true }
           ]
-        }),
-        showNodeIdBadge: true
+        })
       })
-      await expand(wrapper)
-      expect(wrapper.text()).toContain('#10')
-      expect(wrapper.text()).toContain('#20')
-      expect(wrapper.text()).toContain('#30')
-    })
+      expect(screen.queryByRole('list')).not.toBeInTheDocument()
 
-    it('shows nodeId badge when showNodeIdBadge is true', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await expand(wrapper)
-      expect(wrapper.text()).toContain('#1')
-      expect(wrapper.text()).toContain('#2')
-    })
+      await expand()
 
-    it('hides nodeId badge when showNodeIdBadge is false', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: false })
-      await expand(wrapper)
-      expect(wrapper.text()).not.toContain('#1')
-      expect(wrapper.text()).not.toContain('#2')
+      expect(
+        within(screen.getByRole('list')).getAllByRole('listitem')
+      ).toHaveLength(3)
+      expect(
+        within(screen.getByRole('list')).getAllByText('GroupedNodeType')
+      ).toHaveLength(3)
     })
 
     it('renders Locate button for each nodeType with nodeId', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await expand(wrapper)
-      expect(wrapper.findAll('button[aria-label="Locate Node"]')).toHaveLength(
-        2
-      )
+      renderRow()
+      await expand()
+      expect(
+        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+      ).toHaveLength(2)
     })
 
     it('does not render Locate button for nodeTypes without nodeId', async () => {
-      const wrapper = mountRow({
+      renderRow({
         group: makeGroup({
-          // Intentionally omits nodeId to test graceful handling of incomplete node data
-          nodeTypes: [
-            { type: 'NoIdNode', isReplaceable: true }
-          ] as unknown as MissingNodeType[]
+          nodeTypes: fromAny<MissingNodeType[], unknown>([
+            { type: 'NoIdNode', isReplaceable: true },
+            { type: 'OtherNoIdNode', isReplaceable: true }
+          ])
         })
       })
-      await expand(wrapper)
-      expect(wrapper.find('button[aria-label="Locate Node"]').exists()).toBe(
-        false
-      )
+      await expand()
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('renders locate controls only for locatable nodeTypes', async () => {
+      renderRow({
+        group: makeGroup({
+          type: 'MixedNodeType',
+          nodeTypes: fromAny<MissingNodeType[], unknown>([
+            { type: 'MixedNodeType', nodeId: '10', isReplaceable: true },
+            { type: 'MixedNodeType', isReplaceable: true }
+          ])
+        })
+      })
+
+      await expand()
+
+      expect(
+        within(screen.getByRole('list')).getAllByText('MixedNodeType')
+      ).toHaveLength(2)
+      expect(
+        within(screen.getByRole('list')).getAllByRole('button', {
+          name: 'MixedNodeType'
+        })
+      ).toHaveLength(1)
+      expect(
+        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+      ).toHaveLength(1)
     })
   })
 
   describe('Events', () => {
     it('emits locate-node with correct nodeId', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      const locateBtns = wrapper.findAll('button[aria-label="Locate Node"]')
-      await locateBtns[0].trigger('click')
-      expect(wrapper.emitted('locate-node')).toBeTruthy()
-      expect(wrapper.emitted('locate-node')?.[0]).toEqual(['1'])
+      const onLocateNode = vi.fn()
+      const user = userEvent.setup()
+      renderRow({ 'onLocate-node': onLocateNode })
+      await user.click(
+        screen.getByRole('button', { name: 'Expand OldNodeType' })
+      )
+      const locateBtns = screen.getAllByRole('button', {
+        name: 'Locate node on canvas'
+      })
+      await user.click(locateBtns[0])
+      expect(onLocateNode).toHaveBeenCalledWith('1')
 
-      await locateBtns[1].trigger('click')
-      expect(wrapper.emitted('locate-node')?.[1]).toEqual(['2'])
+      await user.click(locateBtns[1])
+      expect(onLocateNode).toHaveBeenCalledWith('2')
     })
 
     it('emits replace with group when Replace button is clicked', async () => {
       const group = makeGroup()
-      const wrapper = mountRow({ group })
-      const replaceBtn = wrapper
-        .findAll('button')
-        .find((b) => b.text().includes('Replace Node'))
-      if (!replaceBtn) throw new Error('Replace button not found')
-      await replaceBtn.trigger('click')
-      expect(wrapper.emitted('replace')).toBeTruthy()
-      expect(wrapper.emitted('replace')?.[0][0]).toEqual(group)
+      const onReplace = vi.fn()
+      const user = userEvent.setup()
+      renderRow({ group, onReplace })
+      const replaceBtn = screen.getByRole('button', { name: /Replace Node/ })
+      await user.click(replaceBtn)
+      expect(onReplace).toHaveBeenCalledWith(group)
+    })
+  })
+
+  describe('Single Node Groups', () => {
+    it('locates a single node without expanding', async () => {
+      const onLocateNode = vi.fn()
+      const user = userEvent.setup()
+      renderRow({
+        group: makeGroup({
+          type: 'SingleNodeType',
+          nodeTypes: [
+            { type: 'SingleNodeType', nodeId: '42', isReplaceable: true }
+          ]
+        }),
+        'onLocate-node': onLocateNode
+      })
+
+      expect(
+        screen.queryByRole('button', { name: /^Expand / })
+      ).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('1 node')).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'SingleNodeType' }))
+      expect(onLocateNode).toHaveBeenCalledWith('42')
+
+      await user.click(
+        screen.getByRole('button', { name: 'Locate node on canvas' })
+      )
+      expect(onLocateNode).toHaveBeenCalledTimes(2)
+      expect(onLocateNode).toHaveBeenLastCalledWith('42')
+    })
+
+    it('renders a single node without nodeId as non-locatable text', () => {
+      renderRow({
+        group: makeGroup({
+          type: 'NoIdNode',
+          nodeTypes: fromAny<MissingNodeType[], unknown>([
+            { type: 'NoIdNode', isReplaceable: true }
+          ])
+        })
+      })
+
+      expect(screen.getByText('NoIdNode')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'NoIdNode' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('Edge Cases', () => {
     it('handles empty nodeTypes array', () => {
-      const wrapper = mountRow({
-        group: makeGroup({ nodeTypes: [] })
+      renderRow({
+        group: makeGroup({
+          nodeTypes: []
+        })
       })
-      expect(wrapper.text()).toContain('(0)')
+
+      expect(screen.getByText('OldNodeType')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'OldNodeType' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /^Expand / })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
 
     it('handles string nodeType entries', async () => {
-      const wrapper = mountRow({
+      const user = userEvent.setup()
+      renderRow({
         group: makeGroup({
-          // Intentionally uses a plain string entry to test legacy node type handling
-          nodeTypes: ['StringType'] as unknown as MissingNodeType[]
+          nodeTypes: fromAny<MissingNodeType[], unknown>([
+            'StringType',
+            'OtherStringType'
+          ])
         })
       })
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.text()).toContain('StringType')
+      await user.click(
+        screen.getByRole('button', { name: 'Expand OldNodeType' })
+      )
+
+      expect(screen.getByText('StringType')).toBeInTheDocument()
+      expect(screen.getByText('OtherStringType')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'StringType' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'OtherStringType' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
   })
 })

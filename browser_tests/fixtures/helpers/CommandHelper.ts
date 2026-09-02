@@ -1,9 +1,32 @@
 import type { Page } from '@playwright/test'
 
-import type { KeyCombo } from '../../../src/platform/keybindings/types'
+import type { KeyCombo } from '@/platform/keybindings/types'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class CommandHelper {
   constructor(private readonly page: Page) {}
+
+  async mockCommand(commandId: string): Promise<void> {
+    await this.page.evaluate((commandId) => {
+      const command = window.app?.extensionManager.command.commands.find(
+        ({ id }) => id === commandId
+      )
+      if (!command) throw new Error(`Command not found: ${commandId}`)
+
+      const executionCounts = (window.__commandExecutionCounts ??= {})
+      executionCounts[commandId] = 0
+      command.function = () => {
+        executionCounts[commandId] = (executionCounts[commandId] ?? 0) + 1
+      }
+    }, commandId)
+  }
+
+  async getExecutionCount(commandId: string): Promise<number> {
+    return await this.page.evaluate(
+      (commandId) => window.__commandExecutionCounts?.[commandId] ?? 0,
+      commandId
+    )
+  }
 
   async executeCommand(
     commandId: string,
@@ -20,6 +43,7 @@ export class CommandHelper {
       },
       { commandId, metadata }
     )
+    await nextFrame(this.page)
   }
 
   async registerCommand(
@@ -41,6 +65,7 @@ export class CommandHelper {
           commands: [
             {
               id: commandId,
+              // oxlint-disable-next-line no-eval -- intentional: eval reconstructs a serialized function inside Playwright's page context
               function: eval(commandStr)
             }
           ]
@@ -76,6 +101,7 @@ export class CommandHelper {
           commands: [
             {
               id: commandId,
+              // oxlint-disable-next-line no-eval -- intentional: eval reconstructs a serialized function inside Playwright's page context
               function: eval(commandStr)
             }
           ]

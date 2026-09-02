@@ -1,5 +1,10 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
+import type { BoundingBox } from '@/types/boundingBoxes'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@/types/widgetId'
 
 import type {
   CanvasColour,
@@ -8,12 +13,7 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  NodeId
-} from '../litegraph'
+import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
@@ -45,6 +45,14 @@ export interface IWidgetOptions<TValues = unknown> {
   socketless?: boolean
   /** If `true`, the widget will not be rendered by the Vue renderer. */
   canvasOnly?: boolean
+  /**
+   * If `true`, the widget still renders on the node but is omitted from the
+   * right side panel. Unlike {@link IWidgetOptions.canvasOnly}, the node body
+   * keeps rendering it via the Vue renderer. Used for widgets that hold
+   * non-syncable state (e.g. a Three.js viewport) where a second instance in
+   * the panel would diverge from the one on the node.
+   */
+  hideInPanel?: boolean
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 
@@ -139,6 +147,11 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | ICompositorWidget
+  | IRangeWidget
+  | IVideoEditWidget
+  | IBoundingBoxesWidget
+  | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -341,13 +354,91 @@ export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   value: string
 }
 
+export interface ICompositorWidget extends IBaseWidget<
+  CompositorWidgetValue,
+  'compositor'
+> {
+  type: 'compositor'
+  value: CompositorWidgetValue
+}
+
+export interface IBoundingBoxesWidget extends IBaseWidget<
+  BoundingBox[],
+  'boundingboxes'
+> {
+  type: 'boundingboxes'
+  value: BoundingBox[]
+}
+
+export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {
+  type: 'colors'
+  value: string[]
+}
+
+export interface RangeValue {
+  min: number
+  max: number
+  midpoint?: number
+}
+
+export interface IWidgetRangeOptions extends IWidgetOptions {
+  display?: 'plain' | 'gradient' | 'histogram'
+  gradient_stops?: ColorStop[]
+  show_midpoint?: boolean
+  midpoint_scale?: 'linear' | 'gamma'
+  value_min?: number
+  value_max?: number
+}
+
+export interface IRangeWidget extends IBaseWidget<
+  RangeValue,
+  'range',
+  IWidgetRangeOptions
+> {
+  type: 'range'
+  value: RangeValue
+}
+
+export interface VideoEditTrim {
+  start_time: number
+  duration: number
+}
+
+export interface VideoEditValue {
+  trim?: VideoEditTrim
+  crop?: Bounds
+}
+
+export type VideoEditFeature = 'trim' | 'crop'
+
+export interface IWidgetVideoEditOptions extends IWidgetOptions {
+  features?: VideoEditFeature[]
+}
+
+export interface IVideoEditWidget extends IBaseWidget<
+  VideoEditValue,
+  'videoedit',
+  IWidgetVideoEditOptions
+> {
+  type: 'videoedit'
+  value: VideoEditValue
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
  * Values not in this list will not result in litegraph errors, however they will be treated the same as "custom".
  */
 export type TWidgetType = IWidget['type']
-export type TWidgetValue = IWidget['value']
+export type TWidgetValue = WidgetValue
+
+export function isWidgetValue(value: unknown): value is TWidgetValue {
+  if (value == null) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return typeof value === 'object'
+}
 
 /**
  * The base type for all widgets.  Should not be implemented directly.
@@ -357,13 +448,15 @@ export type TWidgetValue = IWidget['value']
  * @see IWidget
  */
 export interface IBaseWidget<
-  TValue = boolean | number | string | object | undefined,
+  TValue = WidgetValue,
   TType extends string = string,
   TOptions extends IWidgetOptions = IWidgetOptions
 > {
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  readonly widgetId?: WidgetId
 
   name: string
   options: TOptions
@@ -427,7 +520,7 @@ export interface IBaseWidget<
 
   // TODO: Confirm this format
   callback?(
-    value: unknown,
+    value: WidgetValue,
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,

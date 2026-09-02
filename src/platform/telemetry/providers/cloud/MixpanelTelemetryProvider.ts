@@ -1,36 +1,28 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
+import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
-import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
-
-import { getExecutionContext } from '../../utils/getExecutionContext'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
-  ExecutionContext,
-  ExecutionTriggerSource,
-  ExecutionErrorMetadata,
-  ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  ShareFlowMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -43,11 +35,12 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { TelemetryEvents } from '../../types'
+import { OnboardingTourEvents, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -56,13 +49,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
-  TelemetryEvents.TEMPLATE_FILTER_CHANGED,
-  TelemetryEvents.SETTING_CHANGED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
   TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED,
-  TelemetryEvents.UI_BUTTON_CLICKED
+  TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -91,7 +81,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
-  private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
@@ -212,7 +201,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+    this.trackEvent(
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      omit(metadata, ['share_id'])
+    )
   }
 
   trackUserLoggedIn(): void {
@@ -235,8 +227,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED, metadata)
   }
 
   /**
@@ -261,44 +255,19 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
-  // Credit top-up tracking methods (composition with utility functions)
-  startTopupTracking(): void {
-    startTopupUtil()
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
+  trackRunButton(properties: RunButtonProperties): void {
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
-  clearTopupTracking(): void {
-    clearTopupUtil()
-  }
-
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = getExecutionContext()
-    const { mode, isAppMode } = useAppMode()
-
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      has_toolkit_nodes: executionContext.has_toolkit_nodes,
-      toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source,
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value
-    }
-
-    this.lastTriggerSource = options?.trigger_source
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(
@@ -358,11 +327,17 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+    this.trackEvent(
+      TelemetryEvents.WORKFLOW_IMPORTED,
+      omit(metadata, ['share_id'])
+    )
   }
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+    this.trackEvent(
+      TelemetryEvents.WORKFLOW_OPENED,
+      omit(metadata, ['share_id'])
+    )
   }
 
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
@@ -378,7 +353,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
-    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, omit(metadata, ['share_id']))
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
@@ -387,6 +362,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.trackEvent(TelemetryEvents.SHELL_LAYOUT, metadata)
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {
@@ -415,24 +394,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
-  }
-
-  trackWorkflowExecution(): void {
-    const context = getExecutionContext()
-    const eventContext: ExecutionContext = {
-      ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown'
-    }
-    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
-    this.lastTriggerSource = undefined
-  }
-
-  trackExecutionError(metadata: ExecutionErrorMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_ERROR, metadata)
-  }
-
-  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {

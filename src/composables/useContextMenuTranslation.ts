@@ -1,4 +1,4 @@
-import { st, te } from '@/i18n'
+import { resolveNodeDefText, st, te } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type {
   IContextMenuOptions,
@@ -8,7 +8,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**
  * Add translation for litegraph context menu.
@@ -123,7 +122,8 @@ export const useContextMenuTranslation = () => {
       }
 
       // for capture translation text of input and widget
-      const extraInfo = (options.extra || options.parentMenu?.options?.extra) as
+      const extraInfo = (options.extra ||
+        options.parentMenu?.options?.extra) as
         | { inputs?: INodeInputSlot[]; widgets?: IWidget[] }
         | undefined
       // widgets and inputs
@@ -164,10 +164,7 @@ export const useContextMenuTranslation = () => {
     options: IContextMenuOptions
   ) {
     if (options.title) {
-      options.title = st(
-        `nodeDefs.${normalizeI18nKey(options.title)}.display_name`,
-        options.title
-      )
+      options.title = resolveNodeDefText('display_name', options.title)
     }
     translateMenus(values, options)
     const ctx = new OriginalContextMenu(values, options)

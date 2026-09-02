@@ -11,7 +11,6 @@ describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia())
     errorHandler = useErrorHandling()
   })
@@ -324,11 +323,11 @@ describe('useErrorHandling', () => {
     })
 
     describe('network error detection', () => {
-      it.each([
+      it.for([
         ['Failed to fetch', 'Chrome/Edge'],
         ['NetworkError when attempting to fetch resource.', 'Firefox'],
         ['Load failed', 'Safari']
-      ])('should show disconnected toast for "%s" (%s)', async (message) => {
+      ])('should show disconnected toast for "%s" (%s)', async ([message]) => {
         const action = vi.fn(async () => {
           throw new TypeError(message)
         })

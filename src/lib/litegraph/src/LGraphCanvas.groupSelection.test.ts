@@ -1,7 +1,9 @@
+import { fromAny } from '@total-typescript/shoehorn'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-
 import {
   LGraph,
   LGraphCanvas,
@@ -9,16 +11,9 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
@@ -60,7 +55,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 
   el.getContext = vi
     .fn()
-    .mockReturnValue(ctx as unknown as CanvasRenderingContext2D)
+    .mockReturnValue(fromAny<CanvasRenderingContext2D, unknown>(ctx))
   el.getBoundingClientRect = vi.fn().mockReturnValue({
     left: 0,
     top: 0,
@@ -85,8 +80,6 @@ describe('LGraphCanvas group selection', () => {
   let nodeB: TestNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     graph = new LGraph()
     canvas = createCanvas(graph)
 

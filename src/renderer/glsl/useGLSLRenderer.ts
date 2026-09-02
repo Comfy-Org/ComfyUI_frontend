@@ -1,6 +1,7 @@
-import { onScopeDispose } from 'vue'
-
 import { detectPassCount } from '@/renderer/glsl/glslUtils'
+import { acquireSharedGL } from '@/renderer/glsl/sharedGLContext'
+
+import type { SharedGLHandle } from '@/renderer/glsl/sharedGLContext'
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
 out vec2 v_texCoord;
@@ -17,12 +18,16 @@ export interface GLSLRendererConfig {
   maxInputs: number
   maxFloatUniforms: number
   maxIntUniforms: number
+  maxBoolUniforms: number
+  maxCurves: number
 }
 
 const DEFAULT_CONFIG: GLSLRendererConfig = {
   maxInputs: 5,
-  maxFloatUniforms: 5,
-  maxIntUniforms: 5
+  maxFloatUniforms: 20,
+  maxIntUniforms: 20,
+  maxBoolUniforms: 10,
+  maxCurves: 4
 }
 
 interface CompileResult {
@@ -50,17 +55,25 @@ function compileShader(
 }
 
 export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
-  const { maxInputs, maxFloatUniforms, maxIntUniforms } = config
+  const {
+    maxInputs,
+    maxFloatUniforms,
+    maxIntUniforms,
+    maxBoolUniforms,
+    maxCurves
+  } = config
 
   const uniformNames = [
     'u_resolution',
     'u_pass',
-    'u_prevPass',
     ...Array.from({ length: maxInputs }, (_, i) => `u_image${i}`),
     ...Array.from({ length: maxFloatUniforms }, (_, i) => `u_float${i}`),
-    ...Array.from({ length: maxIntUniforms }, (_, i) => `u_int${i}`)
+    ...Array.from({ length: maxIntUniforms }, (_, i) => `u_int${i}`),
+    ...Array.from({ length: maxBoolUniforms }, (_, i) => `u_bool${i}`),
+    ...Array.from({ length: maxCurves }, (_, i) => `u_curve${i}`)
   ]
 
+  let sharedGL: SharedGLHandle | null = null
   let canvas: OffscreenCanvas | null = null
   let gl: WebGL2RenderingContext | null = null
   let vertexShader: WebGLShader | null = null
@@ -72,9 +85,15 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   const inputTextures: (WebGLTexture | null)[] = Array.from<null>({
     length: maxInputs
   }).fill(null)
+  const curveTextures: (WebGLTexture | null)[] = Array.from<null>({
+    length: maxCurves
+  }).fill(null)
   const uniformLocations = new Map<string, WebGLUniformLocation | null>()
   let passCount = 1
   let disposed = false
+  let lastCompiledSource: string | null = null
+  let fboWidth = 0
+  let fboHeight = 0
 
   function initPingPongFBOs(
     ctx: WebGL2RenderingContext,
@@ -92,12 +111,12 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
         ctx.texImage2D(
           ctx.TEXTURE_2D,
           0,
-          ctx.RGBA8,
+          ctx.RGBA16F,
           width,
           height,
           0,
           ctx.RGBA,
-          ctx.UNSIGNED_BYTE,
+          ctx.HALF_FLOAT,
           null
         )
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.LINEAR)
@@ -182,18 +201,20 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (disposed) return false
 
     try {
-      canvas = new OffscreenCanvas(width, height)
-      const ctx = canvas.getContext('webgl2', {
-        alpha: true,
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: true
-      })
-      if (!ctx) return false
+      sharedGL = acquireSharedGL()
+      if (!sharedGL) return false
 
-      gl = ctx
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+      canvas = sharedGL.canvas
+      gl = sharedGL.gl
+
+      canvas.width = width
+      canvas.height = height
+      gl.viewport(0, 0, width, height)
+
       vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
       initPingPongFBOs(gl, width, height)
+      fboWidth = width
+      fboHeight = height
       return true
     } catch {
       dispose()
@@ -205,6 +226,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (disposed || !gl) return { success: false, log: 'Engine disposed' }
 
     passCount = Math.min(detectPassCount(source), MAX_PASSES)
+
+    if (source === lastCompiledSource && program) {
+      return { success: true, log: '' }
+    }
+    lastCompiledSource = source
 
     if (fragmentShader) {
       gl.deleteShader(fragmentShader)
@@ -246,9 +272,13 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
-      gl.viewport(0, 0, width, height)
+    }
+    gl.viewport(0, 0, width, height)
+    if (fboWidth !== width || fboHeight !== height) {
       destroyPingPongFBOs()
       initPingPongFBOs(gl, width, height)
+      fboWidth = width
+      fboHeight = height
     }
   }
 
@@ -268,6 +298,51 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       gl.useProgram(program)
       gl.uniform1i(loc, value)
     }
+  }
+
+  function setBoolUniform(index: number, value: boolean): void {
+    if (disposed || !program || !gl) return
+    const loc = uniformLocations.get(`u_bool${index}`)
+    if (loc != null) {
+      gl.useProgram(program)
+      gl.uniform1i(loc, value ? 1 : 0)
+    }
+  }
+
+  function bindCurveTexture(index: number, lut: Float32Array): void {
+    if (disposed || !gl) return
+    if (index < 0 || index >= maxCurves) return
+
+    if (curveTextures[index]) {
+      gl.deleteTexture(curveTextures[index])
+      curveTextures[index] = null
+    }
+
+    const texture = gl.createTexture()
+    if (!texture) return
+
+    const unit = maxInputs + index
+    gl.activeTexture(gl.TEXTURE0 + unit)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.R16F,
+      lut.length,
+      1,
+      0,
+      gl.RED,
+      gl.FLOAT,
+      lut
+    )
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+
+    curveTextures[index] = texture
   }
 
   function bindInputImage(
@@ -300,10 +375,31 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     inputTextures[index] = texture
   }
 
+  function clearInputImage(index: number): void {
+    if (disposed || !gl) return
+    if (index < 0 || index >= maxInputs) return
+    const texture = inputTextures[index]
+    if (texture) {
+      gl.deleteTexture(texture)
+      inputTextures[index] = null
+    }
+  }
+
+  function isContextLost(): boolean {
+    return gl?.isContextLost() ?? false
+  }
+
   function render(): void {
     if (disposed || !program || !pingPongFBOs || !gl || !canvas) return
 
+    if (canvas.width !== fboWidth || canvas.height !== fboHeight) {
+      canvas.width = fboWidth
+      canvas.height = fboHeight
+    }
+    gl.viewport(0, 0, fboWidth, fboHeight)
+
     gl.useProgram(program)
+    gl.disable(gl.BLEND)
 
     const resLoc = uniformLocations.get('u_resolution')
     if (resLoc != null) {
@@ -319,8 +415,15 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       }
     }
 
-    const prevPassUnit = maxInputs
-    const prevPassLoc = uniformLocations.get('u_prevPass')
+    for (let i = 0; i < maxCurves; i++) {
+      const loc = uniformLocations.get(`u_curve${i}`)
+      if (loc != null && curveTextures[i]) {
+        const unit = maxInputs + i
+        gl.activeTexture(gl.TEXTURE0 + unit)
+        gl.bindTexture(gl.TEXTURE_2D, curveTextures[i])
+        gl.uniform1i(loc, unit)
+      }
+    }
 
     for (let pass = 0; pass < passCount; pass++) {
       const passLoc = uniformLocations.get('u_pass')
@@ -328,31 +431,26 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
       const isLastPass = pass === passCount - 1
       const writeIdx = pass % 2
-      const readIdx = 1 - writeIdx
 
       if (isLastPass) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      } else {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, pingPongFBOs[writeIdx])
-      }
-
-      // Note: u_prevPass uses ping-pong FBOs rather than overwriting the input
-      // texture in-place as the backend does for single-input iteration.
-      if (pass > 0 && prevPassLoc != null) {
-        gl.activeTexture(gl.TEXTURE0 + prevPassUnit)
-        gl.bindTexture(gl.TEXTURE_2D, pingPongTextures![readIdx])
-        gl.uniform1i(prevPassLoc, prevPassUnit)
-      }
-
-      // Ping-pong FBOs have a single color attachment, so intermediate
-      // passes always target COLOR_ATTACHMENT0. MRT is only possible on
-      // the default framebuffer (last pass).
-      if (isLastPass) {
         gl.drawBuffers([gl.BACK])
       } else {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pingPongFBOs[writeIdx])
         gl.drawBuffers([gl.COLOR_ATTACHMENT0])
       }
 
+      // Match backend behavior: pass > 0 binds previous pass output to
+      // texture unit 0, overriding u_image0 so shaders read the previous
+      // pass result via the same sampler.
+      if (pass > 0) {
+        const sourceTexture = pingPongTextures![(pass - 1) % 2]
+        gl.activeTexture(gl.TEXTURE0)
+        gl.bindTexture(gl.TEXTURE_2D, sourceTexture)
+      }
+
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
   }
@@ -371,7 +469,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
   async function toBlob(): Promise<Blob> {
     if (!canvas) throw new Error('Renderer not initialized')
-    return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.92 })
+    return canvas.convertToBlob({ type: 'image/webp', quality: 0.92 })
   }
 
   function dispose(): void {
@@ -383,6 +481,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       if (tex) gl.deleteTexture(tex)
     }
     inputTextures.fill(null)
+
+    for (const tex of curveTextures) {
+      if (tex) gl.deleteTexture(tex)
+    }
+    curveTextures.fill(null)
 
     if (fallbackTexture) {
       gl.deleteTexture(fallbackTexture)
@@ -407,11 +510,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     uniformLocations.clear()
 
-    const ext = gl.getExtension('WEBGL_lose_context')
-    ext?.loseContext()
+    sharedGL?.release()
+    sharedGL = null
+    gl = null
+    canvas = null
   }
-
-  onScopeDispose(dispose)
 
   return {
     init,
@@ -419,7 +522,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     setResolution,
     setFloatUniform,
     setIntUniform,
+    setBoolUniform,
+    bindCurveTexture,
     bindInputImage,
+    clearInputImage,
+    isContextLost,
     render,
     readPixels,
     toBlob,

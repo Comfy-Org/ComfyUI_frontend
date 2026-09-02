@@ -1,11 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { decodePng } from '@/utils/__fixtures__/decodePng'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
 // ---- Module Mocks ----
@@ -20,29 +23,57 @@ vi.mock('@/stores/maskEditorDataStore', () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-function createMockCtx(): CanvasRenderingContext2D {
-  return {
-    drawImage: vi.fn(),
+const CANVAS_SIZE = 4
+const CANVAS_BYTES = CANVAS_SIZE * CANVAS_SIZE * 4
+
+// Pixel model: each mock canvas owns an RGBA buffer, and drawImage /
+// getImageData / putImageData move real data so the saver's compositing and
+// encoding can be asserted on pixel values. drawImage implements source-over
+// for the binary-alpha (0 or 255) fixtures these tests use.
+const canvasPixels = new WeakMap<HTMLCanvasElement, Uint8ClampedArray>()
+
+function createMockCtx(
+  canvas: HTMLCanvasElement,
+  pixels: Uint8ClampedArray
+): CanvasRenderingContext2D {
+  return fromPartial<CanvasRenderingContext2D>({
+    canvas,
+    drawImage: vi.fn((source: CanvasImageSource) => {
+      const sourcePixels = canvasPixels.get(source as HTMLCanvasElement)
+      if (!sourcePixels) return
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (sourcePixels[i + 3] === 255) {
+          pixels.set(sourcePixels.subarray(i, i + 4), i)
+        }
+      }
+    }),
     getImageData: vi.fn(() => ({
-      data: new Uint8ClampedArray(4 * 4 * 4),
-      width: 4,
-      height: 4
+      data: new Uint8ClampedArray(pixels),
+      width: CANVAS_SIZE,
+      height: CANVAS_SIZE
     })),
-    putImageData: vi.fn(),
+    putImageData: vi.fn((imageData: ImageData) => {
+      pixels.set(imageData.data)
+    }),
     globalCompositeOperation: 'source-over'
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
-function createMockCanvas(): HTMLCanvasElement {
-  return {
-    width: 4,
-    height: 4,
-    getContext: vi.fn(() => createMockCtx()),
+function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
+  const pixels = seed ?? new Uint8ClampedArray(CANVAS_BYTES)
+  const canvas = fromPartial<HTMLCanvasElement>({
+    width: CANVAS_SIZE,
+    height: CANVAS_SIZE,
+    getContext(this: HTMLCanvasElement) {
+      return createMockCtx(this, pixels)
+    },
     toBlob: vi.fn((cb: BlobCallback) => {
       cb(new Blob(['x'], { type: 'image/png' }))
     }),
     toDataURL: vi.fn(() => 'data:image/png;base64,mock')
-  } as unknown as HTMLCanvasElement
+  })
+  canvasPixels.set(canvas, pixels)
+  return canvas
 }
 
 const mockEditorStore: Record<string, HTMLCanvasElement | null> = {
@@ -90,13 +121,10 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
-    mockNode = {
+    mockNode = fromAny<LGraphNode, unknown>({
       id: 42,
       type: 'LoadImage',
       images: [],
@@ -106,8 +134,15 @@ describe('useMaskEditorSaver', () => {
       ],
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
-      graph: { setDirtyCanvas: vi.fn() }
-    } as unknown as LGraphNode
+      graph: {
+        setDirtyCanvas: vi.fn(),
+        rootGraph: { id: 'maskeditor-saver-test' }
+      }
+    })
+    useWidgetValueStore().registerWidget(
+      widgetId('maskeditor-saver-test', toNodeId(42), 'image'),
+      { type: 'string', value: 'original.png [input]', options: {} }
+    )
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -135,7 +170,7 @@ describe('useMaskEditorSaver', () => {
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
         if (tagName === 'canvas')
-          return createMockCanvas() as unknown as HTMLCanvasElement
+          return fromAny<HTMLCanvasElement, unknown>(createMockCanvas())
         return originalCreateElement(tagName, options)
       }
     )
@@ -159,10 +194,6 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('registers node outputs in store after save for node without prior execution outputs', async () => {
     const store = useNodeOutputStore()
     const locatorId = String(mockNode.id)
@@ -179,5 +210,122 @@ describe('useMaskEditorSaver', () => {
     // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId('maskeditor-saver-test', toNodeId(42), 'image')
+      )?.value
+    ).toBe('clipspace-painted-masked-123.png [input]')
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png [input]'
+    )
+  })
+
+  it('replaces a stale clipspace image with the saved image', async () => {
+    mockNode.images = [
+      {
+        filename: 'pasted-before-edit.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ]
+
+    await useMaskEditorSaver().save()
+
+    expect(mockNode.images).toEqual([
+      {
+        filename: 'clipspace-painted-masked-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ])
+  })
+
+  it('does not write server references after the source node is detached', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      mockNode.graph = null
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: 'clipspace-painted-masked-123.png',
+            subfolder: 'clipspace',
+            type: 'input'
+          })
+      } as Response
+    })
+
+    await useMaskEditorSaver().save()
+
+    expect(useNodeOutputStore().nodeOutputs['42']).toBeUndefined()
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
+  })
+
+  it('omits subfolder from the upload FormData under the unified contract', async () => {
+    const fetchApiMock = vi.mocked(api.fetchApi)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    // The unified contract uploads to /upload/image with only image + type;
+    // subfolder is intentionally omitted (the server assigns it). Assert it
+    // here so the next reader knows the omission is deliberate, not accidental.
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ method: 'POST' })
+    )
+    const [, init] = fetchApiMock.mock.calls[0]
+    const body = init?.body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('type')).toBe('input')
+    expect(body.get('subfolder')).toBeNull()
+  })
+
+  it('uploads masked layers with inverted mask alpha and preserved RGB', async () => {
+    // Seed a distinct opaque color per pixel, mask the first half of the
+    // canvas, then decode the uploaded blobs and verify both the applied
+    // alpha and that the RGB survives where the alpha is 0 (the pixels a
+    // canvas-derived blob would serialize as black).
+    const imgPixels = new Uint8ClampedArray(CANVAS_BYTES)
+    for (let p = 0; p < CANVAS_BYTES / 4; p++) {
+      imgPixels[p * 4] = (p * 7) % 256
+      imgPixels[p * 4 + 1] = (p * 11) % 256
+      imgPixels[p * 4 + 2] = (p * 13) % 256
+      imgPixels[p * 4 + 3] = 255
+    }
+    const maskPixels = new Uint8ClampedArray(CANVAS_BYTES)
+    for (let p = 0; p < CANVAS_BYTES / 8; p++) {
+      maskPixels[p * 4 + 3] = 255
+    }
+    mockEditorStore.imgCanvas = createMockCanvas(imgPixels)
+    mockEditorStore.maskCanvas = createMockCanvas(maskPixels)
+    mockEditorStore.rgbCanvas = createMockCanvas()
+
+    const fetchApiMock = vi.mocked(api.fetchApi)
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(4)
+    const decodedUploads = []
+    for (const [, init] of fetchApiMock.mock.calls) {
+      const body = init?.body as FormData
+      const file = body.get('image') as Blob
+      try {
+        decodedUploads.push(decodePng(new Uint8Array(await file.arrayBuffer())))
+      } catch {
+        // not an encoder-produced PNG (canvas-derived layer)
+      }
+    }
+
+    expect(decodedUploads).toHaveLength(2)
+    for (const { width, height, pixels } of decodedUploads) {
+      expect(width).toBe(CANVAS_SIZE)
+      expect(height).toBe(CANVAS_SIZE)
+      for (let i = 0; i < pixels.length; i += 4) {
+        expect(pixels[i + 3]).toBe(255 - maskPixels[i + 3])
+        expect(pixels[i]).toBe(imgPixels[i])
+        expect(pixels[i + 1]).toBe(imgPixels[i + 1])
+        expect(pixels[i + 2]).toBe(imgPixels[i + 2])
+      }
+    }
   })
 })

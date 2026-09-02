@@ -1,7 +1,10 @@
 import { computed, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 /**
@@ -50,10 +53,23 @@ export function useSubscriptionCredits() {
 
   const isLoadingBalance = computed(() => toValue(billingContext.isLoading))
 
+  const creditsFromMicros = (maybeCents: number | undefined): number =>
+    centsToCredits(maybeCents ?? 0)
+
+  const monthlyBonusCreditsValue = computed(() =>
+    creditsFromMicros(toValue(billingContext.balance)?.cloudCreditBalanceMicros)
+  )
+
+  const prepaidCreditsValue = computed(() =>
+    creditsFromMicros(toValue(billingContext.balance)?.prepaidBalanceMicros)
+  )
+
   return {
     totalCredits,
     monthlyBonusCredits,
     prepaidCredits,
+    monthlyBonusCreditsValue,
+    prepaidCreditsValue,
     isLoadingBalance
   }
 }

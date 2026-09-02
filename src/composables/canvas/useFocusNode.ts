@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type {
@@ -7,12 +8,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import {
-  getNodeByExecutionId,
-  getRootParentNode
-} from '@/utils/graphTraversalUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
-import { useLitegraphService } from '@/services/litegraphService'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 async function navigateToGraph(targetGraph: LGraph) {
   const canvasStore = useCanvasStore()
@@ -37,6 +33,18 @@ async function navigateToGraph(targetGraph: LGraph) {
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
+  async function focusNodeInstance(node: LGraphNode) {
+    if (!canvasStore.canvas || !node.graph) return
+
+    await navigateToGraph(node.graph as LGraph)
+    const canvas = canvasStore.canvas
+    if (!canvas || canvas.graph !== node.graph) return
+
+    canvas.animateToBounds(node.boundingRect, {
+      viewport: visibleCanvasViewport(canvas)
+    })
+  }
+
   /* Locate and focus a node on the canvas by its execution ID. */
   async function focusNode(
     nodeId: string,
@@ -44,41 +52,16 @@ export function useFocusNode() {
   ) {
     if (!canvasStore.canvas) return
 
-    // For group node internals, locate the root parent group node instead
-    const parentNode = getRootParentNode(app.rootGraph, nodeId)
-
-    if (parentNode && isGroupNode(parentNode) && parentNode.graph) {
-      await navigateToGraph(parentNode.graph as LGraph)
-      canvasStore.canvas?.animateToBounds(parentNode.boundingRect)
-      return
-    }
-
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
       : getNodeByExecutionId(app.rootGraph, nodeId)
     if (!graphNode?.graph) return
 
-    await navigateToGraph(graphNode.graph as LGraph)
-    canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
-  }
-
-  async function enterSubgraph(
-    nodeId: string,
-    executionIdMap?: Map<string, LGraphNode>
-  ) {
-    if (!canvasStore.canvas) return
-
-    const graphNode = executionIdMap
-      ? executionIdMap.get(nodeId)
-      : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
-
-    await navigateToGraph(graphNode.graph as LGraph)
-    useLitegraphService().fitView()
+    await focusNodeInstance(graphNode)
   }
 
   return {
     focusNode,
-    enterSubgraph
+    focusNodeInstance
   }
 }

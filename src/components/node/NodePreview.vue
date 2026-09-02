@@ -7,24 +7,29 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     :node-def="nodeDef"
     :position="position"
   />
-  <div v-else class="_sb_node_preview bg-component-node-background">
+  <div
+    v-else
+    class="_sb_node_preview bg-component-node-background"
+    data-testid="node-preview"
+  >
     <div class="_sb_table">
       <div
         class="node_header text-ellipsis"
+        data-testid="node-header"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
           color: litegraphColors.NODE_TITLE_COLOR
         }"
       >
-        <div class="_sb_dot headdot pr-3" />
+        <div class="_sb_dot headdot pr-3" data-testid="head-dot" />
         {{ nodeDef.display_name }}
       </div>
       <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
 
       <!-- Node slot I/O -->
       <div
-        v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
+        v-for="[slotInput, slotOutput] in zip(slotInputDefs, allOutputDefs)"
         :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')"
         class="_sb_row slot_row"
       >
@@ -76,6 +81,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     <div
       v-if="renderedDescription"
       class="_sb_description"
+      data-testid="node-description"
       :style="{
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR
@@ -86,12 +92,13 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import _ from 'es-toolkit/compat'
+import { truncate, zip } from 'es-toolkit/compat'
 import { computed } from 'vue'
 
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -116,7 +123,7 @@ const renderedDescription = computed(() => {
   return renderMarkdownToHtml(description)
 })
 
-const allInputDefs = Object.values(nodeDef.inputs)
+const allInputDefs = flattenInputSpecs(nodeDef.inputs)
 const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)
@@ -140,7 +147,7 @@ const truncateDefaultValue = (
     stringValue = String(value)
   }
 
-  return _.truncate(stringValue, { length: charLimit })
+  return truncate(stringValue, { length: charLimit })
 }
 </script>
 

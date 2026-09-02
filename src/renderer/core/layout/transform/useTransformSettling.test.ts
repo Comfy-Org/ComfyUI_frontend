@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -8,13 +8,11 @@ describe('useTransformSettling', () => {
   let element: HTMLDivElement
 
   beforeEach(() => {
-    vi.useFakeTimers()
     element = document.createElement('div')
     document.body.appendChild(element)
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     document.body.removeChild(element)
   })
 
@@ -169,11 +167,11 @@ describe('useTransformSettling', () => {
       template: '<div>{{ isTransforming }}</div>'
     }
 
-    const wrapper = mount(TestComponent)
+    const { unmount } = render(TestComponent)
     await nextTick()
 
     // Unmount component
-    wrapper.unmount()
+    unmount()
 
     // Should have removed wheel event listener
     expect(removeEventListenerSpy).toHaveBeenCalledWith(

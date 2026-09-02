@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import CreditTopUpOption from '@/components/dialog/content/credit/CreditTopUpOption.vue'
 
@@ -10,10 +11,16 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const mountOption = (
-  props?: Partial<{ credits: number; description: string; selected: boolean }>
-) =>
-  mount(CreditTopUpOption, {
+function renderOption(
+  props?: Partial<{
+    credits: number
+    description: string
+    selected: boolean
+    onSelect: () => void
+  }>
+) {
+  const user = userEvent.setup()
+  const result = render(CreditTopUpOption, {
     props: {
       credits: 1000,
       description: '~100 videos*',
@@ -24,25 +31,30 @@ const mountOption = (
       plugins: [i18n]
     }
   })
+  return { user, ...result }
+}
 
 describe('CreditTopUpOption', () => {
   it('renders credit amount and description', () => {
-    const wrapper = mountOption({ credits: 5000, description: '~500 videos*' })
-    expect(wrapper.text()).toContain('5,000')
-    expect(wrapper.text()).toContain('~500 videos*')
+    renderOption({ credits: 5000, description: '~500 videos*' })
+    expect(screen.getByText('5,000')).toBeInTheDocument()
+    expect(screen.getByText('~500 videos*')).toBeInTheDocument()
   })
 
   it('applies unselected styling when not selected', () => {
-    const wrapper = mountOption({ selected: false })
-    expect(wrapper.find('div').classes()).toContain(
-      'bg-component-node-disabled'
+    const { container } = renderOption({ selected: false })
+    // eslint-disable-next-line testing-library/no-node-access
+    const rootDiv = container.firstElementChild as HTMLElement
+    expect(rootDiv).toHaveClass(
+      'bg-component-node-disabled',
+      'border-transparent'
     )
-    expect(wrapper.find('div').classes()).toContain('border-transparent')
   })
 
   it('emits select event when clicked', async () => {
-    const wrapper = mountOption()
-    await wrapper.find('div').trigger('click')
-    expect(wrapper.emitted('select')).toHaveLength(1)
+    const selectSpy = vi.fn()
+    const { user } = renderOption({ onSelect: selectSpy })
+    await user.click(screen.getByText('1,000'))
+    expect(selectSpy).toHaveBeenCalledOnce()
   })
 })

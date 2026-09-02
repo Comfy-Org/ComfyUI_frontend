@@ -1,20 +1,13 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-  })
-
+test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
   async function runAndOpenGallery(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow(
       'widgets/save_image_and_animated_webp'
     )
-    await comfyPage.vueNodes.waitForNodes()
     await comfyPage.runButton.click()
 
     // Wait for SaveImage node to produce output
@@ -24,47 +17,44 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
     })
 
     // Open Assets sidebar tab and wait for it to load
-    await comfyPage.page.locator('.assets-tab-button').click()
+    await comfyPage.menu.assetsTab.open({ waitForAssets: false })
     await comfyPage.page
       .locator('.sidebar-content-container')
       .waitFor({ state: 'visible' })
 
-    // Wait for any asset card to appear (may contain img or video)
-    const assetCard = comfyPage.page
-      .locator('[role="button"]')
+    // Wait for a generated previewable asset to appear
+    const assetCard = comfyPage.menu.assetsTab.assetCards
       .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 
     await expect(assetCard).toBeVisible({ timeout: 30_000 })
 
-    // Hover to reveal zoom button, then click it
     await assetCard.hover()
-    await assetCard.getByLabel('Zoom in').click()
+    await assetCard.getByRole('button', { name: 'More options' }).click()
+    await comfyPage.menu.assetsTab.contextMenuItem('Inspect asset').click()
 
-    const gallery = comfyPage.page.getByRole('dialog')
-    await expect(gallery).toBeVisible()
-
-    return { gallery }
+    const { root } = comfyPage.mediaLightbox
+    await expect(root).toBeVisible()
   }
 
   test('opens gallery and shows dialog with close button', async ({
     comfyPage
   }) => {
-    const { gallery } = await runAndOpenGallery(comfyPage)
-    await expect(gallery.getByLabel('Close')).toBeVisible()
+    await runAndOpenGallery(comfyPage)
+    await expect(comfyPage.mediaLightbox.closeButton).toBeVisible()
   })
 
   test('closes gallery on Escape key', async ({ comfyPage }) => {
     await runAndOpenGallery(comfyPage)
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(comfyPage.page.getByRole('dialog')).not.toBeVisible()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
   })
 
   test('closes gallery when clicking close button', async ({ comfyPage }) => {
-    const { gallery } = await runAndOpenGallery(comfyPage)
+    await runAndOpenGallery(comfyPage)
 
-    await gallery.getByLabel('Close').click()
-    await expect(comfyPage.page.getByRole('dialog')).not.toBeVisible()
+    await comfyPage.mediaLightbox.closeButton.click()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
   })
 })

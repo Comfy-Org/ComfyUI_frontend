@@ -3,16 +3,21 @@ import { computed, watch } from 'vue'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 export const useCurrentUser = () => {
-  const authStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
   const commandStore = useCommandStore()
   const apiKeyStore = useApiKeyAuthStore()
 
   const firebaseUser = computed(() => authStore.currentUser)
-  const isApiKeyLogin = computed(() => apiKeyStore.isAuthenticated)
+  // A Firebase session takes precedence on every auth rail (see
+  // authStore.getUserAuthHeader), so a stored key behind a Firebase login is
+  // not an API-key session.
+  const isApiKeyLogin = computed(
+    () => apiKeyStore.isAuthenticated && firebaseUser.value === null
+  )
   const isLoggedIn = computed(
     () => !!isApiKeyLogin.value || firebaseUser.value !== null
   )

@@ -35,7 +35,7 @@
  *
  * @example
  * ```typescript
- * const { camera, transformStyle, canvasToScreen } = useTransformState()
+ * const { camera, transformStyle, screenToCanvas } = useTransformState()
  *
  * // In template
  * <div :style="transformStyle">
@@ -46,7 +46,7 @@
  * </div>
  *
  * // Convert coordinates
- * const screenPos = canvasToScreen({ x: nodeX, y: nodeY })
+ * const canvasPos = screenToCanvas({ x: clientX, y: clientY })
  * ```
  */
 import { computed, reactive, readonly } from 'vue'
@@ -105,28 +105,10 @@ function useTransformStateIndividual() {
   }
 
   /**
-   * Converts canvas coordinates to screen coordinates
-   *
-   * Applies the same transform that LiteGraph uses for rendering.
-   * Essential for positioning Vue components to align with canvas elements.
-   *
-   * Formula: screen = (canvas + offset) * scale
-   *
-   * @param point - Point in canvas coordinate system
-   * @returns Point in screen coordinate system
-   */
-  function canvasToScreen(point: Point): Point {
-    return {
-      x: (point.x + camera.x) * camera.z,
-      y: (point.y + camera.y) * camera.z
-    }
-  }
-
-  /**
    * Converts screen coordinates to canvas coordinates
    *
-   * Inverse of canvasToScreen. Useful for hit testing and converting
-   * mouse events back to canvas space.
+   * Inverse of the pane's own `transformStyle`. Useful for hit testing and
+   * converting mouse events back to canvas space.
    *
    * Formula: canvas = screen / scale - offset
    *
@@ -140,111 +122,58 @@ function useTransformStateIndividual() {
     }
   }
 
-  // Get node's screen bounds for culling
-  function getNodeScreenBounds(
-    pos: [number, number],
-    size: [number, number]
-  ): DOMRect {
-    const topLeft = canvasToScreen({ x: pos[0], y: pos[1] })
-    const width = size[0] * camera.z
-    const height = size[1] * camera.z
-
-    return new DOMRect(topLeft.x, topLeft.y, width, height)
-  }
-
-  // Helper: Calculate zoom-adjusted margin for viewport culling
-  function calculateAdjustedMargin(baseMargin: number): number {
-    if (camera.z < 0.1) return Math.min(baseMargin * 5, 2.0)
-    if (camera.z > 3.0) return Math.max(baseMargin * 0.5, 0.05)
-    return baseMargin
-  }
-
-  // Helper: Check if node is too small to be visible at current zoom
-  function isNodeTooSmall(nodeSize: [number, number]): boolean {
-    const nodeScreenSize = Math.max(nodeSize[0], nodeSize[1]) * camera.z
-    return nodeScreenSize < 4
-  }
-
-  // Helper: Calculate expanded viewport bounds with margin
-  function getExpandedViewportBounds(
+  /**
+   * Tests whether a node's canvas-space bounding box overlaps the visible
+   * viewport, expanded by a margin.
+   *
+   * Mirrors `transformStyle`'s mapping (screen = (canvas + offset) * scale)
+   * so a node's on-screen rect is compared directly against the viewport
+   * dimensions in pixels - no `screenToCanvas` round trip needed.
+   *
+   * @param position - Node's [x, y] position in canvas coordinates
+   * @param size - Node's [width, height] in canvas coordinates
+   * @param viewport - Visible viewport size in screen pixels
+   * @param margin - Extra visible area as a fraction of viewport dimensions
+   *   (e.g. 0.75 = 75% extra on each axis), so nodes just outside the strict
+   *   viewport stay mounted and don't pop in in on pan/zoom.
+   * @returns true if the node's screen-space rect intersects the margined viewport
+   */
+  const isNodeInViewport = (
+    position: readonly [number, number],
+    size: readonly [number, number],
     viewport: { width: number; height: number },
-    margin: number
-  ) {
+    margin = 0
+  ): boolean => {
+    const [x, y] = position
+    const [width, height] = size
+
+    const screenX = (x + camera.x) * camera.z
+    const screenY = (y + camera.y) * camera.z
+    const screenWidth = width * camera.z
+    const screenHeight = height * camera.z
+
     const marginX = viewport.width * margin
     const marginY = viewport.height * margin
-    return {
-      left: -marginX,
-      right: viewport.width + marginX,
-      top: -marginY,
-      bottom: viewport.height + marginY
-    }
-  }
 
-  // Helper: Test if node intersects with viewport bounds
-  function testViewportIntersection(
-    screenPos: { x: number; y: number },
-    nodeSize: [number, number],
-    bounds: { left: number; right: number; top: number; bottom: number }
-  ): boolean {
-    const nodeRight = screenPos.x + nodeSize[0] * camera.z
-    const nodeBottom = screenPos.y + nodeSize[1] * camera.z
+    const minX = -marginX
+    const minY = -marginY
+    const maxX = viewport.width + marginX
+    const maxY = viewport.height + marginY
 
-    return !(
-      nodeRight < bounds.left ||
-      screenPos.x > bounds.right ||
-      nodeBottom < bounds.top ||
-      screenPos.y > bounds.bottom
+    return (
+      screenX + screenWidth >= minX &&
+      screenX <= maxX &&
+      screenY + screenHeight >= minY &&
+      screenY <= maxY
     )
-  }
-
-  // Check if node is within viewport with frustum and size-based culling
-  function isNodeInViewport(
-    nodePos: [number, number],
-    nodeSize: [number, number],
-    viewport: { width: number; height: number },
-    margin: number = 0.2
-  ): boolean {
-    // Early exit for tiny nodes
-    if (isNodeTooSmall(nodeSize)) return false
-
-    const screenPos = canvasToScreen({ x: nodePos[0], y: nodePos[1] })
-    const adjustedMargin = calculateAdjustedMargin(margin)
-    const bounds = getExpandedViewportBounds(viewport, adjustedMargin)
-
-    return testViewportIntersection(screenPos, nodeSize, bounds)
-  }
-
-  // Get viewport bounds in canvas coordinates (for spatial index queries)
-  function getViewportBounds(
-    viewport: { width: number; height: number },
-    margin: number = 0.2
-  ) {
-    const marginX = viewport.width * margin
-    const marginY = viewport.height * margin
-
-    const topLeft = screenToCanvas({ x: -marginX, y: -marginY })
-    const bottomRight = screenToCanvas({
-      x: viewport.width + marginX,
-      y: viewport.height + marginY
-    })
-
-    return {
-      x: topLeft.x,
-      y: topLeft.y,
-      width: bottomRight.x - topLeft.x,
-      height: bottomRight.y - topLeft.y
-    }
   }
 
   return {
     camera: readonly(camera),
     transformStyle,
     syncWithCanvas,
-    canvasToScreen,
     screenToCanvas,
-    getNodeScreenBounds,
-    isNodeInViewport,
-    getViewportBounds
+    isNodeInViewport
   }
 }
 

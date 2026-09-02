@@ -78,7 +78,7 @@
           </Button>
         </div>
         <div
-          class="col-span-2 mt-2 rounded-sm bg-interface-panel-hover-surface px-4 py-2 text-xs/normal text-text-secondary"
+          class="col-span-2 mt-2 max-h-96 overflow-y-auto rounded-sm bg-interface-panel-hover-surface px-4 py-2 text-xs/normal wrap-break-word whitespace-pre-wrap text-text-secondary"
         >
           {{ errorMessageValue }}
         </div>

@@ -1,7 +1,6 @@
-import { mount } from '@vue/test-utils'
-import type { VueWrapper } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { nextTick, reactive } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 
@@ -21,7 +20,7 @@ vi.mock('@/stores/queueStore', () => {
 import { useQueueStore } from '@/stores/queueStore'
 
 function mountUseQueuePolling() {
-  return mount({
+  render({
     template: '<div />',
     setup() {
       useQueuePolling()
@@ -31,7 +30,6 @@ function mountUseQueuePolling() {
 }
 
 describe('useQueuePolling', () => {
-  let wrapper: VueWrapper
   const store = useQueueStore() as Partial<
     ReturnType<typeof useQueueStore>
   > as {
@@ -41,24 +39,17 @@ describe('useQueuePolling', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     store.activeJobsCount = 0
     store.isLoading = false
-    store.update.mockReset()
-  })
-
-  afterEach(() => {
-    wrapper?.unmount()
-    vi.useRealTimers()
   })
 
   it('does not call update on creation', () => {
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
     expect(store.update).not.toHaveBeenCalled()
   })
 
   it('polls when activeJobsCount is exactly 1', async () => {
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     store.activeJobsCount = 1
     await vi.advanceTimersByTimeAsync(8_000)
@@ -67,7 +58,7 @@ describe('useQueuePolling', () => {
   })
 
   it('does not poll when activeJobsCount > 1', async () => {
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     store.activeJobsCount = 2
     await vi.advanceTimersByTimeAsync(16_000)
@@ -77,7 +68,7 @@ describe('useQueuePolling', () => {
 
   it('stops polling when activeJobsCount drops to 0', async () => {
     store.activeJobsCount = 1
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     store.activeJobsCount = 0
     await vi.advanceTimersByTimeAsync(16_000)
@@ -87,7 +78,7 @@ describe('useQueuePolling', () => {
 
   it('resets timer when loading completes', async () => {
     store.activeJobsCount = 1
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     // Advance 5s toward the 8s timeout
     await vi.advanceTimersByTimeAsync(5_000)
@@ -110,7 +101,7 @@ describe('useQueuePolling', () => {
 
   it('applies exponential backoff on successive polls', async () => {
     store.activeJobsCount = 1
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     // First poll at 8s
     await vi.advanceTimersByTimeAsync(8_000)
@@ -131,7 +122,7 @@ describe('useQueuePolling', () => {
 
   it('skips poll when an update is already in-flight', async () => {
     store.activeJobsCount = 1
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     // Simulate an external update starting before the timer fires
     store.isLoading = true
@@ -148,7 +139,7 @@ describe('useQueuePolling', () => {
 
   it('resets backoff when activeJobsCount changes', async () => {
     store.activeJobsCount = 1
-    wrapper = mountUseQueuePolling()
+    mountUseQueuePolling()
 
     // First poll at 8s (backs off delay to 12s)
     await vi.advanceTimersByTimeAsync(8_000)

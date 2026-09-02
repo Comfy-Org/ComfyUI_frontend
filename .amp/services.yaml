@@ -1,0 +1,57 @@
+services:
+  docker-daemon:
+    command: |
+      case "${COMFYUI_FRONTEND_MODE:-local}" in
+        local)
+          echo 'Starting Docker for local ComfyUI mode'
+          exec sudo dockerd
+          ;;
+        cloud)
+          echo 'Cloud mode selected; Docker is not needed'
+          exec sleep infinity
+          ;;
+        *)
+          echo 'COMFYUI_FRONTEND_MODE must be local or cloud' >&2
+          exit 1
+          ;;
+      esac
+
+  comfyui:
+    port: 8188
+    command: |
+      case "${COMFYUI_FRONTEND_MODE:-local}" in
+        local)
+          echo 'Starting the containerized ComfyUI backend'
+          exec env COMFYUI_PORT="$PORT" scripts/start-comfyui-e2e.sh
+          ;;
+        cloud)
+          echo 'Cloud mode selected; the local ComfyUI backend is not needed'
+          exec sleep infinity
+          ;;
+        *)
+          echo 'COMFYUI_FRONTEND_MODE must be local or cloud' >&2
+          exit 1
+          ;;
+      esac
+
+  frontend:
+    port: 5173
+    command: |
+      case "${COMFYUI_FRONTEND_MODE:-local}" in
+        local)
+          echo 'Starting the frontend in local ComfyUI mode'
+          exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
+            pnpm dev --host 0.0.0.0 --port "$PORT"
+          ;;
+        cloud)
+          echo 'Starting the frontend in Comfy test cloud mode'
+          exec pnpm dev:cloud --host 0.0.0.0 --port "$PORT"
+          ;;
+        *)
+          echo 'COMFYUI_FRONTEND_MODE must be local or cloud' >&2
+          exit 1
+          ;;
+      esac
+    portal:
+      title: ComfyUI Frontend
+      description: ComfyUI frontend development server.

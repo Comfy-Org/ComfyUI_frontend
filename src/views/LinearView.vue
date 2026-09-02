@@ -9,12 +9,13 @@ import { computed, useTemplateRef } from 'vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@/utils/tailwindUtil'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
@@ -29,8 +30,10 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 const settingStore = useSettingStore()
+const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -39,6 +42,9 @@ const { hasOutputs } = storeToRefs(appModeStore)
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const assetsPanelCoach = computed(() =>
+  activeTab.value?.id === 'assets' ? COACH_IDS.assetsPanel : undefined
+)
 const sidebarOnLeft = computed(
   () => settingStore.get('Comfy.Sidebar.Location') === 'left'
 )
@@ -86,116 +92,124 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
   [activeTab, splitterKey]
 )
 
-const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
-
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 
 function dragDrop(e: DragEvent) {
   const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  linearWorkflowRef.value?.handleDragDrop(e)
+  if (dataTransfer) linearWorkflowRef.value?.handleDragDrop()
 }
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute size-full" @dragover.prevent>
+  <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
     <div
-      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+      data-testid="linear-workspace-column"
+      class="flex min-w-0 flex-1 flex-col overflow-hidden"
     >
-      <div class="flex h-full items-center">
-        <WorkflowTabs />
-        <TopbarBadges />
-        <TopbarSubscribeButton />
+      <div
+        class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+      >
+        <div class="flex h-full items-center">
+          <WorkflowTabs />
+          <TopbarBadges />
+          <TopbarSubscribeButton />
+        </div>
+      </div>
+      <div
+        class="flex flex-1 overflow-hidden bg-secondary-background"
+        :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
+      >
+        <SideToolbar
+          v-if="!isBuilderMode"
+          :visible-tab-ids="['assets', 'apps']"
+          force-connected
+          hide-workspace-toggles
+        />
+        <Splitter
+          :key="splitterKey"
+          class="h-full flex-1 border-none bg-secondary-background"
+          @resizestart="$event.originalEvent.preventDefault()"
+          @resizeend="onResizeEnd"
+        >
+          <SplitterPanel
+            v-if="hasLeftPanel"
+            ref="leftPanel"
+            :size="SIDE_PANEL_SIZE"
+            :min-size="
+              sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
+            "
+            :style="
+              showRightBuilder && !activeTab ? { display: 'none' } : undefined
+            "
+            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+          >
+            <AppBuilder v-if="showLeftBuilder" />
+            <div
+              v-else-if="sidebarOnLeft && activeTab"
+              v-coachmark="assetsPanelCoach"
+              class="size-full overflow-x-hidden border-r border-border-subtle"
+            >
+              <ExtensionSlot :extension="activeTab" />
+            </div>
+            <LinearControls
+              v-else-if="!isArrangeMode"
+              ref="linearWorkflowRef"
+              :toast-to="unrefElement(bottomLeftRef) ?? undefined"
+            />
+          </SplitterPanel>
+          <SplitterPanel
+            id="linearCenterPanel"
+            v-coachmark="COACH_IDS.outputs"
+            data-testid="linear-center-panel"
+            :size="CENTER_PANEL_SIZE"
+            class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+            @drop="dragDrop"
+          >
+            <LinearProgressBar
+              data-testid="linear-header-progress-bar"
+              class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
+            />
+            <LinearPreview
+              :run-button-click="linearWorkflowRef?.runButtonClick"
+            />
+            <div class="absolute top-2 left-2 z-21">
+              <AppModeToolbar v-if="!isBuilderMode" />
+            </div>
+            <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
+            <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
+          </SplitterPanel>
+          <SplitterPanel
+            v-if="hasRightPanel"
+            ref="rightPanel"
+            :size="SIDE_PANEL_SIZE"
+            :min-size="
+              sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
+            "
+            :style="
+              showLeftBuilder && !activeTab ? { display: 'none' } : undefined
+            "
+            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+          >
+            <AppBuilder v-if="showRightBuilder" />
+            <LinearControls
+              v-else-if="sidebarOnLeft && !isArrangeMode"
+              ref="linearWorkflowRef"
+              :toast-to="unrefElement(bottomRightRef) ?? undefined"
+            />
+            <div
+              v-else-if="activeTab"
+              v-coachmark="assetsPanelCoach"
+              class="h-full overflow-x-hidden border-l border-border-subtle"
+            >
+              <ExtensionSlot :extension="activeTab" />
+            </div>
+          </SplitterPanel>
+        </Splitter>
       </div>
     </div>
-    <Splitter
-      :key="splitterKey"
-      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
-      @resizestart="$event.originalEvent.preventDefault()"
-      @resizeend="onResizeEnd"
-    >
-      <SplitterPanel
-        v-if="hasLeftPanel"
-        ref="leftPanel"
-        :size="SIDE_PANEL_SIZE"
-        :min-size="
-          sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
-        "
-        :style="
-          showRightBuilder && !activeTab ? { display: 'none' } : undefined
-        "
-        :class="
-          cn(
-            'arrange-panel overflow-hidden outline-none',
-            showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
-          )
-        "
-      >
-        <AppBuilder v-if="showLeftBuilder" />
-        <div
-          v-else-if="sidebarOnLeft && activeTab"
-          class="size-full overflow-x-hidden border-r border-border-subtle"
-        >
-          <ExtensionSlot :extension="activeTab" />
-        </div>
-        <LinearControls
-          v-else-if="!isArrangeMode"
-          ref="linearWorkflowRef"
-          :toast-to="unrefElement(bottomLeftRef) ?? undefined"
-        />
-      </SplitterPanel>
-      <SplitterPanel
-        id="linearCenterPanel"
-        :size="CENTER_PANEL_SIZE"
-        class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
-        @drop="dragDrop"
-      >
-        <LinearProgressBar
-          class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
-        />
-        <LinearPreview
-          :run-button-click="linearWorkflowRef?.runButtonClick"
-          :typeform-widget-id="TYPEFORM_WIDGET_ID"
-        />
-        <div class="absolute top-2 left-4.5 z-21">
-          <AppModeToolbar v-if="!isBuilderMode" />
-        </div>
-        <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
-        <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
-        <div class="absolute top-4 right-4 z-20"><ErrorOverlay app-mode /></div>
-      </SplitterPanel>
-      <SplitterPanel
-        v-if="hasRightPanel"
-        ref="rightPanel"
-        :size="SIDE_PANEL_SIZE"
-        :min-size="
-          sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
-        "
-        :style="showLeftBuilder && !activeTab ? { display: 'none' } : undefined"
-        :class="
-          cn(
-            'arrange-panel overflow-hidden outline-none',
-            showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
-          )
-        "
-      >
-        <AppBuilder v-if="showRightBuilder" />
-        <LinearControls
-          v-else-if="sidebarOnLeft && !isArrangeMode"
-          ref="linearWorkflowRef"
-          :toast-to="unrefElement(bottomRightRef) ?? undefined"
-        />
-        <div
-          v-else-if="activeTab"
-          class="h-full overflow-x-hidden border-l border-border-subtle"
-        >
-          <ExtensionSlot :extension="activeTab" />
-        </div>
-      </SplitterPanel>
-    </Splitter>
+    <component :is="DockedAgentPanel" v-if="agentDocked" />
   </div>
 </template>
 

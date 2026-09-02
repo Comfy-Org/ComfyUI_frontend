@@ -1,3 +1,4 @@
+import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
 import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
@@ -16,7 +17,7 @@ function drawSelectionBorder(
   if (selectedItems.size <= 1) return
 
   // Use the same bounds calculation as the toolbox
-  const bounds = createBounds(selectedItems, 10)
+  const bounds = createBounds(selectedItems, SELECTION_BOUNDS_PADDING)
   if (!bounds) return
 
   const [x, y, width, height] = bounds

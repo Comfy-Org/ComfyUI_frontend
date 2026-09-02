@@ -1,9 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import Badge from 'primevue/badge'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -12,7 +12,6 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
 
-// Create a mock i18n instance
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -33,18 +32,12 @@ describe('TreeExplorerTreeNode', () => {
   const mockHandleEditLabel = vi.fn()
 
   beforeAll(() => {
-    // Create a Vue app instance for PrimeVuePrimeVue
     const app = createApp({})
     app.use(PrimeVue)
-    vi.useFakeTimers()
-  })
-
-  afterAll(() => {
-    vi.useRealTimers()
   })
 
   it('renders correctly', () => {
-    const wrapper = mount(TreeExplorerTreeNode, {
+    render(TreeExplorerTreeNode, {
       props: { node: mockNode },
       global: {
         components: { EditableText, Badge },
@@ -55,18 +48,16 @@ describe('TreeExplorerTreeNode', () => {
       }
     })
 
-    expect(wrapper.find('.tree-node').exists()).toBe(true)
-    expect(wrapper.find('.tree-folder').exists()).toBe(true)
-    expect(wrapper.find('.tree-leaf').exists()).toBe(false)
-    expect(wrapper.findComponent(EditableText).props('modelValue')).toBe(
-      'Test Node'
-    )
-    // @ts-expect-error fixme ts strict error
-    expect(wrapper.findComponent(Badge).props()['value'].toString()).toBe('3')
+    const treeNode = screen.getByTestId('tree-node-1')
+    expect(treeNode).toBeInTheDocument()
+    expect(treeNode).toHaveClass('tree-folder')
+    expect(treeNode).not.toHaveClass('tree-leaf')
+    expect(screen.getByText('Test Node')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
   })
 
-  it('makes node label editable when renamingEditingNode matches', async () => {
-    const wrapper = mount(TreeExplorerTreeNode, {
+  it('makes node label editable when isEditingLabel is true', () => {
+    render(TreeExplorerTreeNode, {
       props: {
         node: {
           ...mockNode,
@@ -82,14 +73,13 @@ describe('TreeExplorerTreeNode', () => {
       }
     })
 
-    const editableText = wrapper.findComponent(EditableText)
-    expect(editableText.props('isEditing')).toBe(true)
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
 
   it('triggers handleEditLabel callback when editing is finished', async () => {
     const handleEditLabelMock = vi.fn()
 
-    const wrapper = mount(TreeExplorerTreeNode, {
+    render(TreeExplorerTreeNode, {
       props: {
         node: {
           ...mockNode,
@@ -103,8 +93,9 @@ describe('TreeExplorerTreeNode', () => {
       }
     })
 
-    const editableText = wrapper.findComponent(EditableText)
-    editableText.vm.$emit('edit', 'New Node Name')
+    // Trigger blur on the input to finish editing (fires the 'edit' event)
+    await fireEvent.blur(screen.getByRole('textbox'))
+
     expect(handleEditLabelMock).toHaveBeenCalledOnce()
   })
 })

@@ -16,9 +16,12 @@ yarn.lock
 .eslintcache
 .prettiercache
 .stylelintcache
+.fallow/
+*.tsbuildinfo
 
 node_modules
 .pnpm-store
+.nx
 dist
 dist-ssr
 *.local
@@ -28,6 +31,9 @@ dist-ssr
 .claude/*.local.txt
 .claude/worktrees
 CLAUDE.local.md
+
+# Glary agent artifacts
+.glary/
 
 # Editor directories and files
 .vscode/*
@@ -59,6 +65,9 @@ coverage/
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/local/
+browser_tests/tests/_recording-session.spec.ts
+browser_tests/tests/_recorded-code.txt
+browser_tests/**/*.raw.spec.ts
 
 .env
 
@@ -89,10 +98,6 @@ storybook-static
 # MCP Servers
 .playwright-mcp/*
 
-.nx/cache
-.nx/workspace-data
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 
@@ -100,3 +105,12 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+# Registry census working tree (scripts/registry-census) - corpus, lockfile, results
+.census/
+# Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs
+src/__ecs_matrix__/
+# Per-pack result rows written by a local detection-proof run
+matrix-proof/
+
+# Agent telemetry working files
+/telemetry/

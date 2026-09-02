@@ -14,7 +14,7 @@
       class="p-1 text-amber-400"
     >
       <template #icon>
-        <i class="icon-[lucide--component]" />
+        <i class="icon-[lucide--coins]" />
       </template>
     </Tag>
     <div :class="textClass">
@@ -30,14 +30,14 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const { textClass, showCreditsOnly } = defineProps<{
   textClass?: string
   showCreditsOnly?: boolean
 }>()
 
-const authStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 const { t, locale } = useI18n()
 

@@ -1,5 +1,6 @@
 <template>
   <Form
+    data-testid="update-password-dialog"
     class="flex w-96 flex-col gap-6"
     :resolver="zodResolver(updatePasswordSchema)"
     @submit="onSubmit"
@@ -21,10 +22,10 @@ import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
 
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const loading = ref(false)
 
 const { onSuccess } = defineProps<{

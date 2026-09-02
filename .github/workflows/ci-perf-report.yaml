@@ -3,25 +3,38 @@ name: 'CI: Performance Report'
 on:
   push:
     branches: [main, core/*]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
+  schedule:
+    - cron: '17 8 * * *'
 
 concurrency:
-  group: perf-${{ github.ref }}
+  group: perf-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  changes:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   perf-tests:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.12
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -32,7 +45,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -44,10 +57,14 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
+      # PRs run each test once to keep wall time bounded; main runs 3× so the
+      # baseline saved to perf-data has enough samples to median over noise.
       - name: Run performance tests
         id: perf
         continue-on-error: true
-        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=3
+        env:
+          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
 
       - name: Upload perf metrics
         if: always()
@@ -58,23 +75,11 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Save PR metadata
-        if: github.event_name == 'pull_request'
-        run: |
-          mkdir -p temp/perf-meta
-          echo "${{ github.event.number }}" > temp/perf-meta/number.txt
-          echo "${{ github.event.pull_request.base.ref }}" > temp/perf-meta/base.txt
-          echo "${{ github.event.pull_request.head.sha }}" > temp/perf-meta/head-sha.txt
-
-      - name: Upload PR metadata
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v6
-        with:
-          name: perf-meta
-          path: temp/perf-meta/
-
+      # Save whenever metrics exist, not only when every perf test passed.
+      # Gating on steps.perf.outcome == 'success' let a single failing test
+      # silently kill the baseline pipeline for months (issue #15545).
       - name: Save perf baseline to perf-data branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('test-results/perf-metrics.json') != ''
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
@@ -113,3 +118,41 @@ jobs:
           git worktree remove /tmp/perf-data --force 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if performance tests failed
+        if: steps.perf.outcome == 'failure' && github.event_name == 'push'
+        run: |
+          echo "::error::Performance tests failed; partial metrics were saved when available."
+          exit 1
+
+      - name: Warn if performance tests failed on a PR
+        if: steps.perf.outcome == 'failure' && github.event_name == 'pull_request'
+        run: echo "::warning::Performance tests failed; the metrics may be incomplete."
+
+  perf-baseline-freshness:
+    if: github.event_name == 'schedule' && github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: perf-freshness
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check perf baseline freshness
+        run: |
+          if ! git fetch --depth=1 origin perf-data; then
+            echo "::error::The perf-data branch could not be read."
+            exit 1
+          fi
+          NEWEST=$(git log -1 --format=%ct FETCH_HEAD)
+          NOW=$(date +%s)
+          AGE_SECONDS=$(( NOW - NEWEST ))
+          AGE_DAYS=$(( AGE_SECONDS / 86400 ))
+          echo "Newest perf-data commit is ${AGE_DAYS} day(s) old"
+          if [ "$AGE_SECONDS" -gt $(( 7 * 86400 )) ]; then
+            echo "::error::Perf baseline is stale (${AGE_DAYS} days old). CI has not saved a baseline in seven days. Inspect performance workflow failures and issue #15545."
+            exit 1
+          fi

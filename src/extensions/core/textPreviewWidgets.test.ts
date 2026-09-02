@@ -1,0 +1,150 @@
+import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+
+interface MockWidget {
+  name: string
+  options: Record<string, unknown>
+  value?: unknown
+  serialize?: boolean
+}
+
+vi.mock('@/scripts/app', () => ({ app: { rootGraph: { id: 'graph-1' } } }))
+
+vi.mock('@/lib/litegraph/src/litegraph', () => ({
+  resolveNodeRootGraphId: () => 'graph-1'
+}))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue',
+  () => ({
+    default: {}
+  })
+)
+
+vi.mock('@/stores/widgetValueStore', () => ({
+  useWidgetValueStore: () => ({ getWidget: () => undefined })
+}))
+
+vi.mock('@/scripts/domWidget', () => ({
+  ComponentWidgetImpl: class {
+    name: string
+    options: Record<string, unknown>
+    type: string
+    serialize?: boolean
+    constructor(obj: {
+      name: string
+      options: Record<string, unknown>
+      type: string
+    }) {
+      this.name = obj.name
+      this.options = obj.options
+      this.type = obj.type
+    }
+  },
+  addWidget: (node: { widgets?: MockWidget[] }, widget: MockWidget) => {
+    node.widgets = node.widgets ?? []
+    node.widgets.push(widget)
+  }
+}))
+
+vi.mock('@/scripts/widgets', () => ({
+  ComfyWidgets: {
+    BOOLEAN: (node: { widgets?: MockWidget[] }, name: string) => {
+      const widget: MockWidget = { name, options: {}, value: false }
+      node.widgets = node.widgets ?? []
+      node.widgets.push(widget)
+      return { widget }
+    }
+  }
+}))
+
+const { addTextPreviewWidgets, updateTextPreviewWidgets } =
+  await import('./textPreviewWidgets')
+
+function makeNode(): LGraphNode & { widgets: MockWidget[] } {
+  return { id: '1', widgets: [] } as unknown as LGraphNode & {
+    widgets: MockWidget[]
+  }
+}
+
+describe('addTextPreviewWidgets', () => {
+  it('adds a non-serialized preview widget and a non-serialized mode toggle', () => {
+    const node = makeNode()
+    addTextPreviewWidgets(node)
+
+    const preview = node.widgets.find((w) => w.name === 'preview_text')
+    const mode = node.widgets.find((w) => w.name === 'preview_mode')
+
+    expect(preview?.type).toBe('textPreview')
+    expect(preview?.serialize).toBe(false)
+    expect(preview?.options.serialize).toBe(false)
+    expect(mode?.options.serialize).toBe(false)
+  })
+})
+
+describe('updateTextPreviewWidgets', () => {
+  let node: LGraphNode & { widgets: MockWidget[] }
+
+  beforeEach(() => {
+    node = makeNode()
+    node.widgets.push({ name: 'preview_text', options: {}, value: '' })
+  })
+
+  it('joins array text into the preview widget value', () => {
+    updateTextPreviewWidgets(node, { text: ['a', 'b'] })
+    expect(node.widgets[0].value).toBe('a\n\nb')
+  })
+
+  it('writes a plain string message as-is', () => {
+    updateTextPreviewWidgets(node, { text: 'hello' })
+    expect(node.widgets[0].value).toBe('hello')
+  })
+
+  it.for([
+    ['null message', null],
+    ['undefined message', undefined],
+    ['message without text', {}],
+    ['null text', { text: null }],
+    ['empty array', { text: [] }],
+    ['array of only nulls', { text: [null, null] }]
+  ] as [string, NodeExecutionOutput | null | undefined][])(
+    'renders empty and does not throw for $0',
+    ([_label, message]) => {
+      expect(() => updateTextPreviewWidgets(node, message)).not.toThrow()
+      expect(node.widgets[0].value).toBe('')
+    }
+  )
+
+  it('drops null entries instead of rendering blank separators', () => {
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({
+        text: ['first', null, 'second']
+      })
+    )
+
+    expect(node.widgets[0].value).toBe('first\n\nsecond')
+  })
+
+  it('renders non-string entries rather than blanking the node', () => {
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({
+        text: ['first', 23.976, null, 'second']
+      })
+    )
+
+    expect(node.widgets[0].value).toBe('first\n\n23.976\n\nsecond')
+  })
+
+  it('stringifies a bare non-string scalar payload', () => {
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({ text: 23.976 })
+    )
+    expect(node.widgets[0].value).toBe('23.976')
+  })
+})

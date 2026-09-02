@@ -1,6 +1,6 @@
 import type { Mock } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,7 +30,7 @@ function createMockWorkflow(
   const changeTracker = Object.assign(
     new ChangeTracker(workflow, structuredClone(defaultGraph)),
     {
-      checkState: vi.fn() as Mock
+      captureCanvasState: vi.fn() as Mock
     }
   )
 
@@ -94,7 +94,6 @@ describe('ColorPickerButton', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     workflowStore = useWorkflowStore()
 
@@ -105,8 +104,10 @@ describe('ColorPickerButton', () => {
     workflowStore.activeWorkflow = createMockWorkflow()
   })
 
-  const createWrapper = () => {
-    return mount(ColorPickerButton, {
+  function renderComponent() {
+    const user = userEvent.setup()
+
+    render(ColorPickerButton, {
       global: {
         plugins: [PrimeVue, i18n],
         directives: {
@@ -114,28 +115,30 @@ describe('ColorPickerButton', () => {
         }
       }
     })
+
+    return { user }
   }
 
   it('should render when nodes are selected', () => {
-    // Add a mock node to selectedItems
     canvasStore.selectedItems = [createMockPositionable()]
-    const wrapper = createWrapper()
-    expect(wrapper.find('button').exists()).toBe(true)
+    renderComponent()
+    expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
     canvasStore.selectedItems = [createMockPositionable()]
-    const wrapper = createWrapper()
-    const button = wrapper.find('button')
+    const { user } = renderComponent()
+    const button = screen.getByTestId('color-picker-button')
 
-    expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(false)
+    expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
 
-    await button.trigger('click')
-    const picker = wrapper.findComponent({ name: 'SelectButton' })
-    expect(picker.exists()).toBe(true)
-    expect(picker.findAll('button').length).toBeGreaterThan(0)
+    await user.click(button)
+    expect(screen.getByTestId('noColor')).toBeInTheDocument()
+    expect(screen.getByTestId('red')).toBeInTheDocument()
+    expect(screen.getByTestId('green')).toBeInTheDocument()
+    expect(screen.getByTestId('blue')).toBeInTheDocument()
 
-    await button.trigger('click')
-    expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(false)
+    await user.click(button)
+    expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
   })
 })
