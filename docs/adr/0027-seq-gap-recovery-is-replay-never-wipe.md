@@ -1,4 +1,4 @@
-# 27. Seq-Gap Recovery Is State-Vector Delta Replay — Never Wipe the Follower Doc
+# 27. Lineage-Gated Replay (LGR) for Sequence-Gap Recovery
 
 Date: 2026-08-28
 
