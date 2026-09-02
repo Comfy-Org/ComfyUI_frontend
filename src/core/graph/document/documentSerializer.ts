@@ -25,8 +25,15 @@ function canonicalize(value: unknown, depth = 0): unknown {
   }
   if (Array.isArray(value))
     return value.map((entry) => canonicalize(entry, depth + 1))
-  if (value instanceof Map || value instanceof Set)
-    return canonicalize([...value], depth + 1)
+  if (value instanceof Map || value instanceof Set) {
+    return [...value]
+      .map((entry) => canonicalize(entry, depth + 1))
+      .sort((left, right) => {
+        const leftBytes = JSON.stringify(left) ?? ''
+        const rightBytes = JSON.stringify(right) ?? ''
+        return leftBytes < rightBytes ? -1 : leftBytes > rightBytes ? 1 : 0
+      })
+  }
   if (typeof value === 'object' && value !== null) {
     const source = value as Record<string, unknown>
     const result: Record<string, unknown> = {}
