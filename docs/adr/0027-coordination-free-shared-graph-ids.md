@@ -62,10 +62,14 @@ Partition the safe-integer space and mint the shared range randomly.
   `1099511628031` next to `last_node_id: 3`. No in-tree consumer treats those fields as
   a maximum, but third-party tooling that computes `graph.last_node_id + 1` to mint an
   id will produce a duplicate.
-- The `[0, 2**40)` boundary is now load-bearing in four places: the `observe*` functions,
-  the deprecated `last_node_id` / `last_link_id` setters on `LGraph`, the sequential
-  minters in `subgraphDeduplication`, and `MAX_ID` in that same module. All four are
-  derived from `MINT_ID_MIN` in `idAllocation.ts`; none of them may hard-code the bound.
+- The `[0, 2**40)` boundary is load-bearing in two places: the `observe*` functions and
+  the deprecated `last_node_id` / `last_link_id` setters on `LGraph`, both gated through
+  `isSequentialCounter`/`toSequentialCounter` in `idAllocation.ts`; neither may hard-code
+  the bound. Node and link ids are the only entities coordination-free minting applies to
+  (`mintNodeId`/`mintLinkId`), so group and reroute ids have no `MINT_ID_MIN` gate to
+  begin with — `subgraphDeduplication`'s `mintGroupId`/`mintRerouteId` calls and its
+  `MAX_ID = 100_000_000` exhaustion ceiling are a separate, independent dedup-remap bound
+  unrelated to `MINT_ID_MIN`.
 - Rejected counter writes are dropped rather than thrown, and only warn under
   `import.meta.env.DEV`. A poisoned counter in production is silent.
 - This does not make ids globally unique at creation in the sense ADR-0018 meant.
@@ -79,8 +83,8 @@ Partition the safe-integer space and mint the shared range randomly.
 ADR-0018's recorded plan: `actor:counter` string ids, collision-free by construction.
 Correct, and still the destination. Deferred because it changes the serialized wire type
 of every node id, which is a migration with its own ADR and its own rollout, not a line
-item inside a follower fix. When it lands, this ADR is superseded and all four
-`MINT_ID_MIN` gates come out together.
+item inside a follower fix. When it lands, this ADR is superseded and both `MINT_ID_MIN`
+gates come out together.
 
 ### UUID node ids (rejected)
 
