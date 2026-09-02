@@ -49,6 +49,7 @@ describe('LLink', () => {
 
       expect(result1).toHaveLength(0)
       expect(result1).toBe(result2)
+      expect(Object.isFrozen(result1)).toBe(true)
     })
   })
 })
