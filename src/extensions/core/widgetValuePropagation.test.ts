@@ -1,14 +1,16 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  LLink
-} from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
+import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -20,7 +22,15 @@ vi.mock('@/scripts/app', () => ({
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 
-type SourceNode = Pick<LGraphNode, 'graph' | 'outputs' | 'widgets'>
+type SourceNode = Pick<LGraphNode, 'id' | 'graph' | 'widgets'>
+type TargetNode = Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>
+
+const GRAPH_ID: UUID = 'graph-test'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
+const SOURCE_NODE_ID = toNodeId(1)
 
 function createWidget(
   name: string,
@@ -34,12 +44,9 @@ function createWidget(
   })
 }
 
-function createTargetNode(
-  widget: IBaseWidget,
-  id = 7
-): Pick<LGraphNode, 'id' | 'inputs' | 'widgets'> {
-  return fromPartial<Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>>({
-    id,
+function createTargetNode(widget: IBaseWidget, id = 7): TargetNode {
+  return fromPartial<TargetNode>({
+    id: toNodeId(id),
     inputs: [
       fromPartial<INodeInputSlot>({
         widget: { name: widget.name }
@@ -49,39 +56,42 @@ function createTargetNode(
   })
 }
 
-function createLink(targetId: LLink['target_id'], targetSlot = 0): LLink {
-  return createMockLLink({
-    target_id: targetId,
-    target_slot: targetSlot
-  })
-}
-
 function createSourceNode(options: {
-  link: LLink
-  targetNode: Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>
+  targetNode: TargetNode
   widgets?: IBaseWidget[]
 }): SourceNode {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
+    id: toLinkId(1),
+    graphId: GRAPH_SCOPE.owningGraphId,
+    originNodeId: SOURCE_NODE_ID,
+    originSlot: 0,
+    targetNodeId: options.targetNode.id,
+    targetSlot: 0,
+    type: 'INT'
+  })
   return {
+    id: SOURCE_NODE_ID,
     graph: {
-      links: { 1: options.link },
-      getNodeById: vi.fn((id: LLink['target_id']) =>
+      id: GRAPH_ID,
+      rootGraph: { id: GRAPH_ID },
+      getNodeById: vi.fn((id: TargetNode['id']) =>
         id === options.targetNode.id ? options.targetNode : null
       )
     } as unknown as NonNullable<LGraphNode['graph']>,
-    outputs: [{ links: [1] } as INodeOutputSlot],
     widgets: options.widgets ?? []
   }
 }
 
 describe('applyFirstWidgetValueToGraph', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   it('returns early when the source widget is missing', () => {
     const targetCallback = vi.fn()
     const targetWidget = createWidget('value', 'unchanged', targetCallback)
     const targetNode = createTargetNode(targetWidget)
-    const sourceNode = createSourceNode({
-      link: createLink(targetNode.id),
-      targetNode
-    })
+    const sourceNode = createSourceNode({ targetNode })
 
     expect(() => applyFirstWidgetValueToGraph(sourceNode)).not.toThrow()
     expect(targetWidget.value).toBe('unchanged')
@@ -93,7 +103,6 @@ describe('applyFirstWidgetValueToGraph', () => {
     const targetWidget = createWidget('value', 'old', targetCallback)
     const targetNode = createTargetNode(targetWidget)
     const sourceNode = createSourceNode({
-      link: createLink(targetNode.id),
       targetNode,
       widgets: [createWidget('source', 'new value')]
     })
@@ -115,7 +124,6 @@ describe('applyFirstWidgetValueToGraph', () => {
     const targetWidget = createWidget('value', 'old')
     const targetNode = createTargetNode(targetWidget)
     const sourceNode = createSourceNode({
-      link: createLink(targetNode.id),
       targetNode,
       widgets: [createWidget('source', 'draft')]
     })

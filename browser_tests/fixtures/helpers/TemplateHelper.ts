@@ -1,36 +1,21 @@
+import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import {
   makeTemplate,
   mockTemplateIndex
 } from '@e2e/fixtures/data/templateFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
 
-/**
- * Generate N deterministic templates, optionally restricted to a distribution.
- *
- * Lives here (not in `fixtures/data/`) because `fixtures/data/` is reserved
- * for static test data with no executable fixture logic.
- */
-function generateTemplates(
-  count: number,
-  distribution?: TemplateIncludeOnDistributionEnum
-): TemplateInfo[] {
-  const slug = distribution ?? 'unrestricted'
-  return Array.from({ length: count }, (_, i) =>
-    makeTemplate({
-      name: `gen-${slug}-${String(i + 1).padStart(3, '0')}`,
-      title: `Generated ${slug} ${i + 1}`,
-      ...(distribution ? { includeOnDistributions: [distribution] } : {})
-    })
-  )
-}
+const ROUTE_PATTERN_WORKFLOW_TEMPLATES = /\/api\/workflow_templates(?:\?.*)?$/
+const ROUTE_PATTERN_TEMPLATE_INDEX = /\/templates\/index\.json(?:\?.*)?$/
+const ROUTE_PATTERN_TEMPLATE_THUMBNAILS = /\/templates\/.*\.webp(?:\?.*)?$/
 
-export interface TemplateConfig {
+interface TemplateConfig {
   readonly templates: readonly TemplateInfo[]
   readonly index: readonly WorkflowTemplates[] | null
 }
@@ -39,7 +24,7 @@ function emptyConfig(): TemplateConfig {
   return { templates: [], index: null }
 }
 
-export type TemplateOperator = (config: TemplateConfig) => TemplateConfig
+type TemplateOperator = (config: TemplateConfig) => TemplateConfig
 
 function cloneTemplates(templates: readonly TemplateInfo[]): TemplateInfo[] {
   return templates.map((t) => structuredClone(t))
@@ -62,53 +47,9 @@ export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
   return (config) => addTemplates(config, templates)
 }
 
-export function withTemplate(template: TemplateInfo): TemplateOperator {
-  return (config) => addTemplates(config, [template])
-}
-
-export function withCloudTemplates(count: number): TemplateOperator {
-  return (config) =>
-    addTemplates(
-      config,
-      generateTemplates(count, TemplateIncludeOnDistributionEnum.Cloud)
-    )
-}
-
-export function withDesktopTemplates(count: number): TemplateOperator {
-  return (config) =>
-    addTemplates(
-      config,
-      generateTemplates(count, TemplateIncludeOnDistributionEnum.Desktop)
-    )
-}
-
-export function withLocalTemplates(count: number): TemplateOperator {
-  return (config) =>
-    addTemplates(
-      config,
-      generateTemplates(count, TemplateIncludeOnDistributionEnum.Local)
-    )
-}
-
-export function withUnrestrictedTemplates(count: number): TemplateOperator {
-  return (config) => addTemplates(config, generateTemplates(count))
-}
-
-/**
- * Override the index payload entirely. Useful when a test needs a custom
- * `WorkflowTemplates[]` shape (e.g. multiple modules).
- */
-export function withRawIndex(index: WorkflowTemplates[]): TemplateOperator {
-  return (config) => ({ ...config, index })
-}
-
 export class TemplateHelper {
   private templates: TemplateInfo[]
   private index: WorkflowTemplates[] | null
-  private routeHandlers: Array<{
-    pattern: string
-    handler: (route: Route) => Promise<void>
-  }> = []
 
   constructor(
     private readonly page: Page,
@@ -128,8 +69,27 @@ export class TemplateHelper {
   }
 
   async mock(): Promise<void> {
+    await this.mockCustomTemplates()
     await this.mockIndex()
     await this.mockThumbnails()
+  }
+
+  async mockCustomTemplates(): Promise<void> {
+    const customTemplatesHandler = async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        body: '{}',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    }
+
+    await this.page.route(
+      ROUTE_PATTERN_WORKFLOW_TEMPLATES,
+      customTemplatesHandler
+    )
   }
 
   async mockIndex(): Promise<void> {
@@ -144,9 +104,8 @@ export class TemplateHelper {
         }
       })
     }
-    const indexPattern = '**/templates/index.json'
-    this.routeHandlers.push({ pattern: indexPattern, handler: indexHandler })
-    await this.page.route(indexPattern, indexHandler)
+
+    await this.page.route(ROUTE_PATTERN_TEMPLATE_INDEX, indexHandler)
   }
 
   async mockThumbnails(): Promise<void> {
@@ -160,12 +119,32 @@ export class TemplateHelper {
         }
       })
     }
-    const thumbnailPattern = '**/templates/**.webp'
-    this.routeHandlers.push({
-      pattern: thumbnailPattern,
-      handler: thumbnailHandler
+
+    await this.page.route(ROUTE_PATTERN_TEMPLATE_THUMBNAILS, thumbnailHandler)
+  }
+
+  /** Serves `workflowPath` as the named template's graph. */
+  async mockWorkflow(name: string, workflowPath: string): Promise<void> {
+    await this.page.route(`**/templates/${name}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        path: workflowPath,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    )
+  }
+
+  /** Opens the template browser and loads the named template. */
+  async load(name: string): Promise<void> {
+    await this.page.evaluate(() => {
+      window.app!.extensionManager.command.execute('Comfy.BrowseTemplates')
     })
-    await this.page.route(thumbnailPattern, thumbnailHandler)
+    const card = this.page.getByTestId(TestIds.templates.workflowCard(name))
+    await expect(card).toBeVisible()
+    await card.click()
   }
 
   getTemplates(): TemplateInfo[] {
@@ -174,15 +153,6 @@ export class TemplateHelper {
 
   get templateCount(): number {
     return this.templates.length
-  }
-
-  async clearMocks(): Promise<void> {
-    for (const { pattern, handler } of this.routeHandlers) {
-      await this.page.unroute(pattern, handler)
-    }
-    this.routeHandlers = []
-    this.templates = []
-    this.index = null
   }
 }
 
@@ -195,4 +165,29 @@ export function createTemplateHelper(
     emptyConfig()
   )
   return new TemplateHelper(page, config)
+}
+
+/**
+ * Registers a single paid (partner-node) template whose workflow actually
+ * contains a partner node, so tests can exercise the paid-template surfaces.
+ */
+export async function mockPaidTemplate(
+  page: Page,
+  name: string,
+  workflowPath: string
+): Promise<TemplateHelper> {
+  const templates = createTemplateHelper(
+    page,
+    withTemplates([
+      makeTemplate({
+        name,
+        title: 'Paid Template',
+        description: 'Uses partner nodes.',
+        openSource: false
+      })
+    ])
+  )
+  await templates.mock()
+  await templates.mockWorkflow(name, workflowPath)
+  return templates
 }

@@ -2,9 +2,10 @@ import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =
@@ -16,6 +17,17 @@ type ResizeDirection =
   | 'ne'
   | 'sw'
   | 'se'
+
+interface ResizeHandle {
+  direction: ResizeDirection
+  class: string
+  style: {
+    left: string
+    top: string
+    width?: string
+    height?: string
+  }
+}
 
 const HANDLE_SIZE = 8
 const CORNER_SIZE = 10
@@ -263,17 +275,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     width: `${cropWidth.value * scaleFactor.value}px`,
     height: `${cropHeight.value * scaleFactor.value}px`
   }))
-
-  interface ResizeHandle {
-    direction: ResizeDirection
-    class: string
-    style: {
-      left: string
-      top: string
-      width?: string
-      height?: string
-    }
-  }
 
   const CORNER_DIRECTIONS = new Set<ResizeDirection>(['nw', 'ne', 'sw', 'se'])
 

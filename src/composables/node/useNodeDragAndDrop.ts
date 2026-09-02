@@ -1,7 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { zResultItem } from '@/schemas/apiSchema'
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/schemas/apiSchema'
 
 type DragHandler = (e: DragEvent) => boolean
@@ -12,14 +11,6 @@ interface DragAndDropOptions<T> {
   onDrop: DropHandler<T>
   onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
-}
-
-function parseAssetInfo(assetString?: string) {
-  try {
-    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
-  } catch {
-    // output was not parsable, allow fallthrough and return undefined
-  }
 }
 
 /**
@@ -67,7 +58,7 @@ export const useNodeDragAndDrop = <T>(
       await onDrop(files)
       return true
     }
-    const asset = parseAssetInfo(e?.dataTransfer?.getData(MIME_ASSET_INFO))
+    const asset = parseAssetInfo(e.dataTransfer!)
     if (asset?.filename && options.onResultItemDrop) {
       await options.onResultItemDrop(asset)
       return true

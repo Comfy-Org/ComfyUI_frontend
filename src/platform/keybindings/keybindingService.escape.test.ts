@@ -50,9 +50,6 @@ describe('keybindingService - Escape key handling', () => {
   let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
-
     const commandStore = useCommandStore()
     mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute
@@ -67,6 +64,7 @@ describe('keybindingService - Escape key handling', () => {
   function createKeyboardEvent(
     key: string,
     options: {
+      target?: Element
       ctrlKey?: boolean
       altKey?: boolean
       metaKey?: boolean
@@ -84,7 +82,7 @@ describe('keybindingService - Escape key handling', () => {
     })
 
     event.preventDefault = vi.fn()
-    event.composedPath = vi.fn(() => [document.body])
+    event.composedPath = vi.fn(() => [options.target ?? document.body])
 
     return event
   }
@@ -108,7 +106,7 @@ describe('keybindingService - Escape key handling', () => {
     expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
-  it('should execute Escape keybinding with modifiers regardless of dialog state', async () => {
+  it('should NOT execute Escape keybinding with modifiers when a dialog is open', async () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
 
@@ -125,7 +123,21 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape', { ctrlKey: true })
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).toHaveBeenCalledWith('Test.CtrlEscape')
+    expect(mockCommandExecute).not.toHaveBeenCalled()
+  })
+
+  it('should leave Escape events from menus to the menu', async () => {
+    const menu = document.createElement('div')
+    menu.setAttribute('role', 'menu')
+    const menuItem = document.createElement('div')
+    menuItem.setAttribute('role', 'menuitemcheckbox')
+    menu.appendChild(menuItem)
+
+    const event = createKeyboardEvent('Escape', { target: menuItem })
+    await keybindingService.keybindHandler(event)
+
+    expect(event.preventDefault).not.toHaveBeenCalled()
+    expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
   it('should verify Escape keybinding exists in CORE_KEYBINDINGS', () => {

@@ -285,11 +285,11 @@ quarantine.
 
 ## PromotionStore
 
-`PromotionStore` becomes vestigial. It may remain temporarily as a derived
-runtime compatibility/index layer for existing consumers, but it is not
-serialized authority, must not create promotions without linked
-`SubgraphInput`s, and should be removed once consumers query the standard graph
-interface directly.
+`PromotionStore` has been removed. Canonical value-widget exposure is
+represented by linked `SubgraphInput`s. Canonical preview exposure is
+represented by host-scoped `properties.previewExposures` /
+`PreviewExposureStore`. Legacy `properties.proxyWidgets` is migration input only
+and must not be reintroduced as runtime authority.
 
 ## Considered options
 
@@ -325,4 +325,5 @@ for existing workflow consumers that still assume array order.
 - Primitive fanout repair is more complex, but avoids breaking common existing
   workflows.
 - UI code must migrate with the runtime migration to avoid mixed identity states.
-- `PromotionStore` has a clear removal path.
+- `PromotionStore` is removed; callers query linked inputs or preview exposures
+  directly.

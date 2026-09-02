@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -25,17 +24,27 @@ vi.mock('@/i18n', () => ({
   d: (date: Date) => date.toLocaleDateString()
 }))
 
+const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get supportsModelTypeTags() {
+        return mockSupportsModelTypeTags.value
+      }
+    }
+  })
+}))
+
 describe('useAssetBrowser', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.restoreAllMocks()
+    mockSupportsModelTypeTags.value = false
   })
 
   // Test fixtures - minimal data focused on functionality being tested
   const createApiAsset = (overrides: Partial<AssetItem> = {}): AssetItem => ({
     id: 'test-id',
     name: 'test-asset.safetensors',
-    asset_hash: 'blake3:abc123',
+    hash: 'blake3:abc123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
@@ -134,6 +143,25 @@ describe('useAssetBrowser', () => {
 
       expect(result.badges).toContainEqual({
         label: 'checkpoints',
+        type: 'type'
+      })
+    })
+
+    it('strips the model_type: prefix from the badge when the flag is on', () => {
+      mockSupportsModelTypeTags.value = true
+      const apiAsset = createApiAsset({
+        tags: ['models', 'model_type:checkpoints', 'sdxl']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'checkpoints',
+        type: 'type'
+      })
+      expect(result.badges).not.toContainEqual({
+        label: 'model_type:checkpoints',
         type: 'type'
       })
     })
@@ -665,6 +693,34 @@ describe('useAssetBrowser', () => {
             { id: 'loras', label: 'Loras', icon: 'icon-[lucide--folder]' }
           ]
         }
+      ])
+    })
+
+    it('groups by model_type:* value and ignores other tags when the flag is on', () => {
+      mockSupportsModelTypeTags.value = true
+      const assets = [
+        createApiAsset({ tags: ['models', 'model_type:checkpoints', 'sdxl'] }),
+        createApiAsset({ tags: ['models', 'model_type:LLM'] })
+      ]
+
+      const { navItems } = useAssetBrowser(ref(assets))
+
+      const typeGroup = navItems.value[2] as { items: { id: string }[] }
+      expect(typeGroup.items.map((i) => i.id)).toEqual(['LLM', 'checkpoints'])
+    })
+
+    it('ignores model_type: and groups by bare tags when the flag is off', () => {
+      const assets = [
+        createApiAsset({ tags: ['models', 'model_type:checkpoints'] }),
+        createApiAsset({ tags: ['models', 'model_type:LLM'] })
+      ]
+
+      const { navItems } = useAssetBrowser(ref(assets))
+
+      const typeGroup = navItems.value[2] as { items: { id: string }[] }
+      expect(typeGroup.items.map((i) => i.id)).toEqual([
+        'model_type:LLM',
+        'model_type:checkpoints'
       ])
     })
 

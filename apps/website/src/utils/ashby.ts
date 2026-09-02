@@ -14,7 +14,7 @@ const DEFAULT_BASE_URL = 'https://api.ashbyhq.com'
 const DEFAULT_TIMEOUT_MS = 10_000
 const RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
-export interface DroppedRole {
+interface DroppedRole {
   title: string
   reason: string
 }

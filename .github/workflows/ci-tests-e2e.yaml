@@ -21,7 +21,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -29,35 +29,43 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
+        env:
+          COLLECT_COVERAGE: 'true'
 
-      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Verify localhost Assets default
+        run: pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: localhost
+
+      # Upload only verified dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: frontend-dist
           path: dist/
           retention-days: 1
 
-      # Build cloud distribution for @cloud tagged tests
-      # NX_SKIP_NX_CACHE=true is required because `nx build` was already run
-      # for the OSS distribution above. Without skipping cache, Nx returns
-      # the cached OSS build since env vars aren't part of the cache key.
-      - name: Build cloud frontend
-        run: NX_SKIP_NX_CACHE=true pnpm build:cloud
+      - name: Build and verify desktop Assets default
+        run: |
+          DISTRIBUTION=desktop pnpm build
+          pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: desktop
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
-      - name: Upload cloud frontend
-        uses: actions/upload-artifact@v6
+      - name: Build cloud frontend
+        uses: ./.github/actions/build-cloud-frontend
         with:
-          name: frontend-dist-cloud
-          path: dist/
-          retention-days: 1
+          expected_commit: ${{ github.sha }}
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
@@ -65,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -75,13 +83,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shardTotal: [16]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: frontend-dist
           path: dist/
@@ -95,13 +103,13 @@ jobs:
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() }}
         with:
           name: blob-report-chromium-${{ matrix.shardIndex }}
@@ -110,7 +118,7 @@ jobs:
 
       - name: Upload shard coverage data
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: e2e-coverage-shard-${{ matrix.shardIndex }}
           path: coverage/playwright/
@@ -123,7 +131,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -133,14 +141,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
+        browser:
+          [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
+          name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -152,7 +161,7 @@ jobs:
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
+        run: pnpm exec playwright test --project=${{ matrix.browser }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
@@ -166,7 +175,7 @@ jobs:
           pnpm exec playwright merge-reports --reporter=json ./blob-report
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
@@ -180,12 +189,12 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
     steps:
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 10
 
       - name: Download blob reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: ./all-blob-reports
           pattern: blob-report-chromium-*
@@ -200,7 +209,7 @@ jobs:
           pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report-chromium
           path: ./playwright-report/
@@ -211,7 +220,13 @@ jobs:
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
   e2e-status:
     if: ${{ always() }}
-    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    needs:
+      [
+        changes,
+        playwright-tests-chromium-sharded,
+        playwright-tests,
+        playwright-video-new-tests
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Check E2E results
@@ -219,74 +234,253 @@ jobs:
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
+          VIDEO: ${{ needs.playwright-video-new-tests.result }}
         run: |
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
-  #### BEGIN Deployment and commenting (non-forked PRs only)
-  # when using pull_request event, we have permission to comment directly
-  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
+  upload-e2e-coverage:
+    needs: [changes, playwright-tests-chromium-sharded]
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should-run == 'true' &&
+        needs.playwright-tests-chromium-sharded.result != 'cancelled'
+      }}
+    uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
+    with:
+      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
-  # Post starting comment for non-forked PRs
+  # Records video only for spec files newly added in this PR, to keep cost bounded.
+  playwright-video-new-tests:
+    needs: setup
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      has-new-tests: ${{ steps.detect.outputs.has-new-tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect newly-added test spec files
+        id: detect
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          NEW_FILES=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- browser_tests/tests | grep '\.spec\.ts$' || true)
+
+          if [ -z "$NEW_FILES" ]; then
+            echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-new-tests=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          {
+            echo "files<<EOF_NEW_SPEC_FILES"
+            echo "$NEW_FILES"
+            echo "EOF_NEW_SPEC_FILES"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Newly-added spec files:"
+          echo "${NEW_FILES:-<none>}"
+
+      - name: Download built frontend
+        if: steps.detect.outputs.has-new-tests == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Start ComfyUI server
+        if: steps.detect.outputs.has-new-tests == 'true'
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Install frontend deps
+        if: steps.detect.outputs.has-new-tests == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Find safely recordable new tests
+        if: steps.detect.outputs.has-new-tests == 'true'
+        id: recordable
+        env:
+          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
+        run: |
+          FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
+          AUDIT_EXIT=0
+          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests $FILES 2>&1) || AUDIT_EXIT=$?
+          echo "$AUDIT_OUTPUT"
+
+          if [ "$AUDIT_EXIT" -ne 0 ]; then
+            exit "$AUDIT_EXIT"
+          fi
+
+          if ! echo "$AUDIT_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+            {
+              echo '## New-test video walkthrough'
+              echo
+              echo '### Cannot skip safely: audit tests have no regular CI coverage'
+              echo
+              echo 'At least one newly added test is routed to the `audit` project. Unlike the other projects excluded by Chromium, no regular CI job executes audit tests.'
+              echo 'This video job only records the `chromium` project, so it fails rather than allowing the PR to pass without executing the new audit test.'
+              echo
+              echo 'Detected files:'
+              echo '```text'
+              echo "$NEW_SPEC_FILES"
+              echo '```'
+              echo
+              echo 'Audit discovery output:'
+              echo '```text'
+              echo "$AUDIT_OUTPUT"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          LIST_EXIT=0
+          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests $FILES 2>&1) || LIST_EXIT=$?
+          echo "$LIST_OUTPUT"
+
+          if [ "$LIST_EXIT" -ne 0 ]; then
+            exit "$LIST_EXIT"
+          fi
+
+          if ! echo "$LIST_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+            echo "has-tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "has-tests=false" >> "$GITHUB_OUTPUT"
+          {
+            echo '## New-test video walkthrough'
+            echo
+            echo '### Skipped safely: no Chromium-eligible tests'
+            echo
+            echo 'The workflow detected newly added Playwright spec files, but none of their tests are eligible for the `chromium` project used to record walkthroughs.'
+            echo 'This commonly happens when every test uses a project-routing tag excluded by Chromium: `@perf`, `@cloud`, or `@mobile`.'
+            echo 'The regular project-specific E2E jobs still run these tests. This video job succeeds without creating an empty report or video artifact.'
+            echo
+            echo 'Detected files:'
+            echo '```text'
+            echo "$NEW_SPEC_FILES"
+            echo '```'
+            echo
+            echo 'Playwright discovery output:'
+            echo '```text'
+            echo "$LIST_OUTPUT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run new test(s) with video recording
+        if: steps.recordable.outputs.has-tests == 'true'
+        env:
+          RECORD_VIDEO: 'true'
+          SLOW_MO: '1000'
+          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
+        run: |
+          FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
+          pnpm exec playwright test --project=chromium $FILES
+
+      - name: Upload new-test report (with embedded video)
+        if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-report-new-tests
+          path: ./playwright-report/
+          retention-days: 30
+          if-no-files-found: warn
+
+  #### BEGIN Deployment and commenting (PRs with direct secret access)
+  # when using pull_request event, we have permission to comment directly
+  # otherwise, we use workflow_run in ci-tests-e2e-forks.yaml
+
+  # Post starting section into the unified PR report comment
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Post starting comment
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
-            "starting"
+      - name: Upsert playwright starting section into unified report
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: playwright
+          section-content: '## 🎭 Playwright: ⏳ Running...'
+          token: ${{ github.token }}
 
-  # Deploy and comment for non-forked PRs only
+  # Deploy and upsert final playwright section
   deploy-and-comment:
-    needs: [changes, playwright-tests, merge-reports]
+    needs:
+      [changes, playwright-tests, merge-reports, playwright-video-new-tests]
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         always() &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download all playwright reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: playwright-report-*
           path: reports
 
-      - name: Deploy reports and comment on PR
+      - name: Deploy reports and generate section
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          SUMMARY_FILE: playwright-section.md
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
+            "$BRANCH_NAME" \
             "completed"
-  #### END Deployment and commenting (non-forked PRs only)
+
+      - name: Read and upsert playwright section
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/read-and-upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: playwright
+          section-file: playwright-section.md
+          token: ${{ github.token }}

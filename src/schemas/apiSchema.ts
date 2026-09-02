@@ -1,8 +1,10 @@
 import { z } from 'zod'
 
-import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
+import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -10,8 +12,8 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 const zJobId = z.string()
 export type JobId = z.infer<typeof zJobId>
-export const resultItemType = z.enum(['input', 'output', 'temp'])
-export type ResultItemType = z.infer<typeof resultItemType>
+export { resultItemType }
+export type { ResultItemType }
 
 const zCustomNodesI18n = z.record(z.string(), z.unknown())
 export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
@@ -193,7 +195,7 @@ export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
-const zEmbeddingsResponse = z.array(z.string())
+export const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
   type: z.string(),
@@ -250,6 +252,7 @@ const zSystemStats = z.object({
     python_version: z.string(),
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
+    deploy_environment: z.string().optional(),
     pytorch_version: z.string(),
     required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
@@ -374,6 +377,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
+  'Comfy.Workflow.NamedValuesRestore': z.boolean(),
   'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
@@ -411,6 +415,7 @@ const zSettings = z.object({
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
   'Comfy.Workflow.Persist': z.boolean(),
   'Comfy.TutorialCompleted': z.boolean(),
+  'Comfy.OnboardingCoachmarks.Seen': z.array(z.string()),
   'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
   'Comfy.Minimap.Visible': z.boolean(),
@@ -424,8 +429,8 @@ const zSettings = z.object({
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
-  'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
+  'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy.Queue.ShowRunProgressBar': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
@@ -444,7 +449,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
-  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */

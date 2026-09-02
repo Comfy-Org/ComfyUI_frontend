@@ -1,12 +1,12 @@
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
+import type { NodeId } from '@/types/nodeId'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Keep one adapter per graph so rendering and interaction share state.
@@ -54,7 +54,7 @@ export class LinkConnectorAdapter {
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
 
     if (opts?.moveExisting) {
-      this.linkConnector.moveOutputLink(this.network, output)
+      this.linkConnector.moveOutputLink(this.network, node, output)
     } else {
       this.linkConnector.dragNewFromOutput(
         this.network,
@@ -90,7 +90,9 @@ export class LinkConnectorAdapter {
       const startPoint: Point | undefined = opts.layout
         ? [opts.layout.position.x, opts.layout.position.y]
         : undefined
-      this.linkConnector.moveInputLink(this.network, input, { startPoint })
+      this.linkConnector.moveInputLink(this.network, node, input, {
+        startPoint
+      })
     } else {
       this.linkConnector.dragNewFromInput(
         this.network,

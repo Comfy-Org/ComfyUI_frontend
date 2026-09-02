@@ -12,9 +12,12 @@ export interface WorkflowPublishResult {
 }
 
 export interface PublishPrefill {
+  name?: string
   description?: string
   tags?: string[]
   thumbnailType?: ThumbnailType
+  thumbnailUrl?: string
+  thumbnailComparisonUrl?: string
   sampleImageUrls?: string[]
 }
 

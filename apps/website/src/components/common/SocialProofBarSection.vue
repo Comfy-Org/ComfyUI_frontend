@@ -3,7 +3,6 @@ const logos = [
   'Amazon Studios',
   'Apple',
   'Autodesk',
-  'EA',
   'Harman',
   'Hp',
   'Lucid',
@@ -19,7 +18,7 @@ const mobileRow2Logos = logos.slice(6)
 </script>
 
 <template>
-  <section class="overflow-hidden py-12">
+  <section class="overflow-hidden py-8 md:py-12">
     <!-- Single row on desktop -->
     <div data-testid="social-proof-desktop" class="hidden w-max gap-2 md:flex">
       <div
@@ -42,7 +41,7 @@ const mobileRow2Logos = logos.slice(6)
     <!-- Two rows on mobile -->
     <div
       data-testid="social-proof-mobile"
-      class="flex flex-col gap-8 md:hidden"
+      class="flex flex-col gap-6 md:hidden"
     >
       <div class="flex w-max gap-8">
         <div
@@ -55,7 +54,7 @@ const mobileRow2Logos = logos.slice(6)
           <div
             v-for="logo in mobileRow1Logos"
             :key="logo"
-            class="flex h-14 w-40 shrink-0 items-center justify-center"
+            class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
             <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
           </div>
@@ -72,7 +71,7 @@ const mobileRow2Logos = logos.slice(6)
           <div
             v-for="logo in mobileRow2Logos"
             :key="logo"
-            class="flex h-14 w-40 shrink-0 items-center justify-center"
+            class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
             <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
           </div>

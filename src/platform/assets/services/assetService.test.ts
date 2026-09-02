@@ -12,11 +12,22 @@ import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
+const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get supportsModelTypeTags() {
+        return mockSupportsModelTypeTags.value
+      }
+    }
+  })
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -30,17 +41,32 @@ vi.mock('@/stores/modelToNodeStore', () => {
     CheckpointLoaderSimple: 'ckpt_name',
     LoraLoader: 'lora_name'
   }
+  const nodeTypeCategories: Record<string, string> = {
+    CheckpointLoaderSimple: 'checkpoints',
+    LoraLoader: 'loras'
+  }
   return {
     useModelToNodeStore: vi.fn(() => ({
       getRegisteredNodeTypes: () => registeredNodeTypes,
-      getCategoryForNodeType: vi.fn()
+      getCategoryForNodeType: vi.fn(
+        (nodeType: string) => nodeTypeCategories[nodeType]
+      )
     }))
   }
 })
 
+const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    inputAssets: { invalidate: mockInvalidateInputAssets }
+  })
+}))
+
 vi.mock('@/scripts/api', () => ({
   api: {
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    addCustomEventListener: vi.fn(),
+    removeCustomEventListener: vi.fn()
   }
 }))
 
@@ -53,6 +79,7 @@ const fetchApiMock = vi.mocked(api.fetchApi)
 type AssetListResponseOptions = {
   hasMore?: AssetResponse['has_more']
   total?: AssetResponse['total']
+  nextCursor?: AssetResponse['next_cursor']
 }
 
 function buildResponse(
@@ -62,29 +89,41 @@ function buildResponse(
   return {
     ok: init.ok ?? true,
     status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body)
+    json: vi.fn().mockResolvedValue(body),
+    text: vi.fn().mockResolvedValue(JSON.stringify(body))
   } as unknown as Response
 }
 
 function buildAssetListResponse(
   assets: AssetItem[],
-  { hasMore = false, total = assets.length }: AssetListResponseOptions = {}
+  {
+    hasMore = false,
+    total = assets.length,
+    nextCursor
+  }: AssetListResponseOptions = {}
 ): Response {
-  return buildResponse({ assets, total, has_more: hasMore })
+  return buildResponse({
+    assets,
+    total,
+    has_more: hasMore,
+    ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
+  })
 }
 
 function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
     name: 'model.safetensors',
+    loader_path: overrides.name ?? 'model.safetensors',
     tags: ['models'],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
     ...overrides
   }
 }
 
 describe(assetService.shouldUseAssetBrowser, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = false
     mockSettingStoreGet.mockReturnValue(false)
   })
@@ -148,10 +187,6 @@ describe(assetService.shouldUseAssetBrowser, () => {
 })
 
 describe(assetService.getAssetMetadata, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws a localized message when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({ code: 'FILE_TOO_LARGE' }, { ok: false, status: 413 })
@@ -199,19 +234,10 @@ describe(assetService.getAssetMetadata, () => {
 })
 
 describe(assetService.uploadAssetFromUrl, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    assetService.invalidateInputAssetsIncludingPublic()
-  })
-
-  it('does not invalidate cached input assets when the upload response is invalid', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+  it('rejects when the upload response is invalid', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
-    await assetService.getInputAssetsIncludingPublic()
     await expect(
       assetService.uploadAssetFromUrl({
         url: 'https://example.com/input.png',
@@ -219,23 +245,15 @@ describe(assetService.uploadAssetFromUrl, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    const cached = await assetService.getInputAssetsIncludingPublic()
-
-    expect(cached).toEqual(staleAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
     consoleSpy.mockRestore()
   })
 
-  it('requires upload responses to include created_new', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+  it('rejects when upload response lacks created_new', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(
-        buildResponse(validAsset({ id: 'uploaded-input', tags: ['input'] }))
-      )
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(validAsset({ id: 'uploaded-input', tags: ['input'] }))
+    )
 
-    await assetService.getInputAssetsIncludingPublic()
     await expect(
       assetService.uploadAssetFromUrl({
         url: 'https://example.com/input.png',
@@ -243,10 +261,6 @@ describe(assetService.uploadAssetFromUrl, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    const cached = await assetService.getInputAssetsIncludingPublic()
-
-    expect(cached).toEqual(staleAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
     consoleSpy.mockRestore()
   })
 
@@ -268,11 +282,6 @@ describe(assetService.uploadAssetFromUrl, () => {
 })
 
 describe(assetService.uploadAssetFromBase64, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    assetService.invalidateInputAssetsIncludingPublic()
-  })
-
   it('throws before calling the network when data is not a data URL', async () => {
     await expect(
       assetService.uploadAssetFromBase64({
@@ -284,17 +293,13 @@ describe(assetService.uploadAssetFromBase64, () => {
     expect(fetchApiMock).not.toHaveBeenCalled()
   })
 
-  it('does not invalidate cached input assets when the upload response is invalid', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+  it('rejects when the upload response is invalid', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
-    await assetService.getInputAssetsIncludingPublic()
     await expect(
       assetService.uploadAssetFromBase64({
         data: 'data:text/plain;base64,aGVsbG8=',
@@ -302,30 +307,22 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    const cached = await assetService.getInputAssetsIncludingPublic()
-
-    expect(cached).toEqual(staleAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
     fetchSpy.mockRestore()
     consoleSpy.mockRestore()
   })
 
   it('rejects upload responses with a non-boolean created_new', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(
-        buildResponse({
-          ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
-          created_new: 'true'
-        })
-      )
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({
+        ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
+        created_new: 'true'
+      })
+    )
 
-    await assetService.getInputAssetsIncludingPublic()
     await expect(
       assetService.uploadAssetFromBase64({
         data: 'data:text/plain;base64,aGVsbG8=',
@@ -333,20 +330,12 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    const cached = await assetService.getInputAssetsIncludingPublic()
-
-    expect(cached).toEqual(staleAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
     fetchSpy.mockRestore()
     consoleSpy.mockRestore()
   })
 })
 
 describe(assetService.uploadAssetAsync, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns an async result when the server responds 202', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(
@@ -382,10 +371,6 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws an error containing the status code when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
@@ -406,40 +391,424 @@ describe(assetService.deleteAsset, () => {
   })
 })
 
-describe(assetService.getAssetModelFolders, () => {
+describe('assetResponseSchema accepts real API shapes', () => {
+  it("parses an asset that doesn't satisfy cloud schema", async () => {
+    const asset = {
+      id: 'real-api-shape',
+      created_at: '2025-06-15T09:30:00',
+      updated_at: '2025-06-15T10:00:00',
+      hash: 'badhash'
+    }
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset(asset)])
+    )
+
+    const assets = await assetService.getAssetsByTag('models')
+
+    expect(assets).toHaveLength(1)
+    expect(assets[0]).toMatchObject(asset)
+  })
+})
+
+describe(assetService.getAssetModels, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    assetService.invalidateModelBuckets()
+    mockSupportsModelTypeTags.value = true
   })
 
-  it('requests missing-tag exclusion and returns alphabetical unique folders without include_public', async () => {
+  it('walks the models tag once, excluding missing assets', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
-        validAsset({ id: 'a', tags: ['models', 'loras'] }),
-        validAsset({ id: 'b', tags: ['models', 'checkpoints'] }),
-        validAsset({ id: 'c', tags: ['models', 'configs'] }),
-        validAsset({ id: 'e', tags: ['models', 'loras'] })
+        validAsset({ id: 'a', tags: ['models', 'model_type:checkpoints'] })
       ])
     )
 
-    const folders = await assetService.getAssetModelFolders()
+    await assetService.getAssetModels('checkpoints')
 
-    expect(folders).toEqual([
-      { name: 'checkpoints', folders: [] },
-      { name: 'loras', folders: [] }
-    ])
-
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
-    expect(params.has('include_public')).toBe(false)
+    expect(params.get('include_tags')).toBe('models')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+    // Private-only, matching the legacy per-folder listing this walk replaces.
+    expect(params.get('include_public')).toBe('false')
+  })
+
+  it('deduplicates concurrent reads into a single in-flight walk', async () => {
+    let resolveWalk!: (response: Response) => void
+    fetchApiMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveWalk = resolve
+      })
+    )
+
+    const checkpointsRead = assetService.getAssetModels('checkpoints')
+    const lorasRead = assetService.getAssetModels('loras')
+
+    resolveWalk(
+      buildAssetListResponse([
+        validAsset({ id: 'a', tags: ['models', 'model_type:checkpoints'] }),
+        validAsset({
+          id: 'b',
+          name: 'l.safetensors',
+          tags: ['models', 'model_type:loras']
+        })
+      ])
+    )
+
+    expect((await checkpointsRead).length).toBe(1)
+    expect((await lorasRead).length).toBe(1)
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('buckets by bare tags when model_type tags are unsupported', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          name: 'a.safetensors',
+          tags: ['models', 'checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'a.safetensors', pathIndex: 0 }])
+  })
+
+  it('re-walks when supports_model_type_tags flips after the first walk', async () => {
+    // The flag arrives asynchronously over the websocket handshake. A first
+    // walk before it lands (flag still false) buckets a model_type: tag as a
+    // literal folder, so 'checkpoints' comes back empty.
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          name: 'a.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    expect(await assetService.getAssetModels('checkpoints')).toEqual([])
+
+    // Once the flag lands, the stale cache must be discarded and re-walked so
+    // the asset buckets under 'checkpoints' instead of staying invisible.
+    mockSupportsModelTypeTags.value = true
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          name: 'a.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    expect(await assetService.getAssetModels('checkpoints')).toEqual([
+      { name: 'a.safetensors', pathIndex: 0 }
+    ])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('drops uncategorized model assets with a warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'ok',
+          name: 'ok.safetensors',
+          tags: ['models', 'model_type:loras']
+        }),
+        validAsset({
+          id: 'uncat',
+          name: 'orphan.safetensors',
+          tags: ['models']
+        })
+      ])
+    )
+
+    const loras = await assetService.getAssetModels('loras')
+
+    expect(loras).toEqual([{ name: 'ok.safetensors', pathIndex: 0 }])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('orphan.safetensors')
+    )
+    warn.mockRestore()
+  })
+
+  it('maps loader_path and drops unloadable assets without one', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'nested',
+          name: 'model.safetensors',
+          loader_path: 'sdxl/model.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'orphan',
+          name: 'orphan.safetensors',
+          loader_path: null,
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'other-folder',
+          name: 'lora.safetensors',
+          tags: ['models', 'model_type:loras']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'sdxl/model.safetensors', pathIndex: 0 }])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('orphan.safetensors')
+    )
+    warn.mockRestore()
+  })
+
+  it('drops assets whose loader path is traversal-shaped', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'evil',
+          name: 'evil.safetensors',
+          loader_path: '../../secrets/evil.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'evil-whitespace',
+          name: 'evil2.safetensors',
+          // Leading whitespace must not smuggle an absolute path past the
+          // anchored validation.
+          loader_path: ' /etc/passwd.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'ok',
+          name: 'fine.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'benign-dots',
+          name: 'flux..v2.safetensors',
+          // Double dots inside a single segment are not traversal.
+          loader_path: 'flux..v2.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([
+      { name: 'fine.safetensors', pathIndex: 0 },
+      { name: 'flux..v2.safetensors', pathIndex: 0 }
+    ])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('unsafe'))
+    warn.mockRestore()
+  })
+
+  it('groups slashed bare tags by their top-level segment', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'slashed',
+          name: 'model1.safetensors',
+          tags: ['models', 'Chatterbox/subfolder1/model1']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('Chatterbox')
+
+    expect(models).toEqual([{ name: 'model1.safetensors', pathIndex: 0 }])
+  })
+
+  it('falls back to filename metadata then name on bare-tag backends', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'cloud-hash',
+          name: 'blake3-content-hash',
+          loader_path: null,
+          user_metadata: { filename: 'sdxl/cloud-model.safetensors' },
+          tags: ['models', 'checkpoints']
+        }),
+        validAsset({
+          id: 'bare',
+          name: 'plain.safetensors',
+          loader_path: null,
+          tags: ['models', 'checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([
+      { name: 'sdxl/cloud-model.safetensors', pathIndex: 0 },
+      { name: 'plain.safetensors', pathIndex: 0 }
+    ])
+  })
+
+  it('orders each folder subdirectories-first then files, alphabetically', async () => {
+    const checkpointAsset = (id: string, loaderPath: string) =>
+      validAsset({
+        id,
+        name: loaderPath.split('/').pop()!,
+        loader_path: loaderPath,
+        tags: ['models', 'model_type:checkpoints']
+      })
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        checkpointAsset('1', 'sdxl/base.safetensors'),
+        checkpointAsset('2', 'v1-5.safetensors'),
+        checkpointAsset('3', 'sdxl/refiner.safetensors'),
+        checkpointAsset('4', 'anything.safetensors'),
+        checkpointAsset('5', 'dynamicrafter/model.safetensors')
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models.map((m) => m.name)).toEqual([
+      'dynamicrafter/model.safetensors',
+      'sdxl/base.safetensors',
+      'sdxl/refiner.safetensors',
+      'anything.safetensors',
+      'v1-5.safetensors'
+    ])
+  })
+
+  it('does not let a stale in-flight walk overwrite an invalidated cache', async () => {
+    let resolveStaleWalk!: (response: Response) => void
+    fetchApiMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveStaleWalk = resolve
+      })
+    )
+    const staleRead = assetService.getAssetModels('checkpoints')
+
+    assetService.invalidateModelBuckets()
+
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'fresh',
+          name: 'fresh.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    const freshModels = await assetService.getAssetModels('checkpoints')
+    expect(freshModels.map((m) => m.name)).toEqual(['fresh.safetensors'])
+
+    resolveStaleWalk(
+      buildAssetListResponse([
+        validAsset({
+          id: 'stale',
+          name: 'stale.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    await staleRead
+
+    const cachedModels = await assetService.getAssetModels('checkpoints')
+    expect(cachedModels.map((m) => m.name)).toEqual(['fresh.safetensors'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('places multi-category assets in every folder from a single walk', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'shared',
+          name: 'dual_use.safetensors',
+          loader_path: 'dual_use.safetensors',
+          tags: [
+            'models',
+            'model_type:checkpoints',
+            'model_type:diffusion_models'
+          ]
+        })
+      ])
+    )
+
+    const checkpoints = await assetService.getAssetModels('checkpoints')
+    const diffusion = await assetService.getAssetModels('diffusion_models')
+
+    expect(checkpoints).toEqual([
+      { name: 'dual_use.safetensors', pathIndex: 0 }
+    ])
+    expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
+    // Both folder reads resolve from a single memoized models walk.
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe(assetService.onModelsScanned, () => {
+  it('invokes the callback when the scan event fires and unsubscribes cleanly', () => {
+    const callback = vi.fn()
+
+    const unsubscribe = assetService.onModelsScanned(callback)
+
+    const [eventType, handler] = vi.mocked(api.addCustomEventListener).mock
+      .calls[0]!
+    expect(eventType).toBe('assets.seed.fast_complete')
+
+    handler!(new CustomEvent(eventType))
+    expect(callback).toHaveBeenCalledOnce()
+
+    unsubscribe()
+    expect(api.removeCustomEventListener).toHaveBeenCalledWith(
+      eventType,
+      handler
+    )
+  })
+})
+
+describe(assetService.seedModelAssets, () => {
+  it('POSTs the models root to the seed endpoint', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ status: 'started' }, { status: 202 })
+    )
+
+    await assetService.seedModelAssets()
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/assets/seed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roots: ['models'] })
+    })
+  })
+
+  it('treats an already-running scan (409) as success', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ status: 'already_running' }, { ok: false, status: 409 })
+    )
+
+    await expect(assetService.seedModelAssets()).resolves.toBeUndefined()
+  })
+
+  it('throws on other error statuses', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({}, { ok: false, status: 500 })
+    )
+
+    await expect(assetService.seedModelAssets()).rejects.toThrow('500')
   })
 })
 
 describe(assetService.updateAsset, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws when the response body fails schema validation', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({ name: 'no-id-field.safetensors' })
@@ -474,10 +843,6 @@ describe(assetService.updateAsset, () => {
 })
 
 describe(assetService.getAssetsByTag, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('forwards include_public=true by default and requests missing-tag exclusion', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
@@ -508,11 +873,7 @@ describe(assetService.getAssetsByTag, () => {
 })
 
 describe(assetService.getAllAssetsByTag, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('paginates tagged asset requests with include_public=true', async () => {
+  it('walks pages by keyset cursor with include_public=true', async () => {
     fetchApiMock
       .mockResolvedValueOnce(
         buildAssetListResponse(
@@ -520,7 +881,7 @@ describe(assetService.getAllAssetsByTag, () => {
             validAsset({ id: 'a', tags: ['input'] }),
             validAsset({ id: 'b', tags: ['input'] })
           ],
-          { hasMore: true }
+          { hasMore: true, nextCursor: 'cursor-page-2' }
         )
       )
       .mockResolvedValueOnce(
@@ -538,6 +899,8 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(firstParams.get('include_public')).toBe('true')
     expect(firstParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(firstParams.get('limit')).toBe('2')
+    // First page carries neither a cursor nor an offset.
+    expect(firstParams.has('after')).toBe(false)
     expect(firstParams.has('offset')).toBe(false)
 
     const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
@@ -545,7 +908,9 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(secondParams.get('include_public')).toBe('true')
     expect(secondParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(secondParams.get('limit')).toBe('2')
-    expect(secondParams.get('offset')).toBe('2')
+    // Subsequent pages resume from the prior response's next_cursor, never offset.
+    expect(secondParams.get('after')).toBe('cursor-page-2')
+    expect(secondParams.has('offset')).toBe(false)
   })
 
   it('honors has_more when walking tagged asset pages', async () => {
@@ -556,7 +921,7 @@ describe(assetService.getAllAssetsByTag, () => {
             validAsset({ id: 'first', tags: ['input'] }),
             validAsset({ id: 'second', tags: ['input'] })
           ],
-          { hasMore: true }
+          { hasMore: true, nextCursor: 'cursor-next' }
         )
       )
       .mockResolvedValueOnce(
@@ -577,7 +942,67 @@ describe(assetService.getAllAssetsByTag, () => {
       throw new Error('Expected a second asset request URL')
     }
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
-    expect(secondParams.get('offset')).toBe('2')
+    expect(secondParams.get('after')).toBe('cursor-next')
+  })
+
+  it('caps a runaway cursor walk at the batch backstop', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let page = 0
+    fetchApiMock.mockImplementation(() =>
+      Promise.resolve(
+        buildAssetListResponse(
+          [validAsset({ id: `asset-${page}`, tags: ['input'] })],
+          { hasMore: true, nextCursor: `cursor-${page++}` }
+        )
+      )
+    )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(1000)
+    expect(assets).toHaveLength(1000)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('backstop'))
+    warn.mockRestore()
+  })
+
+  it('stops walking when next_cursor is absent even if has_more is true', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'only', tags: ['input'] })], {
+        hasMore: true
+      })
+    )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['only'])
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+
+  it('stops walking when the server returns a non-advancing cursor', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'a', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'b', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
   it.for([
@@ -636,7 +1061,7 @@ describe(assetService.getAllAssetsByTag, () => {
           validAsset({ id: 'a', tags: ['input'] }),
           validAsset({ id: 'b', tags: ['input'] })
         ],
-        { hasMore: true }
+        { hasMore: true, nextCursor: 'cursor-page-2' }
       )
     })
 
@@ -651,211 +1076,106 @@ describe(assetService.getAllAssetsByTag, () => {
   })
 })
 
-describe(assetService.getInputAssetsIncludingPublic, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    assetService.invalidateInputAssetsIncludingPublic()
+describe(assetService.getAssetsPageForNodeType, () => {
+  it('returns an empty page without fetching when no category is registered', async () => {
+    const page = await assetService.getAssetsPageForNodeType('UnknownLoader')
+
+    expect(page).toEqual({ assets: [], total: 0, has_more: false })
+    expect(fetchApiMock).not.toHaveBeenCalled()
   })
 
-  it('loads input assets with public assets included and reuses the cache', async () => {
-    const assets = [
-      validAsset({ id: 'user-input', tags: ['input'] }),
-      validAsset({ id: 'public-input', tags: ['input'], is_immutable: true })
-    ]
-    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse(assets))
+  it('requests the models and category tags and returns the page envelope', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })], {
+        hasMore: true,
+        total: 3,
+        nextCursor: 'cursor-1'
+      })
+    )
 
-    const first = await assetService.getInputAssetsIncludingPublic()
-    const second = await assetService.getInputAssetsIncludingPublic()
+    const page = await assetService.getAssetsPageForNodeType(
+      'CheckpointLoaderSimple'
+    )
 
-    expect(first).toEqual(assets)
-    expect(second).toBe(first)
-    expect(fetchApiMock).toHaveBeenCalledOnce()
+    expect(page.assets.map((a) => a.id)).toEqual(['ckpt-1'])
+    expect(page.total).toBe(3)
+    expect(page.has_more).toBe(true)
+    expect(page.next_cursor).toBe('cursor-1')
 
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
-    expect(params.get('include_public')).toBe('true')
-    expect(params.get('limit')).toBe('500')
+    expect(params.get('include_tags')).toBe('models,checkpoints')
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+    // First page carries neither a cursor nor an offset.
+    expect(params.has('after')).toBe(false)
+    expect(params.has('offset')).toBe(false)
   })
 
-  it('fetches fresh input assets after explicit invalidation', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
-    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
+  it('sends after instead of offset when a cursor is provided', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-2' })])
+    )
 
-    await assetService.getInputAssetsIncludingPublic()
-    assetService.invalidateInputAssetsIncludingPublic()
-    const refreshed = await assetService.getInputAssetsIncludingPublic()
-
-    expect(refreshed).toEqual(freshAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('does not let one caller abort the shared input asset load for other callers', async () => {
-    const firstController = new AbortController()
-    const secondController = new AbortController()
-    const assets = [validAsset({ id: 'public-input', tags: ['input'] })]
-    let resolveResponse!: (response: Response) => void
-    let serviceSignal: AbortSignal | undefined
-    fetchApiMock.mockImplementationOnce(async (_url, options) => {
-      serviceSignal = options?.signal ?? undefined
-      return await new Promise<Response>((resolve) => {
-        resolveResponse = resolve
-      })
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500,
+      after: 'cursor-2'
     })
 
-    const first = assetService.getInputAssetsIncludingPublic(
-      firstController.signal
-    )
-    const second = assetService.getInputAssetsIncludingPublic(
-      secondController.signal
-    )
-    firstController.abort()
-
-    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
-    expect(serviceSignal).toBeUndefined()
-
-    resolveResponse(buildAssetListResponse(assets))
-
-    await expect(second).resolves.toEqual(assets)
-    expect(fetchApiMock).toHaveBeenCalledOnce()
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('after')).toBe('cursor-2')
+    expect(params.has('offset')).toBe(false)
   })
 
-  it('keeps the shared input asset load alive after all callers abort', async () => {
-    const firstController = new AbortController()
-    const secondController = new AbortController()
-    const assets = [validAsset({ id: 'public-input', tags: ['input'] })]
-    let resolveResponse!: (response: Response) => void
-    fetchApiMock.mockImplementationOnce(
-      async () =>
-        await new Promise<Response>((resolve) => {
-          resolveResponse = resolve
-        })
+  it('sends an empty-string cursor as the after param rather than falling back to offset', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-4' })])
     )
 
-    const first = assetService.getInputAssetsIncludingPublic(
-      firstController.signal
-    )
-    const second = assetService.getInputAssetsIncludingPublic(
-      secondController.signal
-    )
-    firstController.abort()
-    secondController.abort()
-
-    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
-    await expect(second).rejects.toMatchObject({ name: 'AbortError' })
-
-    resolveResponse(buildAssetListResponse(assets))
-    await Promise.resolve()
-
-    await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
-      assets
-    )
-    expect(fetchApiMock).toHaveBeenCalledOnce()
-  })
-
-  it('does not abort in-flight input asset loads when invalidated', async () => {
-    const assets = [validAsset({ id: 'stale-input', tags: ['input'] })]
-    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
-    let resolveResponse!: (response: Response) => void
-    fetchApiMock
-      .mockImplementationOnce(
-        async () =>
-          await new Promise<Response>((resolve) => {
-            resolveResponse = resolve
-          })
-      )
-      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
-
-    const inFlight = assetService.getInputAssetsIncludingPublic()
-    assetService.invalidateInputAssetsIncludingPublic()
-
-    resolveResponse(buildAssetListResponse(assets))
-
-    await expect(inFlight).resolves.toEqual(assets)
-    await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
-      freshAssets
-    )
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('invalidates cached input assets after deleting an asset', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
-    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(buildResponse(null))
-      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
-
-    await assetService.getInputAssetsIncludingPublic()
-    await assetService.deleteAsset('stale-input')
-    const refreshed = await assetService.getInputAssetsIncludingPublic()
-
-    expect(refreshed).toEqual(freshAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(3)
-    expect(fetchApiMock.mock.calls[1]).toEqual([
-      '/assets/stale-input',
-      expect.objectContaining({ method: 'DELETE' })
-    ])
-  })
-
-  it('invalidates cached input assets after an input asset upload', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
-    const uploadedAsset = validAsset({ id: 'uploaded-input', tags: ['input'] })
-    const freshAssets = [uploadedAsset]
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(buildResponse(uploadedAsset))
-      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
-
-    await assetService.getInputAssetsIncludingPublic()
-    await assetService.uploadAssetAsync({
-      source_url: 'https://example.com/input.png',
-      tags: ['input']
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500,
+      after: ''
     })
-    const refreshed = await assetService.getInputAssetsIncludingPublic()
 
-    expect(refreshed).toEqual(freshAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(3)
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('after')).toBe('')
+    expect(params.has('offset')).toBe(false)
   })
 
-  it('does not invalidate cached input assets for pending async input uploads', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(
-        buildResponse(
-          { task_id: 'task-1', status: 'running' },
-          { ok: true, status: 202 }
-        )
-      )
+  it('sends the offset when paging without a cursor', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-3' })])
+    )
 
-    await assetService.getInputAssetsIncludingPublic()
-    await assetService.uploadAssetAsync({
-      source_url: 'https://example.com/input.png',
-      tags: ['input']
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500
     })
-    const cached = await assetService.getInputAssetsIncludingPublic()
 
-    expect(cached).toEqual(staleAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('offset')).toBe('500')
+    expect(params.has('after')).toBe(false)
+  })
+})
+
+describe(assetService.getAssetsForNodeType, () => {
+  it('returns just the assets array from the page response', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
+    )
+
+    const assets = await assetService.getAssetsForNodeType(
+      'CheckpointLoaderSimple'
+    )
+
+    expect(assets.map((a) => a.id)).toEqual(['ckpt-1'])
   })
 
-  it('does not invalidate cached input assets for non-input uploads', async () => {
-    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
-    fetchApiMock
-      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
-      .mockResolvedValueOnce(buildResponse(validAsset({ tags: ['models'] })))
+  it('returns an empty array when no category is registered', async () => {
+    const assets = await assetService.getAssetsForNodeType('UnknownLoader')
 
-    await assetService.getInputAssetsIncludingPublic()
-    await assetService.uploadAssetAsync({
-      source_url: 'https://example.com/model.safetensors',
-      tags: ['models']
-    })
-    const cached = await assetService.getInputAssetsIncludingPublic()
-
-    expect(cached).toEqual(staleAssets)
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+    expect(assets).toEqual([])
+    expect(fetchApiMock).not.toHaveBeenCalled()
   })
 })

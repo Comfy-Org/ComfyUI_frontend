@@ -64,12 +64,6 @@ vi.mock('@/composables/canvas/useSelectionToolboxPosition', () => ({
   resetMoreOptionsState: vi.fn()
 }))
 
-vi.mock('@/composables/element/useRetriggerableAnimation', () => ({
-  useRetriggerableAnimation: vi.fn(() => ({
-    shouldAnimate: { value: false }
-  }))
-}))
-
 vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
   useMinimap: vi.fn(() => ({
     containerStyles: {
@@ -156,7 +150,6 @@ describe('SelectionToolbox', () => {
     // Mock the canvas to avoid "getCanvas: canvas is null" errors
     canvasStore.canvas = createMockCanvas()
 
-    vi.resetAllMocks()
     mockSettingValues()
   })
 
@@ -472,7 +465,9 @@ describe('SelectionToolbox', () => {
       const forwardEventToCanvasSpy = vi.fn()
       mockCanvasInteractions.mockReturnValue({
         handleWheel: vi.fn(),
-        handlePointer: vi.fn(),
+        handlePointerDown: vi.fn(),
+        handlePointerMove: vi.fn(),
+        handlePointerUp: vi.fn(),
         forwardEventToCanvas: forwardEventToCanvasSpy,
         shouldHandleNodePointerEvents: { value: true } as ReturnType<
           typeof useCanvasInteractions

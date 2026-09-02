@@ -25,7 +25,12 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
+import { toLinkId } from '@/types/linkId'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -46,12 +51,27 @@ enum IoDirection {
   OUTPUT
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
+function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
   if ((graph as LGraph).getNodeById) {
-    return (graph as LGraph).getNodeById(id)
+    const parsedNodeId = parseNodeId(id)
+    return parsedNodeId ? (graph as LGraph).getNodeById(parsedNodeId) : null
   }
   graph = graph as ISerialisedGraph
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
+}
+
+function outputLinkIdsOf(
+  node: ISerialisedNode | LGraphNode,
+  slot: number
+): readonly number[] | undefined {
+  const slotData = node.outputs?.[slot]
+  if (!slotData) return undefined
+  if (!(slotData instanceof NodeOutputSlot)) return slotData.links ?? undefined
+
+  const { graph, id } = slotData.node
+  if (!graph) return undefined
+  const ids = outputLinkIds(graph, id, slot)
+  return ids.length ? ids : undefined
 }
 
 function extendLink(link: SerialisedLLinkArray) {
@@ -129,9 +149,9 @@ export function fixBadLinks(
       // We can set to null (delete), so undefined means we haven't set it at all.
       if (patchedNode['inputs']![slot] !== undefined) {
         logger.log(
-          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode[
-            'inputs'
-          ]![slot]!} Skipping.`
+          ` > Already set ${node.id}.inputs[${slot}] to ${
+            patchedNode['inputs']![slot]!
+          } Skipping.`
         )
         return false
       }
@@ -144,13 +164,16 @@ export function fixBadLinks(
         return false
       }
       patchedNode['inputs']![slot] = linkIdToSet
-      if (fix) {
-        inputSlot!.link = linkIdToSet
+      // Live NodeInputSlot mirrors are store-derived and need no repair;
+      // only serialized plain slots carry a writable link field.
+      if (fix && !(inputSlot instanceof NodeInputSlot)) {
+        const writable = inputSlot as { link?: number | null }
+        writable.link = linkIdToSet
       }
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}
       patchedNode['outputs']![slot] = patchedNode['outputs']![slot] || {
-        links: [...(node.outputs?.[slot]?.links || [])],
+        links: [...(outputLinkIdsOf(node, slot) ?? [])],
         changes: {}
       }
       if (patchedNode['outputs']![slot]!['changes']![linkId] !== undefined) {
@@ -172,13 +195,15 @@ export function fixBadLinks(
           return false
         }
         patchedNode['outputs']![slot]!['links'].push(linkId)
-        if (fix) {
+        // Live NodeOutputSlot mirrors are store-derived and need no repair;
+        // only serialized plain slots carry a writable links array.
+        if (fix && !(node.outputs?.[slot] instanceof NodeOutputSlot)) {
           node.outputs = node.outputs || []
-          node.outputs[slot] =
-            node.outputs[slot] ||
-            ({} satisfies Partial<INodeOutputSlot> as INodeOutputSlot)
-          node.outputs[slot]!.links = node.outputs[slot]!.links || []
-          node.outputs[slot]!.links!.push(linkId)
+          const slotData = (node.outputs[slot] ??=
+            {} satisfies Partial<INodeOutputSlot> as INodeOutputSlot)
+          const writable = slotData as { links?: number[] | null }
+          writable.links = writable.links || []
+          writable.links.push(linkId)
         }
       } else {
         const linkIdIndex =
@@ -190,8 +215,9 @@ export function fixBadLinks(
           return false
         }
         patchedNode['outputs']![slot]!['links'].splice(linkIdIndex, 1)
-        if (fix) {
-          node.outputs?.[slot]!.links!.splice(linkIdIndex, 1)
+        if (fix && !(node.outputs?.[slot] instanceof NodeOutputSlot)) {
+          const writable = node.outputs?.[slot] as { links?: number[] | null }
+          writable.links?.splice(linkIdIndex, 1)
         }
       }
     }
@@ -209,7 +235,7 @@ export function fixBadLinks(
     linkId: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let has = false
+    let has: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -224,7 +250,7 @@ export function fixBadLinks(
         has = !!nodeHasIt
       }
     } else {
-      const nodeHasIt = node.outputs?.[slot]?.links?.includes(linkId)
+      const nodeHasIt = outputLinkIdsOf(node, slot)?.includes(toLinkId(linkId))
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes'][linkId]) {
         const patchedHasIt =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
@@ -249,7 +275,7 @@ export function fixBadLinks(
     slot: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let hasAny = false
+    let hasAny: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -264,7 +290,7 @@ export function fixBadLinks(
         hasAny = !!nodeHasAny
       }
     } else {
-      const nodeHasAny = node.outputs?.[slot]?.links?.length
+      const nodeHasAny = outputLinkIdsOf(node, slot)?.length
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes']) {
         const patchedHasAny =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.length
@@ -280,15 +306,9 @@ export function fixBadLinks(
     return hasAny
   }
 
-  let links: Array<SerialisedLLinkArray | LLink> = []
-  if (!Array.isArray(graph.links)) {
-    links = Object.values(graph.links).reduce((acc, v) => {
-      acc[v.id] = v
-      return acc
-    }, links)
-  } else {
-    links = graph.links
-  }
+  const links: Array<SerialisedLLinkArray | LLink> = Array.isArray(graph.links)
+    ? graph.links
+    : Array.from((graph as LGraph).links.values())
 
   const linksReverse = [...links]
   linksReverse.reverse()
@@ -368,12 +388,12 @@ export function fixBadLinks(
           logger.log(
             ` > [PATCH] ${targetLog} is not defined, will set to ${link.id}.`
           )
-          let patched = patchTarget('ADD')
+          const patched = patchTarget('ADD')
           if (!patched) {
             logger.log(
               ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${link.id} from ${originLog}.`
             )
-            patched = patchOrigin('REMOVE')
+            patchOrigin('REMOVE')
           }
         } else {
           logger.log(
@@ -429,7 +449,8 @@ export function fixBadLinks(
     for (let i = data.deletedLinks.length - 1; i >= 0; i--) {
       logger.log(`Deleting link #${data.deletedLinks[i]}.`)
       if ((graph as LGraph).getNodeById) {
-        delete graph.links[data.deletedLinks[i]!]
+        const liveGraph = graph as LGraph
+        liveGraph._removeLink(toLinkId(data.deletedLinks[i]!))
       } else {
         graph = graph as ISerialisedGraph
         // Sometimes we got objects for links if passed after ComfyUI's loadGraphData modifies the

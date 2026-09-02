@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -25,17 +25,19 @@ type Searcher = NonNullable<ComponentProps<typeof AsyncSearchInput>['searcher']>
 function renderSearch(
   initialQuery: string = '',
   searcher?: Searcher,
-  updateKey?: { value: unknown }
+  updateKey?: { value: unknown },
+  onEnter?: (event: KeyboardEvent) => void
 ) {
   const query = ref(initialQuery)
   const key = updateKey
   const Harness = defineComponent({
     components: { AsyncSearchInput },
-    setup: () => ({ query, searcher, key }),
+    setup: () => ({ query, searcher, key, onEnter }),
     template: `<AsyncSearchInput
       v-model="query"
       :searcher="searcher"
       :update-key="key"
+      @enter="onEnter"
     />`
   })
   const utils = render(Harness, { global: { plugins: [i18n] } })
@@ -43,14 +45,6 @@ function renderSearch(
 }
 
 describe('AsyncSearchInput', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   describe('Input binding', () => {
     it('renders the initial query', () => {
       renderSearch('hello')
@@ -62,6 +56,14 @@ describe('AsyncSearchInput', () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       await user.type(screen.getByRole('textbox'), 'abc')
       expect(query.value).toBe('abc')
+    })
+
+    it('emits enter when the user presses Enter in the textbox', async () => {
+      const onEnter = vi.fn()
+      renderSearch('', undefined, undefined, onEnter)
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.type(screen.getByRole('textbox'), '{Enter}')
+      expect(onEnter).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -156,6 +158,29 @@ describe('AsyncSearchInput', () => {
       expect(cleanupA).toHaveBeenCalledTimes(1)
       // Latest active search's cleanup has not fired yet
       expect(cleanupB).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Autofocus', () => {
+    function renderWithAutofocus(autofocus: boolean) {
+      const Harness = defineComponent({
+        components: { AsyncSearchInput },
+        setup: () => ({ autofocus }),
+        template: `<AsyncSearchInput :autofocus="autofocus" />`
+      })
+      return render(Harness, { global: { plugins: [i18n] } })
+    }
+
+    it('focuses the input on mount when autofocus is set', async () => {
+      renderWithAutofocus(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(screen.getByRole('textbox')).toHaveFocus()
+    })
+
+    it('does not steal focus on mount without autofocus', async () => {
+      renderWithAutofocus(false)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(screen.getByRole('textbox')).not.toHaveFocus()
     })
   })
 })

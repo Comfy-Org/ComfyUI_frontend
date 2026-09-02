@@ -86,7 +86,7 @@
           @max-reached="showCeilingWarning = true"
         >
           <template #prefix>
-            <i class="icon-[lucide--component] size-4 shrink-0 text-gold-500" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
           </template>
         </FormattedNumberStepper>
       </div>
@@ -98,7 +98,7 @@
       v-if="isBelowMin"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -109,7 +109,7 @@
       v-if="showCeilingWarning"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -117,7 +117,7 @@
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
       <a
-        href="https://www.comfy.org/cloud/enterprise"
+        href="https://comfy.org/cloud/enterprise/"
         target="_blank"
         class="ml-1 text-inherit"
         >{{ $t('credits.topUp.contactUs') }}</a
@@ -159,10 +159,9 @@ import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -178,9 +177,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { flags } = useFeatureFlags()
 
-const { isSubscriptionEnabled } = useSubscription()
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
@@ -243,7 +240,7 @@ function handlePresetClick(amount: number) {
 
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
@@ -255,24 +252,27 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    await authActions.purchaseCredits(payAmount.value)
+    await authActions.purchaseCreditsDirect(payAmount.value)
 
-    // Close top-up dialog (keep tracking) and open credits panel to show updated balance
+    // Close top-up dialog (keep tracking) and open Plan & Credits to show the
+    // updated balance. The destination is the V1 panel for every session: the
+    // legacy `credits` panel is hidden from the settings menu, and keying this
+    // off the billing rail sent rail-less sessions (API key, pre-workspace
+    // bootstrap) to that hidden screen.
     handleClose(false)
 
-    // In workspace mode (personal workspace), show workspace settings panel
-    // Otherwise, show legacy subscription/credits panel
-    const settingsPanel = flags.teamWorkspacesEnabled
-      ? 'workspace'
-      : isSubscriptionEnabled()
-        ? 'subscription'
-        : 'credits'
-    settingsDialog.show(settingsPanel)
+    settingsDialog.show('workspace')
   } catch (error) {
     console.error('Purchase failed:', error)
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: categorizeBillingApiError(error)
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

@@ -23,6 +23,7 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   readonly fromPos: Point
   readonly fromSlotIndex: SlotIndex
   fromDirection: LinkDirection = LinkDirection.LEFT
+  readonly isIoNodeLink = true
 
   constructor(
     readonly network: LinkNetwork,

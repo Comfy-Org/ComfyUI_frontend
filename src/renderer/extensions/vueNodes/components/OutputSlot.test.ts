@@ -6,6 +6,7 @@ import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { toNodeId } from '@/types/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
@@ -25,11 +26,6 @@ vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
     createTooltipConfig: (text: string) => ({ value: text })
   })
 }))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ useSlotElementTracking: vi.fn() })
-)
 
 vi.mock(
   '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction',
@@ -58,7 +54,7 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     props: {
       slotData: { type: '*', ...slotData } as INodeSlot,
       index,
-      nodeId: 'test-node'
+      nodeId: toNodeId('test-node')
     },
     global: {
       plugins: [i18n],

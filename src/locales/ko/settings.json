@@ -199,7 +199,6 @@
     "name": "PLY 엔진",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLY 파일을 불러올 엔진을 선택합니다. \"threejs\"는 네이티브 Three.js PLYLoader를 사용하며(메시 PLY 파일에 적합), \"fastply\"는 ASCII 포인트 클라우드 PLY 파일에 최적화된 로더를 사용합니다. \"sparkjs\"는 3D Gaussian Splatting PLY 파일에 Spark.js를 사용합니다."
@@ -368,8 +367,8 @@
     "tooltip": "떠다니는 작업 큐 패널을 에셋 사이드 패널에 내장된 동등한 작업 큐로 대체합니다. 이 옵션을 비활성화하면 기존의 떠다니는 패널 레이아웃으로 돌아갈 수 있습니다."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "오류 탭을 사이드 패널에 표시",
-    "tooltip": "활성화하면 오른쪽 사이드 패널에 오류 탭이 표시되어 워크플로 실행 오류를 한눈에 확인할 수 있습니다."
+    "name": "사이드 패널에 문제 탭 표시",
+    "tooltip": "활성화하면 설정이 필요한 차단 오류와 누락된 리소스를 표시하기 위해 오른쪽 사이드 패널에 문제 탭이 표시됩니다."
   },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",
@@ -427,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "자동 스케일 레이아웃 (Vue 노드)",
-    "tooltip": "Vue 렌더링으로 전환 시 노드 위치를 자동으로 조정하여 겹침 방지"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "모던 노드 디자인 (Vue 노드)",
     "tooltip": "모던: 향상된 상호작용, 기본 브라우저 기능, 업데이트된 시각적 디자인을 갖춘 DOM 기반 렌더링. 클래식: 전통적인 캔버스 렌더링."
@@ -459,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "워크플로 삭제 시 확인 표시"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "위젯 값을 이름으로 복원"
   },
   "Comfy_Workflow_Persist": {
     "name": "페이지 (재)로드시 워크플로우 상태를 유지하고 복원"

@@ -3,8 +3,16 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
+import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 
 import type { MenuOption } from './useMoreOptionsMenu'
+
+type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
+
+const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
+  input: true,
+  preview: true
+}
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
@@ -107,23 +115,31 @@ export function useImageMenuOptions() {
     }
   }
 
-  const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
+  const getImageMenuOptions = (
+    node: LGraphNode,
+    availability: ImageMenuAvailability = DEFAULT_IMAGE_MENU_AVAILABILITY
+  ): MenuOption[] => {
     const hasImages = !!node?.imgs?.length
     const canPaste = canPasteImage(node)
-    if (!hasImages && !canPaste) return []
+    if (
+      (!hasImages || !availability.preview) &&
+      (!canPaste || !availability.input)
+    )
+      return []
 
     const options: MenuOption[] = []
 
-    if (hasImages) {
+    if (hasImages && availability.preview) {
       options.push(
-        {
-          label: t('contextMenu.Open in Mask Editor'),
-          action: () => openMaskEditor()
-        },
         {
           label: t('contextMenu.Open Image'),
           icon: 'icon-[lucide--external-link]',
           action: () => openImage(node)
+        },
+        {
+          label: t('contextMenu.Open in Mask Editor'),
+          icon: 'icon-[comfy--mask]',
+          action: () => openMaskEditor()
         },
         {
           label: t('contextMenu.Copy Image'),
@@ -133,7 +149,7 @@ export function useImageMenuOptions() {
       )
     }
 
-    if (canPaste) {
+    if (canPaste && availability.input) {
       options.push({
         label: t('contextMenu.Paste Image'),
         icon: 'icon-[lucide--clipboard-paste]',
@@ -141,7 +157,7 @@ export function useImageMenuOptions() {
       })
     }
 
-    if (hasImages) {
+    if (hasImages && availability.preview) {
       options.push({
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',

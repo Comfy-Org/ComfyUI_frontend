@@ -1,15 +1,14 @@
 import { until } from '@vueuse/core'
-import { setActivePinia } from 'pinia'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { createTestingPinia } from '@pinia/testing'
 import type { SystemStats } from '@/types'
 
 // Mock the dependencies
@@ -18,13 +17,15 @@ vi.mock('semver', () => ({
   valid: vi.fn(() => '1.0.0')
 }))
 
-const mockData = vi.hoisted(() => ({ isDesktop: true }))
+const mockData = vi.hoisted(() => ({ isDesktop: true, isCloud: false }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
-  isCloud: false
+  get isCloud() {
+    return mockData.isCloud
+  }
 }))
 
 vi.mock('@/platform/updates/common/releaseService', () => {
@@ -100,6 +101,15 @@ vi.mock('@vueuse/core', () => ({
   createSharedComposable: vi.fn((fn) => fn)
 }))
 
+const mocks = vi.hoisted(() => ({
+  tour: { activeTour: null as EntryPath | null }
+}))
+vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
+  const { reactive } = await import('vue')
+  mocks.tour = reactive(mocks.tour)
+  return { useOnboardingTourStore: () => mocks.tour }
+})
+
 describe('useReleaseStore', () => {
   const mockRelease = {
     id: 1,
@@ -111,10 +121,9 @@ describe('useReleaseStore', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    vi.resetAllMocks()
     mockSystemStatsState.reset()
+    mockData.isCloud = false
+    mocks.tour.activeTour = null
   })
 
   describe('initial state', () => {
@@ -228,12 +237,15 @@ describe('useReleaseStore', () => {
 
         await store.initialize()
 
-        expect(releaseService.getReleases).toHaveBeenCalledWith({
-          project: 'comfyui',
-          current_version: '1.0.0',
-          form_factor: 'git-windows',
-          locale: 'en'
-        })
+        expect(releaseService.getReleases).toHaveBeenCalledWith(
+          {
+            project: 'comfyui',
+            current_version: '1.0.0',
+            form_factor: 'git-windows',
+            locale: 'en'
+          },
+          { deployEnvironment: undefined }
+        )
       })
     })
 
@@ -300,12 +312,15 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(releaseService.getReleases).toHaveBeenCalledWith({
-        project: 'comfyui',
-        current_version: '1.0.0',
-        form_factor: 'git-windows',
-        locale: 'en'
-      })
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'git-windows',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
       expect(store.releases).toEqual([mockRelease])
     })
 
@@ -318,12 +333,30 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(releaseService.getReleases).toHaveBeenCalledWith({
-        project: 'comfyui',
-        current_version: '1.0.0',
-        form_factor: 'desktop-mac',
-        locale: 'en'
-      })
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'desktop-mac',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
+    })
+
+    it('should pass deploy_environment from system stats', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.deploy_environment = 'local-desktop'
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        expect.anything(),
+        { deployEnvironment: 'local-desktop' }
+      )
     })
 
     it('should skip fetching when --disable-api-nodes is present', async () => {
@@ -617,6 +650,43 @@ describe('useReleaseStore', () => {
 
       expect(store.shouldShowPopup).toBe(true)
     })
+
+    it('withholds the popup while the first-run tour is on screen', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+
+      mocks.tour.activeTour = 'firstRun'
+      expect(store.shouldShowPopup).toBe(false)
+
+      mocks.tour.activeTour = null
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('shows the popup during a tour it does not overlap', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+      mocks.tour.activeTour = 'appMode'
+
+      expect(store.shouldShowPopup).toBe(true)
+    })
   })
 
   describe('edge cases', () => {
@@ -654,6 +724,33 @@ describe('useReleaseStore', () => {
 
       // Should only call API once due to loading check
       expect(releaseService.getReleases).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('isCloud environment (FE-1237)', () => {
+    beforeEach(() => {
+      mockData.isCloud = true
+    })
+
+    it('should use comfyui_version, not cloud_version, as the current version', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '0.27.1'
+      systemStatsStore.systemStats!.system.cloud_version = '0.160.1'
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'cloud',
+          current_version: '0.27.1',
+          form_factor: 'git-windows',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
     })
   })
 

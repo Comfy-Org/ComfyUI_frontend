@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 import { SubgraphBreadcrumbPanel } from '@e2e/fixtures/components/SubgraphBreadcrumbPanel'
 
-export class SubgraphBreadcrumbHelper {
+class SubgraphBreadcrumbHelper {
   readonly panel: SubgraphBreadcrumbPanel
 
   constructor(public readonly page: Page) {

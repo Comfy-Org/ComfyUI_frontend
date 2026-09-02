@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
@@ -13,9 +13,12 @@ const i18n = createI18n({
   }
 })
 
-function renderComponent(onExportModel?: (format: string) => void) {
+function renderComponent(
+  onExportModel?: (format: string) => void,
+  sourceFormat: string | null = null
+) {
   const utils = render(ExportControls, {
-    props: { onExportModel },
+    props: { onExportModel, sourceFormat },
     global: {
       plugins: [i18n],
       directives: { tooltip: () => {} }
@@ -25,10 +28,6 @@ function renderComponent(onExportModel?: (format: string) => void) {
 }
 
 describe('ExportControls', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   it('renders the trigger button without exposing the format list initially', () => {
     renderComponent()
 
@@ -61,6 +60,23 @@ describe('ExportControls', () => {
     expect(
       screen.queryByRole('button', { name: 'GLB' })
     ).not.toBeInTheDocument()
+  })
+
+  it('offers only the source format for direct-export files (e.g. ply)', async () => {
+    const onExportModel = vi.fn()
+    const { user } = renderComponent(onExportModel, 'ply')
+
+    await user.click(screen.getByRole('button', { name: 'Export model' }))
+
+    expect(screen.getByRole('button', { name: 'PLY' })).toBeVisible()
+    for (const label of ['GLB', 'OBJ', 'STL', 'FBX']) {
+      expect(
+        screen.queryByRole('button', { name: label })
+      ).not.toBeInTheDocument()
+    }
+
+    await user.click(screen.getByRole('button', { name: 'PLY' }))
+    expect(onExportModel).toHaveBeenCalledWith('ply')
   })
 
   it('hides the popup when a click happens outside the trigger', async () => {

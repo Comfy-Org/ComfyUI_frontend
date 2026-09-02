@@ -1,9 +1,19 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
+import { buildModelLlmsLinks } from '../../../config/model-llms'
 import { t } from '../../../i18n/translations'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode,
+} from '../../../utils/jsonLd'
+import { buildModelFaqs, modelFaqJsonLd } from '../../../utils/modelFaq'
+import { getPageDescription } from '../../../utils/modelSeoCopy'
 
 export const getStaticPaths: GetStaticPaths = () => {
   return models.map((model) => ({
@@ -15,136 +25,101 @@ const { slug } = Astro.params
 const model = getModelBySlug(slug as string)!
 
 if (model.canonicalSlug) {
-  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}`, 301)
+  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}/`, 301)
 }
 
 const { displayName } = model
-const canonicalURL = new URL(`/p/supported-models/${model.slug}`, Astro.site)
 
-const dirDescriptions: Record<string, string> = {
-  diffusion_models: 'a diffusion model that generates images or video from text and image prompts',
-  checkpoints: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
-  loras: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
-  controlnet: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
-  clip_vision: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
-  vae: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
-  text_encoders: 'a text encoder that converts prompts into embeddings used to guide generation',
-  audio_encoders: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
-  upscale_models: 'an upscale model that increases image resolution while preserving or enhancing detail',
-  latent_upscale_models: 'a latent upscale model that refines latents at higher resolution before decoding',
-  style_models: 'a style model that transfers artistic style onto generated images',
-  model_patches: 'a model patch that modifies or extends the behavior of an existing base model',
-  partner_nodes: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
-}
-
-const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Hub, ready to load and customize.`
-
-const softwareAppJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: displayName,
-  applicationCategory: 'MultimediaApplication',
-  operatingSystem: 'Any',
-  url: canonicalURL.href,
-  author: {
-    '@type': 'Organization',
-    name: 'Comfy Org',
-    url: 'https://comfy.org'
-  }
-}
-
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    {
-      '@type': 'ListItem',
-      position: 1,
-      name: t('models.breadcrumb.home'),
-      item: 'https://comfy.org'
-    },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: t('models.breadcrumb.models'),
-      item: 'https://comfy.org/p/supported-models'
-    },
-    {
-      '@type': 'ListItem',
-      position: 3,
-      name: displayName
-    }
-  ]
-}
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: `What is ${displayName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: whatIsDescription
-      }
-    },
-    {
-      '@type': 'Question',
-      name: `How do I use ${displayName} in ComfyUI?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: model.docsUrl
-          ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
-          : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`
-      }
-    },
-    {
-      '@type': 'Question',
-      name: `How many ComfyUI workflows use ${displayName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Hub. Each template is ready to run in ComfyUI and can be customized to suit your project.`
-      }
-    },
-    {
-      '@type': 'Question',
-      name: `Is ${displayName} free to use in ComfyUI?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`
-      }
-    }
-  ]
-}
+// fal-style LLMs surface: markdown twin + agent handoff links.
+const llms = buildModelLlmsLinks(model.slug, displayName, Astro.site)
 
 const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+const pageDescription = getPageDescription(model)
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
+  name: displayName,
+  url,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+})
+const faqs = buildModelFaqs(model, locale)
+const whatIsDescription = faqs[0].answer
+const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
 ---
 
 <BaseLayout
-  title={`${pageTitle} — Comfy`}
+  title={`${pageTitle} - Comfy`}
   description={pageDescription}
   ogImage={model.thumbnailUrl}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('models.breadcrumb.models', locale),
+      url: absoluteUrl(Astro.site, '/p/supported-models'),
+    },
+    { name: displayName },
+  ]}
+  extraJsonLd={[software, faqPage]}
 >
-  <Fragment slot="head">
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(softwareAppJsonLd)}
-    />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(breadcrumbJsonLd)}
-    />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(faqJsonLd)}
-    />
-  </Fragment>
+
+  <div class="mx-auto flex max-w-7xl justify-end px-6 pt-6 lg:px-8">
+    <div class="relative" id="llms-wrap" data-md={llms.mdPath}>
+      <button
+        id="llms-btn"
+        aria-haspopup="true"
+        aria-expanded="false"
+        class="cursor-pointer rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-extrabold tracking-widest text-primary-comfy-canvas hover:bg-white/10"
+      >
+        {t('models.llms.button')} ▾
+      </button>
+      <div
+        id="llms-menu"
+        class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-white/15 bg-primary-comfy-ink py-1.5 shadow-2xl"
+      >
+        <button
+          id="llms-copy"
+          class="block w-full cursor-pointer px-4 py-2.5 text-left text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.copy')}<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span>
+        </button>
+        <a href={llms.mdPath} class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5">
+          {t('models.llms.view')}
+        </a>
+        <a
+          href="/p/supported-models/llms.txt"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.catalog')}
+        </a>
+        <div class="my-1 border-t border-white/10"></div>
+        <a
+          href={llms.claudeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.openClaude')} ↗
+        </a>
+        <a
+          href={llms.chatgptUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.openChatgpt')} ↗
+        </a>
+      </div>
+    </div>
+  </div>
 
   <ModelHeroSection
     displayName={displayName}
@@ -182,4 +157,55 @@ const pageDescription = `Run ${displayName} in ComfyUI with full parameter contr
   <section>
     {/* TODO: shared HowComfyWorks component */}
   </section>
+
+  <FAQSplit01
+    heading={t('models.faq.heading', locale)}
+    faqs={faqs}
+    client:visible
+  />
 </BaseLayout>
+
+<script>
+  // One delegated document listener: it queries elements at event time, so it
+  // survives ClientRouter DOM swaps without rebinding and never piles up.
+  function setLlmsMenuOpen(open: boolean) {
+    const btn = document.getElementById('llms-btn')
+    const menu = document.getElementById('llms-menu')
+    if (!btn || !menu) return
+    menu.classList.toggle('hidden', !open)
+    btn.setAttribute('aria-expanded', String(open))
+  }
+
+  async function copyLlmsMarkdown() {
+    const wrap = document.getElementById('llms-wrap')
+    const mdUrl = wrap instanceof HTMLElement ? wrap.dataset.md : undefined
+    if (!mdUrl) return
+    try {
+      const md = await (await fetch(mdUrl)).text()
+      await navigator.clipboard.writeText(md)
+      const check = document.getElementById('llms-copied')
+      check?.classList.remove('hidden')
+      window.setTimeout(() => {
+        check?.classList.add('hidden')
+        setLlmsMenuOpen(false)
+      }, 1200)
+    } catch {
+      /* fetch or clipboard unavailable */
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target instanceof Element ? e.target : null
+    if (!target) return
+    if (target.closest('#llms-btn')) {
+      const menu = document.getElementById('llms-menu')
+      setLlmsMenuOpen(menu?.classList.contains('hidden') ?? false)
+      return
+    }
+    if (target.closest('#llms-copy')) {
+      void copyLlmsMarkdown()
+      return
+    }
+    if (!target.closest('#llms-wrap')) setLlmsMenuOpen(false)
+  })
+</script>

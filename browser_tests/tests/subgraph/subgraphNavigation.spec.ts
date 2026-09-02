@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 
 const UPDATED_SUBGRAPH_TITLE = 'Updated Subgraph Title'
 
@@ -260,17 +261,18 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
+      const localSubgraphNodeId = toNodeId(subgraphNodeId)
 
       await comfyPage.page.evaluate((nodeId) => {
         const node = window.app!.canvas.graph!.getNodeById(nodeId)!
         node.progress = 0.5
-      }, subgraphNodeId)
+      }, localSubgraphNodeId)
 
       await expect
         .poll(() =>
           comfyPage.page.evaluate(
             (nodeId) => window.app!.canvas.graph!.getNodeById(nodeId)!.progress,
-            subgraphNodeId
+            localSubgraphNodeId
           )
         )
         .toBe(0.5)
@@ -287,7 +289,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         .poll(() =>
           comfyPage.page.evaluate((nodeId) => {
             return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-          }, subgraphNodeId)
+          }, localSubgraphNodeId)
         )
         .toBeUndefined()
     })
@@ -298,11 +300,12 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
+      const localSubgraphNodeId = toNodeId(subgraphNodeId)
 
       await comfyPage.page.evaluate((nodeId) => {
         const node = window.app!.canvas.graph!.getNodeById(nodeId)!
         node.progress = 0.7
-      }, subgraphNodeId)
+      }, localSubgraphNodeId)
 
       const subgraphNode =
         await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)

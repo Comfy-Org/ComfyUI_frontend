@@ -49,6 +49,7 @@ onUnmounted(() => {
         :can-export="viewer.canExport"
         :material-modes="viewer.materialModes"
         :has-skeleton="viewer.hasSkeleton"
+        :source-format="viewer.sourceFormat"
         @update-background-image="viewer.handleBackgroundImageUpdate"
         @export-model="viewer.exportModel"
       />
