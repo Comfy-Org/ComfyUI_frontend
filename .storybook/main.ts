@@ -6,7 +6,11 @@ import Components from 'unplugin-vue-components/vite'
 import type { InlineConfig } from 'vite'
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: [
+    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../apps/website/src/components/blocks/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+  ],
+  staticDirs: ['../public', '../apps/website/public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {
     name: '@storybook/vue3-vite',
@@ -71,12 +75,59 @@ const config: StorybookConfig = {
       resolve: {
         alias: [
           {
+            find: '@comfyorg/website',
+            replacement: process.cwd() + '/apps/website'
+          },
+          {
+            find: /^\/animations\//,
+            replacement: process.cwd() + '/apps/website/public/animations/'
+          },
+          {
+            find: /^\/icons\//,
+            replacement: process.cwd() + '/apps/website/public/icons/'
+          },
+          {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
           },
           {
             find: '@/composables/queue/useJobActions',
             replacement: process.cwd() + '/src/storybook/mocks/useJobActions.ts'
+          },
+          {
+            find: '@/composables/billing/useBillingContext',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useBillingContext.ts'
+          },
+          {
+            find: '@/composables/useFeatureFlags',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useFeatureFlags.ts'
+          },
+          {
+            find: '@/platform/workspace/composables/useWorkspaceUI',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
+          },
+          {
+            find: '@/platform/workspace/composables/useBillingCapabilities',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useBillingCapabilities.ts'
+          },
+          {
+            find: '@/platform/workspace/stores/teamWorkspaceStore',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/teamWorkspaceStore.ts'
+          },
+          {
+            find: '@/composables/auth/useCurrentUser',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useCurrentUser.ts'
+          },
+          {
+            find: '@/platform/workspace/composables/useWorkspaceUI',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
           },
           {
             find: '@/utils/formatUtil',

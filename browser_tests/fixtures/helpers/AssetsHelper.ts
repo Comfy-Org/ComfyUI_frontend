@@ -26,7 +26,7 @@ const historyRoutePattern = /\/api\/history$/
  * The sidebar filter ultimately matches on the filename extension, so the
  * fixture also picks an extension-appropriate filename for each kind.
  */
-export type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
+type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
 
 const DEFAULT_EXTENSION: Record<MediaKindFixture, string> = {
   images: 'png',
@@ -91,56 +91,6 @@ export function createMockJobs(
       },
       ...baseOverrides
     })
-  )
-}
-
-/**
- * Create one job per requested media kind, in the order supplied. Jobs share
- * a stable timestamp ordering (newer first) so callers can rely on the result
- * order when mediaType filters are inactive.
- */
-export function createMixedMediaJobs(
-  kinds: MediaKindFixture[]
-): RawJobListItem[] {
-  const now = Date.now()
-  return kinds.map((kind, i) =>
-    createMockJob({
-      id: `${kind}-${String(i + 1).padStart(3, '0')}`,
-      mediaKind: kind,
-      create_time: now - i * 60_000,
-      execution_start_time: now - i * 60_000,
-      execution_end_time: now - i * 60_000 + 5000
-    })
-  )
-}
-
-/**
- * Create jobs with explicit `(create_time, execution duration)` pairs so that
- * sort assertions for newest/oldest and longest/fastest are unambiguous.
- *
- * Each spec entry yields a job whose `execution_end_time - execution_start_time`
- * equals `durationMs`. The first spec becomes id `job-001`, etc.
- */
-export function createJobsWithExecutionTimes(
-  specs: ReadonlyArray<{ createTime: number; durationMs: number }>
-): RawJobListItem[] {
-  return specs.map((spec, i) =>
-    createMockJob({
-      id: `job-${String(i + 1).padStart(3, '0')}`,
-      create_time: spec.createTime,
-      execution_start_time: spec.createTime,
-      execution_end_time: spec.createTime + spec.durationMs
-    })
-  )
-}
-
-/** Create mock imported file names with various media types. */
-export function createMockImportedFiles(count: number): string[] {
-  const extensions = ['png', 'jpg', 'mp4', 'wav', 'glb', 'txt']
-  return Array.from(
-    { length: count },
-    (_, i) =>
-      `imported_${String(i + 1).padStart(3, '0')}.${extensions[i % extensions.length]}`
   )
 }
 

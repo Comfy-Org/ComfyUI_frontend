@@ -1,13 +1,13 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import {
-  makeTemplate,
-  mockTemplateIndex
-} from '@e2e/fixtures/data/templateFixtures'
+import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
+import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
+import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
+
+const test = mergeTests(createCloudAssetsFixture([]), templateApiFixture)
 
 const Cloud = TemplateIncludeOnDistributionEnum.Cloud
 const Desktop = TemplateIncludeOnDistributionEnum.Desktop
@@ -25,54 +25,36 @@ test.describe(
       )
       await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
       await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
-
-      await comfyPage.page.route('**/templates/**.webp', async (route) => {
-        await route.fulfill({
-          status: 200,
-          path: 'browser_tests/assets/example.webp',
-          headers: {
-            'Content-Type': 'image/webp',
-            'Cache-Control': 'no-store'
-          }
-        })
-      })
     })
 
     test('displayed count matches visible cards when distribution filter excludes templates', async ({
-      comfyPage
+      comfyPage,
+      templateApi
     }) => {
-      const templates: TemplateInfo[] = [
-        makeTemplate({
-          name: 'cloud-1',
-          title: 'Cloud One',
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'cloud-2',
-          title: 'Cloud Two',
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'desktop-hidden',
-          title: 'Desktop Hidden',
-          includeOnDistributions: [Desktop]
-        }),
-        makeTemplate({
-          name: 'universal',
-          title: 'Universal'
-        })
-      ]
-
-      await comfyPage.page.route('**/templates/index.json', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockTemplateIndex(templates)),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store'
-          }
-        })
-      })
+      templateApi.configure(
+        withTemplates([
+          makeTemplate({
+            name: 'cloud-1',
+            title: 'Cloud One',
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'cloud-2',
+            title: 'Cloud Two',
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'desktop-hidden',
+            title: 'Desktop Hidden',
+            includeOnDistributions: [Desktop]
+          }),
+          makeTemplate({
+            name: 'universal',
+            title: 'Universal'
+          })
+        ])
+      )
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -86,45 +68,38 @@ test.describe(
     })
 
     test('filtered count reflects distribution + model filter together', async ({
-      comfyPage
+      comfyPage,
+      templateApi
     }) => {
-      const templates: TemplateInfo[] = [
-        makeTemplate({
-          name: 'wan-cloud-1',
-          title: 'Wan Cloud 1',
-          models: ['Wan 2.2'],
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'wan-cloud-2',
-          title: 'Wan Cloud 2',
-          models: ['Wan 2.2'],
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'wan-desktop',
-          title: 'Wan Desktop',
-          models: ['Wan 2.2'],
-          includeOnDistributions: [Desktop]
-        }),
-        makeTemplate({
-          name: 'flux-cloud',
-          title: 'Flux Cloud',
-          models: ['Flux'],
-          includeOnDistributions: [Cloud]
-        })
-      ]
-
-      await comfyPage.page.route('**/templates/index.json', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockTemplateIndex(templates)),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store'
-          }
-        })
-      })
+      templateApi.configure(
+        withTemplates([
+          makeTemplate({
+            name: 'wan-cloud-1',
+            title: 'Wan Cloud 1',
+            models: ['Wan 2.2'],
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'wan-cloud-2',
+            title: 'Wan Cloud 2',
+            models: ['Wan 2.2'],
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'wan-desktop',
+            title: 'Wan Desktop',
+            models: ['Wan 2.2'],
+            includeOnDistributions: [Desktop]
+          }),
+          makeTemplate({
+            name: 'flux-cloud',
+            title: 'Flux Cloud',
+            models: ['Flux'],
+            includeOnDistributions: [Cloud]
+          })
+        ])
+      )
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -144,36 +119,29 @@ test.describe(
     })
 
     test('desktop-only templates never leak into DOM on cloud distribution', async ({
-      comfyPage
+      comfyPage,
+      templateApi
     }) => {
-      const templates: TemplateInfo[] = [
-        makeTemplate({
-          name: 'cloud-visible',
-          title: 'Cloud Visible',
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'desktop-leak-check',
-          title: 'Desktop Leak Check',
-          includeOnDistributions: [Desktop]
-        }),
-        makeTemplate({
-          name: 'local-leak-check',
-          title: 'Local Leak Check',
-          includeOnDistributions: [Local]
-        })
-      ]
-
-      await comfyPage.page.route('**/templates/index.json', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockTemplateIndex(templates)),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store'
-          }
-        })
-      })
+      templateApi.configure(
+        withTemplates([
+          makeTemplate({
+            name: 'cloud-visible',
+            title: 'Cloud Visible',
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'desktop-leak-check',
+            title: 'Desktop Leak Check',
+            includeOnDistributions: [Desktop]
+          }),
+          makeTemplate({
+            name: 'local-leak-check',
+            title: 'Local Leak Check',
+            includeOnDistributions: [Local]
+          })
+        ])
+      )
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -200,28 +168,21 @@ test.describe(
     })
 
     test('templates without includeOnDistributions are visible on cloud', async ({
-      comfyPage
+      comfyPage,
+      templateApi
     }) => {
-      const templates: TemplateInfo[] = [
-        makeTemplate({ name: 'unrestricted-1', title: 'Unrestricted 1' }),
-        makeTemplate({ name: 'unrestricted-2', title: 'Unrestricted 2' }),
-        makeTemplate({
-          name: 'cloud-only',
-          title: 'Cloud Only',
-          includeOnDistributions: [Cloud]
-        })
-      ]
-
-      await comfyPage.page.route('**/templates/index.json', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockTemplateIndex(templates)),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store'
-          }
-        })
-      })
+      templateApi.configure(
+        withTemplates([
+          makeTemplate({ name: 'unrestricted-1', title: 'Unrestricted 1' }),
+          makeTemplate({ name: 'unrestricted-2', title: 'Unrestricted 2' }),
+          makeTemplate({
+            name: 'cloud-only',
+            title: 'Cloud Only',
+            includeOnDistributions: [Cloud]
+          })
+        ])
+      )
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -234,39 +195,32 @@ test.describe(
     })
 
     test('clear filters button resets to correct distribution-filtered total', async ({
-      comfyPage
+      comfyPage,
+      templateApi
     }) => {
-      const templates: TemplateInfo[] = [
-        makeTemplate({
-          name: 'wan-cloud',
-          title: 'Wan Cloud',
-          models: ['Wan 2.2'],
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'flux-cloud',
-          title: 'Flux Cloud',
-          models: ['Flux'],
-          includeOnDistributions: [Cloud]
-        }),
-        makeTemplate({
-          name: 'wan-desktop',
-          title: 'Wan Desktop',
-          models: ['Wan 2.2'],
-          includeOnDistributions: [Desktop]
-        })
-      ]
-
-      await comfyPage.page.route('**/templates/index.json', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockTemplateIndex(templates)),
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store'
-          }
-        })
-      })
+      templateApi.configure(
+        withTemplates([
+          makeTemplate({
+            name: 'wan-cloud',
+            title: 'Wan Cloud',
+            models: ['Wan 2.2'],
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'flux-cloud',
+            title: 'Flux Cloud',
+            models: ['Flux'],
+            includeOnDistributions: [Cloud]
+          }),
+          makeTemplate({
+            name: 'wan-desktop',
+            title: 'Wan Desktop',
+            models: ['Wan 2.2'],
+            includeOnDistributions: [Desktop]
+          })
+        ])
+      )
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -275,10 +229,7 @@ test.describe(
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
 
-      const clearButton = comfyPage.templatesDialog.root.getByRole('button', {
-        name: /Clear Filters/i
-      })
-      await clearButton.click()
+      await comfyPage.templatesDialog.clearFilters.click()
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 

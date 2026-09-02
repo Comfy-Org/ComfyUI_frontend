@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -131,20 +131,12 @@ const defaultInputSpec = fromPartial<InputSpec>({
 
 describe('useImagePreviewWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // clearAllMocks does not reset mockReturnValue — restore defaults explicitly
     mockSettingStore.get.mockReturnValue(false)
     vi.mocked(is_all_same_aspect_ratio).mockReturnValue(true)
     mockCanvas.graph_mouse = [0, 0]
     mockCanvas.pointer_is_down = false
     mockCanvas.canvas.style.cursor = ''
-  })
-
-  // Restore real timers unconditionally so a thrown assertion in any
-  // useFakeTimers() test does not leak fake timers into later tests.
-  // Idempotent when timers are already real.
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('widget construction', () => {
@@ -205,9 +197,6 @@ describe('useImagePreviewWidget', () => {
 
   describe('drawWidget — upload spinner', () => {
     it('renders spinner when node.isUploading is true', () => {
-      vi.useFakeTimers()
-      vi.setSystemTime(500)
-
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ isUploading: true })
       constructor(node, defaultInputSpec)
@@ -226,9 +215,6 @@ describe('useImagePreviewWidget', () => {
     })
 
     it('uses LiteGraph.NODE_TEXT_COLOR for spinner stroke', () => {
-      vi.useFakeTimers()
-      vi.setSystemTime(0)
-
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ isUploading: true })
       constructor(node, defaultInputSpec)
@@ -262,6 +248,29 @@ describe('useImagePreviewWidget', () => {
       await vi.waitFor(() => {
         expect(ctx.drawImage).toHaveBeenCalled()
       })
+    })
+
+    it('does not draw an image that breaks before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const img = createMockImage(200, 100)
+      const node = createMockNode({
+        imgs: [img],
+        imageIndex: 0
+      })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      Object.defineProperties(img, {
+        naturalHeight: { value: 0 },
+        naturalWidth: { value: 0 }
+      })
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('auto-sets imageIndex to 0 for single image with null index', () => {
@@ -402,6 +411,28 @@ describe('useImagePreviewWidget', () => {
 
       expect(calculateImageGrid).toHaveBeenCalledWith(imgs, 300, 220)
       expect(node.imageRects).toHaveLength(2)
+    })
+
+    it('does not draw thumbnails that break before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const imgs = [createMockImage(100, 100), createMockImage(100, 100)]
+      const node = createMockNode({ imgs, imageIndex: null })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      for (const img of imgs) {
+        Object.defineProperties(img, {
+          naturalHeight: { value: 0 },
+          naturalWidth: { value: 0 }
+        })
+      }
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('uses non-compact mode for mixed aspect ratios', () => {

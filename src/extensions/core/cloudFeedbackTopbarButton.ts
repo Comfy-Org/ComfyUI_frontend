@@ -1,21 +1,15 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackTypeformUrl } from '@/platform/support/config'
+import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useExtensionService } from '@/services/extensionService'
 import type { ActionBarButton } from '@/types/comfy'
 
 const buttons: ActionBarButton[] = [
   {
-    icon: 'icon-[lucide--message-square-text]',
+    icon: 'icon-[hugeicons--megaphone-03]',
     label: t('actionbar.feedback'),
     tooltip: t('actionbar.feedbackTooltip'),
-    onClick: () => {
-      window.open(
-        buildFeedbackTypeformUrl('action-bar'),
-        '_blank',
-        'noopener,noreferrer'
-      )
-    }
+    onClick: () => openFeedbackDialog('action-bar')
   }
 ]
 

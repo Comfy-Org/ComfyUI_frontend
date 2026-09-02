@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-export class ComfyNodeSearchFilterSelectionPanel {
+class ComfyNodeSearchFilterSelectionPanel {
   readonly root: Locator
   readonly header: Locator
 

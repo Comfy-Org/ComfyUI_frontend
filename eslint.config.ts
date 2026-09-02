@@ -20,6 +20,8 @@ import {
 import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
+import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+
 const extraFileExtensions = ['.vue']
 
 const commonGlobals = {
@@ -72,11 +74,52 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
+const reportErrorRestrictions = [
+  {
+    name: '@sentry/vue',
+    importNames: ['captureException'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+  },
+  {
+    name: '@datadog/browser-rum',
+    importNames: ['datadogRum'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+  }
+] as const
+
+const errorAssertionRestrictions = [
+  {
+    // Bans `value as Error` and `value as Error & { ... }`.
+    // Use `error instanceof Error` narrowing or `toError()` from
+    // @/utils/errorUtil instead — see issue #11429.
+    selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+    message:
+      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+  },
+  {
+    // Bans `<Error>value` and `<Error & { ... }>value`.
+    selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+    message:
+      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+  }
+] as const
+
+// Bans hand-written Zod schemas for remote (Cloud) API types. Remote API
+// types should come from generated packages (packages/ingest-types, driven
+// by packages/ingest-types/openapi-ts.config.ts) instead of hand-authored
+// Zod. This only blocks *new* usage — existing files are grandfathered via
+// `ignores` where this selector is used below.
+const noZodForRemoteApiTypes = {
+  selector: "ImportDeclaration[source.value='zod']",
+  message:
+    'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+} as const
+
 export default defineConfig([
   {
     ignores: [
-      '.i18nrc.cjs',
-      '.nx/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',
@@ -84,6 +127,8 @@ export default defineConfig([
       'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
+      'scripts/registry-census/detection-proof/**',
+      'src/__ecs_matrix__/**',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
@@ -102,8 +147,11 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'vitest.matrix.config.mts',
+            'vitest.timer.setup.ts'
           ]
         }
       }
@@ -146,9 +194,7 @@ export default defineConfig([
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
@@ -241,23 +287,65 @@ export default defineConfig([
       'apps/*/src/**/*.tsx',
       'apps/*/src/**/*.vue'
     ],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      // Re-declared, combined with the Zod restriction, in
+      // comfy/no-new-zod-for-remote-api-types below — flat config replaces
+      // (rather than merges) a rule's options when multiple config objects
+      // matching the same file set it, so this block must not also match
+      // remote files.
+      'src/platform/remote/**/*.ts',
+      'src/platform/remote/**/*.vue'
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', ...errorAssertionRestrictions]
+    }
+  },
+  // Ban new hand-written Zod schemas for remote (Cloud) API types.
+  // Includes the Error-assertion restrictions above since flat config
+  // replaces a rule's options entirely (last matching config wins) rather
+  // than merging arrays across config objects for the same rule.
+  {
+    name: 'comfy/no-new-zod-for-remote-api-types',
+    files: ['src/platform/remote/**/*.ts', 'src/platform/remote/**/*.vue'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      'src/platform/remote/comfyui/jobs/jobTypes.ts'
+    ],
     rules: {
       'no-restricted-syntax': [
         'error',
+        ...errorAssertionRestrictions,
+        noZodForRemoteApiTypes
+      ]
+    }
+  },
+  // A layout read inside a derivation runs on every recompute, and a derivation
+  // that measures the DOM cannot be tested without one. See
+  // docs/guidance/state-and-effects.md.
+  //
+  // 'warn' rather than 'error' because four pre-existing instances remain, in
+  // BrushCursor.vue, WorkflowTabs.vue and SubgraphBreadcrumb.vue. Promote to
+  // 'error' once those are derived from stores instead.
+  {
+    files: ['src/**/*.ts', 'src/**/*.vue'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
         {
-          // Bans `value as Error` and `value as Error & { ... }`.
-          // Use `error instanceof Error` narrowing or `toError()` from
-          // @/utils/errorUtil instead — see issue #11429.
-          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+          selector:
+            "CallExpression[callee.name='computed'] CallExpression[callee.property.name='getBoundingClientRect']",
           message:
-            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+            'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.'
         },
         {
-          // Bans `<Error>value` and `<Error & { ... }>value`.
-          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+          selector:
+            "CallExpression[callee.name='computed'] CallExpression[callee.property.name=/^(getComputedStyle|querySelector|querySelectorAll)$/]",
           message:
-            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+            'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
         }
       ]
     }
@@ -340,6 +428,15 @@ export default defineConfig([
     }
   },
   {
+    // Devtools extension scripts are loaded by ComfyUI in the browser.
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -349,6 +446,36 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
+    }
+  },
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+
+  {
+    name: 'comfy/no-new-error-throw',
+    files: ['src/**/*.{ts,tsx,vue}'],
+    ignores: [
+      'src/**/*.d.ts',
+      'src/**/*.{test,spec,stories}.{ts,tsx,vue}',
+      'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
+      'src/**/{generated,vendor}/**',
+      'src/__ecs_matrix__/**',
+      'src/extensions/core/**',
+      'src/scripts/**',
+      'src/types/generatedManagerTypes.ts',
+      'src/types/vue-shim.d.ts'
+    ],
+    plugins: {
+      comfy: { rules: { 'no-new-error-throw': noNewErrorThrow } }
+    },
+    rules: {
+      'comfy/no-new-error-throw': 'error'
     }
   },
 
@@ -374,7 +501,8 @@ export default defineConfig([
     files: [
       'src/base/**/*.{ts,vue}',
       'src/platform/**/*.{ts,vue}',
-      'src/workbench/**/*.{ts,vue}'
+      'src/workbench/**/*.{ts,vue}',
+      'src/world/**/*.{ts,vue}'
     ],
     rules: {
       'import-x/no-restricted-paths': [
@@ -402,6 +530,47 @@ export default defineConfig([
               from: './src/renderer/**',
               message:
                 'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/world/**',
+              from: './src/lib/litegraph/**',
+              message:
+                'src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  // src/lib/ holds vendored leaf libraries (litegraph). They may import from
+  // src/lib/ and from the shared base utilities, but never from an app layer —
+  // a vendored library depending on the app that vendors it is a dependency
+  // inversion. Reported as a warning while the pre-existing violations are
+  // worked off; see the tracking issue before promoting this to 'error'.
+  {
+    files: ['src/lib/**/*.{ts,vue}'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'warn',
+        {
+          zones: [
+            {
+              target: './src/lib/**',
+              from: [
+                './src/components/**',
+                './src/composables/**',
+                './src/extensions/**',
+                './src/platform/**',
+                './src/renderer/**',
+                './src/services/**',
+                './src/stores/**',
+                './src/views/**',
+                './src/workbench/**',
+                './src/world/**'
+              ],
+              message:
+                'src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/.'
             }
           ]
         }
@@ -416,7 +585,28 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
-
+  // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
+  // TypeScript resolver cannot see but are valid at build time.
+  {
+    files: ['apps/website/**/*.{ts,mts,vue}'],
+    rules: {
+      'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
+  // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
+  {
+    files: [
+      'apps/website/src/components/ui/accordion/*.vue',
+      'apps/website/src/components/ui/dialog/*.vue',
+      'apps/website/src/components/ui/navigation-menu/*.vue',
+      'apps/website/src/components/ui/sheet/*.vue',
+      'apps/website/src/components/ui/slider/*.vue',
+      'apps/website/src/components/ui/toggle-group/*.vue'
+    ],
+    rules: {
+      'vue/no-unused-properties': 'off'
+    }
+  },
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
@@ -432,7 +622,8 @@ export default defineConfig([
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -453,7 +644,8 @@ export default defineConfig([
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -466,7 +658,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction]
+          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
         }
       ]
     }
@@ -486,6 +678,12 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test
@@ -537,6 +735,57 @@ export default defineConfig([
                 'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
           ]
+        }
+      ]
+    }
+  },
+
+  // Deprecate @/schemas/apiSchema — use generated types from
+  // @comfyorg/ingest-types instead. Uses no-restricted-syntax so it
+  // composes with other file-scoped no-restricted-imports blocks above
+  // (flat-config rules of the same key override rather than merge).
+  // Warn severity: ~80 files still import apiSchema during migration;
+  // elevate to error once the count is near zero. Scoped to src/ to
+  // avoid overriding the stricter no-restricted-syntax rules on
+  // browser_tests/fixtures/data and .spec/.test files.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.stories.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "ImportDeclaration[source.value='@/schemas/apiSchema'], ExportNamedDeclaration[source.value='@/schemas/apiSchema'], ExportAllDeclaration[source.value='@/schemas/apiSchema']",
+          message:
+            'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+        }
+      ]
+    }
+  },
+
+  // Deprecate new hand-written zod server-response schemas under
+  // src/schemas/. Local-state / form / UI-config schemas
+  // (colorPaletteSchema, signInSchema) are not server responses and
+  // are explicitly exempted. Server response shapes should come from
+  // @comfyorg/ingest-types generated types. Warn severity so existing
+  // response schemas don't break CI; new additions get nudged at PR
+  // review.
+  {
+    files: ['src/schemas/**/*.ts'],
+    ignores: [
+      'src/schemas/**/*.test.ts',
+      'src/schemas/colorPaletteSchema.ts',
+      'src/schemas/signInSchema.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "ImportDeclaration[source.value='zod'], ExportNamedDeclaration[source.value='zod'], ExportAllDeclaration[source.value='zod']",
+          message:
+            'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
         }
       ]
     }

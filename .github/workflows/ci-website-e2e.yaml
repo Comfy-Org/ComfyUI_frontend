@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref }}
@@ -19,7 +20,7 @@ jobs:
       app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
       packages-changes: ${{ steps.changes.outputs.packages-changes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -28,7 +29,7 @@ jobs:
     if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-noble
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 15
     permissions:
       contents: read
@@ -40,7 +41,7 @@ jobs:
       # Evaluated at job level (not from a step) — static expression.
       is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pnpm
         run: corepack enable && corepack prepare
@@ -51,6 +52,9 @@ jobs:
       - name: Build website
         env:
           WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+          # Un-hides the mobile download email form so e2e can exercise it;
+          # requests are intercepted in the specs, the key is never contacted.
+          PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
       - name: Run Playwright tests
@@ -67,7 +71,15 @@ jobs:
 
       - name: Deploy report to Cloudflare
         id: deploy
-        if: always() && !cancelled()
+        if: >-
+          ${{
+            always() &&
+            !cancelled() &&
+            (
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.fork == false
+            )
+          }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -77,7 +89,7 @@ jobs:
           DEPLOY_OK=false
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
-            OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
             [ $i -lt 3 ] && sleep 10
@@ -93,7 +105,7 @@ jobs:
       - name: Categorize failures
         id: failures
         if: always() && !cancelled() && steps.tests.outcome != 'success'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs')
@@ -124,7 +136,7 @@ jobs:
 
       - name: Write job summary
         if: always() && !cancelled()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TEST_OUTCOME: ${{ steps.tests.outcome }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
@@ -180,12 +192,12 @@ jobs:
       group: website-pr-comment-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: e2e
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
             ## 🌐 Website E2E
@@ -205,11 +217,11 @@ jobs:
       group: website-pr-comment-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build e2e section content
         id: content
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
           REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
@@ -265,6 +277,6 @@ jobs:
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: e2e
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: ${{ steps.content.outputs.section-content }}

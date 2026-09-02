@@ -18,12 +18,12 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const mockData = vi.hoisted(() => ({
   isLoggedIn: false,
-  isDesktop: false,
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
@@ -37,10 +37,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false,
-  isNightly: false,
-  get isDesktop() {
-    return mockData.isDesktop
-  }
+  isNightly: false
 }))
 
 vi.mock('@/platform/updates/common/releaseStore', () => ({
@@ -87,6 +84,14 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackUiButtonClicked: mockTrackUiButtonClicked
+  })
+}))
+
 type WrapperOptions = {
   pinia?: ReturnType<typeof createTestingPinia>
   stubs?: Record<string, boolean | Component>
@@ -110,6 +115,9 @@ function createWrapper({
             activeJobsShort: '{count} active | {count} active',
             clearQueueTooltip: 'Clear queue'
           }
+        },
+        rightSidePanel: {
+          togglePanel: 'Toggle properties panel'
         }
       }
     }
@@ -189,9 +197,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-    localStorage.clear()
-    mockData.isDesktop = false
     mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
   })
@@ -225,21 +230,10 @@ describe('TopMenuSection', () => {
         mockData.isLoggedIn = false
       })
 
-      describe('on desktop platform', () => {
-        it('should display LoginButton and not display CurrentUserButton', () => {
-          mockData.isDesktop = true
-          const { container } = createLegacyTabBarWrapper()
-          expect(container.querySelector('login-button-stub')).not.toBeNull()
-          expect(container.querySelector('current-user-button-stub')).toBeNull()
-        })
-      })
-
-      describe('on web platform', () => {
-        it('should not display CurrentUserButton and not display LoginButton', () => {
-          const { container } = createLegacyTabBarWrapper()
-          expect(container.querySelector('current-user-button-stub')).toBeNull()
-          expect(container.querySelector('login-button-stub')).toBeNull()
-        })
+      it('should display LoginButton and not display CurrentUserButton', () => {
+        const { container } = createLegacyTabBarWrapper()
+        expect(container.querySelector('login-button-stub')).not.toBeNull()
+        expect(container.querySelector('current-user-button-stub')).toBeNull()
       })
     })
   })
@@ -264,6 +258,39 @@ describe('TopMenuSection', () => {
     createWrapper()
 
     expect(screen.queryByTestId('active-jobs-indicator')).toBeNull()
+  })
+
+  it('keeps action bars mounted while hiding the error overlay in node selection mode', () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+
+    createWrapper({
+      pinia,
+      stubs: {
+        ErrorOverlay: {
+          template: '<div data-testid="error-overlay" />'
+        }
+      }
+    })
+
+    expect(screen.getByTestId('top-menu-actionbars')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.queryByTestId('error-overlay')).toBeNull()
+  })
+
+  it('tracks right side panel opens', async () => {
+    const { user } = createWrapper()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Toggle properties panel' })
+    )
+
+    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'right_side_panel_opened',
+      element_group: 'top_menu'
+    })
   })
 
   it('hides queue progress overlay when QPO V2 is enabled', async () => {
@@ -605,7 +632,7 @@ describe('TopMenuSection', () => {
       await nextTick()
 
       expect(querySpy).toHaveBeenCalledTimes(1)
-      expect(actionbarContainer!.classList).toContain('px-2')
+      expect(actionbarContainer!.classList).not.toContain('w-0')
     } finally {
       unmount()
       vi.unstubAllGlobals()

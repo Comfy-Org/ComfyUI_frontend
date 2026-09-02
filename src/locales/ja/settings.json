@@ -199,7 +199,6 @@
     "name": "PLYエンジン",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLYファイルを読み込むエンジンを選択します。「threejs」はネイティブのThree.js PLYLoaderを使用（メッシュPLYファイルに最適）。「fastply」はASCIIポイントクラウドPLYファイル用の最適化ローダーを使用。「sparkjs」は3DガウシアンスプラッティングPLYファイル用にSpark.jsを使用します。"
@@ -368,8 +367,8 @@
     "tooltip": "フローティングジョブキューパネルを、アセットサイドパネルに埋め込まれた同等のジョブキューに置き換えます。無効にすると、フローティングパネルのレイアウトに戻ります。"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "サイドパネルにエラータブを表示",
-    "tooltip": "有効にすると、右側のサイドパネルにエラータブが表示され、ワークフロー実行時のエラーを一目で確認できます。"
+    "name": "サイドパネルに問題タブを表示",
+    "tooltip": "有効にすると、右側のサイドパネルに問題タブが表示され、ブロッキングエラーや設定が必要な不足リソースが表示されます。"
   },
   "Comfy_Sidebar_Location": {
     "name": "サイドバーの位置",
@@ -427,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自動スケールレイアウト（Vueノード）",
-    "tooltip": "Vueレンダリングに切り替えた際にノードの重なりを防ぐため、自動的にノード位置をスケーリングします"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "モダンノードデザイン（Vueノード）",
     "tooltip": "モダン：DOMベースのレンダリングで、操作性の向上、ネイティブブラウザ機能、最新のビジュアルデザインを実現。クラシック：従来のキャンバスレンダリング。"
@@ -459,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "ワークフローを削除する際に確認を表示"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "ウィジェット値を名前で復元"
   },
   "Comfy_Workflow_Persist": {
     "name": "ページ（再）ロード時にワークフローの状態を保持し、復元します"

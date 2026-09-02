@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -8,6 +6,11 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 const mockResolveNode = vi.fn()
@@ -31,12 +34,16 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  fromAny<LGraphNode, unknown>({
-    id: 1,
+const createMockNode = (
+  overrides: Record<string, unknown> = {}
+): LGraphNode => {
+  const { id = 1, ...rest } = overrides
+  return fromAny<LGraphNode, unknown>({
+    id: toNodeId(id as string | number),
     type: 'TestNode',
-    ...overrides
+    ...rest
   })
+}
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -55,15 +62,101 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
 
+  it('keeps execution-keyed outputs distinct from locator-keyed outputs', () => {
+    const store = useNodeOutputStore()
+    const firstOutput = createMockOutputs([{ filename: 'first.png' }])
+    const secondOutput = createMockOutputs([{ filename: 'second.png' }])
+
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
+      firstOutput
+    )
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
+      secondOutput
+    )
+
+    expect(
+      store.getNodeOutputByExecutionId(
+        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
+      )
+    ).toEqual(firstOutput)
+    expect(
+      store.getNodeOutputByExecutionId(
+        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
+      )
+    ).toEqual(secondOutput)
+  })
+
+  it('merges execution-keyed outputs when merge is true', () => {
+    const store = useNodeOutputStore()
+    const initialOutput = createMockOutputs([{ filename: 'first.png' }])
+    const nextOutput = createMockOutputs([{ filename: 'second.png' }])
+
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
+      initialOutput
+    )
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
+      nextOutput,
+      {
+        merge: true
+      }
+    )
+
+    expect(
+      store.getNodeOutputByExecutionId(
+        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
+      )?.images
+    ).toEqual([{ filename: 'first.png' }, { filename: 'second.png' }])
+  })
+
+  it('keeps execution-keyed previews distinct from locator-keyed previews', () => {
+    const store = useNodeOutputStore()
+
+    store.setNodePreviewsByExecutionId(
+      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
+      ['blob:first']
+    )
+    store.setNodePreviewsByExecutionId(
+      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
+      ['blob:second']
+    )
+
+    expect(
+      store.getNodePreviewImagesByExecutionId(
+        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
+      )
+    ).toEqual(['blob:first'])
+    expect(
+      store.getNodePreviewImagesByExecutionId(
+        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
+      )
+    ).toEqual(['blob:second'])
+  })
+
+  it('owns preview arrays after setting them', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(11)])
+    const previews = ['blob:first']
+
+    store.setNodePreviewsByExecutionId(executionId, previews)
+    previews.push('blob:caller-mutation')
+
+    expect(store.getNodePreviewImagesByExecutionId(executionId)).toEqual([
+      'blob:first'
+    ])
+    expect(store.latestPreview).toEqual(['blob:first'])
+  })
+
   it('should update reactive nodeOutputs.value when merging outputs', () => {
     const store = useNodeOutputStore()
-    const executionId = '1'
+    const executionId = createNodeExecutionId([toNodeId(1)])
 
     const initialOutput = createMockOutputs([{ filename: 'a.png' }])
     store.setNodeOutputsByExecutionId(executionId, initialOutput)
@@ -80,7 +173,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 
   it('should assign to reactive ref after merge for Vue reactivity', () => {
     const store = useNodeOutputStore()
-    const executionId = '1'
+    const executionId = createNodeExecutionId([toNodeId(1)])
 
     const initialOutput = createMockOutputs([{ filename: 'a.png' }])
     store.setNodeOutputsByExecutionId(executionId, initialOutput)
@@ -97,7 +190,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 
   it('should create a new object reference on merge so Vue detects the change', () => {
     const store = useNodeOutputStore()
-    const executionId = '1'
+    const executionId = createNodeExecutionId([toNodeId(1)])
 
     const initialOutput = createMockOutputs([{ filename: 'a.png' }])
     store.setNodeOutputsByExecutionId(executionId, initialOutput)
@@ -112,12 +205,119 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(refAfter).not.toBe(refBefore)
     expect(refAfter?.images).toHaveLength(2)
   })
+
+  it('replaces outputs written through the legacy map', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'canonical.png')
+    const legacyOutput = createMockOutputs([{ filename: 'legacy.png' }])
+    store.replaceOutputsFromLegacy({ '5': legacyOutput })
+
+    expect(store.getNodeOutputs(node)).toEqual(legacyOutput)
+  })
+
+  it('projects previews without reading legacy map mutations back', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'blob:canonical'
+    ])
+    app.nodePreviewImages['5'] = ['blob:legacy']
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
+})
+
+describe('nodeOutputStore legacy entry synchronization', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('updates one mapped output without replacing unrelated records', () => {
+    const store = useNodeOutputStore()
+    const untouched = createMockOutputs([{ filename: 'untouched.png' }])
+    store.replaceOutputsFromLegacy({ untouched })
+    const untouchedRecord = store.nodeOutputs.untouched
+
+    store.setOutputFromLegacy(
+      'changed',
+      createMockOutputs([{ filename: 'changed.png' }])
+    )
+
+    expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+    expect(store.nodeOutputs.changed?.images?.[0]?.filename).toBe('changed.png')
+
+    store.removeOutputFromLegacy('changed')
+
+    expect(store.nodeOutputs.changed).toBeUndefined()
+    expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+  })
+})
+
+describe('nodeOutputStore replaceNodeOutputImages', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('drops the previous output metadata when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setOutputFromLegacy(
+      '7',
+      fromAny({
+        images: [{ filename: 'previous.webp' }],
+        animated: [true],
+        video: [{ filename: 'previous.mp4' }]
+      })
+    )
+
+    const images = [
+      {
+        filename: 'painted.png',
+        subfolder: 'clipspace',
+        type: 'input' as const
+      }
+    ]
+    store.replaceNodeOutputImages(node, images)
+
+    expect(store.nodeOutputs['7']?.animated).toBeUndefined()
+    expect(store.nodeOutputs['7']?.video).toBeUndefined()
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+  })
+
+  it('ignores an empty replacement', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png', type: 'input' as const }]
+    const node = createMockNode({ id: 7, images })
+    store.setOutputFromLegacy('7', { images })
+
+    store.replaceNodeOutputImages(node, [])
+
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+    expect(node.images).toEqual(images)
+  })
+
+  it('removes stale previews when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'preview:stale'
+    ])
+
+    store.replaceNodeOutputImages(node, [
+      { filename: 'painted.png', type: 'input' }
+    ])
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(app.nodePreviewImages['7']).toBeUndefined()
+  })
 })
 
 describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -144,7 +344,10 @@ describe('nodeOutputStore restoreOutputs', () => {
     const widgetOutput = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
     ])
-    store.setNodeOutputsByExecutionId('3', widgetOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      widgetOutput
+    )
 
     // The reactive store must reflect the new output.
     // Before the fix, the raw write to app.nodeOutputs would mutate the
@@ -157,15 +360,13 @@ describe('nodeOutputStore restoreOutputs', () => {
 
 describe('nodeOutputStore input preview preservation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
 
   it('should preserve input preview when execution sends empty output', () => {
     const store = useNodeOutputStore()
-    const executionId = '3'
+    const executionId = createNodeExecutionId([toNodeId(3)])
 
     const inputPreview = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
@@ -185,7 +386,7 @@ describe('nodeOutputStore input preview preservation', () => {
 
   it('should preserve input preview when execution sends output with empty images array', () => {
     const store = useNodeOutputStore()
-    const executionId = '3'
+    const executionId = createNodeExecutionId([toNodeId(3)])
 
     const inputPreview = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
@@ -201,7 +402,7 @@ describe('nodeOutputStore input preview preservation', () => {
 
   it('should allow execution output with images to overwrite input preview', () => {
     const store = useNodeOutputStore()
-    const executionId = '3'
+    const executionId = createNodeExecutionId([toNodeId(3)])
 
     const inputPreview = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
@@ -221,7 +422,7 @@ describe('nodeOutputStore input preview preservation', () => {
 
   it('should not preserve non-input outputs from being overwritten', () => {
     const store = useNodeOutputStore()
-    const executionId = '4'
+    const executionId = createNodeExecutionId([toNodeId(4)])
 
     const tempOutput = createMockOutputs([
       { filename: 'temp.png', subfolder: '', type: 'temp' }
@@ -236,7 +437,7 @@ describe('nodeOutputStore input preview preservation', () => {
 
   it('should pass through non-image fields while preserving input preview images', () => {
     const store = useNodeOutputStore()
-    const executionId = '5'
+    const executionId = createNodeExecutionId([toNodeId(5)])
 
     const inputPreview = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
@@ -261,8 +462,6 @@ describe('nodeOutputStore input preview preservation', () => {
 
 describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
@@ -301,6 +500,14 @@ describe('nodeOutputStore getPreviewParam', () => {
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
+  it('should return empty string if outputs.images only contains null entries', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const outputs = createMockOutputs(fromAny([null]))
+    expect(store.getPreviewParam(node, outputs)).toBe('')
+    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+  })
+
   it('should return empty string if outputs.images contains SVG images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode()
@@ -331,8 +538,6 @@ describe('nodeOutputStore getPreviewParam', () => {
 
 describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -344,12 +549,18 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const inputOutput = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
     ])
-    store.setNodeOutputsByExecutionId('3', inputOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      inputOutput
+    )
 
     const execOutput = createMockOutputs([
       { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
     ])
-    store.setNodeOutputsByExecutionId('4', execOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(4)]),
+      execOutput
+    )
 
     // Snapshot
     const snapshot = store.snapshotOutputs()
@@ -378,8 +589,14 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const outputA2 = createMockOutputs([
       { filename: 'example.png', subfolder: '', type: 'input' }
     ])
-    store.setNodeOutputsByExecutionId('1', outputA1)
-    store.setNodeOutputsByExecutionId('3', outputA2)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(1)]),
+      outputA1
+    )
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      outputA2
+    )
 
     // --- Switch away: store() then clean ---
     const tabASnapshot = store.snapshotOutputs()
@@ -404,7 +621,10 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // New execution should still work after restore
     const newOutput = createMockOutputs([{ filename: 'new.png' }])
-    store.setNodeOutputsByExecutionId('5', newOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      newOutput
+    )
     expect(store.nodeOutputs['5']).toStrictEqual(newOutput)
   })
 
@@ -413,13 +633,19 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Tab A: execute
     const outputA = createMockOutputs([{ filename: 'tab_a.png' }])
-    store.setNodeOutputsByExecutionId('1', outputA)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(1)]),
+      outputA
+    )
     const snapshotA = store.snapshotOutputs()
 
     // Switch to Tab B
     store.resetAllOutputsAndPreviews()
     const outputB = createMockOutputs([{ filename: 'tab_b.png' }])
-    store.setNodeOutputsByExecutionId('1', outputB)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(1)]),
+      outputB
+    )
     const snapshotB = store.snapshotOutputs()
 
     // Switch back to Tab A
@@ -446,7 +672,10 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const store = useNodeOutputStore()
 
     const output = createMockOutputs([{ filename: 'a.png' }])
-    store.setNodeOutputsByExecutionId('1', output)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(1)]),
+      output
+    )
 
     const snapshot = store.snapshotOutputs()
 
@@ -463,8 +692,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -473,15 +700,15 @@ describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
     const store = useNodeOutputStore()
 
     store.setNodeOutputsByExecutionId(
-      '1',
+      createNodeExecutionId([toNodeId(1)]),
       createMockOutputs([{ filename: 'a.png' }])
     )
     store.setNodeOutputsByExecutionId(
-      '2',
+      createNodeExecutionId([toNodeId(2)]),
       createMockOutputs([{ filename: 'b.png' }])
     )
     store.setNodeOutputsByExecutionId(
-      '3',
+      createNodeExecutionId([toNodeId(3)]),
       createMockOutputs([{ filename: 'c.png', type: 'input' }])
     )
 
@@ -498,8 +725,6 @@ describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
 
 describe('nodeOutputStore restoreOutputs + execution interaction', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -522,7 +747,10 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     const execOutput = createMockOutputs([
       { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
     ])
-    store.setNodeOutputsByExecutionId('4', execOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(4)]),
+      execOutput
+    )
 
     // Both should be present
     expect(store.nodeOutputs['3']).toStrictEqual(inputOutput)
@@ -544,7 +772,10 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }
     ])
-    store.setNodeOutputsByExecutionId('3', execOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      execOutput
+    )
 
     // On current main (without PR #9123 guard), execution overwrites
     expect(store.nodeOutputs['3']).toStrictEqual(execOutput)
@@ -554,8 +785,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
 
 describe('nodeOutputStore merge mode interactions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -567,13 +796,22 @@ describe('nodeOutputStore merge mode interactions', () => {
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
-    store.setNodeOutputsByExecutionId('3', inputOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      inputOutput
+    )
 
     // Merge new execution images
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }
     ])
-    store.setNodeOutputsByExecutionId('3', execOutput, { merge: true })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      execOutput,
+      {
+        merge: true
+      }
+    )
 
     // Should have both images concatenated
     expect(store.nodeOutputs['3']?.images).toHaveLength(2)
@@ -589,13 +827,22 @@ describe('nodeOutputStore merge mode interactions', () => {
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
-    store.setNodeOutputsByExecutionId('3', inputOutput)
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      inputOutput
+    )
 
     // Merge with empty images — the input-preview guard (lines 166-177)
     // copies existing input images into the incoming outputs before the
     // merge concat runs, resulting in duplication.
     const emptyOutput = createMockOutputs([])
-    store.setNodeOutputsByExecutionId('3', emptyOutput, { merge: true })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(3)]),
+      emptyOutput,
+      {
+        merge: true
+      }
+    )
 
     expect(store.nodeOutputs['3']?.images).toHaveLength(2)
     expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
@@ -605,8 +852,6 @@ describe('nodeOutputStore merge mode interactions', () => {
 
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -641,6 +886,17 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('leaves node images unchanged for preview change detection', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png' }]
+    const node = createMockNode({ id: 5, images })
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(node.images).toBe(images)
+    expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
+  })
+
   it('should skip empty array of filenames after createOutputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
@@ -654,8 +910,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
 describe('nodeOutputStore syncLegacyNodeImgs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     LiteGraph.vueNodesMode = false
   })
 
@@ -666,7 +920,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg, 0)
+    store.syncLegacyNodeImgs(toNodeId(1), mockImg, 0)
 
     expect(mockNode.imgs).toBeUndefined()
     expect(mockNode.imageIndex).toBeUndefined()
@@ -680,7 +934,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg, 0)
+    store.syncLegacyNodeImgs(toNodeId(1), mockImg, 0)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)
@@ -694,7 +948,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(42, mockImg, 3)
+    store.syncLegacyNodeImgs(toNodeId(42), mockImg, 3)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(3)
@@ -708,9 +962,9 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs('123', mockImg, 0)
+    store.syncLegacyNodeImgs(toNodeId('123'), mockImg, 0)
 
-    expect(mockResolveNode).toHaveBeenCalledWith(123)
+    expect(mockResolveNode).toHaveBeenCalledWith('123')
     expect(mockNode.imgs).toEqual([mockImg])
   })
 
@@ -721,7 +975,9 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(undefined)
 
-    expect(() => store.syncLegacyNodeImgs(999, mockImg, 0)).not.toThrow()
+    expect(() =>
+      store.syncLegacyNodeImgs(toNodeId(999), mockImg, 0)
+    ).not.toThrow()
   })
 
   it('should default activeIndex to 0', () => {
@@ -732,7 +988,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg)
+    store.syncLegacyNodeImgs(toNodeId(1), mockImg)
 
     expect(mockNode.imageIndex).toBe(0)
   })
@@ -748,7 +1004,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     // But found by resolveNode (in a subgraph)
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(5, mockImg, 0)
+    store.syncLegacyNodeImgs(toNodeId(5), mockImg, 0)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)

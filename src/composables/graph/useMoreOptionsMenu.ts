@@ -1,14 +1,17 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type {
-  LGraphGroup,
-  LGraphNode,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  shouldHideLinkedCoreMediaInputActions,
+  shouldHideLinkedCoreMediaInputPreview
+} from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
+import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 import {
@@ -33,6 +36,7 @@ export interface MenuOption {
   disabled?: boolean
   source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
+  isShapePicker?: boolean
 }
 
 export interface SubMenuOption {
@@ -44,14 +48,13 @@ export interface SubMenuOption {
 }
 
 export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
+  NEW = 'new'
 }
 
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, NodeId | undefined]>()
+const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
 
 /**
  * Toggle the node options popover
@@ -71,7 +74,7 @@ export function toggleNodeOptions(event: Event) {
 export function showNodeOptions(
   event: MouseEvent,
   widgetName?: string,
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
   if (nodeOptionsInstance?.show) {
@@ -134,6 +137,7 @@ export function useMoreOptionsMenu() {
   } = useSelectionState()
 
   const canvasStore = useCanvasStore()
+  const nodeOutputStore = useNodeOutputStore()
 
   const { getImageMenuOptions } = useImageMenuOptions()
   const {
@@ -181,6 +185,18 @@ export function useMoreOptionsMenu() {
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined = selectedNodes.value[0]
+    const hideLinkedInputActions = node
+      ? shouldHideLinkedCoreMediaInputActions(node)
+      : false
+    const hideLinkedInputPreview = node
+      ? shouldHideLinkedCoreMediaInputPreview(
+          node,
+          nodeOutputStore.getNodeOutputs(node)
+        )
+      : false
+    const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
+    if (hideLinkedInputActions) unavailableCoreMediaActionKinds.add('input')
+    if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
     if (
       selectedNodes.value.length === 1 &&
       !groupContext &&
@@ -190,7 +206,14 @@ export function useMoreOptionsMenu() {
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
         // Don't apply structuring yet - we'll do it after merging with Vue options
         litegraphOptions.push(
-          ...convertContextMenuToOptions(rawItems, node, false)
+          ...convertContextMenuToOptions(
+            filterUnavailableCoreMediaMenuActions(
+              rawItems,
+              unavailableCoreMediaActionKinds
+            ),
+            node,
+            false
+          )
         )
       } catch (error) {
         console.error('Error getting LiteGraph menu items:', error)
@@ -211,7 +234,7 @@ export function useMoreOptionsMenu() {
     }
     if (!groupContext) {
       const pin = getPinOption(states, bump)
-      const bypass = getBypassOption(states, bump)
+      const bypass = getBypassOption(bump)
       options.push(pin)
       options.push(bypass)
     }
@@ -262,19 +285,16 @@ export function useMoreOptionsMenu() {
 
     // Section 5: Image operations (if image node)
     if (hasImageNode.value && selectedNodes.value.length > 0) {
-      options.push(...getImageMenuOptions(selectedNodes.value[0]))
+      options.push(
+        ...getImageMenuOptions(selectedNodes.value[0], {
+          input: !hideLinkedInputActions,
+          preview: !hideLinkedInputPreview
+        })
+      )
       options.push({ type: 'divider' })
     }
-    const [widgetName, nodeId] = hoveredWidget.value ?? []
-    const widget =
-      nodeId !== undefined
-        ? node?.widgets?.find(
-            (w) =>
-              isPromotedWidgetView(w) &&
-              w.sourceWidgetName === widgetName &&
-              w.sourceNodeId === nodeId
-          )
-        : node?.widgets?.find((w) => w.name === widgetName)
+    const [widgetName] = hoveredWidget.value ?? []
+    const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)

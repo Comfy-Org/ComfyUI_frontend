@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -26,7 +26,10 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 vi.mock('@/extensions/core/load3d', () => ({}))
+vi.mock('@/extensions/core/load3dAdvanced', () => ({}))
+vi.mock('@/extensions/core/load3dPreviewExtensions', () => ({}))
 vi.mock('@/extensions/core/saveMesh', () => ({}))
+vi.mock('@/extensions/core/cameraInfo', () => ({}))
 
 type Hook = (
   nodeType: typeof LGraphNode,
@@ -61,10 +64,6 @@ function makeNodeDef(
 }
 
 describe('load3dLazy', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('registers a single Comfy.Load3DLazy extension on import', async () => {
     await loadLazyExtensionFresh()
 
@@ -83,7 +82,16 @@ describe('load3dLazy', () => {
     expect(enabledExtensionsGetter).not.toHaveBeenCalled()
   })
 
-  it.for(['Load3D', 'Preview3D', 'SaveGLB'])(
+  it.for([
+    'Load3D',
+    'Preview3D',
+    'PreviewGaussianSplat',
+    'PreviewPointCloud',
+    'SaveGLB',
+    'Save3DAdvanced',
+    'SaveGaussianSplat',
+    'SavePointCloud'
+  ])(
     'recognizes %s as a 3D node type and triggers the lazy-load path',
     async (nodeType) => {
       const { hook } = await loadLazyExtensionFresh()
@@ -98,6 +106,23 @@ describe('load3dLazy', () => {
   it('injects mesh_upload spec flags into the model_file widget for Load3D nodes', async () => {
     const { hook } = await loadLazyExtensionFresh()
     const nodeData = makeNodeDef('Load3D', {
+      input: {
+        required: { model_file: ['STRING', {}] }
+      }
+    } as Partial<ComfyNodeDef>)
+
+    await hook({} as typeof LGraphNode, nodeData)
+
+    const spec = (
+      nodeData.input!.required!.model_file as [string, Record<string, unknown>]
+    )[1]
+    expect(spec.mesh_upload).toBe(true)
+    expect(spec.upload_subfolder).toBe('3d')
+  })
+
+  it('injects mesh_upload spec flags into the model_file widget for Load3DAdvanced nodes', async () => {
+    const { hook } = await loadLazyExtensionFresh()
+    const nodeData = makeNodeDef('Load3DAdvanced', {
       input: {
         required: { model_file: ['STRING', {}] }
       }

@@ -29,30 +29,9 @@ Allow: /
 Disallow: /_astro/
 Disallow: /_website/
 Disallow: /_vercel/
-Disallow: /payment/
 
-User-agent: GPTBot
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: Claude-User
-Allow: /
-
-User-agent: Claude-SearchBot
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
+# Content Signals (contentsignals.org): this content may be used for search,
+# as input to AI answers, and for AI training.
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 
 Sitemap: https://comfy.org/sitemap-index.xml

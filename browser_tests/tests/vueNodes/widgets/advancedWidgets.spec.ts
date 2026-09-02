@@ -6,6 +6,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 const SHOW_ADVANCED_INPUTS = 'Show advanced inputs'
 const HIDE_ADVANCED_INPUTS = 'Hide advanced inputs'
+const FLOAT_SOURCE_POSITION_LEFT_OF_NODE = { x: 100, y: 200 }
 
 test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -30,6 +31,20 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
 
   function getWidgets(comfyPage: ComfyPage) {
     return getNode(comfyPage).locator('.lg-node-widget')
+  }
+
+  async function getWidgetIndex(comfyPage: ComfyPage, widgetName: string) {
+    const index = await comfyPage.page.evaluate((name) => {
+      const node = window.app!.graph.nodes.find(
+        (node) => node.type === 'ModelSamplingFlux'
+      )
+      return node?.widgets?.findIndex((widget) => widget.name === name) ?? -1
+    }, widgetName)
+    expect(
+      index,
+      `${widgetName} widget should exist on ModelSamplingFlux`
+    ).toBeGreaterThanOrEqual(0)
+    return index
   }
 
   test('should hide advanced widgets by default', async ({ comfyPage }) => {
@@ -70,6 +85,47 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
     // Click again to hide
     await node.getByText(HIDE_ADVANCED_INPUTS).click()
     await expect(widgets).toHaveCount(2)
+  })
+
+  test('should keep connected advanced widgets visible when advanced inputs are hidden', async ({
+    comfyPage
+  }) => {
+    const node = getNode(comfyPage)
+    const maxShiftWidget = node.getByLabel('max_shift', { exact: true })
+    const baseShiftWidget = node.getByLabel('base_shift', { exact: true })
+
+    await node.getByText(SHOW_ADVANCED_INPUTS).click()
+    await expect(maxShiftWidget).toBeVisible()
+    await expect(baseShiftWidget).toBeVisible()
+
+    const primitive = await comfyPage.nodeOps.addNode(
+      'PrimitiveFloat',
+      {},
+      FLOAT_SOURCE_POSITION_LEFT_OF_NODE
+    )
+    const [target] =
+      await comfyPage.nodeOps.getNodeRefsByType('ModelSamplingFlux')
+    const maxShiftIndex = await getWidgetIndex(comfyPage, 'max_shift')
+    await primitive.connectWidget(0, target, maxShiftIndex)
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (node) => node.type === 'ModelSamplingFlux'
+          )
+          return (
+            node?.inputs.find((input) => input.widget?.name === 'max_shift')
+              ?.link ?? null
+          )
+        })
+      )
+      .not.toBeNull()
+
+    await node.getByText(HIDE_ADVANCED_INPUTS).click()
+
+    await expect(maxShiftWidget).toBeVisible()
+    await expect(baseShiftWidget).toBeHidden()
   })
 
   test('should hide advanced footer button while collapsed', async ({

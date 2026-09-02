@@ -1,10 +1,7 @@
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { createTestingPinia } from '@pinia/testing'
-
 // Mock DOM widget for testing
 const createMockDOMWidget = (id: string) => {
   const element = document.createElement('input')
@@ -32,7 +29,6 @@ describe('domWidgetStore', () => {
   let store: ReturnType<typeof useDomWidgetStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useDomWidgetStore()
   })
 

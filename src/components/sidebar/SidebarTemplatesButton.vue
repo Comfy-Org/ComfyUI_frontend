@@ -29,7 +29,8 @@ const isSmall = computed(
  */
 const openTemplates = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'sidebar_templates_dialog_opened'
+    button_id: 'sidebar_templates_dialog_opened',
+    element_group: 'sidebar'
   })
   useWorkflowTemplateSelectorDialog().show('sidebar')
 }

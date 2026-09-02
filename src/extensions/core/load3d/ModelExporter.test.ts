@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -8,13 +8,15 @@ const {
   addAlertMock,
   gltfParseMock,
   objParseMock,
-  stlParseMock
+  stlParseMock,
+  fbxParseAsyncMock
 } = vi.hoisted(() => ({
   downloadBlobMock: vi.fn(),
   addAlertMock: vi.fn(),
   gltfParseMock: vi.fn(),
   objParseMock: vi.fn(),
-  stlParseMock: vi.fn()
+  stlParseMock: vi.fn(),
+  fbxParseAsyncMock: vi.fn()
 }))
 
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -48,17 +50,13 @@ vi.mock('three/examples/jsm/exporters/STLExporter', () => ({
   }
 }))
 
+vi.mock('@comfyorg/fbx-exporter-three', () => ({
+  FBXExporter: class {
+    parseAsync = fbxParseAsyncMock
+  }
+}))
+
 describe('ModelExporter', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
   describe('detectFormatFromURL', () => {
     it('extracts the lowercase extension from the filename query parameter', () => {
       expect(
@@ -125,7 +123,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.downloadFromURL(
@@ -149,6 +149,27 @@ describe('ModelExporter', () => {
       )
       vi.unstubAllGlobals()
     })
+
+    it('rethrows and shows a toast alert when the response status is not ok', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+          blob: () => Promise.resolve(new Blob(['x']))
+        })
+      )
+
+      await expect(
+        ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
+      ).rejects.toThrow('HTTP 404')
+      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(addAlertMock).toHaveBeenCalledWith(
+        'toastMessages.failedToDownloadFile'
+      )
+      vi.unstubAllGlobals()
+    })
   })
 
   describe('exportGLB', () => {
@@ -156,7 +177,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
       const model = new THREE.Object3D()
 
@@ -214,7 +237,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.exportOBJ(
@@ -260,7 +285,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.exportSTL(
@@ -297,6 +324,82 @@ describe('ModelExporter', () => {
       await assertion
       expect(addAlertMock).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
+      )
+    })
+  })
+
+  describe('exportDirect', () => {
+    it('downloads the original source file unchanged', async () => {
+      const blob = new Blob(['x'])
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
+      )
+
+      await ModelExporter.exportDirect(
+        'http://example.com/api/view?filename=src.ply',
+        'out.ply',
+        'ply'
+      )
+
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.ply', blob)
+      vi.unstubAllGlobals()
+    })
+
+    it('throws without toasting when there is no source URL, leaving the alert to the caller', async () => {
+      await expect(
+        ModelExporter.exportDirect(null, 'out.spz', 'spz')
+      ).rejects.toThrow('No source file available to export as spz')
+      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(addAlertMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('exportFBX', () => {
+    it('uses the direct-URL fast path for matching .fbx URLs', async () => {
+      const blob = new Blob(['x'])
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
+      )
+
+      await ModelExporter.exportFBX(
+        new THREE.Object3D(),
+        'out.fbx',
+        'http://example.com/api/view?filename=src.fbx'
+      )
+
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', blob)
+      expect(fbxParseAsyncMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('serializes via FBXExporter and downloads as binary when there is no direct URL', async () => {
+      const bytes = new Uint8Array([0x4b, 0x61, 0x79, 0x64, 0x61, 0x72, 0x61])
+      fbxParseAsyncMock.mockResolvedValue(bytes)
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(fbxParseAsyncMock).toHaveBeenCalled()
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
+    })
+
+    it('alerts and rethrows when FBXExporter throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      const assertion = expect(promise).rejects.toThrow('fbx fail')
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(addAlertMock).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel:{"format":"FBX"}'
       )
     })
   })

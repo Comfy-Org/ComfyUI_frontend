@@ -17,11 +17,5 @@
   },
   "devDependencies": {
     "typescript": "catalog:"
-  },
-  "nx": {
-    "tags": [
-      "scope:shared",
-      "type:util"
-    ]
   }
 }

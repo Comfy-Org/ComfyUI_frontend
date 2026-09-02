@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 
-export class UserSelectPage {
+class UserSelectPage {
   public readonly selectionUrl: string
   public readonly container: Locator
   public readonly newUserInput: Locator

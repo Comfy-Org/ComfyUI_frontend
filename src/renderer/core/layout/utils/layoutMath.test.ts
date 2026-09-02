@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import {
   REROUTE_RADIUS,
@@ -51,7 +54,7 @@ describe('layoutMath utils', () => {
 
   describe('calculateBounds', () => {
     const createTestNode = (
-      id: string,
+      id: NodeId,
       x: number,
       y: number,
       width: number,
@@ -66,7 +69,7 @@ describe('layoutMath utils', () => {
     })
 
     it('calculates bounds for single node', () => {
-      const nodes = [createTestNode('1', 10, 20, 100, 50)]
+      const nodes = [createTestNode(toNodeId('1'), 10, 20, 100, 50)]
       const bounds = calculateBounds(nodes)
 
       expect(bounds).toEqual({
@@ -79,9 +82,9 @@ describe('layoutMath utils', () => {
 
     it('calculates combined bounds for multiple nodes', () => {
       const nodes = [
-        createTestNode('1', 0, 0, 50, 50), // Top-left: (0,0) to (50,50)
-        createTestNode('2', 100, 100, 30, 40), // Bottom-right: (100,100) to (130,140)
-        createTestNode('3', 25, 75, 20, 10) // Middle: (25,75) to (45,85)
+        createTestNode(toNodeId('1'), 0, 0, 50, 50), // Top-left: (0,0) to (50,50)
+        createTestNode(toNodeId('2'), 100, 100, 30, 40), // Bottom-right: (100,100) to (130,140)
+        createTestNode(toNodeId('3'), 25, 75, 20, 10) // Middle: (25,75) to (45,85)
       ]
       const bounds = calculateBounds(nodes)
 
@@ -95,8 +98,8 @@ describe('layoutMath utils', () => {
 
     it('handles nodes with negative positions', () => {
       const nodes = [
-        createTestNode('1', -50, -30, 40, 20), // (-50,-30) to (-10,-10)
-        createTestNode('2', 10, 15, 25, 35) // (10,15) to (35,50)
+        createTestNode(toNodeId('1'), -50, -30, 40, 20), // (-50,-30) to (-10,-10)
+        createTestNode(toNodeId('2'), 10, 15, 25, 35) // (10,15) to (35,50)
       ]
       const bounds = calculateBounds(nodes)
 

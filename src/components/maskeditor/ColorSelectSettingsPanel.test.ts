@@ -74,7 +74,6 @@ const renderPanel = () =>
 
 describe('ColorSelectSettingsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore.colorSelectTolerance = 20
     mockStore.selectionOpacity = 100
     mockStore.colorSelectLivePreview = false

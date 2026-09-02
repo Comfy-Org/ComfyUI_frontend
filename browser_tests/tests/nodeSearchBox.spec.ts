@@ -73,7 +73,9 @@ test.describe('Node search box', { tag: '@node' }, () => {
     const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
-    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
+      exact: true
+    })
     await waitForSearchInsertion(comfyPage, initialNodeCount)
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })
@@ -233,21 +235,21 @@ test.describe('Node search box', { tag: '@node' }, () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
         await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
-        await comfyPage.searchBox.addFilter('utils', 'Category')
+        await comfyPage.searchBox.addFilter('utilities', 'Category')
       })
 
       test('Can remove first filter', async ({ comfyPage }) => {
         await comfyPage.searchBox.removeFilter(0)
-        await expectFilterChips(comfyPage, ['CLIP', 'utils'])
+        await expectFilterChips(comfyPage, ['CLIP', 'utilities'])
         await comfyPage.searchBox.removeFilter(0)
-        await expectFilterChips(comfyPage, ['utils'])
+        await expectFilterChips(comfyPage, ['utilities'])
         await comfyPage.searchBox.removeFilter(0)
         await expectFilterChips(comfyPage, [])
       })
 
       test('Can remove middle filter', async ({ comfyPage }) => {
         await comfyPage.searchBox.removeFilter(1)
-        await expectFilterChips(comfyPage, ['MODEL', 'utils'])
+        await expectFilterChips(comfyPage, ['MODEL', 'utilities'])
       })
 
       test('Can remove last filter', async ({ comfyPage }) => {

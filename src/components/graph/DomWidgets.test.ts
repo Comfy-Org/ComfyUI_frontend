@@ -1,8 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -11,8 +10,19 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { toNodeId } from '@/types/nodeId'
 
 type TestWidget = BaseDOMWidget<object | string>
+
+type WidgetUpdateCounters = {
+  isVisibleCalls: number
+  nodeVisibilityChecks: number
+  positionChanges: number
+  sizeChanges: number
+  visibleChanges: number
+  zIndexChanges: number
+  zIndexLookups: number
+}
 
 function createNode(
   graph: LGraph,
@@ -21,7 +31,7 @@ function createNode(
   pos: [number, number]
 ) {
   const node = new LGraphNode(title)
-  node.id = id
+  node.id = toNodeId(id)
   node.pos = [...pos]
   node.size = [240, 120]
   graph.add(node)
@@ -49,7 +59,10 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     graph,
     low_quality: false,
     read_only: false,
-    isNodeVisible: vi.fn(() => true)
+    isNodeVisible: vi.fn(() => true),
+    ds: { offset: [0, 0], scale: 1 },
+    selected_nodes: {},
+    selectedItems: new Set()
   })
 }
 
@@ -57,154 +70,353 @@ function drawFrame(canvas: LGraphCanvas) {
   canvas.onDrawForeground?.({} as CanvasRenderingContext2D, new Rectangle())
 }
 
-describe('DomWidgets transition grace characterization', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it('applies transition grace for exactly one frame when override exists but is not active', () => {
+describe('DomWidgets positioning', () => {
+  it('positions an active visible widget relative to its owning node', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
 
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const interiorNode = createNode(graphA, 1, 'interior', [100, 200])
-    const overrideNode = createNode(graphB, 2, 'override', [600, 700])
-
-    const widget = createWidget('widget-transition', interiorNode, 14)
-    const overrideWidget = createWidget('override-widget', overrideNode, 22)
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [100, 200])
+    const widget = createWidget('widget-pos', node, 14)
 
     domWidgetStore.registerWidget(widget)
-    domWidgetStore.setPositionOverride(widget.id, {
-      node: overrideNode,
-      widget: overrideWidget
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
     })
+
+    drawFrame(canvas)
+
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    expect(widgetState.visible).toBe(true)
+    expect(widgetState.pos).toEqual([110, 224])
+  })
+
+  it('hides a widget whose owning node is in a different graph', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const currentGraph = new LGraph()
+    const otherGraph = new LGraph()
+    const node = createNode(otherGraph, 1, 'host', [100, 200])
+    const widget = createWidget('widget-other-graph', node, 14)
+
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(currentGraph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    drawFrame(canvas)
+
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    expect(widgetState.visible).toBe(false)
+  })
+
+  it('hides an inactive widget', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [0, 0])
+    const widget = createWidget('widget-inactive', node, 10)
+
+    domWidgetStore.registerWidget(widget)
     domWidgetStore.deactivateWidget(widget.id)
 
     const widgetState = domWidgetStore.widgetStates.get(widget.id)
     if (!widgetState) throw new Error('Widget state not registered')
     widgetState.visible = true
-    widgetState.pos = [321, 654]
 
-    const canvas = createCanvas(graphA)
+    const canvas = createCanvas(graph)
     canvasStore.canvas = canvas
 
     render(DomWidgets, {
-      global: {
-        stubs: {
-          DomWidget: true
-        }
-      }
+      global: { stubs: { DomWidget: true } }
     })
 
     drawFrame(canvas)
-    expect(widgetState.visible).toBe(true)
-    expect(widgetState.pos).toEqual([321, 654])
 
-    drawFrame(canvas)
     expect(widgetState.visible).toBe(false)
   })
 
-  it('uses override positioning while override node is in current graph even when widget is inactive', () => {
+  it('forces pos reassignment on viewport pan even when canvas-space pos is unchanged', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
 
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const interiorNode = createNode(graphA, 1, 'interior', [10, 20])
-    const overrideNode = createNode(graphB, 2, 'override', [300, 400])
-
-    const widget = createWidget('widget-override-active', interiorNode, 8)
-    const overrideWidget = createWidget(
-      'override-position-source',
-      overrideNode,
-      18
-    )
-
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'node', [100, 200])
+    const widget = createWidget('viewport-widget', node, 12)
     domWidgetStore.registerWidget(widget)
-    domWidgetStore.setPositionOverride(widget.id, {
-      node: overrideNode,
-      widget: overrideWidget
-    })
-    domWidgetStore.deactivateWidget(widget.id)
 
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    drawFrame(canvas)
     const widgetState = domWidgetStore.widgetStates.get(widget.id)
     if (!widgetState) throw new Error('Widget state not registered')
+    const posAfterFirstFrame = widgetState.pos
+    expect(posAfterFirstFrame).toEqual([110, 222])
 
-    const canvas = createCanvas(graphB)
-    canvasStore.canvas = canvas
-
-    render(DomWidgets, {
-      global: {
-        stubs: {
-          DomWidget: true
-        }
-      }
-    })
-
+    // Canvas pan: ds.offset is non-reactive, so the downstream watcher only
+    // fires if widgetState.pos is reassigned (a new array identity).
+    canvas.ds.offset[0] = 50
+    canvas.ds.offset[1] = 60
     drawFrame(canvas)
 
-    expect(widgetState.visible).toBe(true)
-    expect(widgetState.pos).toEqual([310, 428])
+    expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
 
-  it('cleans orphaned transition-grace ids after widget removal', () => {
+  it('skips pos reassignment when viewport and canvas-space pos are both stable', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
 
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const interiorNode = createNode(graphA, 1, 'interior', [0, 0])
-    const overrideNode = createNode(graphB, 2, 'override', [200, 200])
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'node', [100, 200])
+    const widget = createWidget('idle-widget', node, 12)
+    domWidgetStore.registerWidget(widget)
 
-    const canvas = createCanvas(graphA)
+    const canvas = createCanvas(graph)
     canvasStore.canvas = canvas
 
     render(DomWidgets, {
-      global: {
-        stubs: {
-          DomWidget: true
-        }
-      }
+      global: { stubs: { DomWidget: true } }
     })
 
-    const oldWidget = createWidget('shared-widget-id', interiorNode, 10)
-    const overrideWidget = createWidget(
-      'shared-override-widget',
-      overrideNode,
-      14
-    )
-
-    domWidgetStore.registerWidget(oldWidget)
-    domWidgetStore.setPositionOverride(oldWidget.id, {
-      node: overrideNode,
-      widget: overrideWidget
-    })
-    domWidgetStore.deactivateWidget(oldWidget.id)
-
     drawFrame(canvas)
-    domWidgetStore.unregisterWidget(oldWidget.id)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    const posAfterFirstFrame = widgetState.pos
 
+    // No pan, no node movement — pos array identity must be preserved
+    // (this is the perf optimization being protected).
     drawFrame(canvas)
-
-    const replacementWidget = createWidget('shared-widget-id', interiorNode, 10)
-    domWidgetStore.registerWidget(replacementWidget)
-    domWidgetStore.setPositionOverride(replacementWidget.id, {
-      node: overrideNode,
-      widget: overrideWidget
-    })
-    domWidgetStore.deactivateWidget(replacementWidget.id)
-
-    const replacementState = domWidgetStore.widgetStates.get(
-      replacementWidget.id
-    )
-    if (!replacementState) throw new Error('Replacement widget missing state')
-    replacementState.visible = true
-    replacementState.pos = [999, 999]
-
-    drawFrame(canvas)
-
-    expect(replacementState.visible).toBe(true)
-    expect(replacementState.pos).toEqual([999, 999])
+    expect(widgetState.pos).toBe(posAfterFirstFrame)
   })
+
+  it('forces pos reassignment when the selected node render area changes', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const movingNode = createNode(graph, 1, 'moving', [100, 100])
+    const otherNode = createNode(graph, 2, 'other', [400, 100])
+    const widget = createWidget('clipped-widget', otherNode, 12)
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvas.selected_nodes = { 1: movingNode }
+    canvas.selectedItems = new Set([movingNode])
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    movingNode.updateArea()
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    const posAfterFirstFrame = widgetState.pos
+
+    movingNode.flags.collapsed = true
+    movingNode.updateArea()
+    drawFrame(canvas)
+
+    expect(widgetState.pos).not.toBe(posAfterFirstFrame)
+  })
+})
+
+describe('DomWidgets deterministic update matrix', () => {
+  const widgetCounts = [0, 10, 100] as const
+
+  async function measureUpdate({
+    count,
+    update,
+    widgetsVisible
+  }: {
+    count: number
+    update: 'node-geometry' | 'node-layout' | 'steady' | 'zoom'
+    widgetsVisible: boolean
+  }): Promise<WidgetUpdateCounters> {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+    const graph = new LGraph()
+    const isVisible = vi.fn(() => widgetsVisible)
+
+    for (let index = 0; index < count; index++) {
+      const node = createNode(graph, index + 1, `node-${index}`, [index, index])
+      const widget = createWidget(`widget-${index}`, node)
+      widget.isVisible = isVisible
+      domWidgetStore.registerWidget(widget)
+    }
+
+    const canvas = createCanvas(graph)
+    const nodeVisibility = vi.mocked(canvas.isNodeVisible)
+    const zIndexLookup = vi.spyOn(graph.nodes, 'indexOf')
+    canvasStore.canvas = canvas
+
+    const rendered = render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+    drawFrame(canvas)
+
+    const changes = {
+      position: 0,
+      size: 0,
+      visible: 0,
+      zIndex: 0
+    }
+    const stops = [...domWidgetStore.widgetStates.values()].flatMap((state) => [
+      watch(
+        () => state.pos,
+        () => changes.position++,
+        { flush: 'sync' }
+      ),
+      watch(
+        () => state.size,
+        () => changes.size++,
+        { flush: 'sync' }
+      ),
+      watch(
+        () => state.visible,
+        () => changes.visible++,
+        { flush: 'sync' }
+      ),
+      watch(
+        () => state.zIndex,
+        () => changes.zIndex++,
+        { flush: 'sync' }
+      )
+    ])
+
+    isVisible.mockClear()
+    nodeVisibility.mockClear()
+    zIndexLookup.mockClear()
+
+    if (update === 'node-geometry') {
+      for (const node of graph.nodes) node.pos[0] += 1
+    } else if (update === 'node-layout') {
+      for (const state of domWidgetStore.widgetStates.values()) {
+        state.widget.computedHeight = (state.widget.computedHeight ?? 50) + 1
+      }
+    } else if (update === 'zoom') {
+      canvas.ds.scale = 1.25
+    }
+
+    drawFrame(canvas)
+
+    const counters: WidgetUpdateCounters = {
+      isVisibleCalls: isVisible.mock.calls.length,
+      nodeVisibilityChecks: nodeVisibility.mock.calls.length,
+      positionChanges: changes.position,
+      sizeChanges: changes.size,
+      visibleChanges: changes.visible,
+      zIndexChanges: changes.zIndex,
+      zIndexLookups: zIndexLookup.mock.calls.length
+    }
+
+    for (const stop of stops) stop()
+    rendered.unmount()
+    domWidgetStore.clear()
+    canvasStore.canvas = null
+    return counters
+  }
+
+  it.for(widgetCounts)(
+    'does no reactive state work for %i visible widgets on a steady draw',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'steady',
+        widgetsVisible: true
+      })
+
+      expect(result).toEqual({
+        isVisibleCalls: count,
+        nodeVisibilityChecks: count,
+        positionChanges: 0,
+        sizeChanges: 0,
+        visibleChanges: 0,
+        zIndexChanges: 0,
+        zIndexLookups: count
+      })
+    }
+  )
+
+  it.for(widgetCounts)(
+    'does no downstream work for %i hidden widgets on a steady draw',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'steady',
+        widgetsVisible: false
+      })
+
+      expect(result).toEqual({
+        isVisibleCalls: count,
+        nodeVisibilityChecks: 0,
+        positionChanges: 0,
+        sizeChanges: 0,
+        visibleChanges: 0,
+        zIndexChanges: 0,
+        zIndexLookups: 0
+      })
+    }
+  )
+
+  it.for(widgetCounts)(
+    'updates size once for each of %i visible widgets after node layout changes',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'node-layout',
+        widgetsVisible: true
+      })
+
+      expect(result.positionChanges).toBe(0)
+      expect(result.sizeChanges).toBe(count)
+    }
+  )
+
+  it.for(widgetCounts)(
+    'updates position once for each of %i visible widgets after geometry changes',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'node-geometry',
+        widgetsVisible: true
+      })
+
+      expect(result.positionChanges).toBe(count)
+      expect(result.sizeChanges).toBe(0)
+      expect(result.zIndexLookups).toBe(count)
+    }
+  )
+
+  it.for(widgetCounts)(
+    'updates position once for each of %i visible widgets after zoom changes',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'zoom',
+        widgetsVisible: true
+      })
+
+      expect(result.positionChanges).toBe(count)
+      expect(result.sizeChanges).toBe(0)
+    }
+  )
 })

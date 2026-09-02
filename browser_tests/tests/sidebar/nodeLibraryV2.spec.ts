@@ -10,30 +10,17 @@ test.describe('Node library sidebar V2', () => {
     await tab.open()
   })
 
-  test('Can switch between tabs', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
-
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-
-    await tab.blueprintsTab.click()
-    await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'false')
-
-    await tab.allTab.click()
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'false')
-  })
-
   test('All tab displays node tree with folders', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.getFolder('sampling')).toBeVisible()
+    await expect(tab.getFolder('model')).toBeVisible()
   })
 
   test('Can expand folder and see nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
   })
@@ -51,6 +38,7 @@ test.describe('Node library sidebar V2', () => {
   test('Drag node to canvas adds it', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
 
@@ -84,6 +72,7 @@ test.describe('Node library sidebar V2', () => {
   }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     const node = tab.getNode('KSampler (Advanced)')
     await expect(node).toBeVisible()
@@ -99,7 +88,7 @@ test.describe('Node library sidebar V2', () => {
   test('Search clear restores folder view', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await expect(tab.getFolder('sampling')).toBeVisible()
+    await expect(tab.getFolder('model')).toBeVisible()
 
     await tab.searchInput.fill('KSampler')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
@@ -107,7 +96,7 @@ test.describe('Node library sidebar V2', () => {
     await tab.searchInput.clear()
     await tab.searchInput.press('Enter')
 
-    await expect(tab.getFolder('sampling')).toBeVisible()
+    await expect(tab.getFolder('model')).toBeVisible()
   })
 
   test('Sort dropdown shows sorting options', async ({ comfyPage }) => {
@@ -123,10 +112,34 @@ test.describe('Node library sidebar V2', () => {
 
   test('Blueprint previews include description', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
-    await tab.blueprintsTab.click()
+    await tab.allTab.click()
 
+    await tab.expandFolder('Comfy Blueprints')
     await tab.getNode('test blueprint').hover()
     await expect(tab.nodePreview, 'Preview displays on hover').toBeVisible()
     await expect(tab.nodePreview).toContainText('Inverts the image')
+  })
+
+  test('Click-to-place from sidebar selects the newly added node', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.nodeLibraryTabV2
+    await comfyPage.nodeOps.clearGraph()
+    await tab.expandFolder('model')
+    await tab.expandFolder('sampling')
+
+    const canvasBox = (await comfyPage.canvas.boundingBox())!
+    const target = {
+      x: canvasBox.width / 2,
+      y: canvasBox.height / 2
+    }
+
+    await tab.getNode('KSampler (Advanced)').click()
+    await comfyPage.canvas.click({ position: target })
+
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+      .toBe(1)
   })
 })
