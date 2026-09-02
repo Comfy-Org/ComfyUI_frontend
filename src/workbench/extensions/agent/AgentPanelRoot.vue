@@ -296,8 +296,10 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
   const active = workflowStore.activeWorkflow
   if (!active) return undefined
-  const bound = cloudIdFor(active)
-  return bound === undefined ? undefined : { id: bound, tabPath: active.path }
+  const id = cloudIdFor(active)
+  return id === undefined
+    ? { tabPath: active.path }
+    : { id, tabPath: active.path }
 }
 
 function activeWorkflowDraft(): DraftSnapshot | undefined {
@@ -361,7 +363,7 @@ function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined
 ): void {
-  if (sent !== undefined && sent.id === workflowId) {
+  if (sent !== undefined && (sent.id === undefined || sent.id === workflowId)) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
   }
