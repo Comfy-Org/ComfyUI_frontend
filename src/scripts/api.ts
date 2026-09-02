@@ -218,6 +218,7 @@ interface FrontendApiCalls {
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never
+  socketClosed: { code: number; reason: string; wasClean: boolean }
   reconnecting: never
   reconnected: never
 }
@@ -857,7 +858,7 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
@@ -868,6 +869,11 @@ export class ComfyApi extends EventTarget {
       }, 300)
       if (opened) {
         this.dispatchCustomEvent('status', null)
+        this.dispatchCustomEvent('socketClosed', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        })
         this.dispatchCustomEvent('reconnecting')
       }
     })
