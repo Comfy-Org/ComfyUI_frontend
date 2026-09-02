@@ -1180,6 +1180,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       reportError(error, { errorType: 'billing_op_cancel_request_failure' })
       return 'unreachable'
     }
+    // A 2xx says the cancel was accepted, not that nothing was captured — and
+    // the notice shown for 'canceled' promises money. One status read settles
+    // it: a charge that won the race stays on the polling path instead of
+    // being erased under a false receipt. A read that fails or comes back
+    // gone is the operation ending as requested.
+    try {
+      const settled = await workspaceApi.getBillingOpStatus(opId)
+      if (
+        settled.status === 'succeeded' ||
+        settled.status === 'reconciliation_needed'
+      ) {
+        return 'unavailable'
+      }
+    } catch {
+      // ignored: the canceled operation has nothing left to report
+    }
     clearOperation(opId)
     return 'canceled'
   }

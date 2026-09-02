@@ -2731,6 +2731,36 @@ describe('billingOperationStore', () => {
       expect(await store.cancelOperation('op-1')).toBe('unreachable')
     })
 
+    it('refuses the canceled claim when the charge already won the race', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('unavailable')
+      expect(store.getOperation('op-1')).toBeDefined()
+    })
+
+    it('confirms canceled when the operation is gone from the server', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
+        new WorkspaceApiError('not found', 404)
+      )
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('canceled')
+      expect(store.getOperation('op-1')).toBeUndefined()
+    })
+
     it('reports unavailable for a 422 state refusal too', async () => {
       vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
         new WorkspaceApiError('state disallows cancel', 422)
