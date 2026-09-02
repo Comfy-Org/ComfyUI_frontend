@@ -14,7 +14,7 @@ function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
     id: 1,
     type: 'TestNode',
     ...overrides
-  } as Partial<LGraphNode> as LGraphNode
+  } as unknown as LGraphNode
 }
 
 describe(useNodeImageStore, () => {
