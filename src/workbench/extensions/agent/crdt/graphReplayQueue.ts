@@ -13,9 +13,22 @@ export type GraphReplayState =
   | 'failed'
   | 'complete'
 
+/**
+ * A link's endpoints, so the queue can reveal it alongside the node it
+ * depends on rather than as a separate global pass. Endpoints outside this
+ * batch (already on the graph before the batch started) are treated as
+ * already-revealed - only endpoints the queue itself is pacing hold a link
+ * back.
+ */
+export interface GraphReplayLink {
+  id: string
+  originId: string
+  targetId: string
+}
+
 export interface GraphReplayBatch {
   nodeIds: readonly string[]
-  linkIds: readonly string[]
+  links: readonly GraphReplayLink[]
 }
 
 export interface GraphReplayStep {
@@ -48,7 +61,7 @@ const clamp = (v: number, lo: number, hi: number) =>
 export class GraphReplayQueue {
   private state: GraphReplayState = 'idle'
   private pendingNodes: string[] = []
-  private pendingLinks: string[] = []
+  private pendingLinks: GraphReplayLink[] = []
   private timer: ReturnType<typeof setTimeout> | null = null
   /** Wall-clock ms consumed by the current batch's reveal steps. */
   private elapsedMs = 0
@@ -85,7 +98,7 @@ export class GraphReplayQueue {
   }
 
   get pendingLinkIds(): ReadonlySet<string> {
-    return new Set(this.pendingLinks)
+    return new Set(this.pendingLinks.map((link) => link.id))
   }
 
   /**
@@ -97,7 +110,7 @@ export class GraphReplayQueue {
       this.fastForward()
     }
     const nodes = dedupe(batch.nodeIds)
-    const links = dedupe(batch.linkIds)
+    const links = dedupeLinks(batch.links)
     if (nodes.length === 0 && links.length === 0) return
     this.pendingNodes = nodes
     this.pendingLinks = links
@@ -111,6 +124,30 @@ export class GraphReplayQueue {
     this.cancelTimer()
     if (this.pendingNodes.length === 0 && this.pendingLinks.length === 0) return
     this.emitStep(this.pendingNodes, this.pendingLinks)
+  }
+
+  /**
+   * Links whose endpoints are all already revealed (not in `pendingNodeIds`
+   * after removing `justRevealedNodes`) - these can go out in the same step
+   * as the node(s) they depend on, or on their own once both ends are clear.
+   */
+  private releasableLinks(justRevealedNodes: ReadonlySet<string>): {
+    releasable: GraphReplayLink[]
+    held: GraphReplayLink[]
+  } {
+    const stillPendingNodes = new Set(this.pendingNodes)
+    const releasable: GraphReplayLink[] = []
+    const held: GraphReplayLink[] = []
+    for (const link of this.pendingLinks) {
+      const originPending =
+        stillPendingNodes.has(link.originId) &&
+        !justRevealedNodes.has(link.originId)
+      const targetPending =
+        stillPendingNodes.has(link.targetId) &&
+        !justRevealedNodes.has(link.targetId)
+      ;(originPending || targetPending ? held : releasable).push(link)
+    }
+    return { releasable, held }
   }
 
   /** Drop all pending work without revealing anything (teardown). */
@@ -130,33 +167,45 @@ export class GraphReplayQueue {
   }
 
   private tick(): void {
-    const total = this.pendingNodes.length + this.pendingLinks.length
-    if (total === 0) return
+    // Pace against nodes and HELD links only - a link that is already
+    // releasable (both endpoints clear) rides out for free alongside the
+    // node that just cleared it rather than competing for its own step, so
+    // "revealed with its target node" means the same tick, not the next one.
+    const { held: heldBefore } = this.releasableLinks(new Set())
+    const total = this.pendingNodes.length + heldBefore.length
+    if (total === 0) {
+      // Only pre-releasable links remain (their endpoints cleared on an
+      // earlier step but they missed that step's link budget) - flush them.
+      if (this.pendingLinks.length > 0) this.emitStep([], this.pendingLinks)
+      return
+    }
     // Coalesce so the whole batch fits in maxTotalMs at stepMs per step:
     // this step plus however many more fit in the remaining budget.
     this.elapsedMs += this.stepMs
     const budgetLeft = Math.max(0, this.maxTotalMs - this.elapsedMs)
     const stepsLeft = 1 + Math.floor(budgetLeft / this.stepMs)
     const perStep = Math.max(1, Math.ceil(total / stepsLeft))
-    // Nodes reveal before links: a link with an unrevealed endpoint is noise.
     const nodes = this.pendingNodes.slice(0, perStep)
-    const links =
-      nodes.length < perStep
-        ? this.pendingLinks.slice(0, perStep - nodes.length)
-        : []
-    this.emitStep(nodes, links)
+    const { releasable } = this.releasableLinks(new Set(nodes))
+    this.emitStep(nodes, releasable)
     if (this.pendingNodes.length + this.pendingLinks.length > 0) {
       this.scheduleNext()
     }
   }
 
-  private emitStep(nodes: readonly string[], links: readonly string[]): void {
+  private emitStep(
+    nodes: readonly string[],
+    links: readonly GraphReplayLink[]
+  ): void {
     const revealedNodes = new Set(nodes)
-    const revealedLinks = new Set(links)
+    const revealedLinkIds = new Set(links.map((link) => link.id))
     this.pendingNodes = this.pendingNodes.filter((id) => !revealedNodes.has(id))
-    this.pendingLinks = this.pendingLinks.filter((id) => !revealedLinks.has(id))
+    this.pendingLinks = this.pendingLinks.filter(
+      (link) => !revealedLinkIds.has(link.id)
+    )
     const missingNodeIds = nodes.filter((id) => !this.nodeExists(id))
-    this.onStep?.({ nodeIds: nodes, linkIds: links, missingNodeIds })
+    const linkIds = links.map((link) => link.id)
+    this.onStep?.({ nodeIds: nodes, linkIds, missingNodeIds })
     const remaining = this.pendingNodes.length + this.pendingLinks.length
     if (missingNodeIds.length > 0) {
       // Honest failure: the graph no longer matches the batch we were pacing.
@@ -169,7 +218,7 @@ export class GraphReplayQueue {
       if (restNodes.length + restLinks.length > 0) {
         this.onStep?.({
           nodeIds: restNodes,
-          linkIds: restLinks,
+          linkIds: restLinks.map((link) => link.id),
           missingNodeIds: []
         })
       }
@@ -195,4 +244,15 @@ export class GraphReplayQueue {
 
 function dedupe(ids: readonly string[]): string[] {
   return Array.from(new Set(ids))
+}
+
+function dedupeLinks(links: readonly GraphReplayLink[]): GraphReplayLink[] {
+  const seen = new Set<string>()
+  const out: GraphReplayLink[] = []
+  for (const link of links) {
+    if (seen.has(link.id)) continue
+    seen.add(link.id)
+    out.push(link)
+  }
+  return out
 }

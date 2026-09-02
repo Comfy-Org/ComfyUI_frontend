@@ -177,17 +177,42 @@ export function useAgentCrdtFollower(
     }
   }
   let knownDocLinkIds: Set<string> = new Set()
-  const currentDocLinkIds = (): Set<string> => {
+  // mm3-23: link records carry `origin_id`/`target_id` verbatim from the
+  // definition's serialized link objects (comfy-multi-player `mint.js`
+  // `definitionLinkKey`/`cloneForMap`) - read them so the replay queue can
+  // hold a link back until its endpoint node is revealed, instead of
+  // revealing every link in its own pass.
+  const currentDocLinkRecords = (): Map<
+    string,
+    { originId: string; targetId: string }
+  > => {
     try {
       const doc = bridge.follower.doc as unknown as {
         getMap: (k: string) => { toJSON: () => Record<string, unknown> }
       }
-      return new Set(Object.keys(doc.getMap('links').toJSON()))
+      const raw = doc.getMap('links').toJSON()
+      const out = new Map<string, { originId: string; targetId: string }>()
+      for (const [key, value] of Object.entries(raw)) {
+        const record = value as Record<string, unknown> | null
+        const originId = record?.origin_id
+        const targetId = record?.target_id
+        if (typeof originId === 'string' && typeof targetId === 'string') {
+          out.set(key, { originId, targetId })
+        } else if (
+          typeof originId === 'number' &&
+          typeof targetId === 'number'
+        ) {
+          out.set(key, {
+            originId: String(originId),
+            targetId: String(targetId)
+          })
+        }
+      }
+      return out
     } catch {
-      return new Set()
+      return new Map()
     }
   }
-
   // mm3-20 Option-B PoC: a presentation-only replay queue. The doc and the
   // ECS graph are ALWAYS fully applied by `adapter.applyFrame` above; the
   // queue only paces which node/link ids are considered "revealed" so a
@@ -329,11 +354,17 @@ export function useAgentCrdtFollower(
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     knownDocNodeIds = ids
-    const linkIds = currentDocLinkIds()
-    const addedLinks = [...linkIds].filter((id) => !knownDocLinkIds.has(id))
+    const linkRecords = currentDocLinkRecords()
+    const linkIds = new Set(linkRecords.keys())
+    const addedLinkIds = [...linkIds].filter((id) => !knownDocLinkIds.has(id))
     knownDocLinkIds = linkIds
-    if (replayEnabled && (added.length > 0 || addedLinks.length > 0)) {
-      replayQueue.enqueueBatch({ nodeIds: added, linkIds: addedLinks })
+    if (replayEnabled && (added.length > 0 || addedLinkIds.length > 0)) {
+      const addedLinks = addedLinkIds.flatMap((id) => {
+        const record = linkRecords.get(id)
+        if (!record) return []
+        return [{ id, originId: record.originId, targetId: record.targetId }]
+      })
+      replayQueue.enqueueBatch({ nodeIds: added, links: addedLinks })
       if (reducedMotion.value === 'reduce') replayQueue.fastForward()
     }
   }
@@ -398,6 +429,12 @@ export function useAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       adapter.bind(workflowId, bridge.follower)
+      knownDocNodeIds = new Set()
+      knownDocLinkIds = new Set()
+      // mm3-23: the replacement doc's lineage broke from the one the queue was
+      // pacing reveals against - force everything pending out now rather than
+      // let it sit veiled behind a doc that no longer exists.
+      settleReplay()
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -422,6 +459,11 @@ export function useAgentCrdtFollower(
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
+    // mm3-23: a mid-replay socket drop must never leave the view stuck
+    // showing a stale partial reveal while the follower is disconnected -
+    // reveal everything pending now; the resubscribe below will re-derive
+    // fresh adds/removes against the settled state once reconnected.
+    settleReplay()
     bridge.resubscribe()
   }
   /**

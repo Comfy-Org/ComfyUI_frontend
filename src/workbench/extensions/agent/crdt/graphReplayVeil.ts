@@ -4,8 +4,10 @@
  * honest loading/partial state is visible on the canvas itself and not only
  * in the dev panel. Presentation-only - reads `pendingNodeIds` off the queue
  * and paints over node bounds; it never mutates the graph, the Y.Doc, or
- * node state. Per-link veiling is out of scope for the PoC (queue paces link
- * ids but LiteGraph renders links in one pass); see mm3-23.
+ * node state. Drawing a veil OVER a link's line (as opposed to pacing when it
+ * reveals - see `graphReplayQueue.ts`'s per-link endpoint gating, mm3-23) is
+ * still out of scope: LiteGraph renders links in one pass, so masking a
+ * single in-flight link would need its own draw hook.
  */
 import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
