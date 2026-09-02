@@ -4,7 +4,10 @@ import { mapInputFileToAssetItem } from './assetMappers'
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    apiURL: (path: string) => `/api${path}`
+    apiURL: (path: string) => `/api${path}`,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 

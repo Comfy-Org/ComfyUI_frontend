@@ -43,6 +43,7 @@ import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -332,6 +333,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        await useAssetsStore().invalidateAll()
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
         }

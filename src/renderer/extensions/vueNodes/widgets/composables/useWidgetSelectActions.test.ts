@@ -25,14 +25,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   }
 })
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((url: string) => url),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock('@/scripts/api')
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({

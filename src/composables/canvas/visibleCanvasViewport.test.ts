@@ -23,7 +23,7 @@ describe('visibleCanvasViewport', () => {
     expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 800, 450])
   })
 
-  it('excludes the docked Agent panel width from the visible canvas', () => {
+  it('T-06 / PM-669 / FE-1633 excludes the docked Agent panel width from Fit View', () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
     panel.isOpen = true

@@ -94,7 +94,6 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   })
 
   afterEach(() => {
-    LiteGraph.unregisterNodeType(nodeName)
     mergeCustomNodesI18n({})
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
   })
@@ -152,7 +151,6 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
   })
 
   afterEach(() => {
-    LiteGraph.unregisterNodeType(nodeName)
     i18n.global.locale.value = 'en'
     i18n.global.setLocaleMessage('zh', cloneDeep(zhMessages))
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
@@ -219,10 +217,6 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
       output_name: [],
       output_node: false
     })
-  })
-
-  afterEach(() => {
-    LiteGraph.unregisterNodeType(nodeName)
   })
 
   it('applies metadata to the concrete widget stored on the node', () => {

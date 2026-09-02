@@ -9,7 +9,7 @@ const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
-  test('keeps a single docked panel root when toggling app mode and back', async ({
+  test('T-16 / PM-653 / FE-1298 keeps a single docked panel root and active workflow in app mode', async ({
     comfyPage
   }) => {
     test.setTimeout(30_000)

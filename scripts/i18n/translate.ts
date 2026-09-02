@@ -1,10 +1,6 @@
 import OpenAI from 'openai'
 
-import type {
-  OutputLocale,
-  ReasoningEffort,
-  TranslationPipelineConfig
-} from './config'
+import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { tokenErrors } from './protected-tokens'
 
 export interface TranslationItem {
@@ -22,11 +18,12 @@ export type TranslateBatch = (
 
 const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
-const maxMalformedResponseRetries = 3
+const maxMalformedResponseRetries = 1
 
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
-// spending API requests whose results nobody will consume
+// spending API requests whose results nobody will consume; in-flight tasks
+// settle before the first failure is rethrown so no work outlives the call
 export async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -34,22 +31,22 @@ export async function mapWithConcurrency<T, R>(
 ): Promise<R[]> {
   const results: R[] = new Array(items.length)
   let next = 0
-  let failed = false
+  let firstFailure: { reason: unknown } | undefined
   const workers = Array.from(
     { length: Math.min(concurrency, items.length) },
     async () => {
-      while (!failed && next < items.length) {
+      while (!firstFailure && next < items.length) {
         const index = next++
         try {
           results[index] = await task(items[index])
         } catch (error) {
-          failed = true
-          throw error
+          firstFailure ??= { reason: error }
         }
       }
     }
   )
   await Promise.all(workers)
+  if (firstFailure) throw firstFailure.reason
   return results
 }
 
@@ -97,24 +94,54 @@ ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
 }
 
-function parseBatchResponse(content: string): Record<string, string> {
+function parseBatchResponse(
+  content: string,
+  requestedIds: ReadonlySet<string>
+): Record<string, string> {
   const parsed: unknown = JSON.parse(content)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('translation response is not a JSON object')
   }
   const record: Record<string, string> = {}
   for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value === 'string') record[key] = value
+    if (typeof value === 'string' && requestedIds.has(key)) record[key] = value
   }
   return record
+}
+
+export interface RequestCounter {
+  fetch: typeof fetch
+  requestCount: () => number
+}
+
+export function createRequestCounter(
+  fetchFn: typeof fetch = globalThis.fetch
+): RequestCounter {
+  let requests = 0
+  const countingFetch: typeof fetch = async (input, init) => {
+    requests++
+    return fetchFn(input, init)
+  }
+  return { fetch: countingFetch, requestCount: () => requests }
+}
+
+function splitTruncatedBatch(items: TranslationItem[]): TranslationItem[][] {
+  const totalChars = items.reduce((sum, item) => sum + item.source.length, 0)
+  return chunkItems(
+    items,
+    Math.ceil(items.length / 2),
+    Math.ceil(totalChars / 2)
+  )
 }
 
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   glossary: string
+  maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
+  onCompletion?: (completion: OpenAI.ChatCompletion) => void
   requestTimeoutMs?: number
 }
 
@@ -127,8 +154,15 @@ export function createOpenAiTranslator(
     timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
     maxRetries: maxNetworkRetries
   })
-  return async (locale, items) => {
-    let lastError = new Error('translation request was not attempted')
+
+  async function translateBatch(
+    locale: OutputLocale,
+    items: TranslationItem[],
+    splitDepth: number
+  ): Promise<Record<string, string>> {
+    if (items.length === 0) return {}
+    const requestedIds = new Set(items.map((item) => item.id))
+    let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
       const completion = await client.chat.completions.create({
         model: options.model,
@@ -142,26 +176,47 @@ export function createOpenAiTranslator(
           { role: 'user', content: JSON.stringify({ items }) }
         ]
       })
+      options.onCompletion?.(completion)
       const choice = completion.choices[0]
       if (choice?.finish_reason === 'length') {
-        lastError = new Error(
-          'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
+        if (items.length === 1) {
+          deferralReason = `the response was truncated (finish_reason "length") for the single string ${items[0].context}`
+          continue
+        }
+        if (splitDepth >= options.maxTruncationSplitDepth) {
+          deferralReason = `${items.length} strings were still truncated (finish_reason "length") at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
+          break
+        }
+        const settled = await Promise.allSettled(
+          splitTruncatedBatch(items).map((chunk) =>
+            translateBatch(locale, chunk, splitDepth + 1)
+          )
         )
-        continue
+        const merged: Record<string, string> = {}
+        for (const result of settled) {
+          if (result.status === 'rejected') throw result.reason
+          Object.assign(merged, result.value)
+        }
+        return merged
       }
-      const content = choice?.message.content
+      const content = choice?.message?.content
       if (typeof content !== 'string') {
-        lastError = new Error('OpenAI response has no message content')
+        deferralReason = 'the response has no message content'
         continue
       }
       try {
-        return parseBatchResponse(content)
+        return parseBatchResponse(content, requestedIds)
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error))
+        deferralReason = error instanceof Error ? error.message : String(error)
       }
     }
-    throw lastError
+    console.warn(
+      `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`
+    )
+    return {}
   }
+
+  return (locale, items) => translateBatch(locale, items, 0)
 }
 
 export async function translateLocaleItems(

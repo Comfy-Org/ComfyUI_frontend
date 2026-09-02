@@ -4,13 +4,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -24,12 +24,6 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
-}
-
-type OutputKeyParts = {
-  nodeId?: SerializedNodeId | null
-  subfolder?: string | null
-  filename?: string | null
 }
 
 type SelectedJobOutputs = {
@@ -114,18 +108,6 @@ export function getTotalAssetOutputCount(assets: readonly AssetItem[]): number {
     total += Math.max(expectedCount, outputKeys.size)
   }
   return total
-}
-
-export function getOutputKey({
-  nodeId,
-  subfolder,
-  filename
-}: OutputKeyParts): string | null {
-  if (nodeId == null || subfolder == null || !filename) {
-    return null
-  }
-
-  return JSON.stringify([String(nodeId), subfolder, filename])
 }
 
 /**

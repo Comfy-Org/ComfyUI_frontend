@@ -26,7 +26,7 @@ function chipRegistry() {
 }
 
 describe('useAttachment', () => {
-  it('gives an image a thumbnail but leaves a video to the icon tile', async () => {
+  it('adds previews for picked images but not picked videos', async () => {
     // A video object URL in an <img> renders as a broken thumbnail, so only
     // images get a previewUrl.
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))

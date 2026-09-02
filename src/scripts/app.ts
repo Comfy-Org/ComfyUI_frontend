@@ -1764,10 +1764,12 @@ export class ComfyApp {
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
+          // Capture workflow and mode before await — both may change if the
+          // user switches tabs or toggles app/graph mode while the request is
+          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph).catch(
             (error: unknown) => {
@@ -1787,7 +1789,7 @@ export class ComfyApp {
             workflowContext = toWorkflowExecutionContext(executionContext, {
               executableNodeCount: Object.keys(p.output).length,
               executionScope: isPartialExecution ? 'partial' : 'full',
-              viewMode: getWorkflowMode(queuedWorkflow)
+              viewMode: queuedMode
             })
           }
           if (
@@ -1837,6 +1839,7 @@ export class ComfyApp {
                   startTime,
                   submissionAcceptedAt: responseReceivedAt,
                   workflow: queuedWorkflow,
+                  mode: queuedMode,
                   workflowContext,
                   workflowExecutionIntent
                 })
@@ -2106,15 +2109,20 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(this.rootGraph, parameters, () => {
-        try {
-          // false: final destination; no later load republishes the hash.
-          useWorkflowService().beforeLoadNewGraph(false)
-        } finally {
-          useMissingNodesErrorStore().setMissingNodeTypes([])
+      const outcome = await importA1111(
+        this.rootGraph,
+        parameters,
+        async () => {
+          try {
+            // false: final destination; no later load republishes the hash.
+            useWorkflowService().beforeLoadNewGraph(false)
+            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+          } finally {
+            useMissingNodesErrorStore().setMissingNodeTypes([])
+          }
+          this.canvas.setGraph(this.rootGraph)
         }
-        this.canvas.setGraph(this.rootGraph)
-      })
+      )
       switch (outcome) {
         case 'core-nodes-unavailable':
           useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2138,10 +2146,17 @@ export class ComfyApp {
           )
         }
       }
+      // Intentionally no beforeConfigureGraph: A1111 has no mutable
+      // workflow JSON before graph construction, so there is no payload.
+      await useExtensionService().invokeExtensionsAsync(
+        'afterConfigureGraph',
+        []
+      )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
 
@@ -2277,6 +2292,7 @@ export class ComfyApp {
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     this.clean()
 
@@ -2420,10 +2436,17 @@ export class ComfyApp {
     for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
 
+    // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
+    // and never passes a ComfyWorkflowJSON through the configure stage.
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      missingNodeTypes
+    )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }
