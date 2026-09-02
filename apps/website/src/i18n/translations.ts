@@ -7902,9 +7902,9 @@ Enterprise`
     'zh-CN': 'MiniMax 商业许可'
   },
   'pricing.resourceCosts.minimaxLicense.description': {
-    en: 'Run MiniMax models locally for commercial work — Professional at $5,000 / month, Enterprise custom.',
+    en: 'For running MiniMax models locally for commercial work. Comfy is the only official reseller.',
     'zh-CN':
-      '在本地运行 MiniMax 模型进行商业创作——专业版 5,000 美元 / 月，企业版定制。'
+      '面向在本地运行 MiniMax 模型进行商业创作的场景。Comfy 是唯一官方经销商。'
   },
   'pricing.resourceCosts.minimaxLicense.cta': {
     en: 'See license tiers',
