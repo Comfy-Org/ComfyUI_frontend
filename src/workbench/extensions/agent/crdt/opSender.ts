@@ -28,10 +28,25 @@ export interface OpsResultView {
   ok: boolean
   applied: string[]
   skipped: string[]
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
+  /**
+   * Failed-batch diagnostics when the host provides them. `op_id` correlates
+   * an otherwise empty-list failure to its batch; `code`, `message` and
+   * `index` are the host's own reason, threaded through verbatim so the
+   * settled outcome (dev panel, telemetry) can say WHY a batch failed rather
+   * than only that it did.
+   */
+  failure?: OpsFailureView
   /** Every `op_id` found in the host's failure payload (canonical `failure` first, then `failed`), for matching against an in-flight batch's op-id set rather than trusting a single arbitrary pick. */
   failureOpIds?: string[]
+}
+
+interface OpsFailureView {
+  op_id?: string
+  /** Wire `DocOpFailure.code` (e.g. `op_rejected`). */
+  code?: string
+  message?: string
+  /** Position of the failing op within the batch, when the host reports one. */
+  index?: number
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -46,41 +61,76 @@ function failureOpId(value: unknown): string | undefined {
   return undefined
 }
 
+/** The host's `failed` payload as a list: absent, one object, or an array. */
+function failedEntries(failed: unknown): unknown[] {
+  if (Array.isArray(failed)) return failed
+  return failed === undefined ? [] : [failed]
+}
+
 /** All `op_id`s findable across the host's `failed` payload, in wire order. */
 function allFailureOpIds(failed: unknown): string[] {
-  const failures = Array.isArray(failed)
-    ? failed
-    : failed === undefined
-      ? []
-      : [failed]
-  return failures
+  return failedEntries(failed)
     .map(failureOpId)
     .filter((id): id is string => id !== undefined)
 }
 
-export function toOpsResultView(
-  detail: (OpsResultView & { failed?: unknown }) | null | undefined
-): OpsResultView {
+/** `code` / `message` / `index` from one host failure object, dropping anything off-type. */
+function failureDiagnostics(value: unknown): Omit<OpsFailureView, 'op_id'> {
+  if (!isRecord(value)) return {}
+  return {
+    ...(typeof value.code === 'string' && { code: value.code }),
+    ...(typeof value.message === 'string' && { message: value.message }),
+    ...(typeof value.index === 'number' && { index: value.index })
+  }
+}
+
+/**
+ * Normalize a `doc_ops_result` detail of ANY shape (the bridge forwards the
+ * frame client's parsed data, but the event contract is `unknown`) into the
+ * sender's view. A canonical `failure` from the host is authoritative for
+ * the single correlating `op_id`; `failed` (object or array, the shipped PoC
+ * shapes) contributes every further op_id so a batch can settle on any of
+ * them. Diagnostics come from the canonical failure, else the `failed` entry
+ * that names an op, else the frame's top-level `code` / `message`.
+ */
+export function toOpsResultView(detail: unknown): OpsResultView {
   if (!isRecord(detail)) {
     return { ok: false, applied: [], skipped: [] }
   }
-  // A canonical `failure` from the host is authoritative; only derive one
-  // from `failed` when the host did not supply it.
+  const canonical = isRecord(detail.failure) ? detail.failure : undefined
   const canonicalOpId =
-    isRecord(detail.failure) && typeof detail.failure.op_id === 'string'
-      ? detail.failure.op_id
-      : undefined
-  const candidateOpIds =
+    typeof canonical?.op_id === 'string' ? canonical.op_id : undefined
+  const failedIds = allFailureOpIds(detail.failed)
+  const failureOpIds =
     canonicalOpId !== undefined
-      ? [canonicalOpId]
-      : allFailureOpIds(detail.failed)
+      ? [canonicalOpId, ...failedIds.filter((id) => id !== canonicalOpId)]
+      : failedIds
+  // Legacy diagnostics come from the entry that names an op (so index and
+  // op_id describe the same failure), else the first entry.
+  const legacy = failedEntries(detail.failed)
+  const legacyDiagnostics =
+    legacy.find((entry) => failureOpId(entry) !== undefined) ?? legacy[0]
+  const diagnostics = {
+    ...failureDiagnostics(detail),
+    ...failureDiagnostics(legacyDiagnostics),
+    ...failureDiagnostics(canonical)
+  }
+  const ok = Boolean(detail.ok)
+  // Diagnostics alone only describe a failure on a failed frame; a success
+  // frame's stray `code` is not one.
+  const hasFailure =
+    failureOpIds.length > 0 || (!ok && Object.keys(diagnostics).length > 0)
   return {
-    ok: Boolean(detail.ok),
+    ok,
     applied: Array.isArray(detail.applied) ? detail.applied : [],
     skipped: Array.isArray(detail.skipped) ? detail.skipped : [],
-    ...(candidateOpIds.length > 0
-      ? { failure: { op_id: candidateOpIds[0] }, failureOpIds: candidateOpIds }
-      : {})
+    ...(hasFailure && {
+      failure: {
+        ...(failureOpIds.length > 0 && { op_id: failureOpIds[0] }),
+        ...diagnostics
+      }
+    }),
+    ...(failureOpIds.length > 0 && { failureOpIds })
   }
 }
 

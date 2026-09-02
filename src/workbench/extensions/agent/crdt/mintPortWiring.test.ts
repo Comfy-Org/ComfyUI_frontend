@@ -47,10 +47,22 @@ function topology(id: number, targetSlot = 3): LinkTopology {
   }
 }
 
+/** Past the ports' double-microtask sweep and the shared queue's drain. */
 async function afterSweep(): Promise<void> {
   await Promise.resolve()
   await Promise.resolve()
   await Promise.resolve()
+}
+
+function createNodeChange(id: number): LayoutChangeView {
+  return {
+    operation: {
+      type: 'createNode',
+      actor: 'user-abc',
+      nodeId: toNodeId(id),
+      layout: { position: { x: 10 * id, y: 20 * id } }
+    }
+  }
 }
 
 describe('attachMintPortWiring', () => {
@@ -98,7 +110,7 @@ describe('attachMintPortWiring', () => {
 
   afterEach(() => wiring.detach())
 
-  it('mints a root clear through the production intentional-clear entry point', () => {
+  it('mints a root clear through the production intentional-clear entry point', async () => {
     graphNodes.set('1', { id: toNodeId(1) })
     graphNodes.set('2', { id: toNodeId(2) })
 
@@ -107,6 +119,7 @@ describe('attachMintPortWiring', () => {
         operation: { type: 'clearGraph', actor: 'user-abc' }
       })
     })
+    await afterSweep()
 
     expect(minted).toEqual([
       { op: 'clear', removed_nodes: [toNodeId(1), toNodeId(2)] }
@@ -170,31 +183,17 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('orders a same-task createNode before its connect', async () => {
-    graphNodes.set('1', {
-      serialize: () => ({ id: 1, type: 'LoadImage' })
-    })
+  it('orders a same-task createNode before its connect when the store delivers a microtask late', async () => {
+    graphNodes.set('1', { serialize: () => ({ id: 1, type: 'LoadImage' }) })
     graphNodes.set('2', {
       serialize: () => ({ id: 2, type: 'PreviewImage' })
     })
 
+    // The real store queues its whole batch on ONE microtask, so the sync
+    // link feed mints first; the shared queue still ships add_node first.
     queueMicrotask(() => {
-      deliverLayoutChange({
-        operation: {
-          type: 'createNode',
-          actor: 'user-abc',
-          nodeId: toNodeId(1),
-          layout: { position: { x: 10, y: 20 } }
-        }
-      })
-      deliverLayoutChange({
-        operation: {
-          type: 'createNode',
-          actor: 'user-abc',
-          nodeId: toNodeId(2),
-          layout: { position: { x: 30, y: 40 } }
-        }
-      })
+      deliverLayoutChange(createNodeChange(1))
+      deliverLayoutChange(createNodeChange(2))
     })
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     await afterSweep()
@@ -206,7 +205,8 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('mints a name-keyed set_widget with the pre-write value from the real store', () => {
+  it('orders a same-task createNode before its widget write, whichever port mints first', async () => {
+    graphNodes.set('7', { serialize: () => ({ id: 7, type: 'KSampler' }) })
     const widgetStore = useWidgetValueStore()
     const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
     widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
@@ -214,6 +214,63 @@ describe('attachMintPortWiring', () => {
     >[1])
 
     widgetStore.setValue(id, 42)
+    deliverLayoutChange(createNodeChange(7))
+    await afterSweep()
+
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'add_node',
+      'set_widget'
+    ])
+    expect(minted).toHaveLength(2)
+  })
+
+  it('drops a widget write on a node the same task deletes', async () => {
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    widgetStore.setValue(id, 42)
+    deliverLayoutChange({
+      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(7) }
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([
+      { op: 'delete_node', node_id: '7', removed_links: [] }
+    ])
+  })
+
+  it('a widget write in a LATER task than the delete is not pruned (drains are per task)', async () => {
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    deliverLayoutChange({
+      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(7) }
+    })
+    await afterSweep()
+    widgetStore.setValue(id, 42)
+    await afterSweep()
+
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'delete_node',
+      'set_widget'
+    ])
+  })
+
+  it('mints a name-keyed set_widget with the pre-write value from the real store', async () => {
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    widgetStore.setValue(id, 42)
+    await afterSweep()
 
     expect(minted).toEqual([
       {
@@ -226,13 +283,14 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('mints nothing for a setValue that did not apply', () => {
+  it('mints nothing for a setValue that did not apply', async () => {
     useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
+    await afterSweep()
 
     expect(minted).toEqual([])
   })
 
-  it('suppresses every port inside the remote scope', () => {
+  it('suppresses every port inside the remote scope', async () => {
     wiring.runRemoteScope(() => {
       useLinkStore().registerLink(ROOT_SCOPE, topology(41))
       const widgetStore = useWidgetValueStore()
@@ -242,11 +300,12 @@ describe('attachMintPortWiring', () => {
       >[1])
       widgetStore.setValue(id, 42)
     })
+    await afterSweep()
 
     expect(minted).toEqual([])
   })
 
-  it('suppresses remote store calls from their call-carried context', () => {
+  it('suppresses remote store calls from their call-carried context', async () => {
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: 'agent:test',
@@ -259,6 +318,7 @@ describe('attachMintPortWiring', () => {
       typeof widgetStore.registerWidget
     >[1])
     const widget = widgetStore.setValue(id, 42, context)
+    await afterSweep()
 
     expect(link).toBeDefined()
     expect(widget).toBe(true)
@@ -282,7 +342,7 @@ describe('attachMintPortWiring', () => {
     expect(minted).toHaveLength(1)
   })
 
-  it('serializes add_node snapshots name-keyed, dropping non-value widgets', () => {
+  it('serializes add_node snapshots name-keyed, dropping non-value widgets', async () => {
     graphNodes.set('5', {
       serialize: () => ({
         id: 5,
@@ -304,6 +364,7 @@ describe('attachMintPortWiring', () => {
         layout: { position: { x: 10, y: 20 } }
       }
     })
+    await afterSweep()
 
     expect(minted).toEqual([
       {
@@ -320,7 +381,7 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {
+  it('positive control: an unbound workflow runs normally, zero mint and zero blockage', async () => {
     bound = false
     const widgetStore = useWidgetValueStore()
     const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
@@ -330,6 +391,7 @@ describe('attachMintPortWiring', () => {
 
     const placed = useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     const applied = widgetStore.setValue(id, 42)
+    await afterSweep()
 
     expect(minted).toEqual([])
     expect(placed).toBeDefined()
@@ -337,7 +399,7 @@ describe('attachMintPortWiring', () => {
     expect(widgetStore.getWidget(id)?.value).toBe(42)
   })
 
-  it('stops observing both stores after detach', () => {
+  it('stops observing both stores after detach', async () => {
     wiring.detach()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     const widgetStore = useWidgetValueStore()
@@ -346,7 +408,18 @@ describe('attachMintPortWiring', () => {
       typeof widgetStore.registerWidget
     >[1])
     widgetStore.setValue(id, 42)
+    await afterSweep()
 
     expect(minted).toEqual([])
+  })
+
+  it('detach flushes a queued mint instead of dropping it', () => {
+    graphNodes.set('5', { serialize: () => ({ id: 5, type: 'LoadImage' }) })
+    deliverLayoutChange(createNodeChange(5))
+    expect(minted).toEqual([])
+
+    wiring.detach()
+
+    expect(minted.map((operation) => operation.op)).toEqual(['add_node'])
   })
 })

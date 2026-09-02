@@ -5,6 +5,10 @@
  * never DELETED (the store displaces incumbents internally). Load brackets
  * are a fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a
  * failed load leaves mints suppressed until the next load's pair recloses.
+ *
+ * All three ports mint into ONE {@link MintQueue}, which is the only thing
+ * that talks to `deps.enqueue`: cross-port order is decided by its drain, not
+ * by which port's microtask happened to be inserted first.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -24,6 +28,8 @@ import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
 import { attachWidgetMintPort } from './widgetMintPort'
+import { createMintQueue } from './mintQueue'
+import type { MintQueue } from './mintQueue'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
@@ -40,7 +46,7 @@ export interface MintPortWiringDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
-  /** Receives minted semantic operations (the sender's inbox). */
+  /** Receives each drained batch of minted operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The layout store's `onChange`, injected by the composition root. */
   layoutChanges(listener: (change: LayoutChangeView) => void): () => void
@@ -116,6 +122,7 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  const queue: MintQueue = createMintQueue(deps.enqueue)
 
   type PlacedListener = Parameters<
     Parameters<typeof attachLinkMintPort>[0]['events']['onPlaced']
@@ -144,7 +151,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    enqueue: deps.enqueue
+    enqueue: queue.enqueue
   })
 
   const layoutPort: LayoutMintPort = attachLayoutMintPort({
@@ -163,7 +170,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
         return (deps.getGraph()?._nodes ?? []).map((node) => node.id)
       }
     },
-    enqueue: deps.enqueue
+    enqueue: queue.enqueue
   })
 
   const widgetPort = attachWidgetMintPort({
@@ -186,7 +193,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (!graph) return null
       return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
     },
-    enqueue: deps.enqueue
+    enqueue: queue.enqueue
   })
 
   const linkStore = useLinkStore()
@@ -262,6 +269,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       widgetPort.detach()
       layoutPort.detach()
       linkPort.detach()
+      queue.flush()
     }
   }
   activeWirings.add(wiring)

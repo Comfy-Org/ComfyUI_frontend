@@ -12,7 +12,6 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-import type { OpsResultView } from './opSender'
 import { createOpSender, toOpsResultView } from './opSender'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
@@ -185,11 +184,7 @@ export function useAgentCrdtFollower(
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as
-          | (OpsResultView & { failed?: unknown })
-          | null
-          | undefined
-        listener(toOpsResultView(detail))
+        listener(toOpsResultView(event.detail))
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)

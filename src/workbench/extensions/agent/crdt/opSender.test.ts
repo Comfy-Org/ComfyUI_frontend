@@ -241,7 +241,7 @@ describe('createOpSender', () => {
       ok: false,
       applied: [],
       skipped: [],
-      failure: { op_id: 'a'.repeat(32) },
+      failure: { op_id: 'a'.repeat(32), index: 0 },
       failureOpIds: ['a'.repeat(32)]
     })
 
@@ -277,7 +277,7 @@ describe('createOpSender', () => {
       applied: [],
       skipped: [],
       failure: { op_id: 'c'.repeat(32) },
-      failureOpIds: ['c'.repeat(32)]
+      failureOpIds: ['c'.repeat(32), 'd'.repeat(32)]
     })
 
     // Addresses review feedback (match any failed op_id, not just the first):
@@ -296,6 +296,81 @@ describe('createOpSender', () => {
       failure: { op_id: 'e'.repeat(32) },
       failureOpIds: ['e'.repeat(32), 'f'.repeat(32)]
     })
+  })
+
+  it('threads the host failure code, message and index through the view', () => {
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825424
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: {
+          index: 2,
+          op_id: 'a'.repeat(32),
+          code: 'op_rejected',
+          message: 'unknown node 7'
+        }
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: {
+        op_id: 'a'.repeat(32),
+        index: 2,
+        code: 'op_rejected',
+        message: 'unknown node 7'
+      },
+      failureOpIds: ['a'.repeat(32)]
+    })
+
+    // The canonical failure's reason wins over a legacy entry's and the
+    // frame's top-level code; each field is only taken when on-type.
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        code: 'frame_code',
+        message: 'frame message',
+        failure: { op_id: 'c'.repeat(32), code: 'lww_dropped', index: '0' },
+        failed: [{ op_id: 'd'.repeat(32), code: 'legacy', message: 'legacy' }]
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: {
+        op_id: 'c'.repeat(32),
+        code: 'lww_dropped',
+        message: 'legacy'
+      },
+      failureOpIds: ['c'.repeat(32), 'd'.repeat(32)]
+    })
+
+    // A rejection that names no op still carries its reason (anonymous
+    // settle keeps working: no failureOpIds).
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        code: 'batch_too_large',
+        message: 'too many ops'
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { code: 'batch_too_large', message: 'too many ops' }
+    })
+
+    // A successful frame's stray code is not a failure.
+    expect(
+      toOpsResultView({ ok: true, applied: ['x'], skipped: [], code: 'noop' })
+    ).toEqual({ ok: true, applied: ['x'], skipped: [] })
   })
 
   it('a canonical empty-list rejection with no failed entries settles as anonymous', () => {
@@ -336,6 +411,33 @@ describe('createOpSender', () => {
     })
 
     expect(settled).toHaveLength(0)
+  })
+
+  it('a legacy failed id matching the in-flight batch settles it even under a foreign canonical op_id', () => {
+    // Addresses review feedback (match against every failure id, not the
+    // canonical pick alone):
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3915356523
+    sender.enqueue([addNode(1)])
+    const own = sent[0].ops[0].op_id
+
+    resultListener?.(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failure: { op_id: 'ffff'.repeat(8), code: 'op_rejected' },
+        failed: [{ op_id: own, code: 'op_rejected', message: 'rejected' }]
+      })
+    )
+
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({
+      state: 'acknowledged',
+      result: {
+        failure: { op_id: 'ffff'.repeat(8), code: 'op_rejected' },
+        failureOpIds: ['ffff'.repeat(8), own]
+      }
+    })
   })
 
   it('idle late results drain the stale credits so a fresh batch can settle anonymously', () => {

@@ -2,10 +2,13 @@
  * The blessed connect port: litegraph's registerLinkTopology bridge calls
  * linkStore synchronously for EVERY link change, so nothing escapes this seam.
  * Register/replace mint a CONCRETE connect (a replace displaces the incumbent
- * register by LWW - no severance). Deletes cannot mint (no disconnect op in
- * the frozen vocabulary): they feed the severance log for delete_node, and an
- * unconsumed local severance surfaces as observable divergence after a double
- * microtask (strictly after the layout store's single-microtask delivery).
+ * register by LWW - no severance). A placement is held for one microtask so
+ * a same-task delete can cancel it before it ships; cross-port ORDER is not
+ * this port's concern - the wiring's shared mint queue decides it. Deletes
+ * cannot mint (no disconnect op in the frozen vocabulary): they feed the
+ * severance log for delete_node, and an unconsumed local severance surfaces
+ * as observable divergence after a double microtask (strictly after the
+ * layout store's single-microtask delivery).
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
@@ -63,7 +66,7 @@ export interface LinkMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
-  /** Receives minted semantic operations (the sender's inbox). */
+  /** Receives minted semantic operations (the wiring's shared mint queue). */
   enqueue(operations: GraphOperation[]): void
 }
 
@@ -80,6 +83,14 @@ interface SeveranceEntry {
 
 function isRootScope(scope: LinkScopeView): boolean {
   return String(scope.owningGraphId) === String(scope.rootGraphId)
+}
+
+/** Link ids are per root graph; two open workflows may both own link 41. */
+function placementKey(
+  scope: LinkScopeView,
+  topology: LinkTopologyView
+): string {
+  return `${String(scope.rootGraphId)}:${String(topology.id)}`
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
@@ -116,7 +127,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
-    const key = String(topology.id)
+    const key = placementKey(scope, topology)
     pendingPlacements.set(key, {
       linkId: topology.id,
       operation: {
@@ -189,7 +200,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     // A same-task placement that never flushed is canceled, not a real
     // divergence: the local graph and the doc both end up without the link.
     // Preserve mutation order for everything else that already flushed.
-    cancelPlacement(String(topology.id))
+    cancelPlacement(placementKey(scope, topology))
     const entry: SeveranceEntry = {
       linkId: topology.id,
       mintable: gateOpen() && isRootScope(scope)
