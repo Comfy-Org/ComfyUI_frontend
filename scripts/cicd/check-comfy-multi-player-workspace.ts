@@ -28,7 +28,11 @@ const server = await createServer({
       name: 'comfy-multi-player-hmr-proof',
       handleHotUpdate(context) {
         if (normalizePath(context.file) === normalizePath(packageEntry)) {
-          resolveHotUpdate?.(context.modules.map((module) => module.id))
+          resolveHotUpdate?.(
+            context.modules
+              .map((module) => module.id)
+              .filter((id) => id !== null)
+          )
         }
       }
     }
