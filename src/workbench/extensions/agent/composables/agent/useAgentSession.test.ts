@@ -344,6 +344,27 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('turn-live')
   })
 
+  it('a stopped session does not restore threads after the identity scope changes', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.ThreadId.user-1.workspace-2',
+      'thread-workspace-2'
+    )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
+    const rest = fakeRest({ getMessages })
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    first.stop()
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+
+    identity.workspace.activeWorkspaceId.value = 'workspace-2'
+
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('thread-workspace-2')
+    )
+    expect(getMessages).toHaveBeenCalledTimes(1)
+  })
+
   it.for([
     ['stale hydrate resolves first', [0, 1]] as const,
     ['current hydrate resolves first', [1, 0]] as const
