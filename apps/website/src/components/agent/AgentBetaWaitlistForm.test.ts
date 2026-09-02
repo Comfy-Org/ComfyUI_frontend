@@ -202,4 +202,76 @@ describe('AgentBetaWaitlistForm', () => {
     expect(fallback.getAttribute('target')).toBe('_blank')
     expect(fallback.getAttribute('rel')).toBe('noopener noreferrer')
   })
+
+  // The form is the only interactive control on the agent page, so every
+  // string a zh-CN visitor can reach is asserted here rather than trusting
+  // the locale prop to be threaded correctly.
+  describe('zh-CN', () => {
+    const props = { locale: 'zh-CN' } as const
+
+    it('labels the field and the submit control in Chinese', () => {
+      render(AgentBetaWaitlistForm, { props })
+
+      expect(screen.getByLabelText('邮箱地址')).toBeTruthy()
+      expect(
+        screen.getByPlaceholderText('输入你的邮箱').getAttribute('type')
+      ).toBe('email')
+      expect(screen.getByRole('button', { name: '加入候补名单' })).toBeTruthy()
+    })
+
+    it('reports an invalid email in Chinese', async () => {
+      const user = userEvent.setup()
+      render(AgentBetaWaitlistForm, { props })
+
+      await user.type(screen.getByRole('textbox'), 'not-an-email')
+      await user.click(screen.getByRole('button', { name: '加入候补名单' }))
+
+      expect((await screen.findByRole('alert')).textContent).toContain(
+        '请输入有效的邮箱地址。'
+      )
+      expect(hoisted.submit).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed submission in Chinese', async () => {
+      hoisted.submit.mockRejectedValueOnce(new Error('network down'))
+      const user = userEvent.setup()
+      render(AgentBetaWaitlistForm, { props })
+
+      await user.type(screen.getByRole('textbox'), 'someone@example.com')
+      await user.click(screen.getByRole('button', { name: '加入候补名单' }))
+
+      expect((await screen.findByRole('alert')).textContent).toContain(
+        '出错了，请重试。'
+      )
+    })
+
+    it('shows Chinese pending text, then a confirmation naming the email', async () => {
+      let resolveSubmit!: () => void
+      hoisted.submit.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSubmit = resolve
+          })
+      )
+      const user = userEvent.setup()
+      render(AgentBetaWaitlistForm, { props })
+
+      await user.type(screen.getByRole('textbox'), 'someone@example.com')
+      await user.click(screen.getByRole('button', { name: '加入候补名单' }))
+
+      expect(screen.getByRole('button', { name: '提交中…' })).toBeTruthy()
+
+      resolveSubmit()
+
+      const confirmation = await screen.findByRole('status')
+      expect(confirmation.textContent).toContain('你已加入候补名单！')
+      // The {email} placeholder has to be substituted, not rendered raw.
+      expect(confirmation.textContent).toContain('someone@example.com')
+      expect(confirmation.textContent).not.toContain('{email}')
+      // The application form stays reachable when the popup was blocked.
+      expect(
+        screen.getByRole('link', { name: '点这里打开' }).getAttribute('href')
+      ).toBe(APPLICATION_URL)
+    })
+  })
 })

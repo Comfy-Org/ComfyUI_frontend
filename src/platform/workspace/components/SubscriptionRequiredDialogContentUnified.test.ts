@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
 
 const mockHandleSubscribeTeamClick = vi.fn()
+const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
 const mockInvalidateQuote = vi.fn()
 const mockIsInPersonalWorkspace = ref(false)
@@ -42,7 +43,7 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     previewVariant: computed(() => mockPreviewVariant.value),
     handleSubscribeClick: mockHandleSubscribeClick,
     handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-    handleBackToPricing: vi.fn(),
+    handleBackToPricing: mockHandleBackToPricing,
     handleSuccessClose: vi.fn(),
     handleAddCreditCard: vi.fn(),
     handleConfirmTransition: vi.fn(),
@@ -112,6 +113,7 @@ function renderComponent(props: Record<string, unknown> = {}) {
             <span data-testid="payment-element-enabled">{{ usePaymentElement }}</span>
             <button data-testid="saved-method-btn" @click="$emit('update:selectedSavedMethodId', 'pm_other')">Saved method</button>
             <button data-testid="new-method-btn" @click="$emit('changePaymentMethod')">New method</button>
+            <button aria-label="Back" @click="$emit('back')">Back</button>
           </div>`
         },
         SubscriptionTransitionPreviewWorkspace: { template: '<div />' },
@@ -248,4 +250,22 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
+
+  it.for([true, false])(
+    'leaves the confirm step its own header and back action (embedded: %s)',
+    async (embeddedCheckoutEnabled) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = 'team-new'
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+
+      renderComponent({ embeddedCheckoutEnabled })
+
+      expect(screen.queryByText('Choose your plan')).toBeNull()
+      expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+      expect(mockHandleBackToPricing).toHaveBeenCalled()
+    }
+  )
 })
