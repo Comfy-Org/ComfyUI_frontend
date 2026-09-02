@@ -17,6 +17,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -376,6 +377,10 @@ describe('ComfyApp', () => {
         'workflow-load',
         7
       )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'bad workflow json' })
+      )
     })
 
     it('notifies extensions once on each side of a graph load, in order', async () => {
@@ -421,6 +426,42 @@ describe('ComfyApp', () => {
   })
 
   describe('nodeOutputs', () => {
+    it('does O(1) work per write instead of rebuilding the whole output record (#16008)', () => {
+      // Regression for a per-write full-record rekey: each write used to
+      // call `replaceOutputsFromLegacy`, an O(N) `mapKeys` rebuild of every
+      // node's entry, making N sequential output writes O(N^2) overall. A
+      // reintroduction of that path would fail this by calling
+      // `replaceOutputsFromLegacy` and by triggering more than one
+      // `setOutputFromLegacy` commit per single-key write.
+      app.vueAppReady = true
+      const nodeCount = 50
+      const storedOutputs = new Map<string, NodeExecutionOutput>()
+      mockNodeOutputStore.setOutputFromLegacy.mockImplementation((id, output) =>
+        storedOutputs.set(id, output)
+      )
+
+      for (let i = 0; i < nodeCount; i++) {
+        mockNodeOutputStore.setOutputFromLegacy.mockClear()
+        app.nodeOutputs[String(i)] = { images: [{ filename: `${i}.png` }] }
+        expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+        expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+          String(i),
+          { images: [{ filename: `${i}.png` }] }
+        )
+      }
+
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).not.toHaveBeenCalled()
+
+      expect(storedOutputs.size).toBe(nodeCount)
+      for (let i = 0; i < nodeCount; i++) {
+        expect(storedOutputs.get(String(i))).toEqual({
+          images: [{ filename: `${i}.png` }]
+        })
+      }
+    })
+
     it('commits legacy property mutations to the output store', () => {
       app.vueAppReady = true
       const output = { images: [{ filename: 'legacy.png' }] }
@@ -1330,25 +1371,21 @@ describe('ComfyApp', () => {
       class RegisteredApiNode extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, RegisteredApiNode)
 
-      try {
-        await app.loadApiJson(
-          {
-            '1': {
-              class_type: nodeType,
-              inputs: {},
-              _meta: { title: 'Registered API Node' }
-            }
-          },
-          ''
-        )
+      await app.loadApiJson(
+        {
+          '1': {
+            class_type: nodeType,
+            inputs: {},
+            _meta: { title: 'Registered API Node' }
+          }
+        },
+        ''
+      )
 
-        expect(missingNodesStore.missingNodesError).toBeNull()
-        expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
-        expect(mockCanvas.graph).toBe(graph)
-        expect(mockCanvas.subgraph).toBeNull()
-      } finally {
-        LiteGraph.unregisterNodeType(nodeType)
-      }
+      expect(missingNodesStore.missingNodesError).toBeNull()
+      expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
+      expect(mockCanvas.graph).toBe(graph)
+      expect(mockCanvas.subgraph).toBeNull()
     })
 
     it('remaps flattened subgraph ids to colon-free local ids', async () => {
@@ -1416,8 +1453,6 @@ describe('ComfyApp', () => {
         ])
       } finally {
         cleanupErrorHooks()
-        LiteGraph.unregisterNodeType(sourceType)
-        LiteGraph.unregisterNodeType(targetType)
       }
     })
 
@@ -1517,7 +1552,6 @@ describe('ComfyApp', () => {
         missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
         Reflect.set(app, 'rootGraphInternal', previousAppGraph)
         Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
-        LiteGraph.unregisterNodeType(widgetNodeType)
       }
     })
 
@@ -1608,94 +1642,85 @@ describe('ComfyApp', () => {
         }
       }
       LiteGraph.registerNodeType(sourceNodeType, ApiJsonSourceNode)
-      let installedTypeRegistered = false
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
       vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
 
-      try {
-        await app.loadApiJson(
-          {
-            '3': {
-              class_type: missingNodeType,
-              inputs: {
-                images: ['4', 0],
-                width: 512,
-                caption: 'preserved caption'
-              },
-              _meta: { title: 'Missing input node' }
+      await app.loadApiJson(
+        {
+          '3': {
+            class_type: missingNodeType,
+            inputs: {
+              images: ['4', 0],
+              width: 512,
+              caption: 'preserved caption'
             },
-            '4': {
-              class_type: sourceNodeType,
-              inputs: {},
-              _meta: { title: 'API JSON source' }
-            }
+            _meta: { title: 'Missing input node' }
           },
-          'api-inputs'
-        )
-
-        const placeholder = graph.getNodeById(toNodeId(3))
-        if (!placeholder) throw new Error('Expected missing-node placeholder')
-        const imageInput = placeholder.inputs.find(
-          (input) => input.name === 'images'
-        )
-        expect(imageInput).toMatchObject({ name: 'images', type: '*' })
-        expect(imageInput?.link).not.toBeNull()
-        if (imageInput?.link == null) throw new Error('Expected input link')
-        expect(graph.links.get(imageInput.link)).toMatchObject({
-          origin_id: toNodeId(4),
-          target_id: toNodeId(3)
-        })
-
-        const serializedGraph = graph.serialize()
-        const serializedPlaceholder = serializedGraph.nodes.find(
-          (node) => node.id === placeholder.id
-        )
-        expect(serializedPlaceholder).toMatchObject({
-          widgets_values: [512, 'preserved caption'],
-          widgets_values_named: {
-            width: 512,
-            caption: 'preserved caption'
+          '4': {
+            class_type: sourceNodeType,
+            inputs: {},
+            _meta: { title: 'API JSON source' }
           }
-        })
+        },
+        'api-inputs'
+      )
 
-        const roundTripGraph = new LGraph()
-        roundTripGraph.configure({
-          ...serializedGraph,
-          id: roundTripGraph.id
-        })
-        const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
-        expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
-          name: 'images',
-          type: '*',
-          link: imageInput.link
-        })
-        expect(roundTripPlaceholder?.serialize()).toMatchObject({
-          widgets_values: [512, 'preserved caption'],
-          widgets_values_named: {
-            width: 512,
-            caption: 'preserved caption'
-          }
-        })
+      const placeholder = graph.getNodeById(toNodeId(3))
+      if (!placeholder) throw new Error('Expected missing-node placeholder')
+      const imageInput = placeholder.inputs.find(
+        (input) => input.name === 'images'
+      )
+      expect(imageInput).toMatchObject({ name: 'images', type: '*' })
+      expect(imageInput?.link).not.toBeNull()
+      if (imageInput?.link == null) throw new Error('Expected input link')
+      expect(graph.links.get(imageInput.link)).toMatchObject({
+        origin_id: toNodeId(4),
+        target_id: toNodeId(3)
+      })
 
-        LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
-        installedTypeRegistered = true
-        const installedGraph = new LGraph()
-        installedGraph.configure({
-          ...serializedGraph,
-          id: installedGraph.id
-        })
-        expect(
-          installedGraph
-            .getNodeById(toNodeId(3))
-            ?.widgets?.map((widget) => widget.value)
-        ).toEqual([512, 'preserved caption'])
-      } finally {
-        LiteGraph.unregisterNodeType(sourceNodeType)
-        if (installedTypeRegistered) {
-          LiteGraph.unregisterNodeType(missingNodeType)
+      const serializedGraph = graph.serialize()
+      const serializedPlaceholder = serializedGraph.nodes.find(
+        (node) => node.id === placeholder.id
+      )
+      expect(serializedPlaceholder).toMatchObject({
+        widgets_values: [512, 'preserved caption'],
+        widgets_values_named: {
+          width: 512,
+          caption: 'preserved caption'
         }
-      }
+      })
+
+      const roundTripGraph = new LGraph()
+      roundTripGraph.configure({
+        ...serializedGraph,
+        id: roundTripGraph.id
+      })
+      const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
+      expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
+        name: 'images',
+        type: '*',
+        link: imageInput.link
+      })
+      expect(roundTripPlaceholder?.serialize()).toMatchObject({
+        widgets_values: [512, 'preserved caption'],
+        widgets_values_named: {
+          width: 512,
+          caption: 'preserved caption'
+        }
+      })
+
+      LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
+      const installedGraph = new LGraph()
+      installedGraph.configure({
+        ...serializedGraph,
+        id: installedGraph.id
+      })
+      expect(
+        installedGraph
+          .getNodeById(toNodeId(3))
+          ?.widgets?.map((widget) => widget.value)
+      ).toEqual([512, 'preserved caption'])
     })
 
     it('defers API JSON missing node warnings until they are flushed', async () => {
