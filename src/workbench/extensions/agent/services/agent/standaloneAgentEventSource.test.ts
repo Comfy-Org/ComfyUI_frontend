@@ -22,6 +22,10 @@ class FakeSocket extends EventTarget {
     )
   }
 
+  error(): void {
+    this.dispatchEvent(new Event('error'))
+  }
+
   close(): void {
     if (this.readyState === WebSocket.CLOSED) return
     this.readyState = WebSocket.CLOSED
@@ -73,6 +77,66 @@ describe('createStandaloneAgentEventSource', () => {
 
     expect(status).toHaveBeenLastCalledWith(false)
     expect(sockets).toHaveLength(2)
+  })
+
+  it('reconnects exactly once when the upgrade fails before open', () => {
+    vi.useFakeTimers()
+    const { source, sockets } = sourceHarness()
+    const status = vi.fn()
+
+    source.subscribe(vi.fn())
+    source.onStatus?.(status)
+    sockets[0].error()
+    vi.advanceTimersByTime(999)
+
+    expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
+    expect(status).toHaveBeenCalledTimes(1)
+    expect(status).toHaveBeenLastCalledWith(false)
+    expect(sockets).toHaveLength(1)
+
+    vi.advanceTimersByTime(1)
+    expect(sockets).toHaveLength(2)
+
+    vi.advanceTimersByTime(5000)
+    expect(sockets).toHaveLength(2)
+  })
+
+  it('reports live again once the replacement socket opens', () => {
+    vi.useFakeTimers()
+    const { source, sockets } = sourceHarness()
+    const status = vi.fn()
+
+    source.subscribe(vi.fn())
+    source.onStatus?.(status)
+    sockets[0].open()
+    sockets[0].close()
+    vi.advanceTimersByTime(1000)
+    sockets[1].open()
+
+    expect(status.mock.calls.map(([live]) => live)).toEqual([true, false, true])
+  })
+
+  it('drops frames from a superseded socket after resubscribing', () => {
+    vi.useFakeTimers()
+    const { source, sockets } = sourceHarness()
+    const first = vi.fn()
+    const second = vi.fn()
+
+    const unsubscribe = source.subscribe(first)
+    sockets[0].open()
+    unsubscribe()
+    source.subscribe(second)
+    sockets[1].open()
+    sockets[0].receive({ type: 'agent_message_delta', data: { delta: 'old' } })
+    sockets[1].receive({ type: 'agent_message_delta', data: { delta: 'new' } })
+
+    expect(sockets).toHaveLength(2)
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenCalledWith({
+      type: 'agent_message_delta',
+      data: { delta: 'new' }
+    })
   })
 
   it('stops the socket and pending reconnect on unsubscribe', () => {

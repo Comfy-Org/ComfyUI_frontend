@@ -13,6 +13,7 @@ interface Options {
   cloudRepo: string
   comfyUrl: string
   frontendPort: number
+  healthPort: number
   help: boolean
 }
 
@@ -49,6 +50,7 @@ function parseOptions(args: string[]): Options {
     cloudRepo: resolve(PROJECT_ROOT, '../cloud'),
     comfyUrl: 'http://127.0.0.1:8188',
     frontendPort: 6207,
+    healthPort: 0,
     help: false
   }
   for (let index = 0; index < args.length; index++) {
@@ -83,6 +85,17 @@ function parseOptions(args: string[]): Options {
   }
   if (options.agentPort === options.frontendPort) {
     throw new Error('Agent and frontend ports must be different')
+  }
+  options.healthPort = options.agentPort + 1
+  if (options.healthPort > 65535) {
+    throw new Error(
+      '--agent-port must leave room for the agent health port (agent port + 1)'
+    )
+  }
+  if (options.healthPort === options.frontendPort) {
+    throw new Error(
+      `Agent health port ${options.healthPort} (agent port + 1) collides with the frontend port`
+    )
   }
   return options
 }
@@ -189,7 +202,7 @@ function standaloneEnv(options: Options, dataDir: string, token: string) {
     AGENT_SESSION_TOKEN: token,
     AGENT_STANDALONE: 'true',
     AGENT_TARGET: 'local',
-    HEALTH_PORT: String(options.agentPort + 1),
+    HEALTH_PORT: String(options.healthPort),
     PORT: String(options.agentPort)
   }
 }
