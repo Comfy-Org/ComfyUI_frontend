@@ -5,6 +5,10 @@ import type { Ref } from 'vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
+
+const ROOT_GRAPH_ID = 'root-graph' as UUID
 
 type ResizeEntryLike = Pick<
   ResizeObserverEntry,
@@ -40,11 +44,10 @@ const resizeObserverState = vi.hoisted(() => {
 
 const testState = vi.hoisted(() => ({
   linearMode: false,
+  rootGraphId: null as string | null,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
   batchUpdateNodeBounds: vi.fn(),
-  setSource: vi.fn(),
-  syncNodeSlotLayoutsFromDOM: vi.fn(),
-  scheduleSlotLayoutSync: vi.fn()
+  syncSlotOffsets: vi.fn()
 }))
 
 const visibilityState = vi.hoisted(() => ({
@@ -62,7 +65,8 @@ vi.mock('@vueuse/core', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    linearMode: testState.linearMode
+    linearMode: testState.linearMode,
+    rootGraphId: testState.rootGraphId
   })
 }))
 
@@ -75,15 +79,20 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
-    setSource: testState.setSource,
-    getNodeLayoutRef: (nodeId: NodeId): Ref<NodeLayout | null> =>
+    getNodeLayoutRef: (
+      _rootGraphId: UUID,
+      nodeId: NodeId
+    ): Ref<NodeLayout | null> =>
       ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null)
   }
 }))
 
-vi.mock('./useSlotElementTracking', () => ({
-  scheduleSlotLayoutSync: testState.scheduleSlotLayoutSync,
-  syncNodeSlotLayoutsFromDOM: testState.syncNodeSlotLayoutsFromDOM
+vi.mock('@/renderer/core/layout/slots/syncSlotOffsets', () => ({
+  syncSlotOffsets: (
+    _element: HTMLElement,
+    _rootGraphId: UUID,
+    nodeId: NodeId
+  ) => testState.syncSlotOffsets(nodeId)
 }))
 
 const rafBatchState = vi.hoisted(() => ({
@@ -122,7 +131,7 @@ function createResizeEntry(options?: {
   collapsed?: boolean
 }) {
   const {
-    nodeId = 'test-node',
+    nodeId = toNodeId('test-node'),
     width = 240,
     height = 180,
     left = 100,
@@ -190,11 +199,10 @@ function seedNodeLayout(options: {
 describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
+    testState.rootGraphId = ROOT_GRAPH_ID
     testState.nodeLayouts.clear()
     testState.batchUpdateNodeBounds.mockReset()
-    testState.setSource.mockReset()
-    testState.syncNodeSlotLayoutsFromDOM.mockReset()
-    testState.scheduleSlotLayoutSync.mockReset()
+    testState.syncSlotOffsets.mockReset()
     resizeObserverState.observe.mockReset()
     resizeObserverState.unobserve.mockReset()
     resizeObserverState.disconnect.mockReset()
@@ -203,7 +211,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const width = 240
     const height = 180
     const left = 100
@@ -224,25 +232,22 @@ describe('useVueNodeResizeTracking', () => {
     // When layout store already has correct position, getBoundingClientRect
     // is not needed — position is read from the store instead.
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
 
-    testState.setSource.mockReset()
     testState.batchUpdateNodeBounds.mockReset()
-    testState.syncNodeSlotLayoutsFromDOM.mockReset()
+    testState.syncSlotOffsets.mockReset()
 
     resizeObserverState.callback?.([entry], createObserverMock())
     rafBatchState.flush()
 
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
   })
 
   it('preserves layout store position when size matches but DOM position differs', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const width = 240
     const height = 180
     const { entry, rectSpy } = createResizeEntry({
@@ -266,12 +271,11 @@ describe('useVueNodeResizeTracking', () => {
 
     // Position from DOM should NOT override layout store position
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
   })
 
   it('updates node bounds + slot layouts when size changes', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const { entry } = createResizeEntry({
       nodeId,
       width: 240,
@@ -292,23 +296,26 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([entry], createObserverMock())
     rafBatchState.flush()
 
-    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId,
-        bounds: {
-          x: 100,
-          y: 200 + titleHeight,
-          width: 240,
-          height: 180
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: 100,
+            y: 200 + titleHeight,
+            width: 240,
+            height: 180
+          }
         }
-      }
-    ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+      ],
+      { source: LayoutSource.Vue }
+    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
   it('writes collapsed dimensions through the normal bounds path', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const collapsedWidth = 200
     const collapsedHeight = 40
     const { entry } = createResizeEntry({
@@ -327,23 +334,26 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([entry], createObserverMock())
     rafBatchState.flush()
 
-    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId,
-        bounds: {
-          x: 100,
-          y: 200 + titleHeight,
-          width: collapsedWidth,
-          height: collapsedHeight
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: 100,
+            y: 200 + titleHeight,
+            width: collapsedWidth,
+            height: collapsedHeight
+          }
         }
-      }
-    ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+      ],
+      { source: LayoutSource.Vue }
+    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
 
     // Seed with smaller (collapsed) size so expand triggers a real bounds update
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 200, height: 10 })
@@ -358,12 +368,11 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([entry], createObserverMock())
     rafBatchState.flush()
 
-    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalled()
   })
 
-  it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
-    const parentNodeId: NodeId = 'parent-node'
+  it('widgets-grid resize is observed as a signal only, without writing node bounds', () => {
+    const parentNodeId: NodeId = toNodeId('parent-node')
     const element = document.createElement('div')
     element.dataset.widgetsGridNodeId = parentNodeId
     const boxSizes = [{ inlineSize: 200, blockSize: 80 }]
@@ -378,14 +387,14 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([entry], createObserverMock())
     rafBatchState.flush()
 
-    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
+    // WidgetGrid.vue owns its own slot resync via its layoutKey watch; this
+    // RO firing only keeps the element tracked, no downstream write happens.
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
   })
 
   it('defers layoutStore writes until the next animation frame', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const { entry } = createResizeEntry({
       nodeId,
       width: 300,
@@ -398,16 +407,14 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
 
     rafBatchState.flush()
 
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
   })
 
   it('coalesces successive resizes for the same node into one write per frame', () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 220, height: 140 })
 
@@ -435,22 +442,26 @@ describe('useVueNodeResizeTracking', () => {
     rafBatchState.flush()
 
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId,
-        bounds: {
-          x: 100,
-          y: 200 + titleHeight,
-          width: 260,
-          height: 180
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: 100,
+            y: 200 + titleHeight,
+            width: 260,
+            height: 180
+          }
         }
-      }
-    ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(1)
+      ],
+      { source: LayoutSource.Vue }
+    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledTimes(1)
   })
 
   it('re-defers pending measurements when the tab becomes hidden before flush', async () => {
-    const nodeId = 'test-node'
+    const nodeId = toNodeId('test-node')
     const { entry } = createResizeEntry({
       nodeId,
       width: 300,
