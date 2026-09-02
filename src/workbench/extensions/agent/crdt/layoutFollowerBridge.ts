@@ -205,6 +205,20 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
+  /**
+   * Silently drops `ops` when no subscription is confirmed (`sentWorkflowId`
+   * is null — never subscribed, or a `doc_subscribed{ok:false}` nack cleared
+   * it). This is a bridge PRIMITIVE, not the production write path: buffering
+   * across a nack so the ops survive the eventual retry is a real design
+   * question (does a transient `not_found` deserve buffer-and-retry, or does
+   * dropping-and-relying-on-the-caller-to-resend keep the primitive simple),
+   * and it is decided ONE layer up. `useAgentCrdtFollower`'s `createOpSender`
+   * is the actual production sender: it reads `workflowId()` at enqueue time
+   * and settles `undeliverable` immediately when this bridge has no confirmed
+   * subscription — a deliberate no-buffer choice (`opSender.ts` docblock),
+   * not an oversight this primitive should silently work around. Changing
+   * that contract is a CRDT applier/protocol call, not a mechanical fix here.
+   */
   sendHumanOps(tab: string, ops: DocOp[]): void {
     const workflowId = this.sentWorkflowId
     if (workflowId === null || ops.length === 0) return

@@ -154,17 +154,35 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     bridge.subscribe('wf-a')
     expect(bridge.subscribedWorkflowId).toBe('wf-a')
 
+    // wf-a's doc must actually hold state for this test to observe whether
+    // the switch to wf-b drops it — an empty doc would pass identically
+    // whether or not `subscribe()` re-minted the follower (FEB-5).
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a'))
+    expect(bridge.follower.updatesApplied).toBe(1)
+
     transport.open = false
     bridge.subscribe('wf-b')
     // The old subscription is dropped locally (the server dropped it with the
     // socket), and the new one is still owed.
     expect(bridge.subscribedWorkflowId).toBeNull()
     expect(bridge.hasPendingSubscribe).toBe(true)
+    // The lineage break already happened at `subscribe()`, before the socket
+    // recovers: the doc is re-minted synchronously, not deferred to reconcile.
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
 
     transport.open = true
     bridge.reconcile()
     expect(bridge.subscribedWorkflowId).toBe('wf-b')
-    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    // The wf-b subscribe must carry an EMPTY state vector — wf-a's would make
+    // the host compute a nonsense delta against an unrelated lineage.
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
   })
 })
 
@@ -184,6 +202,11 @@ describe('human op gating around subscription acknowledgement', () => {
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
+    // Ops minted in this window (before any ack) stamp `base_version: 0` —
+    // the same window recurs on every resubscribe (stale probe, gap resync),
+    // not just at startup, so pinning it here documents the contract rather
+    // than asserting a startup-only quirk.
+    expect(bridge.lastSequence).toBe(0)
     bridge.sendHumanOps('tab-a', [preAckOp])
     expect(transport.framesOfType('doc_ops')).toEqual([
       {
@@ -203,6 +226,7 @@ describe('human op gating around subscription acknowledgement', () => {
       ok: true,
       seq: 1
     })
+    expect(bridge.lastSequence).toBe(1)
     bridge.sendHumanOps('tab-a', [postAckOp])
 
     expect(transport.framesOfType('doc_ops')).toEqual([
@@ -248,7 +272,7 @@ describe('human op gating around subscription acknowledgement', () => {
       workflow_id: WORKFLOW_ID,
       ok: false,
       seq: 0,
-      reason: 'not_found'
+      code: 'not_found'
     })
     bridge.sendHumanOps('tab-a', [postNackOp])
 
@@ -262,6 +286,44 @@ describe('human op gating around subscription acknowledgement', () => {
           workflow_id: WORKFLOW_ID,
           tab: 'tab-a',
           ops: [preNackOp]
+        }
+      }
+    ])
+
+    // The send path must not be wedged permanently: once the retry lands and
+    // the host confirms it, human ops resume.
+    const postRetryOp: DocOp = {
+      op_id: 'op-after-retry',
+      actor: 'human:user:tab-a',
+      type: 'node.move'
+    }
+    bridge.reconcile()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    bridge.sendHumanOps('tab-a', [postRetryOp])
+
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+    expect(transport.framesOfType('doc_ops')).toEqual([
+      {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          tab: 'tab-a',
+          ops: [preNackOp]
+        }
+      },
+      {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          tab: 'tab-a',
+          ops: [postRetryOp]
         }
       }
     ])

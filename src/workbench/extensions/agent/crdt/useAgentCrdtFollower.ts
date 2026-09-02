@@ -368,9 +368,17 @@ export function useAgentCrdtFollower(
    * on every accepted connection, first one included, so it is the earliest
    * signal available that the socket can now carry a frame. `reconcile()` is a
    * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing.
+   * nothing — UNLESS a subscribe was explicitly REFUSED (`ok:false`):
+   * `onDocSubscribed` clears `sentWorkflowId` on a nack, which makes intent
+   * and reality disagree again on purpose, so that `bridge.reconcile()` here
+   * would immediately re-send `doc_subscribe` on every subsequent `status`
+   * frame — bypassing `scheduleSubscribeRetry`'s attempt cap and backoff and
+   * ping-ponging a permanently-refused workflow (deleted doc) at status-frame
+   * rate for the life of the panel. While a scheduled retry is outstanding,
+   * the timer owns the next `resubscribe()`; skip the ad-hoc reconcile.
    */
   const onSocketActivity: EventListener = () => {
+    if (subscribeRetryTimer !== null) return
     bridge.reconcile()
   }
 
