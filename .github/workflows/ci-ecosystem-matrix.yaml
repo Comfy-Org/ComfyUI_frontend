@@ -1,4 +1,4 @@
-# Required gate: on relevant PRs and every merge candidate, execute every
+# Required gate: on relevant PRs and relevant merge candidates, execute every
 # registry pack's frontend JS in both supported renderers.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
@@ -58,11 +58,12 @@ env:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
     outputs:
-      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.candidate-should-run }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -72,6 +73,8 @@ jobs:
       - name: Detect relevant changes
         id: changes
         uses: ./.github/actions/changes-filter
+        with:
+          evaluate-candidate: 'true'
 
   # First job in the run, and deliberately dependency-free so its annotation
   # and step summary land at the top. Stale pins are the one failure mode this
@@ -572,7 +575,10 @@ jobs:
           case "$SHOULD_RUN" in
             true) ;;
             false)
-              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              case "$EVENT_NAME" in
+                pull_request | merge_group) ;;
+                *) echo "::error::change detection returned false for $EVENT_NAME"; exit 1 ;;
+              esac
               ;;
             *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
           esac
@@ -580,7 +586,7 @@ jobs:
             for result in "$PIN_STATUS_RESULT" "$CORPUS_RESULT" "$SHARDS_RESULT" "$VERDICTS_RESULT" "$PROOFS_RESULT"; do
               [ "$result" = skipped ] || { echo "::error::irrelevant-change dependency ended with $result"; exit 1; }
             done
-            echo 'ecosystem matrix not applicable to this pull request'
+            echo 'ecosystem matrix not applicable to this candidate'
             exit 0
           fi
           failures=()
