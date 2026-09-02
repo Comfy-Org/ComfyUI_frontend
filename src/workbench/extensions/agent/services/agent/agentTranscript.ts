@@ -3,10 +3,11 @@ import type { AssistantMessage } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
 export interface NormalizedAgentTranscript {
-  /** Includes user-only placeholder messages omitted from assistantTurnIds. */
+  /** Includes placeholders for turns without assistant text. */
   messages: AssistantMessage[]
   userTexts: Map<TurnId, string>
   rowIds: Set<string>
+  /** Tracks turns with assistant rows, including rows that produce no parts. */
   assistantTurnIds: Set<TurnId>
 }
 
