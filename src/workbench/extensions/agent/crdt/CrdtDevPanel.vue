@@ -8,6 +8,7 @@ import {
   onMounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch
 } from 'vue'
 
@@ -182,6 +183,8 @@ const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
 const open = ref(readOpen())
 const tab = ref<'status' | 'log' | 'merge'>('status')
 const dismissed = ref(readHidden())
+const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
+const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
 function readOpen(): boolean {
   try {
@@ -215,6 +218,7 @@ function setOpen(value: boolean) {
   } catch {
     // Storage unavailable — the panel still toggles in-memory.
   }
+  void nextTick(() => (value ? closeButton.value : chipButton.value)?.focus())
 }
 
 // ── live document facts ───────────────────────────────────────────────────
@@ -561,6 +565,7 @@ function fmtTime(at: number): string {
 
     <button
       v-else-if="!open"
+      ref="chipButton"
       type="button"
       :title="S.open"
       class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
@@ -582,6 +587,7 @@ function fmtTime(at: number): string {
       v-else
       class="bg-agent-surface border-agent-border text-agent-fg flex min-h-0 grow flex-col overflow-hidden border-y"
       data-testid="crdt-dev-panel"
+      @keydown.esc="setOpen(false)"
     >
       <header
         class="border-agent-border flex h-8 shrink-0 items-center gap-2 border-b px-2"
@@ -614,6 +620,7 @@ function fmtTime(at: number): string {
           <span class="icon-[lucide--eye-off] size-4" />
         </button>
         <button
+          ref="closeButton"
           type="button"
           :title="S.close"
           class="text-agent-fg-muted hover:text-agent-fg cursor-pointer"

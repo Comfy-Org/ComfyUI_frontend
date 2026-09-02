@@ -99,16 +99,19 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('7')
   })
 
-  it('opens and closes back to the chip', async () => {
+  it('moves focus into the panel and restores it after Escape closes', async () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(chip()!)
+    const chipButton = chip()!
+    await user.click(chipButton)
     expect(sheet()).toBeTruthy()
+    expect(screen.getByTestId('crdt-dev-panel-close')).toHaveFocus()
 
-    await user.click(screen.getByTestId('crdt-dev-panel-close'))
+    await user.keyboard('{Escape}')
     expect(chip()).toBeTruthy()
     expect(sheet()).toBeNull()
+    expect(chip()).toHaveFocus()
   })
 
   it('replaces the instrument with a way to restore it when hidden', async () => {
