@@ -4,8 +4,11 @@ import * as firebaseAuth from 'firebase/auth'
 import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import * as vuefire from 'vuefire'
 
+import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { clearJobsAuthBackoff } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import {
   capturePreservedQuery,
   clearPreservedQuery
@@ -140,6 +143,13 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackAuth: mockTrackAuth
   })
+}))
+
+// Stub only the jobs-poller backoff reset so we can assert auth recovery clears
+// it, keeping the rest of the fetchers real.
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async (importOriginal) => ({
+  ...(await importOriginal<typeof FetchJobsModule>()),
+  clearJobsAuthBackoff: vi.fn()
 }))
 
 // Keep the real API singleton (other modules rely on its full surface) but
@@ -304,6 +314,40 @@ describe('useAuthStore', () => {
     it('notifyTokenRefreshed increments the rotation trigger (unified rotation driver)', () => {
       store.notifyTokenRefreshed()
       expect(store.tokenRefreshTrigger).toBe(1)
+    })
+  })
+
+  describe('jobs poller auth-backoff recovery', () => {
+    it('clears the jobs poller backoff on token refresh', async () => {
+      vi.mocked(clearJobsAuthBackoff).mockClear()
+
+      store.notifyTokenRefreshed()
+      await nextTick()
+
+      expect(clearJobsAuthBackoff).toHaveBeenCalled()
+    })
+
+    it('clears the jobs poller backoff when the user signs in', async () => {
+      authStateCallback?.(null)
+      await nextTick()
+      vi.mocked(clearJobsAuthBackoff).mockClear()
+
+      authStateCallback?.(mockUser)
+      await nextTick()
+
+      expect(clearJobsAuthBackoff).toHaveBeenCalled()
+    })
+
+    it('clears the jobs poller backoff on a direct account switch', async () => {
+      // A→B switch keeps isAuthenticated true and does not bump the token
+      // trigger, so the reset must key off the user identity itself.
+      vi.mocked(clearJobsAuthBackoff).mockClear()
+
+      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
+      authStateCallback?.(otherUser)
+      await nextTick()
+
+      expect(clearJobsAuthBackoff).toHaveBeenCalled()
     })
   })
 
