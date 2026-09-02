@@ -8603,6 +8603,46 @@ Enterprise`
     'zh-CN': '原型控制 · 模拟数据'
   },
   'workshop.proto.scope': { en: 'Scope', 'zh-CN': '范围' },
+  'workshop.proto.entry': { en: 'Entry point', 'zh-CN': '入口' },
+  'workshop.proto.entry.workshop': {
+    en: 'Workshop catalog',
+    'zh-CN': '工作坊目录'
+  },
+  'workshop.proto.entry.hub': {
+    en: 'Comfy Workflows (comfy.org/workflows)',
+    'zh-CN': 'Comfy 工作流（comfy.org/workflows）'
+  },
+  'workshop.hub.search': {
+    en: 'Search workflows, models, creators...',
+    'zh-CN': '搜索工作流、模型、创作者...'
+  },
+  'workshop.hub.kind.label': { en: 'Browse', 'zh-CN': '浏览' },
+  'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
+  'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
+  'workshop.hub.kind.model': { en: 'Partner Models', 'zh-CN': '合作伙伴模型' },
+  'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'workshop.hub.openHub': {
+    en: 'Open comfy.org/workflows',
+    'zh-CN': '打开 comfy.org/workflows'
+  },
+  'workshop.hub.author': { en: 'ComfyUI', 'zh-CN': 'ComfyUI' },
+  'workshop.hub.tag.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'workshop.hub.tag.graph': { en: 'Node Graph', 'zh-CN': '节点图' },
+  'workshop.hub.tag.app': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
+  'workshop.hub.task': {
+    en: '{input} to {output}',
+    'zh-CN': '{input}转{output}'
+  },
+  'workshop.hub.io.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.hub.io.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.hub.io.other': { en: 'Output', 'zh-CN': '输出' },
   'workshop.proto.scope.v1': {
     en: 'V1 · Models playground (11 Sep)',
     'zh-CN': 'V1 · 模型游乐场（9 月 11 日）'

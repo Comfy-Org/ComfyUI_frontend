@@ -19,11 +19,18 @@ export type Scope = (typeof SCOPES)[number]
 export const OUTPUT_COUNTS = [1, 4, 9] as const
 type OutputCount = (typeof OUTPUT_COUNTS)[number]
 
+// Where /workshop starts: the models catalog, or a first screen that reuses
+// the comfy.org/workflows browser with partner models mixed in.
+export const ENTRIES = ['workshop', 'hub'] as const
+export type Entry = (typeof ENTRIES)[number]
+
 const SCOPE_KEY = 'comfy-workshop-scope'
+const ENTRY_KEY = 'comfy-workshop-entry'
 
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
 const scope = ref<Scope>('v1')
+const entry = ref<Entry>('workshop')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 const outputCount = ref<OutputCount>(1)
@@ -35,13 +42,22 @@ function isScope(value: unknown): value is Scope {
   )
 }
 
-watch(scope, (value) => {
+function isEntry(value: unknown): value is Entry {
+  return (
+    typeof value === 'string' && (ENTRIES as readonly string[]).includes(value)
+  )
+}
+
+function persist(key: string, value: string) {
   try {
-    localStorage.setItem(SCOPE_KEY, value)
+    localStorage.setItem(key, value)
   } catch {
     /* storage unavailable */
   }
-})
+}
+
+watch(scope, (value) => persist(SCOPE_KEY, value))
+watch(entry, (value) => persist(ENTRY_KEY, value))
 
 // Shared across islands so the tweaks panel drives the whole prototype.
 export function usePrototypeTweaks() {
@@ -49,11 +65,13 @@ export function usePrototypeTweaks() {
     if (hydrated) return
     hydrated = true
     try {
-      const stored = localStorage.getItem(SCOPE_KEY)
-      if (isScope(stored)) scope.value = stored
+      const storedScope = localStorage.getItem(SCOPE_KEY)
+      if (isScope(storedScope)) scope.value = storedScope
+      const storedEntry = localStorage.getItem(ENTRY_KEY)
+      if (isEntry(storedEntry)) entry.value = storedEntry
     } catch {
       /* storage unavailable */
     }
   })
-  return { outcome, modelState, scope, showStatuses, outputCount }
+  return { outcome, modelState, scope, entry, showStatuses, outputCount }
 }

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ModalityFilter, WorkshopModel } from '../../config/workshop'
-import { formatRuns, modalityOf } from '../../config/workshop'
+import { modalityOf } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardArrow from '../common/CardArrow.vue'
@@ -99,17 +99,6 @@ const pillClass =
           }}
         </span>
       </div>
-      <span
-        :class="cn(pillClass, 'tracking-normal normal-case tabular-nums')"
-        data-testid="workshop-card-runs"
-      >
-        {{
-          t('workshop.card.runs', locale).replace(
-            '{n}',
-            formatRuns(model.runs, locale)
-          )
-        }}
-      </span>
     </div>
 
     <div class="absolute right-16 bottom-5 left-5">

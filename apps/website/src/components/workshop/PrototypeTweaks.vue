@@ -17,11 +17,13 @@ import {
   useMockSession
 } from '../../composables/useMockSession'
 import type {
+  Entry,
   ModelState,
   RunOutcome,
   Scope
 } from '../../composables/usePrototypeTweaks'
 import {
+  ENTRIES,
   MODEL_STATES,
   OUTPUT_COUNTS,
   RUN_OUTCOMES,
@@ -37,7 +39,7 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 }>()
 
 const { session, signIn, signOut, setCredits, setSubscribed } = useMockSession()
-const { outcome, modelState, scope, showStatuses, outputCount } =
+const { outcome, modelState, scope, entry, showStatuses, outputCount } =
   usePrototypeTweaks()
 
 type SessionChoice = 'signedOut' | AccountKind
@@ -73,6 +75,10 @@ function onSessionChange(event: Event) {
 const scopeLabel: Record<Scope, TranslationKey> = {
   v1: 'workshop.proto.scope.v1',
   v2: 'workshop.proto.scope.v2'
+}
+const entryLabel: Record<Entry, TranslationKey> = {
+  workshop: 'workshop.proto.entry.workshop',
+  hub: 'workshop.proto.entry.hub'
 }
 
 const outcomeLabel: Record<RunOutcome, TranslationKey> = {
@@ -142,6 +148,26 @@ const selectClass =
                 class="bg-primary-comfy-ink"
               >
                 {{ t(scopeLabel[option], locale) }}
+              </option>
+            </select>
+          </label>
+
+          <label class="flex flex-col gap-1">
+            <span class="text-primary-warm-gray">
+              {{ t('workshop.proto.entry', locale) }}
+            </span>
+            <select
+              v-model="entry"
+              data-testid="tweak-entry"
+              :class="selectClass"
+            >
+              <option
+                v-for="option in ENTRIES"
+                :key="option"
+                :value="option"
+                class="bg-primary-comfy-ink"
+              >
+                {{ t(entryLabel[option], locale) }}
               </option>
             </select>
           </label>
