@@ -84,7 +84,10 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
 
     configureConflictingOrigins()
 
-    expect(warn.mock.calls.flat().join(' ')).toContain('3:0')
+    expect(warn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ targetNodeId: toNodeId(3), targetSlot: 0 })
+    )
   })
 
   it('registers exactly one link at the contested input', () => {

@@ -70,6 +70,11 @@ function isStorageReadable(): boolean {
     : workflowStorageState.availability === 'available'
 }
 
+/** @internal Test-only: do not call from production code paths. */
+export function resetStorageAvailable(): void {
+  workflowStorageState = { status: 'ready', availability: 'available' }
+}
+
 function isQuotaExceeded(error: unknown): boolean {
   return (
     error instanceof DOMException &&

@@ -44,13 +44,13 @@ const stepNumber = (index: number) => String(index + 1).padStart(2, '0')
           {{ t(steps.stepLabelKey, locale) }} {{ stepNumber(index) }}
         </p>
         <p class="text-2xl/snug font-medium text-primary-warm-white">
-          {{ step.title[locale] }}
+          {{ step.title[locale] || step.title.en }}
         </p>
         <p
           v-if="step.description"
           class="text-[17px]/relaxed font-light text-primary-comfy-canvas"
         >
-          {{ step.description[locale] }}
+          {{ step.description[locale] || step.description.en }}
         </p>
       </li>
     </ol>

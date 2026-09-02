@@ -219,6 +219,8 @@ interface LGraphCanvasState {
   draggingCanvas: boolean
   /** The canvas is read-only, preventing changes to nodes, disconnecting links, moving items, etc. */
   readOnly: boolean
+  /** Enables node-only selection while disabling other canvas interactions. */
+  selectOnly: boolean
 
   /** Bit flags indicating what is currently below the pointer. */
   hoveringOver: CanvasItem
@@ -341,6 +343,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     draggingItems: false,
     draggingCanvas: false,
     readOnly: false,
+    selectOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
     selectionChanged: false,
@@ -436,6 +439,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (changed) {
       this.dispatchEvent('litegraph:read-only-changed', { readOnly: value })
     }
+  }
+
+  /** @inheritdoc {@link LGraphCanvasState.selectOnly} */
+  get selectOnly(): boolean {
+    return this.state.selectOnly
+  }
+
+  set selectOnly(value: boolean) {
+    this.state.selectOnly = value
   }
 
   get isDragging(): boolean {
@@ -2352,7 +2364,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (
       (e.button === 2 || pointer.isDouble) &&
       this.allow_interaction &&
-      !this.read_only
+      !this.read_only &&
+      !this.selectOnly
     ) {
       // Right / aux button
       const { linkConnector, subgraph } = this
@@ -2648,7 +2661,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           pointer.onDragStart = () => (this.resizingGroup = group)
           pointer.onDrag = (eMove) => {
-            if (this.read_only) return
+            if (this.read_only || this.selectOnly) return
 
             // Resize only by the exact pointer movement
             const pos: Point = [
@@ -2788,6 +2801,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!node.flags.pinned) {
       this.bringToFront(node)
     }
+
+    if (this.selectOnly) return
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -3149,6 +3164,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node &&
       this.allow_interaction &&
       !this.read_only &&
+      !this.selectOnly &&
       !this.connecting_links &&
       !node.flags.collapsed
     ) {
@@ -3643,6 +3659,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
+    if (this.selectOnly) return
+
     this.isDragging = true
 
     // Seed the auto-pan modifier state from the pointer-down event so a drag
@@ -4562,10 +4580,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e: CanvasPointerEvent | undefined,
     sticky: boolean = false
   ): void {
+    if (!item && this.selectOnly) return
+
     const addModifier = e?.shiftKey
     const subtractModifier = e != null && (e.metaKey || e.ctrlKey)
     const eitherModifier = addModifier || subtractModifier
-    const modifySelection = eitherModifier || this.multi_select
+    const modifySelection =
+      eitherModifier || this.multi_select || this.selectOnly
 
     if (!item) {
       if (!eitherModifier || this.multi_select) this.deselectAll()
@@ -4600,6 +4621,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
+    if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
     item.selected = true
@@ -5058,7 +5080,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.render_time = (now - this.last_draw_time) * 0.001
     this.last_draw_time = now
 
-    if (this.graph) this.ds.computeVisibleArea(this.viewport)
+    const graphAtFrameStart = this.graph
+    if (graphAtFrameStart) this.ds.computeVisibleArea(this.viewport)
+
+    let nodesInFrameOrder: LGraphNode[] | undefined
+    const getNodesInFrameOrder = () => {
+      if (!graphAtFrameStart) return
+      return (nodesInFrameOrder ??= nodesInRenderOrder(graphAtFrameStart))
+    }
+    const getCurrentGraphNodesInFrameOrder = () =>
+      this.graph && this.graph === graphAtFrameStart
+        ? getNodesInFrameOrder()
+        : undefined
 
     const shouldDrawBackground = Boolean(
       this.dirty_bgcanvas ||
@@ -5072,7 +5105,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Compute node size before drawing links.
     if (this.dirty_canvas || force_canvas) {
-      this.computeVisibleNodes(undefined, this.visible_nodes)
+      this.computeVisibleNodes(
+        getCurrentGraphNodesInFrameOrder(),
+        this.visible_nodes
+      )
       // Update visible node IDs
       this._visible_node_ids = new Set(
         this.visible_nodes.map((node) => node.id)
@@ -5087,10 +5123,32 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (shouldDrawBackground && !sharesCanvas) {
-      this.drawBackCanvas()
+      this.drawBackCanvas(
+        true,
+        getCurrentGraphNodesInFrameOrder(),
+        graphAtFrameStart
+      )
     }
 
-    if (this.dirty_canvas || force_canvas) this.drawFrontCanvas()
+    const graphForFrontPass =
+      this.graph === graphAtFrameStart ? graphAtFrameStart : this.graph
+    const nodesForFrontPass =
+      graphForFrontPass === graphAtFrameStart
+        ? getCurrentGraphNodesInFrameOrder()
+        : graphForFrontPass
+          ? nodesInRenderOrder(graphForFrontPass)
+          : undefined
+    if (graphForFrontPass !== graphAtFrameStart && graphForFrontPass) {
+      this.ds.computeVisibleArea(this.viewport)
+      this.computeVisibleNodes(nodesForFrontPass, this.visible_nodes)
+      this._visible_node_ids = new Set(
+        this.visible_nodes.map((node) => node.id)
+      )
+    }
+
+    if (this.dirty_canvas || force_canvas) {
+      this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
+    }
 
     this.fps = this.render_time ? 1.0 / this.render_time : 0
     this.frame++
@@ -5099,11 +5157,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * draws the front canvas (the one containing all the nodes)
    */
-  drawFrontCanvas(): void {
+  drawFrontCanvas(
+    nodesInFrameOrder?: LGraphNode[],
+    nodesGraph: LGraph | Subgraph | null = this.graph
+  ): void {
     clearTextMeasureCache()
     this.dirty_canvas = false
 
-    const { ctx, canvas, graph } = this
+    const { ctx, canvas } = this
 
     // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
     if (ctx.start2D && !this.viewport) {
@@ -5137,7 +5198,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // draw bg canvas
     if (this.bgcanvas == this.canvas) {
-      this.drawBackCanvas(false)
+      nodesInFrameOrder ??= nodesGraph
+        ? nodesInRenderOrder(nodesGraph)
+        : undefined
+      this.drawBackCanvas(false, nodesInFrameOrder, nodesGraph)
     } else {
       const scale = window.devicePixelRatio
       ctx.drawImage(
@@ -5148,9 +5212,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.bgcanvas.height / scale
       )
     }
+    const graphAfterBackground = this.graph
 
     // rendering
     this.onRender?.(canvas, ctx)
+
+    const graphForContent =
+      this.graph === graphAfterBackground ? graphAfterBackground : null
+    if (graphAfterBackground !== nodesGraph && graphForContent) {
+      nodesInFrameOrder = nodesInRenderOrder(graphForContent)
+      this.ds.computeVisibleArea(this.viewport)
+      this.computeVisibleNodes(nodesInFrameOrder, this.visible_nodes)
+      this._visible_node_ids = new Set(
+        this.visible_nodes.map((node) => node.id)
+      )
+    }
 
     // info widget
     if (this.show_info) {
@@ -5158,7 +5234,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.renderInfo(ctx, pos?.[0] ?? 0, pos?.[1] ?? 0)
     }
 
-    if (graph) {
+    if (graphForContent) {
       // apply transformations
       ctx.save()
       this.ds.toCanvasContext(ctx)
@@ -5199,8 +5275,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // connections ontop?
-      if (graph.config.links_ontop) {
-        this.drawConnections(ctx)
+      if (graphForContent.config.links_ontop) {
+        nodesInFrameOrder ??= nodesInRenderOrder(graphForContent)
+        this.drawConnections(ctx, nodesInFrameOrder, graphForContent)
       }
 
       if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
@@ -5507,7 +5584,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * draws the back canvas (the one containing the background and the connections)
    */
-  drawBackCanvas(redrawFrontCanvas = true): void {
+  drawBackCanvas(
+    redrawFrontCanvas = true,
+    nodesInFrameOrder?: LGraphNode[],
+    nodesGraph: LGraph | Subgraph | null = this.graph
+  ): void {
     const canvas = this.bgcanvas
     if (
       canvas.width != this.canvas.width ||
@@ -5644,7 +5725,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // draw connections
-      this.drawConnections(ctx)
+      this.drawConnections(ctx, nodesInFrameOrder, nodesGraph)
 
       ctx.shadowColor = 'rgba(0,0,0,0)'
 
@@ -5708,8 +5789,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.beginPath()
       if (shape == RenderShape.BOX) {
         ctx.rect(0, 0, size[0], size[1])
-      } else if (shape == RenderShape.ROUND) {
-        ctx.roundRect(0, 0, size[0], size[1], [10])
+      } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
+        ctx.roundRect(
+          0,
+          0,
+          size[0],
+          size[1],
+          shape == RenderShape.CARD
+            ? [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
+            : [LiteGraph.ROUND_RADIUS]
+        )
       } else if (shape == RenderShape.CIRCLE) {
         ctx.arc(size[0] * 0.5, size[1] * 0.5, size[0] * 0.5, 0, Math.PI * 2)
       }
@@ -6031,7 +6120,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.globalAlpha = globalAlpha
   }
 
-  drawConnections(ctx: CanvasRenderingContext2D): void {
+  drawConnections(
+    ctx: CanvasRenderingContext2D,
+    nodesInFrameOrder?: LGraphNode[],
+    nodesGraph: LGraph | Subgraph | null = this.graph
+  ): void {
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
@@ -6054,7 +6147,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.strokeStyle = '#AAA'
     ctx.globalAlpha = this.editor_alpha
     // for every node
-    const nodes = nodesInRenderOrder(graph)
+    const nodes =
+      graph === nodesGraph && nodesInFrameOrder
+        ? nodesInFrameOrder
+        : nodesInRenderOrder(graph)
     const linkStore = useLinkStore()
     const graphScope = graphScopeOf(graph)
 
@@ -7189,8 +7285,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const div = document.createElement('div')
     const dialog: PromptDialog = Object.assign(div, customProperties)
 
-    const graphcanvas = LGraphCanvas.active_canvas
-    const { canvas } = graphcanvas
+    const { canvas } = this
     if (!canvas.parentNode)
       throw new TypeError(
         'canvas element parentNode was null when opening a prompt.'

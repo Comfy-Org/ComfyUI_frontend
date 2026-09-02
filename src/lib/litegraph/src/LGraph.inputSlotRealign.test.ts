@@ -339,8 +339,13 @@ describe('normalizeConfiguredTopology', () => {
     expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
     expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
     expect(console.warn).toHaveBeenCalledWith(
-      'Dropping competing link to occupied input 2:0',
-      expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
+      expect.any(String),
+      expect.objectContaining({
+        droppedLinkId: 1,
+        survivorLinkId: 2,
+        targetNodeId: toNodeId(2),
+        targetSlot: 0
+      })
     )
   })
 })
@@ -725,7 +730,7 @@ describe('realignInputLinkSlots', () => {
     )
   })
 
-  it('rejects all moves when one link cannot be realigned', () => {
+  it('realigns remaining links when one move is rejected', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -751,10 +756,45 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(blocked.target_slot).toBe(0)
-    expect(movable.target_slot).toBe(2)
+    expect(movable.target_slot).toBe(3)
     expect(console.error).toHaveBeenCalledWith(
       'Failed to realign input link slots',
       expect.objectContaining({ code: 'occupied-target' })
     )
+  })
+
+  it('replays a successful retry after a rejected move', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'number')
+    target.addInput('occupied', 'number')
+    target.addInput('third', 'number')
+    target.addInput('destination', 'number')
+    graph.add(source)
+    graph.add(target)
+    const blocked = source.connect(0, target, 0)!
+    source.connect(0, target, 1)
+    const movable = source.connect(0, target, 2)!
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], name: 'occupied', link: blocked.id },
+      { ...nodeData.inputs![1], name: 'removed', link: null },
+      { ...nodeData.inputs![2], link: null },
+      { ...nodeData.inputs![3], link: movable.id }
+    ]
+    target.onConnectionsChange = (_type, slot, connected) => {
+      if (!connected || slot !== 3) return
+      const destination = target.inputs[3]
+      target.addInput('inserted', 'number')
+      target.inputs[3] = target.inputs[4]
+      target.inputs[4] = destination
+    }
+
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
+
+    expect(movable.target_slot).toBe(4)
   })
 })
