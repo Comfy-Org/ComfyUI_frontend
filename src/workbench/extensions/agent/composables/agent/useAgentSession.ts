@@ -135,7 +135,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       localStorage.setItem(storageKey(), value)
     } catch (error) {
-      console.warn('[agent] failed to persist the thread id', error)
+      reportError(error, { errorType: 'agent_thread_id_persist_failed' })
     }
   }
   function storageRemove(): void {
@@ -362,19 +362,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.recordUser(turnId, text, sentAttachments, sentTags)
       conversationStore.startTurn(turnId)
       if (ack.workflow_id !== undefined) bindWorkflow(ack.workflow_id)
-      try {
-        storageSet(ack.thread_id)
-      } catch (error) {
-        // Thread persistence is best-effort; a quota failure must not fail
-        // an accepted turn.
-        console.warn('[agent] failed to persist the thread id', error)
-      }
+      storageSet(ack.thread_id)
       try {
         if (ack.workflow_id !== undefined)
           workflow?.adopted(ack.workflow_id, wfContext)
       } catch (error) {
         // Consumer bookkeeping cannot retract an accepted turn.
-        console.warn('[agent] workflow.adopted consumer threw', error)
+        reportError(error, { errorType: 'agent_workflow_adopted_failed' })
       }
       if (stopRequestedWhileSending) {
         stopRequestedWhileSending = false

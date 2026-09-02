@@ -22,6 +22,11 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => identity.workspace
 }))
 
+const errorReporter = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: errorReporter
+}))
+
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -134,6 +139,7 @@ function fakeEvents() {
 
 function resetHarness() {
   setActivePinia(createPinia())
+  errorReporter.mockReset()
   identity.currentUser.resolvedUserInfo.value = { id: 'user-1' }
   identity.workspace.activeWorkspaceId.value = 'workspace-1'
   useAgentSession({ rest: fakeRest(), events: fakeEvents().source }).newChat()
@@ -1900,7 +1906,6 @@ describe('08-fix1 receipts and pins', () => {
       removeItem: (key: string) => real.removeItem(key),
       clear: () => real.clear()
     })
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     let ok: boolean
     try {
       ok = await session.sendMessage('accepted')
@@ -1909,11 +1914,9 @@ describe('08-fix1 receipts and pins', () => {
     }
 
     expect(setItem).toHaveBeenCalledTimes(1)
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0][0]).toBe(
-      '[agent] failed to persist the thread id'
-    )
-    warn.mockRestore()
+    expect(errorReporter).toHaveBeenCalledWith(expect.any(DOMException), {
+      errorType: 'agent_thread_id_persist_failed'
+    })
     expect(ok).toBe(true)
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
     expect(session.notices.value).toEqual([])
@@ -1940,13 +1943,10 @@ describe('08-fix1 receipts and pins', () => {
     })
     session.start()
 
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ok = await session.sendMessage('accepted')
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0][0]).toBe(
-      '[agent] workflow.adopted consumer threw'
-    )
-    warn.mockRestore()
+    expect(errorReporter).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_workflow_adopted_failed'
+    })
 
     expect(ok).toBe(true)
     expect(adopted).toHaveBeenCalledTimes(1)
