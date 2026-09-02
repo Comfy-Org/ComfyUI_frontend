@@ -19,6 +19,7 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -409,34 +410,42 @@ defineExpose({
           :key="selectedNodeKey(tag)"
           class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
         >
-          <button
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
-            type="button"
-            :aria-label="
-              t('agent.focusNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="flex cursor-pointer items-center gap-1 p-0 transition-colors"
-            @click="emit('focusTag', selectedNodeKey(tag))"
+          <Tooltip
+            :config="buildAgentTooltipConfig(t('agent.focusNode'))"
+            side="top"
           >
-            <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
-            <span class="max-w-40 truncate">{{ tag.title }}</span>
-            <span
-              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-              :class="duplicateIdClass"
-              >#{{ tag.id }}</span
+            <button
+              type="button"
+              :aria-label="
+                t('agent.focusNodeLabel', { node: `${tag.title} #${tag.id}` })
+              "
+              class="flex cursor-pointer items-center gap-1 p-0 transition-colors"
+              @click="emit('focusTag', selectedNodeKey(tag))"
             >
-          </button>
-          <button
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
-            type="button"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
+              <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
+              <span class="max-w-40 truncate">{{ tag.title }}</span>
+              <span
+                v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+                :class="duplicateIdClass"
+                >#{{ tag.id }}</span
+              >
+            </button>
+          </Tooltip>
+          <Tooltip
+            :config="buildAgentTooltipConfig(t('agent.remove'))"
+            side="top"
           >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </button>
+            <button
+              type="button"
+              :aria-label="
+                t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+              "
+              class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+              @click.stop="emit('removeTag', selectedNodeKey(tag))"
+            >
+              <span class="icon-[lucide--x] size-3.5 shrink-0" />
+            </button>
+          </Tooltip>
         </span>
       </div>
 
@@ -496,13 +505,17 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot>
-          <DropdownMenuTrigger
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.addToPrompt'))"
-            :aria-label="t('agent.addToPrompt')"
-            class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+          <Tooltip
+            :config="buildAgentTooltipConfig(t('agent.addToPrompt'))"
+            side="top"
           >
-            <span class="icon-[lucide--plus] size-4" />
-          </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              :aria-label="t('agent.addToPrompt')"
+              class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+            >
+              <span class="icon-[lucide--plus] size-4" />
+            </DropdownMenuTrigger>
+          </Tooltip>
           <DropdownMenuPortal>
             <DropdownMenuContent
               side="top"
