@@ -675,6 +675,12 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
     })
+
+    it('stays silent while the members list is hidden', () => {
+      mockUiConfig.value = { ...mockUiConfig.value, showMembersList: false }
+      renderComponent()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
   })
 
   describe('card header actions', () => {
