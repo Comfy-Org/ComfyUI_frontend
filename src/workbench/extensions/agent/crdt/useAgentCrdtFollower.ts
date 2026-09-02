@@ -232,6 +232,12 @@ export function useAgentCrdtFollower(
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
+  const bindFollower = (targetWorkflowId: string): boolean =>
+    adapter.bind(targetWorkflowId, bridge.follower, {
+      source: 'agent-remote',
+      actor: 'agent:replay',
+      opId: `follower-bind:${targetWorkflowId}`
+    })
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -480,7 +486,7 @@ export function useAgentCrdtFollower(
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
-      adapter.bind(workflowId, bridge.follower)
+      bindFollower(workflowId)
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -595,7 +601,7 @@ export function useAgentCrdtFollower(
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
             if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-            adapter.bind(persisted, bridge.follower)
+            bindFollower(persisted)
             boundWorkflowId = persisted
           }
           subscribedWorkflowId.value = persisted
@@ -614,7 +620,7 @@ export function useAgentCrdtFollower(
       initialBind = false
       if (boundWorkflowId !== next) {
         if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-        adapter.bind(next, bridge.follower)
+        bindFollower(next)
         boundWorkflowId = next
       }
       subscribedWorkflowId.value = next

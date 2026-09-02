@@ -183,6 +183,11 @@ describe('useAgentCrdtFollower', () => {
   it('subscribes immediately to a bound workflow and reports it in status', () => {
     const { unmount, status } = mountFollower('wf-1')
 
+    expect(adapterState.bind).toHaveBeenCalledWith('wf-1', bridge().follower, {
+      source: 'agent-remote',
+      actor: 'agent:replay',
+      opId: 'follower-bind:wf-1'
+    })
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
     expect(status().enabled).toBe(true)
@@ -427,7 +432,12 @@ describe('useAgentCrdtFollower', () => {
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
-      bridge().follower
+      bridge().follower,
+      {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf-1'
+      }
     )
     unmount()
   })
