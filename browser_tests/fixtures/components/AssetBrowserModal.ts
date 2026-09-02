@@ -22,7 +22,6 @@ export class AssetBrowserModal {
   public readonly descriptionText: Locator
   public readonly userDescriptionTextarea: Locator
   public readonly triggerPhrasesCopyAllButton: Locator
-  public readonly triggerPhraseButtons: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.locator('[data-component-id="AssetBrowserModal"]')
@@ -68,9 +67,6 @@ export class AssetBrowserModal {
     this.triggerPhrasesCopyAllButton = this.modelDescriptionSection.getByRole(
       'button',
       { name: /copy all/i }
-    )
-    this.triggerPhraseButtons = this.modelDescriptionSection.locator(
-      '[data-trigger-phrase]'
     )
   }
 

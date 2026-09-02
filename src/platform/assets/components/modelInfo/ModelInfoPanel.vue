@@ -184,7 +184,6 @@
           <Button
             v-for="phrase in triggerPhrases"
             :key="phrase"
-            data-trigger-phrase
             variant="muted-textonly"
             size="unset"
             :title="t('g.copyToClipboard')"

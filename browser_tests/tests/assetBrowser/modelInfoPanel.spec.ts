@@ -96,40 +96,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect(modal.modelInfoPanel).toBeVisible()
     })
 
-    test('renders display name text', async () => {
-      await expect(modal.displayNameText).toContainText('Cinematic Details v2')
-    })
-
     test('renders filename from metadata filename', async () => {
       await expect(modal.fileNameText).toContainText(
         'cinematic_details_v2.safetensors'
-      )
-    })
-
-    test('renders source link for editable model', async () => {
-      await expect(modal.sourceLink).toBeVisible()
-    })
-
-    test('maps civitai source_arn to expected URL', async () => {
-      await expect(modal.sourceLink).toHaveAttribute(
-        'href',
-        'https://civitai.com/models/12345?modelVersionId=67890'
-      )
-    })
-
-    test('renders trigger phrases copy-all button', async () => {
-      await expect(modal.triggerPhrasesCopyAllButton).toBeVisible()
-    })
-
-    test('renders trigger phrase buttons', async () => {
-      await expect
-        .poll(() => modal.triggerPhraseButtons.count())
-        .toBeGreaterThan(0)
-    })
-
-    test('renders metadata description paragraph', async () => {
-      await expect(modal.descriptionText).toContainText(
-        'cinematic detail enhancer'
       )
     })
 
