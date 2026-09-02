@@ -42,7 +42,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       'minimaxLicense.hero.tagGlobal'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'closingCta'],
+  sectionOrder: ['steps', 'comparison', 'faq', 'closingCta'],
   steps: {
     headingKey: 'minimaxLicense.steps.heading',
     stepLabelKey: 'minimaxLicense.steps.step',
@@ -72,6 +72,84 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN':
             '面向将 MiniMax 构建进自家产品的团队的年度协议。定制批量定价，不限用户数，涵盖所有模型版本，包括未蒸馏权重。'
         }
+      }
+    ]
+  },
+  // Every cell restates copy that already ships elsewhere on this page (steps
+  // items and FAQ answers) — this table makes no licensing claim on its own,
+  // so a copy change there must land here too.
+  comparison: {
+    headingKey: 'minimaxLicense.comparison.heading',
+    columns: [
+      { id: 'professional', label: { en: 'Professional', 'zh-CN': '专业版' } },
+      { id: 'enterprise', label: { en: 'Enterprise', 'zh-CN': '企业版' } }
+    ],
+    rows: [
+      {
+        id: 'pricing',
+        label: { en: 'Pricing', 'zh-CN': '定价' },
+        cells: [
+          { en: 'Fixed monthly price', 'zh-CN': '固定月费' },
+          {
+            en: 'Annual agreement, custom volume pricing',
+            'zh-CN': '年度协议，定制批量定价'
+          }
+        ]
+      },
+      {
+        id: 'licensed-users',
+        label: { en: 'Licensed users', 'zh-CN': '授权用户' },
+        cells: [
+          { en: 'Up to 10', 'zh-CN': '最多 10 个' },
+          { en: 'No user cap', 'zh-CN': '不限用户数' }
+        ]
+      },
+      {
+        id: 'model-versions',
+        label: { en: 'Model versions', 'zh-CN': '模型版本' },
+        cells: [
+          {
+            en: 'Distilled open-weight versions',
+            'zh-CN': '蒸馏开源权重版本'
+          },
+          {
+            en: 'Every version, undistilled weights included',
+            'zh-CN': '所有版本，包括未蒸馏权重'
+          }
+        ]
+      },
+      {
+        id: 'commercial-rights',
+        label: {
+          en: 'Commercial rights to your outputs',
+          'zh-CN': '产出的商业权利'
+        },
+        cells: [
+          { en: 'Included', 'zh-CN': '包含' },
+          { en: 'Included', 'zh-CN': '包含' }
+        ]
+      },
+      {
+        id: 'fine-tuning',
+        label: {
+          en: 'Fine-tuning and LoRA training',
+          'zh-CN': '微调与 LoRA 训练'
+        },
+        cells: [
+          { en: 'Included', 'zh-CN': '包含' },
+          { en: 'Included', 'zh-CN': '包含' }
+        ]
+      },
+      {
+        id: 'client-work',
+        label: {
+          en: 'Client and downstream work',
+          'zh-CN': '客户与下游项目'
+        },
+        cells: [
+          { en: 'Included', 'zh-CN': '包含' },
+          { en: 'Included', 'zh-CN': '包含' }
+        ]
       }
     ]
   },
