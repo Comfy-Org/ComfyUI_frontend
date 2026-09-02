@@ -133,6 +133,7 @@ const graphMutations = (workflowId: string) => {
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
           nodeId,
           layout: {
             id: nodeId,
@@ -154,6 +155,7 @@ const graphMutations = (workflowId: string) => {
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
             graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
             nodeId,
             source: LayoutSource.AgentRemote,
             actor: context.actor,
@@ -778,7 +780,7 @@ const attachment = useAttachment({
     const uploaded = await rest.uploadImage(file, file.name)
     // The library caches input assets; without this refresh a just-uploaded
     // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.updateInputs()
+    void assetsStore.inputAssets.loadNew()
     return { ref: uploaded.name }
   },
   maxBytes: (file) => {

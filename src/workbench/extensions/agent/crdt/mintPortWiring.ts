@@ -75,6 +75,16 @@ export function notifyMintPortsAfterGraphConfigure(): void {
   for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
 }
 
+/** Run a confirmed root-workflow clear through every active mint port. */
+export function runMintPortsIntentionalClear<T>(clear: () => T): T {
+  const wirings = [...activeWirings]
+  const run = (index: number): T =>
+    index === wirings.length
+      ? clear()
+      : wirings[index].runIntentionalClear(() => run(index + 1))
+  return run(0)
+}
+
 /**
  * Serialized save-format node, `widgets_values` NAME-KEYED via the node's own
  * `widgets_values_named` minus non-value widgets (FE-1904: the doc host's

@@ -44,9 +44,16 @@ function previewFixture(
   }
 }
 
+// Interpolation values are appended so assertions can verify what a message
+// was given, not just which message was chosen.
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, named?: Record<string, unknown>) =>
+      named
+        ? `${key}|${Object.entries(named)
+            .map(([name, value]) => `${name}=${String(value)}`)
+            .join(',')}`
+        : key,
     n: (value: number) => value.toLocaleString('en-US'),
     locale: { value: 'en' }
   })
@@ -402,5 +409,29 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         name: 'subscription.preview.backToAllPlans'
       })
     ).toBeNull()
+  })
+
+  it('prices a legacy preview from the server costs instead of rendering a blank total', () => {
+    const {
+      amount_due_cents,
+      currency,
+      renewal_amount_cents,
+      renewal_at,
+      quote_id,
+      quote_version,
+      ...legacy
+    } = previewFixture('MONTHLY', 2000)
+
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', previewData: legacy },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$20.00')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'subscription.preview.renewsAt|amount=$20.00,date=Jun 19, 2027'
+      )
+    ).toBeTruthy()
   })
 })
