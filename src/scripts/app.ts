@@ -88,7 +88,6 @@ import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -100,8 +99,6 @@ import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
@@ -809,41 +806,6 @@ export class ComfyApp {
   }
 
   /**
-   * Handle keypress
-   */
-  private addProcessKeyHandler() {
-    const origProcessKey = LGraphCanvas.prototype.processKey
-    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
-      if (!this.graph) return
-
-      if (e.target instanceof Element && e.target.localName == 'input') {
-        return
-      }
-
-      if (e.type == 'keydown' && !e.repeat) {
-        const keyCombo = KeyComboImpl.fromEvent(e)
-        const keybindingStore = useKeybindingStore()
-        const keybinding = keybindingStore.getKeybinding(keyCombo)
-
-        if (
-          keybinding &&
-          keybinding.targetElementId === 'graph-canvas-container'
-        ) {
-          useCommandStore().execute(keybinding.commandId)
-
-          this.graph.change()
-          e.preventDefault()
-          e.stopImmediatePropagation()
-          return
-        }
-      }
-
-      // Fall through to Litegraph defaults
-      return origProcessKey.apply(this, [e])
-    }
-  }
-
-  /**
    * Handles updates from the API socket
    */
   private addApiUpdateHandlers() {
@@ -970,7 +932,6 @@ export class ComfyApp {
     void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
-    this.addProcessKeyHandler()
     this.addConfigureHandler()
     this.addApiUpdateHandlers()
 

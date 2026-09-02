@@ -53,6 +53,7 @@ describe('keybindingService - Escape key handling', () => {
     const commandStore = useCommandStore()
     mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute
+    commandStore.isRegistered = () => true
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
