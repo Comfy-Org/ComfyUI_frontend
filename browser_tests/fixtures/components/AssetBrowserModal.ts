@@ -86,9 +86,8 @@ export class AssetBrowserModal {
   }
 
   async waitForAssetContent(text: string): Promise<void> {
-    await this.modelInfoPanel
-      .getByText(text, { exact: false })
-      .first()
+    await this.fileNameText
+      .filter({ hasText: text })
       .waitFor({ state: 'visible' })
   }
 }
