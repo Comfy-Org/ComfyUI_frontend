@@ -125,8 +125,16 @@ export function useAgentCrdtFollower(
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
   // s3-opt-6: every minted human op is registered here before it flies and
-  // leaves only on its authoritative doc_update effect or on revert.
+  // leaves only on its authoritative doc_update effect, on revert, or — for
+  // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
   const pendingOps = createPendingOpTracker({
+    // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
+    // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
+    // state, so a skipped result must park there rather than clear on the ack.
+    // An already-current follower (ack, no catch-up) therefore parks a skipped
+    // id until its next applied frame; a still-pending skipped entry means the
+    // effect frame never reached this follower, so one is coming.
+    currentSeq: () => bridge.lastAppliedSequence ?? 0,
     onEvent: (event) => recordDevEvent('pending_ops', event)
   })
   const sender = createOpSender({
@@ -139,6 +147,7 @@ export function useAgentCrdtFollower(
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
+          ...(typeof detail.seq === 'number' ? { seq: detail.seq } : {}),
           ...(detail.failed && typeof detail.failed === 'object'
             ? { failure: detail.failed as OpsResultView['failure'] }
             : {})
@@ -270,6 +279,9 @@ export function useAgentCrdtFollower(
     adapter.applyFrame(update)
     // KEEP-ALIVE #9: the doc_update effect, not the ack, retires a shadow.
     if (update.opIds) pendingOps.onDocEffect(update.opIds)
+    // s3-opt-2: a projected transition at/after an ack seq resolves the
+    // skipped duplicates that ack named (their effect never re-broadcasts).
+    pendingOps.onAuthoritativeState(update.seq)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
