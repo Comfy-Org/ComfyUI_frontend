@@ -115,7 +115,7 @@ const tabClass = (current: boolean) =>
     'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
     current
       ? 'border-primary-comfy-yellow text-primary-warm-white'
-      : 'text-primary-warm-gray hover:text-primary-warm-white border-transparent'
+      : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
   )
 
 const menuItemClass =
@@ -125,7 +125,7 @@ const menuItemClass =
 <template>
   <section>
     <nav
-      class="border-transparency-white-t8 mb-8 flex gap-8 overflow-x-auto border-b"
+      class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8"
       :aria-label="t('workshop.useCase.label', locale)"
       data-testid="workshop-use-cases"
     >
@@ -139,7 +139,7 @@ const menuItemClass =
         @click="useCase = value"
       >
         {{ t(useCaseLabelKey[value], locale) }}
-        <span class="text-primary-warm-gray text-xs tabular-nums">
+        <span class="text-xs text-primary-warm-gray tabular-nums">
           {{ counts[value] }}
         </span>
       </button>
@@ -153,7 +153,7 @@ const menuItemClass =
           {{ t('workshop.search.label', locale) }}
         </label>
         <Search
-          class="text-primary-warm-gray pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
+          class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
           aria-hidden="true"
         />
         <input
@@ -162,14 +162,14 @@ const menuItemClass =
           type="search"
           :placeholder="t('workshop.search.label', locale)"
           data-testid="workshop-search"
-          class="bg-transparency-white-t4 focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 border-transparency-white-t20 text-primary-warm-white placeholder:text-primary-warm-gray h-11 w-full rounded-2xl border pr-10 pl-11 text-sm outline-none focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden"
+          class="bg-transparency-white-t4 focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl border border-transparency-white-t20 pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden"
         />
         <button
           v-if="query"
           type="button"
           :aria-label="t('workshop.search.clear', locale)"
           data-testid="workshop-search-clear"
-          class="text-primary-warm-gray hover:text-primary-warm-white absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+          class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
           @click="query = ''"
         >
           <X class="size-4" aria-hidden="true" />
@@ -189,7 +189,7 @@ const menuItemClass =
           <DropdownMenuTrigger
             data-testid="workshop-sort"
             :aria-label="t('workshop.sort.label', locale)"
-            class="hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 border-transparency-white-t20 text-primary-comfy-canvas inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3"
+            class="hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-transparency-white-t20 px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3"
           >
             <ArrowUpDown class="size-4" aria-hidden="true" />
             {{ t(sortLabelKey[sort], locale) }}
@@ -199,7 +199,7 @@ const menuItemClass =
             <DropdownMenuContent
               align="end"
               :side-offset="8"
-              class="border-primary-comfy-ink-light bg-site-dropdown data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 z-50 w-64 rounded-2xl border p-2 shadow-lg"
+              class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-64 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
             >
               <DropdownMenuRadioGroup v-model="sort">
                 <DropdownMenuRadioItem
@@ -227,7 +227,7 @@ const menuItemClass =
 
     <div v-if="visible.length">
       <ul
-        class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
         data-testid="workshop-models-grid"
       >
         <li v-for="model in visible" :key="model.slug">
@@ -238,13 +238,13 @@ const menuItemClass =
 
     <div
       v-else
-      class="border-transparency-white-t8 flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-16 text-center"
+      class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
       data-testid="workshop-empty"
     >
-      <p class="text-primary-comfy-canvas text-lg font-semibold">
+      <p class="text-lg font-semibold text-primary-comfy-canvas">
         {{ t('workshop.empty.heading', locale) }}
       </p>
-      <p class="text-primary-warm-gray text-sm">
+      <p class="text-sm text-primary-warm-gray">
         {{ t('workshop.empty.body', locale) }}
       </p>
       <Button

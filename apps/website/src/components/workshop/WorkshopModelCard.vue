@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -12,7 +13,6 @@ import { modalityOf, splitTask } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { getLogoPath } from '../../lib/hub/model-logos'
-import CardArrow from '../common/CardArrow.vue'
 
 const {
   model,
@@ -45,6 +45,10 @@ const taskInputKey: Record<TaskInput, TranslationKey> = {
   audio: 'workshop.task.audio'
 }
 
+const providerName = computed(
+  () => model.provider ?? t('workshop.card.partnerNode', locale)
+)
+
 const logo = computed(
   () => getLogoPath(model.provider ?? '') ?? getLogoPath(model.name)
 )
@@ -68,91 +72,118 @@ const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
 }
 
 const pillClass =
-  'inline-flex h-8 items-center rounded-2xl bg-white/20 px-3 text-[11px] font-bold tracking-wider text-white uppercase backdrop-blur-sm'
+  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
 
 <template>
   <a
     :href="model.href"
-    class="group bg-primary-comfy-ink-light relative block aspect-4/5 overflow-hidden rounded-3xl"
+    class="group bg-hub-surface hover:bg-hub-surface-hover flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl px-2 pt-2 pb-6 transition-colors duration-200"
     data-testid="workshop-model-card"
   >
-    <img
-      v-if="model.thumbnailUrl"
-      :src="model.thumbnailUrl"
-      :alt="model.name"
-      class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-      loading="lazy"
-      decoding="async"
-    />
     <div
-      v-else
-      :class="
-        cn(
-          'grid size-full place-items-center bg-linear-to-br',
-          modalityTone[modality]
-        )
-      "
+      class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
     >
-      <span
-        class="font-formula text-primary-warm-white/20 text-7xl font-bold select-none"
-        aria-hidden="true"
+      <img
+        v-if="model.thumbnailUrl"
+        :src="model.thumbnailUrl"
+        :alt="model.name"
+        class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+        loading="lazy"
+        decoding="async"
+        draggable="false"
+      />
+      <div
+        v-else
+        :class="
+          cn(
+            'grid size-full place-items-center bg-linear-to-br',
+            modalityTone[modality]
+          )
+        "
       >
-        {{ model.name[0] }}
+        <span
+          class="font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
+          aria-hidden="true"
+        >
+          {{ model.name[0] }}
+        </span>
+      </div>
+
+      <div
+        class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/70 via-black/30 to-transparent"
+        aria-hidden="true"
+      />
+      <h3
+        class="text-content-bright pointer-events-none absolute inset-x-5 bottom-5 z-10 line-clamp-2 text-base leading-[1.3] font-medium drop-shadow-md sm:text-lg lg:text-xl"
+      >
+        {{ model.name }}
+      </h3>
+
+      <span
+        v-if="logo"
+        role="img"
+        :aria-label="providerName"
+        :title="providerName"
+        class="absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-2xl bg-transparency-white-t8 backdrop-blur-sm"
+        data-testid="model-card-logo"
+      >
+        <span
+          class="size-5 bg-white mask-contain mask-center mask-no-repeat"
+          :style="{ maskImage: `url(${logo})` }"
+        />
+      </span>
+      <span
+        v-if="showStatus && model.status"
+        class="bg-primary-comfy-yellow/80 absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-sm"
+      >
+        {{
+          model.status === 'deprecated'
+            ? t('workshop.model.deprecated', locale)
+            : t('workshop.model.degraded', locale)
+        }}
       </span>
     </div>
 
-    <div
-      class="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-black/35"
-    />
-
-    <span
-      v-if="showStatus && model.status"
-      :class="cn(pillClass, 'bg-primary-comfy-yellow/80 absolute top-4 left-4')"
-    >
-      {{
-        model.status === 'deprecated'
-          ? t('workshop.model.deprecated', locale)
-          : t('workshop.model.degraded', locale)
-      }}
-    </span>
-
-    <div class="absolute right-16 bottom-5 left-5">
-      <div class="flex items-center gap-2">
-        <p
-          class="text-primary-warm-white min-w-0 text-2xl/tight font-light drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
-        >
-          {{ model.name }}
-        </p>
+    <div class="flex flex-col gap-4 px-4">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-content-secondary flex min-w-0 items-center gap-2">
+          <span
+            class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
+            aria-hidden="true"
+          >
+            {{ providerName.charAt(0).toUpperCase() }}
+          </span>
+          <span
+            class="ppformula-text-center-sm truncate text-base"
+            data-testid="model-card-provider"
+          >
+            {{ providerName }}
+          </span>
+        </span>
         <span
-          v-if="logo"
-          role="img"
-          :aria-label="model.provider ?? model.name"
-          :title="model.provider ?? model.name"
-          class="grid size-7 shrink-0 place-items-center rounded-lg bg-white/20 backdrop-blur-sm"
-          data-testid="model-card-logo"
+          class="grid size-10 shrink-0 place-items-center rounded-2xl"
+          aria-hidden="true"
         >
           <span
-            class="size-4 bg-white mask-contain mask-center mask-no-repeat"
-            :style="{ maskImage: `url(${logo})` }"
-          />
-        </span>
-        <span
-          v-else-if="model.provider"
-          :class="cn(pillClass, 'text-2xs h-6 shrink-0 px-2')"
-          data-testid="model-card-provider"
-        >
-          {{ model.provider }}
+            class="text-content group-hover:bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-xl bg-white/20 transition-colors group-hover:text-primary-comfy-ink"
+          >
+            <ChevronRight class="size-4" :stroke-width="2" />
+          </span>
         </span>
       </div>
-      <p
-        class="text-primary-comfy-canvas/80 mt-1 text-sm"
-        data-testid="model-card-task"
-      >
-        {{ taskLabel }}
-      </p>
+      <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
+        <span :class="pillClass" data-testid="model-card-task">
+          {{ taskLabel }}
+        </span>
+        <span
+          v-for="capability in model.capabilities.slice(0, 1)"
+          :key="capability"
+          :class="pillClass"
+        >
+          {{ capability }}
+        </span>
+      </div>
     </div>
-
-    <CardArrow hover="group" class="absolute right-4 bottom-4" />
   </a>
 </template>
