@@ -164,9 +164,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('stops watching for mismatches after unmount', async () => {
-    const toastStore = useToastStore()
+    const toastStore = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
+    const warningSpy = vi.spyOn(toastStore, 'warning')
     const shouldShowWarning = ref(false)
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockImplementation(
       () => shouldShowWarning.value
@@ -184,7 +184,7 @@ describe('useFrontendVersionMismatchWarning', () => {
     shouldShowWarning.value = true
     await nextTick()
 
-    expect(addAlertSpy).not.toHaveBeenCalled()
+    expect(warningSpy).not.toHaveBeenCalled()
   })
 
   it('should not show warning when warningMessage is null', () => {
