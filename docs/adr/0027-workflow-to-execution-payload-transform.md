@@ -162,7 +162,12 @@ At that point:
   `dynamicPrompts.ts` currently does) is deprecated in favor of a registered
   transform step with explicit ordering and isolation guarantees.
 - An ESLint rule or ADR compliance check can flag direct calls to `graph.serialize()`
-  or `graphToPrompt()` from outside the designated transform module.
+  or `graphToPrompt()` from outside the designated transform module. This rule
+  applies to *new* call sites; existing callers in `src` (e.g. `app.ts`) and
+  `browser_tests` are grandfathered until they are migrated to the central
+  pipeline or an adapter, not blocked retroactively. The migration path for
+  those existing callers is itself deferred to the registration-contract work
+  above — this ADR does not enable the check until that boundary is drawn.
 
 ## Consequences
 
