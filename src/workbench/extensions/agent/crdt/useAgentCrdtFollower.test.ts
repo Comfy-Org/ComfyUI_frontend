@@ -43,7 +43,7 @@ const clientState = vi.hoisted(() => ({
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
+  applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -507,6 +507,19 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+      expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
     it('counts errored on a schema_error and does not touch applied/received', () => {
       const { unmount, status } = mountFollower('wf-1')
 
@@ -548,6 +561,20 @@ describe('useAgentCrdtFollower', () => {
       })
 
       expect(status().outcomes.reset).toBe(1)
+      unmount()
+    })
+
+    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+      const { unmount, status } = mountFollower('wf-a', false)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-a',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(status().outcomes.reset).toBe(1)
+      expect(adapterState.clearForReset).not.toHaveBeenCalled()
       unmount()
     })
 

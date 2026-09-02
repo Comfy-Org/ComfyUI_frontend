@@ -122,24 +122,25 @@ export const STALE_AFTER_MS = 30_000
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
  * observable. Each counter increments exactly once, at the boundary where
- * that outcome is decided — never inferred after the fact — so the sum of
- * `applied + skipped + errored` on `received` frames, plus `gap` (withheld
- * before a `doc_update` event even reaches this composable) and `dropped`
- * (the bridge's own stale/duplicate discard), always accounts for the
- * bridge's total delivery attempts. `applied` mirrors
- * `bridge.follower.updatesApplied` for consistency with the pre-existing
- * source of truth, but is tracked independently so a future divergence
- * (e.g. a frame the bridge applies to the Yjs doc but this composable then
- * skips) is visible instead of silently hidden behind one shared number.
+ * that outcome is decided — never inferred after the fact. `received` counts
+ * only frames the bridge re-dispatched as `doc_update`, so
+ * `received === applied + skipped` always holds; `errored`, `gap` and
+ * `dropped` are disjoint from it because the bridge returns before
+ * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
+ * stale/duplicate discard). Frames the bridge drops for a workflowId other
+ * than its `sentWorkflowId` emit no event and are not counted anywhere.
+ * `applied` is tracked independently of `bridge.follower.updatesApplied`
+ * (which counts Yjs merges, including frames this composable skips) so a
+ * divergence between the two is visible instead of hidden behind one number.
  * No payload bodies or actor identifiers are recorded here — see
  * `recordDevEvent` call sites for the (dev-only) frame detail surface.
  */
 export interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
   received: number
-  /** Passed this composable's own filter and was applied to domain stores. */
+  /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
   applied: number
-  /** Discarded by this composable's own filter (inactive target or workflow mismatch). */
+  /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
   errored: number
@@ -155,7 +156,12 @@ export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
-  /** @deprecated use `outcomes.applied` — kept for existing consumers (AgentPanelRoot.vue, CrdtDevPanel.vue). */
+  /**
+   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
+   * `doc_reset` / `follower_replaced`). Not interchangeable with
+   * `outcomes.applied`, which is monotonic and counts only frames that passed
+   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
+   */
   updatesApplied: number
   lastFrameType: string | null
   outcomes: AgentCrdtOutcomeCounters
@@ -388,9 +394,11 @@ export function useAgentCrdtFollower(
     if (staleProbeTimer !== null) armStaleProbe()
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
-    outcomes.value = { ...outcomes.value, applied: outcomes.value.applied + 1 }
     lastFrameType.value = event.type
-    adapter.applyFrame(update)
+    const applied = adapter.applyFrame(update)
+    outcomes.value = applied
+      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -423,6 +431,10 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
+    // The bridge already replaced its doc for this lineage break, whether or
+    // not this target is active, so count it before the filter like the other
+    // bridge-decided outcomes (gap, dropped, errored).
+    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
       detail?.workflowId !== subscribedWorkflowId.value
@@ -437,7 +449,6 @@ export function useAgentCrdtFollower(
       adapter.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
-    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
