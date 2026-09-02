@@ -389,6 +389,118 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  describe('pending-op shadows (s3-opt-6)', () => {
+    function mountWithSender(initial: string | null = 'wf-1') {
+      const workflowId = ref<string | null>(initial)
+      let follower!: ReturnType<typeof useAgentCrdtFollower>
+      const host = defineComponent({
+        setup() {
+          follower = useAgentCrdtFollower(workflowId, graphMutations)
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      const sentOpIds = (): string[] => {
+        const call = clientState.sendOps.mock.lastCall as
+          | [string, string, Array<{ op_id: string }>]
+          | undefined
+        return call ? call[2].map((op) => op.op_id) : []
+      }
+      return { unmount, follower, sentOpIds }
+    }
+
+    const deleteNode1 = {
+      op: 'delete_node' as const,
+      node_id: '1',
+      removed_links: []
+    }
+    const node1 = { kind: 'node', nodeId: '1' } as const
+
+    beforeEach(() => {
+      clientState.sendOps.mockClear()
+      clientState.sendOps.mockImplementation(() => true)
+    })
+
+    it('shows a shadow for a sent op and keeps it through the applied ack', () => {
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+      dispatchFrame('doc_ops_result', {
+        ok: true,
+        applied: [opId],
+        skipped: []
+      })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+      unmount()
+    })
+
+    it('clears the shadow only when a doc_update carries the op id', () => {
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+      dispatchFrame('doc_ops_result', {
+        ok: true,
+        applied: [opId],
+        skipped: []
+      })
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+      expect(follower.pendingShadows.isPending(node1)).toBe(true)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 43,
+        opIds: [opId]
+      })
+      expect(follower.pendingShadows.isPending(node1)).toBe(false)
+      unmount()
+    })
+
+    it('reverts the shadow when the host rejects the op', () => {
+      const { unmount, follower, sentOpIds } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      const [opId] = sentOpIds()
+
+      dispatchFrame('doc_ops_result', {
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: { op_id: opId, reason: 'node_missing' }
+      })
+      expect(follower.pendingShadows.size()).toBe(0)
+      unmount()
+    })
+
+    it('never shows a lingering shadow when no doc is bound', () => {
+      const { unmount, follower } = mountWithSender(null)
+      bridge().subscribedWorkflowId = null
+      follower.enqueueHumanOperations([deleteNode1])
+
+      expect(clientState.sendOps).not.toHaveBeenCalled()
+      expect(follower.pendingShadows.size()).toBe(0)
+      unmount()
+    })
+
+    it('drops every pending shadow on doc_reset', () => {
+      const { unmount, follower } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      expect(follower.pendingShadows.size()).toBe(1)
+
+      dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 1 })
+      expect(follower.pendingShadows.size()).toBe(0)
+      unmount()
+    })
+
+    it('drops every pending shadow on unmount', () => {
+      const { unmount, follower } = mountWithSender()
+      follower.enqueueHumanOperations([deleteNode1])
+      unmount()
+      expect(follower.pendingShadows.size()).toBe(0)
+    })
+  })
+
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
