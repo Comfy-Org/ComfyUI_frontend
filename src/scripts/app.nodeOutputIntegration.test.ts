@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
@@ -7,6 +7,19 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 describe('execution output projection', () => {
+  let originalRootGraph: unknown
+  let originalNodeOutputs: typeof app.nodeOutputs
+
+  beforeEach(() => {
+    originalRootGraph = Reflect.get(app, 'rootGraphInternal')
+    originalNodeOutputs = { ...app.nodeOutputs }
+  })
+
+  afterEach(() => {
+    Reflect.set(app, 'rootGraphInternal', originalRootGraph)
+    app.nodeOutputs = originalNodeOutputs
+  })
+
   it('projects canonical output state to node preview URLs', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Preview Image')
