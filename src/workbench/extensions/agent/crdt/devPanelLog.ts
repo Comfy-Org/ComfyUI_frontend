@@ -27,9 +27,38 @@ export interface DevEvent {
 }
 
 const CAPACITY = 500
+const REDACTED = '[REDACTED]'
+const SENSITIVE_KEY = /(token|password|authorization|prompt|text)/i
+const WIDGET_VALUES_KEYS = new Set(['widgets_values', 'widgets_values_named'])
 
 let nextSeq = 1
 const buffer: DevEvent[] = []
+
+function redactValues(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(() => REDACTED)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).map((key) => [key, REDACTED]))
+  }
+  return REDACTED
+}
+
+function sanitizeDetail(value: unknown, redactOpValue = false): unknown {
+  if (value instanceof Uint8Array) return value
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeDetail(item, redactOpValue))
+  }
+  if (value === null || typeof value !== 'object') return value
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => {
+      if (SENSITIVE_KEY.test(key) || (redactOpValue && key === 'value')) {
+        return [key, REDACTED]
+      }
+      if (WIDGET_VALUES_KEYS.has(key)) return [key, redactValues(item)]
+      return [key, sanitizeDetail(item, key === 'ops')]
+    })
+  )
+}
 
 /**
  * Shallow ref over the ring buffer. Consumers get a stable array identity;
@@ -39,7 +68,12 @@ const buffer: DevEvent[] = []
 export const devEvents = shallowRef<readonly DevEvent[]>(buffer)
 
 export function recordDevEvent(kind: DevEventKind, detail: unknown): void {
-  buffer.push({ seq: nextSeq++, at: Date.now(), kind, detail })
+  buffer.push({
+    seq: nextSeq++,
+    at: Date.now(),
+    kind,
+    detail: sanitizeDetail(detail)
+  })
   if (buffer.length > CAPACITY) buffer.splice(0, buffer.length - CAPACITY)
   triggerRef(devEvents)
 }
