@@ -848,6 +848,7 @@ test(
     await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
   }
 )
+
 test.describe(
   'WidgetControlMode in subgraphs',
   { tag: ['@subgraph', '@widget'] },
