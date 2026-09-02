@@ -1,4 +1,4 @@
-# 27. Lineage-Gated Replay (LGR) for Sequence-Gap Recovery
+# 29. Lineage-Gated Replay (LGR) for Sequence-Gap Recovery
 
 Date: 2026-08-28
 
