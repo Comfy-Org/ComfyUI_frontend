@@ -455,7 +455,7 @@ function currentMintTarget(): GraphMutationTarget | null {
   const workflowId = boundWorkflowId.value
   if (workflowId === null || !isBoundWorkflowActive.value) return null
   const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-  return rootGraphId === undefined ? null : { workflowId, rootGraphId }
+  return rootGraphId ? { workflowId, rootGraphId } : null
 }
 
 const mintPortWiring = attachMintPortWiring({
