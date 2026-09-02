@@ -42,19 +42,6 @@ const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
   other: 'from-primary-comfy-ink-light to-primary-comfy-ink'
 }
 
-const price = computed(() => {
-  if (model.priceUsdFrom !== undefined) {
-    return `${t('workshop.card.from', locale)} ${new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'USD'
-    }).format(model.priceUsdFrom)}`
-  }
-  if (model.creditsPerRun !== undefined) {
-    return `${t('workshop.card.from', locale)} ${model.creditsPerRun} ${t('nav.credits', locale)}`
-  }
-  return undefined
-})
-
 const pillClass =
   'inline-flex h-8 items-center rounded-2xl bg-white/20 px-3 text-[11px] font-bold tracking-wider text-white uppercase backdrop-blur-sm'
 </script>
@@ -94,9 +81,7 @@ const pillClass =
       class="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-black/35"
     />
 
-    <div
-      class="absolute inset-x-4 top-4 flex items-start justify-between gap-2"
-    >
+    <div class="absolute inset-x-4 top-4 flex items-start gap-2">
       <div class="flex flex-wrap gap-2">
         <span :class="pillClass">
           {{ t(modalityLabelKey[modality], locale) }}
@@ -112,13 +97,6 @@ const pillClass =
           }}
         </span>
       </div>
-      <span
-        v-if="price"
-        :class="cn(pillClass, 'tracking-normal normal-case tabular-nums')"
-        data-testid="workshop-card-price"
-      >
-        {{ price }}
-      </span>
     </div>
 
     <div class="absolute right-16 bottom-5 left-5">

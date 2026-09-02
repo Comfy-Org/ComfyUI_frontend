@@ -176,6 +176,7 @@ const menuItemClass =
           :label="t('workshop.filter.capabilityGroup', locale)"
           :options="capabilityOptions"
           :locale
+          searchable
         />
         <WorkshopFacetMenu
           v-model="providers"

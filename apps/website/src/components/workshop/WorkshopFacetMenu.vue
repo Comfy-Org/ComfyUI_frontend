@@ -90,9 +90,12 @@ const itemClass =
         :side-offset="8"
         class="border-primary-comfy-ink-light bg-site-dropdown z-50 flex max-h-[70vh] w-64 flex-col rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
-        <div v-if="searchable" class="relative mb-2">
+        <div
+          v-if="searchable"
+          class="relative -mx-2 -mt-2 mb-1 border-b border-transparency-white-t8"
+        >
           <Search
-            class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-primary-warm-gray"
+            class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
             aria-hidden="true"
           />
           <input
@@ -101,10 +104,15 @@ const itemClass =
             :placeholder="t('workshop.filter.search', locale)"
             :aria-label="t('workshop.filter.search', locale)"
             :data-testid="`workshop-filter-${facet}-search`"
-            class="bg-transparency-white-t4 h-9 w-full rounded-xl border border-transparency-white-t20 pr-3 pl-9 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray [&::-webkit-search-cancel-button]:hidden"
+            class="h-12 w-full bg-transparent pr-4 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray [&::-webkit-search-cancel-button]:hidden"
             @keydown="stopTypeaheadKeys"
           />
         </div>
+        <p
+          class="px-3 pt-2 pb-1 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+        >
+          {{ label }}
+        </p>
         <div class="min-h-0 overflow-y-auto">
           <DropdownMenuCheckboxItem
             v-for="option in visibleOptions"
