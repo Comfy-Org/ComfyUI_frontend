@@ -6,7 +6,7 @@ import { t } from '../../i18n/translations'
 import ServerlessHowItWorksSection from './ServerlessHowItWorksSection.vue'
 
 describe('ServerlessHowItWorksSection', () => {
-  it('walks the three steps from workflow JSON to applications', () => {
+  it('presents three unnumbered cards from workflow JSON to applications', () => {
     render(ServerlessHowItWorksSection, { props: { locale: 'en' } })
 
     expect(
@@ -14,7 +14,10 @@ describe('ServerlessHowItWorksSection', () => {
         name: t('platform.serverlessDeploy.heading', 'en')
       })
     ).toBeTruthy()
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(screen.queryByText('1')).toBeNull()
+    expect(screen.queryByText('2')).toBeNull()
+    expect(screen.queryByText('3')).toBeNull()
     for (const step of [1, 2, 3] as const) {
       expect(
         screen.getByText(t(`platform.howItWorks.${step}.title`, 'en'))

@@ -6,11 +6,12 @@ import { t } from '../../i18n/translations'
 import ProductsSection from './ProductsSection.vue'
 
 describe('ProductsSection', () => {
-  it('links each live product card to its platform page', () => {
+  it('links each live product to its platform page', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
     const cardLinks = [
       ['platform.products.serverless.title', '/platform/comfy-api'],
+      ['platform.products.models.title', '/platform/models'],
       ['platform.products.builder.title', '/platform/builder']
     ] as const
     for (const [key, href] of cardLinks) {
@@ -20,22 +21,18 @@ describe('ProductsSection', () => {
     }
   })
 
-  it('marks Models API as coming soon without a link', () => {
+  it('marks Models API as coming soon and links to its detail page', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
-    expect(
-      screen.queryByRole('link', {
-        name: t('platform.products.models.title', 'en')
-      })
-    ).toBeNull()
     expect(screen.getByText(t('nav.badgeComingSoon', 'en'))).toBeTruthy()
+    expect(
+      screen.getByText(t('platform.products.models.learnMore', 'en'))
+    ).toBeTruthy()
   })
 
-  it('renders no per-card CTA buttons — the whole card is the link', () => {
+  it('uses one link per product card', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
-    expect(
-      screen.queryByRole('link', { name: t('cta.getStarted', 'en') })
-    ).toBeNull()
+    expect(screen.getAllByRole('link')).toHaveLength(3)
   })
 })
