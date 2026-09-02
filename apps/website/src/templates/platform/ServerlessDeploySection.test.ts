@@ -21,7 +21,12 @@ describe('ServerlessDeploySection', () => {
         /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Comfy API\./
       )
     ).toBeTruthy()
-    expect(screen.getByText(/Scanned this ComfyUI install/)).toBeTruthy()
+    expect(
+      screen.getByText(/comfy build init Scanned this ComfyUI install/)
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/comfy build push --release --target linux\/nvidia/)
+    ).toBeTruthy()
 
     await userEvent.click(
       screen.getByRole('tab', {

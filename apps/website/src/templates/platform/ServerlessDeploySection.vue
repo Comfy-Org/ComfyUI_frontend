@@ -8,7 +8,8 @@ import CodeTabs from './CodeTabs.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // Command surface from comfy-cli's build + deploy stack (PRs #801-805):
-// `comfy build init` (or `--from-workflow`), `build push --release`, and
+// `comfy build init` (or `--from-workflow`), `build push --release`, whose
+// `--target` decides whether `deploy up` finds a deployable artifact, and
 // `deploy up`. `init` and `up` both default to the current directory.
 function terminalSegments(transcript: string): CodeTab['segments'] {
   const lines = transcript.split('\n')
@@ -23,7 +24,7 @@ const deployTabs: Record<string, CodeTab> = {
     name: t('platform.serverlessDeploy.tabInstall', locale),
     segments: terminalSegments(`$ comfy build init
 ✔ Scanned this ComfyUI install — custom nodes, models, pinned deps
-$ comfy build push --release
+$ comfy build push --release --target linux/nvidia
 ✔ Build released
 $ comfy deploy up
 ✔ Endpoint live → https://your-build.run.comfy.app`)
@@ -33,7 +34,7 @@ $ comfy deploy up
     segments:
       terminalSegments(`$ comfy build init --from-workflow ./workflow.json
 ✔ Custom nodes and models resolved from your workflow
-$ comfy build push --release
+$ comfy build push --release --target linux/nvidia
 ✔ Build released
 $ comfy deploy up
 ✔ Endpoint live → https://your-build.run.comfy.app`)
