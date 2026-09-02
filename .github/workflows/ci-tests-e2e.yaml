@@ -292,7 +292,11 @@ jobs:
           else
             DIFF_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
           fi
-          NEW_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests | grep '\.spec\.ts$' || true)
+          # git diff and grep are separate statements (not piped) so a git diff failure
+          # (e.g. the fallback sha isn't in the local object store) surfaces as a build
+          # error instead of silently reading as "no new specs" and no-oping the video job.
+          ADDED_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests)
+          NEW_FILES=$(grep '\.spec\.ts$' <<< "$ADDED_FILES" || true)
 
           if [ -z "$NEW_FILES" ]; then
             echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
