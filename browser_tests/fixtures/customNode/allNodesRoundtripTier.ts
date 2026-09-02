@@ -419,16 +419,22 @@ export async function assertRoundtripTier({
             const afterNormalized =
               Array.isArray(after) && after.length === 0 ? null : after
             if (beforeNormalized === null) return true
-            if (Array.isArray(beforeNormalized))
+            if (Array.isArray(beforeNormalized)) {
+              const afterValues = Array.isArray(afterNormalized)
+                ? afterNormalized
+                : afterNormalized !== null &&
+                    typeof afterNormalized === 'object'
+                  ? Object.values(afterNormalized)
+                  : null
               return (
-                Array.isArray(afterNormalized) &&
-                afterNormalized.length >= beforeNormalized.length &&
+                afterValues !== null &&
+                afterValues.length >= beforeNormalized.length &&
                 beforeNormalized.every(
                   (value, index) =>
-                    JSON.stringify(value) ===
-                    JSON.stringify(afterNormalized[index])
+                    JSON.stringify(value) === JSON.stringify(afterValues[index])
                 )
               )
+            }
             if (typeof beforeNormalized === 'object')
               return (
                 typeof afterNormalized === 'object' &&
