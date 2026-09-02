@@ -7,7 +7,7 @@ import type { NodeId } from '@/types/nodeId'
 
 /**
  * Follows serialized link endpoints through node-id remints during
- * `LGraph.configure` (ADR-0008, "Collision recovery lives at the remint
+ * `LGraph.configure` (ADR-ECS, "Collision recovery lives at the remint
  * site").
  *
  * A payload's links name its nodes by their serialized (requested) ids. When

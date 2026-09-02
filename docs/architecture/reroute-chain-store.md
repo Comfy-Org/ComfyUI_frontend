@@ -5,7 +5,7 @@ Status: Accepted (design review; follow-up to the
 [link topology store](link-topology-store.md), PR #13436)
 
 Design record for extracting reroute connectivity state into a dedicated
-store per [ADR 0008](../adr/0008-entity-component-system.md). Amends the
+store per [ADR-ECS](../adr/ECS-entity-component-system.md). Amends the
 `RerouteLinks` component described there.
 
 ## Decision 1: The chain is the single source of truth for membership

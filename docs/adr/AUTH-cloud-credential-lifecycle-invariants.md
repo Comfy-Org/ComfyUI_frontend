@@ -1,4 +1,4 @@
-# 11. Derived Credential Lifecycle for Cloud Auth
+# ADR-AUTH: Cloud Credential Lifecycle Invariants
 
 Date: 2026-07-09
 
@@ -6,7 +6,7 @@ Date: 2026-07-09
 
 Proposed
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)] -->
+<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
 
 ## Context
 
@@ -114,7 +114,7 @@ Alternatives considered:
 
 ## Notes
 
-- Related: [ADR-0003](0003-crdt-based-layout-system.md) is unrelated in domain but
+- Related: [ADR-LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md) is unrelated in domain but
   shares the philosophy of designing invariants that make illegal states
   unrepresentable rather than guarding against them per call site.
 - Tickets: FE-613, FE-950, FE-963, FE-1072. PR: #13511.

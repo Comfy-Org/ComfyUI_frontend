@@ -19,7 +19,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 /**
- * Pins the remint→remap contract for serialized link endpoints (ADR-0008,
+ * Pins the remint→remap contract for serialized link endpoints (ADR-ECS,
  * "Collision recovery lives at the remint site").
  *
  * When `LGraph.configure` adds a payload node whose id collides with a live

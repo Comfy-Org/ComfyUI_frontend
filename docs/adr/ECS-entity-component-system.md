@@ -1,4 +1,4 @@
-# 8. Entity Component System
+# ADR-ECS: Entity Component System
 
 Date: 2026-03-23
 
@@ -74,7 +74,7 @@ This coupling makes it difficult to:
 - Add cross-cutting concerns (undo/redo, serialization, multiplayer CRDT sync, rendering optimization) without modifying every class
 - Test individual aspects of an entity in isolation
 - Evolve rendering, serialization, and execution logic independently
-- Implement the CRDT-based layout system proposed in [ADR 0003](0003-crdt-based-layout-system.md)
+- Implement the CRDT-based layout system proposed in [ADR-LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md)
 
 An Entity Component System (ECS) separates **identity** (entities), **data** (components), and **behavior** (systems), enabling each concern to evolve independently.
 
@@ -358,20 +358,20 @@ System design is deferred to a future ADR. For detailed before/after walkthrough
 
 For the phased migration roadmap with shipping milestones, see [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md). For the full target architecture, see [ECS Target Architecture](../architecture/ecs-target-architecture.md). For an inventory of existing stores that already partially implement ECS patterns, see [Proto-ECS Stores](../architecture/proto-ecs-stores.md).
 
-### Relationship to ADR 0003 (Command Pattern / CRDT)
+### Relationship to ADR-LAYOUT (Command Pattern / CRDT)
 
-[ADR 0003](0003-crdt-based-layout-system.md) defines the target policy that
+[ADR-LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md) defines the target policy that
 durable graph-domain mutations flow through serializable, idempotent commands.
-This ADR (0008) defines the entity data model and dedicated stores that hold it.
+ADR-ECS defines the entity data model and dedicated stores that hold it.
 They are complementary architectural layers:
 
-- **Commands** (ADR 0003) describe the target mutation intent — serializable
+- **Commands** (ADR-LAYOUT) describe the target mutation intent — serializable
   objects that can be logged, replayed, sent over a wire, or undone. On the
   current branch this shape is implemented for layout operations only; graph
   undo remains snapshot-based.
-- **Systems** (ADR 0008) are the target command handlers. Current graph and
+- **Systems** (ADR-ECS) are the target command handlers. Current graph and
   entity classes still coordinate most non-layout mutations.
-- **The dedicated stores** (ADR 0008) hold component data and expose mutation
+- **The dedicated stores** (ADR-ECS) hold component data and expose mutation
   APIs (for example `useLayoutMutations(source)`,
   `widgetValueStore.setValue`). Their transactions are concern-local; no
   workflow transaction spans stores and compatibility registries.
@@ -394,7 +394,7 @@ only the Yjs-backed `layoutStore` uses serializable operations.
 - Components are independently testable — no need to construct an entire `LGraphNode` to test position logic
 - Branded IDs (including the composite `WidgetId` string) prevent a class of bugs where IDs are accidentally used across entity kinds
 - Each dedicated store provides a single source of truth for its concern inside a workflow instance, simplifying debugging and state inspection
-- Aligns with the CRDT layout system direction from ADR 0003
+- Aligns with the CRDT layout system direction from ADR-LAYOUT
 
 ### Negative
 
@@ -423,22 +423,22 @@ The design goal is to preserve ECS modularity while keeping render throughput wi
 
 Companion architecture documents that expand on the design in this ADR:
 
-| Document                                                                                         | Description                                                                                                               |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| [Entity Interactions](../architecture/entity-interactions.md)                                    | Maps all current entity relationships and interaction patterns — the ECS migration baseline                               |
-| [Entity System Structural Problems](../architecture/entity-problems.md)                          | Detailed problem catalog with line-level code references motivating the ECS migration                                     |
-| [Proto-ECS Stores](../architecture/proto-ecs-stores.md)                                          | Inventory of existing Pinia stores that already partially implement ECS patterns                                          |
-| [ECS Target Architecture](../architecture/ecs-target-architecture.md)                            | Full target architecture showing how entities and interactions transform under ECS                                        |
-| [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md)                                  | Phased migration roadmap with shipping milestones and go/no-go criteria                                                   |
-| [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md)                            | Before/after walkthroughs of lifecycle operations (node removal, link creation, etc.)                                     |
-| [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) | Design rationale for modeling subgraphs as node components, not separate entities                                         |
-| [Link Topology Store](../architecture/link-topology-store.md)                                    | Design record for `linkStore` — root-bucketed `LinkId` authority, owner-qualified endpoint indexes, registration protocol |
-| [Reroute Chain Store](../architecture/reroute-chain-store.md)                                    | Design record for the `rerouteStore` — chain state, derived link membership, load-time id dedup                           |
-| [Domain Glossary](../architecture/domain-glossary.md)                                            | Canonical vocabulary for links, reroutes, chains, and membership                                                          |
-| [ADR 0009: Subgraph promoted widgets](0009-subgraph-promoted-widgets-use-linked-inputs.md)       | Follow-up decision for promoted widget identity and value ownership at subgraph boundaries                                |
-| [Appendix: Critical Analysis](../architecture/appendix-critical-analysis.md)                     | Independent verification of the accuracy of the architecture documents                                                    |
-| [Appendix: ECS Pattern Survey](../architecture/appendix-ecs-pattern-survey.md)                   | Survey of bitECS, miniplex, koota, ECSY, Thyseus, and Bevy — patterns adopted, departed, when to revisit                  |
-| [Change Tracker](../architecture/change-tracker.md)                                              | Documents the current undo/redo system that ECS cross-cutting concerns will replace                                       |
+| Document                                                                                             | Description                                                                                                               |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| [Entity Interactions](../architecture/entity-interactions.md)                                        | Maps all current entity relationships and interaction patterns — the ECS migration baseline                               |
+| [Entity System Structural Problems](../architecture/entity-problems.md)                              | Detailed problem catalog with line-level code references motivating the ECS migration                                     |
+| [Proto-ECS Stores](../architecture/proto-ecs-stores.md)                                              | Inventory of existing Pinia stores that already partially implement ECS patterns                                          |
+| [ECS Target Architecture](../architecture/ecs-target-architecture.md)                                | Full target architecture showing how entities and interactions transform under ECS                                        |
+| [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md)                                      | Phased migration roadmap with shipping milestones and go/no-go criteria                                                   |
+| [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md)                                | Before/after walkthroughs of lifecycle operations (node removal, link creation, etc.)                                     |
+| [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)     | Design rationale for modeling subgraphs as node components, not separate entities                                         |
+| [Link Topology Store](../architecture/link-topology-store.md)                                        | Design record for `linkStore` — root-bucketed `LinkId` authority, owner-qualified endpoint indexes, registration protocol |
+| [Reroute Chain Store](../architecture/reroute-chain-store.md)                                        | Design record for the `rerouteStore` — chain state, derived link membership, load-time id dedup                           |
+| [Domain Glossary](../architecture/domain-glossary.md)                                                | Canonical vocabulary for links, reroutes, chains, and membership                                                          |
+| [ADR-PROMOTION: Subgraph promoted widgets](PROMOTION-represent-promoted-widgets-as-linked-inputs.md) | Follow-up decision for promoted widget identity and value ownership at subgraph boundaries                                |
+| [Appendix: Critical Analysis](../architecture/appendix-critical-analysis.md)                         | Independent verification of the accuracy of the architecture documents                                                    |
+| [Appendix: ECS Pattern Survey](../architecture/appendix-ecs-pattern-survey.md)                       | Survey of bitECS, miniplex, koota, ECSY, Thyseus, and Bevy — patterns adopted, departed, when to revisit                  |
+| [Change Tracker](../architecture/change-tracker.md)                                                  | Documents the current undo/redo system that ECS cross-cutting concerns will replace                                       |
 
 ## Notes
 

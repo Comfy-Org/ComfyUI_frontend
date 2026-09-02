@@ -1,4 +1,4 @@
-# 3. Centralized Layout Management with CRDT
+# ADR-LAYOUT: CRDT Layout Intent and Local Measurement
 
 Date: 2025-08-27
 
@@ -35,7 +35,7 @@ The existing system allows each node to directly mutate its position within Lite
 - Accessibility requirements will necessitate DOM-based rendering options
 - Technical debt compounds with each new spatial feature
 
-This decision builds on [ADR-0001 (Merge LiteGraph)](0001-merge-litegraph-into-frontend.md), which enables the architectural restructuring proposed here.
+This decision builds on [ADR-LITEGRAPH (Merge LiteGraph)](LITEGRAPH-integrate-litegraph-into-the-frontend.md), which enables the architectural restructuring proposed here.
 
 ## Decision
 

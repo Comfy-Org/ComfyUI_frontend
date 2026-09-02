@@ -6,7 +6,7 @@ Status: Implemented. Follow-up to the
 [reroute chain store](reroute-chain-store.md).
 
 Design record for extracting the remaining Node-owned components into a
-dedicated store per [ADR 0008](../adr/0008-entity-component-system.md),
+dedicated store per [ADR-ECS](../adr/ECS-entity-component-system.md),
 eliminating the `VueNodeData` mirror and, ultimately, all of
 `src/composables/graph/useGraphNodeManager.ts`.
 
@@ -15,7 +15,7 @@ eliminating the `VueNodeData` mirror and, ultimately, all of
 `nodeDataStore` holds a single plain `NodeState` object per node,
 registered by reference with proxy-returning registration (the
 `BaseWidget` pattern, [reroute store Decision 4](reroute-chain-store.md)).
-ADR 0008's Node component rows (`NodeVisual`, `Execution`, ...) become
+ADR-ECS's Node component rows (`NodeVisual`, `Execution`, ...) become
 field groupings inside `NodeState`, not separate records or stores.
 
 The store uses the same flat root-scoped identity model as link and reroute
@@ -70,7 +70,7 @@ production consumer reads them); they are deleted, not migrated.
 ## Decision 3: Slot identity deferred; `inputs[].link` readers migrate now
 
 `NodeInputSlot` / `NodeOutputSlot` are class instances with methods —
-Slot entity extraction (ADR 0008 `SlotIdentity` etc.) is its own future
+Slot entity extraction (ADR-ECS `SlotIdentity` etc.) is its own future
 phase, so slot _identity_ stays class-side.
 
 Slot _reactivity_ does not wait for it, and is no longer a graft
@@ -275,4 +275,4 @@ Covers node shell state, the `VueNodeData` deletion, and the
 beyond `type`/`apiNode` (`category`, `nodeData`, `description` remain on
 the class/constructor), badges, `WidgetContainer` (already owned by
 `widgetValueStore`), and command-pattern mutators (future work per
-ADR 0003/0008).
+ADR-LAYOUT/ADR-ECS).

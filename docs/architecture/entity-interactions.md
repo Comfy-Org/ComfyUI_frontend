@@ -1,6 +1,6 @@
 # Entity Interactions (Current System)
 
-This document maps the relationships and interaction patterns between all entity types in the litegraph layer as it exists today. It serves as a baseline for the ECS migration planned in [ADR 0008](../adr/0008-entity-component-system.md), whose target is realized as a set of dedicated Pinia stores (see [Proto-ECS Stores](proto-ecs-stores.md)).
+This document maps the relationships and interaction patterns between all entity types in the litegraph layer as it exists today. It serves as a baseline for the ECS migration planned in [ADR-ECS](../adr/ECS-entity-component-system.md), whose target is realized as a set of dedicated Pinia stores (see [Proto-ECS Stores](proto-ecs-stores.md)).
 
 ## Entities
 

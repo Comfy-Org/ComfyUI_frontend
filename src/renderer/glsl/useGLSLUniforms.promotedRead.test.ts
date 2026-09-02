@@ -16,7 +16,7 @@ import type { UUID } from '@/utils/uuid'
  * Regression guard for the GLSL live preview breaking on *promoted* subgraph
  * widget edits (QA 2026-07-20, Terry Jia; fixed by #13875).
  *
- * Under ADR 0009 link-only promotion, a promoted proxy widget's live value is
+ * Under ADR-PROMOTION link-only promotion, a promoted proxy widget's live value is
  * stored at the host widget key (`hostWidgetId`), while the uniform source is
  * still discovered from the interior source node. `useGLSLUniforms` must read
  * the host key so edits to the promoted curve/range proxy reach the renderer.

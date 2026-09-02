@@ -2,7 +2,7 @@
 
 This appendix explains where the existing promotion system needs
 `disambiguatingSourceNodeId`, why that need appears, and how the canonical form
-chosen by [ADR 0009](../0009-subgraph-promoted-widgets-use-linked-inputs.md)
+chosen by [ADR-PROMOTION](../PROMOTION-represent-promoted-widgets-as-linked-inputs.md)
 removes the pattern from promoted-widget identity.
 
 ## Why the disambiguator exists
@@ -62,7 +62,7 @@ identity model that asks host UI state to identify private nested internals.
 
 ## New promoted-widget identity
 
-ADR 0009 moves promoted value identity to the host boundary:
+ADR-PROMOTION moves promoted value identity to the host boundary:
 
 ```ts
 type PromotedWidgetUiIdentity = {

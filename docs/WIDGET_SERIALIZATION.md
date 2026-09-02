@@ -44,7 +44,7 @@ When the pasted PrimitiveNode reconnects to the pasted target node, `_createWidg
 
 But `control_after_generate` is a **secondary** widget created by `addValueControlWidgets()`, which reads its initial value from `this.widgets_values?.[1]` (line 263). That value was lost during clone→serialize, so it falls back to `'fixed'` (line 265).
 
-See [ADR-0006](adr/0006-primitive-node-copy-paste-lifecycle.md) for proposed fixes and design tradeoffs.
+See [ADR-COPY](adr/COPY-preserve-primitive-widget-values-across-copy-and-paste.md) for proposed fixes and design tradeoffs.
 
 ## Code references
 

@@ -1,4 +1,4 @@
-# 15. Adopt Fallow
+# ADR-FALLOW: Adopt Fallow with New-Only Baselines
 
 Date: 2026-06-29
 
@@ -6,7 +6,7 @@ Date: 2026-06-29
 
 Proposed
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)] -->
+<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
 
 ## Context
 

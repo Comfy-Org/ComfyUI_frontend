@@ -1,4 +1,4 @@
-# 7. NodeExecutionOutput Passthrough Schema Design
+# ADR-OPEN: Output Passthrough for Extensible Nodes
 
 Date: 2026-03-11
 

@@ -4,7 +4,7 @@ Date: 2026-07-05 (retroactive design record; implemented in PR #13436)
 Status: Accepted
 
 Design record for extracting link topology into a dedicated store per
-[ADR 0008](../adr/0008-entity-component-system.md). Amends the
+[ADR-ECS](../adr/ECS-entity-component-system.md). Amends the
 `LinkEndpoints` component described there. The
 [Reroute Chain Store](reroute-chain-store.md) builds directly on this
 store; shared vocabulary lives in the

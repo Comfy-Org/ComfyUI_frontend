@@ -4,8 +4,8 @@ Status: Current implementation audit
 Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This audit classifies current graph-domain writes and compares them with
-[ADR 0003](../../adr/0003-crdt-based-layout-system.md)
-and [ADR 0008](../../adr/0008-entity-component-system.md). The related
+[ADR-LAYOUT](../../adr/LAYOUT-crdt-layout-intent-and-local-measurement.md)
+and [ADR-ECS](../../adr/ECS-entity-component-system.md). The related
 [decision traceability matrix](ecs-decision-traceability.md) maps each claim to
 the wider design set.
 
@@ -19,7 +19,7 @@ the wider design set.
 | Legacy orchestration           | `LGraph.add/remove/clear/configure`, connect/disconnect, reroute splice/removal, subgraph promotion, `replaceWithMapping`                                                | Preserves extension callbacks, serialization, graph indexes, and compatibility order                                   | Imperative, reentrant, exception-sensitive sequences span stores and class containers without atomicity or rollback                |
 | Derived read-only data         | Reroute membership, link owner views and slot indexes, badge projections, layout spatial indexes, renderer link/slot geometry                                            | Recomputed from an authority; no second persisted copy                                                                 | Some projections update after individual writes and can expose intermediate state; compatibility views still expose mutable shells |
 
-The first row is the only current implementation that matches ADR 0003's
+The first row is the only current implementation that matches ADR-LAYOUT's
 command shape in a meaningful sense. The other rows may be centralized or
 reactive, but that is not command-driven mutation.
 
@@ -48,7 +48,7 @@ reactive, but that is not command-driven mutation.
 | Execution order                | `computeExecutionOrder` assigns `node.order`; configure restores and serialization emits it                                   | Derived projection plus direct class state | Derived scheduling data can become an independent persisted mutation channel.                                                                |
 | Badges and reroute membership  | `badgeSystem` computed projections; `rerouteStore.buildMembershipIndex`                                                       | Derived read-only data                     | Correctly omitted from serialization, command, and undo state as independent entities.                                                       |
 
-## ADR 0003 properties
+## ADR-LAYOUT properties
 
 | Property      | Layout operations                                                                                                   | Store actions and proxy writes                                                                                           | Legacy graph operation                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |

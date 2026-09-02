@@ -321,7 +321,7 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     // Release the reused graph's store entities before configuring a second
     // graph with the same workflow id: the dedicated stores are keyed by root
     // graph id, and two live graphs claiming the same id are a collision the
-    // stores resolve by reminting (see ADR-0003), which is not what this test
+    // stores resolve by reminting (see ADR-LAYOUT), which is not what this test
     // is about.
     reused.clear()
 

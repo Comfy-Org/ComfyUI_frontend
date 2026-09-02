@@ -5,7 +5,7 @@ type UUID = string
 /**
  * A widget's canonical identity: `graphId:nodeId:name`.
  * Duplicate widget names must be normalized before deriving this ID.
- * See ADR 0008's "Widget identity keys on name" section.
+ * See ADR-ECS's "Widget identity keys on name" section.
  */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 

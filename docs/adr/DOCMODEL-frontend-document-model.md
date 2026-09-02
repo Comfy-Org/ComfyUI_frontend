@@ -13,14 +13,14 @@ Proposed
 This ADR salvages the general document-system proposal from
 `origin/adr/frontend-document-model` (`8606edcbb7`, authored by
 Ben Cooley) after its original `0018` number collided with the already-merged
-[ADR-0018](0018-node-id-reminting-at-the-merge-boundary.md). It now lives as
+[ADR MINT](MINT-merge-identity-for-node-transfers.md). It now lives as
 ADR-0026.
 
-[ADR-0024](0024-in-app-agent-offscreen-graphs.md) remains the agent-specific
+[ADR AGENT](AGENT-graph-activation-and-document-objects-for-in-app-agent-targets.md) remains the agent-specific
 `GraphDocument` and activation contract for offscreen targets, queues, and
 CRDT follower recovery. This ADR is the broader frontend document model that
 explains why workflow identity, lifecycle, sidecars, and event routing need a
-first-class document owner at all. [ADR-0025](0025-in-app-agent-crdt-follower-and-distribution.md)
+first-class document owner at all. [ADR FOLLOWER](FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)
 continues to govern the CRDT follower and distribution boundaries.
 
 A traditional multi-document editor (VS Code, Photoshop, any word processor)
@@ -636,7 +636,7 @@ type-agnostic) but nothing here builds them.
   workflow session data such as graph content, undo/redo records, execution
   state, warnings, view state, and dirty state.
 - **`GraphDocument`** — the agent-facing workflow document shape specified by
-  [ADR-0024](0024-in-app-agent-offscreen-graphs.md). It specializes this
+  [ADR AGENT](AGENT-graph-activation-and-document-objects-for-in-app-agent-targets.md). It specializes this
   ADR's broader document model for target routing and offscreen application.
 - **Document uid** — an in-memory session identifier minted when a document
   opens and erased when it closes. It is not persisted into workflow JSON.
@@ -650,7 +650,7 @@ type-agnostic) but nothing here builds them.
 - **Facade** — a compatibility surface, such as `app.graph`, that continues to
   look global to extensions while resolving through the active document.
 - **ECS** — Entity Component System, the store-oriented frontend architecture
-  described in [ADR-0008](0008-entity-component-system.md).
+  described in [ADR ECS](ECS-entity-component-system.md).
 - **CRDT follower** — the frontend path governed by
-  [ADR-0025](0025-in-app-agent-crdt-follower-and-distribution.md) that applies
+  [ADR FOLLOWER](FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) that applies
   host-produced document updates without becoming the merge authority.

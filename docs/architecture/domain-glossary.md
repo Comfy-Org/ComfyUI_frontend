@@ -8,7 +8,7 @@ Design records that rely on this vocabulary:
 [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md),
 [Node Badge Store](node-badge-store.md),
-[ADR 0008](../adr/0008-entity-component-system.md).
+[ADR-ECS](../adr/ECS-entity-component-system.md).
 
 ## Badges
 

@@ -8,8 +8,8 @@ Detailed evidence and unresolved risks are in the focused audits under
 [References](#references).
 
 The governing decisions remain
-[ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
-[ADR 0008](../../adr/0008-entity-component-system.md). This plan does not amend
+[ADR-LAYOUT](../../adr/LAYOUT-crdt-layout-intent-and-local-measurement.md) and
+[ADR-ECS](../../adr/ECS-entity-component-system.md). This plan does not amend
 them.
 
 ## Direction

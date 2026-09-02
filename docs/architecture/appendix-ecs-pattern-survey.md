@@ -64,7 +64,7 @@ keys. There is no central World or universal entity-ID representation.
 
 ## References
 
-- [ADR 0008: Entity Component System](../adr/0008-entity-component-system.md)
+- [ADR-ECS: Entity Component System](../adr/ECS-entity-component-system.md)
 - [ECS target architecture](ecs-target-architecture.md)
 - [ECS migration plan](ecs/ecs-migration-plan.md)
 - [Proto-ECS stores](proto-ecs-stores.md)

@@ -1,4 +1,4 @@
-# 20. Bound Renderer Reactivity
+# ADR-FAR: Frame-Atomic Rendering
 
 Date: 2026-08-26
 
@@ -119,7 +119,7 @@ Specifically:
 ## Notes
 
 This decision narrows the renderer implications of
-[ADR 0008](0008-entity-component-system.md). The motivating regression and
+[ADR-ECS](ECS-entity-component-system.md). The motivating regression and
 frame-local render-order proof are tracked in
 [issue #15977](https://github.com/Comfy-Org/ComfyUI_frontend/issues/15977),
 [PR #15980](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15980), and

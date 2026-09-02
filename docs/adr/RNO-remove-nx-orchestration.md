@@ -1,4 +1,4 @@
-# 10. Remove Nx Orchestration
+# ADR-RNO: Remove Nx Orchestration
 
 Date: 2026-05-19
 
@@ -6,11 +6,11 @@ Date: 2026-05-19
 
 Accepted
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)] -->
+<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
 
 ## Context
 
-[ADR-0002](0002-monorepo-conversion.md) adopted [Nx](https://nx.dev/) as a tooling option for managing the
+[ADR-MONOREPO](MONOREPO-adopt-a-pnpm-workspace-monorepo.md) adopted [Nx](https://nx.dev/) as a tooling option for managing the
 ComfyUI Frontend monorepo on top of pnpm workspaces. Nx was introduced as task
 orchestration to coordinate builds, tests, lints, and types across the apps and
 packages workspaces.
@@ -55,7 +55,7 @@ Concretely, this change:
   `.github/workflows/release-draft-create.yaml`) to call pnpm/native CLIs
   directly.
 - Updates `AGENTS.md`, `TROUBLESHOOTING.md`, and
-  [ADR-0002](0002-monorepo-conversion.md) to reflect the new tooling story.
+  [ADR-MONOREPO](MONOREPO-adopt-a-pnpm-workspace-monorepo.md) to reflect the new tooling story.
 - Cleans up Nx-specific lint/format/ignore rules in `.oxlintrc.json`,
   `eslint.config.ts`, `vite.config.mts`, and `.gitignore`.
 

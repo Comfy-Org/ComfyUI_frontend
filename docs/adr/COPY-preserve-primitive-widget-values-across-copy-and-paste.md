@@ -1,4 +1,4 @@
-# 6. PrimitiveNode Copy/Paste Lifecycle
+# ADR-COPY: Preserve Primitive Widget Values Across Copy and Paste
 
 Date: 2026-02-22
 

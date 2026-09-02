@@ -2,7 +2,7 @@
 
 This appendix compares the legacy promoted-widget systems with the canonical
 linked-input model chosen by
-[ADR 0009](../0009-subgraph-promoted-widgets-use-linked-inputs.md).
+[ADR-PROMOTION](../PROMOTION-represent-promoted-widgets-as-linked-inputs.md).
 
 | Concern                    | Legacy `properties.proxyWidgets` promotions                                                              | Linked `SubgraphInput` promotions before migration                                               | New canonical linked-input system                                                                           |
 | -------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |

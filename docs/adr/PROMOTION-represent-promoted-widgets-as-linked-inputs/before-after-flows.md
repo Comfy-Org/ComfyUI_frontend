@@ -1,7 +1,7 @@
 # Appendix: Before and after flows
 
 This appendix visualizes the ownership and migration flows described in
-[ADR 0009](../0009-subgraph-promoted-widgets-use-linked-inputs.md).
+[ADR-PROMOTION](../PROMOTION-represent-promoted-widgets-as-linked-inputs.md).
 
 ## Before: proxy widgets and linked inputs overlap
 

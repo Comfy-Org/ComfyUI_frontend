@@ -18,7 +18,7 @@ import { graphToPrompt } from '@/utils/executionUtil'
 
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060
 // (FE-1456): once a Custom Combo node's `choice` widget is promoted through
-// a subgraph boundary (ADR 0009 link-only promotion), the hidden `index`
+// a subgraph boundary (ADR-PROMOTION link-only promotion), the hidden `index`
 // widget must resolve the current *host* value, not the frozen interior
 // widget value.
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboSubgraphPromotion'

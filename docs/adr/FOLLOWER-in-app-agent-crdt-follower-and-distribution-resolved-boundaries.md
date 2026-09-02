@@ -1,4 +1,4 @@
-# 25. In-App Agent CRDT Follower and Distribution-Resolved Boundaries
+# ADR-FOLLOWER: In-App Agent CRDT Follower and Distribution-Resolved Boundaries
 
 Date: 2026-08-21
 
@@ -23,7 +23,7 @@ semantic Y.Doc into a `GraphMutation[]` and applies them to `app.graph` through 
 `LitegraphMutator` (`src/workbench/extensions/agent/crdt/`). That path renders, but it
 writes the imperative litegraph layer that the store migration
 ([#14246](https://github.com/Comfy-Org/ComfyUI_frontend/pull/14246) and the
-`layoutStore` pattern from [ADR-0003](0003-crdt-based-layout-system.md)) is replacing,
+`layoutStore` pattern from [LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md)) is replacing,
 and it introduces a second semantic model parallel to the frontend domain stores. It is
 a disposable stopgap, not the durable seam.
 
@@ -61,7 +61,7 @@ snapshot-diff, no `LitegraphMutator` in the end state.
 
 - litegraph is a **render target / compatibility boundary**, not the state seam. State
   lives in the stores; litegraph is painted from them.
-- **Layout stays its own frontend-owned Y.Doc** ([ADR-0003](0003-crdt-based-layout-system.md)).
+- **Layout stays its own frontend-owned Y.Doc** ([LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md)).
   `pos`, pan/zoom, live drags, and groups do not go in the shared semantic doc; the two
   docs are composed, not merged.
 - **The follower never writes the shared doc.** Raw Yjs updates flow host to follower
@@ -121,7 +121,7 @@ riding `api.socket` and connects to the agent directly.
 **Enforcement.** Guard the seams with the centralized `assert(cond, msg)` from
 `src/base/assert.ts` (DEV throws, prod reports to Sentry); the message must name the
 broken invariant and link this ADR (for example: "breaks CRDT follower invariant:
-followers never write the shared doc — see ADR-0025"). A `.agents/checks/` profile should
+followers never write the shared doc — see FOLLOWER"). A `.agents/checks/` profile should
 flag direct shared-doc mutation, peer raw-update ingestion, optimistic-overlay-as-update,
 layout fields written into the shared semantic doc, and `op_id` regeneration. Keep the
 op-layer package DOM/litegraph-free via the import-graph guard.
@@ -190,8 +190,8 @@ remains rejected: it clobbers concurrent agent edits mid-turn and kills op-log r
 
 This ADR mirrors two cross-repo workspace decisions (ADR-010 follower direction, ADR-011
 one-branch distribution strategy) into the repository they govern, per the project's
-per-repo governance rule. It relates to [ADR-0003](0003-crdt-based-layout-system.md)
-(CRDT layout) and [ADR-0008](0008-entity-component-system.md) (whose unified `World` was
+per-repo governance rule. It relates to [LAYOUT](LAYOUT-crdt-layout-intent-and-local-measurement.md)
+(CRDT layout) and [ECS](ECS-entity-component-system.md) (whose unified `World` was
 dropped in favor of dedicated Pinia stores). Linear FE-1330 tracks the store-migration
 dependency.
 
@@ -205,6 +205,6 @@ The follower code on this branch splits into a durable core and a disposable spi
   and the `useAgentCrdtFollower` orchestrator shell.
 - **Dispose (spike-only, no further investment):** `semanticProjector`, `diffSnapshots`,
   `graphMutations`, `litegraphMutator`, and `followerSeam.integration.test.ts`. These are
-  the interim ADR-0009-lineage render path and are deleted when the
+  the interim PROMOTION-lineage render path and are deleted when the
   apply-remote-update→store adapter lands. Coverage or review findings on these files
   route to the store-adapter work, not to polishing the spike.

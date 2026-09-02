@@ -1,6 +1,6 @@
 # Entity System Structural Problems
 
-This document catalogs the structural problems in the current litegraph entity system. It provides the concrete "why" behind the ECS migration proposed in [ADR 0008](../adr/0008-entity-component-system.md). For the as-is relationship map, see [Entity Interactions](entity-interactions.md).
+This document catalogs the structural problems in the current litegraph entity system. It provides the concrete "why" behind the ECS migration proposed in [ADR-ECS](../adr/ECS-entity-component-system.md). For the as-is relationship map, see [Entity Interactions](entity-interactions.md).
 
 All file references are relative to `src/lib/litegraph/src/`.
 

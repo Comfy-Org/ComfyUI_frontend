@@ -36,7 +36,7 @@ import {
  * `proxyWidgets` clearing and preview auto-exposure. None of that outlives the
  * paste. This file starts where that one stops: what the *deletions* do.
  *
- * These assertions characterise the ECS stores (ADR-0003). Where they differ
+ * These assertions characterise the ECS stores (ADR-LAYOUT). Where they differ
  * from pre-ECS `main` — phantom reroute floating entries, widget-store leaks
  * on host deletion — the delta is intended and called out inline.
  */
@@ -255,7 +255,7 @@ describe('subgraph copy/paste then delete in both orders', () => {
     // On main, `createReroute` seeded `floatingLinkIds` from a non-floating
     // link, so the reroute claimed a floating link the graph never had. The
     // ECS link store keeps floating membership consistent with the graph:
-    // no phantom entry at paste time (ADR-0003).
+    // no phantom entry at paste time (ADR-LAYOUT).
     expect([...f.reroute.floatingLinkIds]).toStrictEqual([])
     expect(f.rootGraph.floatingLinks.size).toBe(0)
   })
@@ -342,7 +342,7 @@ describe('subgraph copy/paste then delete in both orders', () => {
     expect(f.rootGraph.getLink(f.copyInLinkId)).toBeUndefined()
 
     // Same release semantics as above: the deleted copy's widget states are
-    // removed from the store rather than leaking (see ADR-0003).
+    // removed from the store rather than leaking (see ADR-LAYOUT).
     expect(storedWidgets(f.rootGraph, f.copy)).toStrictEqual([])
   })
 
@@ -370,7 +370,7 @@ describe('subgraph copy/paste then delete in both orders', () => {
     // link. Where main kept the reroute alive via a phantom `floatingLinkIds`
     // entry (no matching graph record), the ECS link store materialises the
     // preserved chain as an actual floating link in `graph.floatingLinks`
-    // (ADR-0003). Both deleted hosts' widget states are released rather than
+    // (ADR-LAYOUT). Both deleted hosts' widget states are released rather than
     // leaked.
     const [floatingId] = [...originalFirst.rootGraph.floatingLinks.keys()]
     expect(floatingId).toBeDefined()

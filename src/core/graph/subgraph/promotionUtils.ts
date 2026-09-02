@@ -64,7 +64,7 @@ export function findHostInputForPromotion(
  * Host-first resolver for promoted widget value keys.
  *
  * Anchors on the host `SubgraphNode.inputs` (which own the promoted `widgetId`
- * per ADR 0009) and walks host -> interior only to key each host widget by the
+ * per ADR-PROMOTION) and walks host -> interior only to key each host widget by the
  * interior source it projects. Consumers that discover an interior source can
  * then look up the host value key without a per-source reverse walk.
  */
