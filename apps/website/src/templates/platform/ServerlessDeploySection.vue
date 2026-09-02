@@ -62,6 +62,7 @@ $ comfy deploy up
         :label="t('platform.serverlessDeploy.heading', locale)"
         content-class="bg-[#2a2230]"
         list-class="mx-auto sm:flex sm:w-fit"
+        trigger-class="px-2"
       />
     </div>
   </section>
