@@ -284,6 +284,24 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   }
 }
 
+/**
+ * Fire-and-forget: a telemetry chunk-load failure must never prevent the
+ * token-less WebSocket connect fallback from proceeding.
+ */
+async function trackWsTokenUnavailable(): Promise<void> {
+  try {
+    if (!(await shouldRemintCloudRequest())) return
+    const { useTelemetry } = await import('@/platform/telemetry')
+    useTelemetry()?.trackUnifiedAuthRetry({
+      transport: 'ws',
+      outcome: 'failed',
+      failure_reason: 'token_unavailable'
+    })
+  } catch (err) {
+    console.warn('Failed to report WebSocket token unavailability:', err)
+  }
+}
+
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -690,6 +708,7 @@ export class ComfyApi extends EventTarget {
           params.set('token', authToken)
         }
       } catch (error) {
+        void trackWsTokenUnavailable()
         // Continue without auth token if there's an error
         console.warn(
           'Could not get auth token for WebSocket connection:',
