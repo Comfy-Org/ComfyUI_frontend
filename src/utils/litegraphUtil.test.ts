@@ -282,6 +282,21 @@ describe('migrateWidgetsValues', () => {
     ])
   })
 
+  it('preserves compacted values for dynamic widgets after a skipped widget', () => {
+    const dynamicInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui', false),
+      makeWidget('extra')
+    ]
+
+    expect(
+      migrateWidgetsValues(dynamicInputDefs, widgets, ['av', 'extra value'])
+    ).toEqual(['av', 'extra value'])
+  })
+
   it('continues to migrate a value array without skipped widgets', () => {
     const widgets = [makeWidget('steps')]
 

@@ -219,6 +219,17 @@ export function migrateWidgetsValues<TWidgetValue>(
       : [!!input.forceInput]
   })
 
+  const serializableWidgetCount = filter(
+    widgets,
+    (widget) => widget.serialize !== false
+  ).length
+  if (
+    !widgetIndexHasForceInput.includes(true) &&
+    widgetsValues.length === serializableWidgetCount
+  ) {
+    return widgetsValues
+  }
+
   const compactedWidgetValues = filter(
     widgetsValues,
     (_, index) => widgets[index]?.serialize !== false
