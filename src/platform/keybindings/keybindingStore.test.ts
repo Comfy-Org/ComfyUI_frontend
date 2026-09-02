@@ -14,7 +14,7 @@ describe('useKeybindingStore', () => {
     store.addDefaultKeybinding(keybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(keybinding.combo)).toEqual(keybinding)
+    expect(store.getKeybindings(keybinding.combo)).toEqual([keybinding])
   })
 
   it('should add and retrieve user keybindings', () => {
@@ -27,7 +27,7 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(keybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(keybinding.combo)).toEqual(keybinding)
+    expect(store.getKeybindings(keybinding.combo)).toEqual([keybinding])
   })
 
   it('should get keybindings by command id', () => {
@@ -57,7 +57,7 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(userKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(userKeybinding.combo)).toEqual(userKeybinding)
+    expect(store.getKeybindings(userKeybinding.combo)).toEqual([userKeybinding])
   })
 
   it('Should allow binding to unsetted default keybindings', () => {
@@ -76,7 +76,7 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(userKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(userKeybinding.combo)).toEqual(userKeybinding)
+    expect(store.getKeybindings(userKeybinding.combo)).toEqual([userKeybinding])
   })
 
   it('should unset user keybindings', () => {
@@ -133,7 +133,7 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(keybinding2)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(keybinding2.combo)).toEqual(keybinding2)
+    expect(store.getKeybindings(keybinding2.combo)).toEqual([keybinding2])
   })
 
   it('should not throw an error when unsetting non-existent keybindings', () => {
@@ -180,9 +180,9 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(defaultKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(defaultKeybinding.combo)).toEqual(
+    expect(store.getKeybindings(defaultKeybinding.combo)).toEqual([
       defaultKeybinding
-    )
+    ])
   })
 
   it('Should accept same keybinding from default and user', () => {
@@ -195,7 +195,7 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(keybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(keybinding.combo)).toEqual(keybinding)
+    expect(store.getKeybindings(keybinding.combo)).toEqual([keybinding])
   })
 
   it('Should keep previously customized keybindings after default keybindings change', () => {
@@ -227,27 +227,27 @@ describe('useKeybindingStore', () => {
     }
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
+    expect(store.getKeybindings(userNewKeybindings[0].combo)).toEqual([
       userNewKeybindings[0]
-    )
+    ])
 
     for (const keybinding of userUnsetKeybindings) {
       store.unsetKeybinding(keybinding)
     }
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
+    expect(store.getKeybindings(userNewKeybindings[0].combo)).toEqual([
       userNewKeybindings[0]
-    )
+    ])
 
     for (const keybinding of userNewKeybindings) {
       store.addUserKeybinding(keybinding)
     }
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
+    expect(store.getKeybindings(userNewKeybindings[0].combo)).toEqual([
       userNewKeybindings[0]
-    )
+    ])
   })
 
   it('should replace the previous keybinding with a new one for the same combo and unset the old command', () => {
@@ -265,10 +265,12 @@ describe('useKeybindingStore', () => {
       combo: { key: 'A', ctrl: true }
     })
 
-    store.updateKeybindingOnCommand(newKeybinding)
+    store.updateSpecificKeybinding(oldKeybinding, newKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(newKeybinding.combo)?.commandId).toBe('command2')
+    expect(store.getKeybindings(newKeybinding.combo)[0]?.commandId).toBe(
+      'command2'
+    )
     expect(store.getKeybindingsByCommandId('command1')).toHaveLength(0)
   })
 
@@ -325,7 +327,7 @@ describe('useKeybindingStore', () => {
     })
 
     store.addDefaultKeybinding(defaultKeybinding)
-    store.updateKeybindingOnCommand(userKeybinding)
+    store.updateSpecificKeybinding(defaultKeybinding, userKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
@@ -354,11 +356,10 @@ describe('useKeybindingStore', () => {
     store.unsetKeybinding(defaultKeybinding)
     expect(store.keybindings).toHaveLength(0)
 
-    const serializedCombo = defaultKeybinding.combo.serialize()
-    const userUnsetKeybindings = store.getUserUnsetKeybindings()
-    expect(userUnsetKeybindings[serializedCombo]).toBeTruthy()
     expect(
-      userUnsetKeybindings[serializedCombo].equals(defaultKeybinding)
+      store
+        .getUserUnsetKeybindings()
+        .some((binding) => binding.equals(defaultKeybinding))
     ).toBe(true)
 
     const result = store.resetKeybindingForCommand('test.command')
@@ -369,7 +370,7 @@ describe('useKeybindingStore', () => {
       defaultKeybinding
     )
 
-    expect(store.getUserUnsetKeybindings()[serializedCombo]).toBeUndefined()
+    expect(store.getUserUnsetKeybindings()).toHaveLength(0)
   })
 
   it('should handle complex scenario with both unset and user keybindings', () => {
@@ -543,5 +544,235 @@ describe('useKeybindingStore', () => {
       expect(result).toBe(true)
       expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(0)
     })
+  })
+
+  describe('dialog-scoped bindings on one combo', () => {
+    const workspaceUndo = () =>
+      new KeybindingImpl({
+        commandId: 'test.undo',
+        combo: { key: 'z', ctrl: true }
+      })
+    const maskEditorUndo = () =>
+      new KeybindingImpl({
+        commandId: 'test.maskEditor.undo',
+        combo: { key: 'z', ctrl: true },
+        dialogKey: 'global-mask-editor'
+      })
+
+    it('keeps a workspace default and a dialog-scoped default apart', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(workspaceUndo())
+      store.addDefaultKeybinding(maskEditorUndo())
+
+      expect(store.getKeybindings(workspaceUndo().combo)).toEqual([
+        workspaceUndo()
+      ])
+      expect(
+        store.getKeybindings(workspaceUndo().combo, 'global-mask-editor')
+      ).toEqual([maskEditorUndo()])
+    })
+
+    it('rejects a default on the same combo and scope', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(maskEditorUndo())
+
+      expect(() =>
+        store.addDefaultKeybinding(
+          new KeybindingImpl({
+            commandId: 'test.other',
+            combo: { key: 'z', ctrl: true },
+            dialogKey: 'global-mask-editor'
+          })
+        )
+      ).toThrow('already exists on test.maskEditor.undo')
+    })
+
+    it('only unsets the default a user binding shares a scope with', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(workspaceUndo())
+      store.addDefaultKeybinding(maskEditorUndo())
+
+      const userBinding = new KeybindingImpl({
+        commandId: 'test.save',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(userBinding)
+
+      expect(store.getKeybindings(userBinding.combo)).toEqual([userBinding])
+      expect(
+        store.getKeybindings(userBinding.combo, 'global-mask-editor')
+      ).toEqual([maskEditorUndo()])
+      expect(store.getUserUnsetKeybindings()).toEqual([workspaceUndo()])
+    })
+
+    it('replaces only the user binding a new user binding shares a scope with', () => {
+      const store = useKeybindingStore()
+      store.addUserKeybinding(maskEditorUndo())
+      const userBinding = new KeybindingImpl({
+        commandId: 'test.save',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(userBinding)
+      const replacement = new KeybindingImpl({
+        commandId: 'test.other',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(replacement)
+
+      expect(store.getUserKeybindings()).toEqual([
+        maskEditorUndo(),
+        replacement
+      ])
+    })
+
+    it('drops the user binding that took a default’s place when the default is added back', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(workspaceUndo())
+      store.addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.save',
+          combo: { key: 'z', ctrl: true }
+        })
+      )
+      store.addUserKeybinding(workspaceUndo())
+
+      expect(store.getUserKeybindings()).toEqual([])
+      expect(store.getUserUnsetKeybindings()).toEqual([])
+      expect(store.getKeybindings(workspaceUndo().combo)).toEqual([
+        workspaceUndo()
+      ])
+    })
+
+    it('prefers a user binding over a default registered after it', () => {
+      const store = useKeybindingStore()
+      const userBinding = new KeybindingImpl({
+        commandId: 'test.save',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(userBinding)
+      store.addDefaultKeybinding(workspaceUndo())
+
+      expect(store.getKeybindings(userBinding.combo)).toEqual([
+        userBinding,
+        workspaceUndo()
+      ])
+      expect(store.keybindings).toEqual([userBinding])
+      expect(store.getKeybindingsByCommandId('test.undo')).toEqual([])
+      expect(store.isCommandKeybindingModified('test.undo')).toBe(true)
+    })
+
+    it('collapses a default registered after an identical user binding', () => {
+      const store = useKeybindingStore()
+      store.addUserKeybinding(workspaceUndo())
+      store.addDefaultKeybinding(workspaceUndo())
+
+      expect(store.getUserKeybindings()).toEqual([])
+      expect(store.keybindings).toEqual([workspaceUndo()])
+      expect(store.isCommandKeybindingModified('test.undo')).toBe(false)
+    })
+
+    it('reclaims the combo when resetting a command whose default a user binding took', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(workspaceUndo())
+      const userBinding = new KeybindingImpl({
+        commandId: 'test.save',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(userBinding)
+
+      expect(store.resetKeybindingForCommand('test.undo')).toBe(true)
+      expect(store.getKeybindingsByCommandId('test.save')).toEqual([])
+      expect(store.getKeybindings(userBinding.combo)).toEqual([workspaceUndo()])
+      expect(store.keybindings).toEqual([workspaceUndo()])
+    })
+  })
+
+  describe('when clauses on one combo', () => {
+    const sidebar = () =>
+      new KeybindingImpl({ commandId: 'test.sidebar', combo: { key: 'w' } })
+    const pan = () =>
+      new KeybindingImpl({
+        commandId: 'test.pan',
+        combo: { key: 'w' },
+        when: 'test.wasdMode'
+      })
+
+    it('keeps bindings with different clauses and tries the narrower first', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(sidebar())
+      store.addDefaultKeybinding(pan())
+
+      expect(store.getKeybindings(sidebar().combo)).toEqual([pan(), sidebar()])
+      expect(store.keybindings).toEqual([sidebar(), pan()])
+    })
+
+    it('rejects a default with the same clause', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(pan())
+
+      expect(() =>
+        store.addDefaultKeybinding(
+          new KeybindingImpl({
+            commandId: 'test.other',
+            combo: { key: 'w' },
+            when: 'test.wasdMode'
+          })
+        )
+      ).toThrow('already exists on test.pan')
+    })
+
+    it('treats differently spelled clauses as the same clause', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.a',
+          combo: { key: 'w' },
+          when: 'b && !a'
+        })
+      )
+      const userBinding = new KeybindingImpl({
+        commandId: 'test.b',
+        combo: { key: 'w' },
+        when: '!a && b'
+      })
+      store.addUserKeybinding(userBinding)
+
+      expect(store.getKeybindings(userBinding.combo)).toEqual([userBinding])
+      expect(store.getUserUnsetKeybindings()).toHaveLength(1)
+    })
+  })
+
+  it('treats a binding that matches the default combo but not its scope as modified', () => {
+    const store = useKeybindingStore()
+    const defaultBinding = new KeybindingImpl({
+      commandId: 'test.delete',
+      combo: { key: 'Delete' },
+      targetElementId: 'graph-canvas-container'
+    })
+    store.addDefaultKeybinding(defaultBinding)
+    store.updateSpecificKeybinding(
+      defaultBinding,
+      new KeybindingImpl({ commandId: 'test.delete', combo: { key: 'Delete' } })
+    )
+
+    expect(store.isCommandKeybindingModified('test.delete')).toBe(true)
+    expect(store.resetKeybindingForCommand('test.delete')).toBe(true)
+    expect(store.getKeybindingByCommandId('test.delete')).toEqual(
+      defaultBinding
+    )
+  })
+
+  it('does not record a user binding identical to an active default', () => {
+    const store = useKeybindingStore()
+    const keybinding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'J', ctrl: true }
+    })
+    store.addDefaultKeybinding(keybinding)
+    store.addUserKeybinding(keybinding)
+
+    expect(store.getUserKeybindings()).toEqual([])
+    expect(store.getUserUnsetKeybindings()).toEqual([])
+    expect(store.isCurrentPresetModified).toBe(false)
   })
 })

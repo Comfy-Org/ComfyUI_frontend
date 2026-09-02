@@ -114,6 +114,10 @@ export interface ExtensionManager {
     set: <T = unknown>(id: string, value: T) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
+  contextKey: {
+    /** Sets a context key the extension registered through `contextKeys`. */
+    set: (name: string, value: boolean) => void
+  }
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null

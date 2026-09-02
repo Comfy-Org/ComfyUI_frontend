@@ -131,12 +131,9 @@ export function useKeybindingService() {
 
   async function persistUserKeybindings() {
     await settingStore.setMany({
-      'Comfy.Keybinding.NewBindings': Object.values(
-        keybindingStore.getUserKeybindings()
-      ),
-      'Comfy.Keybinding.UnsetBindings': Object.values(
+      'Comfy.Keybinding.NewBindings': keybindingStore.getUserKeybindings(),
+      'Comfy.Keybinding.UnsetBindings':
         keybindingStore.getUserUnsetKeybindings()
-      )
     })
   }
 
