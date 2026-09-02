@@ -39,7 +39,7 @@ test.describe('API-key login billing surfaces', () => {
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.waitForVisible()
     await expect(
-      settingsDialog.contentArea.getByRole('heading', {
+      settingsDialog.root.getByRole('heading', {
         name: API_KEY_WORKSPACE.name
       })
     ).toBeVisible()
