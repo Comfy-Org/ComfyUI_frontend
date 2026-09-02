@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
@@ -114,7 +114,9 @@ function renderComponent(props: Record<string, unknown> = {}) {
             <button data-testid="new-method-btn" @click="$emit('changePaymentMethod')">New method</button>
           </div>`
         },
-        SubscriptionTransitionPreviewWorkspace: { template: '<div />' },
+        SubscriptionTransitionPreviewWorkspace: {
+          template: '<div data-testid="transition-preview" />'
+        },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
     }
@@ -248,4 +250,23 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
+
+  it.for(['team-change', 'personal-change'])(
+    'withholds the transition confirm until its preview arrives (%s)',
+    async (previewVariant) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = previewVariant
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+      mockPreviewData.value = null
+
+      renderComponent()
+
+      expect(screen.queryByTestId('transition-preview')).toBeNull()
+
+      mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+      await nextTick()
+
+      expect(screen.getByTestId('transition-preview')).toBeTruthy()
+    }
+  )
 })
