@@ -37,6 +37,16 @@ describe('getRoutes models', () => {
   })
 })
 
+describe('getRoutes agent', () => {
+  it('serves the agent page at its canonical path for en', () => {
+    expect(getRoutes('en').agent).toBe('/agent')
+  })
+
+  it('serves the English-only agent page at its canonical path for zh-CN', () => {
+    expect(getRoutes('zh-CN').agent).toBe('/agent')
+  })
+})
+
 describe('getRoutes modelsShowcase', () => {
   it('serves the models showcase page at its canonical path for en', () => {
     expect(getRoutes('en').modelsShowcase).toBe('/models')
