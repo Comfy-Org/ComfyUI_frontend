@@ -17,6 +17,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -389,6 +390,42 @@ describe('ComfyApp', () => {
   })
 
   describe('nodeOutputs', () => {
+    it('does O(1) work per write instead of rebuilding the whole output record (#16008)', () => {
+      // Regression for a per-write full-record rekey: each write used to
+      // call `replaceOutputsFromLegacy`, an O(N) `mapKeys` rebuild of every
+      // node's entry, making N sequential output writes O(N^2) overall. A
+      // reintroduction of that path would fail this by calling
+      // `replaceOutputsFromLegacy` and by triggering more than one
+      // `setOutputFromLegacy` commit per single-key write.
+      app.vueAppReady = true
+      const nodeCount = 50
+      const storedOutputs = new Map<string, NodeExecutionOutput>()
+      mockNodeOutputStore.setOutputFromLegacy.mockImplementation((id, output) =>
+        storedOutputs.set(id, output)
+      )
+
+      for (let i = 0; i < nodeCount; i++) {
+        mockNodeOutputStore.setOutputFromLegacy.mockClear()
+        app.nodeOutputs[String(i)] = { images: [{ filename: `${i}.png` }] }
+        expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+        expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+          String(i),
+          { images: [{ filename: `${i}.png` }] }
+        )
+      }
+
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).not.toHaveBeenCalled()
+
+      expect(storedOutputs.size).toBe(nodeCount)
+      for (let i = 0; i < nodeCount; i++) {
+        expect(storedOutputs.get(String(i))).toEqual({
+          images: [{ filename: `${i}.png` }]
+        })
+      }
+    })
+
     it('commits legacy property mutations to the output store', () => {
       app.vueAppReady = true
       const output = { images: [{ filename: 'legacy.png' }] }
