@@ -75,9 +75,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
       }
     ]
   },
-  // Every cell restates copy that already ships elsewhere on this page (steps
-  // items and FAQ answers) — this table makes no licensing claim on its own,
-  // so a copy change there must land here too.
+  // Rows and figures come from the tier table supplied for this page
+  // (2026-09-02); the pricing numbers live only here, so a deal change means
+  // editing this table.
   comparison: {
     headingKey: 'minimaxLicense.comparison.heading',
     columns: [
@@ -86,14 +86,41 @@ export const minimaxLicensePage: ModelLaunchPage = {
     ],
     rows: [
       {
-        id: 'pricing',
-        label: { en: 'Pricing', 'zh-CN': '定价' },
+        id: 'price',
+        label: { en: 'Price', 'zh-CN': '价格' },
         cells: [
-          { en: 'Fixed monthly price', 'zh-CN': '固定月费' },
-          {
-            en: 'Annual agreement, custom volume pricing',
-            'zh-CN': '年度协议，定制批量定价'
-          }
+          { en: '$5,000 / month', 'zh-CN': '5,000 美元 / 月' },
+          { en: 'Contact sales', 'zh-CN': '联系销售' }
+        ]
+      },
+      {
+        id: 'video-seconds',
+        label: { en: 'Video-seconds included', 'zh-CN': '包含视频秒数' },
+        cells: [
+          { en: '~46,250', 'zh-CN': '约 46,250' },
+          { en: 'Custom', 'zh-CN': '定制' }
+        ]
+      },
+      {
+        id: 'price-per-video-second',
+        label: {
+          en: 'Price per video-second (in bundle)',
+          'zh-CN': '每视频秒价格（套餐内）'
+        },
+        cells: [
+          { en: '$0.108', 'zh-CN': '0.108 美元' },
+          { en: 'Contact sales', 'zh-CN': '联系销售' }
+        ]
+      },
+      {
+        id: 'overage',
+        label: {
+          en: 'Overage per video-second',
+          'zh-CN': '超出部分每视频秒价格'
+        },
+        cells: [
+          { en: '$0.036', 'zh-CN': '0.036 美元' },
+          { en: 'Contact sales', 'zh-CN': '联系销售' }
         ]
       },
       {
@@ -101,7 +128,54 @@ export const minimaxLicensePage: ModelLaunchPage = {
         label: { en: 'Licensed users', 'zh-CN': '授权用户' },
         cells: [
           { en: 'Up to 10', 'zh-CN': '最多 10 个' },
-          { en: 'No user cap', 'zh-CN': '不限用户数' }
+          { en: 'No cap', 'zh-CN': '不设上限' }
+        ]
+      },
+      {
+        id: 'domains',
+        label: { en: 'Domains', 'zh-CN': '域名数量' },
+        cells: [
+          { en: '1', 'zh-CN': '1 个' },
+          { en: 'Custom', 'zh-CN': '定制' }
+        ]
+      },
+      {
+        id: 'commercial-use',
+        label: {
+          en: 'Commercial use of outputs',
+          'zh-CN': '产出的商业使用'
+        },
+        cells: [
+          {
+            en: 'Yes, full commercial rights',
+            'zh-CN': '是，完整商业权利'
+          },
+          {
+            en: 'Yes, full commercial rights',
+            'zh-CN': '是，完整商业权利'
+          }
+        ]
+      },
+      {
+        id: 'fine-tuning',
+        label: {
+          en: 'Fine-tuning and LoRA training',
+          'zh-CN': '微调与 LoRA 训练'
+        },
+        cells: [
+          { en: 'Yes', 'zh-CN': '是' },
+          { en: 'Yes', 'zh-CN': '是' }
+        ]
+      },
+      {
+        id: 'client-work',
+        label: {
+          en: 'Client and downstream work',
+          'zh-CN': '客户与下游项目'
+        },
+        cells: [
+          { en: 'Yes', 'zh-CN': '是' },
+          { en: 'Yes', 'zh-CN': '是' }
         ]
       },
       {
@@ -119,36 +193,11 @@ export const minimaxLicensePage: ModelLaunchPage = {
         ]
       },
       {
-        id: 'commercial-rights',
-        label: {
-          en: 'Commercial rights to your outputs',
-          'zh-CN': '产出的商业权利'
-        },
+        id: 'term',
+        label: { en: 'Term', 'zh-CN': '期限' },
         cells: [
-          { en: 'Included', 'zh-CN': '包含' },
-          { en: 'Included', 'zh-CN': '包含' }
-        ]
-      },
-      {
-        id: 'fine-tuning',
-        label: {
-          en: 'Fine-tuning and LoRA training',
-          'zh-CN': '微调与 LoRA 训练'
-        },
-        cells: [
-          { en: 'Included', 'zh-CN': '包含' },
-          { en: 'Included', 'zh-CN': '包含' }
-        ]
-      },
-      {
-        id: 'client-work',
-        label: {
-          en: 'Client and downstream work',
-          'zh-CN': '客户与下游项目'
-        },
-        cells: [
-          { en: 'Included', 'zh-CN': '包含' },
-          { en: 'Included', 'zh-CN': '包含' }
+          { en: 'Monthly', 'zh-CN': '按月' },
+          { en: '12-month minimum', 'zh-CN': '至少 12 个月' }
         ]
       }
     ]
