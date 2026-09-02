@@ -11,6 +11,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -373,6 +374,13 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
+      // Every call site of updateModified() already gated on a real state
+      // change (activeState just moved to a new snapshot), so this maps 1:1
+      // onto the registry's "mutated" event (ADR-0024 dirty tracking).
+      // Undo/redo call in too: moving activeState to a prior/later snapshot
+      // is still a committed change to the document's current content.
+      if (workflow.documentId)
+        useGraphDocumentStore().markMutated(workflow.documentId)
     }
 
     const autoQueueGraphChanged =
