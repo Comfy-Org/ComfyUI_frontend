@@ -61,6 +61,7 @@ const renamingId = ref<string | null>(null)
 const renameDraft = ref('')
 const renameOriginalTitle = ref('')
 const selectOnFocus = ref(false)
+const optionsTriggers = new Map<string, HTMLElement>()
 
 function startRename(session: ChatSession): void {
   renamingId.value = session.id
@@ -89,14 +90,30 @@ function focusInput(el: Element | ComponentPublicInstance | null): void {
   })
 }
 
-function cancelRename(): void {
+function setOptionsTrigger(
+  sessionId: string,
+  target: Element | ComponentPublicInstance | null
+): void {
+  const element = target instanceof Element ? target : target?.$el
+  if (element instanceof HTMLElement) optionsTriggers.set(sessionId, element)
+  else optionsTriggers.delete(sessionId)
+}
+
+function focusOptionsTrigger(sessionId: string): void {
+  void nextTick(() => optionsTriggers.get(sessionId)?.focus())
+}
+
+function cancelRename(sessionId?: string): void {
   renamingId.value = null
+  if (sessionId) focusOptionsTrigger(sessionId)
 }
 
 watch(
-  () => sections.value.flatMap(([, , sessions]) => sessions.map(({ id }) => id)),
+  () =>
+    sections.value.flatMap(([, , sessions]) => sessions.map(({ id }) => id)),
   (sessionIds) => {
-    if (renamingId.value && !sessionIds.includes(renamingId.value)) cancelRename()
+    if (renamingId.value && !sessionIds.includes(renamingId.value))
+      cancelRename()
   }
 )
 
@@ -106,6 +123,7 @@ function commitRename(session: ChatSession): void {
   const title = renameDraft.value.trim().slice(0, MAX_TITLE_LENGTH)
   if (title !== '' && title !== renameOriginalTitle.value.trim())
     emit('rename', session.id, title)
+  focusOptionsTrigger(session.id)
 }
 
 // Fence reka-ui's close focus-restore only when a rename was just started
@@ -123,7 +141,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
     commitRename(session)
   } else if (event.key === 'Escape') {
     event.preventDefault()
-    cancelRename()
+    cancelRename(session.id)
   }
 }
 </script>
@@ -192,7 +210,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
               :maxlength="MAX_TITLE_LENGTH"
               class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
               @keydown="onRenameKeydown(session, $event)"
-              @blur="cancelRename"
+              @blur="cancelRename()"
             />
           </div>
           <template v-else>
@@ -218,6 +236,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
             </AgentTooltip>
             <DropdownMenuRoot>
               <DropdownMenuTrigger
+                :ref="(target) => setOptionsTrigger(session.id, target)"
                 :aria-label="t('agent.chatOptions')"
                 class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
               >

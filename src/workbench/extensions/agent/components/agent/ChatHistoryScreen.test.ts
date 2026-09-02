@@ -224,6 +224,7 @@ describe('ChatHistoryScreen', () => {
     await rerender({ groups: groupsWithTitle('Findable title') })
 
     expect(screen.getByRole('button', { name: 'Findable title' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Chat options' })).toHaveFocus()
   })
 
   it('does not overwrite a refreshed title with an untouched draft', async () => {
@@ -251,6 +252,7 @@ describe('ChatHistoryScreen', () => {
     expect(screen.getByRole('button', { name: 'Original title' })).toBeVisible()
     expect(screen.queryByText('Discarded')).toBeNull()
     expect(emitted().rename).toBeUndefined()
+    expect(screen.getByRole('button', { name: 'Chat options' })).toHaveFocus()
   })
 
   it('discards a partial rename when focus leaves the input', async () => {
