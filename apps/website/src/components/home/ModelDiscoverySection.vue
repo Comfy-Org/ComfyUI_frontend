@@ -58,7 +58,7 @@ const cardClass =
         :aria-hidden="copy === 2 ? 'true' : undefined"
       >
         <a
-          v-for="{ model, logo, mono } in discoveryModels"
+          v-for="{ model, logo } in discoveryModels"
           :key="model.slug"
           :href="model.href"
           :class="cardClass"
@@ -77,21 +77,15 @@ const cardClass =
             />
           </template>
           <span
-            v-if="mono"
             class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
             :style="{ maskImage: `url(${logo})` }"
             aria-hidden="true"
           />
-          <img
-            v-else
-            :src="logo"
-            alt=""
-            class="relative size-9 object-contain"
-            loading="lazy"
-          />
           <span class="relative flex flex-col gap-0.5">
             <span class="text-base/tight font-medium">{{ model.name }}</span>
-            <span class="text-xs text-primary-warm-gray">
+            <span
+              class="text-xs text-primary-warm-gray transition-colors group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white"
+            >
               {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
             </span>
           </span>

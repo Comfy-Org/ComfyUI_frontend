@@ -229,7 +229,7 @@ const itemClass =
 
         <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />
 
-        <div class="flex items-center gap-3 px-3 py-2">
+        <div class="group/footer flex items-center gap-3 px-3 py-2">
           <span
             class="bg-primary-comfy-yellow/80 grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-comfy-ink"
             aria-hidden="true"
@@ -243,11 +243,13 @@ const itemClass =
             <button
               type="button"
               :aria-label="t('nav.signOut', locale)"
-              :title="t('nav.signOut', locale)"
-              class="cursor-pointer rounded-lg p-1.5 text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:text-primary-warm-white"
+              class="flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-xl px-2 text-sm font-medium text-primary-warm-gray transition-colors outline-none group-hover/footer:bg-transparency-white-t8 group-hover/footer:px-3 group-hover/footer:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
               data-testid="account-sign-out"
               @click="signOut"
             >
+              <span class="hidden group-hover/footer:inline">
+                {{ t('nav.signOut', locale) }}
+              </span>
               <LogOut class="size-5" aria-hidden="true" />
             </button>
           </DropdownMenuItem>
