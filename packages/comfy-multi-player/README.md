@@ -630,7 +630,8 @@ Published to npm as [`@comfyorg/comfy-multi-player`](https://www.npmjs.com/packa
 npm install @comfyorg/comfy-multi-player
 ```
 
-Pin an **exact** version in both the frontend and the server. Conflict
+The server pins an **exact** published version. The frontend consumes the
+workspace source from the same commit that produces that release. Conflict
 resolution is a cross-process agreement about which write wins; two peers
 running different versions of these rules can disagree about the outcome.
 
@@ -643,16 +644,21 @@ superseded) remains documented for historical context.
 ## Develop
 
 ```bash
-npm install
-npm run build         # tsc → dist/
-npm test              # vitest: schema, purity, replay, lww, convergence, roundtrip, applier
-npm run check:purity  # dependency-tree + bare-Node import gate
-npm run check:imports # module-graph gate: no cycles, src imports yjs only, no Node builtins
-npm run check:pins    # cross-repo citations are pinned by SHA, not a moving ref
-npm run verify:corpus # conformance fixtures match their pinned SHAs
-npm run check:profile-claims # .agents/checks prose still matches the code it restates
-npm run check:coderabbit     # .coderabbit.yaml still matches the profiles that generate it
+pnpm install
+pnpm run build         # tsc → dist/
+pnpm test              # vitest: schema, purity, replay, lww, convergence, roundtrip, applier
+pnpm run check:purity  # dependency-tree + bare-Node import gate
+pnpm run check:imports # module-graph gate: no cycles, src imports yjs only, no Node builtins
+pnpm run check:pins    # cross-repo citations are pinned by SHA, not a moving ref
+pnpm run verify:corpus # conformance fixtures match their pinned SHAs
+pnpm run check:profile-claims # .agents/checks prose still matches the code it restates
+pnpm run check:coderabbit     # .coderabbit.yaml still matches the profiles that generate it
 ```
+
+The canonical source lives at
+[`packages/comfy-multi-player`](https://github.com/Comfy-Org/ComfyUI_frontend/tree/main/packages/comfy-multi-player)
+in the ComfyUI frontend workspace. Run these commands from that package directory,
+or use `pnpm --filter @comfyorg/comfy-multi-player <command>` from the workspace root.
 
 `fixtures/` holds the replay corpus: recorded op sessions with their starting
 and final workflows, six conflict-resolution vectors, and the pinned catalog.

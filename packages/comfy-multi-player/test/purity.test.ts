@@ -9,17 +9,32 @@ const distEntry = join(root, "dist", "index.js");
 
 describe("purity", () => {
   it("has exactly yjs as its declared and resolved production dependency root", () => {
-    const run = spawnSync("npm", ["ls", "--omit=dev", "--json", "--all"], {
-      cwd: root,
-      encoding: "utf8",
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    const tree = JSON.parse(run.stdout) as {
+    const run = spawnSync(
+      "pnpm",
+      [
+        "list",
+        "--filter",
+        "@comfyorg/comfy-multi-player",
+        "--prod",
+        "--json",
+        "--depth",
+        "Infinity",
+      ],
+      {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 64 * 1024 * 1024,
+      },
+    );
+    const trees = JSON.parse(run.stdout) as Array<{
+      name?: string;
       dependencies?: Record<
         string,
         { version?: string; resolved?: string; missing?: boolean; invalid?: boolean; extraneous?: boolean }
       >;
-    };
+    }>;
+    const tree = trees.find(({ name }) => name === "@comfyorg/comfy-multi-player");
+    if (!tree) throw new Error("pnpm did not return the comfy-multi-player package tree");
     // A production root must be installed and valid, not just non-extraneous:
     // a missing/invalid yjs node must fail this assertion, not pass it.
     const resolvedRoots = Object.entries(tree.dependencies ?? {})
@@ -46,8 +61,8 @@ describe("purity", () => {
   });
 
   it("built output imports cleanly in a bare Node subprocess", () => {
-    // dist/ is produced by `npm run build`; CI builds before testing.
-    expect(existsSync(distEntry), "dist/index.js missing — run `npm run build` first").toBe(true);
+    // dist/ is produced by `pnpm run build`; CI builds before testing.
+    expect(existsSync(distEntry), "dist/index.js missing — run `pnpm run build` first").toBe(true);
 
     const probe = `
       const mod = await import(${JSON.stringify(pathToFileURL(distEntry).href)});

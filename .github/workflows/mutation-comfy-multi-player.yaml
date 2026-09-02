@@ -1,0 +1,46 @@
+name: 'Mutation: Comfy Multi-Player'
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: Stryker mutation testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend workspace
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build package
+        run: pnpm --filter @comfyorg/comfy-multi-player run build
+
+      - name: Restore incremental mutation report
+        uses: actions/cache@v6
+        with:
+          path: packages/comfy-multi-player/reports/stryker-incremental.json
+          key: comfy-multi-player-stryker-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'packages/comfy-multi-player/stryker.config.mjs') }}-${{ github.run_id }}
+          restore-keys: |
+            comfy-multi-player-stryker-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'packages/comfy-multi-player/stryker.config.mjs') }}-
+
+      - name: Run mutation tests
+        run: pnpm --filter @comfyorg/comfy-multi-player run test:mutation
+
+      - name: Check mutation report
+        if: always()
+        run: pnpm --filter @comfyorg/comfy-multi-player run check:mutation-report
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: comfy-multi-player-mutation-report
+          path: packages/comfy-multi-player/reports/mutation/
+          retention-days: 14
+          if-no-files-found: error

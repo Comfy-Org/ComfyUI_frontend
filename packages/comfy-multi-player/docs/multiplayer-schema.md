@@ -1304,9 +1304,9 @@ consumer repositories at their current revisions, not by analogy to A3:
   `clear`'s `groups`, and `clear` preserves everything else.
 - **The op producer never constructs a document at all.** `comfy-cli` emits ops as plain JSON; it has
   no Yjs dependency, no `Y.Doc`, no snapshot handling.
-- **The frontend does not consume this package.** `@comfyorg/comfy-multi-player` is absent from its
-  `package.json` on every branch, so there is no follower call site to break, which is what ADR-004
-  already records.
+- **At the time of this amendment, the frontend did not consume this package.** It now consumes the
+  canonical workspace source from `packages/comfy-multi-player`; this historical compatibility
+  argument applied before that migration, not to future package changes.
 - **Two endpoints reach `project()`**, both in the doc-host sidecar: `/project` and `/apply` (whose
   response embeds a projection computed after `applyOps`). `/mint` and `/resync` do not.
 

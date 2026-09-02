@@ -13,15 +13,15 @@ Any change touching op semantics, public exports, the dependency set, or the wid
 ## Develop and verify
 
 ```sh
-npm ci
-npm run build
-npm run check:purity
-npm run check:imports
-npm run check:pins
-npm run check:profile-claims
-npm run check:coderabbit
-npm run verify:corpus
-npm test
+pnpm install
+pnpm run build
+pnpm run check:purity
+pnpm run check:imports
+pnpm run check:pins
+pnpm run check:profile-claims
+pnpm run check:coderabbit
+pnpm run verify:corpus
+pnpm test
 ```
 
 Run all nine commands before review — that is the set CI runs, and the list was
@@ -29,12 +29,12 @@ short by three (`check:pins`, `check:profile-claims`, `verify:corpus`) from the
 day each of those gates landed. `check:coderabbit` regenerates `.coderabbit.yaml`'s sentinel-delimited region from the
 `<!-- coderabbit-instructions -->` blocks in `.agents/checks/*.md` and fails on any byte
 difference — including inside the generated header comments, which are emitted too. If it
-fails, edit the block in the owning profile and run `npm run gen:coderabbit`, never the YAML
+fails, edit the block in the owning profile and run `pnpm run gen:coderabbit`, never the YAML
 directly. Like `check:imports` it has a third outcome: it exits `2` (INCONCLUSIVE) when it
 cannot run over meaningful work — no profiles directory, no config file, no sentinels, or
 fewer source blocks than its floor — and `2` is never a pass. The purity gate asserts positively that the declared and resolved production dependency roots are exactly `{yjs}`, and adds a dependency denylist and a bare-Node import probe (issue #22, which raised the missing positive assertion, is closed). `check:imports` covers the same contract one layer down — it cruises the module graph with `.dependency-cruiser.cjs` and asserts the yjs-only and no-Node-builtin boundaries **per source module**, which is what the package-level gate structurally cannot see; it exits `2` (INCONCLUSIVE) rather than green if it analyzed too few modules to mean anything.
 
-Mutation testing (`npm run test:mutation`, nightly in `mutation.yml`) is only comparable across runs because `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis`. Stryker scores a `Timeout` as killed, so with those unpinned the score rises with host load. Do not unpin them, and do not quote a score without running `npm run check:mutation-report` — it re-derives the number, reports `Timeout` separately, and exits 2 INCONCLUSIVE when timeouts are material.
+Mutation testing (`pnpm run test:mutation`, nightly in `mutation-comfy-multi-player.yaml`) is only comparable across runs because `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis`. Stryker scores a `Timeout` as killed, so with those unpinned the score rises with host load. Do not unpin them, and do not quote a score without running `pnpm run check:mutation-report` — it re-derives the number, reports `Timeout` separately, and exits 2 INCONCLUSIVE when timeouts are material.
 
 CI deliberately omits a raw line or branch coverage floor. The mutation threshold plus the survivor and no-coverage inventory is the primary coverage-quality gate; adding a line/branch floor would measure execution breadth without proving assertions catch behavioral changes. This is a gate choice, not an invariant exception, so it belongs here and in `docs/mutation-testing.md`, not in `docs/decisions/EXCEPTIONS.md`.
 

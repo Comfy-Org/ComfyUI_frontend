@@ -279,7 +279,7 @@ export function project(doc: Y.Doc, catalog: WidgetCatalog): WorkflowJSON {
   });
 
   const nodes: WorkflowNode[] = [];
-  nodesMap(doc).forEach((ym, id) => {
+  nodesMap(doc).forEach((ym) => {
     const node = tryProjectNode(ym, catalog);
     if (node) nodes.push(node);
   });

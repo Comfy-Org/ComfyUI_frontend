@@ -4,12 +4,13 @@
  *
  * This package is one implementation of op→doc semantics shared by the
  * browser and the server doc host — it must run identically in both, so it
- * may not depend (directly or transitively, in ANY dependency group) on UI
- * frameworks, DOM implementations, or litegraph. It must also import cleanly
- * in bare Node with no DOM globals.
+ * may not depend at runtime (directly or transitively) on UI frameworks, DOM
+ * implementations, or litegraph. It must also import cleanly in bare Node
+ * with no DOM globals.
  *
  * Checks:
- *   1. `npm ls --json --all` — walk the full resolved dependency tree and
+ *   1. `pnpm list --prod --json --depth Infinity` — walk the resolved
+ *      production dependency tree and
  *      fail on any banned package name.
  *   2. `node --input-type=module -e "await import(dist/index.js)"` in a
  *      clean subprocess — the built entrypoint must load without DOM globals
@@ -63,27 +64,46 @@ if (
   );
 }
 
-// npm ls exits non-zero on tree problems but still prints JSON — parse stdout
-// regardless and only fail if there is no usable output.
-const ls = spawnSync("npm", ["ls", "--omit=dev", "--json", "--all"], {
-  cwd: root,
-  encoding: "utf8",
-  maxBuffer: 64 * 1024 * 1024,
-});
+const ls = spawnSync(
+  "pnpm",
+  [
+    "list",
+    "--filter",
+    packageJson.name,
+    "--prod",
+    "--json",
+    "--depth",
+    "Infinity",
+  ],
+  {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  },
+);
 let tree;
 try {
-  tree = JSON.parse(ls.stdout);
+  const result = JSON.parse(ls.stdout);
+  tree = Array.isArray(result)
+    ? result.find((entry) => entry.name === packageJson.name)
+    : result;
 } catch {
   console.error(ls.stderr);
-  console.error("could not parse `npm ls --json --all` output — did you run `npm install`?");
+  console.error(
+    "could not parse filtered `pnpm list --prod --json --depth Infinity` output — did you run `pnpm install`?",
+  );
+  process.exit(2);
+}
+if (!tree) {
+  console.error(`pnpm did not return a tree for ${packageJson.name}`);
   process.exit(2);
 }
 
-// npm's logical tree nests transitive dependencies under their direct root.
-// Ignore `extraneous` packages because development worktrees may share a
-// node_modules directory; they are not part of this package's production
-// graph. yjs itself has implementation dependencies (currently lib0), but it
-// must be the graph's sole production root.
+// pnpm's logical production tree nests transitive dependencies under their
+// direct root and reports hoisted workspace packages separately as
+// `unsavedDependencies`, which are intentionally outside this traversal. yjs
+// itself has implementation dependencies (currently lib0), but it must be the
+// graph's sole production root.
 // A production root must be actually installed and valid: present in the tree
 // with a version/resolved, and not missing/invalid/extraneous. A MISSING yjs
 // node must fail the gate, not silently pass it.
@@ -136,7 +156,7 @@ console.log(`dependency tree clean (${BANNED.length} ban patterns, no matches)`)
 
 const distEntry = join(root, "dist", "index.js");
 if (!existsSync(distEntry)) {
-  console.error("dist/index.js not found — run `npm run build` before check:purity");
+  console.error("dist/index.js not found — run `pnpm run build` before check:purity");
   process.exit(2);
 }
 

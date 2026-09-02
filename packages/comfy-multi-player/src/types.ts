@@ -62,9 +62,6 @@ export const DEFERRED_OPS = ["reset_doc"] as const;
  */
 export const BATCHABLE_OPS = ["add_node", "connect", "disconnect", "set_widget", "delete_node"] as const;
 
-/** Every kind the vocabulary defines — implemented ({@link Op}) plus deferred ({@link DeferredOp}). */
-export type OpKind = WireOp["op"];
-
 /** A kind `applyOps` implements. */
 export type FrozenOpKind = (typeof FROZEN_OPS)[number];
 
@@ -478,18 +475,20 @@ export type WireOp = Op | DeferredOp;
 // ---------------------------------------------------------------------------
 
 type Equals<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
-type Assert<T extends true> = T;
+type Checked<T, Checks extends readonly true[]> = T &
+  (Checks[number] extends true ? unknown : never);
 
-/** `FROZEN_OPS` names exactly the kinds `applyOps` implements. */
-type _FrozenIsExactlyTheImplementedUnion = Assert<Equals<FrozenOpKind, Op["op"]>>;
-/** `DEFERRED_OPS` names exactly the kinds declared-but-not-implemented. */
-type _DeferredIsExactlyTheDeferredUnion = Assert<Equals<DeferredOpKind, DeferredOp["op"]>>;
-/** Every declared kind is exactly once in FROZEN_OPS or DEFERRED_OPS. */
-type _OpKindsArePartitioned = Assert<Equals<FrozenOpKind | DeferredOpKind, OpKind>>;
-/** No kind is both implemented and deferred. */
-type _FrozenAndDeferredAreDisjoint = Assert<Equals<FrozenOpKind & DeferredOpKind, never>>;
-/** Batchable kinds are a subset of the implemented kinds. */
-type _BatchableIsSubsetOfFrozen = Assert<Equals<Exclude<BatchableOpKind, FrozenOpKind>, never>>;
+/** Every kind the vocabulary defines — implemented ({@link Op}) plus deferred ({@link DeferredOp}). */
+export type OpKind = Checked<
+  WireOp["op"],
+  [
+    Equals<FrozenOpKind, Op["op"]>,
+    Equals<DeferredOpKind, DeferredOp["op"]>,
+    Equals<FrozenOpKind | DeferredOpKind, WireOp["op"]>,
+    Equals<FrozenOpKind & DeferredOpKind, never>,
+    Equals<Exclude<BatchableOpKind, FrozenOpKind>, never>,
+  ]
+>;
 
 // ---------------------------------------------------------------------------
 // Widget catalog (pinned object_info projection)

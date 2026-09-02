@@ -4,12 +4,12 @@
   "license": "GPL-3.0-only",
   "description": "Shared workflow-document package: CRDT op applier + JSON projection used identically by the browser and the server doc host.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
     }
   },
   "files": [
@@ -18,17 +18,25 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Comfy-Org/comfy-multi-player.git"
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/comfy-multi-player"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
-    "typecheck": "npm run build && tsc -p tsconfig.test.json && tsc -p test/types/tsconfig.json",
-    "prepack": "npm run build",
-    "prepare": "npm run build",
+    "typecheck": "pnpm run build && tsc -p tsconfig.test.json && tsc -p test/types/tsconfig.json",
+    "prepack": "pnpm run build",
     "test": "vitest run",
     "test:mutation": "stryker run",
     "check:mutation-report": "node scripts/check-mutation-report.mjs",
@@ -39,7 +47,7 @@
     "gen:coderabbit": "node scripts/gen-coderabbit-config.mjs --write",
     "check:imports": "node scripts/check-import-graph.mjs",
     "check:stateless": "node scripts/check-stateless.mjs",
-    "test:clock-matrix": "npm run build && vitest run test/clock-matrix/clock-matrix.test.ts --reporter=verbose",
+    "test:clock-matrix": "pnpm run build && vitest run test/clock-matrix/clock-matrix.test.ts --reporter=verbose",
     "verify:corpus": "node scripts/verify-corpus.mjs"
   },
   "dependencies": {
@@ -50,7 +58,7 @@
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.3.0",
     "@typescript-eslint/parser": "^8.68.0",
-    "dependency-cruiser": "^18.2.0",
+    "dependency-cruiser": "^17.4.3",
     "eslint": "^9.39.5",
     "eslint-plugin-sonarjs": "^3.0.7",
     "fast-check": "^4.9.0",
