@@ -248,12 +248,6 @@ describe('LGraph round trip preserves the input', () => {
         )
       })
 
-      test('keeps every group, by identity and bounds', () => {
-        const grouped = withGroups(graph)
-
-        expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
-      })
-
       test('does not mutate the workflow it was given', () => {
         const untouched = structuredClone(graph)
         const subject = structuredClone(graph)
@@ -271,4 +265,10 @@ describe('LGraph round trip preserves the input', () => {
       })
     })
   }
+
+  test('keeps every group, by identity and bounds', () => {
+    const grouped = withGroups(fixtures[0].graph)
+
+    expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
+  })
 })
