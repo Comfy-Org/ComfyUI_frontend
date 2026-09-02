@@ -163,8 +163,9 @@ At that point:
 
 ### Positive
 
-- External systems (Agent, Hub, MCP, CLI tools) can execute any workflow
-  faithfully without reimplementing frontend-only transforms.
+- External systems (Agent, Hub, MCP, CLI tools) can execute workflows whose
+  transforms satisfy the replayability contract without reimplementing
+  frontend-only behavior.
 - The transform pipeline becomes testable in isolation — no live graph required.
 - Extension authors get a documented, stable hook rather than relying on
   `widget.serializeValue` override or timing-dependent `beforeConfigureGraph`.
