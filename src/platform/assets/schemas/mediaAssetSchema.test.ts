@@ -33,16 +33,20 @@ describe('parseAssetInfo', () => {
     })
   })
 
-  it.each([
-    ['attachment_ref', { attachment_ref: '' }],
-    ['media_kind', { media_kind: 'hologram' }],
-    ['preview_url', { preview_url: 'not a url' }]
-  ])('rejects the whole payload when %s is malformed', (_name, extra) => {
-    expect(parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))).toBeUndefined()
+  it.for([
+    { name: 'attachment_ref', extra: { attachment_ref: '' } },
+    { name: 'media_kind', extra: { media_kind: 'hologram' } },
+    { name: 'preview_url', extra: { preview_url: 'not a url' } }
+  ])('rejects the whole payload when $name is malformed', ({ extra }) => {
+    expect(
+      parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))
+    ).toBeUndefined()
   })
 
   // W10 target behavior is tracked by source PR #16187.
-  it.todo('W10: should drop malformed optional fields without rejecting the payload')
+  it.todo(
+    'W10: should drop malformed optional fields without rejecting the payload'
+  )
 
   it('still rejects a payload whose base fields are malformed', () => {
     const parsed = parseAssetInfo(transferWith({ ...BASE_ITEM, type: 'bogus' }))
