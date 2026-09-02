@@ -56,13 +56,8 @@ export function findRedirectedLinks(
     .map(({ link }) => link)
 }
 
-interface CanonicalDrift {
-  link: LlmsTxtLink
-  canonical: string
-}
-
 export interface CanonicalDriftResult {
-  drift: CanonicalDrift[]
+  drift: { link: LlmsTxtLink; canonical: string }[]
   /** Links whose built page had a canonical to compare against. */
   checked: number
 }
@@ -81,7 +76,7 @@ export function findCanonicalDrift(
   links: LlmsTxtLink[],
   canonicalFor: (path: string) => string | undefined
 ): CanonicalDriftResult {
-  const drift: CanonicalDrift[] = []
+  const drift: CanonicalDriftResult['drift'] = []
   let checked = 0
   for (const { path, link } of internalLinks(links)) {
     const canonical = canonicalFor(path)
