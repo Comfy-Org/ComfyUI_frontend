@@ -603,6 +603,51 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('blocks projection immediately after a partial commit exception', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let batchAttempts = 0
+    const mutations: GraphMutations = {
+      batch: () => {
+        batchAttempts += 1
+        throw new Error('commit failed after first write')
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'failed',
+      sequence: 1,
+      reason: 'exception'
+    })
+    expect(adapter.retryPending('wf')).toEqual({
+      status: 'failed',
+      sequence: 0,
+      reason: 'blocked'
+    })
+    expect(batchAttempts).toBe(1)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('applies an implicit disconnect when delete-wins installs no replacement', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
