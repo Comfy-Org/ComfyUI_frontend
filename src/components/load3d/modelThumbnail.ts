@@ -10,6 +10,36 @@ let queue: Promise<unknown> = Promise.resolve()
 const MODEL_LOAD_TIMEOUT_MS = 15_000
 
 /**
+ * `modelUrl` on the agent path is untrusted — `classifyAssetUrl` keeps the
+ * raw `href` from the model's markdown reply, which may carry credentials
+ * or a signed query string. three.js's `FileLoader` embeds the URL verbatim
+ * in its thrown error (`fetch for "<url>" responded with <status>`), and
+ * that error's message and stack both reach `reportError` (Sentry/Datadog),
+ * so both must be scrubbed before they leave this module: query strings are
+ * dropped and `user:pass@` credentials are stripped from any URL-shaped
+ * substring.
+ */
+function redactUrls(text: string): string {
+  return text.replace(
+    /https?:\/\/(?:[^\s"']*@)?[^\s"']+/g,
+    (match) => match.replace(/^(https?:\/\/)[^@\s"']*@/, '$1').split('?')[0]
+  )
+}
+
+function redactedCopy(error: unknown): Error {
+  const source = error instanceof Error ? error : new Error(String(error))
+  // A fresh Error, not `new Error(source.message)` alone, so the redacted
+  // copy still carries a stack that distinguishes GLTFLoader from
+  // FBXLoader from fetchModelData — triage needs that frame. `cause` is
+  // deliberately not propagated: Sentry's linkedErrorsIntegration walks it
+  // by default and would re-leak the unscrubbed original.
+  const redacted = new Error(redactUrls(source.message))
+  redacted.name = source.name
+  if (source.stack) redacted.stack = redactUrls(source.stack)
+  return redacted
+}
+
+/**
  * Outcome of an offscreen thumbnail render. `cancelled` is separated from
  * `failed` so a caller that walked away is not reported as a fault.
  */
@@ -78,8 +108,19 @@ async function renderThumbnailWithTimeout(
       : renderPromise)
     return { status: 'rendered', dataUrl }
   } catch (error) {
-    if (callerSignal?.aborted) return { status: 'cancelled' }
-    reportError(error, {
+    // Classify by the caught error's identity, not `callerSignal.aborted` at
+    // catch time. One shared AbortController/signal used to cover every
+    // model in a group (it no longer does — see the per-url controllers in
+    // ReplyAssetGroup.vue), and a mutable flag read after the fact can't
+    // tell a genuine render fault (parse error, WebGL fault, the
+    // withTimeout deadline) from an unrelated abort that lands in the same
+    // tick. `cancelError` is the one thing only a real caller-signal abort
+    // produces, so compare against it directly.
+    if (error === cancelError) return { status: 'cancelled' }
+    // modelUrl is untrusted and may be embedded verbatim in three.js's own
+    // thrown error (FileLoader's "fetch for <url> responded with <status>");
+    // report a redacted copy rather than the original.
+    reportError(redactedCopy(error), {
       errorType: 'agent_model_thumbnail_generation_failure'
     })
     return { status: 'failed' }
