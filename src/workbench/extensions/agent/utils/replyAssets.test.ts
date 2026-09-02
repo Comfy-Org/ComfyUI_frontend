@@ -35,6 +35,12 @@ describe('htmlReplyAssets', () => {
 })
 
 describe('classifyAssetUrl', () => {
+  it('[11-T1 regression] preserves a malformed percent escape as a literal filename', () => {
+    expect(classifyAssetUrl('https://x/100%.png')).toMatchObject({
+      filename: '100%.png',
+      kind: 'image'
+    })
+  })
   it.for([
     ['ComfyUI_0001.png', 'image'],
     ['clip.mp4', 'video'],
@@ -58,6 +64,22 @@ describe('classifyAssetUrl', () => {
       filename: 'output.webm',
       kind: 'video'
     })
+  })
+
+  it('decodes a query filename exactly once, keeping literal percent sequences', () => {
+    expect(classifyAssetUrl(view('my%2520file.png'))).toMatchObject({
+      filename: 'my%20file.png',
+      kind: 'image'
+    })
+  })
+
+  it('decodes a pathname filename exactly once', () => {
+    expect(classifyAssetUrl('https://x.com/media/my%20file.png')).toMatchObject(
+      {
+        filename: 'my file.png',
+        kind: 'image'
+      }
+    )
   })
 })
 

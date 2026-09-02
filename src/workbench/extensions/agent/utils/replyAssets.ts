@@ -22,9 +22,19 @@ export function classifyAssetUrl(href: string): ReplyAsset | null {
   } catch {
     return null
   }
-  const filename =
-    url.searchParams.get('filename') ??
-    decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  // searchParams.get already percent-decodes; only the raw pathname segment
+  // needs decoding. Decoding twice would corrupt literal percent sequences.
+  const queryFilename = url.searchParams.get('filename')
+  let filename = queryFilename ?? ''
+  if (queryFilename === null) {
+    const rawSegment = url.pathname.split('/').at(-1) ?? ''
+    filename = rawSegment
+    try {
+      filename = decodeURIComponent(rawSegment)
+    } catch {
+      // A malformed percent escape is still a valid literal filename.
+    }
+  }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
   if (!ASSET_KINDS.has(kind)) return null

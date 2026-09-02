@@ -131,10 +131,11 @@ describe('MessageFeedback', () => {
   })
 
   it('downloads every reply asset from the download action', async () => {
-    fetchApi.mockResolvedValue({
+    const fetch = vi.fn().mockResolvedValue({
       ok: true,
       blob: () => Promise.resolve(new Blob(['x']))
     })
+    vi.stubGlobal('fetch', fetch)
     const createObjectURL = vi.fn(() => 'blob:mock')
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
@@ -146,9 +147,9 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+    expect(fetch).toHaveBeenCalledWith('https://x/a.png')
+    expect(fetch).toHaveBeenCalledWith('https://x/mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 

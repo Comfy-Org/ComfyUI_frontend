@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -64,9 +70,16 @@ const galleryIndex = ref(-1)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
+let mounted = true
+onBeforeUnmount(() => {
+  mounted = false
+})
 
 watch(
-  () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
+  () => [
+    ...visibleVisual.value.filter((asset) => asset.kind === '3D'),
+    ...visibleAudio.value
+  ],
   (lookups) => {
     if (!isAssetPreviewSupported()) return
     for (const { url, filename, kind } of lookups) {
@@ -75,13 +88,18 @@ watch(
         void findServerPreviewUrl(filename)
           .then(async (preview) => {
             if (preview) {
-              modelThumbnails.value[url] = preview
+              if (mounted) modelThumbnails.value[url] = preview
               return
             }
+            // Skip fallback generation after unmount: it funnels through a
+            // shared serial queue and would delay thumbnails for live panels.
+            if (!mounted) return
             const { generateModelThumbnail } =
               await import('@/components/load3d/modelThumbnail')
+            // Re-check: the component may have unmounted during the import.
+            if (!mounted) return
             const generated = await generateModelThumbnail(url, filename)
-            if (generated) modelThumbnails.value[url] = generated
+            if (mounted && generated) modelThumbnails.value[url] = generated
           })
           .catch(() => {})
       }
@@ -89,7 +107,7 @@ watch(
         assetNames.value[url] = ''
         void findOutputAsset(filename)
           .then((record) => {
-            if (record?.name) assetNames.value[url] = record.name
+            if (mounted && record?.name) assetNames.value[url] = record.name
           })
           .catch(() => {})
       }

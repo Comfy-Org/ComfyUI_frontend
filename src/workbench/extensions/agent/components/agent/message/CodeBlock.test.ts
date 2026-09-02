@@ -1,19 +1,21 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { codeToHtml } from 'shiki'
 
 import { i18n } from '@/i18n'
 
 import CodeBlock from './CodeBlock.vue'
 
 vi.mock('shiki', () => ({
-  codeToHtml: vi.fn(async (code: string, options: { lang: string }) => {
-    if (options.lang === 'nope') throw new Error('unknown language')
+  codeToHtml: vi.fn(async (code: string, options?: { lang: string }) => {
+    if (options?.lang === 'nope') throw new Error('unknown language')
     return `<pre class="shiki"><code><span>HL:${code}</span></code></pre>`
   })
 }))
 
 describe('CodeBlock', () => {
+  beforeEach(() => vi.mocked(codeToHtml).mockClear())
   it('renders plain code first and swaps to highlighted markup', async () => {
     render(CodeBlock, {
       props: { code: 'print("hi")', lang: 'python' },
@@ -32,8 +34,41 @@ describe('CodeBlock', () => {
       global: { plugins: [i18n] }
     })
 
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await waitFor(() =>
+      expect(codeToHtml).toHaveBeenCalledWith(
+        'mystery',
+        expect.objectContaining({ lang: 'nope' })
+      )
+    )
     expect(screen.queryByText('HL:mystery')).not.toBeInTheDocument()
     expect(screen.getByText('mystery')).toBeInTheDocument()
+  })
+
+  it('[10-T5 regression] leaves oversized blocks plain without invoking Shiki', async () => {
+    vi.useFakeTimers()
+    try {
+      const code = 'x'.repeat(50_001)
+      render(CodeBlock, {
+        props: { code, lang: 'text' },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByText(code)).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(120)
+      expect(codeToHtml).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('[10-T6 regression] never displays a highlight for a stale code snapshot', async () => {
+    const { rerender } = render(CodeBlock, {
+      props: { code: 'old', lang: 'text' },
+      global: { plugins: [i18n] }
+    })
+    expect(await screen.findByText('HL:old')).toBeInTheDocument()
+    await rerender({ code: 'new', lang: 'text' })
+    expect(screen.queryByText('HL:old')).not.toBeInTheDocument()
+    expect(screen.getByText('new')).toBeInTheDocument()
+    expect(await screen.findByText('HL:new')).toBeInTheDocument()
   })
 })
