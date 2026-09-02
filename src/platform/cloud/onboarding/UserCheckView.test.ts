@@ -40,7 +40,7 @@ describe('UserCheckView', () => {
       }
     })
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
     expect(warn.mock.calls.flat().join(' ')).not.toContain(
       'Failed to resolve component: CloudWaitlistViewSkeleton'
     )
