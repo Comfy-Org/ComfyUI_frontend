@@ -50,7 +50,7 @@ describe('resolveAgentPaywallPresentation', () => {
       hasAuthoritativeCapabilities: true,
       canTopUp: true,
       canSubscribeSelfServe: true,
-      expected: { kind: 'local' }
+      expected: { kind: 'member' }
     },
     {
       name: 'Desktop owner without a subscription',
