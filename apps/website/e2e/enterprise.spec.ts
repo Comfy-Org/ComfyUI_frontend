@@ -74,10 +74,13 @@ test.describe('Enterprise pages @smoke', () => {
     }
     await expect(
       page.getByRole('link', { name: 'BUILD', exact: true })
-    ).toHaveAttribute('href', 'https://platform.comfy.org')
+    ).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
+    await expect(page.getByRole('link', { name: 'REQUEST DEMO' })).toHaveCount(
+      4
+    )
     await expect(
       page.getByRole('heading', {
         level: 2,

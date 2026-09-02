@@ -378,13 +378,45 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('never suppresses the workflow reset for an API JSON import', async () => {
+    it('notifies extensions once on each side of a graph load, in order', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
 
-      await app.loadApiJson({}, 'empty.json').catch(() => undefined)
+      await app.loadGraphData(createWorkflowGraphData(), false)
+
+      const loadHookCalls =
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter((hook) =>
+            [
+              'beforeLoadGraph',
+              'beforeConfigureGraph',
+              'afterConfigureGraph',
+              'afterLoadGraph'
+            ].includes(hook)
+          )
+      expect(loadHookCalls).toEqual([
+        'beforeLoadGraph',
+        'beforeConfigureGraph',
+        'afterConfigureGraph',
+        'afterLoadGraph'
+      ])
+    })
+
+    it('brackets an API JSON import with graph-load hooks', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+
+      await app.loadApiJson({}, 'empty.json')
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
   })
 
@@ -1298,25 +1330,21 @@ describe('ComfyApp', () => {
       class RegisteredApiNode extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, RegisteredApiNode)
 
-      try {
-        await app.loadApiJson(
-          {
-            '1': {
-              class_type: nodeType,
-              inputs: {},
-              _meta: { title: 'Registered API Node' }
-            }
-          },
-          ''
-        )
+      await app.loadApiJson(
+        {
+          '1': {
+            class_type: nodeType,
+            inputs: {},
+            _meta: { title: 'Registered API Node' }
+          }
+        },
+        ''
+      )
 
-        expect(missingNodesStore.missingNodesError).toBeNull()
-        expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
-        expect(mockCanvas.graph).toBe(graph)
-        expect(mockCanvas.subgraph).toBeNull()
-      } finally {
-        LiteGraph.unregisterNodeType(nodeType)
-      }
+      expect(missingNodesStore.missingNodesError).toBeNull()
+      expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
+      expect(mockCanvas.graph).toBe(graph)
+      expect(mockCanvas.subgraph).toBeNull()
     })
 
     it('remaps flattened subgraph ids to colon-free local ids', async () => {
@@ -1384,8 +1412,6 @@ describe('ComfyApp', () => {
         ])
       } finally {
         cleanupErrorHooks()
-        LiteGraph.unregisterNodeType(sourceType)
-        LiteGraph.unregisterNodeType(targetType)
       }
     })
 
@@ -1485,7 +1511,6 @@ describe('ComfyApp', () => {
         missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
         Reflect.set(app, 'rootGraphInternal', previousAppGraph)
         Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
-        LiteGraph.unregisterNodeType(widgetNodeType)
       }
     })
 
@@ -1576,94 +1601,85 @@ describe('ComfyApp', () => {
         }
       }
       LiteGraph.registerNodeType(sourceNodeType, ApiJsonSourceNode)
-      let installedTypeRegistered = false
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
       vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
 
-      try {
-        await app.loadApiJson(
-          {
-            '3': {
-              class_type: missingNodeType,
-              inputs: {
-                images: ['4', 0],
-                width: 512,
-                caption: 'preserved caption'
-              },
-              _meta: { title: 'Missing input node' }
+      await app.loadApiJson(
+        {
+          '3': {
+            class_type: missingNodeType,
+            inputs: {
+              images: ['4', 0],
+              width: 512,
+              caption: 'preserved caption'
             },
-            '4': {
-              class_type: sourceNodeType,
-              inputs: {},
-              _meta: { title: 'API JSON source' }
-            }
+            _meta: { title: 'Missing input node' }
           },
-          'api-inputs'
-        )
-
-        const placeholder = graph.getNodeById(toNodeId(3))
-        if (!placeholder) throw new Error('Expected missing-node placeholder')
-        const imageInput = placeholder.inputs.find(
-          (input) => input.name === 'images'
-        )
-        expect(imageInput).toMatchObject({ name: 'images', type: '*' })
-        expect(imageInput?.link).not.toBeNull()
-        if (imageInput?.link == null) throw new Error('Expected input link')
-        expect(graph.links.get(imageInput.link)).toMatchObject({
-          origin_id: toNodeId(4),
-          target_id: toNodeId(3)
-        })
-
-        const serializedGraph = graph.serialize()
-        const serializedPlaceholder = serializedGraph.nodes.find(
-          (node) => node.id === placeholder.id
-        )
-        expect(serializedPlaceholder).toMatchObject({
-          widgets_values: [512, 'preserved caption'],
-          widgets_values_named: {
-            width: 512,
-            caption: 'preserved caption'
+          '4': {
+            class_type: sourceNodeType,
+            inputs: {},
+            _meta: { title: 'API JSON source' }
           }
-        })
+        },
+        'api-inputs'
+      )
 
-        const roundTripGraph = new LGraph()
-        roundTripGraph.configure({
-          ...serializedGraph,
-          id: roundTripGraph.id
-        })
-        const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
-        expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
-          name: 'images',
-          type: '*',
-          link: imageInput.link
-        })
-        expect(roundTripPlaceholder?.serialize()).toMatchObject({
-          widgets_values: [512, 'preserved caption'],
-          widgets_values_named: {
-            width: 512,
-            caption: 'preserved caption'
-          }
-        })
+      const placeholder = graph.getNodeById(toNodeId(3))
+      if (!placeholder) throw new Error('Expected missing-node placeholder')
+      const imageInput = placeholder.inputs.find(
+        (input) => input.name === 'images'
+      )
+      expect(imageInput).toMatchObject({ name: 'images', type: '*' })
+      expect(imageInput?.link).not.toBeNull()
+      if (imageInput?.link == null) throw new Error('Expected input link')
+      expect(graph.links.get(imageInput.link)).toMatchObject({
+        origin_id: toNodeId(4),
+        target_id: toNodeId(3)
+      })
 
-        LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
-        installedTypeRegistered = true
-        const installedGraph = new LGraph()
-        installedGraph.configure({
-          ...serializedGraph,
-          id: installedGraph.id
-        })
-        expect(
-          installedGraph
-            .getNodeById(toNodeId(3))
-            ?.widgets?.map((widget) => widget.value)
-        ).toEqual([512, 'preserved caption'])
-      } finally {
-        LiteGraph.unregisterNodeType(sourceNodeType)
-        if (installedTypeRegistered) {
-          LiteGraph.unregisterNodeType(missingNodeType)
+      const serializedGraph = graph.serialize()
+      const serializedPlaceholder = serializedGraph.nodes.find(
+        (node) => node.id === placeholder.id
+      )
+      expect(serializedPlaceholder).toMatchObject({
+        widgets_values: [512, 'preserved caption'],
+        widgets_values_named: {
+          width: 512,
+          caption: 'preserved caption'
         }
-      }
+      })
+
+      const roundTripGraph = new LGraph()
+      roundTripGraph.configure({
+        ...serializedGraph,
+        id: roundTripGraph.id
+      })
+      const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
+      expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
+        name: 'images',
+        type: '*',
+        link: imageInput.link
+      })
+      expect(roundTripPlaceholder?.serialize()).toMatchObject({
+        widgets_values: [512, 'preserved caption'],
+        widgets_values_named: {
+          width: 512,
+          caption: 'preserved caption'
+        }
+      })
+
+      LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
+      const installedGraph = new LGraph()
+      installedGraph.configure({
+        ...serializedGraph,
+        id: installedGraph.id
+      })
+      expect(
+        installedGraph
+          .getNodeById(toNodeId(3))
+          ?.widgets?.map((widget) => widget.value)
+      ).toEqual([512, 'preserved caption'])
     })
 
     it('defers API JSON missing node warnings until they are flushed', async () => {
@@ -2354,7 +2370,7 @@ describe('ComfyApp', () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -2380,10 +2396,20 @@ describe('ComfyApp', () => {
       expect(
         mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
       ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'afterConfigureGraph'])
       expect(settled).toBe(false)
 
       resolveAfterLoad?.()
       await handleFile
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
       expect(settled).toBe(true)
     })
   })

@@ -60,5 +60,5 @@ export function createAssistantMessage(id: TurnId): AssistantMessage {
 }
 
 export function snapshotMessage(message: AssistantMessage): AssistantMessage {
-  return { ...message, parts: [...message.parts] }
+  return { ...message, parts: message.parts.map((part) => ({ ...part })) }
 }

@@ -124,6 +124,7 @@ catalog:
   primevue: 4.2.5
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
+  shaders: ^3.1.463
   shiki: ^4.3.0
   start-server-and-test: ^3.0.11
   storybook: ^10.5.6

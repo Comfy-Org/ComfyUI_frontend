@@ -222,7 +222,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
-  test('keeps the Agent scrollbar track transparent', async ({ comfyPage }) => {
+  test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
+    comfyPage
+  }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
 
