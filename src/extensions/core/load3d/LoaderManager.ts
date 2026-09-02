@@ -17,6 +17,7 @@ import { SplatModelAdapter } from './SplatModelAdapter'
 import type {
   EventManagerInterface,
   LoadModelOptions,
+  LoadModelOutcome,
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
@@ -92,8 +93,8 @@ export class LoaderManager implements LoaderManagerInterface {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
-    if (this.disposed) return
+  ): Promise<LoadModelOutcome> {
+    if (this.disposed) return 'cancelled'
     const loadId = ++this.currentLoadId
 
     try {
@@ -120,26 +121,29 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
-        if (options?.silent) throw new Error(`Unknown model file type: ${url}`)
+        // The agent path may pass an untrusted, credential-bearing URL —
+        // never embed it in a thrown/reported error (see the redaction in
+        // the catch block and in modelThumbnail.ts's reportError call).
+        if (options?.silent) throw new Error('Unknown model file type')
         useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
-        return
+        return 'empty'
       }
 
-      const result = await this.loadModelInternal(url, fileExtension)
+      const result = await this.loadModelInternal(url, fileExtension, loadId)
 
       if (loadId !== this.currentLoadId) {
-        // A newer load on a live manager may already have published this
-        // object as originalModel, so only dispose once the manager is
-        // torn down and nothing can reach it.
-        if (result && this.disposed) this.disposeLoadResult(result)
-        // A newer loadModel has superseded us — do not publish our adapter
-        // and do not setup the model. Whichever load is current owns the
-        // shared state.
-        return
+        // A newer loadModel has superseded us. createLoadContext gates on
+        // loadId, so a superseded adapter's setOriginalModel /
+        // registerOriginalMaterial writes never landed — the result never
+        // entered the scene (setupModel is skipped below) and nothing else
+        // can reach it, so it is always safe to dispose here regardless of
+        // whether the manager itself has been torn down.
+        if (result) this.disposeLoadResult(result)
+        return 'cancelled'
       }
 
       if (!result && options?.silent) {
-        throw new Error(`No model could be loaded from: ${url}`)
+        throw new Error(`No model was produced for type: ${fileExtension}`)
       }
 
       if (result) {
@@ -152,14 +156,21 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
+      return result ? 'loaded' : 'empty'
     } catch (error) {
-      if (loadId !== this.currentLoadId) return
+      if (loadId !== this.currentLoadId) return 'cancelled'
       this.eventManager.emitEvent('modelLoadingEnd', null)
-      console.error('Error loading model:', error)
+      // A silent load's error (and the untrusted URL it may embed, e.g.
+      // from three.js's FileLoader "fetch for <url> responded with ...")
+      // is the caller's to report — logging it here on their behalf would
+      // write it to the console unredacted regardless of what the caller
+      // does with the rethrown error.
       if (options?.silent) throw error
+      console.error('Error loading model:', error)
       if (!(options?.silentOnNotFound && isNotFoundError(error))) {
         useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
       }
+      return 'failed'
     }
   }
 
@@ -194,12 +205,22 @@ export class LoaderManager implements LoaderManagerInterface {
     return null
   }
 
-  private createLoadContext(): ModelLoadContext {
+  private createLoadContext(loadId: number): ModelLoadContext {
     const mm = this.modelManager
+    // Adapters call setOriginalModel / registerOriginalMaterial synchronously
+    // during adapter.load(), before loadModel can check whether this load is
+    // still current. Gate those writes on identity here so a superseded
+    // load's result can never land in modelManager — that is what makes it
+    // safe to unconditionally dispose a stale result afterward (see the
+    // loadId !== this.currentLoadId branch in loadModel).
+    const isCurrent = () => loadId === this.currentLoadId
     return {
-      setOriginalModel: (model) => mm.setOriginalModel(model),
-      registerOriginalMaterial: (mesh, material) =>
-        mm.originalMaterials.set(mesh, material),
+      setOriginalModel: (model) => {
+        if (isCurrent()) mm.setOriginalModel(model)
+      },
+      registerOriginalMaterial: (mesh, material) => {
+        if (isCurrent()) mm.originalMaterials.set(mesh, material)
+      },
       get standardMaterial() {
         return mm.standardMaterial
       },
@@ -211,7 +232,8 @@ export class LoaderManager implements LoaderManagerInterface {
 
   private async loadModelInternal(
     url: string,
-    fileExtension: string
+    fileExtension: string,
+    loadId: number
   ): Promise<{
     object: THREE.Object3D
     adapter: ModelAdapter
@@ -245,7 +267,7 @@ export class LoaderManager implements LoaderManagerInterface {
     if (!adapter) return null
 
     const loadResult = await adapter.load(
-      this.createLoadContext(),
+      this.createLoadContext(loadId),
       path,
       filename,
       fetchBytes
