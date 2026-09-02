@@ -1802,4 +1802,19 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       ui_treatment: 'error_overlay'
     })
   })
+
+  it('does not track a 404 thread-not-found history load as an error', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('gone', 404, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-gone')
+
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
 })
