@@ -613,11 +613,11 @@ describe('useWorkflowStore', () => {
       executionStore.ensureSessionWorkflowPath('job-other', workflow.path)
       executionStore.registerJobWorkflowIdMapping('job-other', 'different-wf')
 
-      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
-        async function (this: unknown, ...args: unknown[]) {
+      vi.spyOn(workflow, 'rename').mockImplementation(
+        async (...args: unknown[]) => {
           const renamedPath = args[0] as string
-          ;(this as typeof workflow).path = renamedPath
-          return this as typeof workflow
+          workflow.path = renamedPath
+          return workflow
         }
       )
 
