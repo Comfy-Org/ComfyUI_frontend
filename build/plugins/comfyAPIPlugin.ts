@@ -38,14 +38,6 @@ function defaultSrcRoot(): string {
   return path.join(process.cwd(), 'src')
 }
 
-/**
- * Whether `id` is one of this package's legacy public-API files under
- * `src/scripts/` or `src/extensions/core/`, resolved relative to `srcRoot`
- * (this package's own `src/`, the same base transformExports uses for the
- * shim path). A bare substring match on "src/scripts" would also match other
- * packages' source, e.g. apps/website/src/scripts/customerio.ts, which is not
- * part of this shim and whose emitted asset path would escape the output root.
- */
 export function isLegacyFile(
   id: string,
   srcRoot: string = defaultSrcRoot()

@@ -5,53 +5,51 @@ import { describe, expect, it, vi } from 'vitest'
 import { comfyAPIPlugin, isLegacyFile } from './comfyAPIPlugin'
 
 describe('isLegacyFile', () => {
-  // Fixed base so the cases below do not depend on the host cwd, and so a
-  // future change to how the plugin derives its base cannot silently keep
-  // these green by drifting in lockstep with the inputs.
   const srcRoot = '/repo/src'
 
-  it("matches this package's own legacy scripts/", () => {
-    expect(isLegacyFile('/repo/src/scripts/api.ts', srcRoot)).toBe(true)
-  })
-
-  it("matches this package's own legacy extensions/core/", () => {
-    expect(
-      isLegacyFile('/repo/src/extensions/core/groupNode.ts', srcRoot)
-    ).toBe(true)
-  })
-
-  it("does not match another package's src/scripts (e.g. apps/website)", () => {
-    // Regression: apps/website/src/scripts/customerio.ts previously matched
-    // via a bare "src/scripts" substring check, breaking storybook-build
-    // (RolldownError: relative fileName for the emitted shim asset).
-    expect(
-      isLegacyFile('/repo/apps/website/src/scripts/customerio.ts', srcRoot)
-    ).toBe(false)
-  })
-
-  it("does not match another package's src/extensions/core", () => {
-    expect(
-      isLegacyFile(
-        '/repo/apps/website/src/extensions/core/whatever.ts',
-        srcRoot
-      )
-    ).toBe(false)
-  })
-
-  it('does not match non-.ts files', () => {
-    expect(isLegacyFile('/repo/src/scripts/api.vue', srcRoot)).toBe(false)
-  })
-
-  it('does not match src/ files outside scripts/ or extensions/core/', () => {
-    expect(isLegacyFile('/repo/src/components/App.ts', srcRoot)).toBe(false)
-  })
-
-  it('does not match files entirely outside src/', () => {
-    expect(isLegacyFile('/repo/build/plugins/other.ts', srcRoot)).toBe(false)
-  })
-
-  it('does not match a sibling directory whose name starts with scripts', () => {
-    expect(isLegacyFile('/repo/src/scripts-old/api.ts', srcRoot)).toBe(false)
+  it.for([
+    {
+      name: "matches this package's own legacy scripts/",
+      id: '/repo/src/scripts/api.ts',
+      expected: true
+    },
+    {
+      name: "matches this package's own legacy extensions/core/",
+      id: '/repo/src/extensions/core/groupNode.ts',
+      expected: true
+    },
+    {
+      name: "does not match another package's src/scripts",
+      id: '/repo/apps/website/src/scripts/customerio.ts',
+      expected: false
+    },
+    {
+      name: "does not match another package's src/extensions/core",
+      id: '/repo/apps/website/src/extensions/core/whatever.ts',
+      expected: false
+    },
+    {
+      name: 'does not match non-.ts files',
+      id: '/repo/src/scripts/api.vue',
+      expected: false
+    },
+    {
+      name: 'does not match src/ files outside legacy directories',
+      id: '/repo/src/components/App.ts',
+      expected: false
+    },
+    {
+      name: 'does not match files entirely outside src/',
+      id: '/repo/build/plugins/other.ts',
+      expected: false
+    },
+    {
+      name: 'does not match sibling directory names starting with scripts',
+      id: '/repo/src/scripts-old/api.ts',
+      expected: false
+    }
+  ])('$name', ({ id, expected }) => {
+    expect(isLegacyFile(id, srcRoot)).toBe(expected)
   })
 
   it('defaults the base to <cwd>/src', () => {
@@ -64,9 +62,6 @@ describe('isLegacyFile', () => {
 })
 
 describe('comfyAPIPlugin transform', () => {
-  // Drive the real hook with the same kind of absolute ids Vite passes, so the
-  // predicate and the emitted shim path are exercised together against the
-  // plugin's actual base rather than a base the test chose.
   const root = process.cwd()
   const source = 'export const api = 1\nexport function helper() {}\n'
 
@@ -100,18 +95,18 @@ describe('comfyAPIPlugin transform', () => {
     expect(asset.source).toContain(
       'export const helper = window.comfyAPI.api.helper;'
     )
-    // scripts/api is in SKIP_WARNING_FILES.
     expect(asset.source).not.toContain('console.warn')
     expect(result?.code).toContain('window.comfyAPI.api.api = api;')
   })
 
   it('derives the module name from an id with Windows separators', () => {
-    const { result } = runTransform(
+    const { result, emitFile } = runTransform(
       false,
       `${path.join(root, 'src/scripts')}\\api.ts`
     )
 
     expect(result?.code).toContain('window.comfyAPI.api.api = api;')
+    expect(emitFile.mock.calls[0][0].fileName).toBe('scripts/api.js')
   })
 
   it('emits a deprecation warning shim for a deprecated legacy file', () => {
