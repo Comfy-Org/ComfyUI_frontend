@@ -217,7 +217,6 @@ export class EcsFollowerAdapter {
     )
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
-    session.reconcileNextFrame = false
     this.discardSessionPending(session)
 
     const replacedNodeIds = new Set(
@@ -241,7 +240,7 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    session.mutations.batch(frameContext(update), (batch) => {
+    const committed = session.mutations.batch(frameContext(update), (batch) => {
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
           const payload = readSemanticNode(session.follower.doc, id)
@@ -286,6 +285,13 @@ export class EcsFollowerAdapter {
         if (link) batch.connect(link)
       }
     })
+
+    // Only clear the reconciliation flag once the batch actually commits.
+    // A rejected batch (no scope, or validation failure) must leave
+    // reconcileNextFrame set so the next frame retries authoritative
+    // cleanup instead of falling through to incremental handling with
+    // stale local-only graph state still present.
+    if (committed) session.reconcileNextFrame = false
   }
 
   private discardSessionPending(session: TargetSession): void {

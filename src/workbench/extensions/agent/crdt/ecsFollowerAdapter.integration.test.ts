@@ -249,6 +249,66 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('retries authoritative reconciliation after a rejected first batch', () => {
+    const deleteLayouts = vi.fn()
+    let scopeAvailable = false
+    const mutations = createGraphMutations({
+      getScope: () => (scopeAvailable ? scope : null),
+      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+    })
+    const context = {
+      source: 'agent-remote' as const,
+      actor: 'local-hydration',
+      opId: 'local-seed'
+    }
+    scopeAvailable = true
+    mutations.addNode(
+      {
+        id: 99,
+        type: 'Sink',
+        widgets_values: { stale: 9 },
+        inputs: [],
+        outputs: []
+      },
+      context
+    )
+
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    // First frame: the batch is rejected (no scope available), so the
+    // reconciliation must not be consumed — local-only node 99 survives.
+    scopeAvailable = false
+    deleteLayouts.mockClear()
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(99)])
+    expect(deleteLayouts).not.toHaveBeenCalled()
+
+    // Second frame: scope is available again, so the retried reconciliation
+    // clears the stale local-only node instead of falling through to
+    // incremental handling.
+    scopeAvailable = true
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+    expect(deleteLayouts).toHaveBeenCalledWith(
+      scope,
+      [toNodeId(99)],
+      expect.objectContaining({ opId: 'replay' })
+    )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('clears only the target owner for an empty authoritative snapshot', () => {
     const targetScope = scope
     const siblingScope = {
