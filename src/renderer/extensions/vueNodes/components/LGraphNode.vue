@@ -363,7 +363,7 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
-const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const isCollapsed = computed(() => nodeData.flags.collapsed ?? false)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
@@ -372,7 +372,7 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
-  if (nodeData.flags?.ghost) return globalOpacity * 0.6
+  if (nodeData.flags.ghost) return globalOpacity * 0.6
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -417,7 +417,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
   if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created?.length) {
+    if (result?.created.length) {
       const [newNode] = result.created
       const newNodeId =
         typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
@@ -470,7 +470,7 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0) return
   if (!shouldHandleNodePointerEvents.value) return
-  if (nodeData.flags?.pinned) return
+  if (nodeData.flags.pinned) return
   if (nodeData.resizable === false) return
   startResize(event, corner)
 }
@@ -492,7 +492,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const cursorClass = computed(() => {
-  if (nodeData.flags?.pinned) return 'cursor-default'
+  if (nodeData.flags.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
     ? 'cursor-grabbing'
     : 'cursor-grab'
@@ -666,7 +666,7 @@ const showAdvancedInputsButton = computed(() => {
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
     const renderState = widgetValueStore.getWidgetRenderState(id)
     const widgetState = widgetValueStore.getWidget(id)
-    return renderState?.advanced ?? widgetState?.options?.advanced
+    return renderState?.advanced ?? widgetState?.options.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
@@ -690,7 +690,7 @@ const nodeMedia = computed(() => {
 
   if (
     !node ||
-    !newOutputs?.images?.length ||
+    !newOutputs.images?.length ||
     node.hideOutputImages ||
     hideExecutedOutput.value
   )

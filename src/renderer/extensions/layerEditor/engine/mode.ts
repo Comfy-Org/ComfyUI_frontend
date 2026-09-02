@@ -72,8 +72,10 @@ function def(
   }
 }
 
-export const LAYER_MODES: Record<BlendFn, LayerModeDef> = {
-  normal: def('normal', 'linear', 'union'),
+const NORMAL_MODE = def('normal', 'linear', 'union')
+
+export const LAYER_MODES: Partial<Record<BlendFn, LayerModeDef>> = {
+  normal: NORMAL_MODE,
   multiply: def('multiply', 'linear', 'clip-to-backdrop'),
   screen: def('screen', 'perceptual', 'clip-to-backdrop'),
   overlay: def('overlay', 'perceptual', 'clip-to-backdrop'),
@@ -102,7 +104,7 @@ export const LAYER_MODES: Record<BlendFn, LayerModeDef> = {
 }
 
 export function defaultMode(blend: BlendFn = 'normal'): LayerMode {
-  const d = LAYER_MODES[blend] ?? LAYER_MODES.normal
+  const d = LAYER_MODES[blend] ?? NORMAL_MODE
   return {
     blend,
     blendSpace: 'auto',
@@ -116,7 +118,7 @@ export function resolveMode(
   mode: LayerMode,
   opts?: { groupPassThrough?: boolean }
 ): EffectiveMode {
-  const def = LAYER_MODES[mode.blend] ?? LAYER_MODES.normal
+  const def = LAYER_MODES[mode.blend] ?? NORMAL_MODE
   if (mode.legacy) {
     return {
       blend: mode.blend,
