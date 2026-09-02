@@ -241,7 +241,8 @@ describe('createOpSender', () => {
       ok: false,
       applied: [],
       skipped: [],
-      failure: { op_id: 'a'.repeat(32) }
+      failure: { op_id: 'a'.repeat(32) },
+      failureOpIds: ['a'.repeat(32)]
     })
 
     expect(
@@ -255,7 +256,72 @@ describe('createOpSender', () => {
       ok: false,
       applied: [],
       skipped: [],
-      failure: { op_id: 'b'.repeat(32) }
+      failure: { op_id: 'b'.repeat(32) },
+      failureOpIds: ['b'.repeat(32)]
+    })
+  })
+
+  it('preserves a canonical failure over a derived one, and collects every failed op_id', () => {
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3893153055
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failure: { op_id: 'c'.repeat(32) },
+        failed: [{ op_id: 'd'.repeat(32) }]
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: 'c'.repeat(32) },
+      failureOpIds: ['c'.repeat(32)]
+    })
+
+    // Addresses review feedback (match any failed op_id, not just the first):
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825409
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: [{ op_id: 'e'.repeat(32) }, { op_id: 'f'.repeat(32) }]
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: 'e'.repeat(32) },
+      failureOpIds: ['e'.repeat(32), 'f'.repeat(32)]
+    })
+  })
+
+  it('a canonical empty-list rejection with no failed entries settles as anonymous', () => {
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3893153036
+    expect(
+      toOpsResultView({ ok: false, applied: [], skipped: [], failed: [] })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+  })
+
+  it('returns a safe empty view for a null or undefined doc_ops_result detail', () => {
+    // Addresses review feedback:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825397
+    expect(toOpsResultView(null)).toEqual({
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    expect(toOpsResultView(undefined)).toEqual({
+      ok: false,
+      applied: [],
+      skipped: []
     })
   })
 

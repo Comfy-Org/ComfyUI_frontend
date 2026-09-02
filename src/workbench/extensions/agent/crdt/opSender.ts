@@ -30,34 +30,57 @@ export interface OpsResultView {
   skipped: string[]
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
   failure?: { op_id?: string }
+  /** Every `op_id` found in the host's failure payload (canonical `failure` first, then `failed`), for matching against an in-flight batch's op-id set rather than trusting a single arbitrary pick. */
+  failureOpIds?: string[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object'
 }
 
 function failureOpId(value: unknown): string | undefined {
-  if (value === null || typeof value !== 'object') return undefined
-  const record = value as Record<string, unknown>
-  if (typeof record.op_id === 'string') return record.op_id
-  const nested = record.op
-  if (nested !== null && typeof nested === 'object') {
-    const opId = (nested as Record<string, unknown>).op_id
-    if (typeof opId === 'string') return opId
-  }
+  if (!isRecord(value)) return undefined
+  if (typeof value.op_id === 'string') return value.op_id
+  const nested = value.op
+  if (isRecord(nested) && typeof nested.op_id === 'string') return nested.op_id
   return undefined
 }
 
-export function toOpsResultView(
-  detail: OpsResultView & { failed?: unknown }
-): OpsResultView {
-  const failures = Array.isArray(detail.failed)
-    ? detail.failed
-    : detail.failed === undefined
+/** All `op_id`s findable across the host's `failed` payload, in wire order. */
+function allFailureOpIds(failed: unknown): string[] {
+  const failures = Array.isArray(failed)
+    ? failed
+    : failed === undefined
       ? []
-      : [detail.failed]
-  const opId = failures.map(failureOpId).find((id) => id !== undefined)
+      : [failed]
+  return failures
+    .map(failureOpId)
+    .filter((id): id is string => id !== undefined)
+}
+
+export function toOpsResultView(
+  detail: (OpsResultView & { failed?: unknown }) | null | undefined
+): OpsResultView {
+  if (!isRecord(detail)) {
+    return { ok: false, applied: [], skipped: [] }
+  }
+  // A canonical `failure` from the host is authoritative; only derive one
+  // from `failed` when the host did not supply it.
+  const canonicalOpId =
+    isRecord(detail.failure) && typeof detail.failure.op_id === 'string'
+      ? detail.failure.op_id
+      : undefined
+  const candidateOpIds =
+    canonicalOpId !== undefined
+      ? [canonicalOpId]
+      : allFailureOpIds(detail.failed)
   return {
-    ok: detail.ok,
-    applied: detail.applied,
-    skipped: detail.skipped,
-    ...(opId !== undefined ? { failure: { op_id: opId } } : {})
+    ok: Boolean(detail.ok),
+    applied: Array.isArray(detail.applied) ? detail.applied : [],
+    skipped: Array.isArray(detail.skipped) ? detail.skipped : [],
+    ...(candidateOpIds.length > 0
+      ? { failure: { op_id: candidateOpIds[0] }, failureOpIds: candidateOpIds }
+      : {})
   }
 }
 
@@ -178,8 +201,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    const identified = [
+      ...result.applied,
+      ...result.skipped,
+      ...(result.failureOpIds ??
+        (result.failure?.op_id ? [result.failure.op_id] : []))
+    ]
     if (identified.length > 0) {
       if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
       settle({ state: 'acknowledged', ops: inFlight.ops, result })

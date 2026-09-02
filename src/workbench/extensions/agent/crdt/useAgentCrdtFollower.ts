@@ -185,7 +185,10 @@ export function useAgentCrdtFollower(
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
+        const detail = event.detail as
+          | (OpsResultView & { failed?: unknown })
+          | null
+          | undefined
         listener(toOpsResultView(detail))
       }
       bridge.addEventListener('doc_ops_result', handler)
