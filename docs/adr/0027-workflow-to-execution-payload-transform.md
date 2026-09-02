@@ -163,7 +163,7 @@ At that point:
 
 - New transform logic must be added to the central pipeline, not to extension
   hooks or `queuePrompt()` call-sites.
-- The `ComfyExtension.serializeValue` override pattern (currently used by
+- The `widget.serializeValue` override pattern (currently used by
   `dynamicPrompts.ts`) is deprecated in favor of a registered transform step
   with explicit ordering and isolation guarantees.
 - An ESLint rule or ADR compliance check can flag direct calls to `graph.serialize()`
