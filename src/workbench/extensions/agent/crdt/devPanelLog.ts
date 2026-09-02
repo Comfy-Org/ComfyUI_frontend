@@ -28,11 +28,20 @@ export interface DevEvent {
 
 const CAPACITY = 500
 const REDACTED = '[REDACTED]'
-const SENSITIVE_KEY = /(token|password|authorization|prompt|text)/i
+// A key is sensitive when its LAST segment (snake_case or camelCase) is one of
+// these words: `access_token`, `accessToken`, `message_text`, `prompt` redact;
+// structural keys that merely contain a word (`context`, `prompt_id`,
+// `class_type`, `token_count`) survive.
+const SENSITIVE_KEY = /(^|_)(token|password|authorization|prompt|text)$/
 const WIDGET_VALUES_KEYS = new Set(['widgets_values', 'widgets_values_named'])
 
 let nextSeq = 1
 const buffer: DevEvent[] = []
+
+function isSensitiveKey(key: string): boolean {
+  const snake = key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()
+  return SENSITIVE_KEY.test(snake)
+}
 
 function redactValues(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(() => REDACTED)
@@ -51,7 +60,7 @@ function sanitizeDetail(value: unknown, redactOpValue = false): unknown {
 
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => {
-      if (SENSITIVE_KEY.test(key) || (redactOpValue && key === 'value')) {
+      if (isSensitiveKey(key) || (redactOpValue && key === 'value')) {
         return [key, REDACTED]
       }
       if (WIDGET_VALUES_KEYS.has(key)) return [key, redactValues(item)]

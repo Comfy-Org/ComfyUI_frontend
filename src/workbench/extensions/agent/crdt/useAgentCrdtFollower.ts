@@ -120,13 +120,15 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const transport: DocFrameTransport = {
     send(frame) {
       const delivered = apiTransport.send(frame)
-      let parsed: unknown = frame
+      // Never store the raw string: `sanitizeDetail` redacts by key, so an
+      // unparsable frame would bypass it. Record only its length.
+      let detail: Record<string, unknown>
       try {
-        parsed = JSON.parse(frame)
+        detail = { delivered, frame: JSON.parse(frame) }
       } catch {
-        // Leave the raw string.
+        detail = { delivered, frame: null, unparsed_chars: frame.length }
       }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      recordDevEvent('ws_out', detail)
       return delivered
     },
     addEventListener(type, listener) {

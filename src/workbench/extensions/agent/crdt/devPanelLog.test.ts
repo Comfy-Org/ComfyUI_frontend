@@ -16,30 +16,36 @@ describe('devPanelLog redaction', () => {
       authorization: 'Bearer secret-auth',
       frame: {
         type: 'doc_ops',
-        seq: 17,
-        access_token: 'secret-token',
-        ops: [
-          {
-            op: 'set_widget',
-            op_id: 'op-123',
-            node_id: 42,
-            name: 'seed',
-            value: 'secret-op-value',
-            outcome: 'applied'
-          },
-          {
-            op: 'add_node',
-            op_id: 'op-456',
-            node: {
-              id: 43,
-              widgets_values: ['secret-widget', 12],
-              widgets_values_named: {
-                prompt: 'secret-named-widget',
-                steps: 20
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          tab: 'tab-1',
+          access_token: 'secret-token',
+          ops: [
+            {
+              op: 'set_widget',
+              op_id: 'op-123',
+              node_id: 42,
+              name: 'seed',
+              value: 'secret-op-value',
+              outcome: 'applied'
+            },
+            {
+              op: 'add_node',
+              op_id: 'op-456',
+              class_type: 'CLIPTextEncode',
+              node: {
+                id: 43,
+                properties: { context: 'kept', prompt_id: 'kept' },
+                widgets_values: ['secret-widget', 12],
+                widgets_values_named: {
+                  prompt: 'secret-named-widget',
+                  steps: 20
+                }
               }
             }
-          }
-        ]
+          ]
+        }
       },
       binary: new Uint8Array([1, 2, 3])
     })
@@ -51,30 +57,36 @@ describe('devPanelLog redaction', () => {
         authorization: '[REDACTED]',
         frame: {
           type: 'doc_ops',
-          seq: 17,
-          access_token: '[REDACTED]',
-          ops: [
-            {
-              op: 'set_widget',
-              op_id: 'op-123',
-              node_id: 42,
-              name: 'seed',
-              value: '[REDACTED]',
-              outcome: 'applied'
-            },
-            {
-              op: 'add_node',
-              op_id: 'op-456',
-              node: {
-                id: 43,
-                widgets_values: ['[REDACTED]', '[REDACTED]'],
-                widgets_values_named: {
-                  prompt: '[REDACTED]',
-                  steps: '[REDACTED]'
+          data: {
+            v: 1,
+            workflow_id: 'wf-1',
+            tab: 'tab-1',
+            access_token: '[REDACTED]',
+            ops: [
+              {
+                op: 'set_widget',
+                op_id: 'op-123',
+                node_id: 42,
+                name: 'seed',
+                value: '[REDACTED]',
+                outcome: 'applied'
+              },
+              {
+                op: 'add_node',
+                op_id: 'op-456',
+                class_type: 'CLIPTextEncode',
+                node: {
+                  id: 43,
+                  properties: { context: 'kept', prompt_id: 'kept' },
+                  widgets_values: ['[REDACTED]', '[REDACTED]'],
+                  widgets_values_named: {
+                    prompt: '[REDACTED]',
+                    steps: '[REDACTED]'
+                  }
                 }
               }
-            }
-          ]
+            ]
+          }
         },
         binary: new Uint8Array([1, 2, 3])
       }
@@ -102,5 +114,25 @@ describe('devPanelLog redaction', () => {
     expect(serialized).toContain('[REDACTED]')
     expect(serialized).not.toContain('secret-password')
     expect(serialized).not.toContain('secret-message')
+  })
+
+  it('matches sensitive words only as the last key segment', () => {
+    recordDevEvent('doc_subscribed', {
+      accessToken: 'secret-camel',
+      message_text: 'secret-snake',
+      token_count: 3,
+      context: 'kept-context',
+      prompt_id: 'kept-prompt-id',
+      class_type: 'kept-class'
+    })
+
+    expect(devEvents.value[0]?.detail).toEqual({
+      accessToken: '[REDACTED]',
+      message_text: '[REDACTED]',
+      token_count: 3,
+      context: 'kept-context',
+      prompt_id: 'kept-prompt-id',
+      class_type: 'kept-class'
+    })
   })
 })
