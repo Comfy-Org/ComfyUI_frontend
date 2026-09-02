@@ -681,6 +681,38 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.queryByText('No members')).not.toBeInTheDocument()
     })
+
+    describe.for([
+      { showMembersList: true, hasMembers: true },
+      { showMembersList: true, hasMembers: false },
+      { showMembersList: false, hasMembers: true },
+      { showMembersList: false, hasMembers: false }
+    ])(
+      'showMembersList=$showMembersList hasMembers=$hasMembers',
+      ({ showMembersList, hasMembers }) => {
+        const wantsEmptyCopy = showMembersList && !hasMembers
+
+        beforeEach(() => {
+          mockUiConfig.value = { ...mockUiConfig.value, showMembersList }
+          mockFilteredMembers.value = hasMembers ? [createMember()] : []
+          mockMembers.value = mockFilteredMembers.value
+        })
+
+        it(`${wantsEmptyCopy ? 'shows' : 'hides'} the empty copy`, () => {
+          renderComponent()
+          const emptyCopy = screen.queryByText('No members')
+          if (wantsEmptyCopy) expect(emptyCopy).toBeInTheDocument()
+          else expect(emptyCopy).not.toBeInTheDocument()
+        })
+
+        it(`${hasMembers ? 'renders' : 'omits'} the member row`, () => {
+          renderComponent()
+          const row = screen.queryByText('member1@example.com')
+          if (hasMembers) expect(row).toBeInTheDocument()
+          else expect(row).not.toBeInTheDocument()
+        })
+      }
+    )
   })
 
   describe('card header actions', () => {
