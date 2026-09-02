@@ -8,9 +8,9 @@ const identity = vi.hoisted(() => {
   const { ref } = require('vue')
   return {
     currentUser: {
-      resolvedUserInfo: ref({ id: 'user-1' } as { id: string } | null)
+      resolvedUserInfo: ref({ id: 'user-1' })
     },
-    workspace: { activeWorkspaceId: ref('workspace-1' as string | null) }
+    workspace: { activeWorkspaceId: ref('workspace-1') }
   }
 })
 
@@ -52,8 +52,6 @@ import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
 import { useAgentSession } from './useAgentSession'
-
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const THREAD_KEY = 'Comfy.Agent.ThreadId.user-1.workspace-1'
 
@@ -1726,10 +1724,12 @@ describe('thread resume (B17)', () => {
           rejectHistory = reject
         })
     )
-    const postMessage = vi.fn(async (): Promise<AgentTurnAccepted> => ({
-      thread_id: 'th-new',
-      message_id: 'msg-new'
-    }))
+    const postMessage = vi.fn(
+      async (): Promise<AgentTurnAccepted> => ({
+        thread_id: 'th-new',
+        message_id: 'msg-new'
+      })
+    )
     const session = useAgentSession({
       rest: fakeRest({ getMessages, postMessage }),
       events: fakeEvents().source

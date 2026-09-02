@@ -112,7 +112,7 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+    await createAgentRestClient().answerAsk('t7', 'turn-1:call/1', ['run'])
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
@@ -157,7 +157,7 @@ describe('agentRestClient route + method', () => {
       })
     )
 
-    await makeClient().listCloudWorkflows()
+    await createAgentRestClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
@@ -224,7 +224,7 @@ describe('postMessage wire body', () => {
 
   it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: "what's on my canvas",
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
@@ -237,7 +237,7 @@ describe('postMessage wire body', () => {
 
   it('forwards draft.version when the client has previously seen one', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: 'edit it',
       draft: { content: { nodes: [], links: [] }, version: 4 }
     })
