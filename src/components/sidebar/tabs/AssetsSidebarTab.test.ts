@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
@@ -195,6 +195,10 @@ function renderTab() {
     }
   })
 }
+
+beforeEach(() => {
+  storeControls.setOutputItems([folderAsset])
+})
 
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
