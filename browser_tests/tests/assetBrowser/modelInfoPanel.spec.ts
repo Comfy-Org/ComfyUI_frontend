@@ -1,7 +1,7 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { AssetBrowserModal } from '@e2e/fixtures/components/AssetBrowserModal'
 import {
   BARE_MODEL,
@@ -11,7 +11,10 @@ import {
 } from '@e2e/fixtures/data/assetBrowserFixtures'
 import { AssetBrowserHelper } from '@e2e/fixtures/helpers/AssetBrowserHelper'
 import type { TagMutationCall } from '@e2e/fixtures/helpers/AssetBrowserHelper'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { withAsset } from '@e2e/fixtures/helpers/AssetHelper'
+
+const test = mergeTests(comfyPageFixture, assetApiFixture)
 
 type UserMetadataUpdate = {
   name?: string
@@ -44,8 +47,8 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     await modal.waitForAssetContent('bare_checkpoint.safetensors')
   }
 
-  function metadataMutations(comfyPage: ComfyPage) {
-    return comfyPage.assetApi
+  function metadataMutations(assetApi: AssetHelper) {
+    return assetApi
       .getMutations()
       .filter(
         (mutation) =>
@@ -55,21 +58,21 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
   }
 
   function getLastMetadataBody(
-    comfyPage: ComfyPage
+    assetApi: AssetHelper
   ): MetadataBody | undefined {
-    const last = metadataMutations(comfyPage).at(-1)
+    const last = metadataMutations(assetApi).at(-1)
     return typeof last?.body === 'object' && last.body !== null
       ? (last.body as MetadataBody)
       : undefined
   }
 
-  test.beforeEach(async ({ comfyPage }) => {
-    comfyPage.assetApi.configure(
+  test.beforeEach(async ({ comfyPage, assetApi }) => {
+    assetApi.configure(
       withAsset(EDITABLE_MODEL),
       withAsset(IMMUTABLE_MODEL),
       withAsset(BARE_MODEL)
     )
-    await comfyPage.assetApi.mock()
+    await assetApi.mock()
 
     assetBrowserHelper = new AssetBrowserHelper(comfyPage.page)
     await comfyPage.modelLibrary.mockModelFolders(MOCK_MODEL_FOLDERS)
@@ -85,10 +88,10 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     await focusEditableModel()
   })
 
-  test.afterEach(async ({ comfyPage }) => {
+  test.afterEach(async ({ comfyPage, assetApi }) => {
     await assetBrowserHelper.clearMocks()
     await comfyPage.modelLibrary.clearMocks()
-    await comfyPage.assetApi.clearMocks()
+    await assetApi.clearMocks()
   })
 
   test.describe('1) Panel Rendering & Basic Info', () => {
@@ -168,26 +171,26 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     })
 
     test('submitting new display name sends metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.editDisplayNameButton.click()
       await modal.displayNameInput.fill('My Renamed Model')
       await modal.displayNameInput.press('Enter')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       expect(lastBody?.user_metadata?.name).toBe('My Renamed Model')
     })
 
     test('submitting same display name does not send metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.editDisplayNameButton.click()
       await modal.displayNameInput.fill('Cinematic Details v2')
@@ -198,7 +201,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.displayNameInput.press('Enter')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBe(initial + 1)
     })
 
@@ -212,9 +215,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     })
 
     test('submitting empty display name does not send metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.editDisplayNameButton.click()
       await modal.displayNameInput.fill('')
@@ -225,7 +228,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.displayNameInput.press('Enter')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBe(initial + 1)
     })
   })
@@ -262,9 +265,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.modelTypeSelect.click()
       await modal.page.getByRole('option', { name: /checkpoints/i }).click()
 
-      await expect
-        .poll(() => tagCalls.getCalls().length)
-        .toBe(initial + 2)
+      await expect.poll(() => tagCalls.getCalls().length).toBe(initial + 2)
     })
 
     test('updates combobox value immediately after selecting new model type', async () => {
@@ -285,18 +286,18 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect(modal.modelTaggingSection).toContainText('detail')
     })
 
-    test('adding a base model sends metadata update', async ({ comfyPage }) => {
-      const initial = metadataMutations(comfyPage).length
+    test('adding a base model sends metadata update', async ({ assetApi }) => {
+      const initial = metadataMutations(assetApi).length
 
       await modal.baseModelsInput.click()
       await modal.baseModelsInput.fill('sd3.5-large')
       await modal.baseModelsInput.press('Enter')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       const baseModels = lastBody?.user_metadata?.base_model
       expect(baseModels).toContain('sd3.5-large')
       expect(baseModels).toContain('sdxl')
@@ -304,9 +305,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     })
 
     test('removing a base model sends metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       const removeButtons = modal.baseModelsField.getByRole('button', {
         name: /remove/i
@@ -314,29 +315,29 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await removeButtons.first().click()
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       const baseModels = lastBody?.user_metadata?.base_model
       expect(baseModels).toBeDefined()
       expect(baseModels).toHaveLength(1)
     })
 
     test('adding an additional tag sends metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.additionalTagsInput.click()
       await modal.additionalTagsInput.fill('cinematic')
       await modal.additionalTagsInput.press('Enter')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       const tags = lastBody?.user_metadata?.additional_tags
       expect(tags).toContain('cinematic')
       expect(tags).toContain('portrait')
@@ -344,9 +345,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     })
 
     test('removing an additional tag sends metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       const removeButtons = modal.additionalTagsField.getByRole('button', {
         name: /remove/i
@@ -354,10 +355,10 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await removeButtons.first().click()
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       const tags = lastBody?.user_metadata?.additional_tags
       expect(tags).toBeDefined()
       expect(tags).toHaveLength(1)
@@ -372,17 +373,17 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     })
 
     test('typing new description sends debounced metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.userDescriptionTextarea.fill('Updated description body')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       expect(lastBody?.user_metadata?.user_description).toBe(
         'Updated description body'
       )
@@ -402,38 +403,38 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     })
 
     test('clearing description sends empty-string metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.userDescriptionTextarea.fill('')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       expect(lastBody?.user_metadata?.user_description).toBe('')
     })
   })
 
   test.describe('7) Watchers & State Reset', () => {
     test('switching assets resets metadata update state', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
       await modal.userDescriptionTextarea.fill('pending draft')
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBeGreaterThan(initial)
 
       await focusBareModel()
       await focusEditableModel()
 
-      const afterSwitch = metadataMutations(comfyPage).length
+      const afterSwitch = metadataMutations(assetApi).length
       await modal.userDescriptionTextarea.fill('something else')
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBe(afterSwitch + 1)
     })
 
@@ -451,19 +452,19 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
 
   test.describe('8) Debounce Behavior', () => {
     test('rapid description edits coalesce into one metadata update', async ({
-      comfyPage
+      assetApi
     }) => {
-      const initial = metadataMutations(comfyPage).length
+      const initial = metadataMutations(assetApi).length
 
       await modal.userDescriptionTextarea.fill('draft 1')
       await modal.userDescriptionTextarea.fill('draft 2')
       await modal.userDescriptionTextarea.fill('final debounced value')
 
       await expect
-        .poll(() => metadataMutations(comfyPage).length)
+        .poll(() => metadataMutations(assetApi).length)
         .toBe(initial + 1)
 
-      const lastBody = getLastMetadataBody(comfyPage)
+      const lastBody = getLastMetadataBody(assetApi)
       expect(lastBody?.user_metadata?.user_description).toBe(
         'final debounced value'
       )
@@ -482,9 +483,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await modal.modelTypeSelect.click()
       await modal.page.getByRole('option', { name: /checkpoints/i }).click()
 
-      await expect
-        .poll(() => tagCalls.getCalls().length)
-        .toBe(initial + 2)
+      await expect.poll(() => tagCalls.getCalls().length).toBe(initial + 2)
     })
   })
 })

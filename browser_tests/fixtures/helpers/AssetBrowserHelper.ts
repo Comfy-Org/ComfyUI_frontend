@@ -16,6 +16,7 @@ export class AssetBrowserHelper {
 
   constructor(private readonly page: Page) {}
 
+  /** Register before `comfyPage.setup()` so startup requests use this mock. */
   async mockAssetTags(): Promise<{ getCalls(): TagMutationCall[] }> {
     const calls: TagMutationCall[] = []
 

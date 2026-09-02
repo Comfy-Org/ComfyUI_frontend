@@ -39,6 +39,7 @@ export class ModelLibraryHelper {
 
   constructor(private readonly page: Page) {}
 
+  /** Register before `comfyPage.setup()` so startup requests use this mock. */
   async mockModelFolders(folders: ModelFolderInfo[]): Promise<void> {
     this.folders = [...folders]
 

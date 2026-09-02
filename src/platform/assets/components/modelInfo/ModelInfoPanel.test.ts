@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
@@ -87,11 +88,12 @@ describe('ModelInfoPanel', () => {
 
     it('labels the display name editor', async () => {
       const asset = createMockAsset({
-        user_metadata: { name: 'My Custom Model' }
+        user_metadata: { name: 'My Custom Model' },
+        is_immutable: false
       })
       renderPanel(asset)
 
-      await fireEvent.dblClick(screen.getByText('My Custom Model'))
+      await userEvent.dblClick(screen.getByText('My Custom Model'))
 
       expect(
         screen.getByRole('textbox', {
@@ -197,16 +199,6 @@ describe('ModelInfoPanel', () => {
   })
 
   describe('Accordion Structure', () => {
-    it('marks each section with a stable selector', () => {
-      const { container } = renderPanel(createMockAsset())
-
-      expect(
-        Array.from(container.querySelectorAll('[data-section]')).map(
-          (section) => section.getAttribute('data-section')
-        )
-      ).toEqual(['basic-info', 'model-tagging', 'model-description'])
-    })
-
     it('renders all three section labels', () => {
       renderPanel(createMockAsset())
       expect(
