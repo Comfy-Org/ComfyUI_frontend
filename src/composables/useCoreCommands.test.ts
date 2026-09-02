@@ -13,6 +13,13 @@ import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
+  vi.fn(<T>(clear: () => T): T => clear())
+)
+vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+  runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
+}))
+
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
 vi.mock('vue-i18n', async () => {
@@ -345,6 +352,7 @@ describe('useCoreCommands', () => {
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
+    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -359,6 +367,7 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
+      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -376,6 +385,7 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
+      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       // Should only remove user nodes, not input/output nodes
       const subgraph = app.canvas.subgraph!

@@ -23,6 +23,8 @@ export const AGENT_REMOTE_ACTOR = 'agent-remote'
 export interface LayoutChangeView {
   operation: {
     type: string
+    graphId?: string
+    ownerGraphId?: string
     actor?: string
     source?: string
     nodeId?: NodeId
@@ -91,6 +93,17 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     switch (operation.type) {
       case 'createNode': {
         if (!gate(change, inTeardown)) return
+        if (
+          operation.ownerGraphId !== undefined &&
+          operation.graphId !== undefined &&
+          operation.ownerGraphId !== operation.graphId
+        ) {
+          console.error(
+            '[agent-crdt] subgraph-interior node create has no wire op; the bound doc diverges from the local graph',
+            operation.nodeId
+          )
+          return
+        }
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -115,6 +128,17 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       }
       case 'deleteNode': {
         if (!gate(change, inTeardown)) return
+        if (
+          operation.ownerGraphId !== undefined &&
+          operation.graphId !== undefined &&
+          operation.ownerGraphId !== operation.graphId
+        ) {
+          console.error(
+            '[agent-crdt] subgraph-interior node delete has no wire op; the bound doc diverges from the local graph',
+            operation.nodeId
+          )
+          return
+        }
         if (operation.nodeId === undefined) return
         deps.enqueue([
           {

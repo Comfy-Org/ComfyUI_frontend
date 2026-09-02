@@ -177,6 +177,8 @@ export interface SetNodeZIndexOperation extends NodeOpBase {
  */
 export interface CreateNodeOperation extends NodeOpBase {
   type: 'createNode'
+  /** Graph that directly contains the node (root or subgraph). */
+  ownerGraphId?: UUID
   layout: NodeLayout
 }
 
@@ -185,6 +187,8 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
+  /** Graph that directly contained the node (root or subgraph). */
+  ownerGraphId?: UUID
 }
 
 /**

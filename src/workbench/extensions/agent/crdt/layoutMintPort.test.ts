@@ -94,6 +94,38 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
+  it('surfaces interior create and delete without minting root operations', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const interior = {
+      graphId: 'root',
+      ownerGraphId: 'subgraph'
+    }
+
+    deliver({
+      operation: { ...createNodeChange('1').operation, ...interior }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, ...interior }
+    })
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('subgraph-interior node create'),
+      '1'
+    )
+    expect(consoleError).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('subgraph-interior node delete'),
+      '1'
+    )
+    expect(consoleError).not.toHaveBeenCalledWith(
+      expect.stringContaining('no snapshot for node'),
+      expect.anything()
+    )
+    consoleError.mockRestore()
+  })
+
   it('never mints an agent-remote echo (KA-6 sender half)', () => {
     deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
 
