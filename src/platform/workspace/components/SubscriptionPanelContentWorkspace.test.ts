@@ -513,6 +513,21 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(screen.getByText('Inactive')).toBeInTheDocument()
     })
 
+    it('gives an ended Personal plan the inactive tile its badge claims', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockBillingStatus.value = 'inactive'
+      mockCanSubscribeSelfServe.value = false
+      renderComponent()
+
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
+      expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+        'data-inactive-plan',
+        'true'
+      )
+    })
+
     it('badges an ended Enterprise plan and keeps its credits out of the zero state', () => {
       useEnterprisePlan()
       mockSubscriptionStatus.value = 'ended'

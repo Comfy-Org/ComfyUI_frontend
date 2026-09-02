@@ -320,7 +320,7 @@
           <div class="w-full lg:max-w-md">
             <CreditsTile
               :zero-state="showZeroState"
-              :inactive-plan="showInactiveSubscription"
+              :inactive-plan="isSubscriptionEnded"
             />
           </div>
 
