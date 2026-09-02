@@ -514,18 +514,32 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   // capture that completes after the switch cannot persist the new model's
   // pixels under the previous model's name.
   let thumbnailGeneration = 0
+  let standaloneThumbnailCapture: Promise<void> | undefined
 
   const persistStandaloneThumbnail = (modelUrl: string, generation: number) => {
     if (!load3d || !isAssetPreviewSupported()) return
     const name = standaloneAssetName(modelUrl)
     if (!name) return
-    void load3d
-      .captureThumbnail(THUMBNAIL_CAPTURE_SIZE, THUMBNAIL_CAPTURE_SIZE)
+    const capture = load3d.captureThumbnail(
+      THUMBNAIL_CAPTURE_SIZE,
+      THUMBNAIL_CAPTURE_SIZE
+    )
+    const captureComplete = capture.then(
+      () => undefined,
+      () => undefined
+    )
+    standaloneThumbnailCapture = captureComplete
+    void capture
       .then((dataUrl) => {
         if (generation !== thumbnailGeneration) return
         return persistThumbnailFromDataUrl(name, dataUrl)
       })
       .catch(() => {})
+    void captureComplete.finally(() => {
+      if (standaloneThumbnailCapture === captureComplete) {
+        standaloneThumbnailCapture = undefined
+      }
+    })
   }
 
   /**
@@ -536,6 +550,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (!load3d) return
 
     try {
+      if (standaloneThumbnailCapture) {
+        await standaloneThumbnailCapture
+        if (generation !== thumbnailGeneration) return
+      }
       saveStandaloneConfig()
       await load3d.loadModel(modelUrl)
       if (generation !== thumbnailGeneration) return

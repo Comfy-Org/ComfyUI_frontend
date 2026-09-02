@@ -807,11 +807,14 @@ describe('useLoad3dViewer', () => {
         containerRef,
         '/api/view?filename=first.glb&type=output'
       )
-      await viewer.initializeStandaloneViewer(
+      const secondLoad = viewer.initializeStandaloneViewer(
         containerRef,
         '/api/view?filename=second.glb&type=output'
       )
+      expect(mockLoad3d.loadModel).toHaveBeenCalledTimes(1)
       releaseFirst('data:image/png;base64,first')
+      await secondLoad
+      expect(mockLoad3d.loadModel).toHaveBeenCalledTimes(2)
 
       await vi.waitFor(() =>
         expect(persistThumbnailFromDataUrl).toHaveBeenCalledWith(
