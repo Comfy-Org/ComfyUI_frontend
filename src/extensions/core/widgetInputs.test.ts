@@ -508,22 +508,13 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(222)
   })
 
-  it('expires an unconsumed serialized value after graph restoration', () => {
-    const animationFrames: FrameRequestCallback[] = []
-    vi.stubGlobal(
-      'requestAnimationFrame',
-      vi.fn((callback: FrameRequestCallback) => {
-        animationFrames.push(callback)
-        return animationFrames.length
-      })
-    )
+  it('clears an unconsumed serialized value when the node disconnects', () => {
     const primitive = new PrimitiveNode('Primitive')
     primitive.configure(
       fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
     )
 
-    animationFrames.shift()?.(0)
-    animationFrames.shift()?.(0)
+    primitive.onLastDisconnect()
 
     const graph = new LGraph()
     const target = new LGraphNode('Target')

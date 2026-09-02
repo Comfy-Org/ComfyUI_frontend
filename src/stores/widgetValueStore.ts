@@ -35,6 +35,11 @@ interface WidgetValueChange {
   context?: RemoteMutationContext
 }
 
+interface PrimitiveWidgetRestorationState {
+  type: string
+  values: readonly WidgetValue[]
+}
+
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
@@ -85,6 +90,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     valueChangeListeners.add(listener)
     return () => valueChangeListeners.delete(listener)
   }
+  const graphPrimitiveWidgetRestorations = new Map<
+    UUID,
+    Map<NodeId, PrimitiveWidgetRestorationState>
+  >()
 
   function setNodeWidgetRestoration(
     graphId: UUID,
@@ -122,6 +131,38 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!restorations) return
     restorations.delete(nodeId)
     if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
+  }
+
+  function setPrimitiveWidgetRestoration(
+    graphId: UUID,
+    nodeId: NodeId,
+    restoration: PrimitiveWidgetRestorationState
+  ): void {
+    let graphRestorations = graphPrimitiveWidgetRestorations.get(graphId)
+    if (!graphRestorations) {
+      graphRestorations = new Map()
+      graphPrimitiveWidgetRestorations.set(graphId, graphRestorations)
+    }
+    graphRestorations.set(nodeId, restoration)
+  }
+
+  function getPrimitiveWidgetRestoration(
+    graphId: UUID,
+    nodeId: NodeId
+  ): PrimitiveWidgetRestorationState | undefined {
+    return graphPrimitiveWidgetRestorations.get(graphId)?.get(nodeId)
+  }
+
+  function clearPrimitiveWidgetRestoration(
+    graphId: UUID,
+    nodeId: NodeId
+  ): void {
+    const restorations = graphPrimitiveWidgetRestorations.get(graphId)
+    if (!restorations) return
+    restorations.delete(nodeId)
+    if (restorations.size === 0) {
+      graphPrimitiveWidgetRestorations.delete(graphId)
+    }
   }
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
@@ -456,6 +497,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     _context?: RemoteMutationContext
   ): void {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
+    graphPrimitiveWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
     if (widgetStates) {
@@ -480,6 +522,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphWidgetRenderStates.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
+    graphPrimitiveWidgetRestorations.delete(graphId)
   }
 
   return {
@@ -487,6 +530,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
+    setPrimitiveWidgetRestoration,
+    getPrimitiveWidgetRestoration,
+    clearPrimitiveWidgetRestoration,
     getWidget,
     getWidgetRenderState,
     onValueChange,
