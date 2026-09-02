@@ -226,10 +226,12 @@ function deduplicateClonedSubgraphNodeIds(
 
   for (const subgraph of clonedSubgraphs) {
     patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
+    patchPreviewExposures(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
   }
 
   if (clonedRootNodes) {
     patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
+    patchPreviewExposures(clonedRootNodes, subgraphIdSet, remapBySubgraph)
   }
 }
 
@@ -550,6 +552,32 @@ export function topologicalSortSubgraphs(
   if (sorted.length !== subgraphs.length) return subgraphs
 
   return sorted
+}
+
+/** Patches `properties.previewExposures[].sourceNodeId` for a remapped interior node. */
+function patchPreviewExposures(
+  hostNodes: ISerialisedNode[],
+  subgraphIdSet: Set<string>,
+  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
+): void {
+  for (const node of hostNodes) {
+    if (!subgraphIdSet.has(node.type)) continue
+    const remappedIds = remapBySubgraph.get(node.type)
+    if (!remappedIds) continue
+
+    const previewExposures = node.properties?.previewExposures
+    if (!Array.isArray(previewExposures)) continue
+
+    for (const exposure of previewExposures) {
+      if (!exposure || typeof exposure !== 'object') continue
+      const { sourceNodeId } = exposure as { sourceNodeId?: unknown }
+      if (typeof sourceNodeId !== 'string') continue
+      const newId = remappedIds.get(toNodeId(sourceNodeId))
+      if (newId !== undefined) {
+        ;(exposure as { sourceNodeId: string }).sourceNodeId = String(newId)
+      }
+    }
+  }
 }
 
 /** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
