@@ -541,13 +541,25 @@ let singleton: Comfy | undefined
  * The app-wide instance. The graph provider is injected by the app layer rather
  * than imported here, so this module stays a leaf: it depends on litegraph
  * types only, never on stores or the app.
+ *
+ * @knipIgnoreUsedByStackedPR magicPatch/verify builds its instance through this
  */
-function useComfyApi(
+export function useComfyApi(
   getGraph: () => LGraph | null | undefined,
   host?: ComfyApiHost
 ): Comfy {
   singleton ??= createComfyApi(getGraph, LATEST_MAJOR, host)
   return singleton
+}
+
+/**
+ * Drops the memoised instance, so a suite can build one against a graph it
+ * controls. The conversion corpus runs every converted pack this way.
+ *
+ * @knipIgnoreUsedByStackedPR magicPatch/verify resets between packs
+ */
+export function resetComfyApi(): void {
+  singleton = undefined
 }
 
 /**
