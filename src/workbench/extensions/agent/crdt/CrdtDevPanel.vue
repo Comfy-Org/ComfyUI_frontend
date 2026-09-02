@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useTemplateRef
+} from 'vue'
 
 import { api } from '@/scripts/api'
 
@@ -87,6 +94,8 @@ function readOpen(): boolean {
 }
 
 const open = ref(readOpen())
+const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
+const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
 function setOpen(value: boolean) {
   open.value = value
@@ -95,6 +104,7 @@ function setOpen(value: boolean) {
   } catch {
     /* storage unavailable — panel still toggles in-memory */
   }
+  void nextTick(() => (value ? closeButton.value : chipButton.value)?.focus())
 }
 
 // ── 1s poll of the PoC console helper ─────────────────────────────────────
@@ -195,9 +205,11 @@ function fmtTime(at: number): string {
   <div
     class="fixed right-3 bottom-3 z-9999 font-mono text-xs"
     data-testid="crdt-dev-panel"
+    @keydown.esc="setOpen(false)"
   >
     <button
       v-if="!open"
+      ref="chipButton"
       class="rounded-full border border-border-default bg-base-background px-3 py-1 shadow-md"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
@@ -214,6 +226,7 @@ function fmtTime(at: number): string {
       >
         <span class="font-bold">{{ S.title }}</span>
         <button
+          ref="closeButton"
           class="rounded-sm border border-border-default px-2 py-0.5"
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
