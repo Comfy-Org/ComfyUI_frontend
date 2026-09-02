@@ -1101,6 +1101,109 @@ describe('useExecutionStore - progress_text startup guard', () => {
   })
 })
 
+describe('rewriteSessionWorkflowPaths', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    store = useExecutionStore()
+  })
+
+  it('rewrites all entries associated with the workflow instance', () => {
+    store.ensureSessionWorkflowPath(
+      'job-1',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-2',
+      'workflows/keep.app.json',
+      'instance-B'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-3',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+      'workflows/new.app.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
+      'workflows/keep.app.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-3')).toBe(
+      'workflows/new.app.json'
+    )
+  })
+
+  it('only rewrites entries matching the workflow instance', () => {
+    store.ensureSessionWorkflowPath(
+      'job-1',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-2',
+      'workflows/old.app.json',
+      'instance-B'
+    )
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+      'workflows/new.app.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
+      'workflows/old.app.json'
+    )
+  })
+
+  it('does not rewrite entries from a different workflow sharing the same temp path', () => {
+    store.ensureSessionWorkflowPath(
+      'job-old',
+      'workflows/Unsaved Workflow.json',
+      'instance-OLD'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-new',
+      'workflows/Unsaved Workflow.json',
+      'instance-NEW'
+    )
+
+    store.rewriteSessionWorkflowPaths(
+      'instance-NEW',
+      'workflows/saved.app.json'
+    )
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-old')).toBe(
+      'workflows/Unsaved Workflow.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-new')).toBe(
+      'workflows/saved.app.json'
+    )
+  })
+
+  it('does not trigger reactivity when no entries match', () => {
+    store.ensureSessionWorkflowPath('job-1', 'workflows/keep.app.json')
+    const originalMap = store.jobIdToSessionWorkflowPath
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
+  })
+
+  it('handles empty map', () => {
+    const originalMap = store.jobIdToSessionWorkflowPath
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath.size).toBe(0)
+    expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
+  })
+})
+
 describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 

@@ -200,7 +200,7 @@ const structuredData = shouldNoindex
       >
         try {
           const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-          if (dismissed[bannerVersion]) {
+          if (dismissed && dismissed[bannerVersion] === true) {
             document.documentElement.setAttribute(dismissAttr, '')
           }
         } catch (e) {}

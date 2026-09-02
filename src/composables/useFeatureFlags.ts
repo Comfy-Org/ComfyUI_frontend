@@ -27,6 +27,7 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
+  PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -155,6 +156,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         remoteConfig.value.partner_node_governance_enabled,
         false
+      )
+    },
+    get partnerRunGateEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
+        remoteConfig.value.partner_run_gate_enabled,
+        true
       )
     },
     get userSecretsEnabled() {
