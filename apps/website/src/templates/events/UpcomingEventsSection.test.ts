@@ -60,7 +60,7 @@ beforeEach(() => {
 
 describe('UpcomingEventsSection', () => {
   it('renders a row per upcoming event with its title, blurb, location and date', () => {
-    render(UpcomingEventsSection)
+    render(UpcomingEventsSection, { props: { locale: 'en' } })
 
     const rows = screen.getAllByRole('listitem')
     expect(rows).toHaveLength(2)
@@ -75,7 +75,7 @@ describe('UpcomingEventsSection', () => {
   })
 
   it('links streamed events to their own page and the rest straight out', () => {
-    render(UpcomingEventsSection)
+    render(UpcomingEventsSection, { props: { locale: 'en' } })
 
     const streamedLink = screen.getByRole('link', {
       name: `${streamedEvent.title.en} — Livestream`
@@ -96,7 +96,7 @@ describe('UpcomingEventsSection', () => {
   it('keeps the list in place when nothing is upcoming', () => {
     stub.upcomingEvents = []
 
-    render(UpcomingEventsSection)
+    render(UpcomingEventsSection, { props: { locale: 'en' } })
 
     expect(screen.getByRole('list')).toBeTruthy()
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
