@@ -211,7 +211,7 @@ describe('TaskItemImpl', () => {
     expect(output.supportsPreview).toBe(true)
   })
 
-  it.skip('should parse text outputs', () => {
+  it('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
       preview_output: {
@@ -223,10 +223,16 @@ describe('TaskItemImpl', () => {
 
     const task = new TaskItemImpl(job)
 
-    expect(task.flatOutputs).toHaveLength(1)
-    expect(task.flatOutputs[0].filename).toBe('')
-    expect(task.previewableOutputs).toHaveLength(1)
-    expect(task.previewOutput?.content).toBe('test')
+    expect(task.flatOutputs).toStrictEqual([
+      expect.objectContaining({
+        filename: '',
+        content: 'test',
+        isText: true,
+        supportsPreview: true
+      })
+    ])
+    expect(task.previewableOutputs).toStrictEqual(task.flatOutputs)
+    expect(task.previewOutput).toBe(task.flatOutputs[0])
   })
 
   describe('error extraction getters', () => {

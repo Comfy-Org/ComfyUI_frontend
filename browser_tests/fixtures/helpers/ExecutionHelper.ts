@@ -293,19 +293,12 @@ export class ExecutionHelper {
    */
   async completeWithHistory(
     jobId: string,
-    nodeId: string,
-    filename: string
+    previewOutput: NonNullable<RawJobListItem['preview_output']>
   ): Promise<void> {
     this.completedJobs.push(
       createMockJob({
         id: jobId,
-        preview_output: {
-          filename,
-          subfolder: '',
-          type: 'output',
-          nodeId,
-          mediaType: 'images'
-        }
+        preview_output: previewOutput
       })
     )
 

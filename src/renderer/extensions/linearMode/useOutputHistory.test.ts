@@ -226,6 +226,29 @@ describe(useOutputHistory, () => {
       expect(outputs[1].filename).toBe('a.png')
     })
 
+    it('returns inline text from metadata without a preview URL', () => {
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
+      const text = new ResultItemImpl({
+        filename: '',
+        subfolder: '',
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'text',
+        content: 'hello'
+      })
+      const asset = {
+        ...makeAsset('a1', 'job-1', {
+          allOutputs: [text],
+          outputCount: 1
+        }),
+        preview_url: undefined
+      }
+
+      const { allOutputs } = useOutputHistory()
+
+      expect(allOutputs(asset)).toStrictEqual([text])
+    })
+
     it('filters outputs to selected output nodes only', () => {
       const results = [
         makeResult('a.png', '1'),
