@@ -23,15 +23,13 @@ const { models, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-type HubKind = HubWorkflowKind | 'model'
-const KINDS = ['all', 'graph', 'app', 'model'] as const
+const KINDS = ['all', 'graph', 'app'] as const
 type KindFilter = (typeof KINDS)[number]
 
 const kindLabelKey: Record<KindFilter, TranslationKey> = {
   all: 'workshop.hub.kind.all',
   graph: 'workshop.hub.kind.graph',
-  app: 'workshop.hub.kind.app',
-  model: 'workshop.hub.kind.model'
+  app: 'workshop.hub.kind.app'
 }
 const ioLabelKey: Record<string, TranslationKey> = {
   text: 'workshop.hub.io.text',
@@ -42,8 +40,11 @@ const ioLabelKey: Record<string, TranslationKey> = {
   other: 'workshop.hub.io.other'
 }
 
+// A partner model is a node graph with a single partner node, so it lives
+// under Node Graphs and only differs by its tag and call to action.
 interface HubItem {
-  readonly kind: HubKind
+  readonly kind: HubWorkflowKind
+  readonly partner: boolean
   readonly id: string
   readonly title: string
   readonly author: string
@@ -68,7 +69,8 @@ function taskLabel(model: WorkshopModel) {
 function modelItem(model: WorkshopModel): HubItem {
   const task = taskLabel(model)
   return {
-    kind: 'model',
+    kind: 'graph',
+    partner: true,
     id: model.slug,
     title: task ? `${model.name}: ${task}` : model.name,
     author: t('workshop.hub.author', locale),
@@ -85,6 +87,7 @@ function modelItem(model: WorkshopModel): HubItem {
 
 const workflowItems: readonly HubItem[] = hubWorkflows.map((workflow) => ({
   kind: workflow.kind,
+  partner: false,
   id: workflow.title,
   title: workflow.title,
   author: workflow.author,
@@ -209,7 +212,7 @@ const toolClass =
           :href="item.href"
           :target="item.external ? '_blank' : undefined"
           :rel="item.external ? 'noopener' : undefined"
-          :data-testid="`hub-card-${item.kind}`"
+          :data-testid="`hub-card-${item.partner ? 'model' : item.kind}`"
           class="group bg-primary-comfy-ink-light block overflow-hidden rounded-2xl border border-transparency-white-t8 transition-colors hover:border-transparency-white-t20"
         >
           <div
@@ -240,7 +243,7 @@ const toolClass =
                 :class="
                   cn(
                     'size-3.5 rounded-full',
-                    item.kind === 'model'
+                    item.partner
                       ? 'bg-primary-comfy-yellow'
                       : 'bg-primary-comfy-plum'
                   )
@@ -250,7 +253,7 @@ const toolClass =
               {{ item.author }}
             </span>
             <span
-              v-if="item.kind === 'model'"
+              v-if="item.partner"
               class="bg-primary-comfy-yellow inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase"
             >
               <ChevronRight class="size-3" aria-hidden="true" />

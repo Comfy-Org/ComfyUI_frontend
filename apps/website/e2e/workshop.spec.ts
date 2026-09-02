@@ -15,13 +15,13 @@ test.describe('Workshop entry', () => {
   test('mirrors comfy.org/workflows and links partner models to their page', async ({
     page
   }) => {
-    await page.goto('/workshop/?kind=model')
+    await page.goto('/workshop/')
     const hub = page.getByTestId('workshop-hub')
-    await expect(hub.getByTestId('hub-kind-model')).toHaveAttribute(
-      'aria-selected',
-      'true'
+    await hub.getByTestId('hub-kind-graph').click()
+    await expect(hub.getByTestId('hub-card-app')).toHaveCount(0)
+    await expect(hub.getByTestId('hub-card-model').first()).toContainText(
+      'Partner Nodes'
     )
-    await expect(hub.getByTestId('hub-card-graph')).toHaveCount(0)
     await hub.getByTestId('hub-search').fill('kling ai')
     await hub.getByTestId('hub-card-model').first().click()
     await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)

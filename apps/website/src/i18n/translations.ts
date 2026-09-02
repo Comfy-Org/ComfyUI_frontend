@@ -8620,7 +8620,6 @@ Enterprise`
   'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
   'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
   'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
-  'workshop.hub.kind.model': { en: 'Partner Models', 'zh-CN': '合作伙伴模型' },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.openHub': {
     en: 'Open comfy.org/workflows',

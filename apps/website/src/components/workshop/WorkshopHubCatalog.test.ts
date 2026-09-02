@@ -36,12 +36,13 @@ const models: WorkshopModel[] = [
 
 describe('WorkshopHubCatalog', () => {
   it('preselects the kind named in the URL', async () => {
-    vi.stubGlobal('location', { search: '?kind=model' })
+    vi.stubGlobal('location', { search: '?kind=app' })
     render(WorkshopHubCatalog, { props: { models } })
     await nextTick()
     expect(
-      screen.getByTestId('hub-kind-model').getAttribute('aria-selected')
+      screen.getByTestId('hub-kind-app').getAttribute('aria-selected')
     ).toBe('true')
+    expect(screen.queryByTestId('hub-card-model')).toBeNull()
     expect(screen.queryByTestId('hub-card-graph')).toBeNull()
   })
 
@@ -57,13 +58,13 @@ describe('WorkshopHubCatalog', () => {
     )
   })
 
-  it('narrows to partner models by chip and by search', async () => {
+  it('keeps partner models under Node Graphs and narrows by search', async () => {
     const user = userEvent.setup()
     render(WorkshopHubCatalog, { props: { models } })
 
-    await user.click(screen.getByTestId('hub-kind-model'))
+    await user.click(screen.getByTestId('hub-kind-graph'))
     expect(screen.getAllByTestId('hub-card-model')).toHaveLength(2)
-    expect(screen.queryByTestId('hub-card-graph')).toBeNull()
+    expect(screen.getAllByTestId('hub-card-graph').length).toBeGreaterThan(0)
     expect(screen.queryByTestId('hub-card-app')).toBeNull()
 
     await user.type(screen.getByTestId('hub-search'), 'flux')
