@@ -36,6 +36,8 @@ export type EnqueueResult =
   /** Queue bound exceeded; queue discarded, resync required. */
   | { status: 'overflow'; discardedFrames: number }
   | { status: 'resync-required' }
+  /** Frame addressed to another target; never queued, in every build. */
+  | { status: 'rejected'; reason: 'cross-target' }
 
 export type CommitResult =
   | { status: 'idle' }
@@ -92,15 +94,22 @@ export function createDetachedTargetSession(
   let expectedSeq: number | null = null
   let queue: TargetFrame[] = []
 
-  function assertTarget(frameWorkflowId: string): void {
+  /**
+   * Loud in DEV (throws), reported in production, and fail-closed in both:
+   * `assert` returns in non-DEV builds, so callers must still honour `false`.
+   */
+  function isOwnTarget(frameWorkflowId: string): boolean {
+    const matches = frameWorkflowId === workflowId
     assert(
-      frameWorkflowId === workflowId,
-      `DetachedTargetSession: frame addressed to ${frameWorkflowId} does not match session target ${workflowId}; frames must never cross targets`
+      matches,
+      'DetachedTargetSession: frame addressed to another target; frames must never cross targets'
     )
+    return matches
   }
 
   function enqueue(frame: TargetFrame): EnqueueResult {
-    assertTarget(frame.workflowId)
+    if (!isOwnTarget(frame.workflowId))
+      return { status: 'rejected', reason: 'cross-target' }
     if (needsResync) return { status: 'resync-required' }
 
     const lastAcceptedSeq = queue.at(-1)?.seq ?? committedSeq

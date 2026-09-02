@@ -218,6 +218,11 @@ export function useAgentCrdtFollower(
       subscribeRetryAttempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS
     )
       return
+    // The pending timer here is the final attempt's answer deadline.
+    if (subscribeRetryTimer !== null) {
+      clearTimeout(subscribeRetryTimer)
+      subscribeRetryTimer = null
+    }
     subscribeRetryFailureReported = true
     useTelemetry()?.trackAgentReconnectFailed({
       attempt: subscribeRetryAttempt,
@@ -233,11 +238,13 @@ export function useAgentCrdtFollower(
   }
 
   const scheduleSubscribeRetry = (): void => {
-    if (subscribeRetryTimer !== null) return
+    // A refusal after the final attempt is the exhaustion signal itself; it
+    // must win over the answer deadline armed below.
     if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
       reportSubscribeRetryExhausted()
       return
     }
+    if (subscribeRetryTimer !== null) return
     const target = subscribedWorkflowId.value
     if (target === null) return
     subscribeRetryStartedAt ??= performance.now()
@@ -252,8 +259,18 @@ export function useAgentCrdtFollower(
         workflowId: target
       })
       bridge.resubscribe()
-      if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS)
-        reportSubscribeRetryExhausted()
+      // The final attempt has no retry to reveal a silently dropped answer,
+      // so treat silence for one more backoff step as a refusal. A confirmed
+      // subscribe cancels this through clearSubscribeRetry.
+      if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+        subscribeRetryTimer = setTimeout(
+          () => {
+            subscribeRetryTimer = null
+            reportSubscribeRetryExhausted()
+          },
+          SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
+        )
+      }
     }, delay)
   }
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import type {
@@ -6,6 +6,7 @@ import type {
   TargetFrameApplyPort
 } from '@/core/graph/document/detachedTargetSession'
 import { createDetachedTargetSession } from '@/core/graph/document/detachedTargetSession'
+import { setAssertReporter } from '@/base/assert'
 
 const WORKFLOW_ID = 'wf-detached'
 
@@ -303,15 +304,43 @@ describe('createDetachedTargetSession', () => {
     freshHost.destroy()
   })
 
-  it('rejects frames addressed to another target loudly', () => {
-    const session = createDetachedTargetSession(WORKFLOW_ID)
-    const stranger = createFrameSource('wf-other')
+  describe('cross-target frames', () => {
+    afterEach(() => {
+      setAssertReporter(null)
+    })
 
-    expect(() =>
-      session.enqueue(
+    it('rejects frames addressed to another target loudly in DEV', () => {
+      vi.stubEnv('DEV', true)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const session = createDetachedTargetSession(WORKFLOW_ID)
+      const stranger = createFrameSource('wf-other')
+
+      expect(() =>
+        session.enqueue(
+          stranger.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+        )
+      ).toThrow(/frames must never cross targets/)
+    })
+
+    it('fails closed outside DEV: reported, never queued', () => {
+      vi.stubEnv('DEV', false)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const reported: string[] = []
+      setAssertReporter((message) => reported.push(message))
+      const session = createDetachedTargetSession(WORKFLOW_ID)
+      const stranger = createFrameSource('wf-other')
+
+      const result = session.enqueue(
         stranger.frame((doc) => setNode(doc, '1', { type: 'Source' }))
       )
-    ).toThrow(/frames must never cross targets/)
+
+      expect(result).toEqual({ status: 'rejected', reason: 'cross-target' })
+      expect(reported).toHaveLength(1)
+      expect(reported[0]).toMatch(/frames must never cross targets/)
+      expect(reported[0]).not.toContain('wf-other')
+      expect(session.commitNext(acceptAll).status).toBe('idle')
+      expect(session.snapshot().committedSeq).toBeNull()
+    })
   })
 
   it('isCommitted answers for any sequence at or below the committed head of the same lineage', () => {

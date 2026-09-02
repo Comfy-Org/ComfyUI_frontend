@@ -222,6 +222,12 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_subscribed', { ok: false })
       vi.advanceTimersByTime(500 * 2 ** attempt)
     }
+    // The final attempt was sent but not yet answered: no verdict yet.
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(60_000)
 
     expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
     expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith({
@@ -230,6 +236,47 @@ describe('useAgentCrdtFollower', () => {
       retryable: true,
       reconnect_duration_ms: 31_500
     })
+    unmount()
+  })
+
+  it('does not report exhaustion when the final attempt is confirmed', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(60_000)
+
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+    expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('reports exhaustion when the final attempt is never answered', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+
+    // Silence for one more backoff step (500 * 2 ** 6) counts as a refusal.
+    vi.advanceTimersByTime(32_000 - 1)
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ attempt: 6, reconnect_duration_ms: 63_500 })
+    )
     unmount()
   })
 
