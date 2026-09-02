@@ -18,4 +18,5 @@ const result = spawnSync('pnpm', ['exec', 'vitest', 'run', ...testFiles], {
   shell: process.platform === 'win32'
 })
 
+if (result.error) console.error(result.error)
 process.exit(result.status ?? 1)
