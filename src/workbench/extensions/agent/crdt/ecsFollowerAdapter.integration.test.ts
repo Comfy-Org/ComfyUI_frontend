@@ -826,6 +826,75 @@ describe('EcsFollowerAdapter integration', () => {
     })
   })
 
+  it('retries a dropped add with the next unrelated update', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    let activeScope: typeof scope | null = null
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    let seq = 0
+    let first = true
+
+    const deliver = (operationId: string, operation: object) => {
+      const before = Y.encodeStateVector(host)
+      seq += 1
+      const result = applyOps(
+        host,
+        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: operationId, outcome: 'applied' }
+      ])
+      const update = first
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, before)
+      first = false
+      follower.applyRemoteUpdate(update)
+      return adapter.applyFrame({
+        workflowId: 'wf',
+        seq,
+        update,
+        actor: 'agent:test',
+        opIds: [operationId]
+      })
+    }
+
+    expect(
+      deliver('dropped-add', {
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Source',
+        pos: [0, 0],
+        node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+      })
+    ).toBe(false)
+
+    activeScope = scope
+    expect(
+      deliver('unrelated-add', {
+        op: 'add_node',
+        node_id: 2,
+        class_type: 'Sink',
+        pos: [100, 0],
+        node: { id: 2, type: 'Sink', inputs: [], outputs: [] }
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1', '2'])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('keeps follower docs and apply queues isolated by workflow target', () => {
     const followerA = new FollowerDoc()
     const followerB = new FollowerDoc()

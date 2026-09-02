@@ -223,7 +223,6 @@ export class EcsFollowerAdapter {
     const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
-    this.discardSessionPending(session)
 
     const replacedNodeIds = new Set(
       [...nodeActions]
@@ -301,12 +300,16 @@ export class EcsFollowerAdapter {
       }
     })
 
-    // Only clear the reconciliation flag once the batch actually commits.
-    // A rejected batch (no scope, or validation failure) must leave
-    // reconcileNextFrame set so the next frame retries authoritative
-    // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    // Only clear the reconciliation flag and the pending node/widget/link
+    // work once the batch actually commits. A rejected batch (no scope, or
+    // validation failure) must leave reconcileNextFrame set so the next
+    // frame retries authoritative cleanup, and must leave the dropped
+    // work in session state so the next frame retries it instead of
+    // silently losing it.
+    if (committed) {
+      session.reconcileNextFrame = false
+      this.discardSessionPending(session)
+    }
     return committed
   }
 

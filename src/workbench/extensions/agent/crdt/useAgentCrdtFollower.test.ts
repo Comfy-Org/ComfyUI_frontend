@@ -615,7 +615,7 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  it('records a dropped doc_update when the adapter has no bound session', () => {
+  it('records and resubscribes after a dropped doc_update', () => {
     const { unmount } = mountFollower('wf-1')
     adapterState.applyFrame.mockReturnValueOnce(false)
 
@@ -630,6 +630,8 @@ describe('useAgentCrdtFollower', () => {
       workflowId: 'wf-1',
       seq: 7
     })
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+    expect(adapterState.bind).toHaveBeenCalledOnce()
     unmount()
   })
 
