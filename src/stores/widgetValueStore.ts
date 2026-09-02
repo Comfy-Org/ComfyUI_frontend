@@ -28,6 +28,8 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
+type HydrationCallback = () => void
+
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
   const graphWidgetRenderStates = ref(
@@ -38,6 +40,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     UUID,
     Map<NodeId, WidgetRestorationState>
   >()
+  const hydratingNodes = new Set<NodeId>()
+  const hydrationCallbacks = new Map<NodeId, HydrationCallback[]>()
 
   function setNodeWidgetRestoration(
     graphId: UUID,
@@ -427,6 +431,31 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (widgetOrders?.size === 0) graphNodeWidgetOrders.value.delete(graphId)
   }
 
+  function beginHydration(nodeId: NodeId): void {
+    hydratingNodes.add(nodeId)
+  }
+
+  function commitHydration(nodeId: NodeId): void {
+    hydratingNodes.delete(nodeId)
+    const callbacks = hydrationCallbacks.get(nodeId)
+    if (!callbacks) return
+
+    hydrationCallbacks.delete(nodeId)
+    for (const cb of callbacks) cb()
+  }
+
+  function isHydrating(nodeId: NodeId): boolean {
+    return hydratingNodes.has(nodeId)
+  }
+
+  function onHydrationComplete(nodeId: NodeId, callback: HydrationCallback) {
+    if (!hydratingNodes.has(nodeId)) return callback()
+
+    const existing = hydrationCallbacks.get(nodeId) ?? []
+    if (!existing.includes(callback)) existing.push(callback)
+    hydrationCallbacks.set(nodeId, existing)
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
@@ -454,6 +483,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     removeNodeWidgetOrder,
     releaseNodeWidgets,
     clearNode,
+    beginHydration,
+    commitHydration,
+    isHydrating,
+    onHydrationComplete,
     clearGraph
   }
 })

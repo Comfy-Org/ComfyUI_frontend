@@ -1121,6 +1121,8 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
+    // Hydration transaction: suppress derived-state callbacks (e.g.
+    // CustomCombo's updateCombo) until all widget values are restored.
     const positionalValues = Array.from(info.widgets_values ?? [])
     const getNamedValues = () => {
       if (info.widgets_values_named) return info.widgets_values_named
@@ -1137,8 +1139,10 @@ export class LGraphNode
     const shouldRestoreNamed =
       LiteGraph.namedValuesRestore ||
       this.constructor.nodeData?.fallbackWidgetsValuesNames
+    const widgetStore = useWidgetValueStore()
+    widgetStore.beginHydration(this.id)
     try {
-      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
+      widgetStore.setNodeWidgetRestoration(graphId, this.id, {
         positional: positionalValues,
         named: namedValues ? { ...namedValues } : undefined,
         restoreNamed: Boolean(namedValues && shouldRestoreNamed)
@@ -1150,7 +1154,6 @@ export class LGraphNode
 
           const input = this.inputs.find((i) => i.widget?.name === w.name)
           if (input?.label) w.label = input.label
-
           if (
             w.options?.property &&
             this.properties[w.options.property] != undefined
@@ -1163,7 +1166,7 @@ export class LGraphNode
         let positionalIndex = 0
         for (const widget of this.widgets) {
           if (widget.serialize === false) continue
-          const restored = useWidgetValueStore().getRestoredWidgetValue(
+          const restored = widgetStore.getRestoredWidgetValue(
             graphId,
             this.id,
             widget.name,
@@ -1196,7 +1199,8 @@ export class LGraphNode
         )
       }
     } finally {
-      useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
+      widgetStore.clearNodeWidgetRestoration(graphId, this.id)
+      widgetStore.commitHydration(this.id)
     }
   }
 

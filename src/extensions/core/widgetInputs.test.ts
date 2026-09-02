@@ -87,6 +87,35 @@ describe('PrimitiveNode', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
+  describe('serialize', () => {
+    it('preserves widgets_values when widgets array is empty (disconnected state)', () => {
+      const node = new PrimitiveNode('Primitive')
+      node.widgets = []
+      node.widgets_values = ['preserved value', 42]
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual(['preserved value', 42])
+    })
+
+    it('uses live widgets_values when widgets exist', () => {
+      const node = new PrimitiveNode('Primitive')
+      node.widgets = [
+        {
+          name: 'value',
+          type: 'string',
+          value: 'live value',
+          options: {},
+          y: 0
+        }
+      ]
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual(['live value'])
+    })
+  })
+
   it('resets itself when the store reports a link the graph cannot resolve', () => {
     const graph = new LGraph()
     const node = new PrimitiveNode('Primitive')

@@ -402,6 +402,69 @@ describe('useWidgetValueStore', () => {
     })
   })
 
+  describe('hydration transactions', () => {
+    it('beginHydration / isHydrating / commitHydration lifecycle', () => {
+      const store = useWidgetValueStore()
+      const node1 = toNodeId('node-1')
+      const node2 = toNodeId('node-2')
+
+      expect(store.isHydrating(node1)).toBe(false)
+
+      store.beginHydration(node1)
+      expect(store.isHydrating(node1)).toBe(true)
+      expect(store.isHydrating(node2)).toBe(false)
+
+      store.commitHydration(node1)
+      expect(store.isHydrating(node1)).toBe(false)
+    })
+
+    it('commitHydration fires registered callbacks', () => {
+      const store = useWidgetValueStore()
+      const calls: string[] = []
+      const nodeId = toNodeId('node-1')
+
+      store.beginHydration(nodeId)
+      store.onHydrationComplete(nodeId, () => calls.push('a'))
+      store.onHydrationComplete(nodeId, () => calls.push('b'))
+
+      expect(calls).toHaveLength(0)
+
+      store.commitHydration(nodeId)
+      expect(calls).toEqual(['a', 'b'])
+    })
+
+    it('onHydrationComplete fires immediately when not hydrating', () => {
+      const store = useWidgetValueStore()
+      const calls: string[] = []
+
+      store.onHydrationComplete(toNodeId('node-1'), () =>
+        calls.push('immediate')
+      )
+      expect(calls).toEqual(['immediate'])
+    })
+
+    it('commitHydration is safe to call when not hydrating', () => {
+      const store = useWidgetValueStore()
+      expect(() => store.commitHydration(toNodeId('node-1'))).not.toThrow()
+    })
+
+    it('hydration is node-scoped — independent per node', () => {
+      const store = useWidgetValueStore()
+      const node1 = toNodeId('node-1')
+      const node2 = toNodeId('node-2')
+
+      store.beginHydration(node1)
+      store.beginHydration(node2)
+
+      store.commitHydration(node1)
+      expect(store.isHydrating(node1)).toBe(false)
+      expect(store.isHydrating(node2)).toBe(true)
+
+      store.commitHydration(node2)
+      expect(store.isHydrating(node2)).toBe(false)
+    })
+  })
+
   describe('graph isolation', () => {
     it('isolates widget states by graph', () => {
       const store = useWidgetValueStore()
