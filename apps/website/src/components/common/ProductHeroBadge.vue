@@ -18,12 +18,22 @@ const {
   showLogo?: boolean
   showConnector?: boolean
 }>()
+
+// Compact sizes the lockup once on the wrapper and lets every piece fill it,
+// the way PlatformHeroBadge does. The caps and connector then take their width
+// from their own aspect ratio, so there is one height to change rather than a
+// per-piece width and height at each breakpoint.
+const PIECE = 'h-full w-auto'
 </script>
 
 <template>
   <div
-    class="font-formula-narrow flex shrink-0 items-stretch font-semibold"
-    :style="compact ? { height: 'clamp(22px, 4vw, 46px)' } : undefined"
+    :class="
+      cn(
+        'font-formula-narrow flex shrink-0 items-stretch font-semibold',
+        compact && 'h-[clamp(22px,4vw,46px)]'
+      )
+    "
   >
     <img
       v-if="showLogo"
@@ -31,13 +41,10 @@ const {
       alt=""
       :width="compact ? 21 : 43"
       :height="compact ? 46 : 95"
-      :style="compact ? { width: 'auto', height: '100%' } : undefined"
       :class="
         cn(
           '-mx-px my-auto self-center',
-          compact
-            ? 'h-5.5 w-2.5 lg:my-0 lg:h-11.5 lg:w-[21px] lg:self-stretch'
-            : 'h-12 w-5.5 lg:my-0 lg:size-auto lg:self-stretch'
+          compact ? PIECE : 'h-12 w-5.5 lg:my-0 lg:size-auto lg:self-stretch'
         )
       "
       aria-hidden="true"
@@ -49,13 +56,10 @@ const {
       alt=""
       :width="compact ? 21 : 28"
       :height="compact ? 46 : 62"
-      :style="compact ? { width: 'auto', height: '100%' } : undefined"
       :class="
         cn(
           '-mx-px my-auto self-center',
-          compact
-            ? 'h-5.5 w-2.5 lg:h-11.5 lg:w-[21px]'
-            : 'h-7.25 w-[13px] lg:h-15.5 lg:w-7'
+          compact ? PIECE : 'h-7.25 w-[13px] lg:h-15.5 lg:w-7'
         )
       "
       aria-hidden="true"
@@ -63,15 +67,13 @@ const {
 
     <span
       v-if="showLogo"
-      :style="compact ? { height: '100%' } : undefined"
       :class="
         cn(
-          'bg-primary-comfy-yellow my-auto flex items-center justify-center text-primary-comfy-ink',
-          compact
-            ? showConnector
-              ? 'h-5.5 px-3 lg:my-0 lg:h-11.5 lg:px-4.5'
-              : 'h-5.5 pr-1 pl-3 lg:my-0 lg:h-11.5 lg:pr-1 lg:pl-4.5'
-            : 'h-12 lg:my-0 lg:h-auto lg:p-8'
+          'bg-primary-comfy-yellow text-primary-comfy-ink my-auto flex items-center justify-center',
+          compact ? 'h-full px-3 lg:px-4.5' : 'h-12 lg:my-0 lg:h-auto lg:p-8',
+          // Without the connector the two slabs butt together, so the facing
+          // edges lose their padding and read as one block.
+          compact && !showConnector && 'pr-1 lg:pr-1'
         )
       "
     >
@@ -97,24 +99,20 @@ const {
       alt=""
       :width="compact ? 30 : 62"
       :height="compact ? 46 : 94"
-      :style="compact ? { width: 'auto', height: '100%' } : undefined"
       :class="
         cn(
           '-mx-px my-auto self-center',
-          compact
-            ? 'h-5.5 w-[15px] lg:my-0 lg:h-11.5 lg:w-[30px] lg:self-stretch'
-            : 'h-12 w-8 lg:my-0 lg:size-auto lg:self-stretch'
+          compact ? PIECE : 'h-12 w-8 lg:my-0 lg:size-auto lg:self-stretch'
         )
       "
       aria-hidden="true"
     />
 
     <span
-      :style="compact ? { height: '100%' } : undefined"
       :class="
         cn(
-          'bg-primary-comfy-yellow my-auto flex items-center justify-center text-primary-comfy-ink',
-          compact ? 'h-5.5 lg:h-11.5 lg:px-4.5' : 'h-7.25 lg:h-15.5 lg:px-6',
+          'bg-primary-comfy-yellow text-primary-comfy-ink my-auto flex items-center justify-center',
+          compact ? 'h-full lg:px-4.5' : 'h-7.25 lg:h-15.5 lg:px-6',
           !showLogo && (compact ? 'px-3' : 'px-4'),
           showLogo && !showConnector && compact && 'pr-3 pl-1 lg:pr-4.5 lg:pl-1'
         )
@@ -137,13 +135,10 @@ const {
       alt=""
       :width="compact ? 21 : 28"
       :height="compact ? 46 : 62"
-      :style="compact ? { width: 'auto', height: '100%' } : undefined"
       :class="
         cn(
           'my-auto -mr-px -ml-0.5 self-center',
-          compact
-            ? 'h-5.5 w-2.5 lg:h-11.5 lg:w-[21px]'
-            : 'h-7.25 w-[13px] lg:h-15.5 lg:w-7'
+          compact ? PIECE : 'h-7.25 w-[13px] lg:h-15.5 lg:w-7'
         )
       "
       aria-hidden="true"
