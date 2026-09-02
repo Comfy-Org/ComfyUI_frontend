@@ -57,14 +57,9 @@ export class AssetBrowserModal {
       .first()
 
     this.modelTypeSelect = this.modelTaggingSection.getByRole('combobox')
-    this.baseModelsField = this.modelTaggingSection
-      .locator('div')
-      .filter({ hasText: /base model/i })
-      .first()
-    this.additionalTagsField = this.modelTaggingSection
-      .locator('div')
-      .filter({ hasText: /additional tag/i })
-      .first()
+    this.baseModelsField = this.modelTaggingSection.getByTestId('base-models')
+    this.additionalTagsField =
+      this.modelTaggingSection.getByTestId('additional-tags')
     this.baseModelsInput = this.baseModelsField.locator('input')
     this.additionalTagsInput = this.additionalTagsField.locator('input')
 

@@ -103,7 +103,10 @@
           }}
         </div>
       </ModelInfoField>
-      <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
+      <ModelInfoField
+        data-testid="base-models"
+        :label="t('assetBrowser.modelInfo.compatibleBaseModels')"
+      >
         <TagsInput
           v-slot="{ isEmpty }"
           v-model="baseModels"
@@ -127,7 +130,10 @@
           />
         </TagsInput>
       </ModelInfoField>
-      <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
+      <ModelInfoField
+        data-testid="additional-tags"
+        :label="t('assetBrowser.modelInfo.additionalTags')"
+      >
         <TagsInput
           v-slot="{ isEmpty }"
           v-model="additionalTags"
