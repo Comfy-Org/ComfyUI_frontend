@@ -35,9 +35,39 @@ interface WidgetValueChange {
   context?: RemoteMutationContext
 }
 
-interface PrimitiveWidgetRestorationState {
+/**
+ * Serialized widget values of a PrimitiveNode whose widget is only rebuilt
+ * once its output link resolves, which happens after the node's own
+ * `configure` finishes and the regular restoration state has been cleared.
+ */
+export interface PrimitiveWidgetRestorationState {
   type: string
   values: readonly WidgetValue[]
+}
+
+function setNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId,
+  value: T
+): void {
+  let nodeMap = graphMap.get(graphId)
+  if (!nodeMap) {
+    nodeMap = new Map()
+    graphMap.set(graphId, nodeMap)
+  }
+  nodeMap.set(nodeId, value)
+}
+
+function clearNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId
+): void {
+  const nodeMap = graphMap.get(graphId)
+  if (!nodeMap) return
+  nodeMap.delete(nodeId)
+  if (nodeMap.size === 0) graphMap.delete(graphId)
 }
 
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
@@ -100,12 +130,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     nodeId: NodeId,
     restoration: WidgetRestorationState
   ): void {
-    let graphRestorations = graphWidgetRestorations.get(graphId)
-    if (!graphRestorations) {
-      graphRestorations = new Map()
-      graphWidgetRestorations.set(graphId, graphRestorations)
-    }
-    graphRestorations.set(nodeId, restoration)
+    setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
   function getRestoredWidgetValue(
@@ -127,10 +152,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
-    const restorations = graphWidgetRestorations.get(graphId)
-    if (!restorations) return
-    restorations.delete(nodeId)
-    if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
+    clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
   }
 
   function setPrimitiveWidgetRestoration(
@@ -138,12 +160,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     nodeId: NodeId,
     restoration: PrimitiveWidgetRestorationState
   ): void {
-    let graphRestorations = graphPrimitiveWidgetRestorations.get(graphId)
-    if (!graphRestorations) {
-      graphRestorations = new Map()
-      graphPrimitiveWidgetRestorations.set(graphId, graphRestorations)
-    }
-    graphRestorations.set(nodeId, restoration)
+    setNodeScoped(
+      graphPrimitiveWidgetRestorations,
+      graphId,
+      nodeId,
+      restoration
+    )
   }
 
   function getPrimitiveWidgetRestoration(
@@ -157,12 +179,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphId: UUID,
     nodeId: NodeId
   ): void {
-    const restorations = graphPrimitiveWidgetRestorations.get(graphId)
-    if (!restorations) return
-    restorations.delete(nodeId)
-    if (restorations.size === 0) {
-      graphPrimitiveWidgetRestorations.delete(graphId)
-    }
+    clearNodeScoped(graphPrimitiveWidgetRestorations, graphId, nodeId)
   }
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {

@@ -13,6 +13,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -144,6 +145,35 @@ describe('PrimitiveNode', () => {
     primitive.onAfterGraphConfigured()
 
     expect(primitive.widgets?.[0].value).toBeNull()
+  })
+
+  it('restores a serialized explicit undefined value over the target widget value', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'STRING')
+    target.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['STRING', {}]
+    }
+    target.addWidget('text', 'value', 'stale', () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({
+        widgets_values: [undefined],
+        outputs: [{ type: 'STRING' }]
+      })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets).toHaveLength(1)
+    expect(primitive.widgets?.[0].value).toBeUndefined()
   })
 
   it('restores its serialized control value when the target declares control_after_generate', () => {
@@ -473,7 +503,7 @@ describe('PrimitiveNode', () => {
     expect(onLastDisconnect).toHaveBeenCalled()
   })
 
-  it('keeps its serialized value when the widget cannot be built during load', () => {
+  it('drops its serialized value when the widget cannot be built during load', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -505,17 +535,10 @@ describe('PrimitiveNode', () => {
 
     primitive.connect(0, target, 0)
 
-    expect(primitive.widgets?.[0].value).toBe(222)
+    expect(primitive.widgets?.[0].value).toBe(111)
   })
 
-  it('clears an unconsumed serialized value when the node disconnects', () => {
-    const primitive = new PrimitiveNode('Primitive')
-    primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
-    )
-
-    primitive.onLastDisconnect()
-
+  it('clears an unconsumed serialized value once graph restoration ends', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -525,10 +548,49 @@ describe('PrimitiveNode', () => {
       [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
     }
     target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+    expect(
+      useWidgetValueStore().getPrimitiveWidgetRestoration(
+        graph.rootGraph.id,
+        primitive.id
+      )
+    ).toEqual({ type: 'INT', values: [222] })
+
+    primitive.onAfterGraphConfigured()
+
+    expect(
+      useWidgetValueStore().getPrimitiveWidgetRestoration(
+        graph.rootGraph.id,
+        primitive.id
+      )
+    ).toBeUndefined()
+
     primitive.connect(0, target, 0)
 
     expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  it('clears its serialized value when its output is disconnected', () => {
+    const graph = new LGraph()
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+
+    primitive.onLastDisconnect()
+
+    expect(
+      useWidgetValueStore().getPrimitiveWidgetRestoration(
+        graph.rootGraph.id,
+        primitive.id
+      )
+    ).toBeUndefined()
   })
 })
 

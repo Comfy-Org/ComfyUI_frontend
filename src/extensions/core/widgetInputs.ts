@@ -125,30 +125,35 @@ export class PrimitiveNode extends LGraphNode {
     return values
   }
 
+  /**
+   * The widget of a PrimitiveNode is only built once its output link resolves,
+   * which happens after `configure` has finished and the regular widget
+   * restoration state has been cleared. Park the serialized values in the
+   * widget value store until the widget is built or graph restoration ends.
+   */
   override onConfigure(serialisedNode: ISerialisedNode) {
     super.onConfigure?.(serialisedNode)
-    const positionalValues = serialisedNode.widgets_values
-    const namedValues = serialisedNode.widgets_values_named
     const type = serialisedNode.outputs?.[0]?.type
+    if (typeof type !== 'string') {
+      this._clearConfiguredWidgetValues()
+      return
+    }
+    const namedValues = serialisedNode.widgets_values_named
     const values =
       LiteGraph.namedValuesRestore && namedValues
         ? ['value', 'control_after_generate', 'control_filter_list'].reduce<
-            NonNullable<ISerialisedNode['widgets_values']>
+            WidgetValue[]
           >((restored, name, index) => {
             if (Object.hasOwn(namedValues, name))
               restored[index] = namedValues[name]
             return restored
           }, [])
-        : Array.from(positionalValues ?? [])
-    const configuredWidgetValues =
-      typeof type === 'string' ? { type, values } : undefined
-    if (configuredWidgetValues) {
-      useWidgetValueStore().setPrimitiveWidgetRestoration(
-        this.graph?.rootGraph.id ?? zeroUuid,
-        this.id,
-        configuredWidgetValues
-      )
-    }
+        : Array.from(serialisedNode.widgets_values ?? [])
+    useWidgetValueStore().setPrimitiveWidgetRestoration(
+      this._restorationGraphId(),
+      this.id,
+      { type, values }
+    )
   }
 
   override onAfterGraphConfigured() {
@@ -162,6 +167,20 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
+    // Graph restoration is complete; any serialized value that was not
+    // consumed while rebuilding the widget must not leak into later links.
+    this._clearConfiguredWidgetValues()
+  }
+
+  private _restorationGraphId() {
+    return this.graph?.rootGraph.id ?? zeroUuid
+  }
+
+  private _clearConfiguredWidgetValues() {
+    useWidgetValueStore().clearPrimitiveWidgetRestoration(
+      this._restorationGraphId(),
+      this.id
+    )
   }
 
   override onConnectionsChange(
@@ -226,8 +245,6 @@ export class PrimitiveNode extends LGraphNode {
         console.warn(
           `PrimitiveNode ${this.id}: link store reports output 0 connected but no link resolves in the graph; resetting the widget.`
         )
-        this.onLastDisconnect(true)
-        return
       }
       this.onLastDisconnect()
       return
@@ -280,16 +297,17 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
-    const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    const widgetValueStore = useWidgetValueStore()
-    const pendingRestoration = widgetValueStore.getPrimitiveWidgetRestoration(
-      graphId,
-      this.id
-    )
+    const restoration = recreating
+      ? undefined
+      : useWidgetValueStore().getPrimitiveWidgetRestoration(
+          this._restorationGraphId(),
+          this.id
+        )
+    // Consumed on this build regardless of type match: the values belong to
+    // the link that was serialized, not to whatever connects later.
+    if (restoration) this._clearConfiguredWidgetValues()
     const configuredWidgetValues =
-      !recreating && pendingRestoration?.type === type
-        ? pendingRestoration.values
-        : undefined
+      restoration?.type === type ? restoration.values : undefined
     const hasConfiguredWidgetValue =
       configuredWidgetValues !== undefined && 0 in configuredWidgetValues
     const configuredWidgetValue = configuredWidgetValues?.[0]
@@ -303,9 +321,6 @@ export class PrimitiveNode extends LGraphNode {
       if (theirWidget) widget.value = theirWidget.value
       if (hasConfiguredWidgetValue)
         this._restoreConfiguredWidgetValue(widget, configuredWidgetValue)
-      if (configuredWidgetValues) {
-        widgetValueStore.clearPrimitiveWidgetRestoration(graphId, this.id)
-      }
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
       return
     }
@@ -356,9 +371,6 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
-    if (configuredWidgetValues) {
-      widgetValueStore.clearPrimitiveWidgetRestoration(graphId, this.id)
-    }
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
   }
 
@@ -517,13 +529,8 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onLastDisconnect(preserveConfiguredValues = false) {
-    if (!preserveConfiguredValues) {
-      useWidgetValueStore().clearPrimitiveWidgetRestoration(
-        this.graph?.rootGraph.id ?? zeroUuid,
-        this.id
-      )
-    }
+  onLastDisconnect() {
+    this._clearConfiguredWidgetValues()
     // We can't remove + re-add the output here as if you drag a link over the same link
     // it removes, then re-adds, causing it to break
     this.outputs[0].type = '*'
