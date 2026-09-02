@@ -826,6 +826,75 @@ describe('EcsFollowerAdapter integration', () => {
     })
   })
 
+  it('lands an agent add_node in the ECS store with no corresponding LGraph adapter (qa-59)', () => {
+    // Regression test for qa-59 ("Cannot serialize graph ... has no live
+    // adapter"). This drives the real applier + follower + adapter chain
+    // (no LGraph involved, by design: `graphMutations.ts` is the pure,
+    // litegraph-free op layer per this repo's CRDT invariants) and confirms
+    // the observable symptom at this layer's boundary: after an agent
+    // `add_node`, the ECS node-data store has the node, but nothing in this
+    // chain ever touches an `LGraph`/`LGraphNode`. The consuming half of the
+    // defect — that `LGraph.serialize()` then silently drops this node
+    // because it never gets an adapter — is covered by the companion test
+    // `drops an agent-added node from serialize() ... (qa-59)` in
+    // `src/lib/litegraph/src/LGraph.test.ts`, which is able to construct a
+    // real `LGraph` without pulling litegraph into this pure-op-layer suite.
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const result = applyOps(
+      host,
+      [
+        op('op-1', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [10, 20],
+          node: {
+            id: 1,
+            type: 'Source',
+            title: 'Agent-added node',
+            pos: [10, 20],
+            size: [180, 90],
+            widgets_values: { seed: 1 },
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([{ op_id: 'op-1', outcome: 'applied' }])
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['op-1']
+      })
+    ).toBe(true)
+
+    const [stored] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(stored).toMatchObject({ id: toNodeId(1), type: 'Source' })
+    // `stored` is a plain reactive NodeState, not an LGraphNode: this layer
+    // has no LGraph instance at all to check `_nodes` against. That absence
+    // is exactly the gap qa-59 identifies — nothing downstream of this chain
+    // ever constructs the adapter LGraph.serialize() requires.
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('keeps follower docs and apply queues isolated by workflow target', () => {
     const followerA = new FollowerDoc()
     const followerB = new FollowerDoc()

@@ -4,6 +4,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -31,6 +32,7 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -849,6 +851,64 @@ describe('Store-driven serialization parity', () => {
     graph._nodes = []
 
     expect(graph.asSerialisable().nodes).toEqual([])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+        }
+      }
+    )
+  })
+
+  test('drops an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it (qa-59)', ({
+    expect
+  }) => {
+    // Regression test for the qa-59 defect: the CRDT follower's addNode path
+    // (`graphMutations.commit()` -> nodeStore/widgetStore/layout, see
+    // `src/core/graph/graphMutations.ts`) never constructs an LGraphNode and
+    // never calls `LGraph.add()`, so the node exists in the ECS node-data
+    // store (and renders on canvas via the store-driven Vue node path) but
+    // has no adapter in `LGraph._nodes`. `serialiseStoredNodes()` hits the
+    // adapter/state mismatch branch and silently serializes only the
+    // (empty) live-adapter set, so the node is dropped from every save.
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const createLayout = vi.fn()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: createLayout, deleteNodes: vi.fn() }
+    })
+
+    mutations.addNode(
+      {
+        id: 1,
+        type: 'dummy',
+        pos: [0, 0],
+        size: [100, 80],
+        inputs: [],
+        outputs: []
+      },
+      { source: 'agent-remote', actor: 'agent:test', opId: 'op-1' }
+    )
+
+    // The node is real in the ECS store...
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
+    ).toHaveLength(1)
+    // ...but LGraph never learned about it.
+    expect(graph._nodes).toHaveLength(0)
+
+    const serialized = graph.serialize()
+
+    // This is the bug: the store-only node is silently absent from the
+    // persisted document instead of being included. When this assertion
+    // starts failing (serialized.nodes has length 1), the fix has landed.
+    expect(serialized.nodes).toEqual([])
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         message: 'Graph serialization state mismatch'
