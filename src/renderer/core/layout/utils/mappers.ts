@@ -1,46 +1,98 @@
 import * as Y from 'yjs'
 
-import type { NodeLayout } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
+import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
-export type NodeLayoutMap = Y.Map<NodeLayout[keyof NodeLayout]>
+/**
+ * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
+ * are views of it rather than fields of their own, so they cannot disagree, and
+ * a whole-tuple replace is the write a CRDT register wants.
+ */
+export type StoredRect = [x: number, y: number, width: number, height: number]
 
-export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
-  id: toNodeId('unknown-node'),
-  position: { x: 0, y: 0 },
-  size: { width: 100, height: 50 },
-  zIndex: 0,
-  visible: true,
-  bounds: { x: 0, y: 0, width: 100, height: 50 }
+type StoredNode = {
+  id: NodeId
+  rect: StoredRect
+  zIndex: number
+  visible: boolean
 }
 
+export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
+
+const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
+
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
-  const ynode = new Y.Map<NodeLayout[keyof NodeLayout]>() as NodeLayoutMap
+  const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
   ynode.set('id', layout.id)
-  ynode.set('position', layout.position)
-  ynode.set('size', layout.size)
+  ynode.set('rect', [
+    layout.position.x,
+    layout.position.y,
+    layout.size.width,
+    layout.size.height
+  ])
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
-  ynode.set('bounds', layout.bounds)
   return ynode
 }
 
-function getOr<K extends keyof NodeLayout>(
-  map: NodeLayoutMap,
-  key: K,
-  fallback: NodeLayout[K]
-): NodeLayout[K] {
-  const v = map.get(key)
-  return (v ?? fallback) as NodeLayout[K]
+function yNodeRect(ynode: NodeLayoutMap): Readonly<StoredRect> {
+  return (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
 }
 
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
+  const [x, y, width, height] = yNodeRect(ynode)
   return {
-    id: getOr(ynode, 'id', NODE_LAYOUT_DEFAULTS.id),
-    position: getOr(ynode, 'position', NODE_LAYOUT_DEFAULTS.position),
-    size: getOr(ynode, 'size', NODE_LAYOUT_DEFAULTS.size),
-    zIndex: getOr(ynode, 'zIndex', NODE_LAYOUT_DEFAULTS.zIndex),
-    visible: getOr(ynode, 'visible', NODE_LAYOUT_DEFAULTS.visible),
-    bounds: getOr(ynode, 'bounds', NODE_LAYOUT_DEFAULTS.bounds)
+    id: parseNodeId(ynode.get('id')) ?? toNodeId('unknown-node'),
+    position: { x, y },
+    size: { width, height },
+    bounds: { x, y, width, height },
+    zIndex: (ynode.get('zIndex') ?? 0) as number,
+    visible: (ynode.get('visible') ?? true) as boolean
+  }
+}
+
+type StoredGroup = {
+  id: GroupId
+  rect: StoredRect
+}
+
+export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
+
+const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
+
+export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
+  const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>() as GroupLayoutMap
+  ygroup.set('id', layout.id)
+  ygroup.set('rect', [
+    layout.position.x,
+    layout.position.y,
+    layout.size.width,
+    layout.size.height
+  ])
+  return ygroup
+}
+
+export function setYGroupRect(
+  ygroup: GroupLayoutMap,
+  position: GroupLayout['position'],
+  size: GroupLayout['size']
+): void {
+  ygroup.set('rect', [position.x, position.y, size.width, size.height])
+}
+
+export function yGroupToLayout(
+  ygroup: GroupLayoutMap,
+  groupId: GroupId
+): GroupLayout {
+  const [x, y, width, height] =
+    (ygroup.get('rect') as StoredRect | undefined) ?? DEFAULT_GROUP_RECT
+  const storedId = ygroup.get('id')
+  return {
+    id: typeof storedId === 'number' ? toGroupId(storedId) : groupId,
+    position: { x, y },
+    size: { width, height }
   }
 }

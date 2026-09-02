@@ -71,8 +71,7 @@ const {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
@@ -253,8 +252,7 @@ describe('MembersPanelContent', () => {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }
     mockUiConfig.value = {
       showMembersList: true,
@@ -443,8 +441,7 @@ describe('MembersPanelContent', () => {
         canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canTopUp: false
+        canManageSubscription: false
       }
       mockUiConfig.value.showPendingTab = false
     })
@@ -593,7 +590,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
+        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

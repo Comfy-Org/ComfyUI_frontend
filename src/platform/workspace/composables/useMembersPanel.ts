@@ -8,7 +8,9 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { isCloud } from '@/platform/distribution/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
@@ -124,17 +126,22 @@ export function useMembersPanel() {
   } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
   const { maxSeats, occupiedSeats } = useBillingContext()
+  const { canChangeSeats, canInviteMembers } = useBillingCapabilities()
 
   const permissions = computed(() => {
     const canManageMembers =
-      hasMemberSeats.value && workspaceRole.value === 'owner'
+      hasMemberSeats.value &&
+      (isCloud ? canChangeSeats.value : workspaceRole.value === 'owner')
+    const canManageInvites =
+      hasMemberSeats.value &&
+      (isCloud ? canInviteMembers.value : workspaceRole.value === 'owner')
 
     return {
       ...workspacePermissions.value,
       canViewOtherMembers: hasMemberSeats.value,
-      canViewPendingInvites: canManageMembers,
-      canInviteMembers: canManageMembers && !isCancelled.value,
-      canManageInvites: canManageMembers,
+      canViewPendingInvites: canManageInvites,
+      canInviteMembers: canManageInvites && !isCancelled.value,
+      canManageInvites,
       canManageMembers
     }
   })
@@ -195,7 +202,9 @@ export function useMembersPanel() {
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
-  const showInviteButton = computed(() => workspaceRole.value === 'owner')
+  const showInviteButton = computed(() =>
+    isCloud ? canInviteMembers.value : workspaceRole.value === 'owner'
+  )
 
   const isMemberLimitReached = computed(
     () =>
@@ -208,6 +217,7 @@ export function useMembersPanel() {
   const isInviteDisabled = computed(
     () =>
       isPlanLoading.value ||
+      !permissions.value.canInviteMembers ||
       isCancelled.value ||
       maxSeats.value === null ||
       occupiedSeats.value === null ||
@@ -223,6 +233,8 @@ export function useMembersPanel() {
   })
 
   function handleInviteMember() {
+    if (isCloud ? !canInviteMembers.value : workspaceRole.value !== 'owner')
+      return
     if (
       isPlanLoading.value ||
       maxSeats.value === null ||
@@ -342,6 +354,7 @@ export function useMembersPanel() {
   }
 
   async function handleResendInvite(invite: WorkspacePendingInvite) {
+    if (!permissions.value.canManageInvites) return
     try {
       await resendInvite(invite.id)
       toast.add({
@@ -358,10 +371,12 @@ export function useMembersPanel() {
   }
 
   function handleRevokeInvite(invite: WorkspacePendingInvite) {
+    if (!permissions.value.canManageInvites) return
     void showRevokeInviteDialog(invite.id)
   }
 
   function handleRemoveMember(member: WorkspaceMember) {
+    if (!permissions.value.canManageMembers) return
     void showRemoveMemberDialog(member.id)
   }
 
@@ -369,6 +384,7 @@ export function useMembersPanel() {
     member: WorkspaceMember,
     targetRole: WorkspaceRole
   ) {
+    if (!permissions.value.canManageMembers) return
     if (member.role === targetRole) return
     void showChangeMemberRoleDialog({
       memberId: member.id,

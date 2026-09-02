@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -6,17 +8,26 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
+  LGraphCanvas,
   LGraphNode,
   LiteGraph,
   LGraph,
+  LLink,
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import {
+  createMockCanvasRenderingContext2D,
+  createMockLGraphNodeWithArrayBoundingRect
+} from '@/utils/__tests__/litegraphTestUtils'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -67,6 +78,34 @@ describe('LGraphNode', () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
+  test('preserves null property values', () => {
+    const widget = node.addWidget('number', 'value', 1, 'value')
+    const onPropertyChanged = vi.fn(() => true)
+    node.onPropertyChanged = onPropertyChanged
+
+    node.setProperty('value', null)
+
+    expect(node.properties.value).toBeNull()
+    expect(widget.value).toBeNull()
+    expect(onPropertyChanged).toHaveBeenCalledWith('value', null, undefined)
+    expect(node.serialize().properties?.value).toBeNull()
+  })
+
+  test('syncs null widget values to the bound property', () => {
+    const widget = node.addWidget('text', 'value', 'initial', 'value')
+    if (!(widget instanceof BaseWidget)) throw new Error('expected BaseWidget')
+    const nullableWidget: BaseWidget = widget
+    node.setProperty('value', 'initial')
+    const canvas = {
+      graph_mouse: [0, 0]
+    } as Partial<LGraphCanvas> as LGraphCanvas
+
+    nullableWidget.setValue(null, { e: {} as CanvasPointerEvent, node, canvas })
+
+    expect(node.properties.value).toBeNull()
+    expect(widget.value).toBeNull()
+  })
+
   test('should serialize position/size correctly', () => {
     const node = new LGraphNode('TestNode')
     node.pos = [10, 20]
@@ -91,12 +130,12 @@ describe('LGraphNode', () => {
       outputs: node.outputs?.map((o) => ({
         name: o.name,
         type: o.type,
-        links: o.links,
+        links: o.links ? [...o.links] : o.links,
         slot_index: o.slot_index
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual(new Float64Array([50, 60]))
+    expect(Array.from(node.pos)).toEqual([50, 60])
     expect(Array.from(node.size)).toEqual([70, 80])
   })
 
@@ -130,6 +169,8 @@ describe('LGraphNode', () => {
     expect(node.outputs.length).toEqual(1)
     expect(node.outputs[0].name).toEqual('TestOutput')
     expect(node.outputs[0].type).toEqual('number')
+    // Serialized data declared an explicit `links: []`; legacy link writes
+    // are removal-only, so array presence is preserved.
     expect(node.outputs[0].links).toEqual([])
     expect(node.outputs[0]).instanceOf(NodeOutputSlot)
 
@@ -231,8 +272,8 @@ describe('LGraphNode', () => {
       const disconnected = node2.disconnectInput(0)
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
-      expect(node1.outputs[0].links?.length).toBe(0)
-      expect(graph._links.has(link!.id)).toBe(false)
+      expect(node1.outputs[0].links).toEqual([])
+      expect(graph.links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
       node1.connect(0, node2, 0)
@@ -295,8 +336,8 @@ describe('LGraphNode', () => {
       expect(disconnectedSpecific).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(sourceNode.outputs[0].links?.length).toBe(1)
-      expect(graph._links.has(link1!.id)).toBe(false)
-      expect(graph._links.has(link2!.id)).toBe(true)
+      expect(graph.links.has(link1!.id)).toBe(false)
+      expect(graph.links.has(link2!.id)).toBe(true)
 
       // Test disconnecting by slot name
       const link3 = sourceNode.connect(1, targetNode1, 0)
@@ -307,7 +348,7 @@ describe('LGraphNode', () => {
       )
       expect(disconnectedByName).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
-      expect(sourceNode.outputs[1].links?.length).toBe(0)
+      expect(sourceNode.outputs[1].links).toEqual([])
 
       // Test disconnecting all connections from an output
       const link4 = sourceNode.connect(0, targetNode1, 0)
@@ -318,8 +359,8 @@ describe('LGraphNode', () => {
       expect(sourceNode.outputs[0].links).toBeNull()
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(targetNode2.inputs[0].link).toBeNull()
-      expect(graph._links.has(link2!.id)).toBe(false)
-      expect(graph._links.has(link4!.id)).toBe(false)
+      expect(graph.links.has(link2!.id)).toBe(false)
+      expect(graph.links.has(link4!.id)).toBe(false)
 
       // Test disconnecting non-existent slot
       const invalidDisconnect = sourceNode.disconnectOutput(999)
@@ -328,6 +369,55 @@ describe('LGraphNode', () => {
       // Test disconnecting already disconnected output
       const alreadyDisconnected = sourceNode.disconnectOutput(0)
       expect(alreadyDisconnected).toBe(false)
+    })
+
+    test('preserves floating links during a targeted output disconnect', () => {
+      const { graph, sourceNode } = createConnectedPair()
+      const unrelated = new LGraphNode('unrelated')
+      unrelated.addInput('input', '*')
+      graph.add(unrelated)
+      const floating = new LLink(
+        toLinkId(-1),
+        '*',
+        sourceNode.id,
+        0,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+      graph.addFloatingLink(floating)
+
+      expect(sourceNode.disconnectOutput(0, unrelated)).toBe(false)
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(sourceNode.isOutputConnected(0)).toBe(true)
+    })
+
+    test('reports and redraws a floating-only output disconnect', () => {
+      const graph = new LGraph()
+      const sourceNode = new LGraphNode('source')
+      sourceNode.addOutput('output', '*')
+      graph.add(sourceNode)
+      const floating = new LLink(
+        toLinkId(-1),
+        '*',
+        sourceNode.id,
+        0,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+      graph.addFloatingLink(floating)
+      const canvasElement = document.createElement('canvas')
+      canvasElement.getContext = vi
+        .fn()
+        .mockReturnValue(createMockCanvasRenderingContext2D())
+      const canvas = new LGraphCanvas(canvasElement, graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      canvas.dirty_bgcanvas = false
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+      expect(graph.floatingLinks.has(floating.id)).toBe(false)
+      expect(canvas.dirty_bgcanvas).toBe(true)
     })
   })
 
@@ -650,8 +740,9 @@ describe('LGraphNode', () => {
     })
     test('should return position based on title height when collapsed', () => {
       node.flags.collapsed = true
+      node.inputs = [inputSlot]
       const expectedPos: Point = [100, 200 - LiteGraph.NODE_TITLE_HEIGHT * 0.5]
-      expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
+      expect(node.getInputSlotPos(node.inputs[0])).toEqual(expectedPos)
     })
 
     test('should return position based on input.pos when defined and not collapsed', () => {
@@ -659,7 +750,7 @@ describe('LGraphNode', () => {
       inputSlot.pos = [10, 50]
       node.inputs = [inputSlot]
       const expectedPos: Point = [100 + 10, 200 + 50]
-      expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
+      expect(node.getInputSlotPos(node.inputs[0])).toEqual(expectedPos)
     })
 
     test('should return default vertical position when input.pos is undefined and not collapsed', () => {
@@ -677,11 +768,17 @@ describe('LGraphNode', () => {
       const expectedY =
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
+      expect(node.getInputSlotPos(node.inputs[slotIndex])).toEqual([
+        expectedX,
+        expectedY
+      ])
       const slotIndex2 = 1
       const expectedY2 =
         200 + (slotIndex2 + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      expect(node.getInputSlotPos(inputSlot2)).toEqual([expectedX, expectedY2])
+      expect(node.getInputSlotPos(node.inputs[slotIndex2])).toEqual([
+        expectedX,
+        expectedY2
+      ])
     })
 
     test('should return default vertical position including slot_start_y when defined', () => {
@@ -693,8 +790,37 @@ describe('LGraphNode', () => {
       const expectedY =
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
+      expect(node.getInputSlotPos(node.inputs[slotIndex])).toEqual([
+        expectedX,
+        expectedY
+      ])
       delete (node.constructor as NodeConstructorWithSlotOffset).slot_start_y
+    })
+    test('should resolve an assigned input through its stable installed view', () => {
+      node.flags.collapsed = false
+      const firstInput = { ...inputSlot }
+      const secondInput: INodeInputSlot = {
+        name: 'test_in_2',
+        type: 'number',
+        link: null,
+        boundingRect: [0, 0, 0, 0]
+      }
+      node.inputs = [firstInput, secondInput]
+
+      const installedFirst = node.inputs[0]
+      expect(installedFirst).not.toBe(firstInput)
+      expect(node.getInputSlotPos(firstInput)).toEqual(
+        node.getInputSlotPos(installedFirst)
+      )
+
+      node.inputs.reverse()
+      expect(node.getInputSlotPos(firstInput)).toEqual(
+        node.getInputSlotPos(installedFirst)
+      )
+      expect(node.getInputSlotPos(firstInput)).toEqual([
+        100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5,
+        200 + 1.7 * LiteGraph.NODE_SLOT_HEIGHT
+      ])
     })
     test('should not overwrite onMouseDown prototype', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
@@ -725,13 +851,19 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode measures collapsed content without replacing requested size', () => {
+      const graph = new LGraph()
+      graph.add(node)
+      layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+        width: 90,
+        height: 12
+      })
       LiteGraph.vueNodesMode = true
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
-      expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[2]).toBe(90)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT + 12)
+      expect(node.serialize().size).toEqual([150, 10])
     })
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
@@ -744,5 +876,82 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
+  })
+})
+
+describe('snapToGrid', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function addedNode(graph: LGraph) {
+    const node = new LGraphNode('test')
+    node.pos = [103, 97]
+    graph.add(node)
+    return node
+  }
+
+  test('commits the snapped position to the layout store', () => {
+    const graph = new LGraph()
+    const node = addedNode(graph)
+
+    expect(node.snapToGrid(20)).toBe(true)
+
+    expect([...node.pos]).toEqual([100, 100])
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 100,
+      y: 100
+    })
+  })
+
+  test('writes indexed position mutations through to the layout store', () => {
+    const graph = new LGraph()
+    const node = addedNode(graph)
+    const pos = node.pos
+
+    node.pos[0] = 120
+
+    expect(node.pos).toBe(pos)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 120,
+      y: 97
+    })
+  })
+
+  test('does not re-commit the current stored position', () => {
+    const node = addedNode(new LGraph())
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+
+    node.pos = [103, 97]
+
+    expect(applyOperation).not.toHaveBeenCalled()
+  })
+
+  test('leaves a pinned node alone', () => {
+    const graph = new LGraph()
+    const node = addedNode(graph)
+    node.pin(true)
+
+    expect(node.snapToGrid(20)).toBe(false)
+    expect([...node.pos]).toEqual([103, 97])
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 103,
+      y: 97
+    })
+  })
+
+  test('does not report or store a change when already aligned', () => {
+    const node = addedNode(new LGraph())
+    node.snapToGrid(20)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+
+    expect(node.snapToGrid(20)).toBe(false)
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 })

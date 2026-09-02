@@ -45,6 +45,26 @@ import {
 
 const PROMPT_CARD_ID = '__prompt__'
 
+const AGENT_PROMPT_ERROR_TYPE_LIST = [
+  'agent_api_failed',
+  'op_rejected',
+  'prefix_abort',
+  'guard_trip',
+  'apply_failed'
+] as const
+
+type AgentPromptErrorType = (typeof AGENT_PROMPT_ERROR_TYPE_LIST)[number]
+
+const AGENT_PROMPT_ERROR_TYPES: ReadonlySet<string> = new Set(
+  AGENT_PROMPT_ERROR_TYPE_LIST
+)
+
+function isAgentPromptErrorType(
+  errorType: string
+): errorType is AgentPromptErrorType {
+  return AGENT_PROMPT_ERROR_TYPES.has(errorType)
+}
+
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
 
@@ -151,6 +171,7 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
       const cards = Array.from(groupData.cards.values()).sort(compareNodeId)
       return {
         type: 'execution' as const,
+        severity: 'error' as const,
         groupKey: `execution:${rawGroupKey}`,
         displayTitle: groupData.displayTitle,
         displayMessage: groupData.displayMessage,
@@ -369,6 +390,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       errors: [
         {
           message: error.message,
+          ...(isAgentPromptErrorType(error.type)
+            ? { details: error.details }
+            : {}),
           ...resolvedDisplay
         }
       ]
@@ -614,6 +638,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (swapCount > 0) {
       groups.push({
         type: 'swap_nodes' as const,
+        severity: 'missing' as const,
         groupKey: 'swap_nodes',
         count: swapCount,
         priority: 0,
@@ -629,6 +654,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (packCount > 0) {
       groups.push({
         type: 'missing_node' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_node',
         count: packCount,
         priority: 1,
@@ -657,6 +683,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_model' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_model',
         count,
         priority: 2,
@@ -682,6 +709,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_media' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
@@ -728,7 +756,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter(
-      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
+      (c) =>
+        (c.nodeId != null && isAssetCandidateInSelection(c.nodeId)) ||
+        (c.sourceExecutionId != null &&
+          isAssetCandidateInSelection(c.sourceExecutionId))
     )
     if (!matched.length) return []
     return groupMissingModelCandidates(matched, isCloud)
@@ -752,6 +783,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_model' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_model',
         count,
         priority: 2,
@@ -773,6 +805,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_media' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
@@ -794,10 +827,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processExecutionError(groupsMap)
 
     return [
+      ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups(),
       ...buildMissingModelGroups(),
-      ...buildMissingMediaGroups(),
-      ...toSortedGroups(groupsMap)
+      ...buildMissingMediaGroups()
     ]
   })
 
@@ -816,12 +849,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processExecutionError(groupsMap, true)
 
     return [
+      ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups((nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
       ...buildMissingModelGroupsForSelection(),
-      ...buildMissingMediaGroupsForSelection(),
-      ...toSortedGroups(groupsMap)
+      ...buildMissingMediaGroupsForSelection()
     ]
   })
 

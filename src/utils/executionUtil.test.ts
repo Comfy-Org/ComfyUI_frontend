@@ -78,4 +78,35 @@ describe('graphToPrompt widget serialization', () => {
 
     expect(await promptInputs(graph, node)).toEqual({ seed: 42 })
   })
+
+  it('sends a null widget value through to the prompt', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    const widget = node.addWidget(
+      'text',
+      'prompt',
+      'hello',
+      () => undefined,
+      {}
+    )
+    widget.value = null
+
+    const inputs = await promptInputs(graph, node)
+
+    expect(inputs).toHaveProperty('prompt')
+    expect(inputs.prompt).toBeNull()
+  })
+
+  it('omits a null widget value when options.serialize is false', async () => {
+    // Control arm for the test above: the prompt path filters on
+    // `options.serialize`, not on nullness.
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    const widget = node.addWidget('text', 'prompt', 'hello', () => undefined, {
+      serialize: false
+    })
+    widget.value = null
+
+    expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
+  })
 })

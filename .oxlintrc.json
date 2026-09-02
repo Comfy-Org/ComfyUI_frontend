@@ -8,6 +8,9 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/patch-playwright-agents.js",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -27,6 +30,7 @@
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
@@ -132,8 +136,26 @@
     {
       "files": ["**/*.test.{ts,tsx}"],
       "rules": {
-        "comfy/no-module-scope-vitest-mocks": "warn",
-        "comfy/no-redundant-vitest-cleanup": "warn"
+        "comfy/no-module-scope-vitest-mocks": "error",
+        "comfy/no-persistent-litegraph-registration": "error",
+        "comfy/no-redundant-litegraph-cleanup": "error",
+        "comfy/no-redundant-vitest-cleanup": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/**/*.test.{ts,tsx}",
+        "packages/object-info-parser/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-persistent-litegraph-registration": "off",
+        "comfy/no-redundant-litegraph-cleanup": "off"
+      }
+    },
+    {
+      "files": ["tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
       }
     },
     {

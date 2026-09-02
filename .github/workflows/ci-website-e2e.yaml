@@ -89,7 +89,7 @@ jobs:
           DEPLOY_OK=false
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
-            OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
             [ $i -lt 3 ] && sleep 10
@@ -197,7 +197,7 @@ jobs:
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: e2e
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
             ## 🌐 Website E2E
@@ -277,6 +277,6 @@ jobs:
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: e2e
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: ${{ steps.content.outputs.section-content }}

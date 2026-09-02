@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -35,10 +35,17 @@ vi.mock('@/services/customerEventsService', () => ({
 }))
 
 const mockTelemetry = vi.hoisted(() => ({
-  checkForCompletedTopup: vi.fn()
+  trackApiCreditTopupSucceeded: vi.fn()
 }))
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => mockTelemetry
+}))
+
+const mockPendingTopup = vi.hoisted(() => ({
+  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+}))
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => mockPendingTopup
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
@@ -90,22 +97,6 @@ const globalConfig = {
   plugins: [PrimeVue, i18n, createTestingPinia()],
   directives: { tooltip: Tooltip }
 }
-
-/**
- * The component starts with loading=true and only loads data when refresh()
- * is called via template ref. This wrapper auto-calls refresh on mount.
- */
-const AutoRefreshWrapper = defineComponent({
-  components: { UsageLogsTable },
-  setup() {
-    const tableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
-    onMounted(async () => {
-      await tableRef.value?.refresh()
-    })
-    return { tableRef }
-  },
-  template: '<UsageLogsTable ref="tableRef" />'
-})
 
 async function flushMicrotasks() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -208,12 +199,8 @@ describe('UsageLogsTable', () => {
     return render(UsageLogsTable, { global: globalConfig })
   }
 
-  function renderWithAutoRefresh() {
-    return render(AutoRefreshWrapper, { global: globalConfig })
-  }
-
   async function renderLoaded() {
-    const result = renderWithAutoRefresh()
+    const result = renderComponent()
     await waitFor(() => {
       expect(screen.getByRole('table')).toBeInTheDocument()
     })
@@ -221,7 +208,25 @@ describe('UsageLogsTable', () => {
   }
 
   describe('loading states', () => {
-    it('shows loading spinner before refresh is called', () => {
+    it('loads activity on mount without an external refresh', async () => {
+      await renderLoaded()
+
+      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads activity on mount on the workspace billing rail', async () => {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+
+      await renderLoaded()
+
+      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows a loading spinner while the initial load is in flight', () => {
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise(() => {})
+      )
+
       renderComponent()
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument()
@@ -232,7 +237,7 @@ describe('UsageLogsTable', () => {
       mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
       mockCustomerEventsService.error.value = 'Failed to load events'
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load events')).toBeInTheDocument()
@@ -244,7 +249,7 @@ describe('UsageLogsTable', () => {
         new Error('Network error')
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(
@@ -260,7 +265,7 @@ describe('UsageLogsTable', () => {
       mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
       mockCustomerEventsService.error.value = null
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(
@@ -312,7 +317,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(screen.getByText('Account initialized')).toBeInTheDocument()
@@ -400,7 +405,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       mockBillingRouting.shouldUseWorkspaceBilling = true
       await waitFor(() => {
@@ -425,6 +430,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
         new Promise((resolve) => {
@@ -442,7 +448,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       mockBillingRouting.shouldUseWorkspaceBilling = true
       await waitFor(() => {
@@ -460,10 +466,22 @@ describe('UsageLogsTable', () => {
       resolveLegacy(legacyResponse)
 
       await waitFor(() => {
-        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
+        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
+    })
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
     })
   })
 

@@ -1,7 +1,7 @@
 ﻿import { BufferSource } from 'mediabunny'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearVideoMetadataCache,
@@ -101,10 +101,6 @@ describe('snapToStandardFrameRate', () => {
 describe('fetchVideoMetadata url gating', () => {
   beforeEach(() => {
     clearVideoMetadataCache()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('extracts metadata from a trusted view url', async () => {

@@ -38,6 +38,7 @@ const {
   muteOnly = false,
   hideControls = false,
   hideFullscreen = false,
+  playButtonVariant = 'solid',
   fit = 'cover',
   ariaLabel,
   class: className
@@ -61,6 +62,8 @@ const {
   muteOnly?: boolean
   hideControls?: boolean
   hideFullscreen?: boolean
+  /** Style of the centered play/pause button in `minimal` mode. */
+  playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
   ariaLabel?: string
   class?: HTMLAttributes['class']
@@ -82,6 +85,21 @@ const {
 
 const { isSupported: fullscreenSupported, toggle: toggleFs } =
   useFullscreen(playerEl)
+
+// A server-rendered `autoplay` video can start playing before hydration
+// attaches useMediaControls' listeners, so its play/volumechange events are
+// missed and the controls render stale state (e.g. a play icon over a
+// playing video). Sync the refs from the element once it binds; the
+// assignments are no-ops when the element already matches.
+watch(
+  videoEl,
+  (el) => {
+    if (!el) return
+    playing.value = !el.paused
+    muted.value = el.muted
+  },
+  { flush: 'post' }
+)
 
 // Controls fade
 const hovering = useElementHover(playerEl)
@@ -284,10 +302,11 @@ function toggleFullscreen() {
       />
     </video>
 
-    <!-- Persistent corner pause and mute toggles -->
+    <!-- Persistent corner pause and mute toggles. z-30 keeps them above the
+      overlay hero's scrim and content layers. -->
     <div
       v-if="src && muteOnly && !hideControls"
-      class="absolute top-4 right-4 flex gap-2 lg:top-6 lg:right-6"
+      class="absolute top-4 right-4 z-30 flex gap-2 lg:top-6 lg:right-6"
     >
       <PlayPauseButton
         :playing
@@ -323,6 +342,7 @@ function toggleFullscreen() {
     >
       <PlayPauseButton
         :playing
+        :variant="playButtonVariant"
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "

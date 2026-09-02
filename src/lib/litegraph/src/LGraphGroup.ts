@@ -1,10 +1,15 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { GroupId } from '@/types/groupId'
+import { toGroupId } from '@/types/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
+import { createMutationView } from './infrastructure/createMutationView'
 import type {
   ColorOption,
   IColorable,
@@ -12,6 +17,7 @@ import type {
   IPinnable,
   Point,
   Positionable,
+  Rect,
   Size
 } from './interfaces'
 import { LiteGraph, Rectangle } from './litegraph'
@@ -26,8 +32,6 @@ import {
   snapPoint
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
-
-export type GroupId = number
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -52,10 +56,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   title: string
   font?: string
   font_size: number = LiteGraph.GROUP_TEXT_SIZE
-  _bounding = new Rectangle(10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight)
-
-  _pos: Point = this._bounding.pos
-  _size: Size = this._bounding.size
+  private readonly bounds = new Rectangle(
+    10,
+    10,
+    LGraphGroup.minWidth,
+    LGraphGroup.minHeight
+  )
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
@@ -68,11 +74,30 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** Title text colour, cached until the background colour changes */
   _titleTextColor: string = LGraphGroup.defaultColour
 
+  readonly _pos: Point = createMutationView(this.bounds.pos, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    observe: this.bounds
+  })
+  readonly _size: Size = createMutationView(this.bounds.size, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    observe: this.bounds
+  })
+  readonly _bounding = createMutationView(this.bounds, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    mapValue: (property, value) => {
+      if (property === 'pos') return this._pos
+      if (property === 'size') return this._size
+      return value
+    }
+  })
+
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
-    this.id = id ?? -1
+    this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
-
     const { pale_blue } = LGraphCanvas.node_colors
     this.color = pale_blue ? pale_blue.groupcolor : '#AAA'
   }
@@ -80,7 +105,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
+      this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }
@@ -103,8 +128,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   set pos(v) {
     if (!v || v.length < 2) return
 
-    this._pos[0] = v[0]
-    this._pos[1] = v[1]
+    this.setBounds(v[0], v[1], this._size[0], this._size[1])
   }
 
   /** Size of the group, as width,height in graph units */
@@ -115,15 +139,44 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   set size(v) {
     if (!v || v.length < 2) return
 
-    this._size[0] = Math.max(LGraphGroup.minWidth, v[0])
-    this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
+    this.setBounds(
+      this._pos[0],
+      this._pos[1],
+      Math.max(LGraphGroup.minWidth, v[0]),
+      Math.max(LGraphGroup.minHeight, v[1])
+    )
+  }
+
+  syncBoundsFromStore(): void {
+    if (!this.graph || this.id === -1) return
+
+    const layout = layoutStore.getGroupLayout(this.graph.rootGraph.id, this.id)
+    if (!layout) return
+
+    const { position, size } = layout
+    this.bounds.set([position.x, position.y, size.width, size.height])
+  }
+
+  private commitBounds(): void {
+    const [x, y, width, height] = this.bounds
+    this.setBounds(x, y, width, height)
+  }
+
+  private setBounds(x: number, y: number, width: number, height: number): void {
+    this.bounds.set([x, y, width, height])
+    if (!this.graph || this.id === -1) return
+
+    setGroupBoundsLayout(this, { x, y }, { width, height })
+    this.syncBoundsFromStore()
   }
 
   get boundingRect() {
+    this.syncBoundsFromStore()
     return this._bounding
   }
 
   getBounding() {
+    this.syncBoundsFromStore()
     return this._bounding
   }
 
@@ -159,9 +212,10 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   configure(o: ISerialisedGroup): void {
-    this.id = o.id
+    this.id = toGroupId(o.id)
     this.title = o.title
-    this._bounding.set(o.bounding)
+    const [x, y, width, height] = o.bounding
+    this.setBounds(x, y, width, height)
     this.color = o.color
     this.flags = o.flags || this.flags
   }
@@ -247,16 +301,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   resize(width: number, height: number): boolean {
     if (this.pinned) return false
 
-    this._size[0] = Math.max(LGraphGroup.minWidth, width)
-    this._size[1] = Math.max(LGraphGroup.minHeight, height)
+    this.size = [width, height]
     return true
   }
 
   move(deltaX: number, deltaY: number, skipChildren: boolean = false): void {
     if (this.pinned) return
 
-    this._pos[0] += deltaX
-    this._pos[1] += deltaY
+    this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
     if (skipChildren === true) return
 
     for (const item of this._children) {
@@ -266,7 +318,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    return this.pinned ? false : snapPoint(this.pos, snapTo)
+    if (this.pinned || !snapTo) return false
+
+    const snapped: Point = [this._pos[0], this._pos[1]]
+    snapPoint(snapped, snapTo)
+    if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
+
+    this.pos = snapped
+    return true
   }
 
   /**
@@ -336,15 +395,22 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const boundingBox = createBounds(objects, padding)
     if (boundingBox === null) return
 
-    this.pos[0] = boundingBox[0]
-    this.pos[1] = boundingBox[1] - this.titleHeight
-    this.size[0] = boundingBox[2]
-    this.size[1] = boundingBox[3] + this.titleHeight
+    const fittedBounds: Rect = [
+      boundingBox[0],
+      boundingBox[1] - this.titleHeight,
+      boundingBox[2],
+      boundingBox[3] + this.titleHeight
+    ]
 
     const snapTo = LiteGraph.alwaysSnapToGrid
       ? this.graph?.getSnapToGridSize()
       : undefined
-    if (snapTo) expandRectToGrid(this._bounding, snapTo)
+    if (snapTo) expandRectToGrid(fittedBounds, snapTo)
+
+    // Deliberately unclamped, as before: a group fitted to its contents may be
+    // narrower than LGraphGroup.minWidth.
+    const [x, y, width, height] = fittedBounds
+    this.setBounds(x, y, width, height)
   }
 
   /**
