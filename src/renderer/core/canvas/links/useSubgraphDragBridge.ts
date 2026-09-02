@@ -2,7 +2,7 @@ import { tryOnScopeDispose, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -15,11 +15,11 @@ import {
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 import { app } from '@/scripts/app'
+import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
 const SNAP_CLASS = 'lg-slot--snap-target'
@@ -79,7 +79,7 @@ export function useSubgraphDragBridge() {
       isBridgeDrag = true
       beginDrag(
         {
-          nodeId: String(renderLink.node.id),
+          nodeId: renderLink.node.id,
           slotIndex: renderLink.fromSlotIndex,
           type: sourceType,
           direction: renderLink.fromDirection ?? LinkDirection.RIGHT,
@@ -91,18 +91,24 @@ export function useSubgraphDragBridge() {
         -1
       )
 
-      const allKeys = layoutStore.getAllSlotKeys()
-      for (const key of allKeys) {
-        const slotLayout = layoutStore.getSlotLayout(key)
-        if (!slotLayout) continue
-        if (slotLayout.type !== connectingTo) continue
-
-        const ok =
+      for (const candidateNode of adapter.network.nodes) {
+        const slots =
           connectingTo === 'input'
-            ? adapter.isInputValidDrop(slotLayout.nodeId, slotLayout.index)
-            : adapter.isOutputValidDrop(slotLayout.nodeId, slotLayout.index)
+            ? candidateNode.inputs
+            : candidateNode.outputs
+        for (const [slotIndex] of slots.entries()) {
+          const key = getSlotKey(
+            candidateNode.id,
+            slotIndex,
+            connectingTo === 'input'
+          )
+          const ok =
+            connectingTo === 'input'
+              ? adapter.isInputValidDrop(candidateNode.id, slotIndex)
+              : adapter.isOutputValidDrop(candidateNode.id, slotIndex)
 
-        setCompatibleForKey(key, ok)
+          setCompatibleForKey(key, ok)
+        }
       }
 
       teardownDrag = startPointerTracking(lgCanvas, linkConnector)
@@ -168,7 +174,6 @@ export function useSubgraphDragBridge() {
   ): () => void {
     const ownerDoc = lgCanvas.getCanvasWindow().document
     const session = createSlotLinkDragContext()
-    const slotRegistry = useNodeSlotRegistryStore()
     let pendingMove: { clientX: number; clientY: number } | null = null
     let highlightedSlotEl: HTMLElement | null = null
 
@@ -195,7 +200,9 @@ export function useSubgraphDragBridge() {
           ?.querySelector<HTMLElement>('[data-slot-key]')
         const elWithNode = target.closest<HTMLElement>('[data-node-id]')
         hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
-        hoveredNodeId = elWithNode?.dataset['nodeId'] ?? null
+        hoveredNodeId = elWithNode?.dataset['nodeId']
+          ? toNodeId(elWithNode.dataset['nodeId'])
+          : null
         session.lastPointerEventTarget = target
         session.lastPointerTargetSlotKey = hoveredSlotKey
         session.lastPointerTargetNodeId = hoveredNodeId
@@ -282,10 +289,10 @@ export function useSubgraphDragBridge() {
         candidate.layout.index,
         candidate.layout.type === 'input'
       )
-      const entry = slotRegistry
-        .getNode(candidate.layout.nodeId)
-        ?.slots.get(key)
-      const groupEl = entry?.el?.parentElement
+      const dotEl = ownerDoc.querySelector<HTMLElement>(
+        `[data-slot-key="${key}"]`
+      )
+      const groupEl = dotEl?.closest<HTMLElement>('.lg-slot')
       if (groupEl) {
         groupEl.classList.add(SNAP_CLASS)
         highlightedSlotEl = groupEl
