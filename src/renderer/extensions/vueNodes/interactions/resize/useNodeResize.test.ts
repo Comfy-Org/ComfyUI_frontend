@@ -11,19 +11,35 @@ type ResizeCallback = (
   element: HTMLElement
 ) => void
 
-// Capture pointermove/pointerup handlers registered via useEventListener
+// Capture pointer handlers registered via useEventListener.
+// All registered handlers are kept so tests can observe stale (un-stopped) ones.
 const eventHandlers = vi.hoisted(() => ({
-  pointermove: null as ((e: PointerEvent) => void) | null,
-  pointerup: null as ((e: PointerEvent) => void) | null
+  pointermove: [] as ((e: PointerEvent) => void)[],
+  pointerup: [] as ((e: PointerEvent) => void)[],
+  pointercancel: [] as ((e: PointerEvent) => void)[]
+}))
+
+const stopHandles = vi.hoisted(() => ({
+  all: [] as ReturnType<typeof vi.fn>[]
 }))
 
 vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn(
     (eventName: string, handler: (...args: unknown[]) => void) => {
-      if (eventName === 'pointermove' || eventName === 'pointerup') {
-        eventHandlers[eventName] = handler as (e: PointerEvent) => void
+      const key = eventName as keyof typeof eventHandlers
+      if (key in eventHandlers) {
+        const typedHandler = handler as (e: PointerEvent) => void
+        eventHandlers[key].push(typedHandler)
+        const stop = vi.fn(() => {
+          const idx = eventHandlers[key].indexOf(typedHandler)
+          if (idx !== -1) eventHandlers[key].splice(idx, 1)
+        })
+        stopHandles.all.push(stop)
+        return stop
       }
-      return vi.fn()
+      const stop = vi.fn()
+      stopHandles.all.push(stop)
+      return stop
     }
   )
 }))
@@ -148,7 +164,7 @@ function simulateMove(
     clientX: startX + deltaX,
     clientY: startY + deltaY
   })
-  eventHandlers.pointermove?.(moveEvent)
+  for (const handler of [...eventHandlers.pointermove]) handler(moveEvent)
 }
 
 describe('useNodeResize', () => {
@@ -157,8 +173,10 @@ describe('useNodeResize', () => {
   let handle: HTMLElement
 
   beforeEach(async () => {
-    eventHandlers.pointermove = null
-    eventHandlers.pointerup = null
+    eventHandlers.pointermove = []
+    eventHandlers.pointerup = []
+    eventHandlers.pointercancel = []
+    stopHandles.all.length = 0
     snapState.shouldSnap = false
     snapState.applySnapToPosition = (pos) => pos
     snapState.applySnapToSize = (size) => size
@@ -316,8 +334,10 @@ describe('useNodeResize', () => {
 
     async function setupDynamic(getMinContentHeight: () => number) {
       vi.clearAllMocks()
-      eventHandlers.pointermove = null
-      eventHandlers.pointerup = null
+      eventHandlers.pointermove = []
+      eventHandlers.pointerup = []
+      eventHandlers.pointercancel = []
+      stopHandles.all.length = 0
       const cb = vi.fn<ResizeCallback>()
       const el = makeReflowingElement(300, 400, getMinContentHeight)
       const h = createMockHandle(el)
@@ -387,7 +407,7 @@ describe('useNodeResize', () => {
       const callsBeforeUp = cb.mock.calls.length
 
       const upEvent = createPointerEvent('pointerup', { pointerId: 1 })
-      eventHandlers.pointerup?.(upEvent)
+      for (const h of [...eventHandlers.pointerup]) h(upEvent)
 
       // Subsequent moves should be ignored after cleanup
       simulateMove(40, 40)
@@ -404,7 +424,9 @@ describe('useNodeResize', () => {
       simulateMove(10, 10)
 
       const upEvent = createPointerEvent('pointerup', { pointerId: 1 })
-      expect(() => eventHandlers.pointerup?.(upEvent)).not.toThrow()
+      expect(() => {
+        for (const h of [...eventHandlers.pointerup]) h(upEvent)
+      }).not.toThrow()
 
       // Further moves are ignored — cleanup still ran.
       const callsAfterUp = cb.mock.calls.length
@@ -510,6 +532,65 @@ describe('useNodeResize', () => {
       simulateMove(10, 10)
 
       expect(el.style.getPropertyValue('--node-width')).toBe('350px')
+    })
+  })
+
+  describe('concurrent resize guard', () => {
+    it('releases every listener set when two corners are grabbed at once', () => {
+      const handlesBeforeGesture = stopHandles.all.length
+      startResizeAt(getStartResize(), handle, 'SE')
+      startResizeAt(getStartResize(), handle, 'SW')
+
+      for (const h of [...eventHandlers.pointerup])
+        h(createPointerEvent('pointerup'))
+
+      const unreleased = stopHandles.all
+        .slice(handlesBeforeGesture)
+        .filter((s) => s.mock.calls.length === 0)
+      expect(unreleased).toHaveLength(0)
+    })
+
+    it('fires resizeCallback once per pointermove on next resize after a double grab', () => {
+      // Simulate double grab: first corner, then second before first releases
+      startResizeAt(getStartResize(), handle, 'SE')
+      startResizeAt(getStartResize(), handle, 'SW')
+
+      // Release first gesture
+      for (const h of [...eventHandlers.pointerup])
+        h(createPointerEvent('pointerup'))
+
+      // Start a fresh resize — this is the "next resize" from the issue
+      stopHandles.all.length = 0
+      startResizeAt(getStartResize(), handle, 'SE')
+
+      callback.mockClear()
+      simulateMove(10, 10)
+      // With the fix, only one handler runs; without it, the stranded L2 handler
+      // also fires against the shared refs producing a second callback call.
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores events from pointers outside the active resize', () => {
+      startResizeAt(getStartResize(), handle, 'SE')
+
+      simulateMove(10, 10)
+      callback.mockClear()
+
+      const otherMove = createPointerEvent('pointermove', {
+        clientX: 550,
+        clientY: 550,
+        pointerId: 2
+      })
+      for (const h of [...eventHandlers.pointermove]) h(otherMove)
+      for (const h of [...eventHandlers.pointerup])
+        h(createPointerEvent('pointerup', { pointerId: 2 }))
+      for (const h of [...eventHandlers.pointercancel])
+        h(createPointerEvent('pointercancel', { pointerId: 2 }))
+
+      expect(callback).not.toHaveBeenCalled()
+
+      simulateMove(20, 20)
+      expect(callback).toHaveBeenCalledTimes(1)
     })
   })
 })
