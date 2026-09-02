@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { useElementVisibility, useRafFn } from '@vueuse/core'
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import {
+  useDocumentVisibility,
+  useElementVisibility,
+  useRafFn
+} from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const textureId = useId()
 
 const COLS = 20
 const ROWS = 7
@@ -28,8 +30,28 @@ const HOLD_DURATION = 3000
 const RESET_DURATION = 650
 const CYCLE_DURATION = BUILD_DURATION + HOLD_DURATION + RESET_DURATION
 const BUILD_STAGGER = 0.62
-const MAX_TEXTURE_SHADE_OPACITY = 0.62
+const MAX_FACE_SHADE_OPACITY = 0.62
 const CONTRIBUTION_HEIGHTS = [0, 14, 26, 40, 56, 72] as const
+const STAGE_WIDTH = 760
+const STAGE_HEIGHT = 360
+const INK_TOKEN = '--color-primary-comfy-ink'
+const PLUM_TOKEN = '--color-primary-comfy-plum'
+// The indicator sits inside a scaled group, so it never sampled the field at
+// its own stage position. These are the colours it showed.
+const INDICATOR_SURFACES = { left: '#d3d4e0', right: '#ebe3f1' } as const
+
+// A frame budget that divides evenly into the vsync interval starves on jitter:
+// 30 fps is exactly two 60 Hz frames, and 40 fps exactly three at 120 Hz, so
+// most frames slip a whole extra vsync. 35 fps is off-grid at every common rate.
+const ANIMATION_FPS = 35
+
+// The retired holographic texture, resampled onto the stage as a 7x4 grid.
+const SURFACE_FIELD = [
+  ['#d7d5e1', '#bcc6e6', '#d5d4e1', '#cbd1e4', '#dbe4f4', '#dee4e9', '#e8eac5'],
+  ['#e7dfd5', '#edcacd', '#e5cac5', '#cccfdc', '#d3d2dd', '#e2dae1', '#eee2e6'],
+  ['#e4d7d5', '#e8ded7', '#d8d2e1', '#a0c5ee', '#dcd8d2', '#e3d7cf', '#ebe0df'],
+  ['#dbdfeb', '#d7d5d9', '#ded7cf', '#cbd0cb', '#b2cddc', '#bcb8dd', '#eddfde']
+]
 
 interface Tile {
   id: number
@@ -38,11 +60,16 @@ interface Tile {
   revealOrder: number
   x: number
   y: number
+  leftFill: string
+  rightFill: string
 }
 
 interface VisualTile extends Tile {
   height: number
-  textureShadeOpacity: number
+  raised: boolean
+  silhouette: string
+  rightFace: string
+  faceShadeOpacity: number
   topFill: string
 }
 
@@ -56,6 +83,51 @@ const reducedMotion = prefersReducedMotion()
 function mixedColor(token: string, percentage: number) {
   return `color-mix(in srgb, var(${token}) ${percentage}%, var(--color-primary-comfy-ink))`
 }
+
+function tintedSurface(surface: string, token: string, percentage: number) {
+  return `color-mix(in srgb, ${surface} ${100 - percentage}%, var(${token}))`
+}
+
+function channels(color: string) {
+  return [1, 3, 5].map((offset) =>
+    parseInt(color.slice(offset, offset + 2), 16)
+  )
+}
+
+function surfaceColor(x: number, y: number) {
+  const lastColumn = SURFACE_FIELD[0].length - 1
+  const lastRow = SURFACE_FIELD.length - 1
+  const u = clamp(x / STAGE_WIDTH) * lastColumn
+  const v = clamp(y / STAGE_HEIGHT) * lastRow
+  const column = Math.min(Math.floor(u), lastColumn - 1)
+  const row = Math.min(Math.floor(v), lastRow - 1)
+  const alongX = u - column
+  const alongY = v - row
+  const corners = [
+    channels(SURFACE_FIELD[row][column]),
+    channels(SURFACE_FIELD[row][column + 1]),
+    channels(SURFACE_FIELD[row + 1][column]),
+    channels(SURFACE_FIELD[row + 1][column + 1])
+  ]
+
+  const blended = corners[0].map((_, channel) =>
+    Math.round(
+      (corners[0][channel] * (1 - alongX) + corners[1][channel] * alongX) *
+        (1 - alongY) +
+        (corners[2][channel] * (1 - alongX) + corners[3][channel] * alongX) *
+          alongY
+    )
+  )
+
+  return `#${blended.map((value) => value.toString(16).padStart(2, '0')).join('')}`
+}
+
+const indicatorLeftFill = tintedSurface(INDICATOR_SURFACES.left, INK_TOKEN, 16)
+const indicatorRightFill = tintedSurface(
+  INDICATOR_SURFACES.right,
+  PLUM_TOKEN,
+  8
+)
 
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value))
@@ -77,6 +149,9 @@ function seededUnit(seed: number) {
 const tiles: Tile[] = Array.from({ length: COLS * ROWS }, (_, id) => {
   const column = id % COLS
   const row = Math.floor(id / COLS)
+  const x = ORIGIN_X + (column - row) * GRID_STEP_X
+  const y = ORIGIN_Y + (column + row) * GRID_STEP_Y
+  const surface = surfaceColor(x, y)
 
   return {
     id,
@@ -84,8 +159,10 @@ const tiles: Tile[] = Array.from({ length: COLS * ROWS }, (_, id) => {
     row,
     revealOrder:
       (column / (COLS - 1)) * 0.64 + ((ROWS - 1 - row) / (ROWS - 1)) * 0.36,
-    x: ORIGIN_X + (column - row) * GRID_STEP_X,
-    y: ORIGIN_Y + (column + row) * GRID_STEP_Y
+    x,
+    y,
+    leftFill: tintedSurface(surface, INK_TOKEN, 12),
+    rightFill: tintedSurface(surface, PLUM_TOKEN, 6)
   }
 }).sort((a, b) => a.y - b.y || a.x - b.x)
 
@@ -180,19 +257,22 @@ const visualTiles = computed<VisualTile[]>(() =>
           : 1 - easeInCubic(resetProgress.value)
     const height = targetHeight * visibleProgress
     const level = targetHeight / MAX_HEIGHT
+    const raised = height > 0.5
 
     return {
       ...tile,
       height,
-      textureShadeOpacity:
-        (1 - clamp(height / MAX_HEIGHT)) * MAX_TEXTURE_SHADE_OPACITY,
-      topFill:
-        height > 0.5
-          ? mixedColor('--color-primary-comfy-yellow', 76 + level * 24)
-          : mixedColor(
-              '--color-primary-comfy-plum',
-              48 + ((tile.id * 29) % 7) * 5
-            )
+      raised,
+      silhouette: raised ? tileSilhouette(tile, height) : '',
+      rightFace: raised ? tileRightFace(tile, height) : '',
+      faceShadeOpacity:
+        (1 - clamp(height / MAX_HEIGHT)) * MAX_FACE_SHADE_OPACITY,
+      topFill: raised
+        ? mixedColor('--color-primary-comfy-yellow', 76 + level * 24)
+        : mixedColor(
+            '--color-primary-comfy-plum',
+            48 + ((tile.id * 29) % 7) * 5
+          )
     }
   })
 )
@@ -201,7 +281,7 @@ function tileTransform(tile: VisualTile) {
   return `matrix(${ISO_X} ${-ISO_Y} ${ISO_X} ${ISO_Y} ${tile.x} ${tile.y - tile.height})`
 }
 
-function tileCorners(tile: VisualTile, elevation: number): readonly Point[] {
+function tileCorners(tile: Tile, elevation: number): readonly Point[] {
   const topY = tile.y - elevation
   const halfWidth = TILE_WIDTH / 2
   const halfHeight = TILE_HEIGHT / 2
@@ -218,15 +298,15 @@ function polygonPoints(points: readonly Point[]) {
   return points.map(([x, y]) => `${x},${y}`).join(' ')
 }
 
-function leftFace(tile: VisualTile) {
-  const top = tileCorners(tile, tile.height)
+function tileSilhouette(tile: Tile, height: number) {
+  const top = tileCorners(tile, height)
   const base = tileCorners(tile, 0)
 
-  return polygonPoints([top[0], top[3], base[3], base[0]])
+  return polygonPoints([top[0], top[1], top[2], base[2], base[3], base[0]])
 }
 
-function rightFace(tile: VisualTile) {
-  const top = tileCorners(tile, tile.height)
+function tileRightFace(tile: Tile, height: number) {
+  const top = tileCorners(tile, height)
   const base = tileCorners(tile, 0)
 
   return polygonPoints([top[3], top[2], base[2], base[3]])
@@ -236,13 +316,15 @@ const { pause, resume } = useRafFn(
   ({ delta }) => {
     elapsed.value += delta
   },
-  { immediate: false }
+  { immediate: false, fpsLimit: ANIMATION_FPS }
 )
 
+const documentVisibility = useDocumentVisibility()
+
 watch(
-  onScreen,
-  (visible) => {
-    if (visible && !reducedMotion) resume()
+  [onScreen, documentVisibility],
+  ([visible, pageState]) => {
+    if (visible && pageState === 'visible' && !reducedMotion) resume()
     else pause()
   },
   { immediate: true }
@@ -265,23 +347,6 @@ watch(
       class="absolute inset-0 size-full"
       aria-hidden="true"
     >
-      <defs>
-        <pattern
-          :id="textureId"
-          width="760"
-          height="360"
-          patternUnits="userSpaceOnUse"
-          patternContentUnits="userSpaceOnUse"
-        >
-          <image
-            href="/assets/platform/serverless/isometric-texture.webp"
-            width="760"
-            height="360"
-            preserveAspectRatio="xMidYMid slice"
-          />
-        </pattern>
-      </defs>
-
       <g transform="translate(-23 136) scale(0.275)">
         <path
           d="M400 285.274C414.877 285.274 429.684 288.556 440.919 295.042L638.843 409.313C650.085 415.804 655.411 424.129 655.411 432.187C655.411 440.246 650.085 448.571 638.843 455.062L440.919 569.333C429.684 575.819 414.877 579.1 400 579.1C385.123 579.1 370.316 575.819 359.081 569.333L161.156 455.062C149.914 448.571 144.588 440.246 144.588 432.188C144.588 424.129 149.914 415.804 161.156 409.313L359.081 295.042C370.316 288.556 385.123 285.274 400 285.274Z"
@@ -290,23 +355,10 @@ watch(
           stroke-width="2.6"
         />
         <template v-if="resetIndicatorHeight > 0.5">
-          <polygon
-            :points="resetIndicatorLeftFace"
-            :fill="`url(#${textureId})`"
-          />
+          <polygon :points="resetIndicatorLeftFace" :fill="indicatorLeftFill" />
           <polygon
             :points="resetIndicatorRightFace"
-            :fill="`url(#${textureId})`"
-          />
-          <polygon
-            :points="resetIndicatorLeftFace"
-            fill="var(--color-primary-comfy-ink)"
-            fill-opacity="0.16"
-          />
-          <polygon
-            :points="resetIndicatorRightFace"
-            fill="var(--color-primary-comfy-plum)"
-            fill-opacity="0.08"
+            :fill="indicatorRightFill"
           />
         </template>
         <path
@@ -317,40 +369,13 @@ watch(
       </g>
 
       <g v-for="tile in visualTiles" :key="tile.id">
-        <template v-if="tile.height > 0.5">
-          <polygon :points="leftFace(tile)" :fill="`url(#${textureId})`" />
-          <polygon :points="rightFace(tile)" :fill="`url(#${textureId})`" />
-          <g
-            :opacity="tile.textureShadeOpacity"
-            :data-texture-shade="tile.textureShadeOpacity"
-          >
-            <polygon
-              :points="leftFace(tile)"
-              fill="var(--color-primary-comfy-ink)"
-            />
-            <polygon
-              :points="rightFace(tile)"
-              fill="var(--color-primary-comfy-ink)"
-            />
-          </g>
+        <template v-if="tile.raised">
+          <polygon :points="tile.silhouette" :fill="tile.leftFill" />
+          <polygon :points="tile.rightFace" :fill="tile.rightFill" />
           <polygon
-            :points="leftFace(tile)"
+            :points="tile.silhouette"
             fill="var(--color-primary-comfy-ink)"
-            fill-opacity="0.12"
-          />
-          <polygon
-            :points="rightFace(tile)"
-            fill="var(--color-primary-comfy-plum)"
-            fill-opacity="0.06"
-          />
-          <polygon
-            :points="polygonPoints(tileCorners(tile, tile.height))"
-            :fill="`url(#${textureId})`"
-          />
-          <polygon
-            :points="polygonPoints(tileCorners(tile, tile.height))"
-            fill="var(--color-primary-comfy-ink)"
-            :fill-opacity="tile.textureShadeOpacity"
+            :fill-opacity="tile.faceShadeOpacity"
           />
         </template>
         <rect
