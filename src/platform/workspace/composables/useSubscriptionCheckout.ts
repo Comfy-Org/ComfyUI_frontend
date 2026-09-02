@@ -778,7 +778,12 @@ export function useSubscriptionCheckout(
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
       if (!teamCreditStopId) {
-        if (checkoutType === 'new') checkoutStep.value = 'preview'
+        toast.add({
+          severity: 'error',
+          summary: t('subscription.teamPlan.name'),
+          detail: t('subscription.teamPlan.unavailable')
+        })
+        resetToPricing()
         return
       }
       isLoadingPreview.value = true

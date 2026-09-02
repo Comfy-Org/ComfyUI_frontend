@@ -1357,18 +1357,23 @@ describe('useSubscriptionCheckout', () => {
         expect(mockToastAdd).toHaveBeenCalledOnce()
       })
 
-      it('does not open a change confirmation for a stop the backend cannot quote', async () => {
-        const checkout = await setupLegacyTeam()
+      it.for([false, true])(
+        'reports a stop the backend cannot quote rather than confirming it (isChange: %s)',
+        async (isChange) => {
+          const checkout = await setupLegacyTeam()
 
-        await checkout.handleSubscribeTeamClick({
-          stop: { usd: 1400, credits: 295_400, discountedUsd: 1295 },
-          billingCycle: 'monthly',
-          isChange: true
-        })
+          await checkout.handleSubscribeTeamClick({
+            stop: { usd: 1400, credits: 295_400, discountedUsd: 1295 },
+            billingCycle: 'monthly',
+            isChange
+          })
 
-        expect(mockPreviewSubscribe).not.toHaveBeenCalled()
-        expect(checkout.checkoutStep.value).toBe('pricing')
-      })
+          expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+          expect(checkout.checkoutStep.value).toBe('pricing')
+          expect(checkout.selectedTeamStop.value).toBeNull()
+          expect(mockToastAdd).toHaveBeenCalledOnce()
+        }
+      )
     })
 
     it('transitions to preview with the selected team stop and cycle', async () => {
