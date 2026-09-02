@@ -6,10 +6,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import {
-  appendNodeExecutionId,
-  tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
+import { appendNodeExecutionId } from '@/types/nodeIdentification'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import type { PromotedPreview } from './usePromotedPreviews'
 import { getPreviewMediaType } from './usePromotedPreviews'
@@ -69,12 +67,15 @@ export function useAmbientSubgraphPreviews(
     const { subgraph } = node
     void useSubgraphTopologyVersion(subgraph).value
 
-    // The host's own id, treated as its (single-segment) execution id — see
-    // `usePromotedPreviews`'s identical `hostLocator` construction. Scoping
-    // interior lookups to this instance's own execution path, rather than
-    // the subgraph definition's shared `NodeLocatorId`, is what keeps two
-    // hosts of the same definition from displaying each other's preview.
-    const hostExecutionId = tryNormalizeNodeExecutionId(node.id)
+    // The host's own root-relative execution id (e.g. `9:10` for a host
+    // nested one level deep), not just its bare local id — otherwise a
+    // nested host looks up its interior previews under the wrong key and
+    // never finds the frames `app.ts`'s ancestor fan-out already wrote for
+    // it. Scoping interior lookups to this instance's own execution path,
+    // rather than the subgraph definition's shared `NodeLocatorId`, is also
+    // what keeps two hosts of the same definition from displaying each
+    // other's preview.
+    const hostExecutionId = getExecutionIdByNode(node.rootGraph, node)
     if (!hostExecutionId) return []
 
     return subgraph.nodes.flatMap((interiorNode): PromotedPreview[] => {
