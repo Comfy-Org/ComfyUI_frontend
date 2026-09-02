@@ -34,6 +34,7 @@ export interface DocUpdate {
 export interface DocSubscribed {
   workflowId: string
   ok: boolean
+  /** Cloud omits seq=0; successful subscriptions require docstore seq>=1. */
   seq?: number
   code?: string
   message?: string
