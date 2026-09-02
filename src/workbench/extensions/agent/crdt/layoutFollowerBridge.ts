@@ -240,6 +240,9 @@ export class LayoutFollowerBridge extends EventTarget {
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
     // a live frame overtook the ack: see {@link catchUpPending}.
+    // Deliberately compares against lastSeq, never ackSeq: while lastSeq is
+    // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
+    // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq)
       return
