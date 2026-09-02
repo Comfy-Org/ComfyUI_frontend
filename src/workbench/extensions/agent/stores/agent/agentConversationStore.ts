@@ -54,7 +54,6 @@ export const useAgentConversationStore = defineStore(
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
-    let hydratedAssistantTurnIds = new Set<TurnId>()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -188,25 +187,7 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      const last = kept.at(-1)
-      let poppedHydratedCopy = false
-      if (
-        kept.length === messages.value.length &&
-        last &&
-        !hydratedAssistantTurnIds.has(last.id) &&
-        entry.userText !== undefined &&
-        userTexts.value.get(last.id) === entry.userText
-      ) {
-        kept.pop()
-        userTexts.value.delete(last.id)
-        poppedHydratedCopy = true
-      }
-      if (
-        entry.settled &&
-        !poppedHydratedCopy &&
-        hydratedMessageIds.has(entry.messageId)
-      )
-        return
+      if (entry.settled && hydratedMessageIds.has(entry.messageId)) return
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
@@ -298,7 +279,6 @@ export const useAgentConversationStore = defineStore(
       dropAttachmentPreviews()
       threadId.value = null
       hydratedMessageIds = new Set()
-      hydratedAssistantTurnIds = new Set()
       clearActive()
     }
 
@@ -309,7 +289,6 @@ export const useAgentConversationStore = defineStore(
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       hydratedMessageIds = transcript.rowIds
-      hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
       if (transcript.pending) {
         liveMessage = transcript.pending.message
