@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as VueUseCore from '@vueuse/core'
 import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -10,9 +11,7 @@ const useImageMock = vi.hoisted(() => ({
 }))
 
 vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<typeof import('@vueuse/core')>(
-    '@vueuse/core'
-  )
+  const actual = await vi.importActual<typeof VueUseCore>('@vueuse/core')
   const { ref } = await import('vue')
   useImageMock.state = ref<HTMLImageElement | undefined>(undefined)
   useImageMock.isReady = ref(false)
