@@ -239,7 +239,7 @@ type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
     ? StatusWsMessageStatus
     : K extends 'executing'
-      ? SerializedNodeId
+      ? SerializedNodeId | null
       : T[K]
 }
 

@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -10,6 +12,12 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+
+// Create mock functions that will be shared
+const { mockRevokePreviewsByExecutionId } = vi.hoisted(() => ({
+  mockRevokePreviewsByExecutionId: vi.fn()
+}))
+
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
@@ -30,7 +38,11 @@ const {
     mockNodeIdToNodeLocatorId: vi.fn(),
     mockNodeLocatorIdToNodeExecutionId: vi.fn(),
     mockExecutionIdToCurrentId: vi.fn(),
-    mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
+    mockActiveWorkflow: shallowRef<{
+      path?: string
+      activeState?: { id?: string }
+      initialState?: { id?: string }
+    } | null>(null),
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
@@ -135,7 +147,7 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
-    revokePreviewsByExecutionId: vi.fn()
+    revokePreviewsByExecutionId: mockRevokePreviewsByExecutionId
   })
 }))
 
@@ -1038,6 +1050,455 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   })
 })
 
+describe('useExecutionStore - active workflow gating', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>,
+    workflowId?: string
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', {
+        detail: { nodes, prompt_id: jobId, workflow_id: workflowId }
+      })
+    )
+  }
+
+  function fireProgress(
+    jobId: string,
+    nodeId: string,
+    workflowId?: string,
+    value = 5,
+    max = 10
+  ) {
+    const handler = apiEventHandlers.get('progress')
+    if (!handler) throw new Error('progress handler not bound')
+    handler(
+      new CustomEvent('progress', {
+        detail: {
+          value,
+          max,
+          prompt_id: jobId,
+          node: nodeId,
+          workflow_id: workflowId
+        }
+      })
+    )
+  }
+
+  beforeEach(() => {
+    apiEventHandlers.clear()
+    mockActiveWorkflow.value = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('always updates per-job progress regardless of active workflow', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState(
+      'job-other',
+      makeProgressNodes('1', 'job-other'),
+      'wf-other'
+    )
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-other')
+  })
+
+  it('skips global mirror when message workflow_id mismatches active workflow', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState(
+      'job-other',
+      makeProgressNodes('1', 'job-other'),
+      'wf-other'
+    )
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('updates global mirror when message workflow_id matches active workflow', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-active')
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
+  })
+
+  it('falls back to jobIdToWorkflowId mapping when workflow_id missing', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    store.registerJobWorkflowIdMapping('job-other', 'wf-other')
+
+    fireProgressState('job-other', makeProgressNodes('1', 'job-other'))
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('falls back to session path mapping when no id mapping is registered', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    store.ensureSessionWorkflowPath('job-other', '/wf-other.json')
+
+    fireProgressState('job-other', makeProgressNodes('1', 'job-other'))
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('preserves single-tab behaviour when ownership is unresolvable', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState('job-unknown', makeProgressNodes('1', 'job-unknown'))
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStates).toEqual(
+      makeProgressNodes('1', 'job-unknown')
+    )
+  })
+
+  it('updates mirror when there is no active workflow', () => {
+    mockActiveWorkflow.value = null
+
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-1')
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
+  })
+
+  it('skips preview revocation for non-active workflow messages', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    mockRevokePreviewsByExecutionId.mockClear()
+
+    fireProgressState(
+      'job-other',
+      makeProgressNodes('1', 'job-other'),
+      'wf-other'
+    )
+
+    expect(mockRevokePreviewsByExecutionId).not.toHaveBeenCalled()
+  })
+
+  it('revokes previews for active workflow messages', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    mockRevokePreviewsByExecutionId.mockClear()
+
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-active')
+    vi.advanceTimersToNextFrame()
+
+    expect(mockRevokePreviewsByExecutionId).toHaveBeenCalledWith('1')
+  })
+
+  it('skips _executingNodeProgress on workflow_id mismatch', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgress('job-other', '1', 'wf-other')
+    vi.advanceTimersToNextFrame()
+
+    expect(store._executingNodeProgress).toBeNull()
+  })
+
+  it('updates _executingNodeProgress on workflow_id match', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgress('job-1', '1', 'wf-active', 7, 10)
+    vi.advanceTimersToNextFrame()
+
+    expect(store._executingNodeProgress).toEqual({
+      value: 7,
+      max: 10,
+      prompt_id: 'job-1',
+      node: '1',
+      workflow_id: 'wf-active'
+    })
+  })
+
+  it('execution_start from a non-active workflow does not steal activeJobId', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBeNull()
+  })
+
+  it('execution_start from active workflow adopts activeJobId', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-1',
+          timestamp: 0,
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('execution_success from a non-active workflow does not clear activeJobId', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-1',
+          timestamp: 0,
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    const successHandler = apiEventHandlers.get('execution_success')
+    if (!successHandler) throw new Error('execution_success handler not bound')
+    successHandler(
+      new CustomEvent('execution_success', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('execution_interrupted from a non-active workflow does not clear activeJobId', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-1',
+          timestamp: 0,
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    const intHandler = apiEventHandlers.get('execution_interrupted')
+    if (!intHandler) throw new Error('execution_interrupted handler not bound')
+    intHandler(
+      new CustomEvent('execution_interrupted', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          node_id: '1',
+          node_type: 'X',
+          executed: [],
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('execution_cached from a non-active workflow does not mark active job nodes', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
+      })
+    )
+
+    const cachedHandler = apiEventHandlers.get('execution_cached')
+    if (!cachedHandler) throw new Error('execution_cached handler not bound')
+    cachedHandler(
+      new CustomEvent('execution_cached', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other',
+          nodes: ['n1', 'n2']
+        }
+      })
+    )
+
+    expect(store.activeJob?.nodes).toEqual({})
+  })
+
+  it('executed from a non-active workflow does not mark active job nodes', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
+      })
+    )
+
+    const executedHandler = apiEventHandlers.get('executed')
+    if (!executedHandler) throw new Error('executed handler not bound')
+    executedHandler(
+      new CustomEvent('executed', {
+        detail: {
+          prompt_id: 'job-other',
+          node: 'n1',
+          display_node: 'n1',
+          workflow_id: 'wf-other',
+          output: {}
+        }
+      })
+    )
+
+    expect(store.activeJob?.nodes['n1']).toBeUndefined()
+  })
+
+  it('execution_error from a non-active workflow does not clear active job state but still clears the errored job initializing flag', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
+      })
+    )
+
+    store.initializingJobIds = new Set(['job-other'])
+
+    const errorHandler = apiEventHandlers.get('execution_error')
+    if (!errorHandler) throw new Error('execution_error handler not bound')
+    errorHandler(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other',
+          node_id: 'n1',
+          node_type: 'X',
+          executed: [],
+          exception_message: 'oops',
+          exception_type: 'RuntimeError',
+          traceback: [],
+          current_inputs: {},
+          current_outputs: {}
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+    expect(store.initializingJobIds.has('job-other')).toBe(false)
+    // Errors are recorded for diagnostics regardless of which workflow they
+    // belong to; only the active-tab execution UI reset is gated.
+    expect(useExecutionErrorStore().lastExecutionError).not.toBeNull()
+  })
+
+  it('revokes preview when node transitions pending -> running', () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const pendingNodes: Record<string, NodeProgressState> = {
+      n1: {
+        value: 0,
+        max: 10,
+        state: 'pending',
+        node_id: 'n1',
+        prompt_id: 'job-1',
+        display_node_id: 'n1'
+      }
+    }
+    fireProgressState('job-1', pendingNodes, 'wf-active')
+    vi.advanceTimersToNextFrame()
+    mockRevokePreviewsByExecutionId.mockClear()
+
+    const runningNodes: Record<string, NodeProgressState> = {
+      n1: { ...pendingNodes.n1, state: 'running', value: 1 }
+    }
+    fireProgressState('job-1', runningNodes, 'wf-active')
+    vi.advanceTimersToNextFrame()
+
+    expect(mockRevokePreviewsByExecutionId).toHaveBeenCalledWith('n1')
+  })
+})
+
 describe('useExecutionStore - progress_text startup guard', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -1045,6 +1506,7 @@ describe('useExecutionStore - progress_text startup guard', () => {
     nodeId: string
     text: string
     prompt_id?: string
+    workflow_id?: string
   }) {
     const handler = apiEventHandlers.get('progress_text')
     if (!handler) throw new Error('progress_text handler not bound')
@@ -1053,6 +1515,8 @@ describe('useExecutionStore - progress_text startup guard', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
+    mockActiveWorkflow.value = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -1098,6 +1562,50 @@ describe('useExecutionStore - progress_text startup guard', () => {
 
     expect(mockExecutionIdToCurrentId).toHaveBeenCalledWith('1:2')
     expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('skips progress_text whose workflow_id mismatches active workflow', async () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({
+      nodeId: '1',
+      text: 'warming up',
+      prompt_id: 'job-other',
+      workflow_id: 'wf-other'
+    })
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('forwards progress_text whose workflow_id matches active workflow', async () => {
+    mockActiveWorkflow.value = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({
+      nodeId: '1',
+      text: 'warming up',
+      prompt_id: 'job-1',
+      workflow_id: 'wf-active'
+    })
+
+    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
   })
 })
 
@@ -2008,6 +2516,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
+    mockActiveWorkflow.value = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -2066,10 +2576,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('clears initializing state for the starting job', () => {
-      store.initializingJobIds = new Set([
-        'job-1',
-        'job-2'
-      ]) as unknown as Set<string>
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
@@ -2265,6 +2772,16 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         view_mode: 'app',
         is_app_mode: true
       })
+    })
+
+    it('clears initializing state for the completed job', () => {
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.initializingJobIds.has('job-1')).toBe(false)
+      expect(store.initializingJobIds.has('job-2')).toBe(true)
     })
   })
 
