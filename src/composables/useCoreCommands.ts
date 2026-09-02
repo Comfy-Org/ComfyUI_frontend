@@ -68,6 +68,7 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
@@ -297,7 +298,6 @@ export function useCoreCommands(): ComfyCommand[] {
           !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
-          app.clean()
           if (app.canvas.subgraph) {
             // `clear` is not implemented on subgraphs and the parent class's
             // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
@@ -305,6 +305,8 @@ export function useCoreCommands(): ComfyCommand[] {
             const subgraph = app.canvas.subgraph
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            runMintPortsIntentionalClear(() => app.clean())
           }
           api.dispatchCustomEvent('graphCleared')
         }

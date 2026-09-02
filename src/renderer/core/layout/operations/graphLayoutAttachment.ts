@@ -18,17 +18,18 @@ type GraphLayoutOwner = Pick<
   LGraph,
   '_nodes' | '_groups' | '_subgraphs' | 'reroutes'
 >
-type LayoutGraph = { rootGraph: { id: UUID } }
+type LayoutGraph = { id: UUID; rootGraph: { id: UUID } }
 
 interface LayoutAttachment<TId> {
   graphId: UUID
   id: TId
 }
 
-const nodeAttachments = new WeakMap<
-  LGraphNode,
-  LayoutAttachment<LGraphNode['id']>
->()
+interface NodeLayoutAttachment extends LayoutAttachment<LGraphNode['id']> {
+  ownerGraphId: UUID
+}
+
+const nodeAttachments = new WeakMap<LGraphNode, NodeLayoutAttachment>()
 const nodeAttachmentOwners = new Map<
   UUID,
   Map<LGraphNode['id'], WeakRef<LGraphNode>>
@@ -254,7 +255,7 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
 
   const graphId = graph.rootGraph.id
   if (layoutStore.getNodeLayout(graphId, node.id)) {
-    adoptNodeAttachment(graphId, node)
+    adoptNodeAttachment(graphId, graph.id, node)
     return
   }
 
@@ -272,19 +273,24 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
       visible: true
     },
     nodeId: node.id,
+    ownerGraphId: graph.id,
     type: 'createNode'
   })
-  adoptNodeAttachment(graphId, node)
+  adoptNodeAttachment(graphId, graph.id, node)
 }
 
-function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
+function adoptNodeAttachment(
+  graphId: UUID,
+  ownerGraphId: UUID,
+  node: LGraphNode
+): void {
   const projection = nodeGeometryProjection(node)
   const geometrySynchronized = layoutStore.readNodeRect(
     graphId,
     node.id,
     projection.buffer
   )
-  nodeAttachments.set(node, { graphId, id: node.id })
+  nodeAttachments.set(node, { graphId, id: node.id, ownerGraphId })
   setNodeAttachmentOwner(graphId, node)
   projection.layoutRef = layoutStore.getNodeLayoutRef(graphId, node.id)
   if (geometrySynchronized) {
@@ -295,7 +301,7 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
 function transferableNodeAttachment(
   node: LGraphNode,
   replacement: LGraphNode
-): LayoutAttachment<LGraphNode['id']> | undefined {
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (
     !attachment ||
@@ -346,7 +352,7 @@ export function transferLayoutAttachment(
 export function detachNodeLayout(node: LGraphNode): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
-  const { graphId, id: nodeId } = attachment
+  const { graphId, id: nodeId, ownerGraphId } = attachment
 
   const projection = nodeGeometryProjection(node)
   layoutStore.readNodeRect(graphId, nodeId, projection.buffer)
@@ -357,6 +363,7 @@ export function detachNodeLayout(node: LGraphNode): void {
     ...canvasOperationMeta(),
     graphId,
     nodeId,
+    ownerGraphId,
     type: 'deleteNode'
   })
 }
@@ -538,6 +545,7 @@ export function detachGraphLayouts(
           ...meta,
           graphId: attachment.graphId,
           nodeId: attachment.id,
+          ownerGraphId: attachment.ownerGraphId,
           type: 'deleteNode'
         })
       }

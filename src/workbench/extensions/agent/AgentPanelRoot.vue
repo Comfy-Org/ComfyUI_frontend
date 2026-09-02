@@ -133,6 +133,7 @@ const graphMutations = (workflowId: string) => {
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
           nodeId,
           layout: {
             id: nodeId,
@@ -154,6 +155,7 @@ const graphMutations = (workflowId: string) => {
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
             graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
             nodeId,
             source: LayoutSource.AgentRemote,
             actor: context.actor,
