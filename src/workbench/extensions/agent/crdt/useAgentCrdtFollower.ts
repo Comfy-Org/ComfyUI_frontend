@@ -1,3 +1,4 @@
+import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -11,9 +12,12 @@ import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
+import type { GraphReplayState } from './graphReplayQueue'
+import { GraphReplayQueue } from './graphReplayQueue'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { resolveReplayEnabled } from './replayGate'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
@@ -67,6 +71,16 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+  /** mm3-20 Option-B PoC: presentation-only replay state; `idle` when gated off. */
+  replayState: GraphReplayState
+}
+
+function safeLocalStorage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage
+  } catch {
+    return null
+  }
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -161,6 +175,43 @@ export function useAgentCrdtFollower(
     } catch {
       return new Set()
     }
+  }
+  let knownDocLinkIds: Set<string> = new Set()
+  const currentDocLinkIds = (): Set<string> => {
+    try {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      }
+      return new Set(Object.keys(doc.getMap('links').toJSON()))
+    } catch {
+      return new Set()
+    }
+  }
+
+  // mm3-20 Option-B PoC: a presentation-only replay queue. The doc and the
+  // ECS graph are ALWAYS fully applied by `adapter.applyFrame` above; the
+  // queue only paces which node/link ids are considered "revealed" so a
+  // client can render a veil over the rest. Gated off by default; resolved
+  // once per composable instance so a mid-session toggle never splits a
+  // batch. Reduced-motion users get every batch fast-forwarded.
+  const replayEnabled = resolveReplayEnabled({
+    buildFlag: (import.meta.env as Record<string, string | undefined>)
+      .VITE_AGENT_GRAPH_REPLAY,
+    search: typeof window === 'undefined' ? '' : window.location.search,
+    storage: safeLocalStorage()
+  })
+  const reducedMotion = usePreferredReducedMotion()
+  const replayState = ref<GraphReplayState>('idle')
+  const replayQueue = new GraphReplayQueue({
+    nodeExists: (id) => currentDocNodeIds().has(id),
+    onStep: (step) => recordDevEvent('replay_step', step),
+    onStateChange: (state) => {
+      replayState.value = state
+      recordDevEvent('replay_state', { state })
+    }
+  })
+  const settleReplay = () => {
+    if (replayEnabled) replayQueue.fastForward()
   }
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
@@ -269,6 +320,13 @@ export function useAgentCrdtFollower(
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     knownDocNodeIds = ids
+    const linkIds = currentDocLinkIds()
+    const addedLinks = [...linkIds].filter((id) => !knownDocLinkIds.has(id))
+    knownDocLinkIds = linkIds
+    if (replayEnabled && (added.length > 0 || addedLinks.length > 0)) {
+      replayQueue.enqueueBatch({ nodeIds: added, linkIds: addedLinks })
+      if (reducedMotion.value === 'reduce') replayQueue.fastForward()
+    }
   }
   const onOpsResult: EventListener = (event) => {
     if (staleProbeTimer !== null) armStaleProbe()
@@ -303,6 +361,8 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
+    knownDocLinkIds = new Set()
+    settleReplay()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -393,6 +453,8 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
+      knownDocLinkIds = new Set()
+      settleReplay()
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
@@ -444,6 +506,7 @@ export function useAgentCrdtFollower(
     try {
       clearSubscribeRetry()
       clearStaleProbe()
+      replayQueue.clear()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
@@ -465,7 +528,8 @@ export function useAgentCrdtFollower(
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    replayState: replayState.value
   }))
 
   return {
