@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 vi.mock('@/services/jobOutputCache', () => ({
@@ -161,14 +162,11 @@ describe('extractApiPromptFromAsset', () => {
     expect(getJobApiPrompt).toHaveBeenCalledWith('job-42')
   })
 
-  // `null` is unreachable per the type but arrives from real asset payloads,
-  // so the schema guard is expected to reject it alongside malformed shapes.
   const nonJobMetadata: [string, AssetItem['user_metadata']][] = [
     ['absent', undefined],
-    ['null', null as unknown as AssetItem['user_metadata']],
     ['missing jobId', { nodeId: 0, subfolder: '' }],
     ['non-string jobId', { jobId: 42, nodeId: 0, subfolder: '' }],
-    ['missing nodeId', { jobId: 'job-42', subfolder: '' }]
+    ['missing subfolder', { jobId: 'job-42', nodeId: 0 }]
   ]
 
   it.for(nonJobMetadata)(
@@ -180,6 +178,20 @@ describe('extractApiPromptFromAsset', () => {
       expect(getJobApiPrompt).not.toHaveBeenCalled()
     }
   )
+
+  it('returns undefined for an asset whose payload carried a null user_metadata', async () => {
+    const asset = assetItemSchema.parse({
+      id: 'asset-1',
+      name: 'image.png',
+      created_at: '2026-01-01T00:00:00',
+      updated_at: '2026-01-01T00:00:00',
+      user_metadata: null
+    })
+
+    expect(asset.user_metadata).toBeUndefined()
+    await expect(extractApiPromptFromAsset(asset)).resolves.toBeUndefined()
+    expect(getJobApiPrompt).not.toHaveBeenCalled()
+  })
 })
 
 describe('supportsWorkflowMetadata', () => {
