@@ -10,7 +10,7 @@ type RecordedCall =
   | { kind: 'reconcileNode'; id: unknown; type: unknown }
   | { kind: 'connect'; id: unknown }
 
-function recordingMutations(): {
+function recordingMutations(batchResult = true): {
   mutations: GraphMutations
   calls: RecordedCall[]
   contexts: unknown[]
@@ -37,7 +37,7 @@ function recordingMutations(): {
         deleteNode: fail,
         clearSemanticGraph: () => calls.push({ kind: 'clearSemanticGraph' })
       })
-      return true
+      return batchResult
     },
     addNode: fail,
     setWidget: fail,
@@ -116,5 +116,33 @@ describe('createTargetFrameApplyPort', () => {
 
     expect(applied).toBe(false)
     expect(calls).toEqual([])
+  })
+
+  it('propagates a failed batch commit', () => {
+    const doc = new Y.Doc()
+    setNode(doc, '1', { type: 'Source' })
+    const { mutations } = recordingMutations(false)
+
+    expect(createTargetFrameApplyPort(mutations).apply(frame, doc)).toBe(false)
+  })
+
+  it('uses replay stamps and only clears for an empty document', () => {
+    const doc = new Y.Doc()
+    const { mutations, calls, contexts } = recordingMutations()
+
+    expect(
+      createTargetFrameApplyPort(mutations).apply(
+        {
+          workflowId: 'wf-projection',
+          seq: 1,
+          update: new Uint8Array()
+        },
+        doc
+      )
+    ).toBe(true)
+    expect(calls).toEqual([{ kind: 'clearSemanticGraph' }])
+    expect(contexts).toEqual([
+      { source: 'agent-remote', actor: 'agent-replay', opId: 'replay' }
+    ])
   })
 })

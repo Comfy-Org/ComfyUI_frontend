@@ -45,10 +45,8 @@ export class ComfyWorkflow extends UserFile {
   /**
    * This workflow's `GraphDocument` registry identity (ADR-0024). Created
    * local-only (no `workflow_id`) the first time the workflow is loaded and
-   * held for the instance's lifetime; cleared on unload. A fresh load call
-   * after unload mints a new document id — the registry entry for the old
-   * one is left for the caller to close, matching `changeTracker`'s own
-   * create-on-load/null-on-unload lifecycle.
+   * held for the instance's lifetime. Unload retains it, and later loads of
+   * the same instance reuse it until an explicit document closer is wired.
    */
   documentId: DocumentId | null = null
   /**
@@ -193,18 +191,24 @@ export class ComfyWorkflow extends UserFile {
     const documentId = this.documentId
     const graphDocumentStore = documentId ? useGraphDocumentStore() : null
     const saveTicket = graphDocumentStore?.beginSave(documentId!) ?? null
+    const content = JSON.stringify(this.activeState)
 
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const draftStore = useWorkflowDraftStoreV2()
-    this.content = JSON.stringify(this.activeState)
+    this.content = content
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
     if (saveTicket) graphDocumentStore!.completeSave(saveTicket)
-    this.changeTracker?.reset()
-    this.isModified = false
-    draftStore.removeDraft(this.path)
+    const savedCurrentRevision =
+      saveTicket === null ||
+      graphDocumentStore?.persistenceStateOf(saveTicket.documentId) === 'clean'
+    if (savedCurrentRevision) {
+      this.changeTracker?.reset()
+      this.isModified = false
+      draftStore.removeDraft(this.path)
+    }
     return ret
   }
 

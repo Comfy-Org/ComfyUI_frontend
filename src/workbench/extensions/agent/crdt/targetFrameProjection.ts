@@ -120,9 +120,13 @@ export function createTargetFrameApplyPort(
       const nodeIds = [...nodesMap(stagedDoc).keys()].sort((left, right) =>
         compareNodeIds(toNodeId(left), toNodeId(right))
       )
-      const linkIds = [...linksMap(stagedDoc).keys()].sort(
-        (left, right) => Number(left) - Number(right)
-      )
+      const linkIds = [...linksMap(stagedDoc).keys()].sort((left, right) => {
+        const leftNumber = Number(left)
+        const rightNumber = Number(right)
+        if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber))
+          return leftNumber - rightNumber
+        return left < right ? -1 : left > right ? 1 : 0
+      })
 
       // Read and validate the whole snapshot before touching the stores: a
       // malformed entry rejects the frame outright instead of applying a
