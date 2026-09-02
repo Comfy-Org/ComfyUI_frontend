@@ -633,7 +633,7 @@ export async function assertRoundtripTier({
                 // reports drift on every widget of the node.
                 const asNamedValues = (
                   values: unknown,
-                  names: string[]
+                  names: readonly string[]
                 ): unknown => {
                   const named = Array.isArray(values)
                     ? Object.fromEntries(
