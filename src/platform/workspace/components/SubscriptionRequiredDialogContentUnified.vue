@@ -79,7 +79,13 @@
       </h2>
     </div>
 
-    <div v-if="reason === 'out_of_credits'" class="text-center">
+    <div
+      v-if="
+        reason === 'out_of_credits' &&
+        (checkoutStep === 'pricing' || checkoutStep === 'preview')
+      "
+      class="text-center"
+    >
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h2>
@@ -300,7 +306,6 @@ const {
   checkoutStep,
   checkoutDeclineReason,
   handleDeclinedBack,
-  handleUpdatePayment,
   isCancelingPayment,
   cancelUnavailable,
   cancelUnreachable,
@@ -397,7 +402,7 @@ const isDeclinedStep = computed(() => checkoutStep.value === 'declined')
 // The decline CTA returns to confirm and opens method collection, which is
 // dialog state rather than checkout state.
 function handleDeclinedUpdatePayment() {
-  handleUpdatePayment()
+  handleDeclinedBack()
   selectSavedPaymentMethod(null)
 }
 

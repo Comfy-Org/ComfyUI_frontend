@@ -24,14 +24,14 @@ describe('SubscriptionDeclinedWorkspace', () => {
   it('shows the Stripe reason when the API provides one', () => {
     renderDeclined('Insufficient funds')
 
-    expect(screen.getByText('Stripe reasoning:')).toBeInTheDocument()
+    expect(screen.getByText('What your bank said')).toBeInTheDocument()
     expect(screen.getByText('Insufficient funds')).toBeInTheDocument()
   })
 
   it('omits the reason block entirely when there is none', () => {
     renderDeclined(null)
 
-    expect(screen.queryByText('Stripe reasoning:')).toBeNull()
+    expect(screen.queryByText('What your bank said')).toBeNull()
     expect(screen.getByText('Payment declined')).toBeInTheDocument()
   })
 
