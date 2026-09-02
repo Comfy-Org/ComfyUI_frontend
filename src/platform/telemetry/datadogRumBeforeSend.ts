@@ -11,8 +11,9 @@ const RUM_NOISE_HOSTS = [
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 
-const FIREBASE_LOGGER_TIMESTAMP =
-  /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]\s*(?=@firebase\/)/
+const FIREBASE_PENDING_PROMISE_ASSERTION =
+  'INTERNAL ASSERTION FAILED: Pending promise was never set'
+const FIREBASE_PENDING_PROMISE_FINGERPRINT = 'firebase-auth-pending-promise'
 
 type RumErrorOrigin =
   | { origin: 'first_party' }
@@ -36,11 +37,10 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
   return { origin: 'third_party' }
 }
 
-function stripLeadingTimestamp(event: RumErrorEvent): void {
-  event.error.message = event.error.message.replace(
-    FIREBASE_LOGGER_TIMESTAMP,
-    ''
-  )
+function fingerprintFirebasePendingPromise(event: RumErrorEvent): void {
+  if (event.error.message.endsWith(FIREBASE_PENDING_PROMISE_ASSERTION)) {
+    event.error.fingerprint = FIREBASE_PENDING_PROMISE_FINGERPRINT
+  }
 }
 
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
@@ -76,8 +76,10 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {
-  if (event.type === 'error') stripLeadingTimestamp(event)
   if (!shouldKeepRumEvent(event)) return false
-  if (event.type === 'error') tagRumErrorOrigin(event)
+  if (event.type === 'error') {
+    fingerprintFirebasePendingPromise(event)
+    tagRumErrorOrigin(event)
+  }
   return true
 }
