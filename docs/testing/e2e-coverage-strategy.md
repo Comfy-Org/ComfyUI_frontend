@@ -16,9 +16,9 @@ regenerated.
   there is no per-area view, so gaps go unnoticed.
 - The headline E2E figure (68.1% of executable lines in loaded chunks) is
   incomplete. V8 coverage only sees chunks the browser actually loaded, so 457
-  source files (~65k raw lines) never enter the denominator. Raw source lines
-  cannot be compared with lcov's executable-line count, so the corrected
-  percentage is not yet known. The `cloud`, `mobile-chrome`, `chromium-2x`, and
+  source files (~65k raw lines) never enter the denominator. Raw source lines cannot be compared with lcov's executable-line count
+  directly; applying the loaded files' executable-to-raw ratio (0.27) to the
+  absent files puts the corrected figure near 54%. The `cloud`, `mobile-chrome`, `chromium-2x`, and
   `chromium-0.5x` projects do not collect coverage, so everything cloud-only
   looks worse than it is, or is invisible.
 - The three cheapest wins are measurement fixes rather than new tests: collect
@@ -82,9 +82,13 @@ regenerated.
    | `composables/boundingBoxes`                  | 1,037     | 2     |
    | `renderer/extensions/compositor`             | 788       | 8     |
 
-   Some of these are type-only or cloud-only (see point 2). Their raw line
-   count does not establish a corrected E2E percentage because lcov counts
-   executable lines, not raw source lines.
+   Some of these are type-only or cloud-only (see point 2). Raw line counts
+   cannot be placed next to lcov's executable-line totals directly. The 1,585
+   loaded `src/` files hold 258k raw lines and 69.8k executable lines, a ratio
+   of 0.27. Applied to the absent files' 65k raw lines that is about 17.5k
+   executable lines, so the corrected E2E figure is near 54% (47.4k of 87.3k)
+   rather than 68%. The absent set is 22% of production files and 20% of raw
+   lines. The exact figure arrives when those files enter the report.
 
 2. Only the `chromium` project collects coverage. The `cloud` project runs
    154 tests against the cloud build, including the agent panel, workspace

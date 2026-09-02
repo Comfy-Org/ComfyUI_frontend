@@ -26,7 +26,7 @@ The ComfyUI Frontend project uses **colocated tests** - test files are placed al
 
 ### Test File Naming
 
-- Use `.test.ts` extension for test files
+- Unit tests use the `.test.ts` extension; Playwright browser tests use `.spec.ts` (Playwright ignores `**/*.test.ts`)
 - Name tests after their source file: `sourceFile.test.ts`
 
 ## Test Frameworks and Libraries
