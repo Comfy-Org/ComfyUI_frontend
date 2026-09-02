@@ -1,5 +1,7 @@
 import type { Locator } from '@playwright/test'
 
+import type { PromptResponse } from '@/schemas/apiSchema'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -277,5 +279,55 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       name: /Execute to selected output nodes/i
     })
     await expect(executeButton).toBeHidden()
+  })
+
+  test('partial execution applies control_after_generate to seeds', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const readSeed = () =>
+      comfyPage.page.evaluate(() => {
+        const sampler = window.app!.graph!._nodes.find(
+          (node) => node.type === 'KSampler'
+        )
+        return sampler!.widgets!.find((widget) => widget.name === 'seed')!.value
+      })
+
+    await comfyPage.page.evaluate(() => {
+      const sampler = window.app!.graph!._nodes.find(
+        (node) => node.type === 'KSampler'
+      )
+      const control = sampler?.widgets?.find(
+        (widget) => widget.name === 'control_after_generate'
+      )
+      if (!control) throw new Error('seed control widget missing')
+      control.value = 'randomize'
+    })
+    const seedBefore = await readSeed()
+
+    await comfyPage.page.route('**/api/prompt', async (route) => {
+      const promptResponse: PromptResponse = {
+        prompt_id: '1',
+        node_errors: {},
+        error: ''
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(promptResponse)
+      })
+    })
+
+    const saveImageRef = (
+      await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+    )[0]
+    await selectNodeWithPan(comfyPage, saveImageRef)
+
+    await comfyPage.page
+      .getByRole('button', { name: /Execute to selected output nodes/i })
+      .click()
+
+    await expect.poll(readSeed).not.toBe(seedBefore)
   })
 })

@@ -6190,6 +6190,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "display_name": "Google Gemini Omni (Video)",
+    "description": "Generate a video with audio from a text prompt using Google's Gemini Omni Flash models. Optionally provide reference images and/or videos to guide or edit the result. Describe the desired length (3-10s) directly in the prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini video model used to generate the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "Generate Video Tracks",
     "inputs": {
@@ -6252,6 +6288,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "display_name": "Get 3D Components",
+    "description": "Parse a 3D model file (GLB, GLTF, OBJ, STL) into an editable MESH for the mesh-processing nodes (decimate, remesh, UV unwrap, bake, ...). All scene nodes/primitives are merged into one mesh with their transforms applied; textures and material factors come from the first material. Counterpart of MeshToFile3D.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model file from Load 3D or another 3D node. FBX/USDZ are not supported - convert to GLB first."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7086,7 +7138,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' is faster; 'precision' produces higher-quality lip sync at twice the price."
+        "tooltip": "'speed' is faster; 'precision' produces higher-quality lip sync at a higher price."
       },
       "translate_audio_only": {
         "name": "translate_audio_only",
@@ -7150,7 +7202,7 @@
   },
   "HiDreamO1ReferenceImages": {
     "display_name": "HiDream-O1 Reference Images",
-    "description": "Attach 1-10 reference images to conditioning, one for edit instructionor multiple for subject-driven personalization.",
+    "description": "Attach ordered reference images to positive and negative conditioning.",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -7160,7 +7212,7 @@
       },
       "images": {
         "name": "images",
-        "tooltip": "Reference images. 1 image = instruction edit; 2-10 images = multi reference."
+        "tooltip": "Reference images are used in numeric socket order."
       }
     },
     "outputs": {
@@ -12692,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "display_name": "Apply MiniMax H3 Fun ControlNet",
+    "description": "Apply a MiniMax H3 Fun ControlNet to a text-to-video model as a model patch.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "control_video": {
+        "name": "control_video"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 marks the regions to regenerate."
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Video behind the mask; only read when a mask is given."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -20948,6 +21040,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "display_name": "SenseNova Sampling Options",
+    "description": "Set the SenseNova flow shift.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Set CLIP Hooks",
     "inputs": {
@@ -24585,6 +24694,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Crop Video",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "crop": {
+        "name": "crop",
+        "tooltip": "Crop region in pixels. Zero width/height keeps the full frame."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "display_name": "Sample Video Frame",
     "description": "Sample a fixed number of frames from a video using various strategies.",
@@ -24686,6 +24812,27 @@
       },
       "min_cfg": {
         "name": "min_cfg"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Trim Video (Advanced)",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Trim window using start/end frames."
+      },
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "If True, when the specified duration is not possible, an error will be raised."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

@@ -25,9 +25,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 const WidgetStub = {
   name: 'WidgetStub',
-  props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
+  props: ['widget', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
   template:
-    '<button class="widget-stub" :data-linked-display="widget.linkedDisplay" :data-node-type="nodeType" :disabled="widget.options?.disabled" :inert="widget.linkedDisplay ? true : undefined">{{ modelValue }}</button>'
+    '<button class="widget-stub" :data-linked-display="widget.linkedDisplay" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined" :disabled="widget.options?.disabled" :inert="widget.linkedDisplay ? true : undefined">{{ modelValue }}</button>'
 }
 
 const AppInputStub = {

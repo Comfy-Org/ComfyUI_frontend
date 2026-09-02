@@ -104,6 +104,61 @@ describe('LGraph Serialisation', () => {
     })
   })
 
+  test('binds serialization hooks to live instances with plain data arguments', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Before serialize')
+    graph.add(node)
+
+    node.onSerialize = function (data) {
+      expect(this).toBe(node)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.title = 'After serialize'
+    }
+    graph.onSerialize = function (data) {
+      expect(this).toBe(graph)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.extra.serialized = true
+    }
+
+    node.serialize()
+    graph.asSerialisable()
+
+    expect(node.title).toBe('After serialize')
+    expect(graph.extra.serialized).toBe(true)
+  })
+
+  test('binds configure hooks to live instances with plain data arguments', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Before configure')
+    const nodeData = node.serialize()
+    const graphData = graph.asSerialisable()
+
+    node.onConfigure = function (data) {
+      expect(this).toBe(node)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.title = 'After configure'
+    }
+    graph.onConfigure = function (data) {
+      expect(this).toBe(graph)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.extra.configured = true
+    }
+
+    node.configure(nodeData)
+    graph.configure(graphData)
+
+    expect(node.title).toBe('After configure')
+    expect(graph.extra.configured).toBe(true)
+  })
+
   test('preserves canonical hook mutations while isolating legacy payloads', ({
     expect,
     minimalGraph
