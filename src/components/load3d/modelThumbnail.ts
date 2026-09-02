@@ -78,11 +78,11 @@ async function renderThumbnailWithTimeout(
       : renderPromise)
     return { status: 'rendered', dataUrl }
   } catch (error) {
-    // Classify on the sentinel, not on `callerSignal.aborted`: one signal
-    // covers every model in a group, so an unrelated abort landing in the
-    // same tick must not mask a genuine render fault.
+    // Classify on the sentinel, not on `callerSignal.aborted`: an abort
+    // observed after a deadline or render fault has already rejected would
+    // otherwise relabel a real failure as a user cancellation.
     if (error === cancelError) return { status: 'cancelled' }
-    reportError(error, {
+    reportError(redactModelUrls(error), {
       errorType: 'agent_model_thumbnail_generation_failure'
     })
     return { status: 'failed' }
@@ -92,6 +92,24 @@ async function renderThumbnailWithTimeout(
     // abort/timeout never surfaces as an unhandled rejection.
     renderPromise.catch(() => {})
   }
+}
+
+/**
+ * three.js embeds the failed request URL in its loader errors. On the agent
+ * path that URL comes from the model's markdown reply and may carry
+ * credentials or signed query parameters, so strip the query string before
+ * the message reaches Sentry or Datadog.
+ */
+function redactModelUrls(error: unknown): unknown {
+  if (!(error instanceof Error)) return error
+  const scrubbed = error.message.replace(
+    /(https?:\/\/[^\s"']+|\/?api\/view)\?[^\s"']*/g,
+    '$1?<redacted>'
+  )
+  if (scrubbed === error.message) return error
+  const copy = new Error(scrubbed)
+  copy.name = error.name
+  return copy
 }
 
 async function renderThumbnail(

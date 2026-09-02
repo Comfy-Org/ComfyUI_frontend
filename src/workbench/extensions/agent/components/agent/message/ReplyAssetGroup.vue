@@ -2,6 +2,7 @@
 import {
   computed,
   defineAsyncComponent,
+  markRaw,
   onBeforeUnmount,
   ref,
   watch
@@ -70,37 +71,70 @@ const galleryItems = computed(() =>
 )
 const galleryIndex = ref(-1)
 
-const modelThumbnails = ref<Record<string, string>>({})
+/**
+ * One entry per model url. The controller is `markRaw`, because a `ref`
+ * deep-proxies nested objects and the proxy would not compare equal to the
+ * controller the pending strand closed over. Keeping the controller inside
+ * the state is what
+ * makes "gave up while off screen" unrepresentable: dropping the entry and
+ * cancelling its render are the same act, so the watcher can always tell an
+ * in-flight lookup from one that is finished with.
+ */
+type ThumbnailState =
+  | { phase: 'loading'; controller: AbortController }
+  | { phase: 'ready'; src: string }
+  | { phase: 'gaveUp' }
+
+const THUMBNAIL_RETRY_MS = 2_000
+
+const modelThumbnails = ref<Record<string, ThumbnailState>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
 const retriedThumbnails = new Set<string>()
-const thumbnailAborts = new Map<string, AbortController>()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
-  for (const controller of thumbnailAborts.values()) controller.abort()
-  thumbnailAborts.clear()
+  for (const state of Object.values(modelThumbnails.value)) {
+    if (state.phase === 'loading') state.controller.abort()
+  }
   for (const timeout of refreshTimeouts) clearTimeout(timeout)
   refreshTimeouts.clear()
 })
 
+function thumbnailSrc(url: string): string | undefined {
+  const state = modelThumbnails.value[url]
+  return state?.phase === 'ready' ? state.src : undefined
+}
+
+/** Stop tracking a url so the next watcher pass may start it afresh. */
+function releaseModelThumbnail(url: string): void {
+  const state = modelThumbnails.value[url]
+  if (state?.phase === 'loading') state.controller.abort()
+  delete modelThumbnails.value[url]
+}
+
 /**
  * Look up a server-rendered preview, falling back to an offscreen render.
- *
- * The placeholder is what stops the watcher re-entering, so both giving-up
- * paths clear it deliberately: a cancelled render was never attempted and
- * is retried whenever the tile comes back on screen, while a failed one
- * gets a single retry, because `failed` also covers a transient deadline.
+ * A model that could not be rendered is retried once on a timer, because
+ * `failed` also covers a transient deadline; nothing else re-runs this, as
+ * the watcher only reacts to which assets are on screen.
  */
 function loadModelThumbnail(url: string, filename: string): void {
-  modelThumbnails.value[url] = ''
   const controller = new AbortController()
-  thumbnailAborts.set(url, controller)
+  modelThumbnails.value[url] = {
+    phase: 'loading',
+    controller: markRaw(controller)
+  }
+  const owns = () => {
+    const state = modelThumbnails.value[url]
+    return state?.phase === 'loading' && state.controller === controller
+  }
+
   void findServerPreviewUrl(filename)
     .then(async (preview) => {
-      if (!mounted) return
+      if (!mounted || !owns()) return
       if (preview) {
-        modelThumbnails.value[url] = preview
+        modelThumbnails.value[url] = { phase: 'ready', src: preview }
         return
       }
       const result = await generateModelThumbnail(
@@ -108,25 +142,35 @@ function loadModelThumbnail(url: string, filename: string): void {
         filename,
         controller.signal
       )
-      if (!mounted) return
+      if (!mounted || !owns()) return
       if (result.status === 'rendered') {
-        modelThumbnails.value[url] = result.dataUrl
+        modelThumbnails.value[url] = { phase: 'ready', src: result.dataUrl }
       } else if (result.status === 'cancelled') {
         delete modelThumbnails.value[url]
-      } else if (!retriedThumbnails.has(url)) {
-        retriedThumbnails.add(url)
-        delete modelThumbnails.value[url]
+      } else {
+        modelThumbnails.value[url] = { phase: 'gaveUp' }
+        scheduleThumbnailRetry(url, filename)
       }
     })
     .catch((error) => {
-      if (mounted) delete modelThumbnails.value[url]
+      if (mounted && owns()) delete modelThumbnails.value[url]
       reportError(error, {
         errorType: 'agent_reply_asset_preview_failure'
       })
     })
-    .finally(() => {
-      if (thumbnailAborts.get(url) === controller) thumbnailAborts.delete(url)
-    })
+}
+
+function scheduleThumbnailRetry(url: string, filename: string): void {
+  if (retriedThumbnails.has(url)) return
+  retriedThumbnails.add(url)
+  const timeout = setTimeout(() => {
+    refreshTimeouts.delete(timeout)
+    if (!mounted) return
+    if (modelThumbnails.value[url]?.phase !== 'gaveUp') return
+    if (!visibleVisual.value.some((asset) => asset.url === url)) return
+    loadModelThumbnail(url, filename)
+  }, THUMBNAIL_RETRY_MS)
+  refreshTimeouts.add(timeout)
 }
 
 watch(
@@ -137,8 +181,9 @@ watch(
   (lookups) => {
     if (!isAssetPreviewSupported()) return
     const onScreen = new Set(lookups.map((asset) => asset.url))
-    for (const [url, controller] of thumbnailAborts) {
-      if (!onScreen.has(url)) controller.abort()
+    for (const url of Object.keys(modelThumbnails.value)) {
+      if (modelThumbnails.value[url].phase === 'loading' && !onScreen.has(url))
+        releaseModelThumbnail(url)
     }
     for (const { url, filename, kind } of lookups) {
       if (kind === '3D' && !(url in modelThumbnails.value)) {
@@ -168,14 +213,14 @@ function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
   if (
     !mounted ||
     !isAssetPreviewSupported() ||
-    modelThumbnails.value[asset.url]
+    modelThumbnails.value[asset.url]?.phase === 'ready'
   )
     return
   void findServerPreviewUrl(asset.filename)
     .then((preview) => {
       if (!mounted) return
       if (preview) {
-        modelThumbnails.value[asset.url] = preview
+        modelThumbnails.value[asset.url] = { phase: 'ready', src: preview }
       } else if (retry) {
         const timeout = setTimeout(() => {
           refreshTimeouts.delete(timeout)
@@ -257,8 +302,8 @@ function stopPreview(event: Event): void {
           @mouseleave="stopPreview"
         />
         <img
-          v-else-if="modelThumbnails[asset.url]"
-          :src="modelThumbnails[asset.url]"
+          v-else-if="thumbnailSrc(asset.url)"
+          :src="thumbnailSrc(asset.url)"
           :alt="asset.label ?? asset.filename"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"

@@ -954,7 +954,7 @@ describe('Load3d', () => {
       }))
       const setCameraState = vi.fn()
       const getCurrentCameraType = vi.fn(() => 'perspective' as const)
-      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      const loaderLoadModel = vi.fn().mockResolvedValue('loaded')
       Object.assign(ctx.load3d, {
         cameraManager: {
           ...ctx.cameraManager,
@@ -976,8 +976,33 @@ describe('Load3d', () => {
         handleResize: vi.fn(),
         hasLoadedModel: false
       })
-      return { getCameraState, setCameraState, getCurrentCameraType }
+      return {
+        getCameraState,
+        setCameraState,
+        getCurrentCameraType,
+        loaderLoadModel
+      }
     }
+
+    it('skips post-load work when the loader reports the load was cancelled', async () => {
+      const mocks = setupLoadInternal()
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.load3d as unknown as { hasLoadedModel: boolean }).hasLoadedModel =
+        true
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+      ;(ctx.load3d.handleResize as ReturnType<typeof vi.fn>).mockClear()
+      const setupAnimations = ctx.load3d.animationManager
+        .setupModelAnimations as ReturnType<typeof vi.fn>
+      setupAnimations.mockClear()
+      mocks.loaderLoadModel.mockResolvedValueOnce('cancelled')
+
+      await expect(ctx.load3d.loadModel('b.glb')).resolves.toBe('cancelled')
+
+      expect(setupAnimations).not.toHaveBeenCalled()
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+      expect(ctx.load3d.handleResize).not.toHaveBeenCalled()
+    })
 
     it('first load uses default framing', async () => {
       const mocks = setupLoadInternal()

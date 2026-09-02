@@ -324,19 +324,59 @@ describe('ReplyAssetGroup', () => {
     expect(hidden?.[2]?.aborted).toBe(true)
   })
 
-  it('retries a failed model once, then leaves the placeholder', async () => {
+  it('retries a failed model once on its own, then gives up', async () => {
+    vi.useFakeTimers()
+    try {
+      isAssetPreviewSupported.mockReturnValue(true)
+      renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+      expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('restarts a model whose render was cancelled by Show less', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    const { rerender } = renderGroup([model])
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    generateModelThumbnail.mockReturnValue(new Promise(() => {}))
+    const models = Array.from({ length: 13 }, (_, n) => ({
+      ...model,
+      url: `https://x/mesh-${n}.glb`,
+      filename: `mesh-${n}.glb`
+    }))
+    renderGroup(models)
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(12)
+    )
 
-    await rerender({ assets: [{ ...model }] })
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledTimes(2))
+    await userEvent.click(toggle()!)
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(13)
+    )
+    const hidden = generateModelThumbnail.mock.calls.find(
+      (call) => call[0] === 'https://x/mesh-12.glb'
+    )
 
-    await rerender({ assets: [{ ...model }] })
-    await rerender({ assets: [{ ...model }] })
+    await userEvent.click(toggle()!)
+    expect(hidden?.[2]?.aborted).toBe(true)
 
-    expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
-    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
+    await userEvent.click(toggle()!)
+
+    await waitFor(() =>
+      expect(
+        generateModelThumbnail.mock.calls.filter(
+          (call) => call[0] === 'https://x/mesh-12.glb'
+        )
+      ).toHaveLength(2)
+    )
   })
 
   it('clears a pending thumbnail refresh when unmounted', async () => {
@@ -350,7 +390,7 @@ describe('ReplyAssetGroup', () => {
       dialog.dialogComponentProps.onClose()
       await vi.advanceTimersByTimeAsync(0)
       const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
-      expect(vi.getTimerCount()).toBe(1)
+      expect(vi.getTimerCount()).toBeGreaterThan(0)
 
       unmount()
       expect(vi.getTimerCount()).toBe(0)
@@ -432,9 +472,10 @@ describe('ReplyAssetGroup', () => {
         expect.any(AbortSignal)
       )
     )
-    const generated = new Set(
-      generateModelThumbnail.mock.calls.map((call) => call[0])
-    )
-    expect(generated.size).toBe(13)
+    const generated = generateModelThumbnail.mock.calls.map((call) => call[0])
+    expect(new Set(generated).size).toBe(13)
+    for (const url of new Set(generated)) {
+      expect(generated.filter((seen) => seen === url).length).toBeLessThan(3)
+    }
   })
 })

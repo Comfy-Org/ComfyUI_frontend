@@ -491,10 +491,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      if ((await load3d.loadModel(modelUrl)) !== 'loaded') return
+      const outcome = await load3d.loadModel(modelUrl)
+      captureAdapterFlags(load3d)
+      if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
-      captureAdapterFlags(load3d)
 
       isPreview.value = true
 
@@ -527,10 +528,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      if ((await load3d.loadModel(modelUrl)) !== 'loaded') return
+      const outcome = await load3d.loadModel(modelUrl)
+      captureAdapterFlags(load3d)
+      if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
-      captureAdapterFlags(load3d)
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
@@ -821,9 +823,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      if ((await load3d.loadModel(modelUrl)) !== 'loaded') return
+      const outcome = await load3d.loadModel(modelUrl)
 
       captureAdapterFlags(load3d)
+      if (outcome !== 'loaded') return
 
       const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
       if (modelWidget) {
