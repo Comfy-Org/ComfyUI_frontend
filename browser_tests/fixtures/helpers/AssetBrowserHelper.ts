@@ -1,7 +1,5 @@
 import type { Page, Route } from '@playwright/test'
 
-import type { Asset } from '@comfyorg/ingest-types'
-
 export type TagMutationCall = {
   method: string
   assetId: string
@@ -67,14 +65,4 @@ export class AssetBrowserHelper {
       await this.page.unroute(pattern, handler)
     }
   }
-}
-
-export function assetToDisplayName(asset: Asset): string {
-  if (typeof asset.user_metadata?.name === 'string') {
-    return asset.user_metadata.name
-  }
-  if (typeof asset.metadata?.name === 'string') {
-    return asset.metadata.name
-  }
-  return asset.name
 }
