@@ -3854,7 +3854,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   processMouseUp(e: PointerEvent): void {
     // early exit for extra pointer
-    if (e.isPrimary === false) return
+    if (!e.isPrimary) return
 
     const { graph, pointer } = this
     if (!graph) return
@@ -3871,7 +3871,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     /** The mouseup event occurred near the mousedown event. */
     /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
     const isClick = pointer.up(e)
-    if (isClick === true) {
+    if (isClick) {
       pointer.isDown = false
       pointer.isDouble = false
       // Required until all link behaviour is added to Pointer API
@@ -7930,7 +7930,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (sIn && sV && LiteGraph.registered_slot_in_types[sV]?.nodes) {
               const doesInc =
                 LiteGraph.registered_slot_in_types[sV].nodes.includes(sType)
-              if (doesInc === false) return false
+              if (!doesInc) return false
             }
 
             sV = sOut?.value
@@ -7940,7 +7940,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (sOut && sV && LiteGraph.registered_slot_out_types[sV]?.nodes) {
               const doesInc =
                 LiteGraph.registered_slot_out_types[sV].nodes.includes(sType)
-              if (doesInc === false) return false
+              if (!doesInc) return false
             }
           }
           return true
@@ -8696,7 +8696,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             _item: Positionable,
             _options: IContextMenuOptions | undefined,
             _e: MouseEvent | undefined,
-            _menu: ContextMenu<unknown> | undefined,
+            _menu: ContextMenu | undefined,
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
@@ -8914,7 +8914,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const setDirty = () => this.setDirty(true)
 
     function inner_option_clicked(
-      v: IContextMenuValue<unknown>,
+      v: IContextMenuValue,
       options: IDialogOptions
     ) {
       if (!v) return

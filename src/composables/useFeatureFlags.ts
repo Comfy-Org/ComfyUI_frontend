@@ -89,7 +89,8 @@ function resolveAuthGatedFlag(
 
 function resolveFailClosedBooleanFlag(flagKey: string): boolean {
   try {
-    return api.getServerFeature<unknown>(flagKey, false) === true
+    const value: unknown = api.getServerFeature(flagKey, false)
+    return value === true
   } catch {
     return false
   }
