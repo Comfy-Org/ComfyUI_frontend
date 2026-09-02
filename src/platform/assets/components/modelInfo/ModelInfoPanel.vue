@@ -3,7 +3,10 @@
     data-component-id="ModelInfoPanel"
     class="flex scrollbar-custom h-full flex-col"
   >
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem
+      data-section="basic-info"
+      :class="accordionClass"
+    >
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
@@ -64,7 +67,10 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem
+      data-section="model-tagging"
+      :class="accordionClass"
+    >
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.modelTagging') }}
@@ -140,7 +146,10 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem
+      data-section="model-description"
+      :class="accordionClass"
+    >
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.modelDescription') }}

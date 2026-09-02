@@ -30,10 +30,15 @@ export class AssetBrowserModal {
     this.assetGrid = this.root.locator('[data-component-id="AssetGrid"]')
     this.modelInfoPanel = page.locator('[data-component-id="ModelInfoPanel"]')
 
-    const sections = this.modelInfoPanel.locator(':scope > div')
-    this.basicInfoSection = sections.nth(0)
-    this.modelTaggingSection = sections.nth(1)
-    this.modelDescriptionSection = sections.nth(2)
+    this.basicInfoSection = this.modelInfoPanel.locator(
+      '[data-section="basic-info"]'
+    )
+    this.modelTaggingSection = this.modelInfoPanel.locator(
+      '[data-section="model-tagging"]'
+    )
+    this.modelDescriptionSection = this.modelInfoPanel.locator(
+      '[data-section="model-description"]'
+    )
 
     this.displayNameText = this.basicInfoSection
       .locator('.editable-text')

@@ -182,6 +182,16 @@ describe('ModelInfoPanel', () => {
   })
 
   describe('Accordion Structure', () => {
+    it('marks each section with a stable selector', () => {
+      const { container } = renderPanel(createMockAsset())
+
+      expect(
+        Array.from(container.querySelectorAll('[data-section]')).map(
+          (section) => section.getAttribute('data-section')
+        )
+      ).toEqual(['basic-info', 'model-tagging', 'model-description'])
+    })
+
     it('renders all three section labels', () => {
       renderPanel(createMockAsset())
       expect(
