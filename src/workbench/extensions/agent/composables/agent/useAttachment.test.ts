@@ -162,8 +162,41 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
-  // 12-T2: remove `.fails` when rejected deferred sources settle as upload errors.
-  it.fails('[12-T2 regression] catches a rejected deferred resolver and removes its chip', async () => {
+  it.fails('settles a rejected deferred resolver as an upload error', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await expect(
+      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
+    ).resolves.toBeUndefined()
+  })
+
+  it.fails('removes a deferred chip when its resolver rejects', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await addDeferredFile('missing.mp4', () =>
+      Promise.reject(new Error('gone'))
+    ).catch(() => undefined)
+
+    expect(registry.chips).toEqual([])
+  })
+
+  it('does not upload when a deferred resolver rejects', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await expect(
+      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
+    ).rejects.toThrow('gone')
+
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it.fails('reports a rejected deferred resolver', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
     const registry = chipRegistry()
@@ -173,11 +206,10 @@ describe('useAttachment', () => {
       ...registry
     })
 
-    await expect(
-      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
-    ).resolves.toBeUndefined()
-    expect(registry.chips).toEqual([])
-    expect(upload).not.toHaveBeenCalled()
+    await addDeferredFile('missing.mp4', () =>
+      Promise.reject(new Error('gone'))
+    ).catch(() => undefined)
+
     expect(onError).toHaveBeenCalledOnce()
   })
 
