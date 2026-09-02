@@ -64,7 +64,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
       v-if="tutorial.youtubeId"
       :key="tutorial.id"
       :youtube-id="tutorial.youtubeId"
-      :title="tutorial.title[locale] || tutorial.title.en"
+      :title="tutorial.title[locale] ?? tutorial.title.en"
       class="w-full"
     />
     <VideoPlayer

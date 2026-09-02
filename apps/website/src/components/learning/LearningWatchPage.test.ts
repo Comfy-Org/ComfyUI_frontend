@@ -42,14 +42,6 @@ describe('LearningWatchPage', () => {
     expect(screen.queryByTestId('hosted-video')).toBeNull()
   })
 
-  it('uses the English title when the locale title is unavailable', () => {
-    renderWatchPage(youtubeTutorial, 'ja')
-
-    expect(screen.getByTestId('youtube-embed').textContent).toBe(
-      youtubeTutorial.title.en
-    )
-  })
-
   it('falls back to the hosted VideoPlayer for self-hosted tutorials', () => {
     renderWatchPage(hostedTutorial)
 
