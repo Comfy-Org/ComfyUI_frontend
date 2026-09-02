@@ -9,6 +9,7 @@ import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vu
 import { getRoutes } from '../../../config/routes'
 import {
   catalogSearch,
+  formatRuns,
   getWorkshopModel,
   getWorkshopModelDetail,
   workshopModels
@@ -125,6 +126,10 @@ const tags = [
                 </span>
                 <span class="text-lg font-bold text-primary-comfy-yellow">{price}</span>
                 {t('workshop.model.perRun')}
+                <span class="text-primary-comfy-canvas/40">·</span>
+                <span data-testid="model-runs">
+                  {t('workshop.card.runs').replace('{n}', formatRuns(model.runs, 'en'))}
+                </span>
               </>
             ) : (
               t('workshop.card.priceOnPage')

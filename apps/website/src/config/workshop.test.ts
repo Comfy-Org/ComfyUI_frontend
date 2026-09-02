@@ -10,7 +10,9 @@ import {
   decodeGeneratedModels,
   catalogSearch,
   filterWorkshopModels,
+  formatRuns,
   getWorkshopModel,
+  mockRuns,
   parseCatalogSearch,
   isRouterModel,
   sortWorkshopModels,
@@ -29,6 +31,7 @@ const fixture: WorkshopModel[] = [
     href: '/a',
     routerId: 'kling/a',
     capabilities: [],
+    runs: 12_000,
     provider: 'Kling',
     modality: 'video',
     task: 'text-to-video'
@@ -40,6 +43,7 @@ const fixture: WorkshopModel[] = [
     href: '/b',
     routerId: 'bfl/b',
     capabilities: ['Upscale', 'Inpainting'],
+    runs: 12_000,
     provider: 'Black Forest Labs',
     modality: 'image',
     task: 'image-to-image'
@@ -50,7 +54,8 @@ const fixture: WorkshopModel[] = [
     workflowCount: 1,
     href: '/c',
     routerId: 'comfy/c',
-    capabilities: []
+    capabilities: [],
+    runs: 12_000
   }
 ]
 
@@ -360,5 +365,18 @@ describe('catalog deep links', () => {
   it('ignores unknown use cases and yields no query string when empty', () => {
     expect(parseCatalogSearch('?useCase=nonsense').useCase).toBe('all')
     expect(catalogSearch({ useCase: 'all', capabilities: [] })).toBe('')
+  })
+})
+
+describe('run counts', () => {
+  it('is stable per model and grows with the workflow count', () => {
+    expect(mockRuns('kling-o3', 2)).toBe(mockRuns('kling-o3', 2))
+    expect(mockRuns('kling-o3', 5)).toBeGreaterThan(mockRuns('kling-o3', 2))
+    expect(mockRuns('kling-o3', 2)).not.toBe(mockRuns('seedance-2', 2))
+  })
+
+  it('formats compactly in lowercase', () => {
+    expect(formatRuns(89_000, 'en')).toBe('89k')
+    expect(formatRuns(1_250_000, 'en')).toBe('1.3m')
   })
 })

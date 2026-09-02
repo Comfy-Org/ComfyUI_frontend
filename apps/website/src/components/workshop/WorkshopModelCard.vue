@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ModalityFilter, WorkshopModel } from '../../config/workshop'
-import { modalityOf } from '../../config/workshop'
+import { formatRuns, modalityOf } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardArrow from '../common/CardArrow.vue'
@@ -81,7 +81,9 @@ const pillClass =
       class="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-black/35"
     />
 
-    <div class="absolute inset-x-4 top-4 flex items-start gap-2">
+    <div
+      class="absolute inset-x-4 top-4 flex items-start justify-between gap-2"
+    >
       <div class="flex flex-wrap gap-2">
         <span :class="pillClass">
           {{ t(modalityLabelKey[modality], locale) }}
@@ -97,6 +99,17 @@ const pillClass =
           }}
         </span>
       </div>
+      <span
+        :class="cn(pillClass, 'tracking-normal normal-case tabular-nums')"
+        data-testid="workshop-card-runs"
+      >
+        {{
+          t('workshop.card.runs', locale).replace(
+            '{n}',
+            formatRuns(model.runs, locale)
+          )
+        }}
+      </span>
     </div>
 
     <div class="absolute right-16 bottom-5 left-5">

@@ -62,9 +62,9 @@ const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
               {{ example.description }}
             </p>
             <Button
-              variant="link"
+              variant="outline"
               size="sm"
-              class="mt-auto"
+              class="mt-auto self-start"
               :append-icon="ArrowRight"
               data-testid="example-open"
               @click="emit('open', example)"

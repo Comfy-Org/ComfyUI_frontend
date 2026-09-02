@@ -12,6 +12,7 @@ const base: WorkshopModel = {
   href: '/workshop/models/flux/',
   routerId: 'bfl/flux',
   capabilities: [],
+  runs: 12_000,
   provider: 'Black Forest Labs',
   modality: 'image'
 }

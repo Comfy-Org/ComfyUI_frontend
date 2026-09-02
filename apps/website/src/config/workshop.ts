@@ -103,6 +103,7 @@ export interface WorkshopModel {
   readonly modality?: Modality
   readonly task?: WorkshopTask
   readonly capabilities: readonly string[]
+  readonly runs: number
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
@@ -341,6 +342,24 @@ function withoutRegistrySuffix(name: string, provider?: string): string {
   return suffix ? name.slice(0, -suffix.length).trim() : name
 }
 
+// Router does not report usage yet; until it does, each model gets a stable
+// placeholder derived from its slug and workflow count.
+export function mockRuns(slug: string, workflowCount: number): number {
+  let seed = 7
+  for (let i = 0; i < slug.length; i += 1)
+    seed = (seed * 31 + slug.charCodeAt(i)) % 1_000_003
+  return (workflowCount + 1) * (4000 + (seed % 37) * 1000)
+}
+
+export function formatRuns(runs: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    notation: 'compact',
+    maximumFractionDigits: 1
+  })
+    .format(runs)
+    .toLowerCase()
+}
+
 function toWorkshopModel(model: Model): WorkshopModel {
   const overrides = display[model.slug] ?? {}
   const data = generated[model.slug]
@@ -360,6 +379,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
     ...(modality ? { modality } : {}),
     ...(data ? { task: taskFor(data.fields, modality) } : {}),
     capabilities: capabilitiesFor(data?.examples ?? []),
+    runs: mockRuns(model.slug, model.workflowCount),
     ...(creditsPerRun !== undefined ? { creditsPerRun } : {}),
     ...(data?.priceUsdFrom !== undefined
       ? { priceUsdFrom: data.priceUsdFrom }

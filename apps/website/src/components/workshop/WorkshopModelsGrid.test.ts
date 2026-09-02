@@ -14,6 +14,7 @@ const models: WorkshopModel[] = [
     href: '/workshop/models/kling-ai/',
     routerId: 'kling/kling-ai',
     capabilities: [],
+    runs: 12_000,
     provider: 'Kling',
     modality: 'video',
     task: 'text-to-video',
@@ -26,6 +27,7 @@ const models: WorkshopModel[] = [
     href: '/workshop/models/flux/',
     routerId: 'bfl/flux',
     capabilities: ['Upscale'],
+    runs: 12_000,
     provider: 'Black Forest Labs',
     modality: 'image',
     task: 'image-to-image',
@@ -37,7 +39,8 @@ const models: WorkshopModel[] = [
     workflowCount: 1,
     href: '/workshop/models/mystery/',
     routerId: 'comfy/mystery',
-    capabilities: []
+    capabilities: [],
+    runs: 12_000
   }
 ]
 
