@@ -35,8 +35,6 @@ export function usePartitionedBadges(nodeData: NodeState) {
       !!nodeDef?.isCoreNode &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
-    // Comfy Cloud nodes are api_nodes like every other partner node, so nothing
-    // in the badge data distinguishes them. Key off the module that defines them.
     const isComfyCloudNode =
       nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
 
@@ -64,10 +62,8 @@ export function usePartitionedBadges(nodeData: NodeState) {
     }
 
     return {
-      // The core-node logo is a source badge, so it defers to the source setting
-      // and yields to a price badge. The Comfy Cloud mark is provider identity
-      // instead: it is the only thing separating these from a partner node, and a
-      // node that always carries a price would otherwise never show it at all.
+      // Provider identity, not a source badge: these always carry a price, so
+      // the core-node rule of yielding to one would hide the mark permanently.
       hasComfyBadge:
         (showComfyLogo && pricing.length === 0) || isComfyCloudNode,
       hasComfyCloudBadge: isComfyCloudNode,

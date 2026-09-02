@@ -21,8 +21,6 @@ describe('NodeBadges', () => {
     ).toBeTruthy()
   })
 
-  // The Comfy mark is the only thing separating a Comfy Cloud node from any other
-  // partner node on canvas, so the tint is what carries the distinction.
   it('tints the Comfy mark for a Comfy Cloud node', () => {
     render(NodeBadges, {
       props: {
@@ -33,8 +31,9 @@ describe('NodeBadges', () => {
       }
     })
 
-    const icon = screen.getByTestId('comfy-badge').querySelector('i')
-    expect(icon?.className).toContain('text-brand-yellow')
+    expect(screen.getByTestId('comfy-badge-icon').className).toContain(
+      'text-brand-yellow'
+    )
   })
 
   it('leaves the core-node Comfy mark untinted', () => {
@@ -47,7 +46,8 @@ describe('NodeBadges', () => {
       }
     })
 
-    const icon = screen.getByTestId('comfy-badge').querySelector('i')
-    expect(icon?.className).not.toContain('text-brand-yellow')
+    expect(screen.getByTestId('comfy-badge-icon').className).not.toContain(
+      'text-brand-yellow'
+    )
   })
 })
