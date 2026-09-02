@@ -74,11 +74,11 @@ function adapter(kind: 'map' | 'json' = 'map') {
     operations: {
       exchange: {
         idempotent: true,
-        makeRequest: (input, signal) => ({
+        makeRequest: ({ identity, workspaceId }, signal) => ({
           method: 'POST',
           path: '/auth/token',
           headers: {},
-          body: input,
+          body: { identityToken: identity.token, workspaceId },
           signal
         }),
         response: { decode: (value) => decodeCredential(value) },
@@ -196,6 +196,8 @@ it('TP-2a PM-4: refresh fires at expiry minus five minutes, not one ms earlier',
   fake.scheduler.advance(299_999)
   expect(fake.trace).toHaveLength(1)
   fake.scheduler.advance(1)
+  await Promise.resolve()
+  await Promise.resolve()
   await Promise.resolve()
   expect(fake.trace).toHaveLength(2)
 })

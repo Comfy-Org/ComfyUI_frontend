@@ -543,6 +543,25 @@ export default defineConfig([
     }
   },
 
+  {
+    files: ['packages/account/**/*.{ts,vue}'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/account/**',
+              from: './src/**',
+              message:
+                'packages/account cannot import producer application code; inject host behavior through public account contracts'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   // src/lib/ holds vendored leaf libraries (litegraph). They may import from
   // src/lib/ and from the shared base utilities, but never from an app layer —
   // a vendored library depending on the app that vendors it is a dependency
