@@ -29,6 +29,9 @@
       >
         {{ $t('g.keybindingAlreadyExists') }}
         {{ existingKeybindingOnCombo.commandId }}
+        <span v-if="existingKeybindingSource">
+          ({{ existingKeybindingSource }})
+        </span>
       </p>
     </div>
   </div>
@@ -40,11 +43,17 @@ import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 
 import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 
-const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
+const {
+  dialogState,
+  onUpdateCombo,
+  existingKeybindingOnCombo,
+  existingKeybindingSource = null
+} = defineProps<{
   dialogState: EditKeybindingDialogState
   commandLabel: string
   onUpdateCombo: (combo: KeyComboImpl) => void
   existingKeybindingOnCombo: KeybindingImpl | null
+  existingKeybindingSource?: string | null
 }>()
 
 function captureKeybinding(event: KeyboardEvent) {

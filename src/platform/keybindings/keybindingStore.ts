@@ -1,11 +1,26 @@
 import { groupBy } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, toRaw } from 'vue'
 
 import type { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import type { KeybindingPreset } from './types'
 import { whenClauseSpecificity } from './whenClause'
+
+/** Who declared a binding. A user's rebind beats an extension's, which beats core. */
+export type KeybindingSource =
+  | { readonly tier: 'core' }
+  | { readonly tier: 'extension'; readonly name: string }
+  | { readonly tier: 'user' }
+
+const CORE_SOURCE: KeybindingSource = { tier: 'core' }
+const USER_SOURCE: KeybindingSource = { tier: 'user' }
+
+const TIER_RANK: Record<KeybindingSource['tier'], number> = {
+  user: 0,
+  extension: 1,
+  core: 2
+}
 
 function scopeKey(combo: KeyComboImpl, dialogKey: string | undefined) {
   return `${combo.serialize()}:${dialogKey ?? ''}`
@@ -18,22 +33,38 @@ function conflicts(a: KeybindingImpl, b: KeybindingImpl): boolean {
   )
 }
 
-/** Narrower clauses first; within a clause width, user bindings first. */
-function byResolutionOrder(a: KeybindingImpl, b: KeybindingImpl): number {
-  return whenClauseSpecificity(b.when) - whenClauseSpecificity(a.when)
-}
-
 function without(bindings: KeybindingImpl[], binding: KeybindingImpl) {
   return bindings.filter((existing) => !existing.equals(binding))
+}
+
+function attribution(source: KeybindingSource): string {
+  return source.tier === 'extension' ? ` from ${source.name}` : ''
 }
 
 export const useKeybindingStore = defineStore('keybinding', () => {
   const defaultKeybindings = shallowRef<KeybindingImpl[]>([])
   const userKeybindings = shallowRef<KeybindingImpl[]>([])
   const userUnsetKeybindings = shallowRef<KeybindingImpl[]>([])
+  const sources = new WeakMap<KeybindingImpl, KeybindingSource>()
 
   const currentPresetName = ref('default')
   const savedPresetData = ref<KeybindingPreset | null>(null)
+
+  function sourceOf(binding: KeybindingImpl): KeybindingSource {
+    return sources.get(toRaw(binding)) ?? USER_SOURCE
+  }
+
+  function rank(binding: KeybindingImpl): number {
+    return TIER_RANK[sourceOf(binding).tier]
+  }
+
+  /** Higher tier first, then narrower clause, then registration order. */
+  function byResolutionOrder(a: KeybindingImpl, b: KeybindingImpl): number {
+    return (
+      rank(a) - rank(b) ||
+      whenClauseSpecificity(b.when) - whenClauseSpecificity(a.when)
+    )
+  }
 
   const savedPresetSerialized = computed(() => {
     if (!savedPresetData.value) return null
@@ -88,15 +119,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     )
   )
 
-  const keybindings = computed<KeybindingImpl[]>(() => [
-    ...activeDefaultKeybindings.value.filter(
-      (binding) =>
-        !userKeybindings.value.some((user) => conflicts(user, binding))
-    ),
-    ...userKeybindings.value
-  ])
-
-  const keybindingsByScope = computed<Partial<Record<string, KeybindingImpl[]>>>(() => {
+  const keybindingsByScope = computed<
+    Partial<Record<string, KeybindingImpl[]>>
+  >(() => {
     const groups = groupBy(
       [...userKeybindings.value, ...activeDefaultKeybindings.value],
       (binding) => scopeKey(binding.combo, binding.dialogKey)
@@ -104,6 +129,28 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     for (const group of Object.values(groups)) group.sort(byResolutionOrder)
     return groups
   })
+
+  /** Hidden by a higher tier on the same combo, scope and clause, so they never run. */
+  const shadowedKeybindings = computed(() => {
+    const shadowed = new Set<KeybindingImpl>()
+    for (const group of Object.values(keybindingsByScope.value)) {
+      if (!group) continue
+      group.forEach((binding, index) => {
+        const winner = group
+          .slice(0, index)
+          .find((candidate) => conflicts(candidate, binding))
+        if (winner && rank(winner) < rank(binding)) shadowed.add(binding)
+      })
+    }
+    return shadowed
+  })
+
+  const keybindings = computed<KeybindingImpl[]>(() => [
+    ...activeDefaultKeybindings.value.filter(
+      (binding) => !shadowedKeybindings.value.has(binding)
+    ),
+    ...userKeybindings.value
+  ])
 
   /** Active bindings for a combo in a scope, in the order the dispatcher tries them. */
   function getKeybindings(
@@ -122,7 +169,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   const keybindingsByCommandId = computed<
-    Partial<Partial<Record<string, KeybindingImpl[]>>>
+    Partial<Record<string, KeybindingImpl[]>>
   >(() => {
     return groupBy(keybindings.value, 'commandId')
   })
@@ -145,35 +192,37 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return getKeybindingsByCommandId(commandId).at(0)
   }
 
-  function addDefaultKeybinding(keybinding: KeybindingImpl) {
-    const existing = defaultKeybindings.value.find((binding) =>
-      conflicts(binding, keybinding)
+  function registerDefault(
+    keybinding: KeybindingImpl,
+    source: KeybindingSource
+  ) {
+    const existing = defaultKeybindings.value.find(
+      (binding) =>
+        sourceOf(binding).tier === source.tier && conflicts(binding, keybinding)
     )
     if (existing) {
       throw new Error(
-        `Keybinding on ${keybinding.combo} already exists on ${existing.commandId}`
+        `Keybinding on ${keybinding.combo} already exists on ${existing.commandId}${attribution(sourceOf(existing))}`
       )
     }
+    if (
+      defaultKeybindings.value.some((binding) => binding.equals(keybinding))
+    ) {
+      return
+    }
+    sources.set(toRaw(keybinding), source)
     defaultKeybindings.value = [...defaultKeybindings.value, keybinding]
-    userKeybindings.value = without(userKeybindings.value, keybinding)
+  }
+
+  function addDefaultKeybinding(keybinding: KeybindingImpl) {
+    registerDefault(keybinding, CORE_SOURCE)
+  }
+
+  function addExtensionKeybinding(keybinding: KeybindingImpl, name: string) {
+    registerDefault(keybinding, { tier: 'extension', name })
   }
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
-    const isDefault = defaultKeybindings.value.some((binding) =>
-      binding.equals(keybinding)
-    )
-    const unset = userUnsetKeybindings.value.find((binding) =>
-      binding.equals(keybinding)
-    )
-    if (isDefault && unset) {
-      userUnsetKeybindings.value = without(userUnsetKeybindings.value, unset)
-      userKeybindings.value = userKeybindings.value.filter(
-        (binding) => !conflicts(binding, keybinding)
-      )
-      return
-    }
-    if (isDefault) return
-
     for (const binding of activeDefaultKeybindings.value) {
       if (conflicts(binding, keybinding)) unsetKeybinding(binding)
     }
@@ -181,7 +230,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       ...userKeybindings.value.filter(
         (binding) => !conflicts(binding, keybinding)
       ),
-      keybinding
+      new KeybindingImpl(keybinding)
     ]
   }
 
@@ -191,7 +240,11 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     )
     if (user) {
       userKeybindings.value = without(userKeybindings.value, user)
-      return
+      if (
+        !activeDefaultKeybindings.value.some((binding) => binding.equals(user))
+      ) {
+        return
+      }
     }
 
     const active = activeDefaultKeybindings.value.find((binding) =>
@@ -267,32 +320,18 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return true
   }
 
+  /** Commands the user changed: rebound, unset, or displaced by a user binding. */
   const modifiedCommandIds = computed<Set<string>>(() => {
     const result = new Set<string>()
-    const allCommandIds = new Set([
-      ...Object.keys(keybindingsByCommandId.value),
-      ...Object.keys(defaultKeybindingsByCommandId.value)
-    ])
-
-    for (const commandId of allCommandIds) {
-      const currentBindings = keybindingsByCommandId.value[commandId] ?? []
-      const defaultBindings =
-        defaultKeybindingsByCommandId.value[commandId] ?? []
-
-      if (currentBindings.length !== defaultBindings.length) {
-        result.add(commandId)
-        continue
-      }
-      if (currentBindings.length === 0) continue
-
-      const sortedCurrent = currentBindings.map((b) => b.serialize()).sort()
-      const sortedDefault = defaultBindings.map((b) => b.serialize()).sort()
-
-      if (sortedCurrent.some((binding, i) => binding !== sortedDefault[i])) {
-        result.add(commandId)
+    for (const binding of userKeybindings.value) result.add(binding.commandId)
+    for (const binding of userUnsetKeybindings.value) {
+      result.add(binding.commandId)
+    }
+    for (const binding of defaultKeybindings.value) {
+      if (userKeybindings.value.some((user) => conflicts(user, binding))) {
+        result.add(binding.commandId)
       }
     }
-
     return result
   })
 
@@ -302,6 +341,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   return {
     keybindings,
+    sourceOf,
     getUserKeybindings,
     getUserUnsetKeybindings,
     getKeybindings,
@@ -310,6 +350,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     getDefaultKeybindingsByCommandId,
     getKeybindingByCommandId,
     addDefaultKeybinding,
+    addExtensionKeybinding,
     addUserKeybinding,
     unsetKeybinding,
     resetAllKeybindings,
