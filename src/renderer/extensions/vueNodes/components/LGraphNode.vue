@@ -265,7 +265,10 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useAmbientSubgraphPreviews } from '@/composables/node/useAmbientSubgraphPreviews'
-import { mergeSubgraphPreviews } from '@/composables/node/mergeSubgraphPreviews'
+import {
+  getHostExposedSourceNodeIds,
+  mergeSubgraphPreviews
+} from '@/composables/node/mergeSubgraphPreviews'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -293,7 +296,6 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   stripGraphPrefix,
@@ -634,16 +636,11 @@ const lgraphNode = computed(resolveLGraphNode)
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 const { ambientPreviews } = useAmbientSubgraphPreviews(lgraphNode)
-const previewExposureStore = usePreviewExposureStore()
 
 const subgraphPreviews = computed(() => {
   const node = lgraphNode.value
   const exposedSourceNodeIds =
-    node instanceof SubgraphNode
-      ? previewExposureStore
-          .getExposures(node.rootGraph.id, String(node.id))
-          .map((exposure) => exposure.sourceNodeId)
-      : []
+    node instanceof SubgraphNode ? getHostExposedSourceNodeIds(node) : []
   return mergeSubgraphPreviews(
     promotedPreviews.value,
     ambientPreviews.value,
