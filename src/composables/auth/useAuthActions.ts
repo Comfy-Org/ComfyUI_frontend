@@ -3,17 +3,32 @@ import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
-import { t } from '@/i18n'
+import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  clearAllWorkflowStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
+
+/** Popup outcomes the user or their browser caused, not app faults. */
+const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [
+  AuthErrorCodes.POPUP_CLOSED_BY_USER,
+  AuthErrorCodes.EXPIRED_POPUP_REQUEST,
+  AuthErrorCodes.POPUP_BLOCKED
+]
 
 /**
  * Service for Firebase Auth actions.
@@ -26,6 +41,15 @@ export const useAuthActions = () => {
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
+
+  const reportAuthFlowError =
+    (authAction: AuthFlowAction) => (error: unknown) => {
+      useTelemetry()?.trackAuthFailed({
+        error_code: error instanceof FirebaseError ? error.code : 'unknown',
+        auth_action: authAction
+      })
+      reportError(error)
+    }
 
   const reportError = (error: unknown) => {
     // Ref: https://firebase.google.com/docs/auth/admin/errors
@@ -46,24 +70,75 @@ export const useAuthActions = () => {
           email: 'support@comfy.org'
         })
       })
+    } else if (
+      error instanceof FirebaseError &&
+      error.message.toLowerCase().includes('signup_blocked')
+    ) {
+      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
+      // rejections collapse the thrown code into a generic `auth/internal-error`,
+      // so the message is the only reliable channel. `signup_blocked` is a
+      // cross-repo contract token; matched case-insensitively.
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('auth.errors.signupBlocked')
+      })
+    } else if (
+      error instanceof FirebaseError &&
+      POPUP_PERMISSION_ERROR_CODES.includes(error.code)
+    ) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      })
+    } else if (error instanceof FirebaseError) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      })
     } else {
       toastErrorHandler(error)
     }
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
-    const workflowStore = useWorkflowStore()
-    if (workflowStore.modifiedWorkflows.length > 0) {
-      const dialogService = useDialogService()
-      const confirmed = await dialogService.confirm({
-        title: t('auth.signOut.unsavedChangesTitle'),
-        message: t('auth.signOut.unsavedChangesMessage'),
-        type: 'dirtyClose'
-      })
-      if (!confirmed) return
+    if (isCloud) {
+      const workflowStore = useWorkflowStore()
+      const modifiedWorkflows = workflowStore.modifiedWorkflows
+      if (modifiedWorkflows.length > 0) {
+        const dialogService = useDialogService()
+        const confirmed = await dialogService.confirm({
+          title: t('auth.signOut.unsavedChangesTitle'),
+          message: t('auth.signOut.unsavedChangesMessage'),
+          type: 'dirtyClose',
+          denyLabel: t('auth.signOut.signOutAnyway')
+        })
+        if (confirmed === null) return
+
+        if (confirmed === true) {
+          const workflowService = useWorkflowService()
+          for (const workflow of modifiedWorkflows) {
+            try {
+              const saved = await workflowService.saveWorkflow(workflow)
+              if (!saved) return
+            } catch {
+              throw new Error(
+                t('auth.signOut.saveFailed', { workflow: workflow.path })
+              )
+            }
+          }
+        }
+      }
     }
 
     await authStore.logout()
+    if (isCloud) {
+      prepareWorkflowLogoutTransition()
+      clearAllWorkflowStorage()
+    }
+
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),
@@ -91,12 +166,18 @@ export const useAuthActions = () => {
         life: 5000
       })
     },
-    reportError
+    reportAuthFlowError('password_reset')
   )
 
-  const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription } = useBillingContext()
-    if (!isActiveSubscription.value) return
+  /**
+   * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
+   * so callers that need to observe a rejection directly (e.g. to fire failure
+   * telemetry) aren't routed through `wrapWithErrorHandlingAsync`, which
+   * resolves instead of re-throwing on failure.
+   */
+  const purchaseCreditsDirect = async (amount: number): Promise<void> => {
+    const { canAccessSubscriptionFeatures } = useBillingContext()
+    if (!canAccessSubscriptionFeatures.value) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
@@ -111,9 +192,17 @@ export const useAuthActions = () => {
       )
     }
 
-    useTelemetry()?.startTopupTracking()
+    // Mark the pending top-up directly, not via telemetry, so the balance
+    // refresh on return still fires when telemetry consent is off.
+    usePendingTopup().startPendingTopup()
     window.open(response.checkout_url, '_blank')
-  }, reportError)
+    watchForTopupBalanceUpdate()
+  }
+
+  const purchaseCredits = wrapWithErrorHandlingAsync(
+    purchaseCreditsDirect,
+    reportError
+  )
 
   const accessBillingPortal = wrapWithErrorHandlingAsync<
     [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
@@ -141,32 +230,34 @@ export const useAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = wrapWithErrorHandlingAsync(
-    async (options?: { isNewUser?: boolean }) => {
-      return await authStore.loginWithGoogle(options)
-    },
-    reportError
-  )
+  const signInWithGoogle = async (options?: { isNewUser?: boolean }) =>
+    await wrapWithErrorHandlingAsync(
+      async () => await authStore.loginWithGoogle(options),
+      reportAuthFlowError(
+        options?.isNewUser ? 'google_sign_up' : 'google_sign_in'
+      )
+    )()
 
-  const signInWithGithub = wrapWithErrorHandlingAsync(
-    async (options?: { isNewUser?: boolean }) => {
-      return await authStore.loginWithGithub(options)
-    },
-    reportError
-  )
+  const signInWithGithub = async (options?: { isNewUser?: boolean }) =>
+    await wrapWithErrorHandlingAsync(
+      async () => await authStore.loginWithGithub(options),
+      reportAuthFlowError(
+        options?.isNewUser ? 'github_sign_up' : 'github_sign_in'
+      )
+    )()
 
   const signInWithEmail = wrapWithErrorHandlingAsync(
     async (email: string, password: string) => {
       return await authStore.login(email, password)
     },
-    reportError
+    reportAuthFlowError('email_sign_in')
   )
 
   const signUpWithEmail = wrapWithErrorHandlingAsync(
-    async (email: string, password: string) => {
-      return await authStore.register(email, password)
+    async (email: string, password: string, turnstileToken?: string) => {
+      return await authStore.register(email, password, turnstileToken)
     },
-    reportError
+    reportAuthFlowError('email_sign_up')
   )
 
   /**
@@ -229,6 +320,7 @@ export const useAuthActions = () => {
     logout,
     sendPasswordReset,
     purchaseCredits,
+    purchaseCreditsDirect,
     accessBillingPortal,
     fetchBalance,
     signInWithGoogle,

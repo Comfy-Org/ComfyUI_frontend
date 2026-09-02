@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { useFrameScrub } from '../../composables/useFrameScrub'
 import { externalLinks, getRoutes } from '../../config/routes'
+import { useFrameScrub } from '../../composables/useFrameScrub'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FooterLinkColumn from './FooterLinkColumn.vue'
@@ -14,14 +14,18 @@ const routes = getRoutes(locale)
 const footerRef = ref<HTMLElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 
+const frameUrls = Array.from({ length: 75 }, (_, i) => {
+  const index = String(i).padStart(5, '0')
+  return `https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_${index}.webp`
+})
+
 useFrameScrub(canvasRef, {
-  frameCount: 73,
-  frameSrc: (i) =>
-    `/videos/footer-logo-seq/Logo${String(i).padStart(2, '0')}.webp`,
+  urls: frameUrls,
   scrollTrigger: (canvas) => ({
     trigger: canvas,
     start: 'top bottom',
-    end: 'top bottom',
+    endTrigger: footerRef.value,
+    end: 'bottom bottom',
     scrub: 1
   })
 })
@@ -32,13 +36,40 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api },
-      { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
+      { label: t('nav.developerPlatform', locale), href: routes.platform },
+      { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
+      { label: t('nav.pricing', locale), href: routes.pricing },
+      { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.comfyCli', locale), href: routes.cli },
+      { label: t('nav.supportedModels', locale), href: routes.models },
+      { label: t('footer.minimaxH3', locale), href: routes.minimax },
+      {
+        label: t('footer.minimaxMusic3', locale),
+        href: routes.minimaxMusic3
+      },
+      {
+        label: t('footer.minimaxLicense', locale),
+        href: routes.minimaxLicense
+      },
+      { label: t('footer.seedance', locale), href: routes.seedance },
+      { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
+      { label: t('footer.ltx', locale), href: routes.ltx },
+      { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
+      { label: t('footer.wan3', locale), href: routes.wan3 },
+      { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },
   {
     title: t('footer.resources', locale),
     links: [
+      { label: t('nav.learning', locale), href: routes.learning },
+      { label: t('footer.workflows', locale), href: externalLinks.workflows },
+      {
+        label: t('footer.useCases', locale),
+        href: externalLinks.workflowUseCases
+      },
+      { label: t('nav.launches', locale), href: routes.launches },
+      { label: t('nav.fdct', locale), href: routes.fdct },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,
@@ -63,6 +94,25 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('nav.youtube', locale),
         href: externalLinks.youtube,
         external: true
+      },
+      {
+        label: t('nav.instagram', locale),
+        href: externalLinks.instagram,
+        external: true
+      },
+      {
+        label: t('nav.x', locale),
+        href: externalLinks.x,
+        external: true
+      },
+      {
+        label: t('nav.linkedin', locale),
+        href: externalLinks.linkedin,
+        external: true
+      },
+      {
+        label: t('footer.affiliateProgram', locale),
+        href: routes.affiliates
       }
     ]
   }
@@ -73,42 +123,55 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   links: [
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
+    { label: t('nav.brand', locale), href: routes.brand },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
+    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
     { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
-    { label: t('footer.support', locale), href: externalLinks.discord }
+    {
+      label: t('footer.trustSafety', locale),
+      href: externalLinks.trustCenter,
+      external: true
+    }
   ]
 }
 
-const contactColumn = {
+const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
-  links: ['hello@comfy.org', 'press@comfy.org'].map((email) => ({
-    label: email,
-    href: `mailto:${email}`
-  }))
+  links: [
+    { label: t('footer.sales', locale), href: routes.contact },
+    {
+      label: t('footer.support', locale),
+      href: externalLinks.support,
+      external: true
+    },
+    {
+      label: t('footer.cloudStatus', locale),
+      href: externalLinks.cloudStatus,
+      external: true
+    },
+    { label: t('footer.press', locale), href: 'mailto:press@comfy.org' }
+  ]
 }
 </script>
 
 <template>
   <footer
     ref="footerRef"
-    class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20"
+    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="border-primary-warm-gray flex flex-col gap-12 border-t pt-16 lg:gap-0"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
     >
-      <!-- Desktop: row layout / Mobile: column layout -->
-      <div class="flex flex-col gap-12 lg:flex-row lg:gap-0">
-        <!-- Left: tagline -->
-        <div class="flex-1">
-          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-            {{ t('footer.tagline', locale) }}
-          </p>
-        </div>
+      <!-- Tagline -->
+      <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+        {{ t('footer.tagline', locale) }}
+      </p>
 
-        <!-- Right: link columns (desktop: 3-col, mobile: 2-col + company below) -->
-        <div class="flex flex-1 flex-col gap-12">
-          <!-- Mobile: 2-col grids -->
-          <div class="grid grid-cols-2 gap-12 lg:hidden">
+      <!-- Link columns -->
+      <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
+        <!-- Mobile: 2×2 grid -->
+        <div class="flex flex-col gap-12 lg:hidden">
+          <div class="grid grid-cols-2 gap-12">
             <FooterLinkColumn
               v-for="column in topColumns"
               :key="column.title"
@@ -116,7 +179,7 @@ const contactColumn = {
               :links="column.links"
             />
           </div>
-          <div class="grid grid-cols-2 gap-12 lg:hidden">
+          <div class="grid grid-cols-2 gap-12">
             <FooterLinkColumn
               :title="companyColumn.title"
               :links="companyColumn.links"
@@ -126,29 +189,37 @@ const contactColumn = {
               :links="contactColumn.links"
             />
           </div>
+        </div>
 
-          <!-- Desktop: all columns in a row -->
-          <div class="hidden grid-cols-4 gap-12 lg:grid">
+        <!-- Desktop: 3-col, Company+Contact merged -->
+        <div class="hidden grid-cols-3 gap-12 lg:grid">
+          <FooterLinkColumn
+            v-for="column in topColumns"
+            :key="column.title"
+            :title="column.title"
+            :links="column.links"
+          />
+          <div class="flex flex-col gap-10">
             <FooterLinkColumn
-              v-for="column in [...topColumns, companyColumn, contactColumn]"
-              :key="column.title"
-              :title="column.title"
-              :links="column.links"
+              :title="companyColumn.title"
+              :links="companyColumn.links"
+            />
+            <FooterLinkColumn
+              :title="contactColumn.title"
+              :links="contactColumn.links"
             />
           </div>
         </div>
-      </div>
 
-      <!-- Logo + bottom bar -->
-      <div
-        class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
-      >
-        <canvas ref="canvasRef" class="mt-12 size-52 opacity-80 lg:mt-24" />
+        <!-- Bottom bar -->
         <div class="flex justify-center gap-6 lg:justify-end">
           <p class="text-sm">{{ t('footer.location', locale) }}</p>
           <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
         </div>
       </div>
+
+      <!-- Logo -->
+      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>
 </template>

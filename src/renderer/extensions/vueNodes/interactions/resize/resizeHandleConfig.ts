@@ -43,3 +43,11 @@ export const RESIZE_HANDLES: ResizeHandle[] = [
     svgTransform: 'scale(-1, -1)'
   }
 ] as const
+
+/** True for corners on the left edge of a node (SW, NW) — these move the x-origin when dragged. */
+export const hasWestEdge = (corner: CompassCorners): boolean =>
+  corner === 'SW' || corner === 'NW'
+
+/** True for corners on the top edge of a node (NE, NW) — these move the y-origin when dragged. */
+export const hasNorthEdge = (corner: CompassCorners): boolean =>
+  corner === 'NE' || corner === 'NW'

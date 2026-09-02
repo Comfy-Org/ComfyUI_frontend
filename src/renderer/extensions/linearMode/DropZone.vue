@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 

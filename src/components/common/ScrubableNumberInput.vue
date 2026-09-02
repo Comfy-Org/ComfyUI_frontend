@@ -1,20 +1,26 @@
 <template>
   <div
     ref="container"
-    class="flex h-7 rounded-lg bg-component-node-widget-background text-xs text-component-node-foreground"
+    :class="
+      cn(
+        'flex overflow-hidden rounded-md bg-component-node-widget-background text-xs text-component-node-foreground',
+        useWidgetHeight()
+      )
+    "
   >
     <slot name="background" />
     <Button
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      class="aspect-8/7 h-full rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
+      class="aspect-square h-full rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
       variant="muted-textonly"
+      size="unset"
       :disabled="!canDecrement"
       tabindex="-1"
       @click="modelValue = clamp(modelValue - step)"
     >
-      <i class="pi pi-minus" />
+      <i class="icon-[lucide--minus]" />
     </Button>
     <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
       <input
@@ -24,7 +30,7 @@
         :disabled
         :class="
           cn(
-            'absolute inset-0 truncate border-0 bg-transparent p-1 text-sm focus:outline-0'
+            'absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0'
           )
         "
         inputmode="decimal"
@@ -54,13 +60,14 @@
       v-if="!hideButtons"
       :aria-label="t('g.increment')"
       data-testid="increment"
-      class="aspect-8/7 h-full rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
+      class="aspect-square h-full rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
       variant="muted-textonly"
+      size="unset"
       :disabled="!canIncrement"
       tabindex="-1"
       @click="modelValue = clamp(modelValue + step)"
     >
-      <i class="pi pi-plus" />
+      <i class="icon-[lucide--plus]" />
     </Button>
   </div>
 </template>
@@ -71,7 +78,8 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { useWidgetHeight } from '@/types/widgetTypes'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   min = -Number.MAX_VALUE,

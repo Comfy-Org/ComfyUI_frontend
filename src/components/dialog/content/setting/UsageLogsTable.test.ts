@@ -1,8 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, onMounted, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -34,8 +34,42 @@ vi.mock('@/services/customerEventsService', () => ({
   }
 }))
 
+const mockTelemetry = vi.hoisted(() => ({
+  trackApiCreditTopupSucceeded: vi.fn()
+}))
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => null
+  useTelemetry: () => mockTelemetry
+}))
+
+const mockPendingTopup = vi.hoisted(() => ({
+  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+}))
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => mockPendingTopup
+}))
+
+const mockBillingRouting = vi.hoisted(() => ({
+  shouldUseWorkspaceBilling: false
+}))
+vi.mock('@/composables/billing/useBillingRouting', async () => {
+  const { ref } = await import('vue')
+  const shouldUseWorkspaceBilling = ref(false)
+  Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
+    get: () => shouldUseWorkspaceBilling.value,
+    set: (value: boolean) => {
+      shouldUseWorkspaceBilling.value = value
+    }
+  })
+  return {
+    useBillingRouting: () => ({ shouldUseWorkspaceBilling })
+  }
+})
+
+const mockWorkspaceApi = vi.hoisted(() => ({
+  getBillingEvents: vi.fn()
+}))
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: mockWorkspaceApi
 }))
 
 const i18n = createI18n({
@@ -50,7 +84,10 @@ const i18n = createI18n({
         additionalInfo: 'Additional Info',
         added: 'Added',
         accountInitialized: 'Account initialized',
-        model: 'Model'
+        model: 'Model',
+        loadEventsError: 'Failed to load activity. Please try again.',
+        loadEventsUnknownError:
+          'Something went wrong while loading activity. Please refresh and try again.'
       }
     }
   }
@@ -61,21 +98,10 @@ const globalConfig = {
   directives: { tooltip: Tooltip }
 }
 
-/**
- * The component starts with loading=true and only loads data when refresh()
- * is called via template ref. This wrapper auto-calls refresh on mount.
- */
-const AutoRefreshWrapper = defineComponent({
-  components: { UsageLogsTable },
-  setup() {
-    const tableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
-    onMounted(async () => {
-      await tableRef.value?.refresh()
-    })
-    return { tableRef }
-  },
-  template: '<UsageLogsTable ref="tableRef" />'
-})
+async function flushMicrotasks() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
+}
 
 function makeEventsResponse(
   events: Partial<AuditLog>[],
@@ -115,9 +141,9 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
+    mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
+    mockBillingRouting.shouldUseWorkspaceBilling = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
         switch (type) {
@@ -169,20 +195,12 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.isLoading.value = false
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   function renderComponent() {
     return render(UsageLogsTable, { global: globalConfig })
   }
 
-  function renderWithAutoRefresh() {
-    return render(AutoRefreshWrapper, { global: globalConfig })
-  }
-
   async function renderLoaded() {
-    const result = renderWithAutoRefresh()
+    const result = renderComponent()
     await waitFor(() => {
       expect(screen.getByRole('table')).toBeInTheDocument()
     })
@@ -190,7 +208,25 @@ describe('UsageLogsTable', () => {
   }
 
   describe('loading states', () => {
-    it('shows loading spinner before refresh is called', () => {
+    it('loads activity on mount without an external refresh', async () => {
+      await renderLoaded()
+
+      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads activity on mount on the workspace billing rail', async () => {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+
+      await renderLoaded()
+
+      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows a loading spinner while the initial load is in flight', () => {
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise(() => {})
+      )
+
       renderComponent()
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument()
@@ -201,22 +237,40 @@ describe('UsageLogsTable', () => {
       mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
       mockCustomerEventsService.error.value = 'Failed to load events'
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load events')).toBeInTheDocument()
       })
     })
 
-    it('shows error message when service throws', async () => {
+    it('shows a localized fallback instead of a raw Error message', async () => {
       mockCustomerEventsService.getMyEvents.mockRejectedValue(
         new Error('Network error')
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument()
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
+      })
+      expect(screen.queryByText('Network error')).not.toBeInTheDocument()
+    })
+
+    it('shows a localized fallback when the service reports no message', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
+      mockCustomerEventsService.error.value = null
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Failed to load activity. Please try again.')
+        ).toBeInTheDocument()
       })
     })
 
@@ -263,7 +317,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(screen.getByText('Account initialized')).toBeInTheDocument()
@@ -317,6 +371,117 @@ describe('UsageLogsTable', () => {
         page: 1,
         limit: 7
       })
+    })
+  })
+
+  describe('billing events source', () => {
+    it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+
+      await renderLoaded()
+
+      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledWith({
+        page: 1,
+        limit: 7
+      })
+      expect(mockCustomerEventsService.getMyEvents).not.toHaveBeenCalled()
+    })
+
+    it('discards a stale legacy response when routing flips mid-fetch', async () => {
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderComponent()
+
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      resolveLegacy(
+        makeEventsResponse([
+          {
+            event_id: 'legacy-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'LegacyAPI', model: 'legacy-model' },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+
+      await flushMicrotasks()
+
+      expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
+    })
+
+    it('runs top-up completion telemetry for a superseded response', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderComponent()
+
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      const legacyResponse = makeEventsResponse([
+        {
+          event_id: 'legacy-1',
+          event_type: EventType.CREDIT_ADDED,
+          params: { amount: 1000 },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+      ])
+      resolveLegacy(legacyResponse)
+
+      await waitFor(() => {
+        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+          legacyResponse.events
+        )
+        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+      })
+    })
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
     })
   })
 

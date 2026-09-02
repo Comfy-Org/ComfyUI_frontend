@@ -87,7 +87,7 @@ import Checkbox from 'primevue/checkbox'
 import type { CSSProperties, Ref } from 'vue'
 
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineProps<{
   panelStyles: CSSProperties

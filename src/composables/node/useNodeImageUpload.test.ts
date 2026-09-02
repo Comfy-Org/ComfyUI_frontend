@@ -2,11 +2,12 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ResultItem } from '@/schemas/apiSchema'
 
-const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
+const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),
   mockAddAlert: vi.fn(),
-  mockUpdateInputs: vi.fn()
+  mockInvalidateInputs: vi.fn()
 }))
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
@@ -41,7 +42,9 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ updateInputs: mockUpdateInputs })
+  useAssetsStore: () => ({
+    inputAssets: { invalidate: mockInvalidateInputs }
+  })
 }))
 
 function createMockNode(): LGraphNode {
@@ -53,8 +56,8 @@ function createMockNode(): LGraphNode {
   })
 }
 
-function createFile(name = 'test.png'): File {
-  return new File(['data'], name, { type: 'image/png' })
+function createFile(name = 'test.png', type = 'image/png'): File {
+  return new File(['data'], name, { type })
 }
 
 function successResponse(name: string, subfolder?: string) {
@@ -73,13 +76,12 @@ function failResponse(status = 500) {
 
 describe('useNodeImageUpload', () => {
   let node: LGraphNode
-  let onUploadComplete: (paths: string[]) => void
+  let onUploadComplete: (paths: (string | ResultItem)[]) => void
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
   beforeEach(async () => {
     vi.resetModules()
-    vi.clearAllMocks()
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()
@@ -94,15 +96,21 @@ describe('useNodeImageUpload', () => {
     })
   })
 
-  it('sets isUploading true during upload and false after', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+  it.for([
+    { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
+    { mediaType: 'video', filename: 'clip.mp4', mimeType: 'video/mp4' }
+  ])(
+    'sets isUploading true during $mediaType upload and false after',
+    async ({ filename, mimeType }) => {
+      mockFetchApi.mockResolvedValueOnce(successResponse(filename))
 
-    const promise = capturedDragOnDrop([createFile()])
-    expect(node.isUploading).toBe(true)
+      const promise = capturedDragOnDrop([createFile(filename, mimeType)])
+      expect(node.isUploading).toBe(true)
 
-    await promise
-    expect(node.isUploading).toBe(false)
-  })
+      await promise
+      expect(node.isUploading).toBe(false)
+    }
+  )
 
   it('clears node.imgs on upload start', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
@@ -121,10 +129,24 @@ describe('useNodeImageUpload', () => {
     expect(onUploadStart).toHaveBeenCalledWith(files)
   })
 
-  it('calls onUploadComplete with valid paths on success', async () => {
+  it('invalidates input assets and only then calls onUploadComplete on success', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    let invalidateResolve!: () => void
+    mockInvalidateInputs.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          invalidateResolve = resolve
+        })
+    )
 
-    await capturedDragOnDrop([createFile()])
+    const drop = capturedDragOnDrop([createFile()])
+    await vi.waitFor(() =>
+      expect(mockInvalidateInputs).toHaveBeenCalledTimes(1)
+    )
+    expect(onUploadComplete).not.toHaveBeenCalled()
+
+    invalidateResolve()
+    await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
   })
 

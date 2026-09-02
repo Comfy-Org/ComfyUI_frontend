@@ -1,10 +1,14 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4">
+  <div
+    data-testid="publish-describe-step"
+    class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4"
+  >
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.workflowName') }}
       </span>
       <Input
+        data-testid="publish-name-input"
         :model-value="name"
         :placeholder="$t('comfyHubPublish.workflowNamePlaceholder')"
         @update:model-value="$emit('update:name', String($event))"
@@ -29,6 +33,7 @@
       </span>
       <TagsInput
         v-slot="{ isEmpty }"
+        data-testid="publish-tags-input"
         always-editing
         class="bg-secondary-background select-none"
         :model-value="tags"

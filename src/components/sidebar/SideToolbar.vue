@@ -2,14 +2,20 @@
   <nav
     ref="sideToolbarRef"
     data-testid="side-toolbar"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    :inert="isHidden"
+    :aria-hidden="isHidden"
+    class="side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected,
+      'pointer-events-none opacity-0': isHidden,
+      '-translate-x-8': isHidden && sidebarLocation === 'left',
+      'translate-x-8': isHidden && sidebarLocation === 'right'
     }"
+    :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
   >
     <div
       :class="
@@ -30,7 +36,7 @@
           :label="tab.label || tab.title"
           :is-small="isSmall"
           :selected="tab.id === selectedTab?.id"
-          :class="tab.id + '-tab-button'"
+          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
@@ -42,8 +48,14 @@
           :is-small="isSmall"
         />
         <SidebarHelpCenterIcon :is-small="isSmall" />
-        <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
-        <SidebarShortcutsToggleButton :is-small="isSmall" />
+        <SidebarBottomPanelToggleButton
+          v-if="!isCloud && !hideWorkspaceToggles"
+          :is-small="isSmall"
+        />
+        <SidebarShortcutsToggleButton
+          v-if="!hideWorkspaceToggles"
+          :is-small="isSmall"
+        />
         <SidebarSettingsButton :is-small="isSmall" />
       </div>
     </div>
@@ -77,17 +89,28 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
+
+const {
+  visibleTabIds,
+  forceConnected = false,
+  hideWorkspaceToggles = false
+} = defineProps<{
+  visibleTabIds?: string[]
+  forceConnected?: boolean
+  hideWorkspaceToggles?: boolean
+}>()
 
 const NightlySurveyController =
   isNightly && !isCloud && !isDesktop
@@ -102,6 +125,7 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -115,13 +139,20 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
 const isConnected = computed(
   () =>
+    forceConnected ||
     selectedTab.value ||
     isOverflowing.value ||
     sidebarStyle.value === 'connected'
 )
 
-const tabs = computed(() => workspaceStore.getSidebarTabs())
+const tabs = computed(() => {
+  const all = workspaceStore.getSidebarTabs()
+  return visibleTabIds
+    ? all.filter((tab) => visibleTabIds.includes(tab.id))
+    : all
+})
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
 
 /**
  * Handle sidebar tab icon click.
@@ -138,19 +169,23 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
   if (isNodeLibraryTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_node_library_selected'
+      button_id: 'sidebar_tab_node_library_selected',
+      element_group: 'sidebar'
     })
   else if (isModelLibraryTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_model_library_selected'
+      button_id: 'sidebar_tab_model_library_selected',
+      element_group: 'sidebar'
     })
   else if (isWorkflowsTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_workflows_selected'
+      button_id: 'sidebar_tab_workflows_selected',
+      element_group: 'sidebar'
     })
   else if (isAssetsTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_assets_media_selected'
+      button_id: 'sidebar_tab_assets_media_selected',
+      element_group: 'sidebar'
     })
 
   await commandStore.commands

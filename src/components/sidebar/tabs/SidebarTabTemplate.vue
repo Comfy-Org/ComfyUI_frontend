@@ -9,6 +9,7 @@
   >
     <div class="comfy-vue-side-bar-header flex flex-col">
       <Toolbar
+        v-if="!hideToolbar"
         class="min-h-16 rounded-none border-x-0 border-t-0 bg-transparent px-3 2xl:px-4"
         :pt="sidebarPt"
       >
@@ -40,11 +41,12 @@
 import ScrollPanel from 'primevue/scrollpanel'
 import Toolbar from 'primevue/toolbar'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<{
   title: string
   class?: string
+  hideToolbar?: boolean
 }>()
 const sidebarPt = {
   start: 'min-w-0 flex-1 overflow-hidden'

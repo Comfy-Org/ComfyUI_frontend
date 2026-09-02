@@ -1,9 +1,9 @@
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { isCloud } from '@/platform/distribution/types'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -12,10 +12,10 @@ import { useCommandStore } from '@/stores/commandStore'
  */
 export function useSubscriptionActions() {
   const dialogService = useDialogService()
-  const authActions = useAuthActions()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
-  const { fetchStatus } = useBillingContext()
+  const { fetchBalance, fetchStatus } = useBillingContext()
+  const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const isLoadingSupport = ref(false)
 
@@ -24,30 +24,38 @@ export function useSubscriptionActions() {
   })
 
   const handleAddApiCredits = () => {
+    telemetry?.trackAddApiCreditButtonClicked({
+      source: 'settings_billing_panel'
+    })
     void dialogService.showTopUpCreditsDialog()
   }
 
-  const handleMessageSupport = async () => {
-    try {
+  // A user who cannot reach support cannot tell us that they cannot reach
+  // support, so this failure has to report itself.
+  const reportSupportFailure = (error: unknown) => {
+    reportError(error, { errorType: 'contact_support_failed' })
+    toastErrorHandler(error)
+  }
+
+  const handleMessageSupport = wrapWithErrorHandlingAsync(
+    async () => {
       isLoadingSupport.value = true
-      if (isCloud) {
-        telemetry?.trackHelpResourceClicked({
-          resource_type: 'help_feedback',
-          is_external: true,
-          source: 'subscription'
-        })
-      }
+      telemetry?.trackHelpResourceClicked({
+        resource_type: 'help_feedback',
+        is_external: true,
+        source: 'subscription'
+      })
       await commandStore.execute('Comfy.ContactSupport')
-    } catch (error) {
-      console.error('[useSubscriptionActions] Error contacting support:', error)
-    } finally {
+    },
+    reportSupportFailure,
+    () => {
       isLoadingSupport.value = false
     }
-  }
+  )
 
   const handleRefresh = async () => {
     try {
-      await Promise.all([authActions.fetchBalance(), fetchStatus()])
+      await Promise.all([fetchBalance(), fetchStatus()])
     } catch (error) {
       console.error('[useSubscriptionActions] Error refreshing data:', error)
     }

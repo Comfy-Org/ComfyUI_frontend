@@ -4,7 +4,7 @@ import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import { storeToRefs } from 'pinia'
 
-import { d, t } from '@/i18n'
+import { t } from '@/i18n'
 import type {
   AssetFilterState,
   OwnershipOption
@@ -19,10 +19,13 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
-  getAssetFilename
+  getAssetCategories,
+  getAssetFilename,
+  getAssetTypeBadges
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
@@ -38,10 +41,53 @@ export interface AssetDisplayItem extends AssetItem {
   secondaryText: string
   badges: AssetBadge[]
   stats: {
-    formattedDate?: string
     downloadCount?: string
     stars?: string
   }
+}
+
+const displayItemCache = new WeakMap<
+  AssetItem,
+  { modelTypeMode: boolean; item: AssetDisplayItem }
+>()
+
+function buildDisplayItem(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): AssetDisplayItem {
+  const badges: AssetBadge[] = []
+
+  for (const typeBadge of getAssetTypeBadges(asset, modelTypeMode)) {
+    badges.push({ label: typeBadge, type: 'type' })
+  }
+
+  for (const model of getAssetBaseModels(asset)) {
+    badges.push({ label: model, type: 'base' })
+  }
+
+  // Intentionally no formatted date here — the WeakMap caches by AssetItem
+  // reference, so a pre-formatted string would pin the locale active at first
+  // transform. AssetCard formats `created_at` at render via `d()` instead.
+  return {
+    ...asset,
+    secondaryText: getAssetFilename(asset),
+    badges,
+    stats: {
+      downloadCount: undefined,
+      stars: undefined
+    }
+  }
+}
+
+function transformAssetForDisplay(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): AssetDisplayItem {
+  const cached = displayItemCache.get(asset)
+  if (cached && cached.modelTypeMode === modelTypeMode) return cached.item
+  const item = buildDisplayItem(asset, modelTypeMode)
+  displayItemCache.set(asset, { modelTypeMode, item })
+  return item
 }
 
 /**
@@ -54,6 +100,7 @@ export function useAssetBrowser(
   const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
   const assetDownloadStore = useAssetDownloadStore()
   const { sessionDownloadCount } = storeToRefs(assetDownloadStore)
+  const { flags } = useFeatureFlags()
 
   // State
   const searchQuery = ref('')
@@ -82,53 +129,11 @@ export function useAssetBrowser(
     return selectedNavItem.value
   })
 
-  // Transform API asset to display asset
-  function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
-    const secondaryText = getAssetFilename(asset)
-
-    const badges: AssetBadge[] = []
-
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
-    // Type badge from non-root tag
-    if (typeTag) {
-      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
-      const badgeLabel = typeTag.includes('/')
-        ? typeTag.substring(typeTag.indexOf('/') + 1)
-        : typeTag
-
-      badges.push({ label: badgeLabel, type: 'type' })
-    }
-
-    // Base model badges from metadata
-    const baseModels = getAssetBaseModels(asset)
-    for (const model of baseModels) {
-      badges.push({ label: model, type: 'base' })
-    }
-
-    // Create display stats from API data
-    const stats = {
-      formattedDate: asset.created_at
-        ? d(new Date(asset.created_at), { dateStyle: 'short' })
-        : undefined,
-      downloadCount: undefined, // Not available in API
-      stars: undefined // Not available in API
-    }
-
-    return {
-      ...asset,
-      secondaryText,
-      badges,
-      stats
-    }
-  }
-
   const typeCategories = computed<NavItemData[]>(() => {
+    const modelTypeMode = flags.supportsModelTypeTags
     const categories = assets.value
       .filter((asset) => asset.tags.includes(MODELS_TAG))
-      .flatMap((asset) =>
-        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
-      )
-      .map((tag) => tag.split('/')[0])
+      .flatMap((asset) => getAssetCategories(asset, modelTypeMode))
 
     return Array.from(new Set(categories))
       .sort()
@@ -192,7 +197,9 @@ export function useAssetBrowser(
 
   // Category-filtered assets for filter options (before search/format/base model filters)
   const categoryFilteredAssets = computed(() => {
-    return assets.value.filter(filterByCategory(selectedCategory.value))
+    return assets.value.filter(
+      filterByCategory(selectedCategory.value, flags.supportsModelTypeTags)
+    )
   })
 
   const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
@@ -249,7 +256,10 @@ export function useAssetBrowser(
     const sortedAssets = sortAssets(filtered, filters.value.sortBy)
 
     // Transform to display format
-    return sortedAssets.map(transformAssetForDisplay)
+    const modelTypeMode = flags.supportsModelTypeTags
+    return sortedAssets.map((asset) =>
+      transformAssetForDisplay(asset, modelTypeMode)
+    )
   })
 
   function updateFilters(newFilters: AssetFilterState) {

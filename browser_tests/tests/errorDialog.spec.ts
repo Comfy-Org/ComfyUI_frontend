@@ -8,7 +8,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import {
   interceptClipboardWrite,
   getClipboardText
-} from '@e2e/helpers/clipboardSpy'
+} from '@e2e/fixtures/utils/clipboardSpy'
 
 async function triggerConfigureError(
   comfyPage: ComfyPage,

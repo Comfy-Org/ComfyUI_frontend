@@ -1,32 +1,52 @@
-/* eslint-disable vue/one-component-per-file */
 import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
-import { defineComponent } from 'vue'
+import type { RenderOptions } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
+import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+import type { NodeState } from '@/types/nodeState'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
+import {
+  createMockNodeInputSlot,
+  createMockNodeOutputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
 
 import NodeSlots from './NodeSlots.vue'
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '123',
+const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
+
+const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
+  id: toNodeId('123'),
+  // Empty = root graph: derives a null subgraphId in the node's locator.
+  graphId: '',
   title: 'Test Node',
   type: 'TestType',
   mode: 0,
-  selected: false,
-  executing: false,
   inputs: [],
   outputs: [],
-  widgets: [],
   flags: { collapsed: false },
-  ...overrides
+  ...overrides,
+  properties: overrides.properties ?? {}
 })
 
 // Explicit stubs to capture props for assertions
@@ -36,14 +56,18 @@ interface StubSlotData {
   boundingRect?: [number, number, number, number]
 }
 
+const STUB_SLOT_PROPS = {
+  slotData: { type: Object as PropType<StubSlotData>, required: true },
+  nodeId: { type: String, required: false, default: '' },
+  hasError: { type: Boolean, required: false, default: false },
+  index: { type: Number, required: true },
+  readonly: { type: Boolean, required: false, default: false },
+  connected: { type: Boolean, required: false, default: false }
+} as const
+
 const InputSlotStub = defineComponent({
   name: 'InputSlot',
-  props: {
-    slotData: { type: Object as PropType<StubSlotData>, required: true },
-    nodeId: { type: String, required: false, default: '' },
-    index: { type: Number, required: true },
-    readonly: { type: Boolean, required: false, default: false }
-  },
+  props: STUB_SLOT_PROPS,
   template: `
     <div
       class="stub-input-slot"
@@ -51,19 +75,17 @@ const InputSlotStub = defineComponent({
       :data-name="slotData && slotData.name ? slotData.name : ''"
       :data-type="slotData && slotData.type ? slotData.type : ''"
       :data-node-id="nodeId"
+      :data-slot-key="nodeId + '-in-' + index"
+      :data-has-error="hasError ? 'true' : 'false'"
       :data-readonly="readonly ? 'true' : 'false'"
+      :data-connected="connected ? 'true' : 'false'"
     />
   `
 })
 
 const OutputSlotStub = defineComponent({
   name: 'OutputSlot',
-  props: {
-    slotData: { type: Object as PropType<StubSlotData>, required: true },
-    nodeId: { type: String, required: false, default: '' },
-    index: { type: Number, required: true },
-    readonly: { type: Boolean, required: false, default: false }
-  },
+  props: STUB_SLOT_PROPS,
   template: `
     <div
       class="stub-output-slot"
@@ -71,67 +93,248 @@ const OutputSlotStub = defineComponent({
       :data-name="slotData && slotData.name ? slotData.name : ''"
       :data-type="slotData && slotData.type ? slotData.type : ''"
       :data-node-id="nodeId"
+      :data-slot-key="nodeId + '-out-' + index"
       :data-readonly="readonly ? 'true' : 'false'"
+      :data-connected="connected ? 'true' : 'false'"
     />
   `
 })
 
-const mountSlots = (nodeData: VueNodeData) => {
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: { en: enMessages }
-  })
-  return render(NodeSlots, {
-    global: {
-      plugins: [i18n, createTestingPinia({ stubActions: false })],
-      stubs: {
-        InputSlot: InputSlotStub,
-        OutputSlot: OutputSlotStub
-      }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
+
+type SlotComponentStubs = NonNullable<
+  NonNullable<RenderOptions<typeof NodeSlots>['global']>['stubs']
+>
+
+const defaultSlotStubs: SlotComponentStubs = {
+  InputSlot: InputSlotStub,
+  OutputSlot: OutputSlotStub
+}
+
+function createTrackingStub(
+  componentName: 'InputSlot' | 'OutputSlot',
+  mountCounts: Map<string, number>
+) {
+  const cssClass =
+    componentName === 'InputSlot' ? 'stub-input-slot' : 'stub-output-slot'
+  return defineComponent({
+    name: componentName,
+    props: STUB_SLOT_PROPS,
+    setup(props) {
+      const key = `${props.slotData?.name ?? ''}`
+      mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
     },
-    props: { nodeData }
+    template: `
+      <div
+        class="${cssClass}"
+        :data-index="index"
+        :data-name="slotData && slotData.name ? slotData.name : ''"
+      />
+    `
   })
 }
 
+function renderSlots(
+  nodeData: NodeState,
+  stubs: SlotComponentStubs = defaultSlotStubs,
+  pinia = createTestingPinia({ stubActions: false }),
+  syncLayout = true
+) {
+  return render(NodeSlots, {
+    global: {
+      plugins: [i18n, pinia],
+      stubs
+    },
+    props: { nodeData, syncLayout }
+  })
+}
+
+function createConnectedGraph() {
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
+
+  const graph = new LGraph()
+  useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
+
+  const upstream = new LGraphNode('Upstream')
+  upstream.id = toNodeId(1)
+  upstream.addOutput('out', 'FAKE')
+  graph.add(upstream)
+
+  const node = new LGraphNode('Target')
+  node.id = toNodeId(2)
+  node.addInput('plain', 'FAKE')
+  node.addInput('w', 'FAKE')
+  node.inputs[1].widget = { name: 'w' }
+  graph.add(node)
+
+  return { pinia, graph, upstream, node }
+}
+
+function renderSlotsWithTracking(
+  nodeData: NodeState,
+  mountCounts: Map<string, number>,
+  trackingTarget: 'InputSlot' | 'OutputSlot'
+) {
+  const trackingStub = createTrackingStub(trackingTarget, mountCounts)
+  const stubs =
+    trackingTarget === 'InputSlot'
+      ? { InputSlot: trackingStub, OutputSlot: OutputSlotStub }
+      : { InputSlot: InputSlotStub, OutputSlot: trackingStub }
+
+  return renderSlots(nodeData, stubs)
+}
+
+const INPUT_SLOT_SELECTOR = '.stub-input-slot'
+const OUTPUT_SLOT_SELECTOR = '.stub-output-slot'
+
+function querySlotElements(
+  container: Element,
+  selector: string
+): HTMLElement[] {
+  // eslint-disable-next-line testing-library/no-node-access
+  const nodes = container.querySelectorAll(selector)
+  return Array.from(nodes).filter(
+    (el): el is HTMLElement => el instanceof HTMLElement
+  )
+}
+
+function getRenderedSlotIndex(container: Element, slotName: string) {
+  return Number(getRenderedSlotElement(container, slotName).dataset.index)
+}
+
+function getRenderedSlotElement(container: Element, slotName: string) {
+  // eslint-disable-next-line testing-library/no-node-access
+  const el = container.querySelector(`[data-name="${slotName}"]`)
+  if (!(el instanceof HTMLElement)) {
+    throw new Error(`Slot element "${slotName}" not found`)
+  }
+  return el
+}
+
+function expectSlotError(
+  container: Element,
+  slotName: string,
+  hasError: boolean
+) {
+  expect(getRenderedSlotElement(container, slotName)).toHaveAttribute(
+    'data-has-error',
+    hasError ? 'true' : 'false'
+  )
+}
+
 describe('NodeSlots.vue', () => {
+  beforeEach(() => layoutStore.resetForTests())
+
+  it('stores slot offsets when the rendered element mounts', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const nodeData = makeNodeData({
+      inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+    })
+
+    renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        nodeData.id,
+        0,
+        'input',
+        'expanded'
+      )
+    ).toEqual({ x: 0, y: 50 - LiteGraph.NODE_TITLE_HEIGHT })
+  })
+
+  it('does not store slot offsets when layout synchronization is disabled', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const nodeData = makeNodeData({
+      inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+    })
+
+    renderSlots(nodeData, defaultSlotStubs, pinia, false)
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        nodeData.id,
+        0,
+        'input',
+        'expanded'
+      )
+    ).toBeNull()
+  })
+
+  it('renders slots from nodeDataStore without resolving the live node', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    const node = new LGraphNode('Target')
+    node.id = toNodeId(7)
+    node.addInput('model', 'MODEL')
+    node.addOutput('latent', 'LATENT')
+    graph.add(node)
+
+    const [registered] = useNodeDataStore().getGraphNodesFor(
+      graph.rootGraph.id,
+      graph.id
+    )
+
+    // No app.rootGraph spy: the component must not need a graph traversal.
+    const { container } = renderSlots(registered, defaultSlotStubs, pinia)
+
+    expect(getRenderedSlotElement(container, 'model')).toBeTruthy()
+    expect(getRenderedSlotElement(container, 'latent')).toBeTruthy()
+
+    node.addInput('clip', 'CLIP')
+    await nextTick()
+
+    expect(getRenderedSlotIndex(container, 'clip')).toBe(1)
+  })
+
   it('filters out inputs with widget property and maps indexes correctly', () => {
-    // Two inputs without widgets and one with widget (filtered out)
-    const inputObjNoWidget: INodeInputSlot = {
-      name: 'objNoWidget',
-      type: 'number',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const inputObjWithWidget: INodeInputSlot = {
-      name: 'objWithWidget',
-      type: 'number',
-      boundingRect: [0, 0, 0, 0],
-      widget: { name: 'objWithWidget' },
-      link: null
-    }
-    const inputStringNoWidget: INodeInputSlot = {
-      name: 'stringInput',
-      type: 'string',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const inputs: INodeInputSlot[] = [
-      inputObjNoWidget,
-      inputObjWithWidget,
-      inputStringNoWidget
+    const inputs = [
+      createMockNodeInputSlot({ name: 'objNoWidget', type: 'number' }),
+      createMockNodeInputSlot({
+        name: 'objWithWidget',
+        type: 'number',
+        widget: { name: 'objWithWidget' }
+      }),
+      createMockNodeInputSlot({ name: 'stringInput', type: 'string' })
     ]
 
-    const { container } = mountSlots(makeNodeData({ inputs }))
+    const { container } = renderSlots(makeNodeData({ inputs }))
 
-    const inputEls = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      container.querySelectorAll('.stub-input-slot')
-    ) as HTMLElement[]
-    // Should filter out the widget-backed input; expect 2 inputs rendered
+    const inputEls = querySlotElements(container, INPUT_SLOT_SELECTOR)
     expect(inputEls).toHaveLength(2)
 
-    // Verify expected tuple of {index, name, nodeId}
     const info = inputEls.map((el) => ({
       index: Number(el.dataset.index),
       name: el.dataset.name ?? '',
@@ -143,44 +346,31 @@ describe('NodeSlots.vue', () => {
       {
         index: 0,
         name: 'objNoWidget',
-        nodeId: '123',
+        nodeId: toNodeId('123'),
         type: 'number',
         readonly: false
       },
       {
         index: 2,
         name: 'stringInput',
-        nodeId: '123',
+        nodeId: toNodeId('123'),
         type: 'string',
         readonly: false
       }
     ])
 
-    // Ensure widget-backed input was indeed filtered out
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-name="objWithWidget"]')).toBeNull()
   })
 
   it('maps outputs and passes correct indexes', () => {
-    const outputObj: INodeOutputSlot = {
-      name: 'outA',
-      type: 'any',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-    const outputObjB: INodeOutputSlot = {
-      name: 'outB',
-      type: 'any',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-    const outputs: INodeOutputSlot[] = [outputObj, outputObjB]
+    const outputs = [
+      createMockNodeOutputSlot({ name: 'outA', type: 'any' }),
+      createMockNodeOutputSlot({ name: 'outB', type: 'any' })
+    ]
 
-    const { container } = mountSlots(makeNodeData({ outputs }))
-    const outputEls = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      container.querySelectorAll('.stub-output-slot')
-    ) as HTMLElement[]
+    const { container } = renderSlots(makeNodeData({ outputs }))
+    const outputEls = querySlotElements(container, OUTPUT_SLOT_SELECTOR)
 
     expect(outputEls).toHaveLength(2)
     const outInfo = outputEls.map((el) => ({
@@ -191,17 +381,291 @@ describe('NodeSlots.vue', () => {
       readonly: el.dataset.readonly === 'true'
     }))
     expect(outInfo).toEqual([
-      { index: 0, name: 'outA', nodeId: '123', type: 'any', readonly: false },
-      // string output mapped to object with type 'any'
-      { index: 1, name: 'outB', nodeId: '123', type: 'any', readonly: false }
+      {
+        index: 0,
+        name: 'outA',
+        nodeId: toNodeId('123'),
+        type: 'any',
+        readonly: false
+      },
+      {
+        index: 1,
+        name: 'outB',
+        nodeId: toNodeId('123'),
+        type: 'any',
+        readonly: false
+      }
     ])
   })
 
+  it('marks an output connected only while a link leaves it', async () => {
+    const { pinia, graph, upstream, node } = createConnectedGraph()
+    upstream.addOutput('spare', 'FAKE')
+    upstream.connect(0, node, 0)
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(upstream.id),
+      graphId: graph.id,
+      outputs: upstream.outputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(getRenderedSlotElement(container, 'out')).toHaveAttribute(
+      'data-connected',
+      'true'
+    )
+    expect(getRenderedSlotElement(container, 'spare')).toHaveAttribute(
+      'data-connected',
+      'false'
+    )
+
+    node.disconnectInput(0)
+    await nextTick()
+    expect(getRenderedSlotElement(container, 'out')).toHaveAttribute(
+      'data-connected',
+      'false'
+    )
+  })
+
+  it('marks an input connected from the link store', async () => {
+    const { pinia, graph, upstream, node } = createConnectedGraph()
+    upstream.connect(0, node, 0)
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(node.id),
+      graphId: graph.id,
+      inputs: node.inputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(getRenderedSlotElement(container, 'plain')).toHaveAttribute(
+      'data-connected',
+      'true'
+    )
+  })
+
+  it('passes validation error state to matching input slots', async () => {
+    const inputs = [
+      createMockNodeInputSlot({ name: 'model', type: 'MODEL' }),
+      createMockNodeInputSlot({ name: 'steps', type: 'INT' })
+    ]
+    const nodeData = makeNodeData({ inputs })
+    const { container } = renderSlots(nodeData)
+    seedRequiredInputMissingNodeError(
+      useExecutionErrorStore(),
+      createNodeExecutionId([nodeData.id]),
+      'model'
+    )
+    await nextTick()
+
+    expectSlotError(container, 'model', true)
+    expectSlotError(container, 'steps', false)
+  })
+
+  it('maps one-level subgraph execution ids to input slot errors', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('InteriorNode')
+    interiorNode.id = toNodeId(70)
+    interiorNode.addInput('model', 'MODEL')
+    interiorNode.addInput('steps', 'INT')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const graph = subgraphNode.rootGraph
+    graph.add(subgraphNode)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useCanvasStore().currentGraph = subgraph
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(interiorNode.id),
+      graphId: subgraph.id,
+      inputs: interiorNode.inputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    seedRequiredInputMissingNodeError(
+      useExecutionErrorStore(),
+      createNodeExecutionId([toNodeId(65), toNodeId(70)]),
+      'model'
+    )
+    await nextTick()
+
+    expectSlotError(container, 'model', true)
+    expectSlotError(container, 'steps', false)
+  })
+
+  it('maps nested subgraph execution ids to input slot errors', async () => {
+    const innerSubgraph = createTestSubgraph()
+    const innerNode = new LGraphNode('InnerNode')
+    innerNode.id = toNodeId(63)
+    innerNode.addInput('image', 'IMAGE')
+    innerNode.addInput('mask', 'MASK')
+    innerSubgraph.add(innerNode)
+
+    const outerSubgraph = createTestSubgraph()
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: toNodeId(70),
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 65 })
+    const graph = outerSubgraphNode.rootGraph
+    graph.add(outerSubgraphNode)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useCanvasStore().currentGraph = innerSubgraph
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(innerNode.id),
+      graphId: innerSubgraph.id,
+      inputs: innerNode.inputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    seedRequiredInputMissingNodeError(
+      useExecutionErrorStore(),
+      createNodeExecutionId([toNodeId(65), toNodeId(70), toNodeId(63)]),
+      'mask'
+    )
+    await nextTick()
+
+    expectSlotError(container, 'image', false)
+    expectSlotError(container, 'mask', true)
+  })
+
+  it('remounts OutputSlot when index shifts due to output removal', async () => {
+    const mountCounts = new Map<string, number>()
+    const outputs = [
+      createMockNodeOutputSlot({ name: 'outA', type: 'IMAGE' }),
+      createMockNodeOutputSlot({ name: 'outB', type: 'VIDEO' }),
+      createMockNodeOutputSlot({ name: 'outC', type: 'AUDIO' })
+    ]
+
+    const { container, rerender } = renderSlotsWithTracking(
+      makeNodeData({ outputs }),
+      mountCounts,
+      'OutputSlot'
+    )
+
+    expect(mountCounts.get('outC')).toBe(1)
+    expect(getRenderedSlotIndex(container, 'outC')).toBe(2)
+
+    await rerender({
+      nodeData: makeNodeData({
+        outputs: [
+          createMockNodeOutputSlot({ name: 'outA', type: 'IMAGE' }),
+          createMockNodeOutputSlot({ name: 'outC', type: 'AUDIO' })
+        ]
+      })
+    })
+
+    expect(getRenderedSlotIndex(container, 'outC')).toBe(1)
+    expect(mountCounts.get('outC')).toBe(2)
+  })
+
   it('renders nothing when there are no inputs/outputs', () => {
-    const { container } = mountSlots(makeNodeData({ inputs: [], outputs: [] }))
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelectorAll('.stub-input-slot')).toHaveLength(0)
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelectorAll('.stub-output-slot')).toHaveLength(0)
+    const { container } = renderSlots(makeNodeData({ inputs: [], outputs: [] }))
+    expect(querySlotElements(container, INPUT_SLOT_SELECTOR)).toHaveLength(0)
+    expect(querySlotElements(container, OUTPUT_SLOT_SELECTOR)).toHaveLength(0)
+  })
+
+  it('passes correct actual indices for multi-group input layout', () => {
+    const inputs = [
+      createMockNodeInputSlot({ name: 'ref_images.img0', type: 'IMAGE' }),
+      createMockNodeInputSlot({ name: 'ref_images.img1', type: 'IMAGE' }),
+      createMockNodeInputSlot({ name: 'ref_images.img2', type: 'IMAGE' }),
+      createMockNodeInputSlot({ name: 'ref_videos.vid0', type: 'VIDEO' }),
+      createMockNodeInputSlot({ name: 'ref_videos.vid1', type: 'VIDEO' })
+    ]
+
+    const { container } = renderSlots(makeNodeData({ inputs }))
+
+    const inputEls = querySlotElements(container, INPUT_SLOT_SELECTOR)
+
+    expect(inputEls).toHaveLength(5)
+
+    const info = inputEls.map((el) => ({
+      index: Number(el.dataset.index),
+      name: el.dataset.name ?? ''
+    }))
+    expect(info).toEqual([
+      { index: 0, name: 'ref_images.img0' },
+      { index: 1, name: 'ref_images.img1' },
+      { index: 2, name: 'ref_images.img2' },
+      { index: 3, name: 'ref_videos.vid0' },
+      { index: 4, name: 'ref_videos.vid1' }
+    ])
+  })
+
+  describe('unified mode', () => {
+    function renderUnified(
+      nodeData: NodeState,
+      pinia = createTestingPinia({ stubActions: false })
+    ) {
+      setActivePinia(pinia)
+      return render(NodeSlots, {
+        global: {
+          plugins: [i18n, pinia],
+          stubs: defaultSlotStubs
+        },
+        props: { nodeData, unified: true }
+      })
+    }
+
+    it('reacts to connect and disconnect without a reprojection event', async () => {
+      const { pinia, graph, upstream, node } = createConnectedGraph()
+      const nodeData = makeNodeData({
+        id: toVueNodeId(node.id),
+        graphId: graph.id,
+        inputs: node.inputs
+      })
+      const { container } = renderUnified(nodeData, pinia)
+
+      expect(querySlotElements(container, '[data-name="w"]')).toHaveLength(0)
+
+      upstream.connect(0, node, 1)
+      await nextTick()
+      expect(getRenderedSlotIndex(container, 'w')).toBe(1)
+
+      node.disconnectInput(1)
+      await nextTick()
+      expect(querySlotElements(container, '[data-name="w"]')).toHaveLength(0)
+    })
+  })
+
+  it('remounts InputSlot when index shifts due to autogrow insertion', async () => {
+    const mountCounts = new Map<string, number>()
+    const initialInputs = [
+      createMockNodeInputSlot({ name: 'ref_images.img0', type: 'IMAGE' }),
+      createMockNodeInputSlot({ name: 'ref_videos.vid0', type: 'VIDEO' })
+    ]
+
+    const { container, rerender } = renderSlotsWithTracking(
+      makeNodeData({ inputs: initialInputs }),
+      mountCounts,
+      'InputSlot'
+    )
+
+    expect(mountCounts.get('ref_videos.vid0')).toBe(1)
+    expect(getRenderedSlotIndex(container, 'ref_videos.vid0')).toBe(1)
+
+    await rerender({
+      nodeData: makeNodeData({
+        inputs: [
+          createMockNodeInputSlot({ name: 'ref_images.img0', type: 'IMAGE' }),
+          createMockNodeInputSlot({ name: 'ref_images.img1', type: 'IMAGE' }),
+          createMockNodeInputSlot({ name: 'ref_videos.vid0', type: 'VIDEO' })
+        ]
+      })
+    })
+
+    expect(getRenderedSlotIndex(container, 'ref_videos.vid0')).toBe(2)
+    expect(mountCounts.get('ref_videos.vid0')).toBe(2)
   })
 })

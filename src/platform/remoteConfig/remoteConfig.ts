@@ -1,3 +1,7 @@
+import { useStorage } from '@vueuse/core'
+
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+
 /**
  * Remote configuration service
  *
@@ -28,10 +32,9 @@ type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
  */
 export const remoteConfigState = ref<RemoteConfigState>('unloaded')
 
-/**
- * Whether the authenticated config has been loaded.
- * Use this to gate access to user-specific feature flags like teamWorkspacesEnabled.
- */
+export const remoteConfigErrorStatus = ref<number | null>(null)
+
+/** Whether the authenticated config has been loaded. */
 export const isAuthenticatedConfigLoaded = computed(
   () => remoteConfigState.value === 'authenticated'
 )
@@ -50,3 +53,15 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
   const configValue = remoteConfig[key]
   return configValue || defaultValue
 }
+
+export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
+  'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
+  undefined
+)
+
+export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
+
+export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
+  'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
+  undefined
+)

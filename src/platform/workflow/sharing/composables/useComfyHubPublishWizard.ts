@@ -32,8 +32,11 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    thumbnailUrl: null,
+    existingThumbnailType: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
+    comparisonAfterUrl: null,
     exampleImages: [],
     tutorialUrl: '',
     metadata: {}
@@ -48,9 +51,12 @@ function extractPrefillFromFormData(
   formData: ComfyHubPublishFormData
 ): PublishPrefill {
   return {
+    name: formData.name || undefined,
     description: formData.description || undefined,
     tags: formData.tags.length > 0 ? normalizeTags(formData.tags) : undefined,
     thumbnailType: formData.thumbnailType,
+    thumbnailUrl: formData.thumbnailUrl ?? undefined,
+    thumbnailComparisonUrl: formData.comparisonAfterUrl ?? undefined,
     sampleImageUrls: formData.exampleImages
       .map((img) => img.url)
       .filter((url) => !url.startsWith('blob:'))
@@ -95,8 +101,19 @@ export function useComfyHubPublishWizard() {
   function applyPrefill(prefill: PublishPrefill) {
     const defaults = createDefaultFormData()
     const current = formData.value
+    const hasThumbnail = !!(current.thumbnailFile || current.thumbnailUrl)
+    const hasComparisonAfter = !!(
+      current.comparisonAfterFile || current.comparisonAfterUrl
+    )
+    const restoredThumbnailUrl = hasThumbnail
+      ? current.thumbnailUrl
+      : (prefill.thumbnailUrl ?? current.thumbnailUrl)
     formData.value = {
       ...current,
+      name:
+        current.name === defaults.name
+          ? (prefill.name ?? current.name)
+          : current.name,
       description:
         current.description === defaults.description
           ? (prefill.description ?? current.description)
@@ -109,6 +126,14 @@ export function useComfyHubPublishWizard() {
         current.thumbnailType === defaults.thumbnailType
           ? (prefill.thumbnailType ?? current.thumbnailType)
           : current.thumbnailType,
+      thumbnailUrl: restoredThumbnailUrl,
+      existingThumbnailType:
+        restoredThumbnailUrl && !current.thumbnailFile
+          ? (prefill.thumbnailType ?? current.existingThumbnailType)
+          : current.existingThumbnailType,
+      comparisonAfterUrl: hasComparisonAfter
+        ? current.comparisonAfterUrl
+        : (prefill.thumbnailComparisonUrl ?? current.comparisonAfterUrl),
       exampleImages:
         current.exampleImages.length === 0 && prefill.sampleImageUrls?.length
           ? createExampleImagesFromUrls(prefill.sampleImageUrls)

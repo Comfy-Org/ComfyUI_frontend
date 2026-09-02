@@ -26,7 +26,7 @@ export function useHeroAnimation(refs: {
     ctx = gsap.context(() => {
       gsap.from(textEls, {
         y: 60,
-        opacity: 0,
+        autoAlpha: 0,
         duration: 1,
         stagger: 0.12,
         ease: 'power2.out'
@@ -36,7 +36,7 @@ export function useHeroAnimation(refs: {
         gsap.from(logo, {
           x: -80,
           y: 80,
-          opacity: 0,
+          autoAlpha: 0,
           duration: 1.2,
           delay: 0.15,
           ease: 'power2.out'
@@ -46,7 +46,7 @@ export function useHeroAnimation(refs: {
       if (video) {
         gsap.from(video, {
           y: 120,
-          opacity: 0,
+          autoAlpha: 0,
           duration: 1,
           delay: 0.3,
           ease: 'power2.out'
@@ -56,10 +56,11 @@ export function useHeroAnimation(refs: {
           gsap.to(video, {
             yPercent: -10,
             ease: 'none',
+            immediateRender: false,
             scrollTrigger: {
               trigger: section,
-              start: 'top top',
-              end: 'bottom top',
+              start: 'clamp(top top)',
+              end: 'clamp(bottom top)',
               scrub: 1
             }
           })

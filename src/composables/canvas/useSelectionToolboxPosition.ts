@@ -4,12 +4,8 @@ import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -46,6 +42,14 @@ function currentSelectionMatchesSignature(
 ) {
   if (!moreOptionsSelectionSignature) return false
   return buildSelectionSignature(store) === moreOptionsSelectionSignature
+}
+
+function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
+  if (item instanceof LGraphGroup) return item.boundingRect
+
+  const bounds: Rect = [0, 0, 0, 0]
+  item.measure(bounds)
+  return bounds
 }
 
 export function useSelectionToolboxPosition(
@@ -99,27 +103,8 @@ export function useSelectionToolboxPosition(
       // Skip items without valid IDs
       if (item.id == null) continue
 
-      if (shouldRenderVueNodes.value && typeof item.id === 'string') {
-        // Use layout store for Vue nodes (only works with string IDs)
-        const layout = layoutStore.getNodeLayoutRef(item.id).value
-        if (layout) {
-          allBounds.push([
-            layout.bounds.x,
-            layout.bounds.y,
-            layout.bounds.width,
-            layout.bounds.height
-          ])
-        }
-      } else {
-        // Fallback to LiteGraph bounds for regular nodes or non-string IDs
-        if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-          allBounds.push([
-            item.pos[0],
-            item.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-            item.size[0],
-            item.size[1] + LiteGraph.NODE_TITLE_HEIGHT
-          ])
-        }
+      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+        allBounds.push(getSelectionBounds(item))
       }
     }
 

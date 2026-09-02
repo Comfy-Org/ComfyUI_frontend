@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { openMoreOptionsMenu } from '@e2e/fixtures/utils/selectionToolboxMoreOptions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -18,70 +19,19 @@ test.describe(
       await comfyPage.nextFrame()
     })
 
-    const openMoreOptions = async (comfyPage: ComfyPage) => {
-      const ksamplerNodes =
-        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      if (ksamplerNodes.length === 0) {
-        throw new Error('No KSampler nodes found')
-      }
+    const openMoreOptions = (comfyPage: ComfyPage) =>
+      openMoreOptionsMenu(comfyPage, 'KSampler')
 
-      // Drag the KSampler to the center of the screen
-      const nodePos = await ksamplerNodes[0].getPosition()
-      const viewportSize = comfyPage.page.viewportSize()
-      if (!viewportSize) {
-        throw new Error(
-          'Viewport size is null - page may not be properly initialized'
-        )
-      }
-      const centerX = viewportSize.width / 3
-      const centerY = viewportSize.height / 2
-      await comfyPage.canvasOps.dragAndDrop(
-        { x: nodePos.x, y: nodePos.y },
-        { x: centerX, y: centerY }
-      )
-      await comfyPage.nextFrame()
+    test('hides Node Info from More Options menu when the new menu is disabled', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
 
-      await ksamplerNodes[0].click('title')
-
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
-
-      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
-      await expect(moreOptionsBtn).toBeVisible()
-
-      await moreOptionsBtn.click()
-
-      await comfyPage.nextFrame()
-
-      const menuOptionsVisible = await comfyPage.page
-        .getByText('Rename')
-        .isVisible({ timeout: 2000 })
-        .catch(() => false)
-      if (menuOptionsVisible) {
-        return
-      }
-
-      await moreOptionsBtn.click()
-      await comfyPage.nextFrame()
-
-      const menuOptionsVisibleAfterClick = await comfyPage.page
-        .getByText('Rename')
-        .isVisible({ timeout: 2000 })
-        .catch(() => false)
-      if (menuOptionsVisibleAfterClick) {
-        return
-      }
-
-      throw new Error('Could not open More Options menu - popover not showing')
-    }
-
-    test('opens Node Info from More Options menu', async ({ comfyPage }) => {
       await openMoreOptions(comfyPage)
-      const nodeInfoButton = comfyPage.page.getByText('Node Info', {
-        exact: true
+      const nodeInfoButton = comfyPage.page.getByRole('menuitem', {
+        name: 'Node Info'
       })
-      await expect(nodeInfoButton).toBeVisible()
-      await nodeInfoButton.click()
-      await comfyPage.nextFrame()
+      await expect(nodeInfoButton).toBeHidden()
     })
 
     test('changes node shape via Shape submenu', async ({ comfyPage }) => {
@@ -90,11 +40,14 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Shape', { exact: true }).hover()
-      await expect(
-        comfyPage.page.getByText('Box', { exact: true })
-      ).toBeVisible()
-      await comfyPage.page.getByText('Box', { exact: true }).click()
+      // Shape now opens via body-appended popover (FE-570); a hover no
+      // longer reveals the submenu — match the Color flow and click.
+      await comfyPage.page.getByText('Shape', { exact: true }).click()
+      const shapePopover = comfyPage.page
+        .locator('.p-popover')
+        .filter({ hasText: 'Default' })
+      await expect(shapePopover.getByText('Box', { exact: true })).toBeVisible()
+      await shapePopover.getByText('Box', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)

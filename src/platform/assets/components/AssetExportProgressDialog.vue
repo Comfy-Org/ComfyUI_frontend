@@ -7,7 +7,7 @@ import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const assetExportStore = useAssetExportStore()

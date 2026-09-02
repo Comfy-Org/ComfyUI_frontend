@@ -43,7 +43,7 @@ const reasons: CloudReason[] = [
     <template #reason-extra="{ reason }">
       <div v-if="'badge' in reason && reason.badge" class="mt-3">
         <span
-          class="font-formula-condensed text-primary-comfy-yellow text-lg font-bold tracking-wide"
+          class="font-formula-narrow text-primary-comfy-yellow text-lg font-bold tracking-wide"
         >
           {{ t('cloud.reason.2.badge.onlyOn', locale) }}
           <img src="/icons/logo.svg" alt="Comfy" class="inline-block h-5" />

@@ -9,7 +9,11 @@
           : 'max-w-full max-h-64 object-contain'
       "
     />
-    <div ref="containerRef" class="absolute inset-0">
+    <div
+      data-testid="compare-slider-container"
+      class="absolute inset-0"
+      @mousemove="updateSliderPosition"
+    >
       <LazyImage
         :src="overlayImageSrc"
         :alt="alt"
@@ -34,8 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMouseInElement } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import LazyImage from '@/components/common/LazyImage.vue'
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
@@ -57,18 +60,20 @@ const isVideoType =
   false
 
 const sliderPosition = ref(SLIDER_START_POSITION)
-const containerRef = ref<HTMLElement | null>(null)
 
-const { elementX, elementWidth, isOutside } = useMouseInElement(containerRef)
-
-// Update slider position based on mouse position when hovered
-watch(
-  [() => isHovered, elementX, elementWidth, isOutside],
-  ([isHovered, x, width, outside]) => {
-    if (!isHovered) return
-    if (!outside) {
-      sliderPosition.value = (x / width) * 100
-    }
-  }
-)
+/**
+ * Update slider position from a local mousemove. Scoped to currentTarget so
+ * only the hovered card reads its rect — unlike useMouseInElement which
+ * attaches a global mousemove listener and fires for every mounted instance.
+ */
+function updateSliderPosition(event: MouseEvent) {
+  const el = event.currentTarget as HTMLElement
+  const rect = el.getBoundingClientRect()
+  if (rect.width === 0) return
+  // Clamp to [0, 100] — subpixel rounding or stale rects on hover-in can
+  // push the raw percentage slightly out of range, which would offset the
+  // divider past the container or invert the overlay's clipPath.
+  const raw = ((event.clientX - rect.left) / rect.width) * 100
+  sliderPosition.value = Math.max(0, Math.min(100, raw))
+}
 </script>

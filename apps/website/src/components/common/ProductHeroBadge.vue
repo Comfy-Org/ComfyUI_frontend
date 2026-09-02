@@ -1,26 +1,40 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 const {
   logoSrc = '/icons/logo.svg',
   logoAlt = 'Comfy',
-  text = 'LOCAL'
+  text = 'DESKTOP',
+  showLogo = true
 } = defineProps<{
   logoSrc?: string
   logoAlt?: string
   text?: string
+  showLogo?: boolean
 }>()
 </script>
 
 <template>
-  <div class="font-formula-condensed flex items-stretch font-semibold">
+  <div class="font-formula-narrow flex items-stretch font-semibold">
     <img
+      v-if="showLogo"
       src="/icons/node-left.svg"
       alt=""
       class="-mx-px my-auto h-12 self-center lg:my-0 lg:h-auto lg:self-stretch"
       aria-hidden="true"
     />
 
+    <img
+      v-else
+      src="/icons/node-left.svg"
+      alt=""
+      class="-mx-px my-auto h-7.25 self-center lg:h-15.5"
+      aria-hidden="true"
+    />
+
     <span
-      class="bg-primary-comfy-yellow text-primary-comfy-ink my-auto flex h-12 items-center justify-center lg:my-0 lg:h-auto lg:p-8"
+      v-if="showLogo"
+      class="bg-primary-comfy-yellow my-auto flex h-12 items-center justify-center text-primary-comfy-ink lg:my-0 lg:h-auto lg:p-8"
     >
       <img
         :src="logoSrc"
@@ -30,6 +44,7 @@ const {
     </span>
 
     <img
+      v-if="showLogo"
       src="/icons/node-union-2size.svg"
       alt=""
       class="-mx-px my-auto h-12 self-center lg:my-0 lg:h-auto lg:self-stretch"
@@ -37,7 +52,12 @@ const {
     />
 
     <span
-      class="bg-primary-comfy-yellow text-primary-comfy-ink my-auto flex h-7.25 items-center justify-center lg:h-15.5 lg:px-6"
+      :class="
+        cn(
+          'bg-primary-comfy-yellow my-auto flex h-7.25 items-center justify-center text-primary-comfy-ink lg:h-15.5 lg:px-6',
+          !showLogo && 'px-4'
+        )
+      "
     >
       <span
         class="inline-block translate-y-0.5 text-2xl leading-none font-bold lg:text-3xl"

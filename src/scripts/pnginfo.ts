@@ -105,14 +105,17 @@ export function getWebpMetadata(file: File) {
           ...webp.slice(offset, offset + 4)
         )
         if (chunk_type === 'EXIF') {
+          let exifOffset = offset + 8
+          let exifLength = chunk_length
           if (
-            String.fromCharCode(...webp.slice(offset + 8, offset + 8 + 6)) ==
+            String.fromCharCode(...webp.slice(exifOffset, exifOffset + 6)) ==
             'Exif\0\0'
           ) {
-            offset += 6
+            exifOffset += 6
+            exifLength -= 6
           }
-          let data = parseExifData(
-            webp.slice(offset + 8, offset + 8 + chunk_length)
+          const data = parseExifData(
+            webp.slice(exifOffset, exifOffset + exifLength)
           )
           for (const key in data) {
             const value = data[Number(key)]
@@ -131,30 +134,38 @@ export function getWebpMetadata(file: File) {
 
       r(txt_chunks)
     }
-
+    reader.onerror = () => r({})
+    reader.onabort = () => r({})
     reader.readAsArrayBuffer(file)
   })
 }
 
-export function getLatentMetadata(file: File): Promise<Record<string, string>> {
+export function getLatentMetadata(
+  file: File
+): Promise<Record<string, string> | undefined> {
   return new Promise((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
-      const safetensorsData = new Uint8Array(
-        event.target?.result as ArrayBuffer
-      )
-      const dataView = new DataView(safetensorsData.buffer)
-      let header_size = dataView.getUint32(0, true)
-      let offset = 8
-      let header = JSON.parse(
-        new TextDecoder().decode(
-          safetensorsData.slice(offset, offset + header_size)
+      try {
+        const safetensorsData = new Uint8Array(
+          event.target?.result as ArrayBuffer
         )
-      )
-      r(header.__metadata__)
+        const dataView = new DataView(safetensorsData.buffer)
+        const headerSize = dataView.getUint32(0, true)
+        const offset = 8
+        const header = JSON.parse(
+          new TextDecoder().decode(
+            safetensorsData.slice(offset, offset + headerSize)
+          )
+        )
+        r(header.__metadata__)
+      } catch {
+        r(undefined)
+      }
     }
-
-    var slice = file.slice(0, 1024 * 1024 * 4)
+    reader.onerror = () => r(undefined)
+    reader.onabort = () => r(undefined)
+    const slice = file.slice(0, 1024 * 1024 * 4)
     reader.readAsArrayBuffer(slice)
   })
 }
@@ -169,20 +180,41 @@ interface LoraEntry {
   weight: number
 }
 
+const A1111_NEGATIVE_PROMPT_PREFIX = '\nNegative prompt:'
+
+function normalizeA1111Parameters(parameters: string): string {
+  const stepsIndex = parameters.lastIndexOf('\nSteps:')
+  if (
+    stepsIndex === -1 ||
+    parameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, stepsIndex) > -1
+  ) {
+    return parameters
+  }
+
+  return `${parameters.slice(0, stepsIndex)}${A1111_NEGATIVE_PROMPT_PREFIX}${parameters.slice(stepsIndex)}`
+}
+
+export type A1111ImportOutcome =
+  | 'imported'
+  | 'imported-without-embeddings'
+  | 'not-a1111'
+  | 'core-nodes-unavailable'
+
 export async function importA1111(
   graph: LGraph,
-  parameters: string
-): Promise<void> {
-  const p = parameters.lastIndexOf('\nSteps:')
+  parameters: string,
+  beforeGraphClear?: () => void | Promise<void>
+): Promise<A1111ImportOutcome> {
+  const normalizedParameters = normalizeA1111Parameters(parameters)
+  const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    const embeddings = await api.getEmbeddings()
-    const matchResult = parameters
+    const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
-    if (!matchResult) return
+    if (!matchResult) return 'not-a1111'
 
     const opts: Record<string, string> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
@@ -195,10 +227,12 @@ export async function importA1111(
       },
       {}
     )
-    const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
+    const p2 = normalizedParameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, p)
     if (p2 > -1) {
-      let positive = parameters.substr(0, p2).trim()
-      let negative = parameters.substring(p2 + 18, p).trim()
+      let positive = normalizedParameters.substr(0, p2).trim()
+      let negative = normalizedParameters
+        .substring(p2 + A1111_NEGATIVE_PROMPT_PREFIX.length, p)
+        .trim()
 
       const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
       const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')
@@ -220,7 +254,7 @@ export async function importA1111(
         !saveNode
       ) {
         console.error('Failed to create required nodes for A1111 import')
-        return
+        return 'core-nodes-unavailable'
       }
 
       let hrSamplerNode: LGraphNode | null = null
@@ -320,6 +354,15 @@ export async function importA1111(
         return v
       }
 
+      const { embeddings, embeddingsLoaded } = await api
+        .getEmbeddings()
+        .then((embeddings) => ({ embeddings, embeddingsLoaded: true }))
+        .catch((error: unknown) => {
+          console.error('Failed to load embeddings for A1111 import:', error)
+          return { embeddings: [], embeddingsLoaded: false }
+        })
+
+      await beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)
@@ -539,7 +582,11 @@ export async function importA1111(
         delete opts[opt]
       }
 
-      console.warn('Unhandled parameters:', opts)
+      if (Object.keys(opts).length) {
+        console.warn('Unhandled parameters:', opts)
+      }
+      return embeddingsLoaded ? 'imported' : 'imported-without-embeddings'
     }
   }
+  return 'not-a1111'
 }

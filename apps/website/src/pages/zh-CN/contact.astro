@@ -2,9 +2,52 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import FormSection from '../../components/contact/FormSection.vue'
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import { contactFaqs } from '../../data/contactFaq'
+import { t } from '../../i18n/translations'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import {
+  absoluteUrl,
+  faqPageNode,
+  organizationId,
+  pageContext,
+} from '../../utils/jsonLd'
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+const faqs = contactFaqs(locale)
+const faqPage = faqPageNode(
+  url,
+  faqs.map((faq) => ({
+    question: faq.question,
+    answer: faqAnswerPlainText(faq.answer),
+  })),
+)
 ---
 
-<BaseLayout title="联系我们 — Comfy">
+<BaseLayout
+  title="联系我们 - Comfy"
+  description="就企业版、驻场创意人才、MiniMax 商业许可或合作事宜联系 Comfy。常见问题解答，包括 SOC 2 进展。"
+  pageType="ContactPage"
+  mainEntityId={organizationId(siteUrl)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN'),
+    },
+    { name: t('breadcrumb.contact', locale) },
+  ]}
+  extraJsonLd={[faqPage]}
+>
   <FormSection locale="zh-CN" client:load />
+  <FAQSplit01
+    client:visible
+    heading={t('contact.faq.heading', locale)}
+    faqs={faqs}
+  />
   <SocialProofBarSection />
 </BaseLayout>
