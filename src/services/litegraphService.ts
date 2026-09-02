@@ -40,6 +40,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { applyDefExtensions } from '@/platform/nodeApi/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -635,6 +636,9 @@ export const useLitegraphService = () => {
       node,
       nodeDefV1 // Receives V1 NodeDef, and potentially make modifications to it
     )
+    // After the legacy hook, so a pack using `defs.extend` sees the same
+    // definition its unconverted neighbours have already had a chance to edit.
+    applyDefExtensions(node, nodeDefV1)
 
     const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     node.nodeData = nodeDef

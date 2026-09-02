@@ -480,6 +480,15 @@ export interface IBaseWidget<
   serialize?: boolean
 
   /**
+   * Produces the value written to the saved workflow, when that has to differ
+   * from {@link value} — a widget holding a handle can persist what the handle
+   * refers to. Widgets that do not set it serialise their own value.
+   *
+   * @see IWidgetOptions.serialize — API prompt inclusion
+   */
+  serializeWorkflowValue?: () => unknown
+
+  /**
    * The computed height of the widget. Used by customized node resize logic.
    * See scripts/domWidget.ts for more details.
    * @readonly [Computed] This property is computed by the node.

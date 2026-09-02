@@ -106,6 +106,11 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
+import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -968,6 +973,19 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+
+    // All before loadExtensions: extension modules run their top level during
+    // that call, so the API has to be reachable and fully sourced by then. A
+    // pack subscribing to onNodeMoved at module scope throws otherwise.
+    installNodeMoveBridge()
+    installNodeChangeBridge()
+    // Which the API cannot see for itself: ChangeTracker lives up here.
+    provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
+    installComfyApi(() => useCanvasStore().currentGraph, {
+      openWorkflow: async (data) => {
+        await this.loadGraphData(data as ComfyWorkflowJSON)
+      }
+    })
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()

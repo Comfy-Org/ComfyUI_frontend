@@ -172,7 +172,12 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
+    // `serializeWorkflowValue` is the saved-file counterpart of
+    // `serializeValue`, which only the prompt builder consults. A widget that
+    // sets neither serialises its own value, as it always has.
+    const value = widget.serializeWorkflowValue
+      ? widget.serializeWorkflowValue()
+      : widget.value
     const serialisedValue =
       value != null && typeof value === 'object'
         ? JSON.parse(JSON.stringify(value))
@@ -659,6 +664,15 @@ export class LGraphNode
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
+  /**
+   * A virtual node whose outputs the prompt builder's RESOLUTION pass
+   * substitutes. Execution-time link walking must stop at this node and
+   * report it as the origin — the legacy virtual shapes below
+   * (`resolveVirtualOutput`, same-slot `getInputLink` pass-through) cannot
+   * express a computed source like Get/Set, and guessing with them silently
+   * drops the consumer's input.
+   */
+  declare resolutionOwned?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
 
   isSubgraphNode(): this is SubgraphNode {
