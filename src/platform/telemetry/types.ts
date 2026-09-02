@@ -594,6 +594,22 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 /**
+ * Fired once per duplicate link dropped during workflow load, when the loser
+ * has a *different origin* from the survivor — i.e. a connection the file
+ * recorded is silently discarded, not merely a redundant same-origin copy.
+ * Cloud cannot see the accompanying `console.warn`, so this is the only
+ * signal that a load lost a link. The survivor follows an authoritative
+ * serialized reference: `input.link` for node inputs, `linkIds` priority
+ * order for subgraph boundaries, and document order otherwise. `target`
+ * names the contested input slot.
+ */
+export interface LinkDedupDropMetadata {
+  droppedLinkId: number
+  survivorLinkId: number
+  target: string
+}
+
+/**
  * Fired once per node when its `widgets_values_named` restore path
  * disagrees with what the legacy positional `widgets_values` restore
  * would have produced. Diagnostic only — never reflects an actual
@@ -1087,6 +1103,9 @@ export interface TelemetryProvider {
     metadata: NamedValuesShadowDiffSummaryMetadata
   ): void
 
+  // Link deduplication diagnostics
+  trackLinkDedupDrop?(metadata: LinkDedupDropMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -1246,6 +1265,9 @@ export const TelemetryEvents = {
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
 
+  // Link deduplication diagnostics
+  LINK_DEDUP_DROP: 'app:link_dedup_drop',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -1327,6 +1349,7 @@ export type TelemetryEventProperties =
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
+  | LinkDedupDropMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
