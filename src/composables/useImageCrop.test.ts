@@ -261,7 +261,6 @@ describe('useImageCrop', () => {
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
     resetUseImageMock()
-    vi.clearAllMocks()
     outputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
       nodePreviewImages: reactive<Record<string, unknown>>({}),
@@ -658,7 +657,6 @@ describe('WidgetImageCrop', () => {
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
     resetUseImageMock()
-    vi.clearAllMocks()
     const outputStore: MockOutputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
       nodePreviewImages: reactive<Record<string, unknown>>({}),

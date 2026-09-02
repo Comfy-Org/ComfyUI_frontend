@@ -108,7 +108,6 @@ describe('ImagePreview', () => {
 
   beforeEach(() => {
     if (useImageMock.error) useImageMock.error.value = null
-    vi.clearAllMocks()
   })
 
   it('does not render when no imageUrls provided', () => {
