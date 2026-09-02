@@ -9,19 +9,77 @@ interface FrameScrubOptions {
   scrollTrigger: (canvas: HTMLCanvasElement) => ScrollTrigger.Vars
 }
 
-function loadFrames(urls: string[]): Promise<HTMLImageElement[]> {
-  return Promise.all(
-    urls.map(
-      (url) =>
-        new Promise<HTMLImageElement>((resolve, reject) => {
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.onload = () => resolve(img)
-          img.onerror = () => reject(new Error(`Failed to load ${url}`))
-          img.src = url
-        })
-    )
-  )
+type Frame = HTMLImageElement | ImageBitmap
+
+const FRAME_LOAD_BATCH_SIZE = 4
+const MAX_CANVAS_DPR = 2
+
+function closeFrames(frames: Frame[]) {
+  for (const frame of frames) {
+    if ('close' in frame) frame.close()
+  }
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`Failed to load ${url}`))
+    img.src = url
+  })
+}
+
+async function loadFrame(
+  url: string,
+  width: number,
+  height: number,
+  signal: AbortSignal
+): Promise<Frame> {
+  signal.throwIfAborted()
+  if (typeof createImageBitmap !== 'function') return loadImage(url)
+
+  const response = await fetch(url, { signal })
+  if (!response.ok) throw new Error(`Failed to load ${url}`)
+
+  const bitmap = await createImageBitmap(await response.blob(), {
+    resizeWidth: width,
+    resizeHeight: height,
+    resizeQuality: 'high'
+  })
+  if (!signal.aborted) return bitmap
+
+  bitmap.close()
+  throw signal.reason
+}
+
+async function loadFrames(
+  urls: string[],
+  width: number,
+  height: number,
+  signal: AbortSignal
+): Promise<Frame[]> {
+  const frames: Frame[] = []
+  try {
+    for (let index = 0; index < urls.length; index += FRAME_LOAD_BATCH_SIZE) {
+      const batchUrls = urls.slice(index, index + FRAME_LOAD_BATCH_SIZE)
+      const results = await Promise.allSettled(
+        batchUrls.map((url) => loadFrame(url, width, height, signal))
+      )
+      frames.push(
+        ...results.flatMap((result) =>
+          result.status === 'fulfilled' ? [result.value] : []
+        )
+      )
+
+      const failure = results.find((result) => result.status === 'rejected')
+      if (failure?.status === 'rejected') throw failure.reason
+    }
+    return frames
+  } catch (error) {
+    closeFrames(frames)
+    throw error
+  }
 }
 
 export function useFrameScrub(
@@ -29,6 +87,8 @@ export function useFrameScrub(
   options: FrameScrubOptions
 ) {
   let ctx: gsap.Context | undefined
+  let frames: Frame[] = []
+  const loadController = new AbortController()
 
   onMounted(async () => {
     const canvas = canvasRef.value
@@ -37,18 +97,35 @@ export function useFrameScrub(
     const draw = canvas.getContext('2d')
     if (!draw) return
 
-    const frames = await loadFrames(options.urls)
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR)
+    const width = Math.max(Math.round(canvas.clientWidth * dpr), 1)
+    const height = Math.max(Math.round(canvas.clientHeight * dpr), 1)
+    canvas.width = width
+    canvas.height = height
+
+    try {
+      frames = await loadFrames(
+        options.urls,
+        width,
+        height,
+        loadController.signal
+      )
+    } catch (error) {
+      if (loadController.signal.aborted) return
+      throw error
+    }
+    if (loadController.signal.aborted) {
+      closeFrames(frames)
+      frames = []
+      return
+    }
     if (!frames.length) return
 
-    const { naturalWidth: w, naturalHeight: h } = frames[0]
-    canvas.width = w
-    canvas.height = h
-
     function drawFrame(index: number) {
-      const img = frames[Math.round(index)]
-      if (!img || !draw) return
-      draw.clearRect(0, 0, w, h)
-      draw.drawImage(img, 0, 0)
+      const frame = frames[Math.round(index)]
+      if (!frame || !draw) return
+      draw.clearRect(0, 0, width, height)
+      draw.drawImage(frame, 0, 0, width, height)
     }
 
     drawFrame(0)
@@ -67,6 +144,9 @@ export function useFrameScrub(
   })
 
   onUnmounted(() => {
+    loadController.abort()
     ctx?.revert()
+    closeFrames(frames)
+    frames = []
   })
 }
