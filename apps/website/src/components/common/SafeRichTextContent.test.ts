@@ -33,7 +33,9 @@ describe('SafeRichText', () => {
       }
     })
 
-    expect(screen.queryByText('alert(1)', { exact: false })).toBeNull()
+    expect(
+      screen.queryByText('alert(1)', { exact: false, ignore: false })
+    ).toBeNull()
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.getByText('Link').hasAttribute('href')).toBe(false)
     expect(screen.getByText('Link').hasAttribute('onclick')).toBe(false)
