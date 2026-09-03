@@ -47,29 +47,31 @@
           :config="widget.tooltipConfig ?? EMPTY_TOOLTIP"
           side="left"
         >
-          <AppInput
-            :widget-id="widget.widgetId"
-            :name="widget.simplified.name"
-            :enable="canSelectInputs && !widget.simplified.options?.disabled"
-          >
-            <component
-              :is="widget.vueComponent"
-              :model-value="widget.simplified.value"
-              :widget="widget.simplified"
-              :node-id
-              :node-type
-              :invalid="widget.hasError"
-              :aria-invalid="widget.hasError || undefined"
-              :class="
-                cn(
-                  'col-span-2',
-                  widget.hasError && 'font-bold text-node-stroke-error'
-                )
-              "
-              @update:model-value="widget.updateHandler"
-              @contextmenu="widget.handleContextMenu"
-            />
-          </AppInput>
+          <div class="contents">
+            <AppInput
+              :widget-id="widget.widgetId"
+              :name="widget.simplified.name"
+              :enable="canSelectInputs && !widget.simplified.options?.disabled"
+            >
+              <component
+                :is="widget.vueComponent"
+                :model-value="widget.simplified.value"
+                :widget="widget.simplified"
+                :node-id
+                :node-type
+                :invalid="widget.hasError"
+                :aria-invalid="widget.hasError || undefined"
+                :class="
+                  cn(
+                    'col-span-2',
+                    widget.hasError && 'font-bold text-node-stroke-error'
+                  )
+                "
+                @update:model-value="widget.updateHandler"
+                @contextmenu="widget.handleContextMenu"
+              />
+            </AppInput>
+          </div>
         </Tooltip>
       </div>
     </template>

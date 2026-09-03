@@ -16,12 +16,6 @@ const WidgetStub = markRaw(
   })
 )
 
-const FragmentWidgetStub = markRaw(
-  defineComponent({
-    template: '<button>Widget control</button><span>Widget status</span>'
-  })
-)
-
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
@@ -44,8 +38,10 @@ const AppInputStub = defineComponent({
   props: {
     name: { type: String, required: true }
   },
-  template:
-    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
+  template: `
+    <div data-testid="app-input" :data-widget-name="name"><slot /></div>
+    <span data-testid="app-input-sibling" />
+  `
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -100,7 +96,7 @@ describe('WidgetGrid', () => {
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 
-  it('shows tooltips for widgets with fragment roots', async () => {
+  it('shows widget tooltips when AppInput has fragment roots', async () => {
     const user = userEvent.setup()
     render(WidgetGrid, {
       props: {
@@ -109,7 +105,6 @@ describe('WidgetGrid', () => {
         processedWidgets: [
           {
             ...widget('seed', 'number', 0),
-            vueComponent: FragmentWidgetStub,
             tooltipConfig: { value: 'Widget value', showDelay: 0 }
           }
         ]
@@ -122,7 +117,7 @@ describe('WidgetGrid', () => {
       }
     })
 
-    await user.hover(screen.getByRole('button'))
+    await user.hover(screen.getByTestId('widget-control'))
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
   })
