@@ -61,6 +61,8 @@ const zResponseEntry = z.discriminatedUnion('kind', [
 const zTurn = z.object({
   message_id: z.string().min(1).optional(),
   request: zAgentConversationRequest,
+  // Response entry the recorded cancel followed; the replay stops there too.
+  cancel_after: z.number().int().nonnegative().optional(),
   response: z.array(zResponseEntry).min(1)
 })
 export type AgentConversationTurn = z.infer<typeof zTurn>

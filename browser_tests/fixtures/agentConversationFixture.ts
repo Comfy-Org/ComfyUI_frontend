@@ -271,13 +271,15 @@ class AgentConversationHarness {
         await new Promise((resolve) =>
           setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
         )
-      if (entry.kind === 'event') {
-        this.send(this.stampTurn(entry.event, turn))
-        continue
+      if (entry.kind === 'event') this.send(this.stampTurn(entry.event, turn))
+      else {
+        await this.waitForSubscribe()
+        this.send(this.host.apply(entry.ops))
+        await afterEntry?.(index)
       }
-      await this.waitForSubscribe()
-      this.send(this.host.apply(entry.ops))
-      await afterEntry?.(index)
+      // The recorded turn was stopped here, so the panel stops here too.
+      if (index === this.conversation.turns[turn].cancel_after)
+        await this.stopTurn()
     }
     this.replayElapsedMs = Date.now() - startedAt
   }
@@ -294,6 +296,10 @@ class AgentConversationHarness {
 
   private entries(): AgentConversationTurn['response'] {
     return this.conversation.turns.flatMap((turn) => turn.response)
+  }
+
+  async stopTurn(): Promise<void> {
+    await this.panel.getByRole('button', { name: STOP_LABEL }).click()
   }
 
   async waitForTurnComplete(): Promise<void> {
