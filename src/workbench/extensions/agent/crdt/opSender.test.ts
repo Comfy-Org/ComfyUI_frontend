@@ -29,6 +29,7 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let boundRootGraph: string | null
   let producerVersion: number
   let producerClockWritable: boolean
   let sender: ReturnType<typeof createOpSender>
@@ -74,6 +75,7 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    boundRootGraph = TARGET.rootGraphId
     producerVersion = 0
     producerClockWritable = true
     sender = createOpSender({
@@ -89,6 +91,7 @@ describe('createOpSender', () => {
         }
       },
       workflowId: () => boundWorkflow,
+      rootGraphId: () => boundRootGraph,
       tab: TAB,
       actor: () => ACTOR,
       observedVersion: () => 41,
@@ -180,6 +183,25 @@ describe('createOpSender', () => {
     ).not.toBe(settled[2].state === 'undeliverable' && settled[2].ops[0].op_id)
   })
 
+  it('rejects a queued batch before send after the active root changes', () => {
+    enqueue(addNode(1))
+    enqueue(addNode(2))
+    boundRootGraph = 'root-2'
+
+    ackInFlight()
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toEqual([
+      expect.objectContaining({ state: 'acknowledged', target: TARGET }),
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(2)],
+        reason: 'target_mismatch'
+      }
+    ])
+  })
+
   it('a bound workflow restored before the next send still carries the queued batch', () => {
     enqueue(addNode(1))
     enqueue(addNode(2))
@@ -208,6 +230,24 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('rejects an in-flight batch before retry after the active root changes', () => {
+    transportUp = false
+    enqueue(addNode(1))
+    boundRootGraph = 'root-2'
+
+    vi.advanceTimersByTime(500)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'target_mismatch'
+      }
+    ])
+  })
+
   it('abortIfUnbound settles an in-flight batch immediately, without waiting the 10s silence window', () => {
     enqueue(addNode(1))
     boundWorkflow = null
@@ -228,6 +268,7 @@ describe('createOpSender', () => {
   it('abortIfUnbound frees the queue for the next bound batch immediately', () => {
     enqueue(addNode(1))
     boundWorkflow = 'wf-2'
+    boundRootGraph = 'root-wf-2'
     enqueueFor('wf-2', addNode(2))
     expect(sent).toHaveLength(1)
 
@@ -243,6 +284,7 @@ describe('createOpSender', () => {
     enqueue(addNode(2))
     enqueue(addNode(3))
     boundWorkflow = 'wf-2'
+    boundRootGraph = 'root-wf-2'
     enqueueFor('wf-2', addNode(4))
     expect(sent).toHaveLength(1)
 
@@ -289,6 +331,7 @@ describe('createOpSender', () => {
   it('an unbound workflow at the resend frees the queue for the next bound batch without a retry burn', () => {
     enqueue(addNode(1))
     boundWorkflow = 'wf-2'
+    boundRootGraph = 'root-wf-2'
     enqueueFor('wf-2', addNode(2))
     expect(sent).toHaveLength(1)
 
@@ -320,6 +363,22 @@ describe('createOpSender', () => {
 
     expect(accepted).toBe(false)
     expect(sent).toHaveLength(0)
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'target_mismatch'
+      }
+    ])
+    expect(producerVersion).toBe(0)
+  })
+
+  it('rejects a same-workflow root mismatch before reserving or minting', () => {
+    boundRootGraph = 'root-2'
+
+    expect(enqueue(addNode(1))).toBe(false)
+    expect(sent).toEqual([])
     expect(settled).toEqual([
       {
         state: 'rejected',
@@ -472,6 +531,7 @@ describe('createOpSender', () => {
 
     const targetB = { workflowId: 'wf-2', rootGraphId: 'root-2' }
     boundWorkflow = targetB.workflowId
+    boundRootGraph = targetB.rootGraphId
     sender.enqueue({ target: targetB, operations: [addNode(1)] })
     const workflowBOpId = sent[1].ops[0].op_id
 

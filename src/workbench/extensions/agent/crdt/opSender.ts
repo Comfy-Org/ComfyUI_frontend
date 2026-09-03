@@ -43,13 +43,12 @@ export interface OpSenderDeps {
   /** Subscribe to `doc_ops_result` frames; returns unsubscribe. */
   onOpsResult(listener: (result: OpsResultView) => void): () => void
   /**
-   * The bound workflow id, or null when no doc is bound. Read at mint time to
-   * address the batch (`target.workflowId`) and re-read before EVERY send and
-   * resend: a batch whose workflow is no longer bound (subscription refused,
-   * tab moved to another doc) is never carried or re-addressed and settles
-   * 'undeliverable' at once.
+   * The bound workflow id, or null when no doc is bound. Read with
+   * `rootGraphId()` at mint time and before EVERY send and resend.
    */
   workflowId(): string | null
+  /** The root graph currently shown for the bound workflow, or null. */
+  rootGraphId(): string | null
   tab: string
   /** `human:<user>:<tab>` (vocabulary §7). */
   actor(): string
@@ -110,14 +109,18 @@ interface BatchIdentity {
   ops: Op[]
 }
 
-interface InFlight extends BatchIdentity {
+interface QueuedBatch extends BatchIdentity {
+  operations: GraphOperation[]
+}
+
+interface InFlight extends QueuedBatch {
   opIds: Set<string>
   resent: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: BatchIdentity[] = []
+  const queue: QueuedBatch[] = []
   let inFlight: InFlight | null = null
   let detached = false
 
@@ -134,6 +137,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     // now rather than spend the retry budget while later batches wait behind.
     if (deps.workflowId() !== batch.target.workflowId) {
       settleUndeliverable(batch)
+      return
+    }
+    if (deps.rootGraphId() !== batch.target.rootGraphId) {
+      settleTargetMismatch(batch)
       return
     }
     if (!deps.sendOps(batch.target.workflowId, deps.tab, batch.ops)) {
@@ -164,6 +171,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
+  function settleTargetMismatch(batch: InFlight): void {
+    if (inFlight === batch) {
+      settle({
+        state: 'rejected',
+        target: batch.target,
+        operations: batch.operations,
+        reason: 'target_mismatch'
+      })
+    }
+  }
+
   function armResultTimeout(batch: InFlight): void {
     if (inFlight !== batch) return
     batch.timer = setTimeout(() => {
@@ -190,6 +208,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (!queued) return
     inFlight = {
       target: queued.target,
+      operations: queued.operations,
       batchId: queued.batchId,
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
@@ -217,7 +236,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue({ target, operations }) {
       if (detached || operations.length === 0) return false
-      if (deps.workflowId() !== target.workflowId) {
+      if (
+        deps.workflowId() !== target.workflowId ||
+        deps.rootGraphId() !== target.rootGraphId
+      ) {
         deps.onBatchSettled({
           state: 'rejected',
           target: { ...target },
@@ -245,13 +267,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         actor: deps.actor(),
         firstVersion
       })
-      queue.push(
-        ...chunkWireOps(minted).map((ops) => ({
+      let operationOffset = 0
+      for (const ops of chunkWireOps(minted)) {
+        queue.push({
           target: stableTarget,
+          operations: operations.slice(
+            operationOffset,
+            operationOffset + ops.length
+          ),
           batchId: ops[0].op_id,
           ops
-        }))
-      )
+        })
+        operationOffset += ops.length
+      }
       pump()
       return true
     },

@@ -25,6 +25,7 @@ import type {
   MintableGraph
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
@@ -33,6 +34,10 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 function createNodeOp(graphId: string, id: string) {
   return {
@@ -128,13 +133,11 @@ describe('mint ports against the real layout store delivery', () => {
         return true
       },
       layoutChanges: (listener) => layoutStore.onChange(listener),
-      withLayoutActor: (actor, fn) => {
-        layoutStore.withActor(actor, fn)
-      },
       localActorPrefix: 'user-',
       getGraph: (requested) =>
         requested.rootGraphId === graphId ? graph : null
     })
+    vi.mocked(reportError).mockClear()
   })
 
   afterEach(() => {
@@ -172,9 +175,6 @@ describe('mint ports against the real layout store delivery', () => {
     const severed = linkTopology(41, '2')
     linkStore.registerLink(scope, severed)
     minted.length = 0
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
 
     // The real teardown order: litegraph severs the node's links
     // synchronously, then the layout deleteNode queues and delivers on the
@@ -193,8 +193,7 @@ describe('mint ports against the real layout store delivery', () => {
         removed_links: [toLinkId(41)]
       }
     ])
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('F2: the intentional-clear capture is consumed by the real clearGraph delivery', async () => {
@@ -226,14 +225,15 @@ describe('mint ports against the real layout store delivery', () => {
     expect(minted).toEqual([])
   })
 
-  it('the remote scope suppresses a real layout apply end to end', async () => {
+  it('remote provenance suppresses a real layout apply end to end', async () => {
     graphNodes.set('5', {
       id: toNodeId('5'),
       serialize: () => ({ id: 5, type: 'TestNode' })
     })
 
-    wiring.runRemoteScope(() => {
-      layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    layoutStore.applyOperation({
+      ...createNodeOp(graphId, '5'),
+      source: LayoutSource.AgentRemote
     })
     await realDelivery()
 
@@ -245,14 +245,19 @@ describe('mint ports against the real layout store delivery', () => {
     const dangling = linkTopology(43, '9')
     linkStore.registerLink(scope, dangling)
     minted.length = 0
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
 
     linkStore.deleteLink(scope, dangling)
     await realDelivery()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_link_mint_unrepresentable_disconnect',
+      context: {
+        targetWorkflowId: target.workflowId,
+        targetRootGraphId: target.rootGraphId,
+        scopeRootGraphId: scope.rootGraphId,
+        owningGraphId: scope.owningGraphId,
+        linkId: '43'
+      }
+    })
   })
 })

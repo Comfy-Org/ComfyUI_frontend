@@ -9,6 +9,8 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   GraphMutationTarget,
   TargetedGraphOperations
@@ -86,6 +88,8 @@ export interface LinkMintPort {
 interface SeveranceEntry {
   linkId: WireNodeId
   consumptionKey: string
+  target: GraphMutationTarget
+  scope: LinkScopeView
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
 }
@@ -118,17 +122,35 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     return shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
-      localProvenance: !deps.session.inRemoteApply(),
       teardown: deps.session.inTeardown()
     })
   }
 
-  function surfaceUnrepresentable(what: string, id: string | number): void {
-    // A doc that no longer matches the local graph must be observable,
-    // never silent (the surfacing-honesty principle).
-    console.error(
-      `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`,
-      id
+  function surfaceUnrepresentable(
+    errorType:
+      | 'agent_crdt_link_mint_rejected_by_sender'
+      | 'agent_crdt_link_mint_subgraph_interior_connect'
+      | 'agent_crdt_link_mint_target_mismatch'
+      | 'agent_crdt_link_mint_unrepresentable_disconnect',
+    what: string,
+    target: GraphMutationTarget,
+    scope: LinkScopeView,
+    id: string | number
+  ): void {
+    reportError(
+      new Error(
+        `${what} has no wire op; the bound doc diverges from the local graph`
+      ),
+      {
+        errorType,
+        context: {
+          targetWorkflowId: target.workflowId,
+          targetRootGraphId: target.rootGraphId,
+          scopeRootGraphId: scope.rootGraphId,
+          owningGraphId: scope.owningGraphId,
+          linkId: String(id)
+        }
+      }
     )
   }
 
@@ -139,11 +161,23 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   ): void {
     if (!gateOpen()) return
     if (!matchesTarget(target, scope)) {
-      surfaceUnrepresentable('cross-document connect', topology.id)
+      surfaceUnrepresentable(
+        'agent_crdt_link_mint_target_mismatch',
+        'cross-document connect',
+        target,
+        scope,
+        topology.id
+      )
       return
     }
     if (!isRootScope(scope)) {
-      surfaceUnrepresentable('subgraph-interior connect', topology.id)
+      surfaceUnrepresentable(
+        'agent_crdt_link_mint_subgraph_interior_connect',
+        'subgraph-interior connect',
+        target,
+        scope,
+        topology.id
+      )
       return
     }
     const accepted = deps.enqueue({
@@ -160,7 +194,15 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         }
       ]
     })
-    if (!accepted) surfaceUnrepresentable('rejected connect', topology.id)
+    if (!accepted) {
+      surfaceUnrepresentable(
+        'agent_crdt_link_mint_rejected_by_sender',
+        'rejected connect',
+        target,
+        scope,
+        topology.id
+      )
+    }
   }
 
   function scheduleSweep(): void {
@@ -179,7 +221,13 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
-            surfaceUnrepresentable('link disconnect', entry.linkId)
+            surfaceUnrepresentable(
+              'agent_crdt_link_mint_unrepresentable_disconnect',
+              'link disconnect',
+              entry.target,
+              entry.scope,
+              entry.linkId
+            )
           }
         }
         severancesByNode.clear()
@@ -210,6 +258,8 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         owningRoot,
         String(topology.id)
       ),
+      target: { ...target },
+      scope: { ...scope },
       mintable: gateOpen() && isRootScope(scope)
     }
     for (const nodeId of [topology.originNodeId, topology.targetNodeId]) {

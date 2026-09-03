@@ -154,7 +154,14 @@ function mountFollower(initial: string): {
     setup() {
       const { enqueueHumanOperations, status } = useAgentCrdtFollower(
         workflowId,
-        graphMutations
+        graphMutations,
+        () => null,
+        ref(true),
+        () => null,
+        () =>
+          workflowId.value === null
+            ? null
+            : target(workflowId.value).rootGraphId
       )
       enqueue = enqueueHumanOperations
       exposedStatus = () => status.value as AgentCrdtStatus
@@ -212,17 +219,21 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     clientState.transportUp = true
     vi.advanceTimersByTime(500)
 
-    // R-73 was filed against PR #16332's switch site. On main f954e479a,
-    // opSender keeps the workflow captured at enqueue time, so this half of
-    // the suspected A-to-B contamination is already a regression guard.
+    // The batch keeps workflow A's immutable address, but the active graph is
+    // already workflow B's root. The sender rejects rather than delivering an
+    // edit captured from a graph that is no longer current.
     expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-b')
-    expect(clientState.sent).toHaveLength(1)
-    expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
-    expect(clientState.sent[0].ops[0]).toMatchObject({
-      op_id: operationId,
-      op: 'delete_node',
-      node_id: 'a-queued'
-    })
+    expect(clientState.sent).toHaveLength(0)
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      {
+        state: 'rejected',
+        target: target('wf-a'),
+        operations: [deleteNode('a-queued')],
+        reason: 'target_mismatch'
+      }
+    )
+    expect(operationId).toMatch(/^[0-9a-f]{32}$/)
   })
 
   it('settles only workflow A from a late workflow A result while workflow B is active', async () => {

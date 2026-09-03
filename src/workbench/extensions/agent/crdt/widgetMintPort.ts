@@ -4,6 +4,8 @@
  * writes mint the interior form (path = resolved node-id chain,
  * inner_widget = the name); an unresolvable owner surfaces, never drops.
  */
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   GraphMutationTarget,
   TargetedGraphOperations
@@ -55,12 +57,27 @@ export interface WidgetMintPort {
 }
 
 export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
-  function surfaceUnminted(reason: string, set: WidgetSetView): void {
-    // The doc no longer matches the local graph; observable, never silent
-    // (the surfacing-honesty principle).
-    console.error(
-      `[agent-crdt] set_widget ${reason}; the bound doc diverges from the local graph`,
-      `${set.graphId}:${String(set.nodeId)}:${set.name}`
+  function surfaceUnminted(
+    reason: 'owner_unresolvable' | 'rejected_by_sender',
+    target: GraphMutationTarget,
+    set: WidgetSetView
+  ): void {
+    const message =
+      reason === 'owner_unresolvable'
+        ? 'set_widget owner could not be resolved'
+        : 'set_widget mint rejected by the sender'
+    reportError(
+      new Error(`${message}; the bound doc diverges from the graph`),
+      {
+        errorType: `agent_crdt_widget_mint_${reason}`,
+        context: {
+          targetWorkflowId: target.workflowId,
+          targetRootGraphId: target.rootGraphId,
+          widgetGraphId: set.graphId,
+          widgetNodeId: String(set.nodeId),
+          widgetName: set.name
+        }
+      }
     )
   }
 
@@ -68,7 +85,6 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     const mintable = shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
-      localProvenance: !deps.session.inRemoteApply(),
       teardown: deps.session.inTeardown()
     })
     if (!mintable) return
@@ -86,13 +102,13 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
           }
         ]
       })
-      if (!accepted) surfaceUnminted('rejected by the sender', set)
+      if (!accepted) surfaceUnminted('rejected_by_sender', target, set)
       return
     }
 
     const subgraphNodePath = deps.resolveInteriorPath(target, set.graphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      surfaceUnminted('with an unresolvable owner not minted', set)
+      surfaceUnminted('owner_unresolvable', target, set)
       return
     }
 
@@ -111,7 +127,7 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
         }
       ]
     })
-    if (!accepted) surfaceUnminted('rejected by the sender', set)
+    if (!accepted) surfaceUnminted('rejected_by_sender', target, set)
   }
 
   const detach = deps.events.onSet(onSet)

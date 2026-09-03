@@ -148,6 +148,10 @@ function defaultIdAllocationState(): () => LGraphState {
   return () => state
 }
 
+function rootGraphId(workflowId: string | null): string | null {
+  return workflowId?.replace(/^wf-/, 'root-') ?? null
+}
+
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
@@ -170,7 +174,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        idAllocationState
+        idAllocationState,
+        () => rootGraphId(workflowId.value)
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -702,7 +707,11 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          () => rootGraphId(workflowId.value)
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -843,7 +852,11 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          () => rootGraphId(workflowId.value)
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -883,7 +896,11 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          () => rootGraphId(workflowId.value)
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -924,7 +941,11 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          () => rootGraphId(workflowId.value)
         )
         enqueue = enqueueHumanOperations
         return () => null

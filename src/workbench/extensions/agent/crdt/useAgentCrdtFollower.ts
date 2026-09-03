@@ -8,6 +8,9 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import { wireLog } from './crdtLog'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
+import { readCrdtSnapshot } from './crdtSnapshot'
 import type {
   DocFrameTransport,
   DocOpsResult,
@@ -273,7 +276,8 @@ export function useAgentCrdtFollower(
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
   isTargetActive: Ref<boolean> = ref(true),
-  idAllocationState: () => LGraphState | null = () => null
+  idAllocationState: () => LGraphState | null = () => null,
+  currentRootGraphId: () => string | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -301,7 +305,7 @@ export function useAgentCrdtFollower(
       } catch {
         // Leave the raw string.
       }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      wireLog.trace('ws_out', 'outbound frame', { delivered, frame: parsed })
       return delivered
     },
     addEventListener(type, listener) {
@@ -337,6 +341,7 @@ export function useAgentCrdtFollower(
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
+    rootGraphId: currentRootGraphId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     observedVersion: () => bridge.lastSequence,
@@ -763,8 +768,17 @@ export function useAgentCrdtFollower(
     outcomes: outcomes.value
   }))
 
+  const debugSnapshot = (): CrdtDebugSnapshot =>
+    readCrdtSnapshot(bridge.follower.doc, {
+      status: status.value,
+      tabId,
+      lastSeq: bridge.lastSequence,
+      schemaError: bridge.lastSchemaError?.message ?? null
+    })
+
   return {
     status: readonly(status),
+    debugSnapshot,
     enqueueHumanOperations: (batch: TargetedGraphOperations) => {
       armCoordinationFreeIds()
       return sender.enqueue(batch)

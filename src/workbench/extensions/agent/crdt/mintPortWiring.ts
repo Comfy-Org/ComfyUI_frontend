@@ -1,10 +1,10 @@
 /**
  * Composition seam for the three mint ports. Layout pieces are injected
- * (workbench must not import renderer); link/widget adapt via Pinia $onAction,
- * which fires synchronously around each action. A replace maps to PLACED and
- * never DELETED (the store displaces incumbents internally). Load brackets
- * are a fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a
- * failed load leaves mints suppressed until the next load's pair recloses.
+ * (workbench must not import renderer); link and widget events come from their
+ * owning stores. A replace maps to PLACED and never DELETED (the store
+ * displaces incumbents internally). Load brackets are a fail-closed boolean
+ * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
+ * suppressed until the next load's pair recloses.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -22,7 +22,7 @@ import type {
   GraphMutationTarget,
   TargetedGraphOperations
 } from './graphOperations'
-import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
+import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
 import { attachWidgetMintPort } from './widgetMintPort'
@@ -48,8 +48,6 @@ export interface MintPortWiringDeps {
   enqueue(batch: TargetedGraphOperations): boolean
   /** The layout store's `onChange`, injected by the composition root. */
   layoutChanges(listener: (change: LayoutChangeView) => void): () => void
-  /** The layout store's `withActor`, injected by the composition root. */
-  withLayoutActor(actor: string, fn: () => void): void
   /** `ACTOR_CONFIG.USER_PREFIX`, injected by the composition root. */
   localActorPrefix: string
   /** The target's live root graph, or null when it is no longer active. */
@@ -58,8 +56,6 @@ export interface MintPortWiringDeps {
 
 export interface MintPortWiring {
   session: MintSession
-  /** Legacy compatibility scope; new remote store calls carry their context. */
-  runRemoteScope(apply: () => void): void
   /** The layout port's intentional-clear window (human clear paths only). */
   runIntentionalClear<T>(fn: () => T): T
   /** Forward from the app extension's `beforeLoadGraph` hook. */
@@ -223,37 +219,28 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     }
   })
 
-  const detachWidgetActions = widgetStore.$onAction(({ name, args, after }) => {
-    if (name !== 'setValue') return
-    if (isRemoteMutationContext(args[2])) return
-    const target = deps.target()
-    if (!target) return
-    const widgetId = args[0]
-    const old = widgetStore.getWidget(widgetId)?.value
-    after((applied) => {
-      if (!applied) return
+  const detachWidgetChanges = widgetStore.onValueChange(
+    ({ widgetId, value, oldValue, context }) => {
+      if (isRemoteMutationContext(context)) return
+      const target = deps.target()
+      if (!target) return
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener(target, {
           graphId: String(graphId),
           nodeId,
           name: widgetName,
-          value: args[1],
-          old
+          value,
+          old: oldValue
         })
       }
-    })
-  })
+    }
+  )
 
   let loadBracketOpen = false
 
   const wiring: MintPortWiring = {
     session,
-    runRemoteScope(apply) {
-      session.runRemoteApply(() => {
-        deps.withLayoutActor(AGENT_REMOTE_ACTOR, apply)
-      })
-    },
     runIntentionalClear(fn) {
       return layoutPort.runIntentionalClear(fn)
     },
@@ -270,7 +257,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     detach() {
       activeWirings.delete(wiring)
       detachLinkActions()
-      detachWidgetActions()
+      detachWidgetChanges()
       widgetPort.detach()
       layoutPort.detach()
       linkPort.detach()
