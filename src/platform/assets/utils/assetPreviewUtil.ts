@@ -89,19 +89,6 @@ export async function persistThumbnail(
   }
 }
 
-export async function persistThumbnailFromDataUrl(
-  name: string,
-  dataUrl: string
-): Promise<void> {
-  try {
-    const res = await fetch(dataUrl)
-    const blob = await res.blob()
-    await persistThumbnail(name, blob)
-  } catch {
-    // Non-critical — invalid data URL
-  }
-}
-
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
