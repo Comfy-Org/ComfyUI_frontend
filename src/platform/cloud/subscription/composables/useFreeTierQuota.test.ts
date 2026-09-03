@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import type * as VueUseCoreModule from '@vueuse/core'
+
+type VueUseCore = typeof VueUseCoreModule
+
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...(await importOriginal<VueUseCore>()),
+  createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
+    fn
+}))
+
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -26,11 +36,7 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   }
 }))
 
-async function loadQuota() {
-  vi.resetModules()
-  const { useFreeTierQuota } = await import('./useFreeTierQuota')
-  return useFreeTierQuota()
-}
+const { useFreeTierQuota } = await import('./useFreeTierQuota')
 
 describe('useFreeTierQuota', () => {
   beforeEach(() => {
@@ -41,17 +47,17 @@ describe('useFreeTierQuota', () => {
     }
   })
 
-  it('enables the quota on Cloud when the flag and an allowance are present', async () => {
-    const quota = await loadQuota()
+  it('enables the quota on Cloud when the flag and an allowance are present', () => {
+    const quota = useFreeTierQuota()
 
     expect(quota.quotaEnabled.value).toBe(true)
     expect(quota.freeTierExecutionPermitted.value).toBe(true)
   })
 
-  it('keeps the quota disabled off Cloud even when the flag and an allowance are present', async () => {
+  it('keeps the quota disabled off Cloud even when the flag and an allowance are present', () => {
     mockIsCloud.value = false
 
-    const quota = await loadQuota()
+    const quota = useFreeTierQuota()
 
     expect(quota.quotaEnabled.value).toBe(false)
     expect(quota.freeTierExecutionPermitted.value).toBe(false)
