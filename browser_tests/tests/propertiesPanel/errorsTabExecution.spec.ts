@@ -11,7 +11,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
     )
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
