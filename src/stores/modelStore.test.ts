@@ -123,6 +123,13 @@ describe('useModelStore', () => {
     expect(Object.keys(folderStore!.models)).toHaveLength(3)
   })
 
+  it('returns null when a model folder is unavailable', async () => {
+    enableMocks()
+    store = useModelStore()
+
+    await expect(store.getLoadedModelFolder('unknown')).resolves.toBeNull()
+  })
+
   it('should load model metadata', async () => {
     enableMocks()
     store = useModelStore()

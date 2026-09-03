@@ -30,6 +30,7 @@ import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 export class ComfyNodeDefImpl
   implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
@@ -591,7 +592,10 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const nodeDefStore = useNodeDefStore()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     return nodeNamesByFrequency.value
-      .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
+      .flatMap((nodeName: string) => {
+        const nodeDef = widenToNullish(nodeDefStore.nodeDefsByName[nodeName])
+        return nodeDef ? [nodeDef] : []
+      })
       .slice(0, topNodeDefLimit.value)
   })
 

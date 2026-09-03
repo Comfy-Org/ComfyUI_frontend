@@ -4686,8 +4686,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /** @deprecated See {@link LGraphCanvas.select} */
-  selectNode(node: LGraphNode, add_to_current_selection?: boolean): void {
-    this.selectNodes([node], add_to_current_selection)
+  selectNode(
+    node: LGraphNode | null,
+    add_to_current_selection?: boolean
+  ): void {
+    if (node) this.selectNodes([node], add_to_current_selection)
+    else this.deselectAll()
   }
 
   get empty(): boolean {

@@ -617,7 +617,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // If we have progress for the currently executing node, update it for backwards compatibility
     if (executingNodeId.value) {
-      const nodeState = nodes[executingNodeId.value]
+      const nodeState = widenToNullish(nodes[executingNodeId.value])
+      if (!nodeState) return
       _executingNodeProgress.value = {
         value: nodeState.value,
         max: nodeState.max,

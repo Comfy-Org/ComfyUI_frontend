@@ -39,8 +39,9 @@ function workspaceStoreSetup() {
     settings: useSettingStore().settingsById,
     // Allow generic key access to settings as custom nodes may add their
     // own settings which is not tracked by the `Setting` schema.
-    get: (key: string): unknown | undefined =>
-      useSettingStore().get(key as keyof Settings) as unknown | undefined,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+    get: <T = unknown>(key: string): T | undefined =>
+      useSettingStore().get(key as keyof Settings) as T | undefined,
     set: (key: string, value: unknown) =>
       useSettingStore().set(key as keyof Settings, value)
   }))

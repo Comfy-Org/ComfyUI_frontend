@@ -8,6 +8,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(
@@ -382,8 +383,8 @@ export const useModelStore = defineStore('models', () => {
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
-    const folder = modelFolderByName.value[folderName]
-    return await folder.load()
+    const folder = widenToNullish(modelFolderByName.value[folderName])
+    return folder ? await folder.load() : null
   }
 
   /**
