@@ -47,3 +47,22 @@ utilities. Size them with `size-*`, not font-size classes.
 
 Run the **Version Bump Design System** workflow to open a version PR, then merge
 it with the `Release` label. Publishing to npm happens automatically on merge.
+
+### SemVer policy
+
+This package follows SemVer for everything it exports: the CSS entry points
+(`style.css`, `base.css`, and every `./css/*` path in the [exports
+table](#exports)) and the icon SVGs are the public surface, and removing or
+repurposing tokens, `@font-face` declarations, or an entire file from that
+surface is a **major** bump — even when no in-repo consumer breaks, because
+published consumers pin this package by version.
+
+Precedent (recorded 2026-09-03): #14790 ("move the brand layer into the
+package") took brand tokens out of `_palette.css` and stopped `base.css`
+loading Inter. That PR was merged into a feature-branch stack with an
+in-tree version of `1.1.0`, and the review raised whether it should have been
+`2.0.0`. The verdict: the change **is breaking** — the PR's own body says so,
+and nothing was ever published to npm at `1.1.0` (the published versions are
+`1.0.0` and `1.0.1`), so there is no shipped `1.1.x` to defend. The next
+release that carries the brand-layer move must therefore be **`2.0.0`**, not
+`1.1.0`; do not let the in-tree `1.1.0` from that stack reach npm.
