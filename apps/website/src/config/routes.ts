@@ -40,6 +40,7 @@ const baseRoutes = {
   ltx: '/ltx-2.5',
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
+  cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
   brand: '/brand'
 } as const

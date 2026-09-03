@@ -89,6 +89,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
 - [Request a MiniMax Professional License](https://comfy.org/minimax/license/professional-request/): Intake form for the Professional tier — a fixed-price monthly license covering up to 10 users.
 - [Launches](https://comfy.org/launches/): Everything new in ComfyUI in one place: the latest launches across desktop, cloud, and the core engine.
+- [Comfy Cloud Nodes](https://comfy.org/cloud-nodes/): Run the newest open models on Comfy Cloud GPUs from inside a local ComfyUI graph, with no subscription and no downloads, billed per GPU-second in credits.
 
 ## Models
 
