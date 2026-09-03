@@ -18,6 +18,30 @@ and deletes the temporary agent database.
             └──▶ Air ── rebuild/restart ──▶ Comfy-Org/cloud/services/agent
 ```
 
+## Playbook
+
+Prerequisites: the cloud checkout beside this repo, `air` on PATH, a ComfyUI
+backend on 8188, `ANTHROPIC_API_KEY` exported.
+
+Standalone (the dev loop), then the unmocked smoke against it:
+
+```bash
+pnpm tsx scripts/dev-agent-integration.ts --cloud-repo ../cloud
+```
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:6207 pnpm exec playwright test browser_tests/tests/agent/agentHarnessSmoke.spec.ts --project=agent-harness
+```
+
+Record mode (needs `cloud up` in the cloud checkout first; add `--engine
+temporal` to make turns cancellable):
+
+```bash
+AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog <conversation fixture> --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096 --temporal-port 7234
+```
+
+It prints the recorder command to run next. Ctrl-C stops everything it started.
+
 ## Setup
 
 1. Use Node 25 and install this repository with `pnpm install`.
