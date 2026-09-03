@@ -243,6 +243,7 @@ export async function fetchJobAssets(
       offset += data.assets.length
     }
   } catch (error) {
+    if (isPageUnloading()) return { assets, complete: false }
     console.error(`Failed to fetch assets for job ${jobId}:`, error)
     return { assets, complete: false }
   }

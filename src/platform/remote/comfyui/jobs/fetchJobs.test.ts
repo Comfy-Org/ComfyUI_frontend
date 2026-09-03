@@ -56,7 +56,6 @@ function createMockResponse(
 
 describe('fetchJobs', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     dispatchPageTransition('pageshow', { persisted: true })
   })
 
@@ -704,6 +703,20 @@ describe('fetchJobs', () => {
       expect(assets).toEqual([])
       expect(complete).toBe(false)
       consoleSpy.mockRestore()
+    })
+
+    it('does not report a request cancelled by page teardown', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: false })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
+      expect(errorSpy).not.toHaveBeenCalled()
     })
 
     it('stops at the page cap when the server always reports has_more', async () => {
