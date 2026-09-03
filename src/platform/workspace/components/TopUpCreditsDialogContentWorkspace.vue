@@ -404,15 +404,18 @@ const paymentLocked = computed(
     !!topupOperation.value
 )
 
-watch([isPolling, topupOperation], ([polling, operation]) => {
-  if (step.value === 'verifying' && !polling && !operation) {
-    step.value = 'amount'
-    return
+watch(
+  [isPolling, topupOperation, canTopUp],
+  ([polling, operation, allowed]) => {
+    if (step.value === 'verifying' && !polling && !operation) {
+      step.value = 'amount'
+      return
+    }
+    if (operation && allowed) {
+      step.value = 'verifying'
+    }
   }
-  if (operation && canTopUp.value) {
-    step.value = 'verifying'
-  }
-})
+)
 
 // Utility functions
 function formatNumber(num: number): string {

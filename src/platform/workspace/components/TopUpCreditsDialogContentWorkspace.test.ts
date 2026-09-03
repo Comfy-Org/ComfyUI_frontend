@@ -458,6 +458,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('enters verification once permission resolves after an operation already exists', async () => {
+    setCanTopUp(false)
+    setTopupActionOperation({
+      opId: 'op-action',
+      status: 'pending',
+      actionUrl: 'https://verify.example/sensitive-token'
+    })
+
+    renderDialog()
+    expect(screen.getByText('Select amount')).toBeInTheDocument()
+
+    setCanTopUp(true)
+    await nextTick()
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
+  })
+
   it('resumes a live challenge in page', async () => {
     renderDialog()
 
