@@ -128,7 +128,13 @@ export class PrimitiveNode extends LGraphNode {
   override configure(serialisedNode: ISerialisedNode) {
     const type = serialisedNode.outputs?.[0]?.type
     super.configure(serialisedNode)
-    if (!this.graph || this.widgets?.length || typeof type !== 'string') return
+    if (
+      !this.graph ||
+      this.widgets?.length ||
+      typeof type !== 'string' ||
+      !outputHasLinks(this.graph, this.id, 0)
+    )
+      return
 
     useWidgetValueStore().setNodeWidgetRestoration(
       this.graph.rootGraph.id,
