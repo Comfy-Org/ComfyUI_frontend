@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
 import { defaultWorkshopValues } from './workshop-detail'
-import { buildWorkshopInput, buildWorkshopSnippet } from './workshop-snippets'
+import { buildWorkshopInput, buildRouterSnippet } from './workshop-snippets'
 
 const fields: WorkshopField[] = [
   {
@@ -80,7 +80,7 @@ describe('Workshop snippets', () => {
     'builds the %s snippet from the current values',
     (language) => {
       expect(
-        buildWorkshopSnippet(language, 'bfl/flux-3', fields, {
+        buildRouterSnippet(language, 'bfl/flux-3', fields, {
           prompt: 'A red fox',
           enhance: true
         })

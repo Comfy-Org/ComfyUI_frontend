@@ -2,6 +2,20 @@ import snapshot from './workshop-catalog.generated.json'
 
 type FieldOption = string | number
 
+/**
+ * Which backend actually runs a model, and therefore what the API snippets
+ * on its page should say. Router is the only one today; Cloud workflows and
+ * deployed endpoints are the reason this is a field rather than an
+ * assumption. See ./workshop-run-target for the implementations.
+ */
+export type WorkshopRunTargetId = 'router'
+
+/**
+ * The five controls a page can render. Deliberately a presentation shape
+ * rather than a Router shape: the generator maps a Router input schema onto
+ * it today, and a workflow's inputs can map onto the same five without the
+ * page or the form components learning where the model came from.
+ */
 export type WorkshopField =
   | {
       readonly kind: 'text'
@@ -61,6 +75,8 @@ export interface WorkshopDetailModel {
   readonly description: string
   readonly tags: readonly string[]
   readonly fields: readonly WorkshopField[]
+  /** Absent in the current snapshot, where every model is a Router model. */
+  readonly runTarget?: WorkshopRunTargetId
 }
 
 export type WorkshopFormValue =

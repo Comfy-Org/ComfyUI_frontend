@@ -1,7 +1,8 @@
 import type { WorkshopField, WorkshopFormValues } from './workshop-detail'
 export type WorkshopSnippetLanguage = 'typescript' | 'python' | 'http'
 
-export const WORKSHOP_SNIPPET_LANGUAGES: readonly WorkshopSnippetLanguage[] = [
+/** The languages Router can be called in. Another target may offer fewer. */
+export const ROUTER_SNIPPET_LANGUAGES: readonly WorkshopSnippetLanguage[] = [
   'typescript',
   'python',
   'http'
@@ -60,7 +61,11 @@ function pythonLiteral(value: unknown, depth = 0): string {
   return 'None'
 }
 
-export function buildWorkshopSnippet(
+/**
+ * Router's own snippets. Reached through `runTargetFor` rather than called
+ * directly, so a page never has to know which backend it is describing.
+ */
+export function buildRouterSnippet(
   language: WorkshopSnippetLanguage,
   modelId: string,
   fields: readonly WorkshopField[],

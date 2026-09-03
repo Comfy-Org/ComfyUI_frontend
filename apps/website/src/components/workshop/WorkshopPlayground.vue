@@ -3,11 +3,8 @@ import { computed, ref } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
+import { runTargetFor } from '../../config/workshop-run-target'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
-import {
-  WORKSHOP_SNIPPET_LANGUAGES,
-  buildWorkshopSnippet
-} from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopForm from './WorkshopForm.vue'
@@ -16,11 +13,12 @@ const { model, locale = 'en' } = defineProps<{
   model: WorkshopDetailModel
   locale?: Locale
 }>()
+const runTarget = computed(() => runTargetFor(model))
 const values = ref(defaultWorkshopValues(model.fields))
 const language = ref<WorkshopSnippetLanguage>('typescript')
 const copied = ref(false)
 const snippet = computed(() =>
-  buildWorkshopSnippet(language.value, model.id, model.fields, values.value)
+  runTarget.value.buildSnippet(language.value, model, values.value)
 )
 
 async function copySnippet() {
@@ -50,7 +48,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           class="flex gap-1"
         >
           <button
-            v-for="option in WORKSHOP_SNIPPET_LANGUAGES"
+            v-for="option in runTarget.snippetLanguages"
             :key="option"
             type="button"
             role="tab"
