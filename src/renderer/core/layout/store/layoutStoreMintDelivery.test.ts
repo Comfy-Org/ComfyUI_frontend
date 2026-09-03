@@ -38,6 +38,10 @@ function createNodeOp(graphId: string, id: string) {
   return {
     type: 'createNode' as const,
     graphId,
+    // Root-scoped, like the real attachNodeLayout producer: ownerGraphId
+    // equals graphId. layoutMintPort's human-edit gate fails closed on a
+    // defined graphId with no ownerGraphId (see reportUnrepresentableInteriorChange).
+    ownerGraphId: graphId,
     nodeId: toNodeId(id),
     layout: {
       id: toNodeId(id),
@@ -56,6 +60,7 @@ function deleteNodeOp(graphId: string, id: string) {
   return {
     type: 'deleteNode' as const,
     graphId,
+    ownerGraphId: graphId,
     nodeId: toNodeId(id),
     timestamp: Date.now(),
     source: LayoutSource.Canvas

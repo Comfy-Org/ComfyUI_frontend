@@ -234,8 +234,26 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 42 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
+
+    // The switch itself settles A's in-flight batch undeliverable (the
+    // composable calls sender.abortIfUnbound() after retargeting the bridge),
+    // so B's batch goes out at once instead of queueing behind A for the
+    // 10 s result-silence window.
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      {
+        state: 'undeliverable',
+        target: target('wf-a'),
+        batchId: operationAId,
+        ops: [expect.objectContaining({ op_id: operationAId })]
+      }
+    )
     enqueue({ target: target('wf-b'), operations: [deleteNode('b-pending')] })
-    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent).toHaveLength(2)
+    expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
+    // Fresh producer clock for wf-b: nothing observed, so it reserves 1.
+    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 1 })
+    const operationBId = clientState.sent[1].ops[0].op_id
 
     dispatchOpsResult({
       workflowId: 'wf-a',
@@ -244,10 +262,13 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
-    expect(clientState.sent).toHaveLength(2)
-    expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
-    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 1 })
-    const operationBId = clientState.sent[1].ops[0].op_id
+    // A's late result names A's op_id, which is not in B's in-flight batch,
+    // so the sender ignores it: B stays in flight and nothing else settles.
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(1)
 
     // R-73: the sender settles by the result frame's workflowId, so the late
     // wf-a result acknowledges only the wf-a batch. The composable status
@@ -262,26 +283,6 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       applied: [operationAId],
       skipped: []
     })
-    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
-      'human_ops_settled',
-      {
-        state: 'acknowledged',
-        target: target('wf-a'),
-        batchId: operationAId,
-        ops: [expect.objectContaining({ op_id: operationAId })],
-        result: expect.objectContaining({
-          workflowId: 'wf-a',
-          ok: true,
-          applied: [operationAId],
-          skipped: []
-        })
-      }
-    )
-    expect(
-      devLogState.recordDevEvent.mock.calls.filter(
-        ([event]) => event === 'human_ops_settled'
-      )
-    ).toHaveLength(1)
     expect(operationBId).not.toBe(operationAId)
   })
 
@@ -290,16 +291,18 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     enqueue({ target: target('wf-a'), operations: [deleteNode('a-inflight')] })
     const operationAId = clientState.sent[0].ops[0].op_id
+    // The switch settles A undeliverable (settlement 0) and B goes out at once.
     await switchWorkflow(workflowId, 'wf-b')
     enqueue({ target: target('wf-b'), operations: [deleteNode('b-pending')] })
+    const operationBId = clientState.sent[1].ops[0].op_id
 
+    // A's identified late result is ignored: its op_id is not in B's batch.
     dispatchOpsResult({
       workflowId: 'wf-a',
       ok: true,
       applied: [operationAId],
       skipped: []
     })
-    const operationBId = clientState.sent[1].ops[0].op_id
 
     // R-73 second half: a failure frame naming neither op_id nor workflow B
     // must not acknowledge the wf-b batch. Before the per-workflow gate it
@@ -314,9 +317,11 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
+    // Settlement 0 is A going undeliverable at the switch; neither of A's
+    // late frames reaches B because the sender gates by workflowId + op_id.
     expect(settlements).toHaveLength(1)
     expect(settlements[0][1]).toMatchObject({
-      state: 'acknowledged',
+      state: 'undeliverable',
       target: target('wf-a'),
       ops: [expect.objectContaining({ op_id: operationAId })]
     })

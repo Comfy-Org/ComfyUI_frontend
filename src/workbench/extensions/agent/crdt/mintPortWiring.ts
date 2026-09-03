@@ -9,7 +9,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -78,6 +77,16 @@ export function notifyMintPortsBeforeGraphLoad(): void {
 
 export function notifyMintPortsAfterGraphConfigure(): void {
   for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
+}
+
+/** Run a confirmed root-workflow clear through every active mint port. */
+export function runMintPortsIntentionalClear<T>(clear: () => T): T {
+  const wirings = [...activeWirings]
+  const run = (index: number): T =>
+    index === wirings.length
+      ? clear()
+      : wirings[index].runIntentionalClear(() => run(index + 1))
+  return run(0)
 }
 
 /**
@@ -219,7 +228,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     if (isRemoteMutationContext(args[2])) return
     const target = deps.target()
     if (!target) return
-    const widgetId = args[0] as WidgetId
+    const widgetId = args[0]
     const old = widgetStore.getWidget(widgetId)?.value
     after((applied) => {
       if (!applied) return

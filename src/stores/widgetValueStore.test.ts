@@ -443,7 +443,7 @@ describe('useWidgetValueStore', () => {
     // header, preview, button). Such an id cannot be keyed; the store must
     // decline it rather than throw and blank every widget on the node.
     const malformedIds = [
-      widgetId(graphA, toNodeId('node-1'), '') as WidgetId, // empty name
+      widgetId(graphA, toNodeId('node-1'), ''), // empty name
       'no-colons' as WidgetId,
       `${graphA}:node-1` as WidgetId, // missing name segment
       `${graphA}:node-1:seed:extra` as WidgetId, // extra segment

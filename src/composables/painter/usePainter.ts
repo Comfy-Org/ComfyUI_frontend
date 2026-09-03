@@ -11,7 +11,6 @@ import {
 import { StrokeProcessor } from '@/composables/maskeditor/StrokeProcessor'
 import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -81,7 +80,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   const litegraphNode = computed(() => {
     if (!nodeId || !app.canvas.graph) return null
-    return app.canvas.graph.getNodeById(nodeId) as LGraphNode | null
+    return app.canvas.graph.getNodeById(nodeId)
   })
 
   function getWidgetByName(name: string): IBaseWidget | undefined {

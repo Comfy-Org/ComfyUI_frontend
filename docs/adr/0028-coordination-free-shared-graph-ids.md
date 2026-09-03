@@ -1,4 +1,4 @@
-# 27. Coordination-Free Ids for Shared Graph Documents
+# 28. Coordination-Free Ids for Shared Graph Documents
 
 Date: 2026-09-01
 

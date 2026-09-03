@@ -29,6 +29,7 @@ export interface LayoutChangeView {
   operation: {
     type: string
     graphId: string
+    ownerGraphId?: string
     actor?: string
     source?: string
     nodeId?: NodeId
@@ -96,6 +97,7 @@ function sameTarget(
 
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClear: IntentionalClear | null = null
+  const reportedInteriorChanges = new Set<string>()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -150,6 +152,52 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     })
   }
 
+  function reportUnrepresentableInteriorChange(
+    operation: LayoutChangeView['operation'],
+    action: 'create' | 'delete'
+  ): boolean {
+    if (operation.ownerGraphId === undefined) {
+      // Every production emitter (canvas attach/detach, the agent panel) now
+      // sets ownerGraphId on every createNode/deleteNode it mints, root scope
+      // included (ownerGraphId === graphId there). A defined graphId with no
+      // ownerGraphId means an emitter regressed the contract, not a benign
+      // root edit — fail closed instead of silently minting a root op that
+      // may really belong to a subgraph (the #16503 class of bug).
+      reportError(
+        new Error(
+          `${action}Node has no ownerGraphId; refusing to mint (root-vs-subgraph is unknown)`
+        ),
+        {
+          errorType: `agent_crdt_missing_owner_graph_id_${action}`,
+          context: { graphId: operation.graphId, nodeId: operation.nodeId }
+        }
+      )
+      return true
+    }
+
+    if (operation.ownerGraphId === operation.graphId) return false
+
+    const reportKey = `${action}:${operation.graphId}:${operation.ownerGraphId}`
+    if (reportedInteriorChanges.has(reportKey)) return true
+
+    reportedInteriorChanges.add(reportKey)
+    queueMicrotask(() => reportedInteriorChanges.delete(reportKey))
+    reportError(
+      new Error(
+        `Subgraph-interior node ${action} has no wire op; the bound doc diverges from the local graph`
+      ),
+      {
+        errorType: `agent_crdt_unrepresentable_subgraph_node_${action}`,
+        context: {
+          graphId: operation.graphId,
+          ownerGraphId: operation.ownerGraphId,
+          nodeId: operation.nodeId
+        }
+      }
+    )
+    return true
+  }
+
   function onChange(
     target: GraphMutationTarget,
     change: LayoutChangeView
@@ -160,6 +208,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'createNode': {
         if (!gate(change, inTeardown)) return
         if (!ownsChange(target, change)) return
+        if (reportUnrepresentableInteriorChange(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(target, String(operation.nodeId))
         if (!node) {
@@ -188,6 +237,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'deleteNode': {
         if (!gate(change, inTeardown)) return
         if (!ownsChange(target, change)) return
+        if (reportUnrepresentableInteriorChange(operation, 'delete')) return
         if (operation.nodeId === undefined) return
         enqueue('delete_node', operation.nodeId, {
           target,

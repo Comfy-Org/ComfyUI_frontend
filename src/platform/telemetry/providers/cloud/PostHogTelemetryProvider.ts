@@ -36,6 +36,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -138,9 +139,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
-    this.configureDisabledEvents(
-      (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
-    )
+    this.configureDisabledEvents(window.__CONFIG__ ?? null)
     watch(
       remoteConfig,
       (config) => {
@@ -158,7 +157,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
           .then((posthogModule) => {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value?.posthog_config ?? {}
-            this.posthog!.init(apiKey, {
+            this.posthog.init(apiKey, {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
@@ -295,7 +294,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     } else {
       this.eventQueue.push({
         eventName,
-        properties: properties as TelemetryEventProperties
+        properties
       })
     }
   }
@@ -705,6 +704,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.trackEvent(TelemetryEvents.LINK_DEDUP_DROP, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

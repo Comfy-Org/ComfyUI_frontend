@@ -67,7 +67,7 @@ function createWidgetState(
     }
   })
 
-  const widget = fromPartial<BaseDOMWidget<object | string>>({
+  const widget = fromPartial<BaseDOMWidget>({
     id,
     name: 'test_widget',
     type: 'custom',

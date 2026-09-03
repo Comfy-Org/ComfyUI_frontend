@@ -2,12 +2,24 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const TEST_FIXTURE_MARKERS = [
+/**
+ * Path markers: only meaningful as a module path, so they are checked against
+ * a sourcemap's `sources` array, never against arbitrary chunk/sourcesContent
+ * text. A production module that merely mentions one of these strings in a
+ * comment or a string literal must not fail the build.
+ */
+const TEST_FIXTURE_PATH_MARKERS = [
   'browser_tests/fixtures/',
   '/__fixtures__/',
-  'ui-mock-assets',
-  'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
+  'ui-mock-assets'
 ] as const
+
+/**
+ * The sentinel is a value, not a path: it can appear anywhere in bundled
+ * source (a mock asset id inlined into a chunk), so it stays a full-text scan
+ * across every chunk, including sourcesContent.
+ */
+const TEST_FIXTURE_SENTINEL = 'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
 
 const DISTRIBUTIONS = ['localhost', 'desktop', 'cloud'] as const
 const TEXT_ASSET_EXTENSIONS = new Set([
@@ -41,18 +53,38 @@ function artifactFiles(directory: string): string[] {
   })
 }
 
+/**
+ * Walk `chunk` from `start`, tracking brace depth until it returns to 0.
+ * Skips braces inside string/template literals so a `{` in a quoted value
+ * (e.g. a re-quoted setting key) can't desync the count. Returns the index
+ * just past the matching `}`, or -1 if depth never returns to 0.
+ */
+function findMatchingBraceEnd(chunk: string, start: number): number {
+  let depth = 1
+  let quote: '"' | "'" | '`' | null = null
+  let index = start
+  for (; index < chunk.length && depth > 0; index++) {
+    const char = chunk[index]
+    if (quote) {
+      if (char === '\\') index++
+      else if (char === quote) quote = null
+      continue
+    }
+    if (char === '"' || char === "'" || char === '`') quote = char
+    else if (char === '{') depth++
+    else if (char === '}') depth--
+  }
+  return depth === 0 ? index : -1
+}
+
 function assetApiGates(chunks: ReadonlyArray<string>): string {
   const gates = chunks.flatMap((chunk) => {
     const matches: string[] = []
     const declaration = /function isAssetAPIEnabled\(\)\s*\{/g
     for (const match of chunk.matchAll(declaration)) {
-      let depth = 1
-      let index = (match.index ?? 0) + match[0].length
-      for (; index < chunk.length && depth > 0; index++) {
-        if (chunk[index] === '{') depth++
-        if (chunk[index] === '}') depth--
-      }
-      if (depth === 0) matches.push(chunk.slice(match.index, index))
+      const start = (match.index ?? 0) + match[0].length
+      const end = findMatchingBraceEnd(chunk, start)
+      if (end !== -1) matches.push(chunk.slice(match.index, end))
     }
     return matches
   })
@@ -100,7 +132,7 @@ export function assertBuildProvenance(
   const build = parsed as Record<string, unknown>
   if (build.commit !== expectedCommit) {
     throw new Error(
-      `Build does not contain expected frontend commit ${expectedCommit}`
+      `Build does not contain expected frontend commit ${expectedCommit}, found ${String(build.commit)}`
     )
   }
   if (build.distribution !== expectedDistribution) {
@@ -110,11 +142,39 @@ export function assertBuildProvenance(
   }
 }
 
-export function assertNoTestFixtures(chunks: ReadonlyArray<string>): void {
-  for (const marker of TEST_FIXTURE_MARKERS) {
-    if (chunks.some((chunk) => chunk.includes(marker))) {
+/** A parsed sourcemap's relevant fields, tolerant of malformed/missing ones. */
+function sourcemapSources(mapSource: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(mapSource)
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      Array.isArray((parsed as { sources?: unknown }).sources)
+    ) {
+      return (parsed as { sources: unknown[] }).sources.filter(
+        (source): source is string => typeof source === 'string'
+      )
+    }
+  } catch {
+    // Malformed sourcemap JSON: fall through and treat as no sources, so a
+    // parse failure here doesn't mask the assertions below.
+  }
+  return []
+}
+
+export function assertNoTestFixtures(
+  chunks: ReadonlyArray<string>,
+  sourcemapSourcePaths: ReadonlyArray<string> = []
+): void {
+  for (const marker of TEST_FIXTURE_PATH_MARKERS) {
+    if (sourcemapSourcePaths.some((source) => source.includes(marker))) {
       throw new Error(`Build contains test fixture marker: ${marker}`)
     }
+  }
+  if (chunks.some((chunk) => chunk.includes(TEST_FIXTURE_SENTINEL))) {
+    throw new Error(
+      `Build contains test fixture marker: ${TEST_FIXTURE_SENTINEL}`
+    )
   }
 }
 
@@ -128,6 +188,15 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
   if (!expectedDistribution) {
     throw new Error('EXPECTED_DISTRIBUTION is required')
   }
+
+  // Check provenance before anything else: a stale `dist/` from a build that
+  // predates the sourcemap requirement (or any other assertion below) should
+  // report "wrong commit", not a confusing downstream failure.
+  assertBuildProvenance(
+    readFileSync(join(directory, 'build-manifest.json'), 'utf8'),
+    expectedCommit,
+    expectedDistribution
+  )
 
   const textAssets = artifactFiles(directory)
     .filter((path) => TEXT_ASSET_EXTENSIONS.has(extname(path)))
@@ -143,13 +212,11 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
   const executableChunks = textAssets
     .filter(({ path }) => EXECUTABLE_ASSET_EXTENSIONS.has(extname(path)))
     .map(({ source }) => source)
+  const sourcemapSourcePaths = textAssets
+    .filter(({ path }) => extname(path) === '.map')
+    .flatMap(({ source }) => sourcemapSources(source))
 
-  assertBuildProvenance(
-    readFileSync(join(directory, 'build-manifest.json'), 'utf8'),
-    expectedCommit,
-    expectedDistribution
-  )
-  assertNoTestFixtures(chunks)
+  assertNoTestFixtures(chunks, sourcemapSourcePaths)
   assertAssetApiGate(executableChunks, expectedDistribution)
 }
 
