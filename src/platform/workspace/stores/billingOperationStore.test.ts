@@ -2548,6 +2548,9 @@ describe('billingOperationStore', () => {
       vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
       const store = useBillingOperationStore()
       startPendingOperation(store)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
+        new WorkspaceApiError('gone', 404)
+      )
 
       const result = await store.cancelOperation('op-1')
 
@@ -2575,10 +2578,38 @@ describe('billingOperationStore', () => {
           settled = true
         })
 
+      vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
+        new WorkspaceApiError('gone', 404)
+      )
       await store.cancelOperation('op-1')
       await awaiting
 
       expect(settled).toBe(true)
+    })
+
+    it('keeps the affordance live when the cancel has not taken effect yet', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('unreachable')
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+    })
+
+    it('claims nothing when the verification read itself fails', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
+        new Error('network down')
+      )
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('unreachable')
+      expect(store.getOperation('op-1')).toBeDefined()
     })
 
     it('reports unavailable and keeps the operation when the backend refuses', async () => {
