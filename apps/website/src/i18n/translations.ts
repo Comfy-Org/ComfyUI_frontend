@@ -1,6 +1,82 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'workshop.run.heading': {
+    en: 'Run it',
+    'zh-CN': '运行'
+  },
+  'workshop.run.apiKey': {
+    en: 'Comfy API key',
+    'zh-CN': 'Comfy API 密钥'
+  },
+  'workshop.run.apiKeyPlaceholder': {
+    en: 'comfyui-...',
+    'zh-CN': 'comfyui-...'
+  },
+  'workshop.run.keyNote': {
+    en: 'Your key is stored in this browser only and is sent straight to the Comfy API.',
+    'zh-CN': '密钥仅保存在此浏览器中，并直接发送至 Comfy API。'
+  },
+  'workshop.run.button': {
+    en: 'Run',
+    'zh-CN': '运行'
+  },
+  'workshop.run.cancel': {
+    en: 'Cancel',
+    'zh-CN': '取消'
+  },
+  'workshop.run.running': {
+    en: 'Running. This can take a minute or two.',
+    'zh-CN': '运行中，可能需要一两分钟。'
+  },
+  'workshop.run.noMedia': {
+    en: 'The model returned no media. The full response is below.',
+    'zh-CN': '该模型未返回媒体文件，完整响应见下方。'
+  },
+  'workshop.run.rawOutput': {
+    en: 'Full response',
+    'zh-CN': '完整响应'
+  },
+  'workshop.run.requestId': {
+    en: 'Request ID',
+    'zh-CN': '请求 ID'
+  },
+  'workshop.run.error.generic': {
+    en: 'The run failed.',
+    'zh-CN': '运行失败。'
+  },
+  'workshop.run.error.unauthorized': {
+    en: 'That API key was not accepted.',
+    'zh-CN': '该 API 密钥未被接受。'
+  },
+  'workshop.run.error.insufficientCredits': {
+    en: 'Not enough credits to run this model.',
+    'zh-CN': '积分不足，无法运行此模型。'
+  },
+  'workshop.run.error.rateLimited': {
+    en: 'Too many requests. Try again in a moment.',
+    'zh-CN': '请求过于频繁，请稍后再试。'
+  },
+  'workshop.run.error.contentPolicy': {
+    en: 'The provider refused this request.',
+    'zh-CN': '提供方拒绝了该请求。'
+  },
+  'workshop.run.error.notEnabled': {
+    en: 'This model is not available to run yet.',
+    'zh-CN': '该模型暂不可运行。'
+  },
+  'workshop.run.error.invalidInput': {
+    en: 'The model rejected these inputs.',
+    'zh-CN': '模型拒绝了这些输入。'
+  },
+  'workshop.run.error.timeout': {
+    en: 'The run took too long and was stopped.',
+    'zh-CN': '运行时间过长，已停止。'
+  },
+  'workshop.run.error.network': {
+    en: 'The request could not be sent.',
+    'zh-CN': '请求无法发送。'
+  },
   'workshop.meta.title': {
     en: 'Comfy Workshop',
     'zh-CN': 'Comfy Workshop'
@@ -57,10 +133,6 @@ const translations = {
   'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
   'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
   'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
-  'workshop.model.runNext': {
-    en: 'Run model — sign-in coming next',
-    'zh-CN': '运行模型 — 登录功能即将推出'
-  },
   'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
   'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
   'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
