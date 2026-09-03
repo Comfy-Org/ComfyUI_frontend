@@ -587,7 +587,7 @@ export const useAuthStore = defineStore('auth', () => {
         typeof body === 'object' &&
         body !== null &&
         'message' in body &&
-        (body as { message: unknown }).message === MISSING_CUSTOMER_MESSAGE
+        body.message === MISSING_CUSTOMER_MESSAGE
       )
     } catch {
       return false

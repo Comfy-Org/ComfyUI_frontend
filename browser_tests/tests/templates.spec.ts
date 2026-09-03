@@ -61,6 +61,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
     // Load the page
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
 
     await expect(comfyPage.templates.content).toBeVisible()
@@ -130,6 +131,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({
       clearStorage: true,
       url: '/?share=test-share-id'
@@ -511,6 +513,7 @@ test.describe(
 
       await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: true,
         url: '/?template=default'

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
+import { brandButtonVariants } from '../../components/common/brandButton.variants'
 import Badge from '../../components/ui/badge/Badge.vue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -25,13 +27,21 @@ const modelsTabs = modelsApiCodeTabs
       <a
         :href="routes.platformComfyApi"
         :aria-label="t('platform.products.serverless.title', locale)"
-        class="absolute inset-0 rounded-4xl"
+        class="absolute inset-0 z-0 rounded-4xl"
       ></a>
-      <div>
+      <div class="pointer-events-none relative z-10">
         <h3
           class="flex items-center gap-2.5 text-lg font-normal text-primary-warm-white lg:text-xl"
         >
-          {{ t('platform.products.serverless.title', locale) }}
+          <span class="sr-only">
+            {{ t('platform.products.serverless.title', locale) }}
+          </span>
+          <ProductHeroBadge
+            :text="t('platform.products.serverless.badgeLabel', locale)"
+            compact
+            :show-connector="false"
+            aria-hidden="true"
+          />
           <Badge variant="accent" size="xs">
             {{ t('nav.badgeBeta', locale) }}
           </Badge>
@@ -39,25 +49,50 @@ const modelsTabs = modelsApiCodeTabs
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.serverless.description', locale) }}
         </p>
+        <div class="mt-8">
+          <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
+            <span class="ppformula-text-center uppercase">
+              {{ t('platform.hero.getStarted', locale) }}
+            </span>
+          </span>
+        </div>
       </div>
-      <ServerlessIsometricStudy :locale />
+      <ServerlessIsometricStudy
+        class="pointer-events-none relative z-10"
+        :locale
+      />
     </article>
 
     <!-- Models API and Builder, side by side -->
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
         id="models"
-        class="group/models bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="group bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
       >
         <a
           :href="routes.platformModels"
           :aria-label="t('platform.products.models.title', locale)"
-          class="absolute inset-0 rounded-4xl"
+          class="absolute inset-0 z-0 rounded-4xl"
         ></a>
-        <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
+        <h3 class="sr-only">
           {{ t('platform.products.models.title', locale) }}
         </h3>
-        <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
+        <div
+          class="pointer-events-none relative z-10 flex w-fit items-center gap-2"
+          aria-hidden="true"
+        >
+          <ProductHeroBadge
+            :text="t('platform.products.models.title', locale).toUpperCase()"
+            :show-logo="false"
+            compact
+          />
+          <Badge variant="accent" size="xs">
+            {{ t('nav.badgeComingSoon', locale) }}
+          </Badge>
+        </div>
+        <p
+          class="pointer-events-none relative z-10 mt-3 text-sm/relaxed font-light text-primary-comfy-canvas"
+        >
           {{ t('platform.products.models.description', locale) }}
         </p>
         <div class="relative z-10 mt-6">
@@ -65,6 +100,13 @@ const modelsTabs = modelsApiCodeTabs
             :tabs="modelsTabs"
             :label="t('platform.products.models.title', locale)"
           />
+        </div>
+        <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
+          <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
+            <span class="ppformula-text-center uppercase">
+              {{ t('platform.products.models.learnMore', locale) }}
+            </span>
+          </span>
         </div>
       </article>
 
@@ -77,14 +119,27 @@ const modelsTabs = modelsApiCodeTabs
           :aria-label="t('platform.products.builder.title', locale)"
           class="absolute inset-0 rounded-4xl"
         ></a>
-        <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
+        <h3 class="sr-only">
           {{ t('platform.products.builder.title', locale) }}
         </h3>
+        <ProductHeroBadge
+          :text="t('platform.products.builder.title', locale).toUpperCase()"
+          :show-logo="false"
+          compact
+          aria-hidden="true"
+        />
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.builder.description', locale) }}
         </p>
         <div class="mt-6 flex-1">
           <BuilderVisual />
+        </div>
+        <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
+          <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
+            <span class="ppformula-text-center uppercase">
+              {{ t('platform.hero.getStarted', locale) }}
+            </span>
+          </span>
         </div>
       </article>
     </div>

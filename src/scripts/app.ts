@@ -4,6 +4,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
+import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
@@ -46,7 +47,11 @@ import type {
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
@@ -125,6 +130,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
   forEachNode,
@@ -876,6 +882,8 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
+      const isActiveWorkflowError =
+        useExecutionStore().isJobErrorForActiveWorkflow(detail.prompt_id)
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type ?? '',
         exceptionMessage: detail.exception_message ?? ''
@@ -884,10 +892,12 @@ export class ComfyApp {
         useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
-      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        useExecutionErrorStore().showErrorOverlay()
-      } else {
-        useDialogService().showExecutionErrorDialog(detail)
+      } else if (isActiveWorkflowError) {
+        if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+          useExecutionErrorStore().showErrorOverlay()
+        } else {
+          useDialogService().showExecutionErrorDialog(detail)
+        }
       }
       this.canvas.draw(true, true)
     })
@@ -1258,7 +1268,7 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<boolean> {
+  ): Promise<LoadedComfyWorkflow | boolean> {
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1441,6 +1451,7 @@ export class ComfyApp {
     }
 
     ChangeTracker.isLoadingGraph = true
+    let activatedWorkflow: LoadedComfyWorkflow | undefined
     try {
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
@@ -1469,6 +1480,10 @@ export class ComfyApp {
           reportType: 'loadWorkflowError'
         })
         console.error(error)
+        await useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          error
+        )
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
@@ -1555,6 +1570,9 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      // Capture the workflow this load activated before the asset-scan awaits
+      // below can hand control back and let the user switch to another one.
+      activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -1598,7 +1616,7 @@ export class ComfyApp {
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
-      return true
+      return activatedWorkflow ?? true
     } finally {
       // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(
@@ -1646,6 +1664,12 @@ export class ComfyApp {
       ? { queueNodeIds: optionsOrQueueNodeIds }
       : optionsOrQueueNodeIds
     const { queueNodeIds, intent } = options
+    if (
+      intent?.trigger_source === 'auto_queue' &&
+      partnerRunGateBlocksAutoQueue()
+    ) {
+      return false
+    }
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({
       number,
@@ -1768,6 +1792,7 @@ export class ComfyApp {
           // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph).catch(
@@ -1827,7 +1852,10 @@ export class ComfyApp {
                 ...(workflowContext && { workflowContext })
               })
             }
-            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            executionErrorStore.recordNodeErrors(
+              res.node_errors ?? null,
+              queuedRunErrorKey
+            )
             queueResultOverride = null
             try {
               if (res.prompt_id) {
@@ -1939,15 +1967,21 @@ export class ComfyApp {
               // Keep the legacy result before empty node errors are normalized.
               const nodeErrors = error.response.node_errors
               queueResultOverride = !nodeErrors
-              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
+              executionErrorStore.recordNodeErrors(
+                nodeErrors ?? null,
+                queuedRunErrorKey
+              )
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              if (!executionErrorStore.hasNodeError) {
+              if (!nodeErrors || Object.keys(nodeErrors).length === 0) {
                 const promptError = normalizePromptError(error.response.error)
                 if (promptError) {
-                  executionErrorStore.recordPromptError(promptError)
+                  executionErrorStore.recordPromptError(
+                    promptError,
+                    queuedRunErrorKey
+                  )
                 }
               }
 
@@ -2585,7 +2619,7 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearRunErrors()
+    executionErrorStore.setActiveGraph(null)
     useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
@@ -2594,7 +2628,10 @@ export class ComfyApp {
     // (`LGraph`) `clear` breaks the subgraph structure.
     if (this.rootGraph && !this.canvas.subgraph) {
       this.rootGraph.clear()
+      ensureNonZeroUuid(this.rootGraph)
     }
+
+    executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
