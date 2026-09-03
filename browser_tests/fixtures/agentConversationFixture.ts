@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import type { GraphSnapshot, Op } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import enNodes from '@/locales/en/nodeDefs.json' with { type: 'json' }
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -59,6 +60,11 @@ interface RecordedWidgetValue {
   nodeId: string
   widget: string
   value: string | number
+}
+
+function displayName(type: string): string {
+  const entry = (enNodes as Record<string, { display_name?: string }>)[type]
+  return entry?.display_name ?? type
 }
 
 // The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
@@ -239,7 +245,8 @@ class AgentConversationHarness {
         const widgets = new Set(catalog[type]?.widget_order ?? [])
         return {
           id,
-          title: byId.get(id)?.title ?? type,
+          // An untitled node renders its registered display name, as LiteGraph.createNode does.
+          title: byId.get(id)?.title ?? displayName(type),
           // Widget-backed inputs render as widgets, not slot rows.
           inputs: (body?.inputs ?? [])
             .map((slot, index) => ({ name: slot.name, index }))
