@@ -128,6 +128,12 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn((event: string) => {
       apiEventHandlers.delete(event)
     }),
+    dispatchCustomEvent: vi.fn((event: string, detail?: unknown) => {
+      const handler = apiEventHandlers.get(event)
+      if (!handler) return false
+      handler(new CustomEvent(event, { detail }))
+      return true
+    }),
     clientId: 'test-client',
     apiURL: vi.fn((path: string) => `/api${path}`)
   }
@@ -1143,8 +1149,11 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
   })
 
-  it('flushes a buffered failure when queue polling maps its workflow', () => {
+  it('resets the active job and flushes its buffered failure after mapping', () => {
+    fireExecutionStart('job-b')
     fireExecutionError('job-b')
+
+    expect(store.isIdle).toBe(true)
 
     store.registerJobWorkflowIdMapping('job-b', graphBId)
 
@@ -1156,16 +1165,32 @@ describe('useExecutionStore - background workflow error routing', () => {
 
   it('does not replay a buffered failure after execution succeeds', () => {
     fireExecutionError('job-b')
-    apiEventHandlers.get('execution_success')!(
-      new CustomEvent('execution_success', {
-        detail: { prompt_id: 'job-b' }
-      })
-    )
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'job-b',
+      timestamp: 0
+    })
 
     store.registerJobWorkflowIdMapping('job-b', graphBId)
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError).toBeNull()
+  })
+
+  it('does not replay a buffered failure after execution is interrupted', () => {
+    fireExecutionError('job-b')
+    api.dispatchCustomEvent('execution_interrupted', {
+      prompt_id: 'job-b',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'TestNode',
+      executed: []
+    })
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+    expect(errorStore.totalErrorCount).toBe(0)
   })
 
   it('clears execution-start errors only for the producing workflow', () => {

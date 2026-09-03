@@ -510,6 +510,7 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
+    pendingExecutionErrorsByJobId.delete(jobId)
     setWorkflowStatus(jobId, {
       status: 'failed',
       endTime: performance.now(),
@@ -713,8 +714,8 @@ export const useExecutionStore = defineStore('execution', () => {
     // before the handlers below record anything.
     const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
     if (runErrorKey === null) {
-      cancelPendingProgressUpdates()
       bufferPendingExecutionError({ detail: e.detail, endTime })
+      resetExecutionState(e.detail.prompt_id)
       return
     }
 
