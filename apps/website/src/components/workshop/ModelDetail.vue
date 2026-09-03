@@ -115,7 +115,7 @@ const credits = computed(() =>
 const subscribed = computed(
   () => session.value.status === 'signedIn' && session.value.account.subscribed
 )
-const creditsPerRun = model.creditsPerRun ?? 0
+const creditsPerRun = model.creditsPerRun
 const modelStatus = computed(() =>
   simGate.value === 'deprecated' || simGate.value === 'degraded'
     ? simGate.value
@@ -224,6 +224,7 @@ function sampleOutput(): RunOutput {
 }
 
 function finishRun() {
+  if (creditsPerRun === undefined) return
   const at = Date.now()
   switch (simOutcome.value) {
     case 'success':
@@ -300,7 +301,7 @@ function useInCode() {
     <div
       role="tablist"
       :aria-label="t('workshop.title', locale)"
-      class="border-transparency-white-t8 flex gap-8 border-b"
+      class="flex gap-8 border-b border-transparency-white-t8"
       data-testid="model-tabs"
     >
       <button
@@ -315,7 +316,7 @@ function useInCode() {
             'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
             section === activeSection
               ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'text-primary-warm-gray hover:text-primary-warm-white border-transparent'
+              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
           )
         "
         @click="activeSection = section"
@@ -330,11 +331,11 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 border-transparency-white-t8 flex flex-col overflow-hidden rounded-2xl border lg:col-span-5"
+        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 lg:col-span-5"
         data-testid="playground-input"
       >
         <header
-          class="border-transparency-white-t8 text-primary-warm-gray border-b px-5 py-3 text-xs font-bold tracking-wider uppercase"
+          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
         >
           <span>{{ t('workshop.input.title', locale) }}</span>
         </header>
@@ -350,7 +351,7 @@ function useInCode() {
         </div>
 
         <div
-          class="border-transparency-white-t8 mt-auto flex flex-col gap-2 border-t p-3"
+          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-3"
         >
           <Button
             v-if="isRunning"
@@ -429,7 +430,7 @@ function useInCode() {
             {{ t('workshop.run.run', locale) }}
             <template v-if="creditsPerRun" #append>
               <span
-                class="bg-primary-comfy-ink/10 ml-auto inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
+                class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
                 data-testid="run-cost"
               >
                 <Coins class="size-3.5" aria-hidden="true" />
@@ -453,7 +454,7 @@ function useInCode() {
           </Button>
           <p
             v-if="gate === 'noCredits'"
-            class="text-primary-warm-gray text-xs"
+            class="text-xs text-primary-warm-gray"
             data-testid="gate-note"
           >
             {{
@@ -466,7 +467,7 @@ function useInCode() {
           </p>
           <p
             v-else-if="gate === 'memberNoCredits'"
-            class="text-primary-warm-gray text-xs"
+            class="text-xs text-primary-warm-gray"
             data-testid="gate-note"
           >
             {{
@@ -503,7 +504,7 @@ function useInCode() {
                 )
               }}
             </Button>
-            <p class="text-primary-warm-gray text-xs" data-testid="clone-note">
+            <p class="text-xs text-primary-warm-gray" data-testid="clone-note">
               {{ cloneNote }}
             </p>
           </template>

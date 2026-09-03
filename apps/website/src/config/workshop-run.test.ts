@@ -83,6 +83,10 @@ describe('runGate', () => {
     expect(runGate(base)).toBe('ready')
   })
 
+  it('refuses to run a model whose price is unknown', () => {
+    expect(runGate({ ...base, creditsPerRun: undefined })).toBe('unavailable')
+  })
+
   it('asks for sign in before anything account related', () => {
     expect(runGate({ ...base, signedIn: false, credits: 0 })).toBe('signedOut')
   })

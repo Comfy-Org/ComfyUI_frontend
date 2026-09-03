@@ -233,6 +233,7 @@
     "creditsPerRun": 20
   },
   "quiver": {
-    "modality": "image"
+    "modality": "image",
+    "creditsPerRun": 5
   }
 }

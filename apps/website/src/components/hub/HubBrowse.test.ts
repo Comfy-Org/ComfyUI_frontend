@@ -52,4 +52,18 @@ describe('HubBrowse', () => {
     expect(screen.getByTestId('hub-filter-count').textContent?.trim()).toBe('1')
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 36')
   })
+
+  it('counts the applied filters in the popover and clears them', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    await user.click(screen.getByTestId('hub-filter'))
+    await user.click(await screen.findByRole('option', { name: /^Wan \d+$/ }))
+    expect(screen.getByTestId('hub-filter-applied').textContent).toContain(
+      '1 selected'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Clear all' }))
+    expect(screen.queryByTestId('hub-filter-applied')).toBeNull()
+    expect(screen.queryByTestId('hub-filter-count')).toBeNull()
+  })
 })

@@ -104,7 +104,7 @@ const pillClass =
         "
       >
         <span
-          class="font-formula text-primary-warm-white/20 text-7xl font-bold select-none"
+          class="font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
           aria-hidden="true"
         >
           {{ model.name[0] }}
@@ -126,7 +126,7 @@ const pillClass =
         role="img"
         :aria-label="providerName"
         :title="providerName"
-        class="bg-transparency-white-t8 absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-2xl backdrop-blur-sm"
+        class="absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-2xl bg-transparency-white-t8 backdrop-blur-sm"
         data-testid="model-card-logo"
       >
         <span
@@ -136,7 +136,7 @@ const pillClass =
       </span>
       <span
         v-if="showStatus && model.status"
-        class="bg-primary-comfy-yellow/80 text-primary-comfy-ink absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider uppercase backdrop-blur-sm"
+        class="bg-primary-comfy-yellow/80 absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-sm"
       >
         {{
           model.status === 'deprecated'
@@ -150,7 +150,7 @@ const pillClass =
       <div class="flex items-center justify-between gap-2">
         <span class="text-content-secondary flex min-w-0 items-center gap-2">
           <span
-            class="bg-brand text-page text-2xs grid size-5 shrink-0 place-items-center rounded-full font-bold"
+            class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
             aria-hidden="true"
           >
             {{ providerName.charAt(0).toUpperCase() }}
@@ -163,10 +163,10 @@ const pillClass =
           </span>
         </span>
         <span
-          class="text-content group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink relative isolate inline-flex h-10 w-fit shrink-0 items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap uppercase transition-all duration-500 group-hover:pe-5"
+          class="text-content group-hover:bg-primary-comfy-yellow group-focus-visible:bg-primary-comfy-yellow relative isolate inline-flex h-10 w-fit shrink-0 items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap uppercase transition-all duration-500 group-hover:pe-5 group-hover:text-primary-comfy-ink group-focus-visible:pe-5 group-focus-visible:text-primary-comfy-ink"
         >
           <span
-            class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover:grid-cols-[1fr]"
+            class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover:grid-cols-[1fr] group-focus-visible:grid-cols-[1fr]"
           >
             <span class="overflow-hidden">
               <span class="ppformula-text-center relative leading-none">
@@ -175,7 +175,7 @@ const pillClass =
             </span>
           </span>
           <span
-            class="group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500"
+            class="group-hover:bg-primary-comfy-yellow group-focus-visible:bg-primary-comfy-yellow absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500 group-hover:text-primary-comfy-ink group-focus-visible:text-primary-comfy-ink"
             aria-hidden="true"
           >
             <ChevronRight class="size-4" :stroke-width="2" />

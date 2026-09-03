@@ -2,10 +2,11 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { UseCase, WorkshopModel } from '../../config/workshop'
+import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
 import {
   USE_CASES,
   filterWorkshopModels,
+  sortWorkshopModels,
   useCaseFor
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -17,11 +18,13 @@ const ROW_LIMIT = 8
 const {
   models,
   labelKey,
+  sort = 'popular',
   locale = 'en',
   showStatuses = false
 } = defineProps<{
   models: readonly WorkshopModel[]
   labelKey: Record<UseCase | 'all', TranslationKey>
+  sort?: SortOrder
   locale?: Locale
   showStatuses?: boolean
 }>()
@@ -30,7 +33,10 @@ const emit = defineEmits<{ open: [UseCase] }>()
 
 const sections = computed(() =>
   USE_CASES.map((useCase) => {
-    const matches = filterWorkshopModels(models, { useCase })
+    const matches = sortWorkshopModels(
+      filterWorkshopModels(models, { useCase }),
+      sort
+    )
     return {
       useCase,
       total: matches.length,
@@ -42,7 +48,10 @@ const sections = computed(() =>
 // A model the taxonomy cannot place would otherwise be reachable only by
 // search, so it gets its own row rather than disappearing from the listing.
 const unplaced = computed(() =>
-  models.filter((model) => useCaseFor(model) === undefined)
+  sortWorkshopModels(
+    models.filter((model) => useCaseFor(model) === undefined),
+    sort
+  )
 )
 </script>
 

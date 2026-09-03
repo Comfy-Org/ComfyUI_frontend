@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { UseCase, WorkshopModel } from '../../config/workshop'
@@ -55,6 +55,17 @@ describe('WorkshopSections', () => {
       '1'
     )
     expect(screen.queryByTestId('section-audio')).toBeNull()
+  })
+
+  it('applies the chosen sort inside each row', () => {
+    render(WorkshopSections, {
+      props: { models, labelKey, sort: 'name' }
+    })
+
+    const names = within(screen.getByTestId('section-generate-videos'))
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+    expect(names).toEqual(['a', 'b'])
   })
 
   it('asks the catalog to open the section behind See all', async () => {

@@ -86,6 +86,27 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
   })
 
+  test('V1.1 browses category rows and drills into one', async ({ page }) => {
+    await page.goto('/workshop/?version=v1.1')
+    const sections = page.getByTestId('workshop-sections')
+    await expect(sections).toBeVisible()
+    await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
+
+    const videos = page.getByTestId('section-generate-videos')
+    await expect(videos).toContainText('11')
+    await videos.getByTestId('section-generate-videos-see-all').click()
+
+    await expect(sections).toHaveCount(0)
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+    ).toHaveCount(11)
+
+    await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+  })
+
   test('model cards open the model detail page', async ({ page }) => {
     await page.goto('/workshop/')
     await page.getByTestId('workshop-search').fill('kling ai')

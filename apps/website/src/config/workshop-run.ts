@@ -104,7 +104,7 @@ export type RunGate =
 export interface GateInput {
   readonly signedIn: boolean
   readonly credits: number
-  readonly creditsPerRun: number
+  readonly creditsPerRun: number | undefined
   readonly modelStatus?: ModelStatus
   readonly policyDisabled: boolean
   readonly unavailable: boolean
@@ -115,7 +115,12 @@ export interface GateInput {
 // and a workspace policy block wins over credits because buying would not
 // unblock the run.
 export function runGate(input: GateInput): RunGate {
-  if (input.unavailable || input.modelStatus === 'deprecated') {
+  // No price means the cost of a run is unknown, not free.
+  if (
+    input.unavailable ||
+    input.modelStatus === 'deprecated' ||
+    input.creditsPerRun === undefined
+  ) {
     return 'unavailable'
   }
   if (!input.signedIn) return 'signedOut'
