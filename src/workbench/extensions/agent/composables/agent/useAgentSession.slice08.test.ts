@@ -489,6 +489,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first: only a live->down transition is a
+    // real disconnect. An initial `false` snapshot is inert.
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
@@ -900,6 +903,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first; only a live->down transition (an
+    // actual socket death) should settle background turns.
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))

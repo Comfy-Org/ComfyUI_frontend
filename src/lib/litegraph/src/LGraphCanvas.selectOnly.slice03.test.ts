@@ -456,9 +456,7 @@ describe('LGraphCanvas selectOnly', () => {
     } as unknown as Parameters<typeof canvas.renderedPaths.add>[0]
     canvas.renderedPaths.add(linkSegment)
     canvas.ctx.isPointInStroke = vi.fn().mockReturnValue(false)
-    const linkMenuSpy = vi
-      .spyOn(canvas, 'showLinkMenu')
-      .mockReturnValue(false as never)
+    const linkMenuSpy = vi.spyOn(canvas, 'showLinkMenu').mockReturnValue(false)
     const event = { canvasX: 300, canvasY: 300 } as CanvasPointerEvent
     canvas.selectOnly = true
 
@@ -477,9 +475,7 @@ describe('LGraphCanvas selectOnly', () => {
     } as unknown as Parameters<typeof canvas.renderedPaths.add>[0]
     canvas.renderedPaths.add(linkSegment)
     canvas.ctx.isPointInStroke = vi.fn().mockReturnValue(false)
-    const linkMenuSpy = vi
-      .spyOn(canvas, 'showLinkMenu')
-      .mockReturnValue(false as never)
+    const linkMenuSpy = vi.spyOn(canvas, 'showLinkMenu').mockReturnValue(false)
     const event = { canvasX: 300, canvasY: 300 } as CanvasPointerEvent
 
     canvas['_processPrimaryButton'](event, undefined)
