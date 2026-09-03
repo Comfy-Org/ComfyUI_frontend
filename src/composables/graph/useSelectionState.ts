@@ -87,9 +87,7 @@ export function useSelectionState() {
   ): NodeSelectionState => {
     if (!nodes.length) return { collapsed: false, pinned: false }
     return {
-      collapsed: nodes.some(
-        (n) => Object.hasOwn(n, 'flags') && n.flags.collapsed
-      ),
+      collapsed: nodes.some((n) => n.flags.collapsed),
       pinned: nodes.some((n) => n.pinned)
     }
   }

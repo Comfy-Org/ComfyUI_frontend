@@ -18,6 +18,7 @@ import {
   getNodeByExecutionId,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { createCancelToken } from '@/utils/createCancelToken'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import type { MissingNodeType } from '@/types/comfy'
@@ -482,10 +483,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       if (!toResolve.length) return
 
       const resolvingTypes = toResolve.map((n) => n.type)
-      let cancelled = false
-      const isCancelled = () => cancelled
+      const { cancel, isCancelled } = createCancelToken()
       onCleanup(() => {
-        cancelled = true
+        cancel()
         const next = new Map(asyncResolvedIds.value)
         for (const type of resolvingTypes) {
           if (next.get(type) === RESOLVING) next.delete(type)

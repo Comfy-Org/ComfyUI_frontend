@@ -72,11 +72,10 @@ export function sortWidgetValuesByInputOrder(
     return widgetValues
   }
 
-  // Create a map of widget name to value
-  const valueMap = new Map<string, TWidgetValue>()
+  const widgetIndexByName = new Map<string, number>()
   currentWidgetOrder.forEach((name, index) => {
     if (index < widgetValues.length) {
-      valueMap.set(name, widgetValues[index])
+      widgetIndexByName.set(name, index)
     }
   })
 
@@ -86,16 +85,16 @@ export function sortWidgetValuesByInputOrder(
 
   // First, add values in the order specified by input_order
   for (const name of inputOrder) {
-    if (valueMap.has(name)) {
-      reordered.push(valueMap.get(name))
-      usedNames.add(name)
-    }
+    const index = widgetIndexByName.get(name)
+    if (index === undefined) continue
+    reordered.push(widgetValues[index])
+    usedNames.add(name)
   }
 
   // Then add any remaining values not in input_order
-  for (const [name, value] of valueMap.entries()) {
+  for (const [name, index] of widgetIndexByName) {
     if (!usedNames.has(name)) {
-      reordered.push(value)
+      reordered.push(widgetValues[index])
     }
   }
 

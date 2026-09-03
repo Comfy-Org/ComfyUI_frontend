@@ -62,6 +62,7 @@ export function createMockLGraphNode(
     renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
+    flags: {},
     ...nodeOverrides
   })
 }

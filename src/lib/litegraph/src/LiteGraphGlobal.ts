@@ -757,7 +757,7 @@ export class LiteGraphGlobal {
 
     // UNDER CONSTRUCTION
     // convert pointerevents to touch event when not available
-    if (sMethod == 'pointer' && !Object.hasOwn(window, 'PointerEvent')) {
+    if (sMethod == 'pointer' && !Reflect.has(window, 'PointerEvent')) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
       console.warn(
         `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`

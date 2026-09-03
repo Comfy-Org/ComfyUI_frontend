@@ -7,6 +7,7 @@ import { until } from '@vueuse/core'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { createCancelToken } from '@/utils/createCancelToken'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 
 import type { ErrorCardData } from './types'
@@ -31,11 +32,8 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
   watch(
     () => toValue(cardSource),
     async (card, _, onCleanup) => {
-      let cancelled = false
-      const isCancelled = () => cancelled
-      onCleanup(() => {
-        cancelled = true
-      })
+      const { cancel, isCancelled } = createCancelToken()
+      onCleanup(cancel)
 
       for (const key of Object.keys(enrichedDetails)) {
         delete enrichedDetails[key as unknown as number]

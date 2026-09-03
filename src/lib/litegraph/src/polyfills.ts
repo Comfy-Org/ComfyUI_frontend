@@ -9,7 +9,7 @@ export function loadPolyfills() {
   if (
     typeof window != 'undefined' &&
     typeof Reflect.get(window, 'CanvasRenderingContext2D') === 'function' &&
-    !Object.hasOwn(window.CanvasRenderingContext2D.prototype, 'roundRect')
+    !Reflect.has(window.CanvasRenderingContext2D.prototype, 'roundRect')
   ) {
     window.CanvasRenderingContext2D.prototype.roundRect = function (
       x: number,
@@ -81,7 +81,7 @@ export function loadPolyfills() {
 
   if (
     typeof window != 'undefined' &&
-    !Object.hasOwn(window, 'requestAnimationFrame')
+    !Reflect.has(window, 'requestAnimationFrame')
   ) {
     window.requestAnimationFrame =
       // @ts-expect-error Legacy code

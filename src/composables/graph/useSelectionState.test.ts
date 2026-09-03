@@ -180,7 +180,7 @@ describe('useSelectionState', () => {
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
-        (n) => Object.hasOwn(n, 'flags') && n.flags.collapsed === true
+        (n) => n.flags.collapsed === true
       )
       const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
@@ -198,7 +198,7 @@ describe('useSelectionState', () => {
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
-        (n) => Object.hasOwn(n, 'flags') && n.flags.collapsed === true
+        (n) => n.flags.collapsed === true
       )
       const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
