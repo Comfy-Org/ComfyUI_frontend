@@ -264,24 +264,20 @@ async function waitForHostedReturn(page: Page) {
   if (new URL(page.url()).origin === appOrigin) return
   const captchaCandidates = await Promise.all(
     page.frames().map(async (frame) => {
-      const widgets = frame.locator(
-        'iframe[src*="hcaptcha.com"], [data-hcaptcha-widget-id]'
-      )
-      const boxes = await Promise.all(
-        Array.from({ length: await widgets.count() }, (_, index) =>
-          widgets
-            .nth(index)
-            .boundingBox()
-            .catch(() => null)
-        )
-      )
+      const text = await frame
+        .locator('body')
+        .innerText()
+        .catch(() => '')
       return {
         frameUrl: frame.url(),
-        boxes: boxes.filter((box) => box !== null)
+        challengeFrame: frame.url().includes('frame=challenge'),
+        visibleText: /please try again|verify/i.test(text)
       }
     })
   )
-  const captchaVisible = captchaCandidates.some(({ boxes }) => boxes.length > 0)
+  const captchaVisible = captchaCandidates.some(
+    ({ challengeFrame, visibleText }) => challengeFrame && visibleText
+  )
   const challengeVisible = (await challengeFrames(page)).some(
     ({ completeVisible }) => completeVisible
   )
@@ -297,26 +293,11 @@ async function waitForHostedReturn(page: Page) {
     `${evidenceDir}/captcha-detected.json`,
     `${JSON.stringify({ captured_at: new Date().toISOString(), frames: captchaCandidates }, null, 2)}\n`
   )
-  const startedAt = Date.now()
-  console.log(
-    'HUMAN: solve the Stripe hCaptcha in the Chrome window on display :1, then leave the tab alone'
-  )
-  while (Date.now() - startedAt <= 600_000) {
-    if (new URL(page.url()).origin === appOrigin) {
-      writeFileSync(
-        `${evidenceDir}/hcaptcha.json`,
-        `${JSON.stringify({ appeared: true, human_used: true, wait_ms: Date.now() - startedAt })}\n`
-      )
-      return
-    }
-    await new Promise((resolve) => setTimeout(resolve, 5_000))
-  }
-  await page.screenshot({ path: `${evidenceDir}/hcaptcha-timeout.png` })
   writeFileSync(
     `${evidenceDir}/hcaptcha.json`,
-    `${JSON.stringify({ appeared: true, human_used: true, wait_ms: Date.now() - startedAt, timed_out: true })}\n`
+    `${JSON.stringify({ appeared: true, human_used: false, blocked: true })}\n`
   )
-  throw new Error('Stripe hCaptcha remained after the ten-minute human window')
+  throw new Error('Stripe hCaptcha requires a person; automation stopped')
 }
 
 async function completeChallenge(page: Page) {
@@ -598,6 +579,7 @@ test('resumes declined checkout and completes it with a new card', async () => {
       const invoicePage = context
         .pages()
         .find((candidate) => candidate.url().includes('invoice.stripe.com'))!
+      await new Promise((resolve) => setTimeout(resolve, 3_000))
       writeFileSync(
         `${evidenceDir}/invoice-operation-before.json`,
         `${JSON.stringify({ operation_id: operationId, action_url: invoicePage.url(), opened_by: 'package-poller' }, null, 2)}\n`
@@ -609,6 +591,11 @@ test('resumes declined checkout and completes it with a new card', async () => {
       const pay = invoicePage.getByRole('button', { name: /pay/i }).last()
       await expect(pay).toBeVisible({ timeout: 30_000 })
       await pay.click()
+      await new Promise((resolve) => setTimeout(resolve, 3_000))
+      await invoicePage.screenshot({
+        path: `${evidenceDir}/invoice-after-pay.png`,
+        fullPage: true
+      })
       await findChallengeFrame(invoicePage)
       const challengeStartedAt = Date.now()
       await completeChallenge(invoicePage)

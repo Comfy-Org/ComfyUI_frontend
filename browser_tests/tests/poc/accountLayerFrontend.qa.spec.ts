@@ -4,8 +4,10 @@ import type { Page, Request } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const evidenceDir =
+  process.env.ACCOUNT_LAYER_EVIDENCE_DIR ??
   '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20g-frontend/RUN20G-9'
 const paymentsEvidenceDir =
+  process.env.ACCOUNT_LAYER_PAYMENTS_EVIDENCE_DIR ??
   '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20g-frontend/RUN20G-5'
 const testUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
 const storagePrefix = 'comfyui-frontend-account-layer-poc:'
