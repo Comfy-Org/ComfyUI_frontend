@@ -54,6 +54,15 @@ The Vite proxy keeps the standalone session token server-side. Browser REST and 
 WebSocket traffic use same-origin `/api/agent` routes, while all other `/api` and `/ws`
 traffic continues to reach ComfyUI.
 
+## Modes
+
+|                     | Standalone (no flag)                               | Record (`--record`)                                                                                |
+| ------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| What runs           | frontend plus the agent alone: SQLite, no Docker   | the agent on the cloud repo's own local stack (`cloud up`): Postgres, Redis, the doc host it ships |
+| Who uses it         | the dev loop; the smoke drives one real turn on it | whoever records a replay fixture                                                                   |
+| Records graph edits | no: this configuration writes no per-op audit rows | yes                                                                                                |
+| Cancels a turn      | no: the inline engine has no cancellation handle   | yes, with `--engine temporal`                                                                      |
+
 ## Playwright entrypoint
 
 Leave the environment running, then use a second terminal:
