@@ -865,7 +865,18 @@ describe('Store-driven serialization parity', () => {
     )
   })
 
-  test('drops an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it (qa-59)', ({
+  // Desired-outcome pin, not the buggy one (DrJKL / coderabbitai,
+  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3914958522,
+  // #discussion_r3914616366): `agentNodeMaterializer.ts` now closes this gap
+  // for anything routed through `useAgentCrdtFollower`, but a bare
+  // `LGraph` + `graphMutations.addNode()` (as below) never calls the
+  // materializer, so the underlying `LGraph._nodes` gap this test documents
+  // is still real for any caller that skips the follower composable.
+  // `test.fails` keeps the assertions expressing the CORRECT behavior; the
+  // test flips green (and must be converted to a plain `test`) the day
+  // `LGraph.serialize()`/`addNode()` itself closes the gap without relying on
+  // the FE-only follower seam.
+  test.fails('does NOT drop an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it (qa-59)', ({
     expect
   }) => {
     // Regression test for the qa-59 defect: the CRDT follower's addNode path
@@ -900,27 +911,13 @@ describe('Store-driven serialization parity', () => {
     expect(
       useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
     ).toHaveLength(1)
-    // ...but LGraph never learned about it.
-    expect(graph._nodes).toHaveLength(0)
 
     const serialized = graph.serialize()
 
-    // This is the bug: the store-only node is silently absent from the
-    // persisted document instead of being included. When this assertion
-    // starts failing (serialized.nodes has length 1), the fix has landed.
-    expect(serialized.nodes).toEqual([])
-    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        message: 'Graph serialization state mismatch'
-      }),
-      {
-        errorType: 'graph_serialization_state_mismatch',
-        context: {
-          graphId: graph.id,
-          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
-        }
-      }
-    )
+    // Desired behavior: the store-only node survives serialize() and no
+    // mismatch is reported.
+    expect(serialized.nodes).toHaveLength(1)
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   test('rejects additive configuration before mutating a populated graph', ({

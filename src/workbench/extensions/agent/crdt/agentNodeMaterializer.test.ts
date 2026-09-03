@@ -53,6 +53,9 @@ describe('materializeMissingAdapters', () => {
     expect(materialized).toEqual(['1'])
     expect(graph._nodes).toHaveLength(1)
     expect(graph.getNodeById(toNodeId(1))).not.toBeNull()
+    // `graph._nodes` alone doesn't exercise `LGraph.serialize()` — assert the
+    // actual save path a regression in `serialiseStoredNodes()` would break.
+    expect(graph.serialize().nodes).toHaveLength(1)
   })
 
   it('is a no-op for an id that already has a live adapter (getNodeById falsiness fix)', () => {
@@ -98,16 +101,16 @@ describe('materializeMissingAdapters', () => {
     const scope = seedAgentAddedNode(graph, 1)
     const nodeDataStore = useNodeDataStore()
 
-    const configureSpy = vi
-      .spyOn(LGraphNode.prototype, 'configure')
-      .mockImplementation(() => {
-        throw new Error('bad payload')
-      })
+    // Not restored explicitly: root `vitest.config` sets `restoreMocks: true`,
+    // so vitest already restores every mock between tests
+    // (https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3920899113).
+    vi.spyOn(LGraphNode.prototype, 'configure').mockImplementation(() => {
+      throw new Error('bad payload')
+    })
 
     const materialized = materializeMissingAdapters(graph, ['1'])
 
     expect(materialized).toEqual([])
     expect(nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))).toBeDefined()
-    configureSpy.mockRestore()
   })
 })

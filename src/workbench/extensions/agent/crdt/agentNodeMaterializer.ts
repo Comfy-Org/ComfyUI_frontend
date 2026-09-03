@@ -30,21 +30,53 @@
  * exists → adopt, don't recreate" branch (`graphLayoutAttachment.ts`) instead
  * of duplicating that logic here.
  *
- * Ordering is rollback-safe: `node.configure()` (which runs node-class /
- * extension code and can throw) happens BEFORE the store record is deleted;
- * the store record is only cleared once `configure()` has already succeeded,
- * immediately ahead of `graph.add()` (whose own failure, e.g.
- * `MAX_NUMBER_OF_NODES`, is caught and the record restored). A throw from
- * either fallible step leaves the authoritative store state exactly as it
- * was, so the node is never dropped from both the live graph and the store
- * at once — it just stays store-only and is retried on the next frame.
+ * Ordering matches canonical graph loading (`LGraph.configure()`: "add
+ * before configure, otherwise configure cannot create links") and stays
+ * rollback-safe: `graph.add()` runs first — on an EMPTY node, so a throw
+ * there touches neither the store nor a live adapter — then the store
+ * record is cleared, then `node.configure()` (which runs node-class /
+ * extension code, resolves slot/link references against `node.graph`, and
+ * can throw) runs against the now-attached node. A `configure()` throw
+ * rolls back both: the node is removed from the graph AND the store record
+ * is restored, so the node is never dropped from both the live graph and
+ * the store at once — it just stays store-only and is retried on the next
+ * frame.
  */
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { parseNodeId } from '@/types/nodeId'
+
+/**
+ * `readSemanticNode` (`ecsFollowerAdapter.ts`) builds `widgets_values` as a
+ * NAME-keyed object from the doc's `widgets` Y.Map, so that's the shape
+ * `NodeState.lastSerialization` carries. `LGraphNode.configure()` only
+ * consumes a name-keyed map via `widgets_values_named` — its
+ * `widgets_values` handling is positional-array-only
+ * (`Array.from(info.widgets_values ?? [])`), with the named fallback gated
+ * on `fallbackWidgetsValuesNames`, which most agent-added node types won't
+ * have. Left alone, an object under `widgets_values` silently becomes `[]`
+ * and every named widget value is dropped on materialization
+ * (github-actions HIGH,
+ * https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3917983350).
+ * Derive the named map explicitly so configure() restores it regardless of
+ * whether the target node class declares a fallback.
+ */
+function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
+  const values = serialised.widgets_values
+  if (
+    values === undefined ||
+    Array.isArray(values) ||
+    serialised.widgets_values_named !== undefined
+  ) {
+    return serialised
+  }
+  return { ...serialised, widgets_values_named: values }
+}
 
 /** The graph surface this module needs — mirrors `MintableGraph` in
  * `mintPortWiring.ts` so the two DI shapes stay compatible for callers that
@@ -54,6 +86,7 @@ export interface MaterializableGraph {
   rootGraph: { id: string }
   getNodeById(id: ReturnType<typeof parseNodeId>): LGraphNode | null
   add(node: LGraphNode): LGraphNode | null | undefined
+  remove?(node: LGraphNode): void
 }
 
 /**
@@ -82,7 +115,8 @@ export function materializeMissingAdapters(
     // `undefined` for an absent id despite its `LGraphNode | null` type, so
     // this must be a falsiness check, not `!== null` (which is always true
     // for `undefined` and made this whole function a no-op in production).
-    if (graph.getNodeById(nodeId)) continue // already has a live adapter
+    //
+    const existing = graph.getNodeById(nodeId)
 
     const state = nodeDataStore.getNode(scope.rootGraphId, nodeId)
     if (!state) continue // store no longer has it (deleted later in the batch)
@@ -91,29 +125,78 @@ export function materializeMissingAdapters(
     const serialised = state.lastSerialization
     if (!serialised) continue
 
-    const node = LiteGraph.createNode(state.type, state.title)
-    if (!node) continue // unregistered node type — nothing to materialize
+    if (existing) {
+      // A live adapter already existing does NOT mean "nothing to do": the
+      // op layer reports a remote `update` through the same
+      // `lastAddedNodeIds` channel as `add` (it applies an update as
+      // delete+add of the STORE record, `ecsFollowerAdapter.ts`), so an id
+      // can arrive here again after its first successful materialization.
+      // Skipping unconditionally left the OLD adapter (stale `pos`/widgets,
+      // possibly the old node class) bound while the store moved on, and
+      // `serialiseStoredNodes()` paired the stale adapter with the new
+      // state on save. Reconcile instead: drop the existing adapter and
+      // fall through to recreate it from the (already-updated) store
+      // record, same as a fresh add. This only fires once we've confirmed
+      // the store still has a record for this id (above) — an id with a
+      // live adapter but NO agent-owned store record (e.g. an ordinary
+      // user-created node whose id happens to collide, or a caller passing
+      // stale ids) must never be touched; that's the store check above,
+      // not this one. `nodeIds` here only ever contains ids the op layer
+      // JUST reported changed — a successfully materialized id is removed
+      // from the caller's pending set and only reappears if a later frame
+      // reports it again — so this never reconciles an id that hasn't
+      // actually changed.
+      graph.remove?.(existing)
+    }
 
-    // `configure()` runs extension/node-class code (`onConfigure`, and
-    // `graph.add()` below can trigger `onConnectionsChange`) and can throw —
-    // do this BEFORE touching the store so a throw here leaves the
-    // authoritative record untouched.
-    try {
-      node.configure(serialised)
-    } catch {
-      continue // leaves the store-only record in place; retried next frame
+    let node = LiteGraph.createNode(state.type, state.title)
+    if (!node) {
+      // Unregistered node type — a supported workflow state that normal
+      // graph loading preserves via a placeholder (`LGraph.configure()`,
+      // "in case of error we create a replacement node to avoid losing
+      // info"; see also `LGraph.ts`'s subgraph-unpack placeholder path).
+      // Dropping the id silently here would desync the store (which still
+      // has it) from the graph (which never learns of it) — materialize the
+      // same placeholder instead so it round-trips through save/load like
+      // any other unregistered-type node.
+      node = new LGraphNode(
+        state.title || state.type || 'Missing Node',
+        state.type
+      )
+      node.has_errors = true
     }
     node.id = nodeId
+
+    // Canonical ordering (`LGraph.configure()`: "add before configure,
+    // otherwise configure cannot create links") — `graph.add()` first, THEN
+    // `node.configure()`, so `node.graph` is set before slot/link resolution
+    // runs inside `configure()` (github-actions Medium,
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3917983386).
+    // Both steps stay fallible and rollback-safe: the store record is only
+    // cleared once `graph.add()` has already succeeded, and restored if
+    // `configure()` throws afterward.
+    let added: LGraphNode | null | undefined
+    try {
+      added = graph.add(node)
+    } catch (cause) {
+      added = undefined
+      reportError(cause, {
+        errorType: 'agent_node_materialize_add_failed',
+        context: { graphId: graph.id, nodeId: String(nodeId) }
+      })
+    }
+    if (!added) continue // leaves the store-only record in place; retried next frame
 
     // The store record this node is about to recreate is the ONLY thing
     // standing in the way of `attachNodeToStores`'s registration succeeding
     // with the CRDT-assigned id (`registerNode` sees an incumbent at this id
     // and returns undefined, which would otherwise force a mint-a-new-id
     // retry — wrong here, since this isn't a real collision, it's the same
-    // node already having store state). Clear it only once `configure()`
-    // above has already succeeded, and restore it if `graph.add()` (the
-    // other fallible step, e.g. `MAX_NUMBER_OF_NODES`) throws or declines,
-    // so a failure here never drops the node from the store and the save.
+    // node already having store state). Clear it only once `graph.add()`
+    // above has already succeeded, and restore it if `configure()` (the
+    // other fallible step — extension/node-class `onConfigure`,
+    // `onConnectionsChange`) throws, so a failure here never drops the node
+    // from the store and the save.
     nodeDataStore.deleteNode(scope, state)
     // Keyed by rootGraphId, matching every other clearNode call site in
     // graphMutations.ts's commit() (e.g. the reconcileNode-replace and
@@ -121,20 +204,22 @@ export function materializeMissingAdapters(
     // not per owning (sub)graph.
     widgetValueStore.clearNode(scope.rootGraphId, nodeId)
 
-    let added: LGraphNode | null | undefined
     try {
-      added = graph.add(node)
-    } catch {
-      added = undefined
-    }
-    if (added) {
-      materialized.push(rawId)
-    } else {
-      // Restore the authoritative record so the node isn't lost from the
-      // store/save; `registerNode` accepts the same state object back
-      // (`toRaw(incumbent) === toRaw(state)` in nodeDataStore.registerNode).
+      node.configure(withNamedWidgetValues(serialised))
+    } catch (cause) {
+      // Roll back both the store record AND the just-added live adapter, so
+      // a configure() failure doesn't leave a half-configured node live on
+      // the graph while also having dropped the authoritative record.
+      graph.remove?.(node)
       nodeDataStore.registerNode(scope, state)
+      reportError(cause, {
+        errorType: 'agent_node_materialize_configure_failed',
+        context: { graphId: graph.id, nodeId: String(nodeId) }
+      })
+      continue
     }
+
+    materialized.push(rawId)
   }
 
   return materialized

@@ -616,11 +616,18 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
+      // qa-59 / coderabbitai (discussion_r3920899129): ids pending
+      // materialization are scoped to `boundWorkflowId`'s doc — carrying them
+      // across a follower-target change would materialize a PRIOR doc's
+      // leftover ids against the NEW target's graph/store. Clear alongside
+      // every `adapter.unbind` below, at the same point the binding itself
+      // invalidates.
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
           adapter.unbind(boundWorkflowId)
           boundWorkflowId = null
+          pendingMaterializeIds.clear()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -632,7 +639,10 @@ export function useAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+            if (boundWorkflowId !== null) {
+              adapter.unbind(boundWorkflowId)
+              pendingMaterializeIds.clear()
+            }
             adapter.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
@@ -644,6 +654,7 @@ export function useAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           adapter.unbind(boundWorkflowId)
           boundWorkflowId = null
+          pendingMaterializeIds.clear()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -651,7 +662,10 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+        if (boundWorkflowId !== null) {
+          adapter.unbind(boundWorkflowId)
+          pendingMaterializeIds.clear()
+        }
         adapter.bind(next, bridge.follower)
         boundWorkflowId = next
       }

@@ -165,15 +165,26 @@ export class EcsFollowerAdapter {
     if (session.applying) return true
     session.applying = true
     let updateCommitted = false
+    // Accumulate across every frame this call drains, not just the frame
+    // that triggered it: `applyQueuedFrame` sets `session.lastAddedNodeIds`
+    // per-frame, and a caller (the qa-59 materializer) only reads it once
+    // after `applyFrame` returns, so an earlier frame's additions in the
+    // same drain must not be clobbered by a later frame's (possibly empty)
+    // set. Reset only here, at the start of the drain, never inside the loop.
+    const drainedAddedNodeIds = new Set<string>()
     try {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
         if (!frame) continue
         const committed = this.applyQueuedFrame(session, frame)
+        if (committed) {
+          for (const id of session.lastAddedNodeIds) drainedAddedNodeIds.add(id)
+        }
         if (frame === update) updateCommitted = committed
       }
     } finally {
       session.applying = false
+      session.lastAddedNodeIds = drainedAddedNodeIds
     }
     return updateCommitted
   }
