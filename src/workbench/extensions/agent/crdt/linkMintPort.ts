@@ -63,6 +63,8 @@ export interface LinkMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** Subgraph-node id chain from the root to the graph owning the link. */
+  resolveInteriorPath(owningGraphId: string): string[] | null
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
 }
@@ -106,7 +108,10 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
 
   function onPlaced(scope: LinkScopeView, topology: LinkTopologyView): void {
     if (!gateOpen()) return
-    if (!isRootScope(scope)) {
+    const path = isRootScope(scope)
+      ? undefined
+      : deps.resolveInteriorPath(scope.owningGraphId)
+    if (path !== undefined && (path === null || path.length === 0)) {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
@@ -118,7 +123,8 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         from_slot: topology.originSlot,
         to_node: topology.targetNodeId,
         to_slot: topology.targetSlot,
-        link_type: String(topology.type)
+        link_type: String(topology.type),
+        ...(path === undefined ? {} : { path: [path[0], ...path.slice(1)] })
       }
     ])
   }
