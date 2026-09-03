@@ -11,6 +11,7 @@ import type {
   InputSpec,
   ObjectInfoResponse
 } from '@/schemas/nodeDefSchema'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 
@@ -20,9 +21,7 @@ function getRequiredInputs(
   objectInfo: ObjectInfoResponse,
   nodeType: string
 ): Record<string, InputSpec> {
-  const nodeInfo = Object.entries(objectInfo).find(
-    ([type]) => type === nodeType
-  )?.[1]
+  const nodeInfo = widenToNullish(objectInfo[nodeType])
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
   }
@@ -40,9 +39,9 @@ function getRequiredInput(
   nodeType: string,
   inputName: string
 ): InputSpec {
-  const input = Object.entries(getRequiredInputs(objectInfo, nodeType)).find(
-    ([name]) => name === inputName
-  )?.[1]
+  const input = widenToNullish(
+    getRequiredInputs(objectInfo, nodeType)[inputName]
+  )
   if (!input) {
     throw new Error(`Missing input ${nodeType}.${inputName}`)
   }
@@ -121,9 +120,7 @@ export function addNodeWithDisplayName(
   displayName: string,
   donorNodeType = 'KSampler'
 ): void {
-  const donor = Object.entries(objectInfo).find(
-    ([type]) => type === donorNodeType
-  )?.[1]
+  const donor = widenToNullish(objectInfo[donorNodeType])
   if (!donor) {
     throw new Error(`Missing object_info entry for ${donorNodeType}`)
   }
