@@ -11,7 +11,7 @@ import {
   assertReachable,
   spawnGroup,
   supervise,
-  waitForAgent
+  waitForHttp
 } from './dev-agent-supervisor'
 
 async function assertWorkspacePackage(): Promise<void> {
@@ -31,7 +31,11 @@ async function assertWorkspacePackage(): Promise<void> {
   }
 }
 
-function standaloneEnv(options: Options, dataDir: string, token: string) {
+function standaloneEnv(
+  options: Options,
+  dataDir: string,
+  token: string
+): NodeJS.ProcessEnv {
   const env = { ...process.env }
   for (const key of [
     'AGENT_M2M_SECRET',
@@ -81,7 +85,12 @@ async function run(options: Options): Promise<number> {
 
   try {
     const startupResult = await Promise.race([
-      waitForAgent(agent, agentUrl, supervisor.requested).then(() => null),
+      waitForHttp(
+        agent,
+        `${agentUrl}/health`,
+        supervisor.requested,
+        'Standalone agent'
+      ).then(() => null),
       supervisor.exitRequested
     ])
     if (startupResult !== null) return await supervisor.stop(startupResult)
@@ -109,6 +118,7 @@ async function run(options: Options): Promise<number> {
       }
     )
     supervisor.watch(frontend)
+    await waitForHttp(frontend, frontendUrl, supervisor.requested, 'Vite')
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +
         `Playwright: PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=${frontendUrl} pnpm exec playwright test browser_tests/tests/agent\n` +

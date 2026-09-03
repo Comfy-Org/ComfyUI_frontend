@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createConnection } from 'node:net'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
@@ -12,7 +12,7 @@ import {
   spawnGroup,
   supervise,
   wait,
-  waitForAgent
+  waitForHttp
 } from './dev-agent-supervisor'
 
 const execFileAsync = promisify(execFile)
@@ -77,31 +77,43 @@ async function assertTemporalCli(): Promise<void> {
 // Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
 async function containerFor(
   portNumber: number,
-  service: string
+  service: string,
+  image: string
 ): Promise<string> {
   const { stdout } = await execFileAsync('docker', [
     'ps',
     '--format',
-    '{{.Names}} {{.Ports}}'
+    '{{.Names}} {{.Image}} {{.Ports}}'
   ])
-  const name = stdout
+  const names = stdout
     .split('\n')
-    .find((line) => line.includes(`:${portNumber}->`))
-    ?.split(' ')[0]
-  if (!name) {
-    throw new Error(`No container publishes ${service} ${portNumber}`)
+    .map((line) => line.split(' '))
+    .filter(
+      ([, imageName, ...ports]) =>
+        imageName?.includes(image) &&
+        ports.join(' ').includes(`:${portNumber}->`)
+    )
+    .map(([name]) => name)
+  if (names.length === 0) {
+    throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
   }
-  return name
+  if (names.length > 1) {
+    throw new Error(
+      `${names.join(', ')} all publish ${service} ${portNumber}; stop the ones this recording should not use`
+    )
+  }
+  return names[0]
 }
 
 async function pgExecCommand(override: string): Promise<string> {
   if (override) return override
-  const name = await containerFor(PG_PORT, 'Postgres')
+  const name = await containerFor(PG_PORT, 'Postgres', 'postgres')
   return `docker exec -i ${name} psql -U postgres -d postgres -At -c`
 }
 
 async function redisExecCommand(): Promise<string> {
-  return `docker exec -i ${await containerFor(REDIS_PORT, 'Redis')} redis-cli`
+  const name = await containerFor(REDIS_PORT, 'Redis', 'redis')
+  return `docker exec -i ${name} redis-cli`
 }
 
 // Every value is a module constant, so the statement carries no caller input.
@@ -117,14 +129,16 @@ async function seedIdentity(command: string): Promise<void> {
 
 // AGENT_CRDT_MODE=on fails closed without a catalog; the doc host takes its own per request.
 async function writeCatalog(fixture: string, dataDir: string): Promise<string> {
-  const parsed = JSON.parse(await readFile(fixture, 'utf8')) as {
-    workflow?: { catalog?: unknown }
-  }
-  if (!parsed.workflow?.catalog) {
+  const parsed: unknown = JSON.parse(await readFile(fixture, 'utf8'))
+  const workflow =
+    typeof parsed === 'object' && parsed !== null && 'workflow' in parsed
+      ? (parsed as { workflow?: { catalog?: unknown } }).workflow
+      : undefined
+  if (!workflow?.catalog) {
     throw new Error(`${fixture} has no workflow.catalog`)
   }
   const path = resolve(dataDir, 'widget-catalog.json')
-  await writeFile(path, JSON.stringify(parsed.workflow.catalog))
+  await writeFile(path, JSON.stringify(workflow.catalog))
   return path
 }
 
@@ -169,10 +183,18 @@ export async function runRecord(options: Options): Promise<number> {
   const secretPath = resolve(dataDir, 'm2m.secret')
   const secret = randomBytes(32).toString('hex')
   await writeFile(secretPath, secret, { mode: 0o600 })
-  const catalogPath = await writeCatalog(options.catalog, dataDir)
-  const pgExec = await pgExecCommand(options.pgExec)
-  const redisExec = await redisExecCommand()
-  await seedIdentity(pgExec)
+  let catalogPath: string
+  let pgExec: string
+  let redisExec: string
+  try {
+    catalogPath = await writeCatalog(options.catalog, dataDir)
+    pgExec = await pgExecCommand(options.pgExec)
+    redisExec = await redisExecCommand()
+    await seedIdentity(pgExec)
+  } catch (error) {
+    await rm(dataDir, { force: true, recursive: true })
+    throw error
+  }
 
   const agentUrl = `http://127.0.0.1:${options.agentPort}`
   const supervisor = supervise(dataDir)
@@ -194,7 +216,13 @@ export async function runRecord(options: Options): Promise<number> {
         process.env
       )
     )
-    await waitForPort(options.temporalPort, 'Temporal', 60_000)
+    const listening = await Promise.race([
+      waitForPort(options.temporalPort, 'Temporal', 60_000).then(() => true),
+      supervisor.exitRequested.then(() => false)
+    ])
+    if (!listening) {
+      throw new Error('Temporal exited before it started listening')
+    }
   }
   const docHost = spawnGroup('bash', ['dochost/start.sh'], agentDir, {
     ...process.env,
@@ -211,7 +239,12 @@ export async function runRecord(options: Options): Promise<number> {
 
   try {
     const startupResult = await Promise.race([
-      waitForAgent(agent, agentUrl, supervisor.requested).then(() => null),
+      waitForHttp(
+        agent,
+        `${agentUrl}/health`,
+        supervisor.requested,
+        'Standalone agent'
+      ).then(() => null),
       supervisor.exitRequested
     ])
     if (startupResult !== null) return await supervisor.stop(startupResult)

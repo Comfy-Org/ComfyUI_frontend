@@ -155,5 +155,15 @@ export function parseOptions(args: string[]): Options {
       `Agent health port ${options.healthPort} (agent port + 1) collides with the frontend port`
     )
   }
+  if (options.record && options.docHostPort === options.agentPort) {
+    throw new Error(
+      `--doc-host-port ${options.docHostPort} collides with the agent port`
+    )
+  }
+  if (options.record && options.docHostPort === options.healthPort) {
+    throw new Error(
+      `--doc-host-port ${options.docHostPort} collides with the agent health port (agent port + 1)`
+    )
+  }
   return options
 }

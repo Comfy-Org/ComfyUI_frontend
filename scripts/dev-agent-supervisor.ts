@@ -50,25 +50,26 @@ async function waitForExit(
   ])
 }
 
-export async function waitForAgent(
+export async function waitForHttp(
   child: ChildProcess,
   url: string,
-  stopped: () => boolean
+  stopped: () => boolean,
+  label: string
 ): Promise<void> {
   const deadline = Date.now() + 120_000
   while (Date.now() < deadline && !stopped()) {
     if (hasExited(child)) {
-      throw new Error(`Standalone agent exited with code ${child.exitCode}`)
+      throw new Error(`${label} exited with code ${child.exitCode}`)
     }
     try {
-      await assertReachable(`${url}/health`)
+      await assertReachable(url)
       return
     } catch {
       await wait(500)
     }
   }
   if (stopped()) return
-  throw new Error(`Standalone agent did not become ready at ${url}/health`)
+  throw new Error(`${label} did not become ready at ${url}`)
 }
 
 // One lifecycle for a spawned group: the first exit reason wins and teardown runs once.

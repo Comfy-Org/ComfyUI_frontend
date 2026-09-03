@@ -22,6 +22,10 @@ class FakeSocket extends EventTarget {
     )
   }
 
+  receiveRaw(data: string): void {
+    this.dispatchEvent(new MessageEvent('message', { data }))
+  }
+
   error(): void {
     this.dispatchEvent(new Event('error'))
   }
@@ -62,6 +66,17 @@ describe('createStandaloneAgentEventSource', () => {
       type: 'agent_message_delta',
       data: { delta: 'hi' }
     })
+  })
+
+  it('forwards an empty text frame instead of dropping it', () => {
+    const { source, sockets } = sourceHarness()
+    const seen = vi.fn()
+
+    source.subscribe(seen)
+    sockets[0].open()
+    sockets[0].receiveRaw('')
+
+    expect(seen).toHaveBeenCalledWith('')
   })
 
   it('reconnects after a backend reload', () => {
