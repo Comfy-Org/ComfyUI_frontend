@@ -294,7 +294,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     } else {
       this.eventQueue.push({
         eventName,
-        properties: properties
+        properties
       })
     }
   }
