@@ -522,6 +522,17 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('ignores malformed operation results without reporting a nack', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1' })
+    dispatchFrame('doc_ops_result', null)
+
+    expect(status()).toMatchObject({ opNacks: 0, lastOpNack: null })
+    expect(reportErrorMock).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('reports an ECS projection failure and keeps listening for updates', () => {
     const { unmount, status } = mountFollower('wf-1')
     adapterState.applyFrame.mockImplementationOnce(() => {
