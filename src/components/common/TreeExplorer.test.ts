@@ -95,6 +95,9 @@ describe('TreeExplorer', () => {
       'data-parent-label',
       'Folder'
     )
+    expect(
+      screen.getByRole('treeitem', { name: /Folder/ })
+    ).not.toHaveAttribute('data-selected')
   })
 
   it('lets a folder click handler own expansion', async () => {
