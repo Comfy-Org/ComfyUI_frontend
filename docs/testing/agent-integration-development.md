@@ -18,6 +18,14 @@ and deletes the temporary agent database.
             └──▶ Air ── rebuild/restart ──▶ Comfy-Org/cloud/services/agent
 ```
 
+## Start here
+
+Three jobs, three docs, in the order you will meet them:
+
+1. Replay the recorded agent conversations as tests. Needs only ComfyUI on 8188. `browser_tests/README.md`, "Playbook".
+2. Run the real agent locally: standalone for the dev loop and the smoke, record mode for the recording stack. Needs the cloud checkout. This doc.
+3. Record a new conversation through record mode. Needs `cloud up` in the cloud checkout. `browser_tests/fixtures/data/agent/README.md`, "Playbook".
+
 ## Playbook
 
 ```bash
