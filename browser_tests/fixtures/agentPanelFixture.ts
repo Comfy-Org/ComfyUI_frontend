@@ -26,11 +26,17 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo?: 'server'
 }
 
 async function mockAgentBoot(
   page: Page,
-  { agentFlag, settings }: { agentFlag: boolean } & BootAgentAppOptions
+  {
+    agentFlag,
+    settings,
+    objectInfo
+  }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
     features: agentFeatures(agentFlag),
@@ -38,7 +44,8 @@ async function mockAgentBoot(
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings
-    }
+    },
+    objectInfo
   })
   await mockBilling(page)
   const emptyAssets: ListAssetsResponse = {

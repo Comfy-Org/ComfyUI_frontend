@@ -12,6 +12,8 @@ interface CloudBootOptions {
   features: RemoteConfig
   /** Body for `/api/settings` (defaults to `{}`). */
   settings?: unknown
+  /** `'server'` lets `/api/object_info` reach the backend so real node definitions load. */
+  objectInfo?: 'server'
 }
 
 /**
@@ -21,7 +23,7 @@ interface CloudBootOptions {
  */
 export async function mockCloudBoot(
   page: Page,
-  { features, settings = {} }: CloudBootOptions
+  { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
   await page.route('**/api/system_stats', (r) =>
@@ -42,7 +44,8 @@ export async function mockCloudBoot(
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute(settings)))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  if (objectInfo !== 'server')
+    await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/auth/session', (r) =>

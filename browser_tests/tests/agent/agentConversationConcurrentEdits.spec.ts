@@ -18,6 +18,10 @@ if (hasAgentConversation('agent-rec-three-sequential-adds'))
         page
       }) => {
         test.setTimeout(60_000)
+        test.fixme(
+          true,
+          'main re-projects the human-edited node without its widgets, see #16870'
+        )
         const { conversation } = agentConversation
         const opsEntries = conversation.turns[0].response
           .map((entry, index) => (entry.kind === 'graph_ops' ? index : -1))

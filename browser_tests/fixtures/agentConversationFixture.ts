@@ -4,7 +4,6 @@ import { expect } from '@playwright/test'
 import type { GraphSnapshot, Op } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import enNodes from '@/locales/en/nodeDefs.json' with { type: 'json' }
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -62,11 +61,6 @@ interface RecordedWidgetValue {
   value: string | number
 }
 
-function displayName(type: string): string {
-  const entry = (enNodes as Record<string, { display_name?: string }>)[type]
-  return entry?.display_name ?? type
-}
-
 // The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
 function toolRowLabel(name: string): string {
   const known = knownTool(name)?.labelKey
@@ -80,15 +74,17 @@ function toolRowLabel(name: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
+// Connected link slots by name; a node definition may render slots the recording never listed.
 interface GraphNodeSnapshot {
   id: string
   title: string
-  inputs: boolean[]
-  outputs: boolean[]
+  inputs: string[]
+  outputs: string[]
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
 class AgentConversationHarness {
+  private readonly displayNames: Record<string, string> = {}
   readonly postedMessages: string[] = []
   // Human-op minting is observable only on the client side of the socket.
   readonly clientFrames: { type?: unknown; data?: unknown }[] = []
@@ -129,11 +125,27 @@ class AgentConversationHarness {
     })
     await bootAgentApp(this.page, agentFlag, {
       // Only the Vue node renderer projects follower edits onto the canvas.
-      settings: { 'Comfy.VueNodes.Enabled': true }
+      settings: { 'Comfy.VueNodes.Enabled': true },
+      // Replayed nodes materialize from registered node types; the recordings use core nodes only.
+      objectInfo: 'server'
     })
 
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.loadDisplayNames()
+  }
+
+  // The same definitions the app just loaded; an untitled node renders its display name.
+  private async loadDisplayNames(): Promise<void> {
+    const response = await this.page.request.get(
+      new URL('/api/object_info', this.page.url()).href
+    )
+    const defs = (await response.json()) as Record<
+      string,
+      { display_name?: string }
+    >
+    for (const [type, def] of Object.entries(defs))
+      if (def.display_name) this.displayNames[type] = def.display_name
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -243,20 +255,30 @@ class AgentConversationHarness {
         const type = String(node.type)
         const body = byId.get(id) ?? byType.get(type)
         const widgets = new Set(catalog[type]?.widget_order ?? [])
+        const inputNames = (body?.inputs ?? []).map((slot) => slot.name)
+        const outputNames = (body?.outputs ?? []).map((slot) => slot.name)
         return {
           id,
           // An untitled node renders its registered display name, as LiteGraph.createNode does.
-          title: byId.get(id)?.title ?? displayName(type),
+          title: byId.get(id)?.title ?? this.displayNames[type] ?? type,
           // Widget-backed inputs render as widgets, not slot rows.
-          inputs: (body?.inputs ?? [])
-            .map((slot, index) => ({ name: slot.name, index }))
-            .filter(({ name }) => !widgets.has(name))
-            .map(({ index }) =>
-              links.some((link) => String(link[3]) === id && link[4] === index)
-            ),
-          outputs: (body?.outputs ?? []).map((_, index) =>
-            links.some((link) => String(link[1]) === id && link[2] === index)
-          )
+          inputs: [
+            ...new Set(
+              links
+                .filter((link) => String(link[3]) === id)
+                .map((link) => inputNames[link[4]])
+                .filter((name) => name !== undefined && !widgets.has(name))
+            )
+          ].sort(),
+          // One slot can feed several links.
+          outputs: [
+            ...new Set(
+              links
+                .filter((link) => String(link[1]) === id)
+                .map((link) => outputNames[link[2]])
+                .filter((name) => name !== undefined)
+            )
+          ].sort()
         }
       })
       .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
@@ -367,10 +389,16 @@ class AgentConversationHarness {
       .locator('[data-node-id]')
       .evaluateAll((nodes) =>
         nodes.map((node) => {
+          // Widget sockets are dot-only and carry no name.
           const connected = (selector: string) =>
-            Array.from(node.querySelectorAll(selector)).map((slot) =>
-              slot.classList.contains('lg-slot--connected')
+            Array.from(
+              node.querySelectorAll(
+                `${selector}.lg-slot--connected:not(.lg-slot--dot-only)`
+              )
             )
+              .map((slot) => slot.textContent?.trim() ?? '')
+              .filter((name) => name !== '')
+              .sort()
           return {
             id: node.getAttribute('data-node-id') ?? '',
             title:
