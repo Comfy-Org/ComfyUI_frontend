@@ -41,6 +41,16 @@ async function signIn(page: Page) {
       { timeout: 30_000 }
     )
     .toBe(true)
+  const currentEmail = await page.evaluate(() => {
+    const seam = Reflect.get(window, '__accountLayerPoc') as {
+      getCurrentEmail?(): string | null
+    }
+    return seam.getCurrentEmail?.() ?? null
+  })
+  if (currentEmail === email) {
+    writeFileSync(`${evidenceDir}/firebase-password-signins.txt`, '0\n')
+    return
+  }
   await page.evaluate(async () => {
     const seam = Reflect.get(window, '__accountLayerPoc') as {
       signOut(): Promise<void>
@@ -51,8 +61,30 @@ async function signIn(page: Page) {
   await page.getByRole('button', { name: /use email/i }).click()
   await page.getByLabel(/email/i).fill(email)
   await page.getByLabel(/password/i).fill(password)
+  const signInResponse = page.waitForResponse((response) =>
+    response
+      .url()
+      .includes('identitytoolkit.googleapis.com/v1/accounts:signInWithPassword')
+  )
   await page.getByRole('button', { name: /sign in|log in/i }).click()
-  await expect(page).not.toHaveURL(/\/cloud\/login/)
+  const response = await signInResponse
+  const body = (await response.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >
+  const redacted = { ...body, idToken: undefined, refreshToken: undefined }
+  writeFileSync(
+    `${evidenceDir}/signin-response.json`,
+    `${JSON.stringify({ status: response.status(), body: redacted }, null, 2)}\n`
+  )
+  writeFileSync(`${evidenceDir}/firebase-password-signins.txt`, '1\n')
+  if (!response.ok()) {
+    const error = body.error as { message?: string } | undefined
+    throw new Error(
+      `Firebase sign-in failed: ${error?.message ?? response.status()}`
+    )
+  }
+  await expect(page).not.toHaveURL(/\/cloud\/login/, { timeout: 30_000 })
   await waitForStableUrl(page)
 }
 
@@ -303,42 +335,74 @@ async function completeChallenge(page: Page) {
   )
   const challenge = frames.find(({ completeVisible }) => completeVisible)
   if (!challenge) throw new Error('No visible 3DS COMPLETE button')
-  const complete = challenge.frame.getByRole('button', {
-    name: /^(complete|complete authentication)$/i
-  })
-  const attempts: Array<{ attempt: number; method: string; outcome: string }> =
-    []
-  for (const [index, method] of ['click', 'force', 'evaluate'].entries()) {
-    if (method === 'click') await complete.click()
-    // oxlint-disable-next-line playwright/no-force-option -- required fallback for Stripe's cross-origin test challenge
-    if (method === 'force') await complete.click({ force: true })
-    if (method === 'evaluate')
-      await complete.evaluate((element) => {
-        if (element instanceof HTMLElement) element.click()
-      })
-    await page.screenshot({ path: `${evidenceDir}/3ds-click-${index + 1}.png` })
-    const outcome = await Promise.race([
-      page
-        .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
-          timeout: 20_000,
-          waitUntil: 'commit'
+  const complete = challenge.frame.locator('#test-source-authorize-3ds')
+  await challenge.frame
+    .locator('.spinner, [class*="spinner"], [aria-busy="true"]')
+    .waitFor({ state: 'hidden', timeout: 30_000 })
+    .catch(() => {})
+  await page.screenshot({ path: `${evidenceDir}/3ds-before-action.png` })
+  const attempts: Array<{
+    attempt: number
+    method: string
+    challengePost: boolean
+  }> = []
+  const methods = [
+    {
+      name: 'message-channel',
+      run: () =>
+        challenge.frame.evaluate(() =>
+          window.postMessage({ test_source: { authorize: true } }, '*')
+        )
+    },
+    {
+      name: 'in-frame-element-click',
+      run: () =>
+        challenge.frame.evaluate(() => {
+          document.getElementById('test-source-authorize-3ds')?.click()
         })
-        .then(() => 'app-return'),
-      complete
-        .waitFor({ state: 'detached', timeout: 20_000 })
-        .then(() => 'frame-detached'),
-      page
-        .getByText(/verify your payment|processing/i)
-        .waitFor({ state: 'visible', timeout: 20_000 })
-        .then(() => 'processing')
-    ]).catch(() => 'button-still-visible')
-    attempts.push({ attempt: index + 1, method, outcome })
-    if (outcome !== 'button-still-visible') break
+    },
+    {
+      name: 'visible-locator-click',
+      run: async () => {
+        await expect(complete).toBeVisible()
+        await complete.click()
+      }
+    }
+  ]
+  for (const [index, method] of methods.entries()) {
+    const requestPromise = page
+      .waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          request.url().includes('/challenge/complete'),
+        { timeout: 15_000 }
+      )
+      .catch(() => null)
+    await method.run()
+    const request = await requestPromise
+    await page.screenshot({
+      path: `${evidenceDir}/3ds-attempt-${index + 1}.png`
+    })
+    attempts.push({
+      attempt: index + 1,
+      method: method.name,
+      challengePost: request !== null
+    })
+    if (request) {
+      const response = await request.response()
+      writeFileSync(
+        `${evidenceDir}/challenge-complete-response.txt`,
+        `status: ${response?.status() ?? 'no-response'}\n${(await response?.text().catch(() => '')) ?? ''}\n`
+      )
+      break
+    }
   }
   writeFileSync(
     `${evidenceDir}/3ds-click.json`,
     `${JSON.stringify({ frame_url: challenge.url, attempts }, null, 2)}\n`
   )
+  if (!attempts.some(({ challengePost }) => challengePost))
+    throw new Error('No 3DS attempt produced the challenge/complete POST')
 }
 
 test('resumes declined checkout and completes it with a new card', async () => {
