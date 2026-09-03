@@ -23,7 +23,10 @@ test.describe('Workshop V2', () => {
   }) => {
     await page.goto('/workshop/')
     const hub = page.getByTestId('workshop-hub')
-    await expect(hub.getByTestId('hub-heading')).toContainText('610+ workflows')
+    await expect(hub.getByTestId('hub-heading')).toContainText(
+      '48 models and 610 workflows'
+    )
+    await expect(hub.getByTestId('hub-use-case-all')).toContainText('658')
     await expect(hub.getByTestId('hub-card').first()).toBeVisible()
     await hub.getByTestId('hub-tab-comfyApps').click()
     await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(

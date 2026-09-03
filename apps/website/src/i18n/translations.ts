@@ -8866,16 +8866,17 @@ Enterprise`
     en: 'Opens this page with the controls above already applied.',
     'zh-CN': '打开此页面时会自动应用上面的控制项。'
   },
-  'workshop.hub.title': { en: 'Browse Workflows', 'zh-CN': '浏览工作流' },
+  'workshop.hub.title': { en: 'Browse the Workshop', 'zh-CN': '浏览工作坊' },
   'workshop.hub.subtitle': {
-    en: '{n}+ workflows across every model and category',
-    'zh-CN': '{n}+ 个工作流，覆盖每个模型与分类'
+    en: '{models} models and {workflows} workflows, by what you want to make',
+    'zh-CN': '{models} 个模型与 {workflows} 个工作流，按你想做的事分类'
   },
+  'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',
     'zh-CN': '搜索工作流、模型、创作者...'
   },
-  'workshop.hub.kind.all': { en: 'ALL', 'zh-CN': '全部' },
+  'workshop.hub.kind.all': { en: 'Everything', 'zh-CN': '全部' },
   'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
   'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
   'workshop.hub.kind.models': { en: 'Models', 'zh-CN': '模型' },

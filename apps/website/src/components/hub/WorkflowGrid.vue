@@ -87,6 +87,8 @@ const showingText = computed(() =>
       />
     </div>
 
+    <slot name="lead" />
+
     <slot v-if="store.activeTab.value === 'models'" name="models" />
     <div
       v-else

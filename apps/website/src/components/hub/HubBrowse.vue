@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useHubStore } from '../../composables/useHubStore'
-import type { WorkshopModel } from '../../config/workshop'
-import { workshopModels } from '../../config/workshop'
+import type { UseCase } from '../../config/workshop'
+import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+import {
+  partnerModelFor,
+  useCaseForTemplate
+} from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
@@ -29,10 +33,51 @@ onUnmounted(() => store.reset())
 
 const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
 
+const useCase = ref<UseCase | 'all'>('all')
+
+const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
+  all: 'workshop.hub.kind.all',
+  'generate-images': 'workshop.useCase.generateImages',
+  'edit-images': 'workshop.useCase.editImages',
+  'generate-videos': 'workshop.useCase.generateVideos',
+  'animate-images': 'workshop.useCase.animateImages',
+  'edit-videos': 'workshop.useCase.editVideos',
+  '3d': 'workshop.useCase.3d',
+  audio: 'workshop.useCase.audio',
+  text: 'workshop.useCase.text'
+}
+
+// One pass over the catalogue: every later count and filter reads this.
+const templateUseCase = new Map(
+  templates.map((tmpl) => [tmpl, useCaseForTemplate(tmpl, workshopModels)])
+)
+
+const inUseCase = (value: UseCase | 'all') => ({
+  models: workshopModels.filter(
+    (model) => value === 'all' || useCaseFor(model) === value
+  ),
+  templates: templates.filter(
+    (tmpl) => value === 'all' || templateUseCase.get(tmpl) === value
+  )
+})
+
+const useCases = computed(() =>
+  (['all', ...USE_CASES] as const)
+    .map((value) => {
+      const { models, templates: scoped } = inUseCase(value)
+      return { value, total: models.length + scoped.length }
+    })
+    .filter((entry) => entry.total > 0)
+)
+
+const scoped = computed(() => inUseCase(useCase.value))
+
 onMounted(() => {
   const params = new URLSearchParams(location.search)
   const tab = TABS.find((value) => value === params.get('tab'))
   if (tab) store.setTab(tab)
+  const wanted = USE_CASES.find((value) => value === params.get('useCase'))
+  if (wanted) useCase.value = wanted
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
@@ -70,32 +115,15 @@ const gridLabels: GridLabels = {
   showing: t('workshop.hub.showing', locale)
 }
 
-const normalize = (value: string) =>
-  value.toLowerCase().replace(/[^a-z0-9]/g, '')
-
 // A Hub entry tagged as a partner node whose model matches a Workshop model
 // opens that model's playground; everything else stays on comfy.org.
-function partnerModelFor(template: HubTemplate): WorkshopModel | undefined {
-  if (!template.tags.includes('API')) return undefined
-  const names = template.models.map(normalize)
-  return (
-    workshopModels.find((model) => names.includes(normalize(model.name))) ??
-    workshopModels.find((model) => {
-      const key = normalize(model.name)
-      return (
-        key.length >= 4 &&
-        names.some((name) => name.includes(key) || key.includes(name))
-      )
-    })
-  )
-}
-
 const hrefFor = (template: HubTemplate) =>
-  partnerModelFor(template)?.href ?? hubWorkflowPath(template.name)
+  partnerModelFor(template, workshopModels)?.href ??
+  hubWorkflowPath(template.name)
 
 const filteredModels = computed(() => {
   const query = store.searchQuery.value.trim().toLowerCase()
-  const matches = workshopModels.filter(
+  const matches = scoped.value.models.filter(
     (model) =>
       query === '' ||
       model.name.toLowerCase().includes(query) ||
@@ -111,7 +139,7 @@ const filteredTemplates = computed(() => {
   const tags = badges.filter((b) => b.type === 'tag').map((b) => b.value)
   const models = badges.filter((b) => b.type === 'model').map((b) => b.value)
   const query = store.searchQuery.value.trim().toLowerCase()
-  return templates.filter(
+  return scoped.value.templates.filter(
     (tmpl) =>
       (tags.length === 0 || tags.some((tag) => tmpl.tags.includes(tag))) &&
       (models.length === 0 ||
@@ -144,13 +172,41 @@ const filteredTemplates = computed(() => {
       </h1>
       <p class="text-content-secondary text-base lg:text-lg">
         {{
-          t('workshop.hub.subtitle', locale).replace(
-            '{n}',
-            String(templates.length)
-          )
+          t('workshop.hub.subtitle', locale)
+            .replace('{models}', String(workshopModels.length))
+            .replace('{workflows}', String(templates.length))
         }}
       </p>
     </div>
+
+    <nav
+      v-if="!embedded"
+      class="-mx-1 mb-2 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10 px-1"
+      :aria-label="t('workshop.useCase.label', locale)"
+      data-testid="hub-use-cases"
+    >
+      <button
+        v-for="entry in useCases"
+        :key="entry.value"
+        type="button"
+        :aria-pressed="useCase === entry.value"
+        :data-testid="`hub-use-case-${entry.value}`"
+        :class="
+          cn(
+            'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
+            useCase === entry.value
+              ? 'border-primary-comfy-yellow text-primary-warm-white'
+              : 'text-content-secondary hover:text-content border-transparent'
+          )
+        "
+        @click="useCase = entry.value"
+      >
+        {{ t(useCaseLabelKey[entry.value], locale) }}
+        <span class="text-content-muted text-xs tabular-nums">
+          {{ entry.total }}
+        </span>
+      </button>
+    </nav>
     <div v-if="!embedded" class="bg-page sticky top-0 z-40 pt-2 pb-6 lg:pb-8">
       <label class="relative block">
         <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
@@ -181,6 +237,31 @@ const filteredTemplates = computed(() => {
       :labels="gridLabels"
       :href-for="hrefFor"
     >
+      <template #lead>
+        <section
+          v-if="store.activeTab.value === 'all' && filteredModels.length"
+          class="mb-10"
+          data-testid="hub-models-lead"
+        >
+          <h2
+            class="text-content-secondary mb-4 flex items-baseline gap-2 text-xs font-bold tracking-wider uppercase"
+          >
+            {{ t('workshop.hub.kind.models', locale) }}
+            <span class="tabular-nums">{{ filteredModels.length }}</span>
+          </h2>
+          <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <li v-for="model in filteredModels.slice(0, 6)" :key="model.slug">
+              <WorkshopModelCard :model :locale />
+            </li>
+          </ul>
+          <h2
+            class="text-content-secondary mt-10 mb-4 flex items-baseline gap-2 text-xs font-bold tracking-wider uppercase"
+          >
+            {{ t('workshop.hub.workflows', locale) }}
+          </h2>
+        </section>
+      </template>
+
       <template #models>
         <ul
           class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"

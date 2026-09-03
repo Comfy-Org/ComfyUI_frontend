@@ -53,6 +53,20 @@ describe('HubBrowse', () => {
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 36')
   })
 
+  it('browses by use case and keeps models and workflows under one count', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('658')
+
+    await user.click(screen.getByTestId('hub-use-case-3d'))
+    const lead = screen.getByTestId('hub-models-lead')
+    expect(lead.textContent).toContain('Tripo')
+    expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
+
+    await user.click(screen.getByTestId('hub-tab-models'))
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
+  })
+
   it('counts the applied filters in the popover and clears them', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
