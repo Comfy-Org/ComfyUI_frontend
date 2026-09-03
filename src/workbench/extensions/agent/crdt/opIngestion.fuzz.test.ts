@@ -1,6 +1,6 @@
 /**
  * QA-12: fuzz the FE op-ingestion boundary with malformed `connect` payloads
- * (the from_slot-class gaps: negatives, floats, NaN, wrong types).
+ * (slot gaps: negatives, floats, NaN, wrong types).
  *
  * Two seams, both exercised end to end rather than mocked:
  *
@@ -17,7 +17,7 @@
  *     the sender attaches wire identity but performs no payload validation
  *     (`opEnvelope.ts`, `opSender.ts` — grep confirms no slot check anywhere
  *     in the FE write leg). The applier is the actual gate. This fuzz proves
- *     that gate holds for the from_slot-class inputs: every malformed
+ *     that gate holds for malformed source and target slots: every malformed
  *     `connect` comes back as a typed `rejected` outcome carrying the slot
  *     reason code (never a thrown `OpRejectedError` escaping `applyOps`),
  *     and, mirroring the existing abort-remainder vector in
@@ -93,7 +93,7 @@ function envelope(actor = 'human:u1:tab', baseVersion = 1) {
   }
 }
 
-/** The from_slot-class gap generator: negatives, floats, NaN, and wrong types. */
+/** The slot gap generator: negatives, floats, NaN, and wrong types. */
 const arbMalformedSlot = fc.oneof(
   fc.integer({ min: -1000, max: -1 }),
   fc
@@ -106,25 +106,39 @@ const arbMalformedSlot = fc.oneof(
   fc.array(fc.integer(), { maxLength: 3 })
 )
 
-const SLOT_REJECTION_CODE = 'output_slot_missing'
+const SLOT_REJECTION_CODES = {
+  from: 'output_slot_missing',
+  toNumber: 'input_slot_missing',
+  toOther: 'malformed_op'
+} as const
 
-function connectOp(fromSlot: unknown): GraphOperation {
+function connectOp(fromSlot: unknown, toSlot: unknown): GraphOperation {
   return {
     op: 'connect',
     link_id: 41,
     from_node: 1,
     from_slot: fromSlot as number,
     to_node: 2,
-    to_slot: 0,
+    to_slot: toSlot as number,
     link_type: 'IMAGE'
   }
 }
 
-function expectSlotRejection(outcome: ApplyResult['outcomes'][number]) {
+function expectSlotRejection(
+  outcome: ApplyResult['outcomes'][number],
+  code: (typeof SLOT_REJECTION_CODES)[keyof typeof SLOT_REJECTION_CODES]
+) {
   expect(outcome.outcome).toBe('rejected')
   if (outcome.outcome === 'rejected') {
-    expect(outcome.reason.code).toBe(SLOT_REJECTION_CODE)
+    expect(outcome.reason.code).toBe(code)
   }
+}
+
+function expectedSlotRejectionCode(endpoint: 'from' | 'to', slot: unknown) {
+  if (endpoint === 'from') return SLOT_REJECTION_CODES.from
+  return typeof slot === 'number'
+    ? SLOT_REJECTION_CODES.toNumber
+    : SLOT_REJECTION_CODES.toOther
 }
 
 describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloads', () => {
@@ -183,7 +197,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
   describe('seam 2: applier rejects malformed connect ops gracefully (never a raw throw)', () => {
     it('applies the well-formed control on the same seed', () => {
       const doc = seedDoc()
-      const op = { ...envelope(), ...connectOp(0) } as unknown as Op
+      const op = { ...envelope(), ...connectOp(0, 0) } as unknown as Op
 
       const result = applyOps(doc, [op], CATALOG)
 
@@ -191,62 +205,85 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
       expect(readGraph(doc).links[41]).toEqual([41, 1, 0, 2, 0, 'IMAGE'])
     })
 
-    it('rejects a from_slot-class malformed connect without throwing, doc unchanged', () => {
+    it('rejects malformed source and target slots without throwing, doc unchanged', () => {
       fc.assert(
-        fc.property(arbMalformedSlot, (badSlot) => {
-          const doc = seedDoc()
-          const before = readGraph(doc)
-          const op = { ...envelope(), ...connectOp(badSlot) } as unknown as Op
+        fc.property(
+          fc.constantFrom<'from' | 'to'>('from', 'to'),
+          arbMalformedSlot,
+          (endpoint, badSlot) => {
+            const doc = seedDoc()
+            const before = readGraph(doc)
+            const op = {
+              ...envelope(),
+              ...connectOp(
+                endpoint === 'from' ? badSlot : 0,
+                endpoint === 'to' ? badSlot : 0
+              )
+            } as unknown as Op
 
-          let result: ApplyResult | undefined
-          expect(() => {
-            result = applyOps(doc, [op], CATALOG)
-          }).not.toThrow()
+            let result: ApplyResult | undefined
+            expect(() => {
+              result = applyOps(doc, [op], CATALOG)
+            }).not.toThrow()
 
-          expect(result!.outcomes).toHaveLength(1)
-          // Never a raw TypeError escaping: a typed rejection carrying the
-          // slot reason code is the only failure mode.
-          expectSlotRejection(result!.outcomes[0])
-          expect(readGraph(doc)).toEqual(before)
-        }),
+            expect(result!.outcomes).toHaveLength(1)
+            // Never a raw TypeError escaping: a typed rejection carrying the
+            // slot reason code is the only failure mode.
+            expectSlotRejection(
+              result!.outcomes[0],
+              expectedSlotRejectionCode(endpoint, badSlot)
+            )
+            expect(readGraph(doc)).toEqual(before)
+          }
+        ),
         { numRuns: 200 }
       )
     })
 
-    it('abort-remainder holds when a from_slot-class malformed connect lands mid-batch', () => {
+    it('abort-remainder holds when a malformed source or target slot lands mid-batch', () => {
       fc.assert(
-        fc.property(arbMalformedSlot, (badSlot) => {
-          const doc = seedDoc()
-          const good1: SetWidgetOp = {
-            ...envelope('human:u1:tab', 1),
-            op: 'set_widget',
-            node_id: 1,
-            widget: 'seed',
-            value: 7
-          }
-          const bad = {
-            ...envelope('human:u1:tab', 1),
-            ...connectOp(badSlot)
-          } as unknown as Op
-          const good2: SetWidgetOp = {
-            ...envelope('human:u1:tab', 1),
-            op: 'set_widget',
-            node_id: 2,
-            widget: 'seed',
-            value: 9
-          }
+        fc.property(
+          fc.constantFrom<'from' | 'to'>('from', 'to'),
+          arbMalformedSlot,
+          (endpoint, badSlot) => {
+            const doc = seedDoc()
+            const good1: SetWidgetOp = {
+              ...envelope('human:u1:tab', 1),
+              op: 'set_widget',
+              node_id: 1,
+              widget: 'seed',
+              value: 7
+            }
+            const bad = {
+              ...envelope('human:u1:tab', 1),
+              ...connectOp(
+                endpoint === 'from' ? badSlot : 0,
+                endpoint === 'to' ? badSlot : 0
+              )
+            } as unknown as Op
+            const good2: SetWidgetOp = {
+              ...envelope('human:u1:tab', 1),
+              op: 'set_widget',
+              node_id: 2,
+              widget: 'seed',
+              value: 9
+            }
 
-          const batch = [good1 as Op, bad, good2 as Op]
-          const result = applyOps(doc, batch, CATALOG)
+            const batch = [good1 as Op, bad, good2 as Op]
+            const result = applyOps(doc, batch, CATALOG)
 
-          expect(result.outcomes).toHaveLength(3)
-          expect(result.outcomes[0].outcome).toBe('applied')
-          expect(hasAppliedOp(doc, good1.op_id)).toBe(true)
-          expectSlotRejection(result.outcomes[1])
-          // The tail after the failure is the abort-remainder protocol's
-          // territory, never applied in the same batch as the failure.
-          expect(hasAppliedOp(doc, good2.op_id)).toBe(false)
-        }),
+            expect(result.outcomes).toHaveLength(3)
+            expect(result.outcomes[0].outcome).toBe('applied')
+            expect(hasAppliedOp(doc, good1.op_id)).toBe(true)
+            expectSlotRejection(
+              result.outcomes[1],
+              expectedSlotRejectionCode(endpoint, badSlot)
+            )
+            // The tail after the failure is the abort-remainder protocol's
+            // territory, never applied in the same batch as the failure.
+            expect(hasAppliedOp(doc, good2.op_id)).toBe(false)
+          }
+        ),
         { numRuns: 100 }
       )
     })
@@ -255,19 +292,34 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
   describe('seam 2b: mintWireOps → applyOps end to end from a real mint-shaped payload', () => {
     it('a malformed connect minted through the real envelope path is rejected, not thrown', () => {
       fc.assert(
-        fc.property(arbMalformedSlot, (badSlot) => {
-          const doc = seedDoc()
-          const wireOps = mintWireOps([connectOp(badSlot)], {
-            actor: 'human:u1:tab',
-            baseVersion: 1
-          })
+        fc.property(
+          fc.constantFrom<'from' | 'to'>('from', 'to'),
+          arbMalformedSlot,
+          (endpoint, badSlot) => {
+            const doc = seedDoc()
+            const wireOps = mintWireOps(
+              [
+                connectOp(
+                  endpoint === 'from' ? badSlot : 0,
+                  endpoint === 'to' ? badSlot : 0
+                )
+              ],
+              {
+                actor: 'human:u1:tab',
+                baseVersion: 1
+              }
+            )
 
-          let result: ApplyResult | undefined
-          expect(() => {
-            result = applyOps(doc, wireOps, CATALOG)
-          }).not.toThrow()
-          expectSlotRejection(result!.outcomes[0])
-        }),
+            let result: ApplyResult | undefined
+            expect(() => {
+              result = applyOps(doc, wireOps, CATALOG)
+            }).not.toThrow()
+            expectSlotRejection(
+              result!.outcomes[0],
+              expectedSlotRejectionCode(endpoint, badSlot)
+            )
+          }
+        ),
         { numRuns: 100 }
       )
     })
