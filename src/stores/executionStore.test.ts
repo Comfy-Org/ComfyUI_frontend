@@ -608,9 +608,13 @@ describe('useExecutionStore - workflowStatus', () => {
     )
   }
 
-  function callStoreJob(jobId: string, workflow: Workflow) {
+  function callStoreJob(
+    jobId: string,
+    workflow: Workflow,
+    nodes: string[] = ['1']
+  ) {
     store.storeJob({
-      nodes: ['1'],
+      nodes,
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
@@ -803,6 +807,50 @@ describe('useExecutionStore - workflowStatus', () => {
       vi.advanceTimersByTime(10_000)
 
       expect(mockReportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not report a missing terminal event when every node is cached', () => {
+    vi.useFakeTimers()
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      apiEventHandlers.get('execution_cached')!(
+        new CustomEvent('execution_cached', {
+          detail: { prompt_id: 'job-1', nodes: ['1'], timestamp: 0 }
+        })
+      )
+      apiEventHandlers.get('executing')!(
+        new CustomEvent('executing', { detail: null })
+      )
+
+      vi.advanceTimersByTime(10_000)
+
+      expect(mockReportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('still reports when only some nodes are cached', () => {
+    vi.useFakeTimers()
+    try {
+      callStoreJob('job-1', workflowA, ['1', '2'])
+      fireExecutionStart('job-1')
+      apiEventHandlers.get('execution_cached')!(
+        new CustomEvent('execution_cached', {
+          detail: { prompt_id: 'job-1', nodes: ['1'], timestamp: 0 }
+        })
+      )
+      apiEventHandlers.get('executing')!(
+        new CustomEvent('executing', { detail: null })
+      )
+
+      vi.advanceTimersByTime(10_000)
+
+      expect(mockReportError).toHaveBeenCalledOnce()
     } finally {
       vi.useRealTimers()
     }
