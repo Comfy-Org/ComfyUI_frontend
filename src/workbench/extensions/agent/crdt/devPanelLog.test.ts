@@ -122,7 +122,7 @@ describe('devPanelLog', () => {
     expect(event.level).toBe('warn')
   })
 
-  it('honors explicit opt-out for direct recorders', () => {
+  it('does not retain events while the debug instrument is disabled', () => {
     setCrdtDebugEnabled(false)
 
     recordDevEvent('doc_update', { seq: 1 })
