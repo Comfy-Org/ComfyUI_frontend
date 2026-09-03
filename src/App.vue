@@ -2,9 +2,10 @@
   <router-view />
   <GlobalDialog />
   <div
-    v-if="isLoading"
+    v-show="isLoading"
+    data-testid="app-loading-overlay"
     class="fixed inset-0 z-1100 bg-black/10"
-    aria-busy="true"
+    :aria-busy="isLoading"
   />
 </template>
 

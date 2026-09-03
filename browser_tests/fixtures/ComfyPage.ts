@@ -373,8 +373,8 @@ export class ComfyPage {
 
   /**
    * Wait for the app to finish initializing after navigation/reload:
-   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
-   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `window.app.extensionManager` is present, the app loading overlay is hidden,
+   * and one animation frame has elapsed. Shared by `setup()` and
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
@@ -387,9 +387,12 @@ export class ComfyPage {
         null,
         { timeout: readyFuseMs }
       )
-      await this.page
-        .locator('.p-blockui-mask')
-        .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      const loadingOverlay = this.page.getByTestId(TestIds.app.loadingOverlay)
+      await loadingOverlay.waitFor({
+        state: 'attached',
+        timeout: readyFuseMs
+      })
+      await loadingOverlay.waitFor({ state: 'hidden', timeout: readyFuseMs })
     } catch (error) {
       const state = await this.describeUnreadyApp()
       throw new Error(`app never became ready: ${state}`, { cause: error })
@@ -407,21 +410,27 @@ export class ComfyPage {
    */
   private async describeUnreadyApp(): Promise<string> {
     try {
-      const state = await this.page.evaluate(() => ({
-        url: location.href,
-        title: document.title,
-        hasApp: !!window.app,
-        hasExtensionManager: !!window.app?.extensionManager,
-        blockUiVisible: !!document.querySelector('.p-blockui-mask'),
-        signInVisible: !!document.querySelector(
-          '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
-        ),
-        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
-      }))
+      const state = await this.page.evaluate(
+        (loadingOverlayTestId) => ({
+          url: location.href,
+          title: document.title,
+          hasApp: !!window.app,
+          hasExtensionManager: !!window.app?.extensionManager,
+          loadingOverlayVisible:
+            document
+              .querySelector(`[data-testid="${loadingOverlayTestId}"]`)
+              ?.getAttribute('aria-busy') === 'true',
+          signInVisible: !!document.querySelector(
+            '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
+          ),
+          bodyText: document.body?.innerText?.slice(0, 300) ?? ''
+        }),
+        TestIds.app.loadingOverlay
+      )
       return (
         `url=${state.url} title=${JSON.stringify(state.title)} ` +
         `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
-        `blockUiMask=${state.blockUiVisible} signInView=${state.signInVisible} ` +
+        `loadingOverlay=${state.loadingOverlayVisible} signInView=${state.signInVisible} ` +
         `body=${JSON.stringify(state.bodyText)}`
       )
     } catch (probeError) {
