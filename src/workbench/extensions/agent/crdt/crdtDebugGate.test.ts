@@ -124,6 +124,13 @@ describe('crdtDebugGate', () => {
     expect(gate.isCrdtDebugEnabled()).toBe(false)
   })
 
+  it('refuses a previously persisted enable choice on production', async () => {
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    const gate = await loadGateOnHostname('', 'cloud.comfy.org')
+
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+  })
+
   it('still honours an explicit opt-out link on the production hostname', async () => {
     // A stray opt-out must never be the one query value this gate refuses to
     // apply — production must always be able to turn ITSELF back off.
