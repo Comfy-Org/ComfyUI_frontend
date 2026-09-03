@@ -213,6 +213,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     const page = comfyPage.page
     await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.menu.topbar.saveWorkflow('default')
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     const panel = page.locator('#agent-panel-root')
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })

@@ -239,9 +239,38 @@ async function mockAgentBoot(
       })
     )
   )
-  await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
+  await page.route('**/api/userdata**', (route) =>
+    route.fulfill(
+      jsonRoute(
+        route.request().method() === 'POST'
+          ? {
+              path: 'workflows/default.json',
+              size: 1024,
+              modified: Date.now()
+            }
+          : []
+      )
+    )
+  )
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  await page.route('**/api/object_info', (r) =>
+    r.fulfill(
+      jsonRoute({
+        AgentE2ENode: {
+          input: { required: {} },
+          output: [],
+          output_is_list: [],
+          output_name: [],
+          name: 'AgentE2ENode',
+          display_name: 'Agent E2E Node',
+          description: '',
+          category: 'testing',
+          output_node: false,
+          python_module: 'tests'
+        }
+      })
+    )
+  )
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/auth/session', (r) =>
