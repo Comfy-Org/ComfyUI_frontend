@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import type { z } from 'zod'
 
 import { exportAgentConversation } from './agentConversationCapture'
 import type {
   AssembleInput,
   NormalizedRows,
-  ParentRow,
   RawCapture,
   RecordedFrame,
   SeedFixture
 } from './agentConversationRecord'
-import { assembleCapture } from './agentConversationRecord'
+import { assembleCapture, zRowsDump } from './agentConversationRecord'
 
 const THREAD = 'thread-1'
 const MESSAGE = 'message-1'
@@ -43,6 +43,7 @@ const frames = (): RecordedFrame[] => [
 
 const seed = (): SeedFixture => ({
   workflow: {
+    id: WORKFLOW,
     name: 'Text to image',
     catalog: { types: { KSampler: { widget_order: ['steps'] } } },
     seed: {
@@ -62,7 +63,9 @@ const addNodeOp = {
   class_type: 'KSampler'
 }
 
-const parent = (overrides: Partial<ParentRow> = {}): ParentRow => ({
+const parent = (
+  overrides: Partial<RowsInput['parents'][number]> = {}
+): RowsInput['parents'][number] => ({
   id: 'parent-1',
   tool_call_id: 'tool-1',
   tool_name: 'apply_ops',
@@ -103,14 +106,23 @@ const raw = (overrides: Partial<RawCapture> = {}): RawCapture => ({
   ...overrides
 })
 
-const rows = (overrides: Partial<NormalizedRows> = {}): NormalizedRows => ({
-  parents: [parent()],
-  draft: { nodes: [{ id: 3 }, { id: 4 }, { id: 10 }], links: [] },
-  retrieval: { kind: 'postgres-json' },
-  path: '/tmp/agent-rec-example.a1.rows.json',
-  sha256: 'b'.repeat(64),
-  ...overrides
-})
+type RowsInput = z.input<typeof zRowsDump>
+
+const rows = (overrides: Partial<RowsInput> = {}): NormalizedRows => {
+  const { parents, draft } = zRowsDump.parse({
+    source: 'postgres',
+    parents: [parent()],
+    draft: { nodes: [{ id: 3 }, { id: 4 }, { id: 10 }], links: [] },
+    ...overrides
+  })
+  return {
+    parents,
+    draft,
+    retrieval: { kind: 'postgres-json' },
+    path: '/tmp/agent-rec-example.a1.rows.json',
+    sha256: 'b'.repeat(64)
+  }
+}
 
 const input = (overrides: Partial<AssembleInput> = {}): AssembleInput => ({
   raw: raw(),
@@ -153,10 +165,11 @@ describe('assembleCapture', () => {
       }
     ])
     expect(receipt).toMatchObject({
-      added_node_ids: ['10'],
-      deleted_node_ids: [],
-      unexplained_draft_node_ids: [],
-      mutating_parents: ['parent-1'],
+      added_nodes: 1,
+      deleted_nodes: 0,
+      unexplained_draft_nodes: 0,
+      parents: 1,
+      mutating_parents: 1,
       child_statuses: { ok: 1 },
       frames_kept: 4
     })
@@ -178,22 +191,6 @@ describe('assembleCapture', () => {
     expect(capture.source.note).toContain('channel:ws:<workspace>:u:<user>')
     expect(capture.source.note).not.toContain('w-secret')
     expect(receipt.channel).toContain('w-secret')
-  })
-
-  it('parses a result the backend handed back as a JSON string', () => {
-    const { capture } = assembleCapture(
-      input({
-        rows: rows({
-          parents: [
-            parent({
-              result: JSON.stringify({ ok: true, data: { ops: [addNodeOp] } })
-            })
-          ]
-        })
-      })
-    )
-
-    expect(capture.tool_calls[0].applied_op_ids).toEqual(['op-1'])
   })
 
   it('accepts a delete_node whose node id is zero', () => {
@@ -226,7 +223,7 @@ describe('assembleCapture', () => {
       })
     )
 
-    expect(receipt.deleted_node_ids).toEqual(['0'])
+    expect(receipt.deleted_nodes).toBe(1)
   })
 
   it('accepts a batch the document rejected as zero applied ops', () => {
@@ -244,12 +241,12 @@ describe('assembleCapture', () => {
       })
     )
 
-    expect(receipt.mutating_parents).toEqual([])
+    expect(receipt.mutating_parents).toBe(0)
     expect(receipt.child_statuses).toEqual({ error: 1 })
   })
 
   it('accepts a read tool that echoes ops without writing child rows', () => {
-    const { receipt } = assembleCapture(
+    const { capture, receipt } = assembleCapture(
       input({
         rows: rows({
           parents: [
@@ -264,7 +261,8 @@ describe('assembleCapture', () => {
       })
     )
 
-    expect(receipt.parent_rows[0].applied_op_ids).toEqual([])
+    expect(capture.tool_calls[0].applied_op_ids).toEqual([])
+    expect(receipt.mutating_parents).toBe(0)
   })
 
   it('drops the ambient heartbeat and a non-replay turn frame into buckets', () => {
@@ -391,18 +389,6 @@ describe('assembleCapture', () => {
         input({ rows: rows({ parents: [parent({ result: null })] }) })
       )
     ).toThrow('has applied ops but a NULL result')
-  })
-
-  it('refuses a parent result that is not a JSON object', () => {
-    expect(() =>
-      assembleCapture(
-        input({
-          rows: rows({
-            parents: [parent({ result: [1, 2], children: [] })]
-          })
-        })
-      )
-    ).toThrow('not an object; the exporter requires an object')
   })
 
   it('refuses an echoed op kind outside the exporter frozen set', () => {
@@ -562,5 +548,64 @@ describe('assembleCapture', () => {
         })
       )
     ).toThrow('is not the seeded workflow')
+  })
+})
+
+describe('zRowsDump', () => {
+  const dump = (result: unknown, overrides: Record<string, unknown> = {}) => ({
+    source: 'postgres',
+    parents: [
+      {
+        id: 'parent-1',
+        tool_call_id: 'tool-1',
+        tool_name: 'apply_ops',
+        status: 'ok',
+        workflow_id: WORKFLOW,
+        result,
+        children: [],
+        ...overrides
+      }
+    ],
+    draft: null
+  })
+
+  it('decodes a result psql handed back as a JSON string', () => {
+    const parsed = zRowsDump.parse(
+      dump(JSON.stringify({ ok: true, data: { ops: [addNodeOp] } }))
+    )
+
+    expect(parsed.parents[0].result).toEqual({
+      ok: true,
+      data: { ops: [addNodeOp] }
+    })
+  })
+
+  it('decodes the draft column and normalises its node ids to strings', () => {
+    const parsed = zRowsDump.parse({
+      ...dump(null),
+      draft: JSON.stringify({ nodes: [{ id: 3 }, { id: '4' }], links: [] })
+    })
+
+    expect(parsed.draft?.nodes.map((node) => node.id)).toEqual(['3', '4'])
+  })
+
+  it('refuses a result that is not a JSON object', () => {
+    expect(() => zRowsDump.parse(dump([1, 2]))).toThrow()
+  })
+
+  it('refuses a result string that is not JSON', () => {
+    expect(() => zRowsDump.parse(dump('{'))).toThrow('is not JSON')
+  })
+
+  it('refuses a parent row without a tool call id', () => {
+    expect(() =>
+      zRowsDump.parse(dump({ ok: true }, { tool_call_id: null }))
+    ).toThrow()
+  })
+
+  it('refuses a dump that did not come from postgres', () => {
+    expect(() =>
+      zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
+    ).toThrow()
   })
 })

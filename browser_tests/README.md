@@ -618,16 +618,16 @@ When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
 
-1. **Capture the conversation.** Reproduce the bug's turn against the
-   local agent harness (`scripts/dev-agent-integration.ts`); the
-   standalone agent records every turn in its local SQLite store
-   (`agent_messages` / `agent_tool_calls`). Export the turn's rows and
-   convert them to a conversation JSON under
-   `browser_tests/fixtures/data/agent/conversations/` with
-   `scripts/agentConversationCapture.ts`, marking
-   `response_side: 'recorded'` (see `fixtures/data/agent/README.md` for
-   the capture format and backend query). Never write `graph_ops` by
-   hand and never relabel a synthesized response as recorded.
+1. **Record the conversation.** Reproduce the bug's turn with
+   `scripts/agentConversationRecord.ts` against the non-standalone local
+   stack (Postgres + doc host), which is the only place the doc host
+   writes the audit rows a replay asserts. That one command records the
+   turn and writes the conversation JSON under
+   `browser_tests/fixtures/data/agent/conversations/` through the
+   exporter, marked `response_side: 'recorded'`; see
+   `fixtures/data/agent/README.md` for the stack recipe, the command and
+   the capture format. Never write `graph_ops` by hand and never relabel
+   a synthesized response as recorded.
 2. **Add the replay case.** Drive the fixture through the conversation
    replay fixture (`agentConversationFixture`), asserting the
    canvas-observable outcome the bug corrupted (graph end-state or

@@ -7,8 +7,11 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { z } from 'zod'
 
+import type { zRecordedWsEvent } from '../browser_tests/fixtures/data/agent/agentConversation'
+import { zAgentConversationWorkflow } from '../browser_tests/fixtures/data/agent/agentConversation'
 import type { AgentBackendCapture } from './agentConversationCapture'
 import { exportAgentConversation } from './agentConversationCapture'
 
@@ -32,17 +35,101 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const STACK =
   'NON-standalone local full stack (Postgres + doc host, M2M identity headers)'
 
-export type Retrieval = Record<string, string>
+const zJsonObject = z.record(z.string(), z.unknown())
+
+// psql hands a json column back as an object, as a string, or as NULL.
+const zJsonColumn = z.unknown().transform((value, ctx) => {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'is not JSON' })
+    return z.NEVER
+  }
+})
+
+const zEnv = z.object({
+  AGENT_CLOUD_SHA: z.string().regex(/^[0-9a-f]{7,40}$/),
+  AGENT_MODEL: z.string().trim().min(1),
+  AGENT_M2M_SECRET_FILE: z.string().min(1),
+  AGENT_WORKSPACE_ID: z.string().min(1),
+  AGENT_USER_ID: z.string().min(1),
+  AGENT_FULLSTACK_URL: z.string().default('http://127.0.0.1:8086'),
+  AGENT_REDIS_EXEC: z
+    .string()
+    .default('docker exec -i be11470-redis redis-cli'),
+  AGENT_PG_EXEC: z
+    .string()
+    .default('docker exec -i be11470-pg psql -U postgres -d postgres -At -c'),
+  AGENT_TURN_TIMEOUT: z.coerce.number().positive().default(180_000),
+  AGENT_ATTEMPT: z.string().default('')
+})
+
+const zAck = z.object({
+  thread_id: z.string().min(1),
+  message_id: z.string().min(1)
+})
+
+const zSeedAck = zAck.extend({ workflow_id: z.string().min(1) })
+
+export const zSeedFixture = z.object({
+  workflow: zAgentConversationWorkflow
+})
+
+const zParentRow = z.object({
+  id: z.coerce.string(),
+  tool_call_id: z.string().min(1),
+  tool_name: z.string().nullable(),
+  status: z.string().nullable(),
+  workflow_id: z.string().nullable(),
+  result: zJsonColumn.pipe(zJsonObject.nullable()),
+  children: z.array(
+    z.object({
+      op_id: z.string().nullable(),
+      status: z.string().nullable()
+    })
+  )
+})
+
+export const zRowsDump = z.object({
+  source: z.literal('postgres'),
+  parents: z.array(zParentRow),
+  draft: zJsonColumn.pipe(
+    z
+      .object({ nodes: z.array(z.object({ id: z.coerce.string() })) })
+      .passthrough()
+      .nullable()
+  )
+})
+
+// The socket carries frames without a data object; the replay union does not.
+const zSocketFrame = z
+  .object({
+    type: z.string(),
+    data: zJsonObject.optional().catch(undefined)
+  })
+  .transform((frame) => ({ type: frame.type, data: frame.data ?? {} }))
+
+// The exporter's candidate set: data.ops when it is a list, else data.op.
+const zOpsCarrier = z.object({
+  data: z
+    .object({ ops: z.array(z.unknown()).optional().catch(undefined) })
+    .passthrough()
+})
+
+export type RecordedFrame = z.infer<typeof zRecordedWsEvent>
+export type SeedFixture = z.infer<typeof zSeedFixture>
+export type ParentRow = z.infer<typeof zParentRow>
+
+export type NormalizedRows = Omit<z.infer<typeof zRowsDump>, 'source'> & {
+  retrieval: Record<string, string>
+  path: string
+  sha256: string
+}
 
 export interface TurnAck {
   status: number
-  body: Record<string, unknown> | null
-}
-
-export interface RecordedFrame {
-  type: string
-  data: Record<string, unknown>
-  at_ms?: number
+  body: unknown
 }
 
 export interface RawCapture {
@@ -54,7 +141,7 @@ export interface RawCapture {
   channel: string
   seed_sha256: string
   seed_name: string
-  seed_node_ids: unknown[]
+  seed_node_ids: Array<string | number>
   saw_stream: boolean
   stream_closed: boolean
   seed_turn: TurnAck | null
@@ -64,30 +151,8 @@ export interface RawCapture {
   timed_out: boolean
   frames: RecordedFrame[]
   rows_artifact: string | null
-  retrieval: Retrieval | null
+  retrieval: Record<string, string> | null
   error: string | null
-}
-
-export interface ParentRow {
-  id: string
-  tool_call_id: string | null
-  tool_name: string | null
-  status: string | null
-  workflow_id: string | null
-  result: unknown
-  children: Array<{ op_id: string | null; status: string | null }>
-}
-
-export interface NormalizedRows {
-  parents: ParentRow[]
-  draft: unknown
-  retrieval: Retrieval
-  path: string
-  sha256: string
-}
-
-export interface SeedFixture {
-  workflow: { name: string; catalog: WidgetCatalog; seed: WorkflowJSON }
 }
 
 export interface AssembleInput {
@@ -99,10 +164,16 @@ export interface AssembleInput {
   rawPath: string
 }
 
+interface DraftCounts {
+  draft_nodes: number
+  added_nodes: number
+  deleted_nodes: number
+  unexplained_draft_nodes: number
+}
+
 interface TurnIds {
   threadId: string
   messageId: string
-  workflowId: string
 }
 
 // A refused recording is an expected outcome: main logs it and exits 1.
@@ -112,46 +183,35 @@ function refuse(reason: string): never {
   throw new RecordRefusal(reason)
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+// A shape mismatch at a boundary is a refusal, named by its json path.
+function parseOrRefuse<S extends z.ZodTypeAny>(
+  schema: S,
+  value: unknown,
+  what: string
+): z.output<S> {
+  const parsed = schema.safeParse(value)
+  if (!parsed.success)
+    refuse(
+      `${what}: ${parsed.error.issues
+        .map((issue) => `${issue.path.join('.') || '(root)'} ${issue.message}`)
+        .join('; ')}`
+    )
+  return parsed.data
+}
+
+const safeJson = (text: string): unknown => {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
 }
 
 const list = (values: Iterable<unknown>): string =>
   [...values].map(String).sort().join(', ')
 
-const text = (value: unknown): string | null =>
-  value === null || value === undefined ? null : String(value)
-
 const sameSet = (left: Set<string>, right: Set<string>): boolean =>
   left.size === right.size && [...left].every((value) => right.has(value))
-
-function asJson(value: unknown, what: string): unknown {
-  if (typeof value !== 'string') return value
-  try {
-    return JSON.parse(value)
-  } catch (error) {
-    refuse(`${what} is not JSON: ${String(error)}`)
-  }
-}
-
-// Ops-shaped mutation record: the CRDT-on op echo or the CRDT-off ack summary.
-// Bare count keys are excluded because read tools carry them.
-function mutationReported(result: Record<string, unknown>): boolean {
-  const data = result.data
-  if (!isRecord(data)) return false
-  if ((Array.isArray(data.ops) && data.ops.length > 0) || isRecord(data.op))
-    return true
-  return Boolean(data.ops_by_kind ?? data.nodes_added ?? data.nodes_deleted)
-}
-
-// The exporter's candidate set: every entry of data.ops when it is a list,
-// else data.op whenever the key is present.
-function echoedOps(result: Record<string, unknown>): unknown[] {
-  const data = result.data
-  if (!isRecord(data)) return []
-  if (Array.isArray(data.ops)) return data.ops
-  return 'op' in data ? [data.op] : []
-}
 
 const sha256 = (bytes: Buffer | string): string =>
   createHash('sha256').update(bytes).digest('hex')
@@ -161,63 +221,59 @@ const sha256OfFile = (path: string): string => sha256(readFileSync(path))
 const writeJson = (path: string, value: unknown): void =>
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
 
-export function assembleCapture(input: AssembleInput) {
-  const { raw, rows, seed, provenance } = input
-  const { attempt } = raw
-  const workflow = seed.json.workflow
-
-  if (!/^[A-Za-z0-9_-]+$/.test(attempt))
-    refuse(`attempt label ${JSON.stringify(attempt)} is not [A-Za-z0-9_-]+`)
-
-  const seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
+// Everything the recorded turn must clear before its frames mean anything.
+function turnIds(raw: RawCapture, seedIds: Set<string>): TurnIds {
+  if (!/^[A-Za-z0-9_-]+$/.test(raw.attempt))
+    refuse(`attempt label ${JSON.stringify(raw.attempt)} is not [A-Za-z0-9_-]+`)
   const driverIds = new Set(raw.seed_node_ids.map(String))
   if (!sameSet(driverIds, seedIds))
     refuse(
       `the driver seeded ${list(driverIds)} but the seed fixture given here has ${list(seedIds)}`
     )
-
   if (raw.accepted?.status !== 202)
     refuse(`recorded turn not accepted: ${JSON.stringify(raw.accepted)}`)
-  const body = raw.accepted.body ?? {}
-  const threadId = body.thread_id
-  const messageId = body.message_id
-  if (typeof threadId !== 'string' || typeof messageId !== 'string')
-    refuse(`ack without ids: ${JSON.stringify(body)}`)
+  const ack = zAck.safeParse(raw.accepted.body)
+  if (!ack.success)
+    refuse(`ack without ids: ${JSON.stringify(raw.accepted.body ?? {})}`)
   if (!raw.saw_stream) refuse('frame stream never opened')
   if (!raw.saw_done)
     refuse(
       `agent_message_done never arrived (timed_out=${raw.timed_out}, error=${raw.error})`
     )
+  return { threadId: ack.data.thread_id, messageId: ack.data.message_id }
+}
 
-  const seedAck = raw.seed_turn?.body ?? {}
+function keepTurnFrames(
+  frames: RecordedFrame[],
+  ids: TurnIds,
+  seedTurn: TurnIds | null
+): { kept: RecordedFrame[]; dropped: Record<string, number> } {
   const kept: RecordedFrame[] = []
   const dropped: Record<string, number> = {}
   const drop = (bucket: string): void => {
     dropped[bucket] = (dropped[bucket] ?? 0) + 1
   }
 
-  for (const frame of raw.frames) {
+  for (const frame of frames) {
     const { type, data } = frame
     // Unparseable payloads belong to no turn; the heartbeat carries no ids.
-    if (type === '__raw__' || type === 'draft_version') {
+    if (type === '__raw__' || type === 'draft_version')
       drop(type === '__raw__' ? 'unparseable' : 'type:draft_version')
-      continue
-    }
-    if (data.thread_id !== threadId || data.message_id !== messageId) {
-      const seedTurn =
-        typeof seedAck.thread_id === 'string' &&
-        data.thread_id === seedAck.thread_id &&
-        data.message_id === seedAck.message_id
-      drop(seedTurn ? 'seed_turn' : 'foreign')
-      continue
-    }
-    if (!REPLAYED_FRAMES.includes(type)) {
-      if (type.startsWith('agent_'))
-        refuse(`frame type ${type} is outside the replay union`)
-      drop(`type:${type}`)
-      continue
-    }
-    kept.push(frame.at_ms === undefined ? { type, data } : frame)
+    else if (
+      data.thread_id !== ids.threadId ||
+      data.message_id !== ids.messageId
+    )
+      drop(
+        seedTurn !== null &&
+          data.thread_id === seedTurn.threadId &&
+          data.message_id === seedTurn.messageId
+          ? 'seed_turn'
+          : 'foreign'
+      )
+    else if (REPLAYED_FRAMES.includes(type)) kept.push(frame)
+    else if (type.startsWith('agent_'))
+      refuse(`frame type ${type} is outside the replay union`)
+    else drop(`type:${type}`)
   }
 
   if (dropped.unparseable)
@@ -225,7 +281,13 @@ export function assembleCapture(input: AssembleInput) {
   const last = kept.at(-1)
   if (last?.type !== 'agent_message_done')
     refuse(`last kept frame is ${last?.type}, not agent_message_done`)
+  return { kept, dropped }
+}
 
+function activeWorkflowId(
+  kept: RecordedFrame[],
+  seededId: string | null
+): string {
   const tabs = new Set(
     kept
       .filter((frame) => frame.type === 'agent_active_tab')
@@ -234,161 +296,204 @@ export function assembleCapture(input: AssembleInput) {
   if (tabs.size === 0) refuse('no agent_active_tab frame in this turn')
   if (tabs.size > 1)
     refuse(`agent_active_tab frames disagree on workflow_id: ${list(tabs)}`)
-  const workflowId = [...tabs][0]
-  if (typeof workflowId !== 'string' || !UUID.test(workflowId))
-    refuse(`active_tab workflow id is not a uuid: ${String(workflowId)}`)
-  if (workflowId !== raw.seed_workflow_id)
+  const [tab] = [...tabs]
+  const workflowId = z.string().regex(UUID).safeParse(tab)
+  if (!workflowId.success)
+    refuse(`active_tab workflow id is not a uuid: ${String(tab)}`)
+  if (workflowId.data !== seededId)
     refuse(
-      `active_tab workflow ${workflowId} is not the seeded workflow ${raw.seed_workflow_id}`
+      `active_tab workflow ${workflowId.data} is not the seeded workflow ${seededId}`
     )
+  return workflowId.data
+}
 
-  const toolCalls: AgentBackendCapture['tool_calls'] = []
-  const childStatuses: Record<string, number> = {}
-  const parentRows = rows.parents.map((parent) => {
-    const { id, tool_name: tool } = parent
-    if (!parent.tool_call_id) refuse(`parent row ${id} has NULL tool_call_id`)
-    for (const child of parent.children) {
-      const key = String(child.status)
-      childStatuses[key] = (childStatuses[key] ?? 0) + 1
-    }
-    const applied = parent.children
-      .filter((child) => child.status === 'ok' && child.op_id)
-      .map((child) => String(child.op_id))
-
-    const parsed = asJson(parent.result, `parent row ${id} result`)
-    if ((parsed ?? null) === null && applied.length > 0)
-      refuse(`parent row ${id} has applied ops but a NULL result`)
-    const result = parsed ?? {}
-    if (!isRecord(result))
-      refuse(
-        `parent row ${id} result is not an object; the exporter requires an object`
-      )
-    if (
-      MUTATING_TOOLS.includes(String(tool)) &&
-      mutationReported(result) &&
-      parent.children.length === 0
+// Every op the exporter will read out of this result, shape-checked once.
+function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
+  const carrier = zOpsCarrier.safeParse(row.result ?? {})
+  if (!carrier.success) return []
+  const { data } = carrier.data
+  const ops = z
+    .array(zJsonObject)
+    .safeParse(data.ops ?? ('op' in data ? [data.op] : []))
+  if (!ops.success) refuse(`parent row ${row.id} echoes a non-object op entry`)
+  const kinds = ops.data.map((op) => String(op.op))
+  const offFrozen = new Set(
+    kinds.filter((kind) => !(FROZEN_OPS as readonly string[]).includes(kind))
+  )
+  if (offFrozen.size > 0)
+    refuse(
+      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the exporter frozen set`
     )
-      refuse(
-        `parent row ${id} (${tool}) reports a document mutation but has NO audit child rows`
-      )
+  return ops.data
+}
 
-    const echoed = echoedOps(result)
-    const nonObjects = echoed.filter((op) => !isRecord(op)).length
-    if (nonObjects > 0)
-      refuse(
-        `parent row ${id} echoes ${nonObjects} non-object op entr${nonObjects === 1 ? 'y' : 'ies'}`
-      )
-    const ops = echoed.filter(isRecord)
-    const offFrozen = new Set(
-      ops
-        .filter(
-          (op) => !(FROZEN_OPS as readonly string[]).includes(String(op.op))
-        )
-        .map((op) => String(op.op))
-    )
-    if (offFrozen.size > 0)
-      refuse(
-        `parent row ${id} echoes op kinds ${list(offFrozen)} outside the exporter frozen set`
-      )
+// Ops-shaped mutation record: the CRDT-on op echo or the CRDT-off ack summary.
+// Bare count keys are excluded because read tools carry them.
+function mutationReported(row: ParentRow): boolean {
+  const carrier = zOpsCarrier.safeParse(row.result ?? {})
+  if (!carrier.success) return false
+  const { data } = carrier.data
+  return (
+    (data.ops?.length ?? 0) > 0 ||
+    zJsonObject.safeParse(data.op).success ||
+    Boolean(data.ops_by_kind ?? data.nodes_added ?? data.nodes_deleted)
+  )
+}
 
-    const byId = new Map(ops.map((op) => [String(op.op_id), op]))
-    const missing = applied.filter((opId) => !byId.has(opId))
-    if (missing.length > 0)
-      refuse(
-        `parent row ${id} applied op ids ${missing.join(', ')} are not echoed in its result`
-      )
-    if (applied.length > 0 && parent.workflow_id !== workflowId)
-      refuse(
-        `parent row ${id} applied ops on ${String(parent.workflow_id)}, not the seeded workflow ${workflowId}`
-      )
-    const appliedOps = applied.map((opId) => byId.get(opId)!)
-    // A node id of 0 is a real id, so only a missing one refuses.
-    if (
-      appliedOps.some(
-        (op) => op.op === 'delete_node' && (op.node_id ?? null) === null
-      )
-    )
-      refuse(`parent row ${id} has an applied delete_node without node_id`)
-
-    toolCalls.push({
-      tool_call_id: parent.tool_call_id,
-      result,
-      applied_op_ids: applied
+function appliedOps(
+  row: ParentRow,
+  applied: string[]
+): Array<Record<string, unknown>> {
+  const byId = new Map(
+    echoedOps(row).flatMap((op) => {
+      const opId = z.string().safeParse(op.op_id)
+      return opId.success ? [[opId.data, op] as const] : []
     })
-    return {
-      id,
-      tool_name: tool,
-      status: parent.status,
-      workflow_id: parent.workflow_id,
-      child_count: parent.children.length,
-      applied_op_ids: applied,
-      applied_op_kinds: appliedOps.map((op) => op.op),
-      applied_ops: appliedOps
-    }
-  })
+  )
+  const missing = applied.filter((opId) => !byId.has(opId))
+  if (missing.length > 0)
+    refuse(
+      `parent row ${row.id} applied op ids ${missing.join(', ')} are not echoed in its result`
+    )
+  const ops = applied.map((opId) => byId.get(opId)!)
+  // A node id of 0 is a real id, so only a missing one refuses.
+  if (
+    ops.some((op) => op.op === 'delete_node' && (op.node_id ?? null) === null)
+  )
+    refuse(`parent row ${row.id} has an applied delete_node without node_id`)
+  return ops
+}
 
+function parentToolCall(
+  row: ParentRow,
+  workflowId: string
+): {
+  toolCall: AgentBackendCapture['tool_calls'][number]
+  appliedOps: Array<Record<string, unknown>>
+} {
+  const applied = row.children.flatMap((child) =>
+    child.status === 'ok' && child.op_id ? [child.op_id] : []
+  )
+  if (row.result === null && applied.length > 0)
+    refuse(`parent row ${row.id} has applied ops but a NULL result`)
+  if (
+    row.tool_name !== null &&
+    MUTATING_TOOLS.includes(row.tool_name) &&
+    mutationReported(row) &&
+    row.children.length === 0
+  )
+    refuse(
+      `parent row ${row.id} (${row.tool_name}) reports a document mutation but has NO audit child rows`
+    )
+
+  if (applied.length > 0 && row.workflow_id !== workflowId)
+    refuse(
+      `parent row ${row.id} applied ops on ${row.workflow_id}, not the seeded workflow ${workflowId}`
+    )
+
+  return {
+    appliedOps: appliedOps(row, applied),
+    toolCall: {
+      tool_call_id: row.tool_call_id,
+      result: row.result ?? {},
+      applied_op_ids: applied
+    }
+  }
+}
+
+// The frames and the audit rows must describe the same turn's tool calls.
+function checkTurnAgreement(kept: RecordedFrame[], rows: ParentRow[]): void {
   const frameCalls = new Set(
     kept
       .filter(
         (frame) =>
           frame.type === 'agent_tool_call' && frame.data.status !== 'running'
       )
-      .map((frame) => String(frame.data.tool_call_id))
+      .flatMap(
+        (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
+      )
   )
-  const rowCalls = new Set(rows.parents.map((row) => String(row.tool_call_id)))
+  const rowCalls = new Set(rows.map((row) => row.tool_call_id))
   if (!sameSet(frameCalls, rowCalls))
     refuse(
       `frames ${list(frameCalls)} and audit parent rows ${list(rowCalls)} disagree; the rows are not this turn`
     )
+}
 
-  if (rows.draft === null || rows.draft === undefined)
+// The draft is the only witness that the applied ops reached the document.
+function checkDraft(
+  draft: NormalizedRows['draft'],
+  seedIds: Set<string>,
+  appliedOps: Array<Record<string, unknown>>,
+  workflowId: string
+): DraftCounts {
+  if (draft === null)
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
-  const draft = asJson(rows.draft, `workflow_drafts.content for ${workflowId}`)
-  const draftIds = new Set(
-    (isRecord(draft) && Array.isArray(draft.nodes) ? draft.nodes : [])
-      .filter(isRecord)
-      .map((node) => String(node.id))
-  )
-
-  const appliedOps = parentRows.flatMap((row) => row.applied_ops)
-  const opsOfKind = (kind: string): Array<Record<string, unknown>> =>
-    appliedOps.filter((op) => op.op === kind)
-  // An uncatalogued class is stored opaquely by the applier, so a later
-  // set_widget on it throws.
-  const catalogTypes = new Set(Object.keys(workflow.catalog.types))
-  const offCatalog = new Set(
-    opsOfKind('add_node')
-      .filter((op) => !catalogTypes.has(String(op.class_type)))
-      .map((op) => String(op.class_type))
-  )
-  if (offCatalog.size > 0)
-    refuse(
-      `applied add_node classes ${list(offCatalog)} are not in the seed catalog ${list(catalogTypes)}`
+  const draftIds = new Set(draft.nodes.map((node) => node.id))
+  const nodeIds = (kind: string): Set<string> =>
+    new Set(
+      appliedOps
+        .filter((op) => op.op === kind && (op.node_id ?? null) !== null)
+        .map((op) => String(op.node_id))
     )
 
-  const deletedIds = new Set(
-    opsOfKind('delete_node').map((op) => String(op.node_id))
-  )
-  const addedIds = new Set(
-    opsOfKind('add_node')
-      .filter((op) => (op.node_id ?? null) !== null)
-      .map((op) => String(op.node_id))
-  )
-  const expectedIds = [...seedIds].filter((id) => !deletedIds.has(id))
-  const missingSeed = expectedIds.filter((id) => !draftIds.has(id))
-  if (missingSeed.length > 0)
+  const deleted = nodeIds('delete_node')
+  const added = nodeIds('add_node')
+  const expected = [...seedIds].filter((id) => !deleted.has(id))
+  const missing = expected.filter((id) => !draftIds.has(id))
+  if (missing.length > 0)
     refuse(
-      `draft for ${workflowId} lacks seed node ids ${list(missingSeed)} that no applied delete_node removed`
+      `draft for ${workflowId} lacks seed node ids ${list(missing)} that no applied delete_node removed`
     )
-  const undeleted = [...deletedIds].filter((id) => draftIds.has(id))
+  const undeleted = [...deleted].filter((id) => draftIds.has(id))
   if (undeleted.length > 0)
     refuse(
       `draft for ${workflowId} still holds node ids ${list(undeleted)} that applied delete_node ops removed`
     )
 
-  const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; message ${messageId}; workflow ${workflowId} (seeded by throwaway turn ${String(seedAck.message_id)}; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(parentRows.map((row) => row.id))}; rows ${basename(rows.path)}; raw capture sha256 ${input.rawSha256}`
+  return {
+    draft_nodes: draftIds.size,
+    added_nodes: added.size,
+    deleted_nodes: deleted.size,
+    unexplained_draft_nodes: [...draftIds].filter(
+      (id) => !expected.includes(id) && !added.has(id)
+    ).length
+  }
+}
 
-  const capture: AgentBackendCapture = {
+// An uncatalogued class is stored opaquely by the applier, so a later
+// set_widget on it throws.
+function checkAddedClasses(
+  appliedOps: Array<Record<string, unknown>>,
+  catalog: SeedFixture['workflow']['catalog']
+): void {
+  const types = new Set(Object.keys(catalog.types))
+  const offCatalog = new Set(
+    appliedOps
+      .filter((op) => op.op === 'add_node')
+      .map((op) => String(op.class_type))
+      .filter((type) => !types.has(type))
+  )
+  if (offCatalog.size > 0)
+    refuse(
+      `applied add_node classes ${list(offCatalog)} are not in the seed catalog ${list(types)}`
+    )
+}
+
+function buildCapture(options: {
+  input: AssembleInput
+  ids: TurnIds
+  workflowId: string
+  seedMessageId: string | null
+  kept: RecordedFrame[]
+  toolCalls: AgentBackendCapture['tool_calls']
+}): AgentBackendCapture {
+  const { input, ids, workflowId, kept, toolCalls } = options
+  const { raw, rows, provenance } = input
+  const { workflow } = input.seed.json
+  const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${ids.threadId}; message ${ids.messageId}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.parents.map((row) => row.id))}; rows ${basename(rows.path)}; raw capture sha256 ${input.rawSha256}`
+
+  return {
     schema_version: 'agent-backend-capture.v1',
     source: {
       repo: 'Comfy-Org/ComfyUI_frontend',
@@ -398,8 +503,8 @@ export function assembleCapture(input: AssembleInput) {
     },
     capture: {
       backend: 'Comfy-Org/cloud',
-      thread_id: threadId,
-      message_id: messageId,
+      thread_id: ids.threadId,
+      message_id: ids.messageId,
       exported_at: provenance.exportedAt
     },
     workflow: {
@@ -412,73 +517,108 @@ export function assembleCapture(input: AssembleInput) {
     frames: kept,
     tool_calls: toolCalls
   }
+}
 
-  const receipt = {
-    attempt,
+function buildReceipt(options: {
+  input: AssembleInput
+  ids: TurnIds
+  workflowId: string
+  frames: { kept: number; dropped: Record<string, number> }
+  parents: { count: number; mutating: number; children: Record<string, number> }
+  draft: DraftCounts
+}) {
+  const { input, ids, workflowId, frames, parents } = options
+  const { raw, rows, seed, provenance } = input
+  return {
+    attempt: raw.attempt,
     frame_source: raw.frame_source,
     channel: raw.channel,
     raw: input.rawPath,
     raw_sha256: input.rawSha256,
     seed: seed.path,
     seed_sha256: seed.sha256,
-    seed_node_ids: [...seedIds].sort(),
     rows: rows.path,
     rows_sha256: rows.sha256,
     retrieval: rows.retrieval,
-    thread_id: threadId,
-    message_id: messageId,
+    thread_id: ids.threadId,
+    message_id: ids.messageId,
     workflow_id: workflowId,
-    start_workflow_id: body.workflow_id,
-    seed_turn: raw.seed_turn,
-    parent_rows: parentRows,
-    child_statuses: childStatuses,
-    frames_kept: kept.length,
-    frames_dropped: dropped,
-    kept_types: kept.map((frame) => frame.type),
-    draft_node_ids: [...draftIds].sort(),
-    deleted_node_ids: [...deletedIds].sort(),
-    added_node_ids: [...addedIds].sort(),
-    unexplained_draft_node_ids: [...draftIds]
-      .filter((id) => !expectedIds.includes(id) && !addedIds.has(id))
-      .sort(),
-    catalog_types: [...catalogTypes].sort(),
-    mutating_parents: parentRows
-      .filter((row) => row.applied_op_ids.length > 0)
-      .map((row) => row.id),
+    frames_kept: frames.kept,
+    frames_dropped: frames.dropped,
+    parents: parents.count,
+    mutating_parents: parents.mutating,
+    child_statuses: parents.children,
+    ...options.draft,
     cloud_sha: provenance.cloudSha,
     model: provenance.model
   }
-
-  return { capture, receipt }
 }
 
-function readRows(exec: string[], path: string, ids: TurnIds): NormalizedRows {
+function childStatuses(parents: ParentRow[]): Record<string, number> {
+  const tally: Record<string, number> = {}
+  for (const child of parents.flatMap((row) => row.children))
+    tally[child.status ?? 'null'] = (tally[child.status ?? 'null'] ?? 0) + 1
+  return tally
+}
+
+export function assembleCapture(input: AssembleInput) {
+  const { raw, rows } = input
+  const { workflow } = input.seed.json
+  const seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
+
+  const ids = turnIds(raw, seedIds)
+  const seedAck = zAck.safeParse(raw.seed_turn?.body)
+  const seedTurn = seedAck.success
+    ? { threadId: seedAck.data.thread_id, messageId: seedAck.data.message_id }
+    : null
+  const { kept, dropped } = keepTurnFrames(raw.frames, ids, seedTurn)
+  const workflowId = activeWorkflowId(kept, raw.seed_workflow_id)
+
+  const calls = rows.parents.map((row) => parentToolCall(row, workflowId))
+  checkTurnAgreement(kept, rows.parents)
+  const appliedOps = calls.flatMap((call) => call.appliedOps)
+  const draft = checkDraft(rows.draft, seedIds, appliedOps, workflowId)
+  checkAddedClasses(appliedOps, workflow.catalog)
+
+  return {
+    capture: buildCapture({
+      input,
+      ids,
+      workflowId,
+      seedMessageId: seedTurn?.messageId ?? null,
+      kept,
+      toolCalls: calls.map((call) => call.toolCall)
+    }),
+    receipt: buildReceipt({
+      input,
+      ids,
+      workflowId,
+      frames: { kept: kept.length, dropped },
+      parents: {
+        count: rows.parents.length,
+        mutating: calls.filter((call) => call.appliedOps.length > 0).length,
+        children: childStatuses(rows.parents)
+      },
+      draft
+    })
+  }
+}
+
+function readRows(
+  exec: string[],
+  path: string,
+  ids: TurnIds & { workflowId: string }
+): NormalizedRows {
   const quote = (value: string): string => `'${value.replace(/'/g, "''")}'`
   const sql = `select json_build_object('source', 'postgres', 'parents', coalesce((select json_agg(row_to_json(r) order by r.started_at, r.id) from (select parent.id, parent.tool_call_id, parent.tool_name, parent.status, parent.result, parent.started_at, parent.workflow_id, coalesce(json_agg(json_build_object('op_id', child.op_id, 'status', child.status, 'op_index', child.op_index) order by child.op_index) filter (where child.id is not null), '[]'::json) as children from agent_tool_calls as parent left join agent_tool_calls as child on child.parent_call_id = parent.id where parent.thread_id = ${quote(ids.threadId)} and parent.message_id = ${quote(ids.messageId)} and parent.parent_call_id is null group by parent.id) r), '[]'::json), 'draft', (select content from workflow_drafts where workflow_id = ${quote(ids.workflowId)} limit 1))`
   const dump: unknown = JSON.parse(
     execFileSync(exec[0], [...exec.slice(1), sql], { encoding: 'utf8' }).trim()
   )
-  if (!isRecord(dump) || dump.source !== 'postgres')
-    refuse(`rows dump source is not 'postgres'`)
   writeJson(path, dump)
+  const { parents, draft } = parseOrRefuse(zRowsDump, dump, 'rows dump')
   return {
-    parents: (Array.isArray(dump.parents) ? dump.parents : [])
-      .filter(isRecord)
-      .map((row) => ({
-        id: String(row.id),
-        tool_call_id: text(row.tool_call_id),
-        tool_name: text(row.tool_name),
-        status: text(row.status),
-        workflow_id: text(row.workflow_id),
-        result: row.result,
-        children: (Array.isArray(row.children) ? row.children : [])
-          .filter(isRecord)
-          .map((child) => ({
-            op_id: text(child.op_id),
-            status: text(child.status)
-          }))
-      })),
-    draft: dump.draft ?? null,
+    parents,
+    draft,
     retrieval: { kind: 'postgres-json', sql },
     path,
     sha256: sha256OfFile(path)
@@ -491,19 +631,8 @@ function openStream(
   onFrame: (frame: RecordedFrame) => void
 ): () => void {
   const push = (payload: string): void => {
-    try {
-      const parsed: unknown = JSON.parse(payload)
-      if (isRecord(parsed) && typeof parsed.type === 'string') {
-        onFrame({
-          type: parsed.type,
-          data: isRecord(parsed.data) ? parsed.data : {}
-        })
-        return
-      }
-    } catch {
-      // Falls through to the marker the assembler refuses on.
-    }
-    onFrame({ type: '__raw__', data: { payload } })
+    const frame = zSocketFrame.safeParse(safeJson(payload))
+    onFrame(frame.success ? frame.data : { type: '__raw__', data: { payload } })
   }
 
   const child = spawn(
@@ -560,27 +689,20 @@ async function recordTurns(
       signal: AbortSignal.timeout(30_000)
     })
     const payload = await response.text()
-    const ack = ((): Record<string, unknown> | null => {
-      try {
-        const parsed: unknown = JSON.parse(payload)
-        return isRecord(parsed) ? parsed : null
-      } catch {
-        return null
-      }
-    })()
-    if (response.status === 202 && ack === null)
+    const body = zJsonObject.safeParse(safeJson(payload))
+    if (response.status === 202 && !body.success)
       refuse(`202 with a non-JSON body: ${payload.slice(0, 200)}`)
-    return { status: response.status, body: ack }
+    return { status: response.status, body: body.data ?? null }
   }
 
-  const done = (messageId: unknown): boolean =>
+  const done = (messageId: string): boolean =>
     raw.frames.some(
       (frame) =>
         frame.type === 'agent_message_done' &&
         frame.data.message_id === messageId
     )
 
-  const waitDone = async (messageId: unknown, label: string): Promise<void> => {
+  const waitDone = async (messageId: string, label: string): Promise<void> => {
     const started = Date.now()
     while (
       !done(messageId) &&
@@ -616,54 +738,39 @@ async function recordTurns(
       draft: { content: options.seed }
     })
     raw.seed_turn = seedTurn
-    const seedWorkflowId = seedTurn.body?.workflow_id
-    if (seedTurn.status !== 202 || typeof seedWorkflowId !== 'string')
+    const seedAck = zSeedAck.safeParse(seedTurn.body)
+    if (seedTurn.status !== 202 || !seedAck.success)
       refuse(`seed turn not accepted: ${JSON.stringify(seedTurn)}`)
-    raw.seed_workflow_id = seedWorkflowId
-    await waitDone(seedTurn.body?.message_id, 'seed turn')
+    raw.seed_workflow_id = seedAck.data.workflow_id
+    await waitDone(seedAck.data.message_id, 'seed turn')
 
     // Turn B opens on a fresh workflow so switch_tab publishes agent_active_tab.
     const recorded = await postTurn({
       content: raw.prompt,
-      open_tabs: [{ workflow_id: seedWorkflowId, name: raw.seed_name }]
+      open_tabs: [
+        { workflow_id: seedAck.data.workflow_id, name: raw.seed_name }
+      ]
     })
     raw.accepted = recorded
-    if (recorded.status !== 202 || !recorded.body?.message_id)
+    const ack = zAck.safeParse(recorded.body)
+    if (recorded.status !== 202 || !ack.success)
       refuse(`recorded turn not accepted: ${JSON.stringify(recorded)}`)
-    await waitDone(recorded.body.message_id, 'recorded turn')
+    await waitDone(ack.data.message_id, 'recorded turn')
     raw.saw_done = true
     if (
       !raw.frames.some(
         (frame) =>
           frame.type === 'agent_active_tab' &&
-          frame.data.message_id === recorded.body?.message_id &&
-          frame.data.workflow_id === seedWorkflowId
+          frame.data.message_id === ack.data.message_id &&
+          frame.data.workflow_id === seedAck.data.workflow_id
       )
     )
       refuse(
-        `no agent_active_tab for ${seedWorkflowId}: the agent never switched tabs`
+        `no agent_active_tab for ${seedAck.data.workflow_id}: the agent never switched tabs`
       )
   } finally {
     stop()
   }
-}
-
-function readSeedFixture(path: string): SeedFixture {
-  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'))
-  const workflow = isRecord(parsed) ? parsed.workflow : undefined
-  const seed = isRecord(workflow) ? workflow.seed : undefined
-  if (
-    !isRecord(workflow) ||
-    typeof workflow.name !== 'string' ||
-    !isRecord(workflow.catalog) ||
-    !isRecord(seed) ||
-    !Array.isArray(seed.nodes) ||
-    !Array.isArray(seed.links)
-  )
-    refuse(
-      `seed fixture ${path} needs workflow.{name,catalog,seed.{nodes,links}}`
-    )
-  return parsed as SeedFixture
 }
 
 async function main(argv: string[]): Promise<void> {
@@ -679,28 +786,25 @@ async function main(argv: string[]): Promise<void> {
   const outPath = flags['--out']
   if (!caseId || !prompt || !seedPath || !outPath) throw new Error(USAGE)
 
-  const env = (name: string, fallback = ''): string =>
-    process.env[name] ?? fallback
-  const cloudSha = env('AGENT_CLOUD_SHA')
-  const model = env('AGENT_MODEL')
-  if (!/^[0-9a-f]{7,40}$/.test(cloudSha) || model.trim() === '')
-    throw new Error('AGENT_CLOUD_SHA (7-40 hex) and AGENT_MODEL are required')
-  const secretFile = env('AGENT_M2M_SECRET_FILE')
-  const workspace = env('AGENT_WORKSPACE_ID', env('REC_WORKSPACE_ID'))
-  const user = env('AGENT_USER_ID', env('REC_USER_ID'))
-  if (!secretFile || !workspace || !user)
-    throw new Error(
-      'AGENT_M2M_SECRET_FILE, AGENT_WORKSPACE_ID (or REC_WORKSPACE_ID) and AGENT_USER_ID (or REC_USER_ID) are required'
-    )
-  const timeoutMs = Number(env('AGENT_TURN_TIMEOUT', '180000'))
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
-    throw new Error(`AGENT_TURN_TIMEOUT must be positive ms, got ${timeoutMs}`)
+  const env = parseOrRefuse(
+    zEnv,
+    {
+      ...process.env,
+      AGENT_WORKSPACE_ID:
+        process.env.AGENT_WORKSPACE_ID ?? process.env.REC_WORKSPACE_ID,
+      AGENT_USER_ID: process.env.AGENT_USER_ID ?? process.env.REC_USER_ID
+    },
+    'environment'
+  )
   const attempt = (
-    env('AGENT_ATTEMPT').trim() ||
-    new Date().toISOString().replace(/[:.]/g, '-')
+    env.AGENT_ATTEMPT.trim() || new Date().toISOString().replace(/[:.]/g, '-')
   ).replace(/[^A-Za-z0-9_-]/g, '-')
 
-  const seed = readSeedFixture(seedPath)
+  const seed = parseOrRefuse(
+    zSeedFixture,
+    JSON.parse(readFileSync(seedPath, 'utf8')),
+    `seed fixture ${seedPath}`
+  )
   // conversations/ is scanned for replay cases, so sidecars go one level down.
   const workDir = flags['--work'] || join(dirname(outPath), 'recordings')
   mkdirSync(workDir, { recursive: true })
@@ -713,13 +817,10 @@ async function main(argv: string[]): Promise<void> {
     case_id: caseId,
     attempt,
     prompt,
-    base: env('AGENT_FULLSTACK_URL', 'http://127.0.0.1:8086').replace(
-      /\/$/,
-      ''
-    ),
+    base: env.AGENT_FULLSTACK_URL.replace(/\/$/, ''),
     // The note carries this shape; the concrete channel stays in the receipt.
     frame_source: 'redis SUBSCRIBE channel:ws:<workspace>:u:<user>',
-    channel: `channel:ws:${workspace}:u:${user}`,
+    channel: `channel:ws:${env.AGENT_WORKSPACE_ID}:u:${env.AGENT_USER_ID}`,
     seed_sha256: sha256OfFile(seedPath),
     seed_name: seed.workflow.name,
     seed_node_ids: seed.workflow.seed.nodes.map((node) => node.id),
@@ -740,30 +841,24 @@ async function main(argv: string[]): Promise<void> {
     await recordTurns(raw, {
       headers: {
         'content-type': 'application/json',
-        'X-Comfy-M2M-Secret': readFileSync(secretFile, 'utf8').trim(),
-        'X-Comfy-Workspace': workspace,
-        'X-Comfy-User': user
+        'X-Comfy-M2M-Secret': readFileSync(
+          env.AGENT_M2M_SECRET_FILE,
+          'utf8'
+        ).trim(),
+        'X-Comfy-Workspace': env.AGENT_WORKSPACE_ID,
+        'X-Comfy-User': env.AGENT_USER_ID
       },
-      redisExec: env(
-        'AGENT_REDIS_EXEC',
-        'docker exec -i be11470-redis redis-cli'
-      ).split(' '),
-      timeoutMs,
+      redisExec: env.AGENT_REDIS_EXEC.split(' '),
+      timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed
     })
 
-    const rows = readRows(
-      env(
-        'AGENT_PG_EXEC',
-        'docker exec -i be11470-pg psql -U postgres -d postgres -At -c'
-      ).split(' '),
-      sidecar('rows.json'),
-      {
-        threadId: String(raw.accepted?.body?.thread_id),
-        messageId: String(raw.accepted?.body?.message_id),
-        workflowId: String(raw.seed_workflow_id)
-      }
-    )
+    const ids = zAck.parse(raw.accepted?.body)
+    const rows = readRows(env.AGENT_PG_EXEC.split(' '), sidecar('rows.json'), {
+      threadId: ids.thread_id,
+      messageId: ids.message_id,
+      workflowId: String(raw.seed_workflow_id)
+    })
     raw.rows_artifact = rows.path
     raw.retrieval = rows.retrieval
     writeJson(rawPath, raw)
@@ -772,7 +867,11 @@ async function main(argv: string[]): Promise<void> {
       raw,
       rows,
       seed: { json: seed, path: seedPath, sha256: raw.seed_sha256 },
-      provenance: { cloudSha, model, exportedAt: new Date().toISOString() },
+      provenance: {
+        cloudSha: env.AGENT_CLOUD_SHA,
+        model: env.AGENT_MODEL,
+        exportedAt: new Date().toISOString()
+      },
       rawSha256: sha256OfFile(rawPath),
       rawPath
     })
@@ -780,7 +879,7 @@ async function main(argv: string[]): Promise<void> {
     writeJson(outPath, exportAgentConversation(capture))
     writeJson(sidecar('receipt.json'), receipt)
     process.stdout.write(
-      `recorded ${outPath} sha256=${sha256OfFile(outPath)} attempt=${attempt} frames=${receipt.frames_kept} dropped=${JSON.stringify(receipt.frames_dropped)} parents=${receipt.parent_rows.length} mutating=${receipt.mutating_parents.length} workflow=${receipt.workflow_id}\nsidecars in ${workDir}\n`
+      `recorded ${outPath} sha256=${sha256OfFile(outPath)} attempt=${attempt} frames=${receipt.frames_kept} dropped=${JSON.stringify(receipt.frames_dropped)} parents=${receipt.parents} mutating=${receipt.mutating_parents} workflow=${receipt.workflow_id}\nsidecars in ${workDir}\n`
     )
   } catch (error) {
     raw.error = error instanceof Error ? error.message : String(error)
@@ -800,8 +899,8 @@ if (
 ) {
   main(process.argv.slice(2)).catch((error: unknown) => {
     const refused = error instanceof RecordRefusal
-    console.error(
-      `record: ${refused ? 'REFUSED' : 'FAILED'}: ${error instanceof Error ? error.message : String(error)}`
+    process.stderr.write(
+      `record: ${refused ? 'REFUSED' : 'FAILED'}: ${error instanceof Error ? error.message : String(error)}\n`
     )
     process.exitCode = 1
   })
