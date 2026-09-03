@@ -23,9 +23,21 @@
     <div
       class="flex min-h-0 flex-col gap-6 rounded-2xl bg-base-background p-8 xl:flex-1"
     >
-      <!-- Plan-scope description, above the billing toggle (DES-197). -->
+      <!-- Plan-scope description, above the billing toggle (DES-197). While a
+           previous payment attempt settles server-side (FE-1990 variant B) the
+           same slot carries the settling notice instead — same row, same type
+           size, so nothing shifts. CTAs stay enabled: a preview is a free
+           quote request, and the first click after the server settles simply
+           succeeds. -->
+      <p
+        v-if="isPaymentSettling"
+        class="m-0 flex items-center justify-center gap-1.5 text-center text-sm text-muted-foreground"
+      >
+        <i class="icon-[lucide--info] size-4 shrink-0" />
+        {{ t('subscription.settlingNotice') }}
+      </p>
       <I18nT
-        v-if="planMode === 'personal'"
+        v-else-if="planMode === 'personal'"
         keypath="subscription.personalHeader"
         tag="p"
         class="m-0 text-center text-sm text-muted-foreground"
@@ -446,12 +458,16 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
   /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
+  /** A previous payment attempt is still settling server-side; the subtitle
+   *  row explains it inline (FE-1990 variant B). */
+  isPaymentSettling?: boolean
 }
 
 const {
   isLoading,
   loadingTier = null,
-  initialPlanMode = 'personal'
+  initialPlanMode = 'personal',
+  isPaymentSettling = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{

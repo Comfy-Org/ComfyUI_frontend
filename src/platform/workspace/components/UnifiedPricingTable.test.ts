@@ -541,3 +541,72 @@ describe('UnifiedPricingTable outside Cloud', () => {
     ).toBeNull()
   })
 })
+
+describe('UnifiedPricingTable settling notice', () => {
+  beforeEach(() => {
+    mockCanReactivatePlan.value = true
+    mockRawCanReactivate.value = true
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('swaps the subtitle row for the settling notice in the same slot', () => {
+    renderComponent({ isPaymentSettling: true })
+
+    expect(
+      screen.getByText(
+        'Finishing up your last payment attempt — you can try again in a moment.'
+      )
+    ).toBeTruthy()
+    expect(
+      screen.queryByText(/Personal plans are for individual use only/)
+    ).toBeNull()
+  })
+
+  it('replaces the team subtitle too when the team tab is up', () => {
+    renderComponent({ isPaymentSettling: true, initialPlanMode: 'team' })
+
+    expect(
+      screen.getByText(
+        'Finishing up your last payment attempt — you can try again in a moment.'
+      )
+    ).toBeTruthy()
+    expect(screen.queryByText(/For teams wanting to collaborate/)).toBeNull()
+  })
+
+  it('keeps the plan CTAs enabled — the retry is the probe', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
+
+    const { emitted } = renderComponent({ isPaymentSettling: true })
+
+    const cta = screen.getByRole('button', {
+      name: 'Subscribe to Creator Yearly'
+    })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribe).toBeTruthy()
+  })
+
+  it('shows the normal subtitle while nothing is settling', () => {
+    renderComponent()
+
+    expect(
+      screen.getByText(/Personal plans are for individual use only/)
+    ).toBeTruthy()
+    expect(
+      screen.queryByText(/Finishing up your last payment attempt/)
+    ).toBeNull()
+  })
+})

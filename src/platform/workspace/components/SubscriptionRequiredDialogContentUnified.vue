@@ -66,6 +66,7 @@
       :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
+      :is-payment-settling="isPaymentSettling"
       @subscribe="handleSubscribeClick"
       @resubscribe="handleResubscribe"
       @subscribe-team="handleSubscribeTeamClick"
@@ -231,6 +232,7 @@ const {
   checkoutStep,
   isLoadingPreview,
   loadingTier,
+  isPaymentSettling,
   isSubscribing,
   isApplyingPromotionCode,
   isResubscribing,
