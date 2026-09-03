@@ -51,10 +51,15 @@ test.describe('Enterprise pages @smoke', () => {
     await page.goto('/enterprise/managed-builds')
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'MANAGED BUILDS'
+      /MANAGED BUILDS\s*BETA/
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    await expect(page.getByText('BETA', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('BETA', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText(
+        /deploy the same build anywhere, local or serverless cloud/
+      )
+    ).toBeVisible()
     await expect(page.getByRole('link', { name: 'CONTACT SALES' })).toHaveCount(
       0
     )
@@ -63,15 +68,7 @@ test.describe('Enterprise pages @smoke', () => {
         level: 2,
         name: /One approved ComfyUI environment, everywhere your team runs it\./
       })
-    ).toBeVisible()
-    for (const group of [
-      'COMFYUI RELEASE',
-      'PYTHON · PYTORCH · CUDA',
-      'CUSTOM NODES',
-      'MODELS'
-    ]) {
-      await expect(page.getByRole('group', { name: group })).toBeVisible()
-    }
+    ).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: 'BUILD', exact: true })
     ).toHaveCount(0)
@@ -79,7 +76,7 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
     await expect(page.getByRole('link', { name: 'REQUEST DEMO' })).toHaveCount(
-      4
+      3
     )
     await expect(
       page.getByRole('heading', {
