@@ -1,9 +1,34 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import FormItem from './FormItem.vue'
 
 describe('FormItem', () => {
+  it('normalizes a nullable number value for the stepper', () => {
+    render(FormItem, {
+      props: {
+        formValue: null,
+        id: 'device',
+        item: { name: 'CUDA device', type: 'number' }
+      },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ],
+        directives: { tooltip: {} }
+      }
+    })
+
+    expect(screen.getByRole('textbox')).toHaveValue('0')
+  })
+
   it('renders radio option labels', () => {
     render(FormItem, {
       props: {
