@@ -56,10 +56,13 @@ export interface DetachedTargetSessionSnapshot {
 export interface DetachedTargetSessionOptions {
   /** Upper bound on staged-but-uncommitted frames. */
   readonly maxQueuedFrames?: number
+  /** Consecutive failed head-frame applications before resync is required. */
+  readonly maxConsecutiveFailures?: number
   readonly initialLineage?: string
 }
 
 const DEFAULT_MAX_QUEUED_FRAMES = 64
+const DEFAULT_MAX_CONSECUTIVE_FAILURES = 3
 
 /**
  * Staged frame queue for a target document that is not attached to a live
@@ -81,6 +84,8 @@ export function createDetachedTargetSession(
   options: DetachedTargetSessionOptions = {}
 ) {
   const maxQueuedFrames = options.maxQueuedFrames ?? DEFAULT_MAX_QUEUED_FRAMES
+  const maxConsecutiveFailures =
+    options.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES
 
   let lineage = options.initialLineage ?? createUuidv4()
   let committedDoc = new Y.Doc()
@@ -96,6 +101,7 @@ export function createDetachedTargetSession(
   /** `null` accepts any sequence (fresh session or just resynced). */
   let expectedSeq: number | null = null
   let queue: TargetFrame[] = []
+  let consecutiveFailures = 0
 
   function assertTarget(frameWorkflowId: string): boolean {
     const matchesTarget = frameWorkflowId === workflowId
@@ -146,13 +152,14 @@ export function createDetachedTargetSession(
       applied = port.apply(frame, staged)
     } catch (error) {
       staged.destroy()
-      return { status: 'failed', seq: frame.seq, error }
+      return failedCommit(frame.seq, error)
     }
     if (!applied) {
       staged.destroy()
-      return { status: 'failed', seq: frame.seq }
+      return failedCommit(frame.seq)
     }
 
+    consecutiveFailures = 0
     committedDoc.destroy()
     committedDoc = staged
     committedSeq = frame.seq
@@ -160,6 +167,16 @@ export function createDetachedTargetSession(
     lastCommitId = `${lineage}:${frame.seq}`
     queue.shift()
     return { status: 'committed', commitId: lastCommitId, seq: frame.seq }
+  }
+
+  function failedCommit(seq: number, error?: unknown): CommitResult {
+    consecutiveFailures += 1
+    if (consecutiveFailures >= maxConsecutiveFailures) {
+      queue = []
+      needsResync = true
+      return { status: 'resync-required' }
+    }
+    return { status: 'failed', seq, ...(error !== undefined && { error }) }
   }
 
   function drainAll(port: TargetFrameApplyPort): {
@@ -195,6 +212,7 @@ export function createDetachedTargetSession(
     needsResync = false
     queue = []
     expectedSeq = null
+    consecutiveFailures = 0
   }
 
   /**
@@ -214,6 +232,7 @@ export function createDetachedTargetSession(
     lastCommitId = null
     needsResync = false
     queue = []
+    consecutiveFailures = 0
   }
 
   function isCommitted(commitId: string): boolean {

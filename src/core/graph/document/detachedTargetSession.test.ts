@@ -199,6 +199,43 @@ describe('createDetachedTargetSession', () => {
     expect(session.snapshot().committedSeq).toBeNull()
   })
 
+  it('requires resync after the bounded consecutive failure limit', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID, {
+      maxConsecutiveFailures: 2
+    })
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+
+    expect(session.commitNext(rejectAll)).toEqual({ status: 'failed', seq: 1 })
+    expect(session.commitNext(rejectAll)).toEqual({
+      status: 'resync-required'
+    })
+    expect(session.snapshot()).toMatchObject({
+      queuedFrames: 0,
+      needsResync: true,
+      committedSeq: null
+    })
+  })
+
+  it('resets the failure count after a successful application', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID, {
+      maxConsecutiveFailures: 2
+    })
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+
+    expect(session.commitNext(rejectAll).status).toBe('failed')
+    expect(session.commitNext(acceptAll).status).toBe('committed')
+    session.enqueue(source.frame((doc) => setNode(doc, '1', { title: 'b' })))
+
+    expect(session.commitNext(rejectAll)).toEqual({ status: 'failed', seq: 2 })
+    expect(session.snapshot().needsResync).toBe(false)
+  })
+
   it('a frame with malformed update bytes reports failed instead of throwing', () => {
     const session = createDetachedTargetSession(WORKFLOW_ID)
     session.enqueue({
