@@ -77,7 +77,7 @@
             :aria-selected="index === selectedIndex"
             :class="
               cn(
-                'focus-visible:ring-primary flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2',
+                'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-highlight',
                 index === selectedIndex && 'bg-secondary-background'
               )
             "

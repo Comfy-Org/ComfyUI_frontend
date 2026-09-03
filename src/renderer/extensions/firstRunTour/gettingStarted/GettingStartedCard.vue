@@ -58,7 +58,7 @@
       <span class="text-center text-xs font-medium text-base-foreground">
         {{ t('gettingStarted.templateFailed') }}
       </span>
-      <span class="text-primary text-xs font-semibold">
+      <span class="text-xs font-semibold text-highlight">
         {{ t('gettingStarted.retry') }}
       </span>
     </div>
