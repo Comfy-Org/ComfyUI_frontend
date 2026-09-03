@@ -417,6 +417,20 @@ describe('CameraManager', () => {
       })
     })
 
+    it('restores a stored custom up without a quaternion', () => {
+      const { quaternion: _quaternion, ...noQuaternion } = rolledState()
+      manager.setCameraState({
+        ...noQuaternion,
+        customUp: { x: 0, y: 0, z: 1 }
+      })
+
+      expect(manager.activeCamera.up.toArray()).toEqual([0, 0, 1])
+      expect(events.emitEvent).toHaveBeenCalledWith('cameraUpStateChange', {
+        hasCustomUp: true,
+        usingCustomUp: true
+      })
+    })
+
     it('omits useCustomUp from the state until a custom up is captured', () => {
       expect(manager.getCameraState().useCustomUp).toBeUndefined()
 

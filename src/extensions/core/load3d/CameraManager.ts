@@ -9,12 +9,12 @@ import {
 } from './interfaces'
 
 function resolveIncomingCustomUp(state: CameraState): THREE.Vector3 | null {
-  if (!state.quaternion || state.useCustomUp === undefined) return null
+  if (state.useCustomUp === undefined) return null
   const storedUp = state.customUp
     ? new THREE.Vector3(state.customUp.x, state.customUp.y, state.customUp.z)
     : null
   if (storedUp && storedUp.lengthSq() > 0) return storedUp
-  if (!state.useCustomUp) return null
+  if (!state.useCustomUp || !state.quaternion) return null
   const q = new THREE.Quaternion(
     state.quaternion.x,
     state.quaternion.y,
