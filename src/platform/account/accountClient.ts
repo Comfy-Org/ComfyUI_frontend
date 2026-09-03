@@ -13,6 +13,7 @@ import type {
   TransportRequest,
   WorkspaceCredential
 } from '@comfyorg/account/core'
+import { signOut } from 'firebase/auth'
 import type { Auth } from 'firebase/auth'
 
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -24,6 +25,12 @@ export interface AccountLayerPocDebug {
   sessionExchanges: number
   lastBillingToken: string | null
   lastSessionToken: string | null
+  lastBillingSessionExchange: number | null
+  credentialLifetimeMs: number | null
+  refreshScheduleDelayMs: number | null
+  refreshCredits(): Promise<void>
+  runScheduledRefresh(): void
+  signOut(): Promise<void>
 }
 
 declare global {
@@ -36,8 +43,16 @@ const debug: AccountLayerPocDebug = {
   billingRequests: 0,
   sessionExchanges: 0,
   lastBillingToken: null,
-  lastSessionToken: null
+  lastSessionToken: null,
+  lastBillingSessionExchange: null,
+  credentialLifetimeMs: null,
+  refreshScheduleDelayMs: null,
+  refreshCredits: async () => undefined,
+  runScheduledRefresh: () => undefined,
+  signOut: async () => undefined
 }
+
+let scheduledRefresh: (() => void) | undefined
 
 function storageName(key: StorageKey): string {
   return `${key.namespace}:${key.userId}:${key.workspaceId}`
@@ -64,6 +79,7 @@ function decodeCredential(value: unknown): WorkspaceCredential {
   }
   debug.sessionExchanges++
   debug.lastSessionToken = input.token
+  debug.credentialLifetimeMs = expiresAt - Date.now()
   return { token: input.token, workspaceId: workspace.id, expiresAt }
 }
 
@@ -88,7 +104,11 @@ function createFrontendAccountAdapter(
     namespace,
     scheduler: {
       now: Date.now,
-      schedule: (fn, delayMs) => setTimeout(fn, delayMs),
+      schedule: (fn, delayMs) => {
+        scheduledRefresh = fn
+        debug.refreshScheduleDelayMs = delayMs
+        return setTimeout(fn, delayMs)
+      },
       cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>)
     },
     async acquireIdentity(options) {
@@ -137,6 +157,7 @@ function createFrontendAccountAdapter(
         idempotent: true,
         makeRequest: ({ credential }, signal) => {
           debug.lastBillingToken = credential.token
+          debug.lastBillingSessionExchange = debug.sessionExchanges
           return {
             method: 'GET',
             path: workspaceApiUrl('/billing/balance'),
@@ -167,7 +188,11 @@ export function createFrontendAccountClients(
 ): { session: SessionClient; billing: BillingClient } {
   const adapter = createFrontendAccountAdapter(auth, getActiveWorkspace)
   const session = createSessionClient(adapter)
-  return { session, billing: createBillingClient(session, adapter) }
+  const billing = createBillingClient(session, adapter)
+  debug.refreshCredits = () => billing.refreshCredits()
+  debug.runScheduledRefresh = () => scheduledRefresh?.()
+  debug.signOut = () => signOut(auth)
+  return { session, billing }
 }
 
 export function getAccountLayerPocDebug(): Readonly<AccountLayerPocDebug> {
