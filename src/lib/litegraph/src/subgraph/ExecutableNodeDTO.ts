@@ -360,7 +360,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Prefer input with the same slot ID
     if (
-      oppositeInput &&
       LiteGraph.isValidConnection(oppositeInput.type, outputType) &&
       LiteGraph.isValidConnection(oppositeInput.type, type)
     ) {

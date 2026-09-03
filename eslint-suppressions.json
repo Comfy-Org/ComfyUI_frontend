@@ -76,7 +76,7 @@
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {

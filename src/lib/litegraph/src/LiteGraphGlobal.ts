@@ -408,8 +408,6 @@ export class LiteGraphGlobal {
    * @param base_class class containing the structure of a node
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
-    if (!base_class.prototype)
-      throw 'Cannot register a simple object, it must be a class with a prototype'
     base_class.type = type
 
     const classname = base_class.name
@@ -425,7 +423,9 @@ export class LiteGraphGlobal {
       base_class.prototype[i] ||= LGraphNode.prototype[i]
     }
 
-    const prev = this.registered_node_types[type]
+    const prev = Object.hasOwn(this.registered_node_types, type)
+      ? this.registered_node_types[type]
+      : undefined
     if (prev && this.debug) {
       console.warn('replacing node type:', type)
     }
@@ -452,7 +452,11 @@ export class LiteGraphGlobal {
    */
   unregisterNodeType(type: string | typeof LGraphNode): void {
     const base_class =
-      typeof type === 'string' ? this.registered_node_types[type] : type
+      typeof type !== 'string'
+        ? type
+        : Object.hasOwn(this.registered_node_types, type)
+          ? this.registered_node_types[type]
+          : undefined
     if (!base_class) throw `node type not found: ${String(type)}`
 
     delete this.registered_node_types[String(base_class.type)]
@@ -534,7 +538,9 @@ export class LiteGraphGlobal {
     title?: string,
     options?: CreateNodeOptions
   ): LGraphNode | null {
-    const base_class = this.registered_node_types[type]
+    const base_class = Object.hasOwn(this.registered_node_types, type)
+      ? this.registered_node_types[type]
+      : undefined
     if (!base_class) {
       if (this.debug) console.warn(`GraphNode type "${type}" not registered.`)
       return null
@@ -554,12 +560,7 @@ export class LiteGraphGlobal {
     }
 
     if (!node.title && title) node.title = title
-    node.properties ||= {}
-    node.properties_info ||= []
-    node.flags ||= {}
     // call onresize?
-    node.size ||= node.computeSize()
-    node.pos ||= [this.DEFAULT_POSITION[0], this.DEFAULT_POSITION[1]]
     node.mode ||= LGraphEventMode.ALWAYS
 
     // extra options
@@ -731,25 +732,19 @@ export class LiteGraphGlobal {
   /* helper for interaction: pointer, touch, mouse Listeners
     used by LGraphCanvas DragAndScale ContextMenu */
   pointerListenerAdd(
-    oDOM: Node,
+    oDOM: Node | null,
     sEvIn: string,
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.addEventListener ||
-      !sEvIn ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM || !sEvIn || typeof fCall !== 'function') return
 
     let sMethod = this.pointerevents_method
     let sEvent = sEvIn
 
     // UNDER CONSTRUCTION
     // convert pointerevents to touch event when not available
-    if (sMethod == 'pointer' && !window.PointerEvent) {
+    if (sMethod == 'pointer' && !Object.hasOwn(window, 'PointerEvent')) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
       console.warn(
         `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`
@@ -818,18 +813,12 @@ export class LiteGraphGlobal {
   }
 
   pointerListenerRemove(
-    oDOM: Node,
+    oDOM: Node | null,
     sEvent: string,
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.removeEventListener ||
-      !sEvent ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM || !sEvent || typeof fCall !== 'function') return
 
     switch (sEvent) {
       // both pointer and move events
@@ -879,7 +868,9 @@ export class LiteGraphGlobal {
 
   distance = distance
 
-  colorToString(c: [number, number, number, number]): string {
+  colorToString(
+    c: [number, number, number] | [number, number, number, number]
+  ): string {
     return `rgba(${Math.round(c[0] * 255).toFixed()},${Math.round(
       c[1] * 255
     ).toFixed()},${Math.round(c[2] * 255).toFixed()},${
