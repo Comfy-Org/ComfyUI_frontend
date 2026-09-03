@@ -15,7 +15,6 @@
 import { watch } from 'vue'
 
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type {
   PromptQueuedEventPayload,
@@ -32,7 +31,10 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
+import { registerQueueGuard } from './queueGuard'
 import type { Unsubscribe } from './widgetHandle'
+
+export { mayRun } from './queueGuard'
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface RunOptions {
@@ -188,49 +190,10 @@ export interface QueueHandle {
   guard(check: () => boolean | Promise<boolean>): Unsubscribe
 }
 
-/** Registered guards, module-level so the host can consult them. */
-const guards = new Set<() => boolean | Promise<boolean>>()
-
-/** How long every guard together may take before the run proceeds regardless. */
-const GUARD_TIMEOUT_MS = 5_000
-
 function assertBatchCount(count: number): void {
   if (!Number.isSafeInteger(count) || count < 1) {
     throw new ComfyApiError('Batch count must be a positive integer.')
   }
-}
-
-/**
- * Asks every guard whether this run may proceed. Called by the host once per
- * queued item, before the prompt is built.
- */
-export async function mayRun(): Promise<boolean> {
-  if (!guards.size) return true
-  const asked = [...guards].map(async (check) => {
-    try {
-      return await check()
-    } catch (error) {
-      reportError(error, { errorType: 'queue_guard_threw' })
-      return true
-    }
-  })
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  const verdicts = await Promise.race([
-    Promise.all(asked),
-    new Promise<true[]>((resolve) => {
-      timeout = setTimeout(() => {
-        reportError(
-          new ComfyApiError(
-            `A queue guard did not settle within ${GUARD_TIMEOUT_MS}ms.`
-          ),
-          { errorType: 'queue_guard_timeout' }
-        )
-        resolve([true])
-      }, GUARD_TIMEOUT_MS)
-    })
-  ])
-  if (timeout !== undefined) clearTimeout(timeout)
-  return verdicts.every((allowed) => allowed)
 }
 
 function subscribe(event: 'promptQueueing' | 'execution_interrupted') {
@@ -437,8 +400,7 @@ export function createQueueApi(
     },
 
     guard(check: () => boolean | Promise<boolean>) {
-      guards.add(check)
-      return () => guards.delete(check)
+      return registerQueueGuard(check)
     }
   })
 }

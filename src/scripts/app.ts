@@ -31,6 +31,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -45,7 +46,6 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -102,6 +102,18 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import {
+  deliverPreview,
+  notifyDefsRefreshed
+} from '@/platform/nodeApi/defsRegistry'
+import { mayRun } from '@/platform/nodeApi/queueGuard'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
+import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -255,6 +267,11 @@ export interface QueuePromptOptions {
   intent?: WorkflowQueueIntent
 }
 
+async function finishWorkflowLoad(): Promise<void> {
+  await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+  notifyWorkflowLoaded()
+}
+
 function createNodeOutputsMutationView(
   outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
@@ -389,6 +406,7 @@ export class ComfyApp {
   }
 
   private configuringGraphLevel: number = 0
+  private disposeUnplacedLinkBridge?: () => void
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -942,6 +960,14 @@ export class ComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+      const node = getNodeByExecutionId(this.rootGraph, displayNodeExecutionId)
+      if (node?.type) {
+        deliverPreview(
+          String(node.id),
+          node.type,
+          Object.freeze({ blob, url: blobUrl })
+        )
+      }
       releaseSharedObjectUrl(blobUrl)
     })
 
@@ -998,6 +1024,19 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+    // All before loadExtensions: extension modules run their top level during
+    // that call, so the API has to be reachable and fully sourced by then. A
+    // pack subscribing to onNodeMoved at module scope throws otherwise.
+    installNodeMoveBridge()
+    installNodeChangeBridge()
+    // Which the API cannot see for itself: ChangeTracker lives up here.
+    provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
+    installComfyApi(() => useCanvasStore().currentGraph, {
+      openWorkflow: async (data) => {
+        await this.loadGraphData(data as ComfyWorkflowJSON)
+      },
+      refreshDefinitions: () => this.refreshComboInNodes()
+    })
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
       useExtensionService().loadExtensions()
     )
@@ -1030,6 +1069,8 @@ export class ComfyApp {
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
+    this.disposeUnplacedLinkBridge?.()
+    this.disposeUnplacedLinkBridge = installUnplacedLinkBridge(this.canvas)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
@@ -1105,6 +1146,7 @@ export class ComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    markAppReady()
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1637,7 +1679,7 @@ export class ComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId
       )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      await finishWorkflowLoad()
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1770,10 +1812,6 @@ export class ComfyApp {
       requestId,
       workflowQueueIntent: intent
     })
-    api.dispatchCustomEvent('promptQueueing', {
-      requestId,
-      batchCount
-    })
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
@@ -1786,6 +1824,7 @@ export class ComfyApp {
     const telemetry = useTelemetry()
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
+    let finishActiveAttempt: (() => void) | undefined
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const teamWorkspaceStore = useTeamWorkspaceStore()
@@ -1847,6 +1886,29 @@ export class ComfyApp {
           workflowQueueIntent
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let rejectedCount = 0
+        const promptIds: string[] = []
+        const submissions: { promptId: string; nodeCount: number }[] = []
+        const finishAttempt = () => {
+          api.dispatchCustomEvent('promptQueueAttemptEnded', {
+            requestId,
+            queued: queuedCount,
+            rejected: rejectedCount
+          })
+          finishActiveAttempt = undefined
+        }
+        finishActiveAttempt = finishAttempt
+        api.dispatchCustomEvent('promptQueueing', {
+          requestId,
+          batchCount,
+          number
+        })
+
+        if (!(await mayRun())) {
+          queueResultOverride = false
+          finishAttempt()
+          continue
+        }
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -1935,6 +1997,8 @@ export class ComfyApp {
             delete api.authToken
             delete api.apiKey
             if (!res.prompt_id) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', { response: res })
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -1948,25 +2012,31 @@ export class ComfyApp {
               res.node_errors ?? null,
               queuedRunErrorKey
             )
+            if (!res.prompt_id) {
+              queueResultOverride = false
+              break
+            }
+            const promptId = res.prompt_id
             queueResultOverride = null
             try {
-              if (res.prompt_id) {
-                executionStore.storeJob({
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                  promptOutput: p.output,
-                  startTime,
-                  submissionAcceptedAt: responseReceivedAt,
-                  workflow: queuedWorkflow,
-                  mode: queuedMode,
-                  workflowContext,
-                  workflowExecutionIntent
-                })
-              }
+              executionStore.storeJob({
+                id: promptId,
+                nodes: Object.keys(p.output),
+                promptOutput: p.output,
+                startTime,
+                submissionAcceptedAt: responseReceivedAt,
+                workflow: queuedWorkflow,
+                mode: queuedMode,
+                workflowContext,
+                workflowExecutionIntent
+              })
             } catch (error) {
               console.warn('Failed to store queued job metadata', {
-                promptId: res.prompt_id,
+                promptId,
                 error
+              })
+              reportError(error, {
+                errorType: 'queue_job_metadata_store_failed'
               })
             }
             if (executionErrorStore.hasNodeError) {
@@ -1975,7 +2045,19 @@ export class ComfyApp {
               }
               this.canvas.draw(true, true)
             }
+            promptIds.push(promptId)
+            submissions.push({
+              promptId,
+              nodeCount: Object.keys(p.output).length
+            })
           } catch (error: unknown) {
+            if (error instanceof PromptExecutionError) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: error.response,
+                status: error.status
+              })
+            }
             telemetry?.trackExecutionOutcome({
               startTime,
               endTime: performance.now(),
@@ -2099,11 +2181,16 @@ export class ComfyApp {
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
-            requestId
+            requestId,
+            promptIds,
+            submissions,
+            rejectedCount
           })
         }
+        finishAttempt()
       }
     } finally {
+      finishActiveAttempt?.()
       this.processingQueue = false
     }
     return queueResultOverride ?? !executionErrorStore.lastNodeErrors
@@ -2270,7 +2357,7 @@ export class ComfyApp {
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      await finishWorkflowLoad()
       return
     }
 
@@ -2579,7 +2666,7 @@ export class ComfyApp {
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
-    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    await finishWorkflowLoad()
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }
@@ -2676,6 +2763,7 @@ export class ComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    notifyDefsRefreshed()
   }
 
   /**

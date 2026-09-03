@@ -66,10 +66,9 @@ const workflowLoaded = new Set<() => void>()
  * from ordinary editing, which no amount of watching graph mutations can do
  * on its own — mutations are what editing this exact document IS.
  *
- * Minted here, at the single call site that means "a workflow finished
- * loading" (`loadGraphData`'s tail in `app.ts`), and nowhere else — undo/redo
- * restores this same document's prior state without reloading it, and must
- * not look like a new one.
+ * Minted here from the common successful-load hook for workflow, API JSON and
+ * A1111 imports. Undo/redo restores this same document's prior state without
+ * reloading it, and must not look like a new one.
  */
 let documentId: UUID | undefined
 
