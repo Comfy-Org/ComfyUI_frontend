@@ -280,7 +280,14 @@ export class EcsFollowerAdapter {
         })
         const links = [...session.links.keys()].flatMap((id) => {
           const link = readSemanticLink(session.follower.doc, id)
-          return link ? [link] : []
+          if (!link) return []
+          const reason = frameConnectRejection(link, session.follower.doc)
+          if (!reason) return [link]
+          console.warn(
+            '[agent-crdt] follower frame dropped unrepresentable link',
+            { workflowId: session.workflowId, linkId: link.id, reason }
+          )
+          return []
         })
         batch.removeMissing(
           nodes.map(({ id }) => toNodeId(id)),
