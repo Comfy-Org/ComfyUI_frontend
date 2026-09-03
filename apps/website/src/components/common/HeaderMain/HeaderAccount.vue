@@ -60,7 +60,6 @@ const itemClass =
     as="a"
     :href="signInHref"
     variant="outline"
-    size="sm"
     class="text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink"
     data-testid="header-sign-in"
   >
@@ -69,7 +68,7 @@ const itemClass =
 
   <DropdownMenuRoot v-else>
     <div
-      class="bg-transparency-white-t4 flex h-11 items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1"
+      class="bg-transparency-white-t4 flex h-10 items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1"
     >
       <a
         :href="externalLinks.platform"
