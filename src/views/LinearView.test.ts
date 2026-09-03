@@ -196,6 +196,13 @@ describe('LinearView', () => {
     )
   })
 
+  it('keeps side panels at least 312px wide in a 1280px layout', () => {
+    renderView({ activeTab: sampleTab, hasOutputs: true })
+
+    expect(screen.getByTestId('linear-left-panel')).toHaveClass('min-w-78')
+    expect(screen.getByTestId('linear-right-panel')).toHaveClass('min-w-78')
+  })
+
   it('omits both side panels when there is no active tab or output', () => {
     renderView({ activeTab: null, hasOutputs: false })
 
