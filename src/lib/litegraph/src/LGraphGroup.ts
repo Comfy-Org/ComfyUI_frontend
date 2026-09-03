@@ -309,7 +309,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     if (this.pinned) return
 
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
-    if (skipChildren === true) return
+    if (skipChildren) return
 
     for (const item of this._children) {
       item.move(deltaX, deltaY)

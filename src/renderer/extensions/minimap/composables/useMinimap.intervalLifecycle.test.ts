@@ -111,7 +111,7 @@ describe('useMinimap change-detection interval', () => {
         ) as HTMLCanvasElement['getContext']
     })
     const container = {
-      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)
+      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200))
     }
 
     const minimap = useMinimap({
@@ -252,7 +252,7 @@ describe('useMinimap change-detection interval', () => {
     // taken inside init() sees a null canvasRef and never starts the loop.
     const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
     const container = {
-      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)
+      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200))
     }
     const minimap = useMinimap({
       containerRefMaybe: shallowRef(
