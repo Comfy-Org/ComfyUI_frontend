@@ -386,7 +386,6 @@ vi.mock(
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    isActiveSubscription: mockCanAccessSubscriptionFeatures,
     isInitialized: mockIsInitialized,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
