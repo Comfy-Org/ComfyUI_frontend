@@ -21,7 +21,7 @@ import type {
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource } from './useAgentSession'
+import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
@@ -73,6 +73,15 @@ function fakeEvents() {
     status: (live: boolean) => statusListener?.(live)
   }
 }
+
+// Mirrors AgentPanelRoot's originWorkflow(): an explicit `null` origin means
+// the send had no origin tab and must resolve to nothing, while an omitted
+// origin falls back to whatever tab is active right now.
+const pathFor = (
+  origin: TurnOrigin | undefined,
+  activePath: string | undefined
+): string | undefined =>
+  origin === null ? undefined : (origin?.tabPath ?? activePath)
 
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
@@ -647,20 +656,22 @@ describe('useAgentSession (v1 composition root)', () => {
       rest,
       events: source,
       workflow: {
-        // Mirrors the real deps: honor an explicit originTabPath (resolved
+        // Mirrors the real deps: honor an explicit origin (resolved
         // post-prepare) and fall back to whatever tab is active right now
         // when called with no argument (the pre-await identity capture).
-        current: (originTabPath) => {
-          const path = originTabPath ?? activePath
-          return { id: idForPath(path), tabPath: path }
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
         },
         adopted,
         prepare,
-        tabs: (originTabPath) => {
-          const path = originTabPath ?? activePath
+        tabs: (origin) => {
+          const path = pathFor(origin, activePath)
           return {
-            open_tabs: [{ workflow_id: idForPath(path), name: path }],
-            current_tab: idForPath(path)
+            open_tabs: [{ workflow_id: 'wf-a', name: 'tab-a' }],
+            current_tab: path === undefined ? undefined : idForPath(path)
           }
         }
       }
@@ -704,18 +715,22 @@ describe('useAgentSession (v1 composition root)', () => {
       rest,
       events: source,
       workflow: {
-        current: (originTabPath) => {
-          const path = originTabPath ?? activePath
-          return { id: idForPath(path), tabPath: path }
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
         },
         adopted: vi.fn(),
         prepare,
         // The draft is read on the same post-await leg as current()/tabs(), so
         // it has to honor the same pinned identity or the turn ships one tab's
         // canvas under another tab's workflow id.
-        draft: (originTabPath) => {
-          const path = originTabPath ?? activePath
-          return { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        draft: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { content: { nodes: [{ id: 1, type: path }], links: [] } }
         }
       }
     })
@@ -730,6 +745,76 @@ describe('useAgentSession (v1 composition root)', () => {
       workflowId: 'wf-a',
       draft: { content: { nodes: [{ id: 1, type: 'tab-a' }], links: [] } }
     })
+  })
+
+  it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-b'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    // The panel is detached when the user hits send, so there is no origin
+    // tab: activeWorkflowTurnContext() returns undefined for every lookup
+    // while `detached` holds, exactly like the real deps.
+    let detached = true
+    let activePath: string | undefined = undefined
+    const resolve = (origin: TurnOrigin | undefined) =>
+      detached ? undefined : pathFor(origin, activePath)
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = resolve(origin)
+          return path === undefined ? undefined : { id: 'wf-b', tabPath: path }
+        },
+        adopted,
+        prepare,
+        tabs: (origin) => {
+          const path = resolve(origin)
+          return {
+            open_tabs: [{ workflow_id: 'wf-b', name: 'tab-b' }],
+            current_tab: path === undefined ? undefined : 'wf-b'
+          }
+        },
+        draft: (origin) => {
+          const path = resolve(origin)
+          return path === undefined
+            ? undefined
+            : { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // The user re-attaches (onSelectTab clears workflowDetached) and selects
+    // tab-b while prepare() is still in flight.
+    detached = false
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    const sent = vi.mocked(postMessage).mock.calls[0][1]
+    expect(sent).not.toHaveProperty('workflowId')
+    expect(sent).not.toHaveProperty('draft')
+    expect(sent.tabs?.current_tab).toBeUndefined()
+    // open_tabs is context, not attribution, so it still travels.
+    expect(sent.tabs?.open_tabs).toEqual([
+      { workflow_id: 'wf-b', name: 'tab-b' }
+    ])
+    // The ack echoes wf-b; with no origin tab there is nothing to bind it to.
+    expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
   })
 
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {

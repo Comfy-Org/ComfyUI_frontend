@@ -75,7 +75,10 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
-import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
+import type {
+  TurnOrigin,
+  WorkflowTurnContext
+} from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
@@ -292,14 +295,23 @@ function cloudIdFor(tab: ComfyWorkflow): string | undefined {
 
 const workflowDetached = ref(false)
 
+// Resolves the tab a turn is attributed to. `null` (the send had no origin
+// tab) resolves to nothing rather than falling back to the active tab, so
+// re-attaching during prepare() cannot pull a later tab into this turn.
+function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
+  if (origin === null) return undefined
+  return (
+    (origin === undefined
+      ? workflowStore.activeWorkflow
+      : workflowStore.getWorkflowByPath(origin.tabPath)) ?? undefined
+  )
+}
+
 function activeWorkflowTurnContext(
-  originTabPath?: string
+  origin?: TurnOrigin
 ): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
-  const active =
-    originTabPath === undefined
-      ? workflowStore.activeWorkflow
-      : workflowStore.getWorkflowByPath(originTabPath)
+  const active = originWorkflow(origin)
   if (!active) return undefined
   const id = cloudIdFor(active)
   return id === undefined
@@ -307,14 +319,9 @@ function activeWorkflowTurnContext(
     : { id, tabPath: active.path }
 }
 
-function activeWorkflowDraft(
-  originTabPath?: string
-): DraftSnapshot | undefined {
+function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
-  const active =
-    originTabPath === undefined
-      ? workflowStore.activeWorkflow
-      : workflowStore.getWorkflowByPath(originTabPath)
+  const active = originWorkflow(origin)
   if (!active) return undefined
   // captureCanvasState() folds the LIVE canvas into whichever workflow it is
   // called on, so it is only correct while that workflow is still the active
@@ -358,9 +365,7 @@ function onClearWorkflow(): void {
   workflowDetached.value = true
 }
 
-function openTabsSnapshot(
-  originTabPath?: string
-): OpenTabsSnapshot | undefined {
+function openTabsSnapshot(origin?: TurnOrigin): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
     const workflowId = cloudIdFor(tab)
     return workflowId === undefined
@@ -368,10 +373,9 @@ function openTabsSnapshot(
       : [{ workflow_id: workflowId, name: tab.filename }]
   })
   if (openTabs.length === 0) return undefined
-  const active =
-    originTabPath === undefined
-      ? workflowStore.activeWorkflow
-      : workflowStore.getWorkflowByPath(originTabPath)
+  // A turn with no origin tab still reports the open tabs (they are context,
+  // not attribution) but must not name a current_tab.
+  const active = originWorkflow(origin)
   return {
     open_tabs: openTabs,
     current_tab:
