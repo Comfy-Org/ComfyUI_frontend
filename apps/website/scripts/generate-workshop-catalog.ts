@@ -19,6 +19,57 @@ interface MediaRole {
   readonly maxItems?: number
 }
 
+type FieldOption = string | number
+
+export type WorkshopCatalogField =
+  | {
+      readonly kind: 'text'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly required: boolean
+      readonly multiline: boolean
+      readonly valueType: 'string' | 'json'
+      readonly defaultValue?: string
+    }
+  | {
+      readonly kind: 'select'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly required: boolean
+      readonly options: readonly FieldOption[]
+      readonly defaultValue?: FieldOption
+    }
+  | {
+      readonly kind: 'number'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly required: boolean
+      readonly integer: boolean
+      readonly min?: number
+      readonly max?: number
+      readonly step: number
+      readonly defaultValue?: number
+    }
+  | {
+      readonly kind: 'toggle'
+      readonly name: string
+      readonly label: string
+      readonly hint?: string
+      readonly required: boolean
+      readonly defaultValue: boolean
+    }
+  | {
+      readonly kind: 'media'
+      readonly name: string
+      readonly label: string
+      readonly required: boolean
+      readonly multiple: boolean
+      readonly accept: 'image' | 'video' | 'audio' | 'file'
+    }
+
 export interface WorkshopCatalogModel {
   readonly id: string
   readonly slug: string
@@ -29,6 +80,7 @@ export interface WorkshopCatalogModel {
   readonly tags: readonly string[]
   readonly parameters: Readonly<Record<string, unknown>>
   readonly roles: readonly MediaRole[]
+  readonly fields: readonly WorkshopCatalogField[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -68,6 +120,149 @@ function slugFor(id: string): string {
   return id.replaceAll('/', '--')
 }
 
+function labelFor(name: string): string {
+  return name
+    .split('_')
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+function hintFor(schema: Record<string, unknown>): { readonly hint?: string } {
+  return typeof schema.description === 'string'
+    ? { hint: schema.description }
+    : {}
+}
+
+function primitiveOptions(schema: Record<string, unknown>): FieldOption[] {
+  if (Array.isArray(schema.enum)) {
+    return schema.enum.filter(
+      (value): value is FieldOption =>
+        typeof value === 'string' || typeof value === 'number'
+    )
+  }
+  if (!Array.isArray(schema.anyOf)) return []
+  return schema.anyOf.flatMap((variant) =>
+    isRecord(variant) ? primitiveOptions(variant) : []
+  )
+}
+
+function fieldFor(
+  name: string,
+  schema: Record<string, unknown>,
+  required: boolean
+): WorkshopCatalogField {
+  const common = {
+    name,
+    label: labelFor(name),
+    ...hintFor(schema),
+    required
+  }
+  const options = primitiveOptions(schema)
+  if (options.length > 0) {
+    const defaultValue =
+      typeof schema.default === 'string' || typeof schema.default === 'number'
+        ? schema.default
+        : undefined
+    return {
+      kind: 'select',
+      ...common,
+      options,
+      ...(defaultValue === undefined ? {} : { defaultValue })
+    }
+  }
+  if (schema.type === 'number' || schema.type === 'integer') {
+    return {
+      kind: 'number',
+      ...common,
+      integer: schema.type === 'integer',
+      ...(typeof schema.minimum === 'number' ? { min: schema.minimum } : {}),
+      ...(typeof schema.maximum === 'number' ? { max: schema.maximum } : {}),
+      step:
+        typeof schema.multipleOf === 'number'
+          ? schema.multipleOf
+          : schema.type === 'integer'
+            ? 1
+            : 0.01,
+      ...(typeof schema.default === 'number'
+        ? { defaultValue: schema.default }
+        : {})
+    }
+  }
+  if (schema.type === 'boolean') {
+    return {
+      kind: 'toggle',
+      ...common,
+      defaultValue: typeof schema.default === 'boolean' ? schema.default : false
+    }
+  }
+  if (schema.type === 'string') {
+    return {
+      kind: 'text',
+      ...common,
+      multiline:
+        name === 'prompt' ||
+        (typeof schema.maxLength === 'number' && schema.maxLength > 200),
+      valueType: 'string',
+      ...(typeof schema.default === 'string'
+        ? { defaultValue: schema.default }
+        : {})
+    }
+  }
+  return {
+    kind: 'text',
+    ...common,
+    multiline: true,
+    valueType: 'json',
+    ...(schema.default === undefined
+      ? {}
+      : { defaultValue: JSON.stringify(schema.default, null, 2) })
+  }
+}
+
+function acceptFor(role: string): 'image' | 'video' | 'audio' | 'file' {
+  if (role.includes('image') || role === 'mask') return 'image'
+  if (role.includes('video')) return 'video'
+  if (role.includes('audio')) return 'audio'
+  return 'file'
+}
+
+export function deriveWorkshopFields(
+  parameters: Readonly<Record<string, unknown>>,
+  roles: readonly MediaRole[]
+): WorkshopCatalogField[] {
+  const properties = isRecord(parameters.properties)
+    ? parameters.properties
+    : {}
+  const required = new Set(
+    isStringArray(parameters.required) ? parameters.required : []
+  )
+  const fields = Object.entries(properties).flatMap(([name, schema]) => {
+    if (
+      name === 'model' ||
+      name === 'medias' ||
+      name === 'dispatch_mode' ||
+      !isRecord(schema)
+    ) {
+      return []
+    }
+    return [fieldFor(name, schema, required.has(name))]
+  })
+  return [
+    ...fields,
+    ...roles.map(
+      (role): WorkshopCatalogField => ({
+        kind: 'media',
+        name: role.role,
+        label: labelFor(role.role),
+        required: role.required,
+        multiple: role.cardinality === 'many',
+        accept: acceptFor(role.role)
+      })
+    )
+  ]
+}
+
 function decodeModel(value: unknown): WorkshopCatalogModel | undefined {
   if (
     !isRecord(value) ||
@@ -86,6 +281,10 @@ function decodeModel(value: unknown): WorkshopCatalogModel | undefined {
   const roles = value.roles.map(decodeRole)
   if (roles.some((role) => role === undefined)) return undefined
 
+  const parameters = value.parameters
+  const decodedRoles = roles.filter(
+    (role): role is MediaRole => role !== undefined
+  )
   return {
     id: value.id,
     slug: slugFor(value.id),
@@ -94,8 +293,9 @@ function decodeModel(value: unknown): WorkshopCatalogModel | undefined {
     modality: value.type,
     description: value.description,
     tags: value.tags,
-    parameters: value.parameters,
-    roles: roles.filter((role): role is MediaRole => role !== undefined)
+    parameters,
+    roles: decodedRoles,
+    fields: deriveWorkshopFields(parameters, decodedRoles)
   }
 }
 
