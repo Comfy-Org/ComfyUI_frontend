@@ -6,6 +6,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
@@ -109,6 +110,7 @@ function buildExecutionNodeLookup(
  * prevent unbounded memory growth in long-running sessions.
  */
 export const MAX_PROGRESS_JOBS = 1000
+const MISSING_TERMINAL_EVENT_GRACE_MS = 10_000
 
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
@@ -167,6 +169,39 @@ export const useExecutionStore = defineStore('execution', () => {
   // Buffers statuses arriving before storeJob attaches the workflow.
   // FIFO-capped to bound growth if a matching storeJob never fires.
   const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
+  const missingTerminalEventTimers = new Map<
+    JobId,
+    ReturnType<typeof setTimeout>
+  >()
+
+  function scheduleMissingTerminalEventReport(jobId: JobId) {
+    if (missingTerminalEventTimers.has(jobId)) return
+    missingTerminalEventTimers.set(
+      jobId,
+      setTimeout(() => {
+        missingTerminalEventTimers.delete(jobId)
+        if (!queuedJobs.value[jobId]) return
+        reportError(new Error('Execution ended without a terminal event'), {
+          errorType: 'queue_execution_terminal_event_missing',
+          tags: {
+            failure_kind: 'missing_event',
+            feature_area: 'queue',
+            operation: 'execute',
+            outcome: 'missing'
+          },
+          context: { jobId },
+          level: 'warning'
+        })
+      }, MISSING_TERMINAL_EVENT_GRACE_MS)
+    )
+  }
+
+  function clearMissingTerminalEventReport(jobId: JobId) {
+    const timer = missingTerminalEventTimers.get(jobId)
+    if (timer === undefined) return
+    clearTimeout(timer)
+    missingTerminalEventTimers.delete(jobId)
+  }
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -449,6 +484,8 @@ export const useExecutionStore = defineStore('execution', () => {
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
     jobIdToWorkflow.clear()
+    for (const timer of missingTerminalEventTimers.values()) clearTimeout(timer)
+    missingTerminalEventTimers.clear()
 
     cancelPendingProgressUpdates()
   }
@@ -544,6 +581,9 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // Update the executing nodes list
     if (e.detail == null) {
+      if (activeJobId.value) {
+        scheduleMissingTerminalEventReport(activeJobId.value)
+      }
       activeJobId.value = null
     }
   }
@@ -866,6 +906,7 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
+    if (jobId) clearMissingTerminalEventReport(jobId)
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
     if (jobId) {
       const map = { ...nodeProgressStatesByJob.value }
