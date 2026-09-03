@@ -654,7 +654,16 @@ export function useAgentCrdtFollower(
     lastAbnormalCloseReportAt = null
   }
   const onSocketClosed: EventListener = (event) => {
-    if (!(event instanceof CustomEvent) || event.detail?.code !== 1006) return
+    if (!(event instanceof CustomEvent)) return
+    const detail: unknown = event.detail
+    if (
+      typeof detail !== 'object' ||
+      detail === null ||
+      !('code' in detail) ||
+      typeof detail.code !== 'number' ||
+      detail.code !== 1006
+    )
+      return
     if (!isTargetActive.value || subscribedWorkflowId.value === null) return
     const now = Date.now()
     if (
