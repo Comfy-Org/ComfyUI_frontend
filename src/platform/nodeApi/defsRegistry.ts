@@ -35,8 +35,6 @@ import type { WidgetTypeDef } from './widgetTypes'
 
 /**
  * The read view of a node definition. Frozen and inert, like every read here.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface NodeDef {
   readonly type: string
@@ -91,8 +89,6 @@ export interface NodeDef {
  * `raw` carries everything else verbatim — ADR-NODE-OUTPUTS-0007's passthrough schema
  * guarantees custom output keys survive, so a pack reading a bespoke key keeps
  * working.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface ExecutionResult {
   readonly images: readonly Readonly<Record<string, unknown>>[]
@@ -116,7 +112,6 @@ export interface PreviewFrame {
   readonly url: string
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
@@ -139,14 +134,11 @@ export interface ConnectionChangeEvent {
  * Inputs are named from that node type's own backend declaration. The saved
  * workflow is untouched; the prompt builder removes these names only from the
  * executable payload it is assembling now.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface PromptInputProjection {
   readonly omitInputs: readonly string[]
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type PromptInputProjector = (
   node: NodeHandle
 ) => PromptInputProjection | Promise<PromptInputProjection>
@@ -358,7 +350,6 @@ export interface UnplacedLinkEvent {
   readonly replaceExisting: boolean
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface BeforeConnectEvent {
   readonly side: 'input' | 'output'
   readonly index: number
@@ -370,7 +361,6 @@ export interface BeforeConnectEvent {
 }
 
 /** One entry inside a menu item's submenu. */
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeSubMenuItem {
   readonly label: string
   run(node: NodeHandle): void
@@ -379,8 +369,6 @@ export interface NodeSubMenuItem {
 /**
  * One entry of ComfyUI's node palette: the title bar, the body, and the shade
  * a group of that colour is filled with.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface NodeColor {
   readonly color: string
@@ -388,7 +376,6 @@ export interface NodeColor {
   readonly groupColor: string
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeMenuItem {
   /**
    * A function when the text depends on the node — packs label entries with
@@ -462,8 +449,6 @@ export type DefSelector =
  * `LiteGraph.registerNodeType`, which is OOP entity modelling — the thing ADR
  * 0008 rules out. Here the definition is plain data; the class behind it is an
  * internal detail of this layer, never the pack's.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface NodeDefinition {
   readonly type: string
@@ -602,7 +587,6 @@ export interface DefRegistry {
   onRefreshed(listener: () => void): Unsubscribe
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface PropertyChangeEvent {
   readonly name: string
   readonly value: unknown
