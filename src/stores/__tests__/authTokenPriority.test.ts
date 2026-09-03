@@ -412,7 +412,7 @@ describe('auth token priority chain', () => {
       mockClearWorkspaceContext.mockClear()
       mockResetForIdentityChange.mockClear()
 
-      authStateCallback({ ...mockUser } as MockUser)
+      authStateCallback({ ...mockUser })
 
       expect(mockClearWorkspaceContext).not.toHaveBeenCalled()
       expect(mockResetForIdentityChange).not.toHaveBeenCalled()

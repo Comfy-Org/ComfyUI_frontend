@@ -21,7 +21,7 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await test.step('Ctrl+Z undoes the last graph change', async () => {
       await comfyPage.page.evaluate(() => {
         const node = window.LiteGraph!.createNode('Note')
-        window.app!.graph!.add(node)
+        window.app!.graph.add(node)
       })
       await comfyPage.nextFrame()
       await expect
