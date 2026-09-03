@@ -10,17 +10,10 @@ test.describe('Workflow tabs', () => {
     }
   })
 
-  // These Agent-adjacent path-identity cases are staged behind the stacked
-  // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
   test.describe('Agent workflow-tab contract from slice 04', () => {
     test('keeps exactly one active tab after selecting several workflows', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -39,11 +32,6 @@ test.describe('Workflow tabs', () => {
     test('keeps path-backed active identity after a tab switch', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       const names = await topbar.getTabNames()
@@ -55,11 +43,6 @@ test.describe('Workflow tabs', () => {
     test('activates a valid neighbor when the active workflow is closed', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -74,11 +57,6 @@ test.describe('Workflow tabs', () => {
     test('preserves tab identity across browser reload', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.getTab(1).click()
