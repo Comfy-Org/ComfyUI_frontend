@@ -131,7 +131,14 @@ function isNonNegativeInteger(value: unknown): value is number {
 function parseAwarenessState(
   value: unknown
 ): Record<string, unknown> | undefined | null {
-  if (value === undefined) return undefined
+  // The Go server's `State map[string]any` has `omitempty`, so it never
+  // emits `state: null` on the wire; nil/empty maps are omitted entirely,
+  // same as an absent field. Treat null the same as absent (no state) rather
+  // than rejecting the whole frame, so a value the server cannot actually
+  // send does not discard `actor`/`expires_at` too. A non-null, non-record
+  // shape (array, string, number) is still a malformed frame and rejected.
+  // discussion_r3911665011.
+  if (value === undefined || value === null) return undefined
   const state = parseRecord(value)
   if (state === null) return null
 

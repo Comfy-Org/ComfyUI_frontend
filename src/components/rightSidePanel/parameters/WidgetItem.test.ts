@@ -91,7 +91,7 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
       values: ['option_a', 'option_b', 'option_c']
     },
     ...overrides
-  } as IBaseWidget
+  }
 }
 
 function renderWidgetItem(

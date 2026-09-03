@@ -513,6 +513,32 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
   })
 
+  it('s5-metrics-1: dispatches doc_gap at the exact boundary a jump is detected', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    const gaps: unknown[] = []
+    bridge.addEventListener('doc_gap', (event) => {
+      gaps.push((event as CustomEvent).detail)
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+
+    expect(gaps).toEqual([
+      { workflowId: WORKFLOW_ID, expected: 2, received: 3 }
+    ])
+  })
+
   it('an update that beats the ack to the follower keeps its baseline when the ack lands', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
@@ -729,26 +755,48 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
-  it('surfaces doc_update_error and re-throws when the follower doc rejects the update, without emitting doc_update', () => {
-    const { transport, bridge, projected, updateOutcomes } = wire()
+  it('s5-metrics-1: dispatches doc_stale at the exact boundary a duplicate is discarded', () => {
+    const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    const applyError = new Error('corrupt Yjs update')
-    vi.spyOn(bridge.follower, 'applyRemoteUpdate').mockImplementation(() => {
-      throw applyError
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+
+    const stale: unknown[] = []
+    bridge.addEventListener('doc_stale', (event) => {
+      stale.push((event as CustomEvent).detail)
     })
 
-    expect(() =>
-      transport.deliver(
-        'doc_update',
-        docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
-      )
-    ).toThrow(applyError)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
 
-    expect(updateOutcomes).toEqual(['received', 'errored'])
-    expect(projected).toHaveLength(0)
-    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+    expect(stale).toEqual([{ workflowId: WORKFLOW_ID, seq: 2 }])
+  })
+
+  it('clears send reality BEFORE re-dispatching the refusal, so listeners observe the unbind synchronously', () => {
+    // useAgentCrdtFollower's onSubscribed calls sender.abortIfUnbound() inside
+    // this listener and relies on reading a null binding at that moment.
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    const seenDuringDispatch: Array<string | null> = []
+    bridge.addEventListener('doc_subscribed', () => {
+      seenDuringDispatch.push(bridge.subscribedWorkflowId)
+    })
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code: 'not_found'
+    })
+
+    expect(seenDuringDispatch).toEqual([null])
   })
 
   it('a refused subscribe re-opens intent so the next reconcile retries', () => {

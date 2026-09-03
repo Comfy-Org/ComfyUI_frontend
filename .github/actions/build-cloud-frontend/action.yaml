@@ -23,10 +23,21 @@ runs:
       shell: bash
       # Never skip. Without expected_commit the provenance leg proves nothing;
       # the distribution assertion is what rejects a leftover localhost dist/.
+      #
+      # This step runs unconditionally, including from callers (like
+      # /update-playwright) that have nothing to do with the Asset API. If it
+      # fails there, the fix is almost always in scripts/checkAssetsFlagArtifact.ts
+      # (a legitimate refactor of isAssetAPIEnabled, a new test-fixture marker,
+      # etc), not in this action or the caller — say so explicitly, since a bare
+      # test failure here reads as "the build is broken" rather than "the gate
+      # correctly rejected this build".
       run: |
         set -euo pipefail
         EXPECTED_FRONTEND_COMMIT="${EXPECTED_FRONTEND_COMMIT:-$(git rev-parse HEAD)}" \
-          pnpm test:assets-flag-artifact
+          pnpm test:assets-flag-artifact || {
+            echo "::error::Cloud frontend failed the Asset API build gate. This check runs on every caller of build-cloud-frontend, including callers unrelated to assets. If your change legitimately affects isAssetAPIEnabled, the build output, or test fixture markers, update scripts/checkAssetsFlagArtifact.ts (see its own error message above for which assertion failed) rather than treating this as an unrelated CI failure."
+            exit 1
+          }
       env:
         EXPECTED_FRONTEND_COMMIT: ${{ inputs.expected_commit }}
         EXPECTED_DISTRIBUTION: cloud

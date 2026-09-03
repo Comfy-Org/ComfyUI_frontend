@@ -37,6 +37,21 @@ describe('awareness frame validation', () => {
     expect(parseServerDocFrame(awarenessFrame(['cursor', 10, 20]))).toBeNull()
   })
 
+  it('treats a null state as absent rather than rejecting the frame', () => {
+    // The Go server's `State map[string]any` has `omitempty` and never
+    // actually emits `state: null`, but this is defence in depth: null
+    // should fold into "no state", not discard the whole frame (and with
+    // it actor/expires_at). discussion_r3911665011.
+    expect(parseServerDocFrame(awarenessFrame(null, 456))).toEqual({
+      type: 'awareness',
+      data: {
+        workflowId: 'wf-1',
+        actor: 'human:user:tab-a',
+        expiresAt: 456
+      }
+    })
+  })
+
   it('rejects negative expires_at', () => {
     expect(parseServerDocFrame(awarenessFrame({}, -1))).toBeNull()
   })
