@@ -77,15 +77,15 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
-    return shouldMint({
-      flagEnabled: deps.isEnabled(),
-      docBound: deps.isDocBound(),
-      localProvenance:
-        change.operation.source !== 'agent-remote' &&
-        actor !== undefined &&
-        actor.startsWith(deps.localActorPrefix),
-      teardown
-    })
+    return (
+      change.operation.source !== 'agent-remote' &&
+      actor?.startsWith(deps.localActorPrefix) === true &&
+      shouldMint({
+        flagEnabled: deps.isEnabled(),
+        docBound: deps.isDocBound(),
+        teardown
+      })
+    )
   }
 
   function reportUnrepresentableInteriorChange(

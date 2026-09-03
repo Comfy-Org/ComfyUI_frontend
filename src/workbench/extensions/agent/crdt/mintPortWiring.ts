@@ -208,18 +208,24 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     }
   })
 
-  const detachWidgetActions = widgetStore.onValueChange((change) => {
-    if (isRemoteMutationContext(change.context)) return
-    const { graphId, nodeId, name: widgetName } = parseWidgetId(change.widgetId)
-    for (const listener of setListeners) {
-      listener({
-        graphId: String(graphId),
-        nodeId,
-        name: widgetName,
-        value: change.value,
-        old: change.oldValue
-      })
-    }
+  const detachWidgetActions = widgetStore.$onAction(({ name, args, after }) => {
+    if (name !== 'setValue') return
+    const [id, value, context] = args
+    if (isRemoteMutationContext(context)) return
+    const old = widgetStore.getWidget(id)?.value
+    after((applied) => {
+      if (!applied) return
+      const { graphId, nodeId, name: widgetName } = parseWidgetId(id)
+      for (const listener of setListeners) {
+        listener({
+          graphId: String(graphId),
+          nodeId,
+          name: widgetName,
+          value,
+          old
+        })
+      }
+    })
   })
 
   let loadBracketOpen = false
