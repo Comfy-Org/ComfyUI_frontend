@@ -73,16 +73,18 @@ describe('createSocket WebSocket host', () => {
   })
 
   it('ignores a prototype-pollution gadget and uses api_host', () => {
-    // @ts-expect-error - simulating a prototype-pollution attack
-    Object.prototype.__COMFY_API_WS_HOST__ = 'evil.example.com'
+    Object.defineProperty(Object.prototype, '__COMFY_API_WS_HOST__', {
+      value: 'evil.example.com',
+      configurable: true,
+      writable: true
+    })
     try {
       api.init()
 
       expect(socketUrls[0]).toContain('://localhost:8188')
       expect(socketUrls[0]).not.toContain('evil.example.com')
     } finally {
-      // @ts-expect-error - cleaning up the simulated attack
-      delete Object.prototype.__COMFY_API_WS_HOST__
+      Reflect.deleteProperty(Object.prototype, '__COMFY_API_WS_HOST__')
     }
   })
 

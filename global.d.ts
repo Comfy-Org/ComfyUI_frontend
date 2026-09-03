@@ -64,6 +64,15 @@ interface SyftDisabledClient {
 }
 
 interface Window {
+  /**
+   * Overrides the host the API WebSocket dials, falling back to `api_host`
+   * when unset. Injected at deploy time by static hosts whose rewrites are
+   * HTTP-only (e.g. Vercel) and therefore cannot proxy the `/ws` upgrade,
+   * letting the socket target a WebSocket-capable host while HTTP calls keep
+   * flowing through the rewrites. Expects a bare host with no scheme
+   * (e.g. `ws.example.com`, not `wss://ws.example.com`).
+   */
+  __COMFY_API_WS_HOST__?: string
   __CONFIG__: {
     gtm_container_id?: string
     ga_measurement_id?: string
