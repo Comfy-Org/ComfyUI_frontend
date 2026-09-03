@@ -1,20 +1,22 @@
 # Agent conversation capture
 
-Conversation replays must use recorded cloud-agent responses. The exporter
-combines two records from the same turn:
+Conversation replays must use recorded cloud-agent responses. A fixture holds
+one thread, and each of its turns lands on the graph the previous turn left. The
+exporter combines two records per turn:
 
 1. Websocket `agent_*` frames, in received order.
 2. The cloud backend's durable parent `agent_tool_calls.result` plus the
    accepted operation IDs from its child audit rows.
 
 Do not write `graph_ops` by hand or relabel a synthesized response. The fixture
-schema rejects `response_side: recorded` without a cloud thread/message ID and
-export timestamp.
+schema rejects `response_side: recorded` without a cloud thread ID, a per-turn
+message ID and an export timestamp.
 
 ## Recording a conversation
 
-One command records a turn against a running agent, applies the gates below,
-and writes the fixture through the exporter:
+One command records a whole thread against a running agent, applies the gates
+below, and writes the fixture through the exporter. Repeat `--prompt` once per
+turn; they run in order on one thread:
 
 ```bash
 AGENT_CLOUD_SHA=$(git -C ../cloud rev-parse HEAD) AGENT_MODEL=claude-opus-5 \
@@ -22,17 +24,20 @@ AGENT_M2M_SECRET_FILE=/path/to/m2m.secret \
 REC_WORKSPACE_ID=... REC_USER_ID=... \
 pnpm exec tsx scripts/agentConversationRecord.ts \
   agent-rec-<slug> \
-  "Switch to the tab 'Text to image', then <what the turn should do>." \
   browser_tests/fixtures/data/agent/conversations/agent-l4-zimage-string-node-prompt.json \
+  --prompt "Switch to the tab 'Text to image', then <what turn 1 should do>." \
+  --prompt "<what turn 2 should do>" \
   --out browser_tests/fixtures/data/agent/conversations/agent-rec-<slug>.json
 ```
 
-The third positional argument is an existing conversation fixture, used only for
-its `workflow` block: the recorder seeds a throwaway turn with that graph and
-catalog, then records a second turn against it. The prompt must switch tabs
-first, because the replay subscribes to the document only on an
+The second positional argument is an existing conversation fixture, used only
+for its `workflow` block: the recorder seeds a throwaway turn with that graph
+and catalog, then records the prompted turns against it. The first prompt must
+switch tabs, because the replay subscribes to the document only on an
 `agent_active_tab` frame and switching to an already-focused tab publishes
-nothing.
+nothing; later turns inherit that subscription, so only the first one needs it.
+Turn 1 opens the thread, and every later turn posts to it the way the panel
+does.
 
 Recording runs against the cloud agent in its non-standalone mode, with
 Postgres, Redis and the doc host beside it (the lean stack): frames come from
@@ -59,7 +64,8 @@ Environment, all optional except the two provenance values:
 | `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                  |
 
 Alongside the fixture the command writes a `recordings/` directory holding the
-raw frames, the retrieved rows, the intermediate `agent-backend-capture.v1`
+raw frames, one retrieved row set per turn, the intermediate
+`agent-backend-capture.v2`
 document and a receipt (turn IDs, parent rows, applied ops, dropped-frame
 counts, artifact hashes). Those are provenance for the recording, not committed
 fixtures. Use `--work <dir>` to put them elsewhere.
@@ -101,9 +107,12 @@ GROUP BY parent.id
 ORDER BY parent.started_at, parent.id;
 ```
 
-Put those values in an `agent-backend-capture.v1` JSON document together with
-the eval source, seed workflow, widget catalog, request, and captured frames.
-The thread ID and message ID in `capture` must be the IDs used for both exports.
+Put those values in an `agent-backend-capture.v2` JSON document: the eval
+source, the seed workflow and widget catalog, a `capture` block naming the
+backend, the thread ID and the export timestamp, and a `turns` array carrying,
+per turn, its `message_id`, its `request`, its captured `frames` and its
+`tool_calls`. Run the query once per turn, binding `$2` to that turn's message
+ID. A frame belongs to the turn whose message ID it carries.
 
 ## Export
 
@@ -116,8 +125,9 @@ pnpm exec tsx scripts/agentConversationCapture.ts \
 The recorder above calls this exporter for you; run it directly when you
 already have a capture document.
 
-The exporter strips turn identity from frames (the replay mints its own),
-inserts each durably accepted op before its terminal tool-call frame, and fails
-if any frame belongs to another turn, an accepted op is missing from the
-recorded parent result, or a mutating call has no terminal frame. Then run the
-conversation replay test for the case.
+The exporter emits one conversation turn per captured turn. It strips turn
+identity from frames (the replay mints its own), inserts each durably accepted
+op before its terminal tool-call frame, and fails if any frame belongs to
+another turn, an accepted op is missing from the recorded parent result, or a
+mutating call has no terminal frame. Then run the conversation replay test for
+the case.

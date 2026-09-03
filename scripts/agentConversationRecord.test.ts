@@ -7,6 +7,7 @@ import type {
   NormalizedRows,
   RawCapture,
   RecordedFrame,
+  RecordedTurn,
   SeedFixture
 } from './agentConversationRecord'
 import { assembleCapture, zRowsDump } from './agentConversationRecord'
@@ -79,7 +80,6 @@ const parent = (
 const raw = (overrides: Partial<RawCapture> = {}): RawCapture => ({
   case_id: 'agent-rec-example',
   attempt: 'a1',
-  prompt: "Switch to the tab 'Text to image', then add a sampler.",
   base: 'http://127.0.0.1:8086',
   frame_source: 'redis SUBSCRIBE channel:ws:<workspace>:u:<user>',
   channel: 'channel:ws:w-secret:u:u-secret',
@@ -93,14 +93,23 @@ const raw = (overrides: Partial<RawCapture> = {}): RawCapture => ({
     body: { thread_id: 'seed-thread', message_id: SEED_MESSAGE }
   },
   seed_workflow_id: WORKFLOW,
-  accepted: {
-    status: 202,
-    body: { thread_id: THREAD, message_id: MESSAGE, workflow_id: 'blank-wf' }
-  },
-  saw_done: true,
+  turns: [
+    {
+      prompt: "Switch to the tab 'Text to image', then add a sampler.",
+      accepted: {
+        status: 202,
+        body: {
+          thread_id: THREAD,
+          message_id: MESSAGE,
+          workflow_id: 'blank-wf'
+        }
+      },
+      saw_done: true
+    }
+  ],
   timed_out: false,
   frames: frames(),
-  rows_artifact: 'rows.json',
+  rows_artifacts: ['rows.json'],
   retrieval: { kind: 'postgres-json' },
   error: null,
   ...overrides
@@ -124,40 +133,49 @@ const rows = (overrides: Partial<RowsInput> = {}): NormalizedRows => {
   }
 }
 
-const input = (overrides: Partial<AssembleInput> = {}): AssembleInput => ({
-  raw: raw(),
-  rows: rows(),
-  seed: { json: seed(), path: 'seed.json', sha256: 'a'.repeat(64) },
-  provenance: {
-    cloudSha: '9dc1da7',
-    model: 'claude-opus-5',
-    exportedAt: '2026-09-03T01:00:00.000Z'
-  },
-  rawSha256: 'c'.repeat(64),
-  rawPath: '/tmp/agent-rec-example.a1.raw.json',
-  ...overrides
-})
+const input = (
+  overrides: Partial<Omit<AssembleInput, 'rows'>> & {
+    rows?: NormalizedRows | NormalizedRows[]
+  } = {}
+): AssembleInput => {
+  const { rows: given, ...rest } = overrides
+  return {
+    raw: raw(),
+    seed: { json: seed(), path: 'seed.json', sha256: 'a'.repeat(64) },
+    provenance: {
+      cloudSha: '9dc1da7',
+      model: 'claude-opus-5',
+      exportedAt: '2026-09-03T01:00:00.000Z'
+    },
+    rawSha256: 'c'.repeat(64),
+    rawPath: '/tmp/agent-rec-example.a1.raw.json',
+    ...rest,
+    rows: given === undefined ? [rows()] : [given].flat()
+  }
+}
 
 describe('assembleCapture', () => {
   it('keeps the turn frames with their receipt times and emits the applied ops', () => {
     const { capture, receipt } = assembleCapture(input())
 
     expect(capture.workflow.id).toBe(WORKFLOW)
+    expect(capture.schema_version).toBe('agent-backend-capture.v2')
     expect(capture.capture).toMatchObject({
       backend: 'Comfy-Org/cloud',
-      thread_id: THREAD,
-      message_id: MESSAGE
+      thread_id: THREAD
     })
-    expect(capture.frames.map((frame) => frame.type)).toEqual([
+    expect(capture.turns).toHaveLength(1)
+    expect(capture.turns[0].message_id).toBe(MESSAGE)
+    expect(capture.turns[0].frames.map((frame) => frame.type)).toEqual([
       'agent_thinking',
       'agent_active_tab',
       'agent_tool_call',
       'agent_message_done'
     ])
-    expect(capture.frames.map((frame) => frame.at_ms)).toEqual([
+    expect(capture.turns[0].frames.map((frame) => frame.at_ms)).toEqual([
       1_700_000_000_000, 1_700_000_000_100, 1_700_000_000_200, 1_700_000_000_300
     ])
-    expect(capture.tool_calls).toEqual([
+    expect(capture.turns[0].tool_calls).toEqual([
       {
         tool_call_id: 'tool-1',
         result: { ok: true, data: { ops: [addNodeOp] } },
@@ -167,12 +185,19 @@ describe('assembleCapture', () => {
     expect(receipt).toMatchObject({
       added_nodes: 1,
       deleted_nodes: 0,
-      unexplained_draft_nodes: 0,
-      parents: 1,
-      mutating_parents: 1,
-      child_statuses: { ok: 1 },
-      frames_kept: 4
+      unexplained_draft_nodes: 0
     })
+    expect(receipt.turns).toEqual([
+      {
+        message_id: MESSAGE,
+        frames_kept: 4,
+        parents: 1,
+        mutating_parents: 1,
+        child_statuses: { ok: 1 },
+        rows: '/tmp/agent-rec-example.a1.rows.json',
+        rows_sha256: 'b'.repeat(64)
+      }
+    ])
   })
 
   it('produces a capture the exporter turns into a recorded conversation', () => {
@@ -180,8 +205,12 @@ describe('assembleCapture', () => {
     const conversation = exportAgentConversation(capture)
 
     expect(conversation.source.response_side).toBe('recorded')
+    expect(conversation.turns).toHaveLength(1)
+    expect(conversation.turns[0].message_id).toBe(MESSAGE)
     expect(
-      conversation.response.filter((entry) => entry.kind === 'graph_ops')
+      conversation.turns[0].response.filter(
+        (entry) => entry.kind === 'graph_ops'
+      )
     ).toHaveLength(1)
   })
 
@@ -241,8 +270,8 @@ describe('assembleCapture', () => {
       })
     )
 
-    expect(receipt.mutating_parents).toBe(0)
-    expect(receipt.child_statuses).toEqual({ error: 1 })
+    expect(receipt.turns[0].mutating_parents).toBe(0)
+    expect(receipt.turns[0].child_statuses).toEqual({ error: 1 })
   })
 
   it('accepts a read tool that echoes ops without writing child rows', () => {
@@ -261,8 +290,8 @@ describe('assembleCapture', () => {
       })
     )
 
-    expect(capture.tool_calls[0].applied_op_ids).toEqual([])
-    expect(receipt.mutating_parents).toBe(0)
+    expect(capture.turns[0].tool_calls[0].applied_op_ids).toEqual([])
+    expect(receipt.turns[0].mutating_parents).toBe(0)
   })
 
   it('drops the ambient heartbeat and a non-replay turn frame into buckets', () => {
@@ -294,7 +323,7 @@ describe('assembleCapture', () => {
       'type:draft_patch': 1,
       seed_turn: 1
     })
-    expect(receipt.frames_kept).toBe(4)
+    expect(receipt.turns[0].frames_kept).toBe(4)
   })
 
   it('refuses a mutating call whose mutation never reached the doc host', () => {
@@ -523,9 +552,15 @@ describe('assembleCapture', () => {
   it('refuses a turn the backend never accepted', () => {
     expect(() =>
       assembleCapture(
-        input({ raw: raw({ accepted: { status: 500, body: null } }) })
+        input({
+          raw: raw({
+            turns: [
+              { ...raw().turns[0], accepted: { status: 500, body: null } }
+            ]
+          })
+        })
       )
-    ).toThrow('recorded turn not accepted')
+    ).toThrow('turn 1 not accepted')
   })
 
   it('refuses a recording whose frame stream never opened', () => {
@@ -536,7 +571,9 @@ describe('assembleCapture', () => {
 
   it('refuses a recording with no terminal done frame observed', () => {
     expect(() =>
-      assembleCapture(input({ raw: raw({ saw_done: false }) }))
+      assembleCapture(
+        input({ raw: raw({ turns: [{ ...raw().turns[0], saw_done: false }] }) })
+      )
     ).toThrow('never arrived')
   })
 
@@ -548,6 +585,193 @@ describe('assembleCapture', () => {
         })
       )
     ).toThrow('is not the seeded workflow')
+  })
+})
+
+const MESSAGE_2 = 'message-2'
+
+const connectOp = { op: 'connect', op_id: 'op-2', from: 10, to: 3 }
+
+const secondTurnFrames = (): RecordedFrame[] => [
+  {
+    type: 'agent_thinking',
+    data: { thread_id: THREAD, message_id: MESSAGE_2, delta: 'wiring' },
+    at_ms: 1_700_000_001_000
+  },
+  {
+    type: 'agent_tool_call',
+    data: {
+      thread_id: THREAD,
+      message_id: MESSAGE_2,
+      tool_call_id: 'tool-2',
+      tool_name: 'connect',
+      status: 'success'
+    },
+    at_ms: 1_700_000_001_100
+  },
+  {
+    type: 'agent_message_done',
+    data: { thread_id: THREAD, message_id: MESSAGE_2 },
+    at_ms: 1_700_000_001_200
+  }
+]
+
+const secondTurn = (overrides: Partial<RecordedTurn> = {}): RecordedTurn => ({
+  prompt: 'Now connect it to the sampler.',
+  accepted: {
+    status: 202,
+    body: { thread_id: THREAD, message_id: MESSAGE_2 }
+  },
+  saw_done: true,
+  ...overrides
+})
+
+const secondRows = (): NormalizedRows =>
+  rows({
+    parents: [
+      parent({
+        id: 'parent-2',
+        tool_call_id: 'tool-2',
+        tool_name: 'connect',
+        result: { ok: true, data: { ops: [connectOp] } },
+        children: [{ op_id: 'op-2', status: 'ok' }]
+      })
+    ]
+  })
+
+const twoTurns = (overrides: Partial<AssembleInput> = {}): AssembleInput =>
+  input({
+    raw: raw({
+      turns: [raw().turns[0], secondTurn()],
+      frames: [...frames(), ...secondTurnFrames()]
+    }),
+    rows: [rows(), secondRows()],
+    ...overrides
+  })
+
+describe('assembleCapture across turns', () => {
+  it('buckets frames by the message id of the turn that owns them', () => {
+    const { capture, receipt } = assembleCapture(twoTurns())
+
+    expect(capture.turns.map((turn) => turn.message_id)).toEqual([
+      MESSAGE,
+      MESSAGE_2
+    ])
+    expect(
+      capture.turns[0].frames.every(
+        (frame) => frame.data.message_id === MESSAGE
+      )
+    ).toBe(true)
+    expect(capture.turns[1].frames.map((frame) => frame.type)).toEqual([
+      'agent_thinking',
+      'agent_tool_call',
+      'agent_message_done'
+    ])
+    expect(capture.turns[1].request.content).toBe(
+      'Now connect it to the sampler.'
+    )
+    expect(receipt.turns.map((turn) => turn.message_id)).toEqual([
+      MESSAGE,
+      MESSAGE_2
+    ])
+    expect(receipt.turns.map((turn) => turn.frames_kept)).toEqual([4, 3])
+  })
+
+  it('exports one recorded conversation turn per recorded turn', () => {
+    const conversation = exportAgentConversation(
+      assembleCapture(twoTurns()).capture
+    )
+
+    expect(conversation.turns.map((turn) => turn.message_id)).toEqual([
+      MESSAGE,
+      MESSAGE_2
+    ])
+    expect(
+      conversation.turns.map(
+        (turn) =>
+          turn.response.filter((entry) => entry.kind === 'graph_ops').length
+      )
+    ).toEqual([1, 1])
+  })
+
+  it('requires the active tab frame only on the opening turn', () => {
+    const { capture } = assembleCapture(twoTurns())
+    const tabFrames = (index: number) =>
+      capture.turns[index].frames.filter(
+        (frame) => frame.type === 'agent_active_tab'
+      )
+
+    expect(tabFrames(0)).toHaveLength(1)
+    expect(tabFrames(1)).toHaveLength(0)
+  })
+
+  it('checks the draft once, against every applied op of the thread', () => {
+    expect(() =>
+      assembleCapture(
+        twoTurns({
+          rows: [
+            rows(),
+            rows({
+              parents: [
+                parent({
+                  id: 'parent-2',
+                  tool_call_id: 'tool-2',
+                  tool_name: 'delete_node',
+                  result: {
+                    ok: true,
+                    data: {
+                      ops: [{ op: 'delete_node', op_id: 'op-2', node_id: 4 }]
+                    }
+                  },
+                  children: [{ op_id: 'op-2', status: 'ok' }]
+                })
+              ],
+              draft: { nodes: [{ id: 3 }, { id: 4 }, { id: 10 }], links: [] }
+            })
+          ]
+        })
+      )
+    ).toThrow('still holds node ids 4')
+  })
+
+  it('refuses a turn that landed on another thread', () => {
+    expect(() =>
+      assembleCapture(
+        twoTurns({
+          raw: raw({
+            turns: [
+              raw().turns[0],
+              secondTurn({
+                accepted: {
+                  status: 202,
+                  body: { thread_id: 'thread-2', message_id: MESSAGE_2 }
+                }
+              })
+            ],
+            frames: [...frames(), ...secondTurnFrames()]
+          })
+        })
+      )
+    ).toThrow('turn 2 landed on thread thread-2')
+  })
+
+  it('refuses a turn whose audit rows were never read', () => {
+    expect(() => assembleCapture(twoTurns({ rows: [rows()] }))).toThrow(
+      'recorded 2 turn(s) but read 1 audit row set(s)'
+    )
+  })
+
+  it('names the turn whose last kept frame is not the done frame', () => {
+    expect(() =>
+      assembleCapture(
+        twoTurns({
+          raw: raw({
+            turns: [raw().turns[0], secondTurn()],
+            frames: [...frames(), ...secondTurnFrames().slice(0, 2)]
+          })
+        })
+      )
+    ).toThrow('last kept frame of turn 2 is agent_tool_call')
   })
 })
 

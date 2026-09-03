@@ -16,7 +16,7 @@ import type { AgentBackendCapture } from './agentConversationCapture'
 import { exportAgentConversation } from './agentConversationCapture'
 
 const USAGE =
-  'usage: pnpm exec tsx scripts/agentConversationRecord.ts <caseId> "<prompt>" <seedFixture.json> --out <fixture.json> [--work <dir>]'
+  'usage: pnpm exec tsx scripts/agentConversationRecord.ts <caseId> <seedFixture.json> --prompt "<turn 1>" [--prompt "<turn 2>" ...] --out <fixture.json> [--work <dir>]'
 
 const REPLAYED_FRAMES =
   'agent_thinking agent_tool_call agent_message_delta agent_message_done agent_active_tab'.split(
@@ -132,10 +132,15 @@ export interface TurnAck {
   body: unknown
 }
 
+export interface RecordedTurn {
+  prompt: string
+  accepted: TurnAck | null
+  saw_done: boolean
+}
+
 export interface RawCapture {
   case_id: string
   attempt: string
-  prompt: string
   base: string
   frame_source: string
   channel: string
@@ -146,18 +151,17 @@ export interface RawCapture {
   stream_closed: boolean
   seed_turn: TurnAck | null
   seed_workflow_id: string | null
-  accepted: TurnAck | null
-  saw_done: boolean
+  turns: RecordedTurn[]
   timed_out: boolean
   frames: RecordedFrame[]
-  rows_artifact: string | null
+  rows_artifacts: string[]
   retrieval: Record<string, string> | null
   error: string | null
 }
 
 export interface AssembleInput {
   raw: RawCapture
-  rows: NormalizedRows
+  rows: NormalizedRows[]
   seed: { json: SeedFixture; path: string; sha256: string }
   provenance: { cloudSha: string; model: string; exportedAt: string }
   rawSha256: string
@@ -221,8 +225,14 @@ const sha256OfFile = (path: string): string => sha256(readFileSync(path))
 const writeJson = (path: string, value: unknown): void =>
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
 
-// Everything the recorded turn must clear before its frames mean anything.
-function turnIds(raw: RawCapture, seedIds: Set<string>): TurnIds {
+const turnLabel = (index: number): string => `turn ${index + 1}`
+
+// Everything the recording as a whole must clear before a turn means anything.
+function checkRecording(
+  raw: RawCapture,
+  seedIds: Set<string>,
+  rowSets: number
+): void {
   if (!/^[A-Za-z0-9_-]+$/.test(raw.attempt))
     refuse(`attempt label ${JSON.stringify(raw.attempt)} is not [A-Za-z0-9_-]+`)
   const driverIds = new Set(raw.seed_node_ids.map(String))
@@ -230,25 +240,35 @@ function turnIds(raw: RawCapture, seedIds: Set<string>): TurnIds {
     refuse(
       `the driver seeded ${list(driverIds)} but the seed fixture given here has ${list(seedIds)}`
     )
-  if (raw.accepted?.status !== 202)
-    refuse(`recorded turn not accepted: ${JSON.stringify(raw.accepted)}`)
-  const ack = zAck.safeParse(raw.accepted.body)
-  if (!ack.success)
-    refuse(`ack without ids: ${JSON.stringify(raw.accepted.body ?? {})}`)
   if (!raw.saw_stream) refuse('frame stream never opened')
-  if (!raw.saw_done)
+  if (raw.turns.length === 0) refuse('no turns recorded')
+  if (raw.turns.length !== rowSets)
     refuse(
-      `agent_message_done never arrived (timed_out=${raw.timed_out}, error=${raw.error})`
+      `recorded ${raw.turns.length} turn(s) but read ${rowSets} audit row set(s)`
+    )
+}
+
+function turnIds(turn: RecordedTurn, label: string, raw: RawCapture): TurnIds {
+  if (turn.accepted?.status !== 202)
+    refuse(`${label} not accepted: ${JSON.stringify(turn.accepted)}`)
+  const ack = zAck.safeParse(turn.accepted.body)
+  if (!ack.success)
+    refuse(
+      `${label} ack without ids: ${JSON.stringify(turn.accepted.body ?? {})}`
+    )
+  if (!turn.saw_done)
+    refuse(
+      `${label}: agent_message_done never arrived (timed_out=${raw.timed_out}, error=${raw.error})`
     )
   return { threadId: ack.data.thread_id, messageId: ack.data.message_id }
 }
 
 function keepTurnFrames(
   frames: RecordedFrame[],
-  ids: TurnIds,
+  ids: TurnIds[],
   seedTurn: TurnIds | null
-): { kept: RecordedFrame[]; dropped: Record<string, number> } {
-  const kept: RecordedFrame[] = []
+): { kept: RecordedFrame[][]; dropped: Record<string, number> } {
+  const kept: RecordedFrame[][] = ids.map(() => [])
   const dropped: Record<string, number> = {}
   const drop = (bucket: string): void => {
     dropped[bucket] = (dropped[bucket] ?? 0) + 1
@@ -256,13 +276,13 @@ function keepTurnFrames(
 
   for (const frame of frames) {
     const { type, data } = frame
+    const turn = ids.findIndex(
+      (id) => data.thread_id === id.threadId && data.message_id === id.messageId
+    )
     // Unparseable payloads belong to no turn; the heartbeat carries no ids.
     if (type === '__raw__' || type === 'draft_version')
       drop(type === '__raw__' ? 'unparseable' : 'type:draft_version')
-    else if (
-      data.thread_id !== ids.threadId ||
-      data.message_id !== ids.messageId
-    )
+    else if (turn === -1)
       drop(
         seedTurn !== null &&
           data.thread_id === seedTurn.threadId &&
@@ -270,7 +290,7 @@ function keepTurnFrames(
           ? 'seed_turn'
           : 'foreign'
       )
-    else if (REPLAYED_FRAMES.includes(type)) kept.push(frame)
+    else if (REPLAYED_FRAMES.includes(type)) kept[turn].push(frame)
     else if (type.startsWith('agent_'))
       refuse(`frame type ${type} is outside the replay union`)
     else drop(`type:${type}`)
@@ -278,9 +298,13 @@ function keepTurnFrames(
 
   if (dropped.unparseable)
     refuse(`${dropped.unparseable} unparseable socket payload(s) recorded`)
-  const last = kept.at(-1)
-  if (last?.type !== 'agent_message_done')
-    refuse(`last kept frame is ${last?.type}, not agent_message_done`)
+  for (const [index, turn] of kept.entries()) {
+    const last = turn.at(-1)
+    if (last?.type !== 'agent_message_done')
+      refuse(
+        `last kept frame of ${turnLabel(index)} is ${last?.type}, not agent_message_done`
+      )
+  }
   return { kept, dropped }
 }
 
@@ -368,7 +392,7 @@ function parentToolCall(
   row: ParentRow,
   workflowId: string
 ): {
-  toolCall: AgentBackendCapture['tool_calls'][number]
+  toolCall: AgentBackendCapture['turns'][number]['tool_calls'][number]
   appliedOps: Array<Record<string, unknown>>
 } {
   const applied = row.children.flatMap((child) =>
@@ -402,7 +426,11 @@ function parentToolCall(
 }
 
 // The frames and the audit rows must describe the same turn's tool calls.
-function checkTurnAgreement(kept: RecordedFrame[], rows: ParentRow[]): void {
+function checkTurnAgreement(
+  kept: RecordedFrame[],
+  rows: ParentRow[],
+  label: string
+): void {
   const frameCalls = new Set(
     kept
       .filter(
@@ -416,7 +444,7 @@ function checkTurnAgreement(kept: RecordedFrame[], rows: ParentRow[]): void {
   const rowCalls = new Set(rows.map((row) => row.tool_call_id))
   if (!sameSet(frameCalls, rowCalls))
     refuse(
-      `frames ${list(frameCalls)} and audit parent rows ${list(rowCalls)} disagree; the rows are not this turn`
+      `${label}: frames ${list(frameCalls)} and audit parent rows ${list(rowCalls)} disagree; the rows are not this turn`
     )
 }
 
@@ -482,19 +510,18 @@ function checkAddedClasses(
 
 function buildCapture(options: {
   input: AssembleInput
-  ids: TurnIds
+  threadId: string
   workflowId: string
   seedMessageId: string | null
-  kept: RecordedFrame[]
-  toolCalls: AgentBackendCapture['tool_calls']
+  turns: AgentBackendCapture['turns']
 }): AgentBackendCapture {
-  const { input, ids, workflowId, kept, toolCalls } = options
+  const { input, threadId, workflowId, turns } = options
   const { raw, rows, provenance } = input
   const { workflow } = input.seed.json
-  const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${ids.threadId}; message ${ids.messageId}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.parents.map((row) => row.id))}; rows ${basename(rows.path)}; raw capture sha256 ${input.rawSha256}`
+  const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
   return {
-    schema_version: 'agent-backend-capture.v1',
+    schema_version: 'agent-backend-capture.v2',
     source: {
       repo: 'Comfy-Org/ComfyUI_frontend',
       suite: 'agent',
@@ -503,8 +530,7 @@ function buildCapture(options: {
     },
     capture: {
       backend: 'Comfy-Org/cloud',
-      thread_id: ids.threadId,
-      message_id: ids.messageId,
+      thread_id: threadId,
       exported_at: provenance.exportedAt
     },
     workflow: {
@@ -513,21 +539,29 @@ function buildCapture(options: {
       catalog: workflow.catalog,
       seed: workflow.seed
     },
-    request: { content: raw.prompt },
-    frames: kept,
-    tool_calls: toolCalls
+    turns
   }
+}
+
+interface TurnReceipt {
+  message_id: string
+  frames_kept: number
+  parents: number
+  mutating_parents: number
+  child_statuses: Record<string, number>
+  rows: string
+  rows_sha256: string
 }
 
 function buildReceipt(options: {
   input: AssembleInput
-  ids: TurnIds
+  threadId: string
   workflowId: string
-  frames: { kept: number; dropped: Record<string, number> }
-  parents: { count: number; mutating: number; children: Record<string, number> }
+  turns: TurnReceipt[]
+  framesDropped: Record<string, number>
   draft: DraftCounts
 }) {
-  const { input, ids, workflowId, frames, parents } = options
+  const { input, threadId, workflowId, turns } = options
   const { raw, rows, seed, provenance } = input
   return {
     attempt: raw.attempt,
@@ -537,17 +571,11 @@ function buildReceipt(options: {
     raw_sha256: input.rawSha256,
     seed: seed.path,
     seed_sha256: seed.sha256,
-    rows: rows.path,
-    rows_sha256: rows.sha256,
-    retrieval: rows.retrieval,
-    thread_id: ids.threadId,
-    message_id: ids.messageId,
+    retrieval: rows[0].retrieval,
+    thread_id: threadId,
     workflow_id: workflowId,
-    frames_kept: frames.kept,
-    frames_dropped: frames.dropped,
-    parents: parents.count,
-    mutating_parents: parents.mutating,
-    child_statuses: parents.children,
+    turns,
+    frames_dropped: options.framesDropped,
     ...options.draft,
     cloud_sha: provenance.cloudSha,
     model: provenance.model
@@ -561,44 +589,94 @@ function childStatuses(parents: ParentRow[]): Record<string, number> {
   return tally
 }
 
+// One recorded turn: its own frames, its own rows, and the gates binding them.
+function assembleTurn(
+  turn: RecordedTurn,
+  ids: TurnIds,
+  frames: RecordedFrame[],
+  rows: NormalizedRows,
+  workflowId: string,
+  label: string
+): {
+  capture: AgentBackendCapture['turns'][number]
+  receipt: TurnReceipt
+  appliedOps: Array<Record<string, unknown>>
+} {
+  const calls = rows.parents.map((row) => parentToolCall(row, workflowId))
+  checkTurnAgreement(frames, rows.parents, label)
+  return {
+    capture: {
+      message_id: ids.messageId,
+      request: { content: turn.prompt },
+      frames,
+      tool_calls: calls.map((call) => call.toolCall)
+    },
+    receipt: {
+      message_id: ids.messageId,
+      frames_kept: frames.length,
+      parents: rows.parents.length,
+      mutating_parents: calls.filter((call) => call.appliedOps.length > 0)
+        .length,
+      child_statuses: childStatuses(rows.parents),
+      rows: rows.path,
+      rows_sha256: rows.sha256
+    },
+    appliedOps: calls.flatMap((call) => call.appliedOps)
+  }
+}
+
 export function assembleCapture(input: AssembleInput) {
   const { raw, rows } = input
   const { workflow } = input.seed.json
   const seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
+  checkRecording(raw, seedIds, rows.length)
 
-  const ids = turnIds(raw, seedIds)
   const seedAck = zAck.safeParse(raw.seed_turn?.body)
   const seedTurn = seedAck.success
     ? { threadId: seedAck.data.thread_id, messageId: seedAck.data.message_id }
     : null
-  const { kept, dropped } = keepTurnFrames(raw.frames, ids, seedTurn)
-  const workflowId = activeWorkflowId(kept, raw.seed_workflow_id)
+  const ids = raw.turns.map((turn, index) =>
+    turnIds(turn, turnLabel(index), raw)
+  )
+  const { threadId } = ids[0]
+  const strayed = ids.findIndex((id) => id.threadId !== threadId)
+  if (strayed > 0)
+    refuse(
+      `${turnLabel(strayed)} landed on thread ${ids[strayed].threadId}, not ${threadId}`
+    )
 
-  const calls = rows.parents.map((row) => parentToolCall(row, workflowId))
-  checkTurnAgreement(kept, rows.parents)
-  const appliedOps = calls.flatMap((call) => call.appliedOps)
-  const draft = checkDraft(rows.draft, seedIds, appliedOps, workflowId)
+  const { kept, dropped } = keepTurnFrames(raw.frames, ids, seedTurn)
+  // The replay subscribes once, so only the opening turn must switch tabs.
+  const workflowId = activeWorkflowId(kept[0], raw.seed_workflow_id)
+  const turns = raw.turns.map((turn, index) =>
+    assembleTurn(
+      turn,
+      ids[index],
+      kept[index],
+      rows[index],
+      workflowId,
+      turnLabel(index)
+    )
+  )
+
+  const appliedOps = turns.flatMap((turn) => turn.appliedOps)
+  const draft = checkDraft(rows.at(-1)!.draft, seedIds, appliedOps, workflowId)
   checkAddedClasses(appliedOps, workflow.catalog)
 
   return {
     capture: buildCapture({
       input,
-      ids,
+      threadId,
       workflowId,
       seedMessageId: seedTurn?.messageId ?? null,
-      kept,
-      toolCalls: calls.map((call) => call.toolCall)
+      turns: turns.map((turn) => turn.capture)
     }),
     receipt: buildReceipt({
       input,
-      ids,
+      threadId,
       workflowId,
-      frames: { kept: kept.length, dropped },
-      parents: {
-        count: rows.parents.length,
-        mutating: calls.filter((call) => call.appliedOps.length > 0).length,
-        children: childStatuses(rows.parents)
-      },
+      turns: turns.map((turn) => turn.receipt),
+      framesDropped: dropped,
       draft
     })
   }
@@ -675,19 +753,23 @@ async function recordTurns(
     redisExec: string[]
     timeoutMs: number
     seed: WorkflowJSON
+    prompts: string[]
   }
 ): Promise<void> {
   const stop = openStream(raw, options.redisExec, (frame) =>
     raw.frames.push({ ...frame, at_ms: Date.now() })
   )
 
-  const postTurn = async (turn: unknown): Promise<TurnAck> => {
-    const response = await fetch(`${raw.base}/agent/threads/new/messages`, {
-      method: 'POST',
-      headers: options.headers,
-      body: JSON.stringify(turn),
-      signal: AbortSignal.timeout(30_000)
-    })
+  const postTurn = async (thread: string, turn: unknown): Promise<TurnAck> => {
+    const response = await fetch(
+      `${raw.base}/agent/threads/${thread}/messages`,
+      {
+        method: 'POST',
+        headers: options.headers,
+        body: JSON.stringify(turn),
+        signal: AbortSignal.timeout(30_000)
+      }
+    )
     const payload = await response.text()
     const body = zJsonObject.safeParse(safeJson(payload))
     if (response.status === 202 && !body.success)
@@ -732,7 +814,7 @@ async function recordTurns(
       refuse(`frame source did not open: ${raw.frame_source}`)
 
     // Turn A mints and seeds the workflow; it is thrown away, not recorded.
-    const seedTurn = await postTurn({
+    const seedTurn = await postTurn('new', {
       content:
         'Hello. Please do nothing to the workflow yet; just acknowledge.',
       draft: { content: options.seed }
@@ -744,24 +826,37 @@ async function recordTurns(
     raw.seed_workflow_id = seedAck.data.workflow_id
     await waitDone(seedAck.data.message_id, 'seed turn')
 
-    // Turn B opens on a fresh workflow so switch_tab publishes agent_active_tab.
-    const recorded = await postTurn({
-      content: raw.prompt,
-      open_tabs: [
-        { workflow_id: seedAck.data.workflow_id, name: raw.seed_name }
-      ]
-    })
-    raw.accepted = recorded
-    const ack = zAck.safeParse(recorded.body)
-    if (recorded.status !== 202 || !ack.success)
-      refuse(`recorded turn not accepted: ${JSON.stringify(recorded)}`)
-    await waitDone(ack.data.message_id, 'recorded turn')
-    raw.saw_done = true
+    // Turn 1 opens on a fresh workflow so switch_tab publishes
+    // agent_active_tab; the rest continue that thread the way the panel does.
+    let thread = 'new'
+    let opening: string | null = null
+    for (const [index, prompt] of options.prompts.entries()) {
+      const posted = await postTurn(thread, {
+        content: prompt,
+        open_tabs: [
+          { workflow_id: seedAck.data.workflow_id, name: raw.seed_name }
+        ]
+      })
+      const turn: RecordedTurn = {
+        prompt,
+        accepted: posted,
+        saw_done: false
+      }
+      raw.turns.push(turn)
+      const ack = zAck.safeParse(posted.body)
+      if (posted.status !== 202 || !ack.success)
+        refuse(`${turnLabel(index)} not accepted: ${JSON.stringify(posted)}`)
+      thread = ack.data.thread_id
+      opening ??= ack.data.message_id
+      await waitDone(ack.data.message_id, turnLabel(index))
+      turn.saw_done = true
+    }
+
     if (
       !raw.frames.some(
         (frame) =>
           frame.type === 'agent_active_tab' &&
-          frame.data.message_id === ack.data.message_id &&
+          frame.data.message_id === opening &&
           frame.data.workflow_id === seedAck.data.workflow_id
       )
     )
@@ -776,15 +871,19 @@ async function recordTurns(
 async function main(argv: string[]): Promise<void> {
   const positional: string[] = []
   const flags: Record<string, string> = {}
+  const prompts: string[] = []
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
-    if (arg === '--out' || arg === '--work')
+    if (arg === '--prompt') prompts.push(argv[(index += 1)] ?? '')
+    else if (arg === '--out' || arg === '--work')
       flags[arg] = argv[(index += 1)] ?? ''
     else positional.push(arg)
   }
-  const [caseId, prompt, seedPath] = positional
+  const [caseId, seedPath] = positional
   const outPath = flags['--out']
-  if (!caseId || !prompt || !seedPath || !outPath) throw new Error(USAGE)
+  if (!caseId || !seedPath || !outPath || prompts.length === 0)
+    throw new Error(USAGE)
+  if (prompts.some((turn) => !turn.trim())) throw new Error(USAGE)
 
   const env = parseOrRefuse(
     zEnv,
@@ -816,7 +915,6 @@ async function main(argv: string[]): Promise<void> {
   const raw: RawCapture = {
     case_id: caseId,
     attempt,
-    prompt,
     base: env.AGENT_FULLSTACK_URL.replace(/\/$/, ''),
     // The note carries this shape; the concrete channel stays in the receipt.
     frame_source: 'redis SUBSCRIBE channel:ws:<workspace>:u:<user>',
@@ -828,11 +926,10 @@ async function main(argv: string[]): Promise<void> {
     stream_closed: false,
     seed_turn: null,
     seed_workflow_id: null,
-    accepted: null,
-    saw_done: false,
+    turns: [],
     timed_out: false,
     frames: [],
-    rows_artifact: null,
+    rows_artifacts: [],
     retrieval: null,
     error: null
   }
@@ -850,17 +947,25 @@ async function main(argv: string[]): Promise<void> {
       },
       redisExec: env.AGENT_REDIS_EXEC.split(' '),
       timeoutMs: env.AGENT_TURN_TIMEOUT,
-      seed: seed.workflow.seed
+      seed: seed.workflow.seed,
+      prompts
     })
 
-    const ids = zAck.parse(raw.accepted?.body)
-    const rows = readRows(env.AGENT_PG_EXEC.split(' '), sidecar('rows.json'), {
-      threadId: ids.thread_id,
-      messageId: ids.message_id,
-      workflowId: String(raw.seed_workflow_id)
+    // One row set per turn; the last one also carries the final draft.
+    const rows = raw.turns.map((turn, index) => {
+      const ids = zAck.parse(turn.accepted?.body)
+      return readRows(
+        env.AGENT_PG_EXEC.split(' '),
+        sidecar(`rows.${index + 1}.json`),
+        {
+          threadId: ids.thread_id,
+          messageId: ids.message_id,
+          workflowId: String(raw.seed_workflow_id)
+        }
+      )
     })
-    raw.rows_artifact = rows.path
-    raw.retrieval = rows.retrieval
+    raw.rows_artifacts = rows.map((set) => set.path)
+    raw.retrieval = rows[0].retrieval
     writeJson(rawPath, raw)
 
     const { capture, receipt } = assembleCapture({
@@ -878,8 +983,14 @@ async function main(argv: string[]): Promise<void> {
     writeJson(sidecar('capture.json'), capture)
     writeJson(outPath, exportAgentConversation(capture))
     writeJson(sidecar('receipt.json'), receipt)
+    const perTurn = receipt.turns
+      .map(
+        (turn, index) =>
+          `t${index + 1}[frames=${turn.frames_kept} parents=${turn.parents} mutating=${turn.mutating_parents}]`
+      )
+      .join(' ')
     process.stdout.write(
-      `recorded ${outPath} sha256=${sha256OfFile(outPath)} attempt=${attempt} frames=${receipt.frames_kept} dropped=${JSON.stringify(receipt.frames_dropped)} parents=${receipt.parents} mutating=${receipt.mutating_parents} workflow=${receipt.workflow_id}\nsidecars in ${workDir}\n`
+      `recorded ${outPath} sha256=${sha256OfFile(outPath)} attempt=${attempt} turns=${receipt.turns.length} ${perTurn} dropped=${JSON.stringify(receipt.frames_dropped)} workflow=${receipt.workflow_id}\nsidecars in ${workDir}\n`
     )
   } catch (error) {
     raw.error = error instanceof Error ? error.message : String(error)
