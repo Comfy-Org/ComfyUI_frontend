@@ -28,7 +28,7 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
-  SHARING_WARNING,
+  EVENT_LOG_WARNING,
   collectCrdtDebugReport,
   redactEventPayloads
 } from './crdtDebugReport'
@@ -388,7 +388,7 @@ async function copyLog() {
   try {
     flashLogCopyState(
       await writeClipboard(
-        `${SHARING_WARNING}\n\n${stringifyDevEvents(redactEventPayloads(matchingEvents.value))}`
+        `${EVENT_LOG_WARNING}\n\n${stringifyDevEvents(redactEventPayloads(matchingEvents.value))}`
       )
     )
   } catch {

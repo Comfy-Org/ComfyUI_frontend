@@ -294,6 +294,40 @@ describe('collectCrdtDebugReport', () => {
     expect(report).not.toContain('private prompt')
   })
 
+  it('keeps binary event details summarized instead of flattening them', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        {
+          seq: 1,
+          at: 0,
+          kind: 'doc_update',
+          scope: 'doc',
+          level: 'info',
+          detail: { bytes: new Uint8Array([1, 2, 3]) }
+        }
+      ]
+    })
+
+    expect(report).toContain('Uint8Array(3)')
+    expect(report).not.toContain('"0": 1')
+  })
+
+  it('renders a cyclic event detail without throwing', async () => {
+    const detail: Record<string, unknown> = { kind: 'loop' }
+    detail.self = detail
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        { seq: 1, at: 0, kind: 'doc_gap', scope: 'doc', level: 'warn', detail }
+      ]
+    })
+
+    expect(report).toContain('redacted at depth limit')
+    expect(report).not.toContain('unserializable')
+  })
+
   it('redacts a credential nested under an innocuous key', async () => {
     getSettings.mockResolvedValue({
       'Comfy.Server.LaunchArgs': { '--api-token': 'nested-do-not-leak' },

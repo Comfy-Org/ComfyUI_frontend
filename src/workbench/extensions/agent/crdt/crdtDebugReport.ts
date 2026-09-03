@@ -50,8 +50,11 @@ const SECRET_KEY_PATTERN =
 
 const REDACTED = '[redacted by the debug report]'
 
-export const SHARING_WARNING =
+const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
+
+/** Heads the CRDT event log both in the report and in the panel's copied log. */
+export const EVENT_LOG_WARNING = `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`
 
 /**
  * Redaction must RECURSE. A single top-level pass reads as sufficient and is
@@ -243,15 +246,36 @@ export function redactEventPayloads(
 ): readonly DevEvent[]
 export function redactEventPayloads(value: unknown): unknown
 export function redactEventPayloads(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(redactEventPayloads)
-  if (!isRecord(value)) return value
+  return redactPayloadTree(value, 0)
+}
+
+/**
+ * Runs before `devEventReplacer`, so anything it rebuilds is what the
+ * replacer sees. Binary views stay intact for the replacer to summarize
+ * (`Object.entries(new Uint8Array(4))` would otherwise flatten them into
+ * index-keyed records), and the depth cap turns a cyclic detail into a marker
+ * instead of a `RangeError` that `copyLog` would swallow.
+ */
+function redactPayloadTree(value: unknown, depth: number): unknown {
+  if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
+  if (Array.isArray(value)) {
+    return value.map((item) => redactPayloadTree(item, depth + 1))
+  }
+  if (!isRecord(value) || isBinary(value)) return value
   return Object.fromEntries(
     Object.entries(value).map(([key, nested]) => [
       key,
       key === 'value' || key === 'widgets_values' || key === 'node'
         ? REDACTED
-        : redactEventPayloads(nested)
+        : redactPayloadTree(nested, depth + 1)
     ])
+  )
+}
+
+function isBinary(value: object): boolean {
+  return (
+    ArrayBuffer.isView(value) ||
+    Object.prototype.toString.call(value) === '[object ArrayBuffer]'
   )
 }
 
@@ -478,7 +502,7 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## CRDT event log',
-    `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`,
+    EVENT_LOG_WARNING,
     fence(
       'json',
       truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
