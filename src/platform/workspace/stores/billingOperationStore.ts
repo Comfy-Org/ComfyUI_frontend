@@ -432,22 +432,24 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // customer just abandoned — the intent has not moved. Keeping the failure
     // presentation stops the alert flapping between polls; a state that
     // actually advanced (processing, succeeded, failed) still flows through and
-    // resolves the UI.
+    // resolves the UI. A different client secret is a genuinely new challenge
+    // and still flows through — same rule the echo check below applies.
     //
     // Likewise after a browser attempt that SUCCEEDED: the server can keep
     // reporting requires_action for the same intent until it observes the
     // completion, and downgrading processing back to requires_action reopened
-    // the pay button mid-payment. A different client secret is a genuinely
-    // new challenge and still flows through.
+    // the pay button mid-payment.
+    const isStaleFailure =
+      state === 'requires_action' &&
+      operation.authenticationState === 'failed_retryable' &&
+      (!clientSecret || clientSecret === knownSecret)
     const isEchoOfHandledChallenge =
       state === 'requires_action' &&
       operation.authenticationState === 'processing' &&
       autoHandledPaymentActions.has(opId) &&
       (!clientSecret || clientSecret === knownSecret)
     const displayState =
-      state === 'requires_action' &&
-      (operation.authenticationState === 'failed_retryable' ||
-        isEchoOfHandledChallenge)
+      isStaleFailure || isEchoOfHandledChallenge
         ? operation.authenticationState
         : state
     const declineDetail =

@@ -1396,6 +1396,49 @@ describe('billingOperationStore', () => {
       expect((await terminal).status).toBe('succeeded')
     })
 
+    it('offers a genuinely new challenge to resume, even after a prior one failed', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'failed_retryable',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_new',
+          started_at: new Date().toISOString()
+        })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'processing' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: false
+      })
+
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'requires_action',
+        canRetryAuthentication: true
+      })
+
+      await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
+        true
+      )
+      expect(mockHandleNextAction).toHaveBeenCalledWith({
+        clientSecret: 'pi_secret_new'
+      })
+    })
+
     it('notices a payment completed outside the tab while parked on verification', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
