@@ -23,6 +23,10 @@ export const getStaticPaths: GetStaticPaths = () =>
 const { slug } = Astro.params
 const model = getWorkshopModelDetail(slug as string)!
 const related = relatedModels(model, workshopModels)
+const relatedHeading =
+  model.provider && related.some((other) => other.provider === model.provider)
+    ? t('workshop.model.relatedProvider').replace('{provider}', model.provider)
+    : t('workshop.model.related')
 const successor = model.successorSlug
   ? getWorkshopModel(model.successorSlug)
   : undefined
@@ -167,7 +171,7 @@ const tags = [
     >
       <div class="mb-6 flex items-end justify-between gap-4">
         <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-          {t('workshop.model.related')}
+          {relatedHeading}
         </h2>
         <a
           href={routes.workshop}

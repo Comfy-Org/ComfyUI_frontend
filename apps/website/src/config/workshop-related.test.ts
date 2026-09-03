@@ -6,7 +6,8 @@ import { relatedModels } from './workshop-related'
 function model(
   slug: string,
   modality: WorkshopModel['modality'],
-  workflowCount: number
+  workflowCount: number,
+  provider?: string
 ): WorkshopModel {
   return {
     slug,
@@ -16,7 +17,8 @@ function model(
     routerId: `x/${slug}`,
     capabilities: [],
     runs: 12_000,
-    modality
+    modality,
+    ...(provider ? { provider } : {})
   }
 }
 
@@ -29,6 +31,13 @@ const catalog = [
   model('other-image', 'image', 2)
 ]
 
+const withProviders = [
+  model('hailuo-03', 'video', 9, 'MiniMax'),
+  model('busy-video', 'video', 8),
+  model('hailuo-02', 'video', 2, 'MiniMax'),
+  model('hailuo-i2v', 'image', 1, 'MiniMax')
+]
+
 describe('relatedModels', () => {
   it('lists the same modality first, most used first, without the model itself', () => {
     expect(relatedModels(catalog[0], catalog).map((m) => m.slug)).toEqual([
@@ -37,6 +46,12 @@ describe('relatedModels', () => {
       'busy-image',
       'audio'
     ])
+  })
+
+  it('puts the other models of the same provider first', () => {
+    expect(
+      relatedModels(withProviders[0], withProviders).map((m) => m.slug)
+    ).toEqual(['hailuo-02', 'hailuo-i2v', 'busy-video'])
   })
 
   it('honours the limit', () => {

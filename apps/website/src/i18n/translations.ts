@@ -8600,6 +8600,10 @@ Enterprise`
     en: 'More from the Workshop',
     'zh-CN': '工作坊的更多内容'
   },
+  'workshop.model.relatedProvider': {
+    en: 'More from {provider}',
+    'zh-CN': '{provider} 的更多模型'
+  },
   'workshop.model.browseAll': {
     en: 'Browse all models',
     'zh-CN': '浏览全部模型'
