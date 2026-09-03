@@ -76,7 +76,8 @@ describe('normalizeSubgraphDefinitionIds', () => {
 
     expect(result.subgraphs).toHaveLength(2)
     expect(isUuidShapedSubgraphId(normalizedId)).toBe(true)
-    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedId)
+    expect(result.subgraphs[1].nodes).toHaveLength(1)
+    expect(result.subgraphs[1].nodes?.[0]?.type).toBe(normalizedId)
   })
 
   it('recursively normalizes a subgraph-within-subgraph definition and hoists it to the flat result', () => {
