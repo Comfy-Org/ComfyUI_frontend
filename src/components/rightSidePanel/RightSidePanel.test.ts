@@ -13,6 +13,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -192,5 +194,78 @@ describe('RightSidePanel active tab fallback', () => {
     expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
+  })
+})
+
+describe('RightSidePanel global parameters tab', () => {
+  beforeEach(() => {
+    mockApp.rootGraph = null
+  })
+
+  function renderWithNoSelection(
+    activeWorkflowPath: string | null,
+    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  ) {
+    setActivePinia(pinia)
+
+    const rootGraph = new LGraph()
+    mockApp.rootGraph = rootGraph
+
+    const canvasStore = useCanvasStore()
+    canvasStore.currentGraph = rootGraph
+    canvasStore.selectedItems = []
+
+    const rightSidePanelStore = useRightSidePanelStore()
+    rightSidePanelStore.activeTab = 'parameters'
+
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = activeWorkflowPath
+      ? ({ path: activeWorkflowPath } as LoadedComfyWorkflow)
+      : null
+
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
+
+    return render(RightSidePanel, {
+      global: {
+        plugins: [pinia, i18n],
+        stubs: {
+          Button: { template: '<button><slot /></button>' },
+          EditableText: true,
+          Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
+          TabErrors: true,
+          TabGlobalParameters: {
+            template: '<div data-testid="tab-global-parameters" />'
+          },
+          TabInfo: true,
+          TabList: { template: '<div><slot /></div>' },
+          TabNormalInputs: true,
+          TabSettings: true
+        }
+      }
+    })
+  }
+
+  it('remounts TabGlobalParameters when the active workflow changes', async () => {
+    renderWithNoSelection('workflows/a.json')
+
+    const first = screen.getByTestId('tab-global-parameters')
+    expect(first).toBeInTheDocument()
+
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = {
+      path: 'workflows/b.json'
+    } as LoadedComfyWorkflow
+    await nextTick()
+
+    // A genuine remount (not just a prop update) replaces the DOM node —
+    // the stub has no state, so this only proves identity changed via the
+    // `:key` binding, matching TabNodes/TabNormalInputs/subgraph views.
+    const second = screen.getByTestId('tab-global-parameters')
+    expect(second).toBeInTheDocument()
+    expect(second).not.toBe(first)
   })
 })
