@@ -1,6 +1,7 @@
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -23,7 +24,6 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { zeroUuid } from '@/utils/uuid'
 import {
   ComfyWidgets,
   addValueControlWidgets,
@@ -40,7 +40,6 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
-  private configuredWidgetType?: string
   static override category: string
   constructor(title: string) {
     super(title)
@@ -126,14 +125,16 @@ export class PrimitiveNode extends LGraphNode {
     return values
   }
 
-  override onConfigure(serialisedNode: ISerialisedNode) {
-    super.onConfigure?.(serialisedNode)
+  override configure(serialisedNode: ISerialisedNode) {
     const type = serialisedNode.outputs?.[0]?.type
-    this.configuredWidgetType = typeof type === 'string' ? type : undefined
-  }
+    super.configure(serialisedNode)
+    if (!this.graph || this.widgets?.length || typeof type !== 'string') return
 
-  protected override deferWidgetRestorationAfterConfigure(): boolean {
-    return Boolean(this.graph && this.configuredWidgetType)
+    useWidgetValueStore().setNodeWidgetRestoration(
+      this.graph.rootGraph.id,
+      this.id,
+      createWidgetRestorationState(serialisedNode)
+    )
   }
 
   override onAfterGraphConfigured() {
@@ -149,16 +150,12 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  private _restorationGraphId() {
-    return this.graph?.rootGraph.id ?? zeroUuid
-  }
-
-  private _clearConfiguredWidgetValues() {
-    useWidgetValueStore().clearNodeWidgetRestoration(
-      this._restorationGraphId(),
-      this.id
-    )
-    this.configuredWidgetType = undefined
+  private _clearWidgetRestoration() {
+    if (this.graph)
+      useWidgetValueStore().clearNodeWidgetRestoration(
+        this.graph.rootGraph.id,
+        this.id
+      )
   }
 
   override onConnectionsChange(
@@ -247,6 +244,8 @@ export class PrimitiveNode extends LGraphNode {
     if (!config) return
 
     const { type } = getWidgetType(config)
+    if (recreating || this.outputs[0].type !== type)
+      this._clearWidgetRestoration()
     // Update our output to restrict to the widget type
     this.outputs[0].type = type
     this.outputs[0].name = type
@@ -275,19 +274,14 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
-    const configuredType = recreating ? undefined : this.configuredWidgetType
-    if (configuredType && configuredType !== type) {
-      this._clearConfiguredWidgetValues()
-    }
-    const configuredWidgetValue =
-      configuredType === type
-        ? useWidgetValueStore().getRestoredWidgetValue(
-            this._restorationGraphId(),
-            this.id,
-            'value',
-            0
-          )
-        : undefined
+    const restoredValue = this.graph
+      ? useWidgetValueStore().getRestoredWidgetValue(
+          this.graph.rootGraph.id,
+          this.id,
+          'value',
+          0
+        )
+      : undefined
 
     try {
       if (
@@ -297,7 +291,7 @@ export class PrimitiveNode extends LGraphNode {
         widget = this._createAssetWidget(node, widgetName, inputData)
         const theirWidget = node.widgets?.find((w) => w.name === widgetName)
         if (theirWidget) widget.value = theirWidget.value
-        if (configuredWidgetValue) widget.value = configuredWidgetValue.value
+        if (restoredValue) widget.value = restoredValue.value
         this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
         return
       }
@@ -316,7 +310,7 @@ export class PrimitiveNode extends LGraphNode {
           widget.value = theirWidget.value
         }
       }
-      if (configuredWidgetValue) widget.value = configuredWidgetValue.value
+      if (restoredValue) widget.value = restoredValue.value
 
       if (
         !inputData?.[1]?.control_after_generate &&
@@ -340,7 +334,7 @@ export class PrimitiveNode extends LGraphNode {
 
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
     } finally {
-      if (configuredType) this._clearConfiguredWidgetValues()
+      this._clearWidgetRestoration()
     }
   }
 
@@ -467,7 +461,7 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   onLastDisconnect() {
-    this._clearConfiguredWidgetValues()
+    this._clearWidgetRestoration()
     // We can't remove + re-add the output here as if you drag a link over the same link
     // it removes, then re-adds, causing it to break
     this.outputs[0].type = '*'

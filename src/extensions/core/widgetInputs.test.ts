@@ -6,14 +6,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -90,7 +90,7 @@ describe('PrimitiveNode', () => {
     LiteGraph.namedValuesRestore = false
   })
 
-  it('keeps its serialized value when the target widget has a stale value', () => {
+  function intFixture() {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -103,14 +103,32 @@ describe('PrimitiveNode', () => {
 
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
+    return { graph, primitive, target }
+  }
+
+  function restoreIntPrimitive(
+    primitive: PrimitiveNode,
+    target: LGraphNode,
+    values: ISerialisedNode['widgets_values'],
+    named?: ISerialisedNode['widgets_values_named']
+  ) {
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+      fromPartial({
+        widgets_values: values,
+        widgets_values_named: named,
+        outputs: [{ type: 'INT' }]
+      })
     )
     appState.configuringGraph = false
-
     primitive.onAfterGraphConfigured()
+  }
+
+  it('keeps its serialized value when the target widget has a stale value', () => {
+    const { primitive, target } = intFixture()
+
+    restoreIntPrimitive(primitive, target, [222])
 
     expect(primitive.widgets?.[0].value).toBe(222)
 
@@ -122,7 +140,10 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it('restores a serialized null value over the target widget value', () => {
+  it.each([
+    { label: 'null', value: null },
+    { label: 'undefined', value: undefined }
+  ])('restores an explicit $label value', ({ value }) => {
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     graph.add(target)
@@ -132,79 +153,29 @@ describe('PrimitiveNode', () => {
       [GET_CONFIG]: () => ['STRING', {}]
     }
     target.addWidget('text', 'value', 'stale', () => {})
-
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
     appState.configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
-      fromPartial({ widgets_values: [null], outputs: [{ type: 'STRING' }] })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
-
-    expect(primitive.widgets?.[0].value).toBeNull()
-  })
-
-  it('restores a serialized explicit undefined value over the target widget value', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('value', 'STRING')
-    target.inputs[0].widget = {
-      name: 'value',
-      [GET_CONFIG]: () => ['STRING', {}]
-    }
-    target.addWidget('text', 'value', 'stale', () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({
-        widgets_values: [undefined],
-        outputs: [{ type: 'STRING' }]
-      })
+      fromPartial({ widgets_values: [value], outputs: [{ type: 'STRING' }] })
     )
     appState.configuringGraph = false
 
     primitive.onAfterGraphConfigured()
 
     expect(primitive.widgets).toHaveLength(1)
-    expect(primitive.widgets?.[0].value).toBeUndefined()
+    expect(primitive.widgets?.[0].value).toBe(value)
   })
 
-  it('prefers named serialized values when named restoration is enabled', () => {
+  it('restores named main and control values when enabled', () => {
     LiteGraph.namedValuesRestore = true
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
+    const { primitive, target } = intFixture()
 
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({
-        widgets_values: [222, 'randomize'],
-        widgets_values_named: {
-          value: 333,
-          control_after_generate: 'fixed'
-        },
-        outputs: [{ type: 'INT' }]
-      })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
+    restoreIntPrimitive(primitive, target, [222, 'randomize'], {
+      value: 333,
+      control_after_generate: 'fixed'
+    })
 
     expect(primitive.widgets?.[0].value).toBe(333)
     expect(primitive.widgets?.[1].value).toBe('fixed')
@@ -270,31 +241,6 @@ describe('PrimitiveNode', () => {
     })
   })
 
-  it('restores its serialized value when the widget is built by a recreate', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
-    )
-    appState.configuringGraph = false
-
-    primitive.recreateWidget()
-
-    expect(primitive.widgets?.[0].value).toBe(222)
-  })
-
   it('restores its serialized value after a reroute resolves its widget config', () => {
     const graph = new LGraph()
     const reroute = new LGraphNode('Reroute')
@@ -321,14 +267,7 @@ describe('PrimitiveNode', () => {
     appState.configuringGraph = false
 
     primitive.onAfterGraphConfigured()
-    expect(
-      useWidgetValueStore().getRestoredWidgetValue(
-        graph.rootGraph.id,
-        primitive.id,
-        'value',
-        0
-      )
-    ).toEqual({ value: 222 })
+    expect(primitive.widgets).toBeUndefined()
     reroute.inputs[0].widget![GET_CONFIG] =
       target.inputs[0].widget?.[GET_CONFIG]
     primitive.recreateWidget()
@@ -336,39 +275,8 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(222)
   })
 
-  it('resets itself when the store reports a link the graph cannot resolve', () => {
-    const graph = new LGraph()
-    const node = new PrimitiveNode('Primitive')
-    graph.add(node)
-    useLinkStore().registerLink(graphScopeOf(graph), {
-      id: toLinkId(999),
-      graphId: graphScopeOf(graph).owningGraphId,
-      originNodeId: node.id,
-      originSlot: 0,
-      targetNodeId: toNodeId(42),
-      targetSlot: 0,
-      type: '*'
-    })
-    const onLastDisconnect = vi.spyOn(node, 'onLastDisconnect')
-
-    node.onAfterGraphConfigured()
-
-    expect(onLastDisconnect).toHaveBeenCalled()
-  })
-
-  it('drops its serialized value when the widget cannot be built during load', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
+  it('drops restoration when the store reports an unresolvable link', () => {
+    const { graph, primitive, target } = intFixture()
     useLinkStore().registerLink(graphScopeOf(graph), {
       id: toLinkId(999),
       graphId: graphScopeOf(graph).owningGraphId,
@@ -378,37 +286,54 @@ describe('PrimitiveNode', () => {
       targetSlot: 0,
       type: '*'
     })
+    const onLastDisconnect = vi.spyOn(primitive, 'onLastDisconnect')
     primitive.configure(
       fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
     )
 
     primitive.onAfterGraphConfigured()
 
+    expect(onLastDisconnect).toHaveBeenCalled()
     expect(primitive.widgets?.length).toBeFalsy()
-
     primitive.connect(0, target, 0)
-
     expect(primitive.widgets?.[0].value).toBe(111)
   })
 
+  it('keeps an unconsumed serialized value until its widget is first built', () => {
+    const { primitive, target } = intFixture()
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+
+    primitive.onAfterGraphConfigured()
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+  })
+
   it('clears its serialized value when its output is disconnected', () => {
-    const graph = new LGraph()
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
+    const { primitive, target } = intFixture()
     primitive.configure(
       fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
     )
 
     primitive.onLastDisconnect()
+    primitive.connect(0, target, 0)
 
-    expect(
-      useWidgetValueStore().getRestoredWidgetValue(
-        graph.rootGraph.id,
-        primitive.id,
-        'value',
-        0
-      )
-    ).toBeUndefined()
+    expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  it('does not retain restoration configured before graph insertion', () => {
+    const { graph, target } = intFixture()
+    const primitive = new PrimitiveNode('Primitive')
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+    graph.add(primitive)
+
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(111)
   })
 })
 

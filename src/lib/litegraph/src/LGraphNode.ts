@@ -183,6 +183,30 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   return { widgets_values: positional, widgets_values_named: named }
 }
 
+export function createWidgetRestorationState(
+  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  fallbackNames?: readonly string[]
+) {
+  const positional = Array.from(info.widgets_values ?? [])
+  const named =
+    info.widgets_values_named ??
+    (info.widgets_values && fallbackNames
+      ? Object.fromEntries(
+          positional.flatMap((value, index) =>
+            fallbackNames[index] ? [[fallbackNames[index], value]] : []
+          )
+        )
+      : undefined)
+
+  return {
+    positional,
+    named: named ? { ...named } : undefined,
+    restoreNamed: Boolean(
+      named && (LiteGraph.namedValuesRestore || fallbackNames)
+    )
+  }
+}
+
 interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
@@ -1127,28 +1151,18 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
-    const positionalValues = Array.from(info.widgets_values ?? [])
-    const getNamedValues = () => {
-      if (info.widgets_values_named) return info.widgets_values_named
-
-      const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
-      if (!info.widgets_values || !map) return
-
-      return Object.fromEntries(
-        positionalValues.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
-      )
-    }
-    const namedValues = getNamedValues()
-    const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    const shouldRestoreNamed =
-      LiteGraph.namedValuesRestore ||
+    const restoration = createWidgetRestorationState(
+      info,
       this.constructor.nodeData?.fallbackWidgetsValuesNames
+    )
+    const namedValues = restoration.named
+    const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
-      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
-        positional: positionalValues,
-        named: namedValues ? { ...namedValues } : undefined,
-        restoreNamed: Boolean(namedValues && shouldRestoreNamed)
-      })
+      useWidgetValueStore().setNodeWidgetRestoration(
+        graphId,
+        this.id,
+        restoration
+      )
 
       if (this.widgets) {
         for (const w of this.widgets) {
@@ -1202,14 +1216,8 @@ export class LGraphNode
         )
       }
     } finally {
-      if (!this.deferWidgetRestorationAfterConfigure()) {
-        useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
-      }
+      useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
-  }
-
-  protected deferWidgetRestorationAfterConfigure(): boolean {
-    return false
   }
 
   /**
