@@ -144,7 +144,7 @@ function openFullSettings() {
             />
             <FormattedNumberStepper
               :model-value="gridSpacing"
-              class="w-16"
+              class="w-16 shrink-0"
               :min="GRID_SIZE_MIN"
               :max="GRID_SIZE_MAX"
               :step="GRID_SIZE_STEP"
