@@ -1,4 +1,5 @@
 import type { SubscriptionDuration } from '@comfyorg/ingest-types'
+import { generateUUID } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   getTierPrice,
   toTierKey
@@ -87,11 +88,7 @@ const dispatchPendingCheckoutChangeEvent = () => {
 }
 
 const createAttemptId = (): string => {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID()
-  }
-
-  return `attempt-${Date.now()}`
+  return generateUUID()
 }
 
 type CheckoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>

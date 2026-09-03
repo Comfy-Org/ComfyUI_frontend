@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   appendWorkflowJsonExt,
@@ -540,6 +540,27 @@ describe('formatUtil', () => {
       ['non-hex character', 'gcea40bb-b0cf-4b40-a758-8935cfe8d52f']
     ])('rejects a %s', ([, value]) => {
       expect(isValidUuid(value)).toBe(false)
+    })
+  })
+
+  describe('generateUUID', () => {
+    it('uses getRandomValues when randomUUID is unavailable', () => {
+      const getRandomValues = vi.fn((bytes: Uint8Array) => {
+        bytes.set(Array.from({ length: 16 }, (_, index) => index))
+        return bytes
+      })
+      vi.stubGlobal('crypto', { getRandomValues })
+
+      expect(generateUUID()).toBe('00010203-0405-4607-8809-0a0b0c0d0e0f')
+      expect(getRandomValues).toHaveBeenCalledOnce()
+    })
+
+    it('throws when Web Crypto is unavailable', () => {
+      vi.stubGlobal('crypto', undefined)
+
+      expect(() => generateUUID()).toThrow(
+        'Web Crypto is required to generate a UUID'
+      )
     })
   })
 
