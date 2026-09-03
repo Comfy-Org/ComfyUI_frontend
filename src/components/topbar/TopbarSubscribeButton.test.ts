@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -26,22 +27,31 @@ vi.mock(
   })
 )
 
-const mockBilling = vi.hoisted(() => ({
-  isFreeTier: true,
-  showsSubscribeToRunPrompt: false
+const mockState = vi.hoisted(() => ({
+  holder: null as null | { isFreeTier: boolean; promptMounted: boolean }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { computed } = await import('vue')
+  const { computed, reactive } = await import('vue')
+  mockState.holder ??= reactive({ isFreeTier: true, promptMounted: false })
   return {
     useBillingContext: vi.fn(() => ({
-      isFreeTier: computed(() => mockBilling.isFreeTier),
-      showsSubscribeToRunPrompt: computed(
-        () => mockBilling.showsSubscribeToRunPrompt
-      )
+      isFreeTier: computed(() => mockState.holder!.isFreeTier)
     }))
   }
 })
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscribeCtaPresence',
+  async () => {
+    const { computed, reactive } = await import('vue')
+    mockState.holder ??= reactive({ isFreeTier: true, promptMounted: false })
+    return {
+      useSubscribeToRunPromptPresence: () =>
+        computed(() => mockState.holder!.promptMounted)
+    }
+  }
+)
 
 vi.mock('pinia')
 
@@ -74,8 +84,8 @@ function renderComponent() {
 
 describe('TopbarSubscribeButton', () => {
   beforeEach(() => {
-    mockBilling.isFreeTier = true
-    mockBilling.showsSubscribeToRunPrompt = false
+    mockState.holder!.isFreeTier = true
+    mockState.holder!.promptMounted = false
   })
 
   it('renders on cloud when isFreeTier is true', () => {
@@ -84,13 +94,17 @@ describe('TopbarSubscribeButton', () => {
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 
-  it('yields when the Run slot is already prompting to subscribe', () => {
+  it('yields while a Run-slot subscribe prompt is mounted, and returns when it unmounts', async () => {
     mockIsCloud.value = true
-    mockBilling.showsSubscribeToRunPrompt = true
+    mockState.holder!.promptMounted = true
     renderComponent()
     expect(
       screen.queryByTestId('topbar-subscribe-button')
     ).not.toBeInTheDocument()
+
+    mockState.holder!.promptMounted = false
+    await nextTick()
+    expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 
   it('hides on non-cloud distribution', () => {

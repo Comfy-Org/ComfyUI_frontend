@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="ts">
+import { registerSubscribeToRunPrompt } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -27,6 +28,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const { t } = useI18n()
+
+registerSubscribeToRunPrompt()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
