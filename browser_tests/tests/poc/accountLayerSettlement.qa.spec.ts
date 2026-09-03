@@ -8,7 +8,8 @@ import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20e-frontend'
+  process.env.ACCOUNT_LAYER_EVIDENCE_DIR ??
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20f-frontend'
 const terminalSteps = [
   'success',
   'canceled',
@@ -77,7 +78,7 @@ async function requireAuthenticated(page: Page) {
       ? Reflect.get(value, 'email')
       : null
   })
-  expect(signedInEmail).toBe(process.env.FIXTURE_B_EMAIL)
+  expect(signedInEmail).toBe(process.env.E2E_EMAIL)
 }
 
 async function pauseBetweenFields() {
@@ -197,7 +198,7 @@ test('completes hosted subscription and captures terminal operation', async () =
   for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20e-'))
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20f-'))
   await mkdir(join(profileDir, 'Default'))
   writeFileSync(
     join(profileDir, 'Default', 'Preferences'),
@@ -358,7 +359,10 @@ test('completes hosted subscription and captures terminal operation', async () =
       )
       await checkoutPage.goto(checkoutUrl, { timeout: 120_000 })
     }
-    await fillCheckout(checkoutPage, '4242424242424242')
+    await fillCheckout(
+      checkoutPage,
+      process.env.STRIPE_TEST_CARD ?? '4242424242424242'
+    )
     await checkoutPage
       .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
         timeout: 600_000,
