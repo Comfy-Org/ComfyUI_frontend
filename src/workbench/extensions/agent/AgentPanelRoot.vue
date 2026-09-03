@@ -299,8 +299,7 @@ function activeWorkflowTurnContext(
   const active =
     originTabPath === undefined
       ? workflowStore.activeWorkflow
-      : (workflowStore.getWorkflowByPath(originTabPath) ??
-        workflowStore.activeWorkflow)
+      : workflowStore.getWorkflowByPath(originTabPath)
   if (!active) return undefined
   const id = cloudIdFor(active)
   return id === undefined
@@ -315,8 +314,7 @@ function activeWorkflowDraft(
   const active =
     originTabPath === undefined
       ? workflowStore.activeWorkflow
-      : (workflowStore.getWorkflowByPath(originTabPath) ??
-        workflowStore.activeWorkflow)
+      : workflowStore.getWorkflowByPath(originTabPath)
   if (!active) return undefined
   // captureCanvasState() folds the LIVE canvas into whichever workflow it is
   // called on, so it is only correct while that workflow is still the active
@@ -373,8 +371,7 @@ function openTabsSnapshot(
   const active =
     originTabPath === undefined
       ? workflowStore.activeWorkflow
-      : (workflowStore.getWorkflowByPath(originTabPath) ??
-        workflowStore.activeWorkflow)
+      : workflowStore.getWorkflowByPath(originTabPath)
   return {
     open_tabs: openTabs,
     current_tab:
