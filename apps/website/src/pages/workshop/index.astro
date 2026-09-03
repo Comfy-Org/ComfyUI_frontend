@@ -4,6 +4,10 @@ import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
 import WorkshopCatalog from '../../components/workshop/WorkshopCatalog.vue'
 import { workshopModels } from '../../config/workshop'
 import { t } from '../../i18n/translations'
+
+// Which layout the listing shows is stored in the browser, so the server cannot
+// render it. The model and workflow pages stay prerendered; this one goes back
+// to client:load when the prototype's version switch goes away.
 ---
 
 <BaseLayout
