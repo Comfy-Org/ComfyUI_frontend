@@ -146,7 +146,7 @@ export interface OpNack {
   workflowId: string
   code: string | null
   message: string | null
-  failed: unknown
+  failed: OpsResultView['failure'] | null
   applied: number
   skipped: number
 }
