@@ -24,7 +24,7 @@ import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
-import { DocFrameClient, encodeBase64 } from './docFrameClient'
+import { DocFrameClient, decodeBase64, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -92,11 +92,6 @@ function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
     seq,
     update_b64: encodeBase64(update)
   }
-}
-
-function decodeBase64(value: string): Uint8Array {
-  const binary = atob(value)
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0))
 }
 
 function wire() {
@@ -353,8 +348,12 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     expect(bridge.follower.updatesApplied).toBe(1)
   })
 
-  it('a warm reconnect requests and applies only missed state without duplication', () => {
+  it('a warm reconnect requests and applies only missed state without re-applying the catch-up', () => {
     const { transport, bridge } = wire()
+    const stale: number[] = []
+    bridge.addEventListener('doc_stale', (event) => {
+      stale.push((event as CustomEvent<{ seq: number }>).detail.seq)
+    })
     const host = mint({ nodes: [], links: [] }, { types: {} })
     const node = new Y.Map<unknown>()
     node.set('type', 'LoadImage')
@@ -368,6 +367,7 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
       docUpdateFrame(Y.encodeStateAsUpdate(host), WORKFLOW_ID, 1)
     )
     const retained = bridge.follower
+    expect(bridge.lastSequence).toBe(1)
 
     node.set('pos', [30, 40])
     const missedNode = new Y.Map<unknown>()
@@ -375,11 +375,22 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     nodesMap(host).set('2', missedNode)
 
     bridge.resubscribe()
+    // The doc is retained; only the seq baseline restarts with the subscribe.
+    expect(bridge.lastSequence).toBe(0)
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
     }[]
     const resumeVector = decodeBase64(subscribes[1].data.state_vector_b64)
     expect(resumeVector).toEqual(retained.stateVector())
+
+    // Wire order: the host acks the resubscribe, then sends the catch-up.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+    expect(bridge.lastSequence).toBe(2)
 
     const missedState = Y.encodeStateAsUpdate(host, resumeVector)
     expect(missedState).not.toEqual(Y.encodeStateAsUpdate(host))
@@ -390,9 +401,11 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
       nodesMap(host).toJSON()
     )
     expect(bridge.follower.updatesApplied).toBe(2)
+    expect(bridge.lastSequence).toBe(2)
 
     transport.deliver('doc_update', docUpdateFrame(missedState, WORKFLOW_ID, 2))
     expect(bridge.follower.updatesApplied).toBe(2)
+    expect(stale).toEqual([2])
   })
 
   it('a channel-close refusal resubscribes from the retained state vector', () => {
@@ -402,7 +415,11 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     const retained = bridge.follower
     const resumeVector = encodeBase64(retained.stateVector())
+    expect(bridge.lastSequence).toBe(1)
 
+    // `resubscribe` is the relay's channel-close code (doc_relay.go
+    // handleWorkflowChannelClose): the fanout was interrupted and the follower
+    // must subscribe again with its state vector.
     transport.deliver('doc_subscribed', {
       v: 1,
       workflow_id: WORKFLOW_ID,
@@ -418,6 +435,7 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     expect(subscribes[1].data.state_vector_b64).toBe(resumeVector)
     expect(bridge.follower).toBe(retained)
     expect(bridge.follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(0)
   })
 })
 
