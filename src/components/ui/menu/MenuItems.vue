@@ -62,7 +62,12 @@ function select(item: MenuItem, event: Event) {
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent
-          :class="menuContentClass"
+          :class="
+            cn(
+              menuContentClass,
+              'max-h-(--reka-dropdown-menu-content-available-height)'
+            )
+          "
           :side-offset="2"
           :align-offset="-5"
         >
