@@ -336,6 +336,7 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
     }[]
+    expect(subscribes).toHaveLength(1)
     const requestedVector = decodeBase64(subscribes[0].data.state_vector_b64)
     expect(requestedVector).toEqual(Y.encodeStateVector(new Y.Doc()))
 
@@ -380,6 +381,7 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
     }[]
+    expect(subscribes).toHaveLength(2)
     const resumeVector = decodeBase64(subscribes[1].data.state_vector_b64)
     expect(resumeVector).toEqual(retained.stateVector())
 
