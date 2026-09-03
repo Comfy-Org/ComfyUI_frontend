@@ -11,10 +11,9 @@ const FAIL_OPEN_POLICY: BillingRailPolicy = {
 }
 
 /**
- * Single decision site for `billing_rail` (ADR-0024). Every consumer must
- * classify the rail through this policy so one value cannot be read two
- * different ways. An absent rail deliberately fails open: workspace-served,
- * no Churnkey.
+ * Single decision site for `billing_rail`. Every consumer must classify the
+ * rail through this policy so one value cannot be read two different ways. An
+ * absent rail deliberately fails open: workspace-served, no Churnkey.
  */
 export function getBillingRailPolicy(
   rail: BillingRail | null | undefined

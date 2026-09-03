@@ -37,6 +37,7 @@ describe('getBillingRailPolicy', () => {
   )
 
   it('fails open for a rail value this build does not recognize', () => {
+    // This cast tests runtime fallback; `satisfies never` guards type widening.
     expect(getBillingRailPolicy('adyen' as BillingRail)).toEqual({
       usesLegacyAccountOperations: false,
       supportsChurnkeyCancellation: false
