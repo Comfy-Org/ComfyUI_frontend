@@ -26,8 +26,9 @@
       @update:open="onFilterDialogOpenChange"
     >
       <DialogPortal>
-        <DialogOverlay />
+        <DialogOverlay v-reka-z-index />
         <DialogContent
+          v-reka-z-index
           class="min-w-96"
           @escape-key-down="$event.isComposing && $event.preventDefault()"
           @close-auto-focus="onFilterDialogCloseAutoFocus"
@@ -89,6 +90,7 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
