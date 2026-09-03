@@ -1,10 +1,12 @@
-import { captureException } from '@sentry/vue'
 import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from '@/App.vue'
+import { reportError } from '@/platform/telemetry/reportError'
 
-vi.mock('@sentry/vue', () => ({ captureException: vi.fn() }))
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 vi.mock('@/components/dialog/GlobalDialog.vue', () => ({
   default: { name: 'GlobalDialog', template: '<div />' }
@@ -56,7 +58,7 @@ describe('App vite:preloadError handling', () => {
     errorSpy.mockRestore()
   })
 
-  it('logs extension-origin failures as warnings and skips Sentry', () => {
+  it('logs extension-origin failures as warnings and skips error reporting', () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const { unmount } = mountApp()
     try {
@@ -77,13 +79,13 @@ describe('App vite:preloadError handling', () => {
         '[vite:preloadError]',
         expect.anything()
       )
-      expect(captureException).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       unmount()
     }
   })
 
-  it('logs first-party chunk failures as errors and reports to Sentry on cloud', () => {
+  it('logs first-party chunk failures as errors and reports them on cloud', () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const { unmount } = mountApp()
     try {
@@ -103,12 +105,32 @@ describe('App vite:preloadError handling', () => {
         '[vite:preloadError]',
         expect.anything()
       )
-      expect(captureException).toHaveBeenCalledWith(
+      expect(reportError).toHaveBeenCalledWith(
         error,
+        expect.objectContaining({ errorType: 'vite_preload_error' })
+      )
+    } finally {
+      unmount()
+    }
+  })
+
+  it('logs first-party chunk failures without reporting them off cloud', () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+    const { unmount } = mountApp()
+    try {
+      dispatchPreloadError(
+        new Error(
+          'Failed to fetch dynamically imported module: https://example.com/assets/vendor-three-def456.js'
+        )
+      )
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[vite:preloadError]',
         expect.objectContaining({
-          tags: expect.objectContaining({ error_type: 'vite_preload_error' })
+          url: 'https://example.com/assets/vendor-three-def456.js'
         })
       )
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       unmount()
     }
