@@ -375,6 +375,25 @@ describe('useWidgetValueStore', () => {
       })
     })
 
+    it('does not leak mutation context into nested writes', () => {
+      const store = useWidgetValueStore()
+      const widget = store.registerWidget(seedA, state('number', 100))!
+      const context: RemoteMutationContext = {
+        source: 'agent-remote',
+        actor: 'agent:test',
+        opId: 'op-1'
+      }
+      const contexts: (RemoteMutationContext | undefined)[] = []
+      store.onValueChange((change) => {
+        contexts.push(change.context)
+        if (change.value === 200) widget.value = 201
+      })
+
+      store.setValue(seedA, 200, context)
+
+      expect(contexts).toEqual([context, undefined])
+    })
+
     it('stops reporting replaced and deleted widget state', () => {
       const store = useWidgetValueStore()
       const replaced = store.registerWidget(seedA, state('number', 1))!

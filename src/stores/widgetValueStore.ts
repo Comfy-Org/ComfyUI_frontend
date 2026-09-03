@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
-import { reactive, ref, watch } from 'vue'
-import type { WatchStopHandle } from 'vue'
+import { reactive, ref } from 'vue'
 
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import {
+  isWidgetId,
+  parseWidgetId,
+  widgetId as createWidgetId
+} from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
@@ -47,34 +50,33 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     Map<NodeId, WidgetRestorationState>
   >()
   const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
-  const valueWatchers = new Map<WidgetId, WatchStopHandle>()
-  let activeValueMutation:
-    | { state: WidgetState; context?: RemoteMutationContext }
-    | undefined
+  const valueMutationContexts = new WeakMap<
+    WidgetState,
+    RemoteMutationContext
+  >()
 
-  function watchValue(widgetId: WidgetId, state: WidgetState): void {
-    valueWatchers.get(widgetId)?.()
-    valueWatchers.set(
-      widgetId,
-      watch(
-        () => state.value,
-        (value, oldValue) => {
-          const context =
-            activeValueMutation?.state === state
-              ? activeValueMutation.context
-              : undefined
-          for (const listener of valueChangeListeners) {
-            listener({ widgetId, value, oldValue, context })
-          }
-        },
-        { flush: 'sync' }
-      )
-    )
-  }
-
-  function stopWatchingValue(widgetId: WidgetId): void {
-    valueWatchers.get(widgetId)?.()
-    valueWatchers.delete(widgetId)
+  function observeValue<TValue extends WidgetValue>(
+    state: WidgetState<TValue>,
+    graphId: UUID
+  ): void {
+    let value = state.value
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      enumerable: true,
+      get: () => value,
+      set: (nextValue: TValue) => {
+        if (Object.is(value, nextValue)) return
+        const oldValue = value
+        value = nextValue
+        const widgetId = createWidgetId(graphId, state.nodeId, state.name)
+        if (getWidget(widgetId) !== state) return
+        const context = valueMutationContexts.get(state)
+        valueMutationContexts.delete(state)
+        for (const listener of valueChangeListeners) {
+          listener({ widgetId, value, oldValue, context })
+        }
+      }
+    })
   }
 
   function onValueChange(
@@ -251,7 +253,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       TType,
       TOptions
     >
-    watchValue(widgetId, registered)
+    observeValue(registered, graphId)
     return registered
   }
 
@@ -295,12 +297,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    const previousMutation = activeValueMutation
-    activeValueMutation = { state, context }
+    if (context) valueMutationContexts.set(state, context)
     try {
       state.value = value
     } finally {
-      activeValueMutation = previousMutation
+      valueMutationContexts.delete(state)
     }
     return true
   }
@@ -326,7 +327,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
-    stopWatchingValue(widgetId)
     graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
     removeNodeWidgetOrder(widgetId)
     return graphWidgetStates.value.get(graphId)?.delete(widgetId) ?? false
@@ -356,13 +356,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const index = order.indexOf(oldId)
 
     widgetStates.delete(oldId)
-    stopWatchingValue(oldId)
     renderStates.delete(oldId)
     if (index !== -1) order.splice(index, 1)
 
     state.name = name
     widgetStates.set(newId, state)
-    watchValue(newId, state)
     if (renderState) renderStates.set(newId, renderState)
     if (index !== -1) order.splice(index, 0, newId)
     else if (!order.includes(newId)) order.push(newId)
@@ -455,7 +453,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     if (discardValues) {
       for (const widgetId of order) {
-        stopWatchingValue(widgetId)
         graphWidgetStates.value.get(graphId)?.delete(widgetId)
         graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
       }
@@ -474,7 +471,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (widgetStates) {
       for (const [id, state] of widgetStates) {
         if (state.nodeId !== nodeId) continue
-        stopWatchingValue(id)
         widgetStates.delete(id)
         widgetRenderStates?.delete(id)
       }
@@ -490,9 +486,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
-    for (const widgetId of graphWidgetStates.value.get(graphId)?.keys() ?? []) {
-      stopWatchingValue(widgetId)
-    }
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
