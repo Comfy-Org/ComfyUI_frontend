@@ -332,9 +332,11 @@ async function assertTemporalCli(): Promise<void> {
   }
 }
 
-// psql is not required on PATH: reach Postgres through whichever container publishes it.
-async function pgExecCommand(override: string): Promise<string> {
-  if (override) return override
+// Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
+async function containerFor(
+  portNumber: number,
+  service: string
+): Promise<string> {
   const { stdout } = await execFileAsync('docker', [
     'ps',
     '--format',
@@ -342,14 +344,22 @@ async function pgExecCommand(override: string): Promise<string> {
   ])
   const name = stdout
     .split('\n')
-    .find((line) => line.includes(`:${PG_PORT}->`))
+    .find((line) => line.includes(`:${portNumber}->`))
     ?.split(' ')[0]
   if (!name) {
-    throw new Error(
-      `No container publishes Postgres ${PG_PORT}; pass --pg-exec "<command ending in -c>"`
-    )
+    throw new Error(`No container publishes ${service} ${portNumber}`)
   }
+  return name
+}
+
+async function pgExecCommand(override: string): Promise<string> {
+  if (override) return override
+  const name = await containerFor(PG_PORT, 'Postgres')
   return `docker exec -i ${name} psql -U postgres -d postgres -At -c`
+}
+
+async function redisExecCommand(): Promise<string> {
+  return `docker exec -i ${await containerFor(REDIS_PORT, 'Redis')} redis-cli`
 }
 
 // Every value is a module constant, so the statement carries no caller input.
@@ -463,7 +473,9 @@ async function runRecord(options: Options): Promise<number> {
   const secret = randomBytes(32).toString('hex')
   await writeFile(secretPath, secret, { mode: 0o600 })
   const catalogPath = await writeCatalog(options.catalog, dataDir)
-  await seedIdentity(await pgExecCommand(options.pgExec))
+  const pgExec = await pgExecCommand(options.pgExec)
+  const redisExec = await redisExecCommand()
+  await seedIdentity(pgExec)
 
   const agentUrl = `http://127.0.0.1:${options.agentPort}`
   const supervisor = supervise(dataDir)
@@ -516,9 +528,11 @@ Record a case with:
 
 AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL="$AGENT_MODEL" \\
 AGENT_M2M_SECRET_FILE=${secretPath} AGENT_FULLSTACK_URL=${agentUrl} \\
-REC_WORKSPACE_ID=${RECORD_WORKSPACE_ID} REC_USER_ID=${RECORD_USER_ID} \\
+AGENT_WORKSPACE_ID=${RECORD_WORKSPACE_ID} AGENT_USER_ID=${RECORD_USER_ID} \\
+AGENT_PG_EXEC="${pgExec}" \\
+AGENT_REDIS_EXEC="${redisExec}" \\
 pnpm exec tsx scripts/agentConversationRecord.ts \\
-  agent-rec-<slug> "<prompt>" <seedFixture.json> \\
+  agent-rec-<slug> <seedFixture.json> --prompt "<prompt>" \\
   --out browser_tests/fixtures/data/agent/conversations/agent-rec-<slug>.json
 
 Press Ctrl-C to stop the agent and doc host.
