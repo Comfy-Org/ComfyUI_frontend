@@ -32,6 +32,8 @@ export function createBillingCommands(options: {
   client: BillingApiClient
   ports: BillingHostPorts
 }): BillingCommands {
+  const attemptIntent = (kind: string) =>
+    `${options.ports.operationStore.namespace}:${kind}:${crypto.randomUUID()}`
   let state = initialBillingState
   const listeners = new Set<(state: BillingState) => void>()
   const singleFlight = createSingleFlight()
@@ -67,10 +69,7 @@ export function createBillingCommands(options: {
     async start() {
       await poller.resume('subscribe')
     },
-    async subscribe(
-      input,
-      intent = `${options.ports.operationStore.namespace}:subscribe:${input.plan_slug}`
-    ) {
+    async subscribe(input, intent = attemptIntent('subscribe')) {
       await singleFlight('subscribe', async () =>
         options.client
           .subscribe(input, intent)
@@ -88,10 +87,7 @@ export function createBillingCommands(options: {
           )
       )
     },
-    async resubscribe(
-      input,
-      intent = `${options.ports.operationStore.namespace}:resubscribe:${input.plan_slug ?? 'current'}`
-    ) {
+    async resubscribe(input, intent = attemptIntent('resubscribe')) {
       const result = await options.client.resubscribe(input, intent)
       if (result.status === 'pending' && result.billing_op_id)
         await follow(result.billing_op_id, 'resubscribe')
@@ -100,8 +96,7 @@ export function createBillingCommands(options: {
     },
     async cancelSubscription(
       input,
-      intent = input.idempotency_key ??
-        `${options.ports.operationStore.namespace}:cancel`
+      intent = input.idempotency_key ?? attemptIntent('cancel')
     ) {
       const result = await options.client.cancel(input, intent)
       if (result.status === 'pending' && result.billing_op_id)
@@ -109,10 +104,7 @@ export function createBillingCommands(options: {
       else
         publish(reduceBilling(state, { type: 'opStatus', status: 'succeeded' }))
     },
-    async openPaymentPortal(
-      input,
-      intent = `${options.ports.operationStore.namespace}:portal`
-    ) {
+    async openPaymentPortal(input, intent = attemptIntent('portal')) {
       const result = await options.client.paymentPortal(input, intent)
       return options.ports.openUrl(result.url, 'new_tab')
     },

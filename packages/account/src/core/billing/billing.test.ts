@@ -172,6 +172,57 @@ describe('payments claims', () => {
     )
     expect(commands.getState().step).toBe('processing_error')
   })
+  it('uses a fresh intent for each billing attempt and preserves explicit resume intents', async () => {
+    const intents: string[] = []
+    const recordIntent = (intent: string) => {
+      intents.push(intent)
+      return Promise.resolve({ status: 'succeeded' as const })
+    }
+    const commands = createBillingCommands({
+      client: {
+        subscribe: vi.fn(async (_input, intent) => {
+          intents.push(intent)
+          return { billing_op_id: 'op' }
+        }),
+        topup: vi.fn(),
+        resubscribe: vi.fn((_input, intent) => recordIntent(intent)),
+        cancel: vi.fn((_input, intent) => recordIntent(intent)),
+        paymentPortal: vi.fn(async (_input, intent) => {
+          intents.push(intent)
+          return { url: 'https://billing.example/test' }
+        }),
+        getOperation: vi.fn(async () => ({ status: 'succeeded' }))
+      },
+      ports: {
+        openUrl: vi.fn(async () => ({ opened: true })),
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => null,
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        }
+      }
+    })
+    const subscription = {
+      plan_slug: 'pro',
+      return_url: 'https://host/ok',
+      cancel_url: 'https://host/no'
+    }
+
+    await commands.subscribe(subscription)
+    await commands.subscribe(subscription)
+    await commands.resubscribe({ plan_slug: 'pro' })
+    await commands.resubscribe({ plan_slug: 'pro' })
+    await commands.cancelSubscription({})
+    await commands.cancelSubscription({})
+    await commands.openPaymentPortal({ return_url: 'https://host/return' })
+    await commands.openPaymentPortal({ return_url: 'https://host/return' })
+    await commands.subscribe(subscription, 'resume-intent')
+
+    expect(new Set(intents.slice(0, 8))).toHaveLength(8)
+    expect(intents.at(-1)).toBe('resume-intent')
+  })
   it('TP-7 TP-8 TP-9 TP-15 PM-9 EC-P-2 EC-P-3 EC-P-4: resumes durable polling and clears on success', async () => {
     const delays: number[] = []
     const callbacks: Array<() => void> = []
