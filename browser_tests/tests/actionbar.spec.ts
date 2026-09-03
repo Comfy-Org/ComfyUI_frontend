@@ -21,7 +21,7 @@ webSocketTest.describe(
       async ({ comfyPage, getWebSocket }) => {
         await comfyPage.workflow.loadWorkflow('default')
         await comfyPage.page.evaluate(() => {
-          const sampler = window.app!.graph!._nodes.find(
+          const sampler = window.app!.graph._nodes.find(
             (node) => node.type === 'KSampler'
           )
           const control = sampler?.widgets?.find(
@@ -64,7 +64,7 @@ webSocketTest.describe(
         // Find and set the width on the latent node
         const triggerChange = async (value: number) => {
           return await comfyPage.page.evaluate((value) => {
-            const node = window.app!.graph!._nodes.find(
+            const node = window.app!.graph._nodes.find(
               (n) => n.type === 'EmptyLatentImage'
             )
             node!.widgets![0].value = value
