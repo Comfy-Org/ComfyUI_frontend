@@ -31,7 +31,7 @@ async function graphPointToClient(
 
 async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
   const handle = await comfyPage.page.waitForFunction(() => {
-    const link = window.app!.graph!.links.values().next().value
+    const link = window.app!.graph.links.values().next().value
     const pos = link?._pos
     return pos ? { x: pos[0], y: pos[1] } : null
   })
@@ -42,9 +42,9 @@ async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
 
 async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
   const handle = await comfyPage.page.waitForFunction((gap) => {
-    const link = window.app!.graph!.links.values().next().value
+    const link = window.app!.graph.links.values().next().value
     if (!link?.hidden) return null
-    const origin = window.app!.graph!.getNodeById(link.origin_id)
+    const origin = window.app!.graph.getNodeById(link.origin_id)
     const socket = origin?.getOutputPos(link.origin_slot)
     return socket ? { x: socket[0] + gap + 4, y: socket[1] } : null
   }, BADGE_GAP)
@@ -150,7 +150,7 @@ test.describe(
       await expect(outputSlot).toBeVisible()
 
       const midpointHandle = await comfyPage.page.waitForFunction(() => {
-        const graph = window.app!.graph!
+        const graph = window.app!.graph
         const source = graph.nodes.find(
           (node) => node.title === 'Load Checkpoint'
         )
