@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { PopoverContentEmits, PopoverContentProps } from 'reka-ui'
-import { PopoverContent, PopoverPortal, useForwardPropsEmits } from 'reka-ui'
+import {
+  PopoverContent,
+  PopoverPortal,
+  injectPopoverRootContext,
+  useForwardPropsEmits
+} from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 
@@ -26,7 +31,8 @@ const delegatedProps = computed(() => ({
 }))
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
-const contentStyle = useModalLiftedZIndex(computed(() => true))
+const rootContext = injectPopoverRootContext()
+const contentStyle = useModalLiftedZIndex(rootContext.open)
 </script>
 
 <template>
