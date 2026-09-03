@@ -30,6 +30,13 @@ of truth.
 - Published artifacts keep the existing package name and versioning. The
   package `publishConfig` rewrites exports to `dist/index.js` and
   `dist/index.d.ts`; source files are not published.
+- `workspace:*` replaces the SHA pin for the frontend only.
+  [ADR-0025](0025-in-app-agent-crdt-follower-and-distribution.md) required the applier
+  to be pinned by SHA, which addressed a package resolved from another repository. That
+  clause is amended there rather than left to contradict this one. Every consumer
+  outside this repository, including the cloud `services/agent/dochost` sidecar, still
+  pins the published version exactly, so the two repositories cannot drift onto
+  different applier bytes.
 - Releases are cut from namespaced `comfy-multi-player-v*` tags in this
   repository. Package-specific CI, mutation testing, and publishing remain
   independently scoped to the package boundary.

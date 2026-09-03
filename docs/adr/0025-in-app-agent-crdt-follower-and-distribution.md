@@ -68,8 +68,16 @@ snapshot-diff, no `LitegraphMutator` in the end state.
   one-way only.
 - The op stamp `[base_version, actor, op_id]` is load-bearing for the eventual
   human-write / merge path and is not replaced by any store command layer's own IDs.
-- The applier is the single shared package `@comfyorg/comfy-multi-player`, pinned by SHA.
-  There must be no second applier implementation in the frontend.
+- The applier is the single shared package `@comfyorg/comfy-multi-player`, ~~pinned by
+  SHA~~. There must be no second applier implementation in the frontend.
+  **Amended 2026-09-03 — see [ADR-0028](0028-comfy-multi-player-workspace-package.md).**
+  The single-applier half stands and is the load-bearing half. The SHA-pin half applied
+  only while the package lived in a separate repository: the frontend now depends on it
+  with `workspace:*` against in-repo source, so there is no external ref to pin and the
+  guarantee the SHA gave (frontend and doc host run the same applier bytes) is instead
+  given by the package having exactly one writable source of truth. Consumers outside
+  this repository, including the cloud `services/agent/dochost` sidecar, still pin the
+  published artifact exactly.
 - ~~V1 is follow-only and needs no public graph-mutations API; the "internal API" is the
   Yjs binding into the domain stores. The human write-back path (canvas edit to op to
   host) is a later, separate step.~~ **Amended 2026-08-22 — see the Amendment section
