@@ -5,22 +5,31 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
 vi.mock('@/scripts/app', () => {
   const rootGraph = {
+    id: 'root',
+    nodes: [],
+    subgraphs: new Map(),
     serialize: vi.fn(() => ({})),
     getNodeById: vi.fn()
   }
@@ -60,8 +69,14 @@ vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   toBrowsableUrl: vi.fn((url: string) => url)
 }))
 
-const ROOT_GRAPH = fromPartial<LGraph>({ isRootGraph: true })
-const SUBGRAPH = fromPartial<LGraph>({ isRootGraph: false })
+const ROOT_GRAPH = fromPartial<LGraph>(app.rootGraph)
+const SUBGRAPH = fromPartial<Subgraph>({
+  id: 'subgraph',
+  isRootGraph: false,
+  nodes: [],
+  rootGraph: ROOT_GRAPH
+})
+app.rootGraph.subgraphs.set(SUBGRAPH.id, SUBGRAPH)
 const SAMPLER_BOUNDS = [10, 20, 30, 40] as const
 const LOADER_BOUNDS = [50, 60, 70, 80] as const
 
@@ -77,6 +92,7 @@ function createNodeFixture(
   Object.defineProperty(node, 'boundingRect', {
     value: Rectangle.from(bounds)
   })
+  graph.nodes.push(node)
   return node
 }
 
@@ -124,9 +140,13 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
 
 function renderList(pinia: TestingPinia) {
   const user = userEvent.setup()
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/', component: { template: '<div />' } }]
+  })
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, testI18n, pinia],
+      plugins: [PrimeVue, testI18n, pinia, router],
       stubs: {
         AsyncSearchInput: {
           template: '<input />'
@@ -154,6 +174,7 @@ function createCanvasFixture(pinia: TestingPinia, graph = ROOT_GRAPH) {
   })
   canvas.setGraph = vi.fn((nextGraph) => {
     canvas.graph = nextGraph
+    canvas.subgraph = nextGraph.isRootGraph ? undefined : nextGraph
   })
   useCanvasStore(pinia).canvas = canvas
   return canvas
