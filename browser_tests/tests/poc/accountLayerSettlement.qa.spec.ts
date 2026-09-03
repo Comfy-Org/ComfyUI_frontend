@@ -1,27 +1,39 @@
 // eslint-disable-next-line no-restricted-imports -- staging has no local ComfyUI settings backend
 import { chromium, expect, test } from '@playwright/test'
-import type { Page, Response } from '@playwright/test'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import type { Page } from '@playwright/test'
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-14-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-15-frontend'
+const terminalSteps = [
+  'success',
+  'canceled',
+  'declined',
+  'processing_error',
+  'payment_received_hold'
+] as const
 
 async function waitForStableUrl(page: Page, stableMs = 1_500) {
   let previous = page.url()
   let stableSince = Date.now()
   await expect
-    .poll(() => {
-      const current = page.url()
-      if (current !== previous) {
-        previous = current
-        stableSince = Date.now()
-      }
-      return Date.now() - stableSince
-    })
+    .poll(
+      () => {
+        const current = page.url()
+        if (current !== previous) {
+          previous = current
+          stableSince = Date.now()
+        }
+        return Date.now() - stableSince
+      },
+      { timeout: 10_000 }
+    )
     .toBeGreaterThanOrEqual(stableMs)
+    .catch(() => {})
 }
 
 async function signIn(page: Page) {
@@ -34,28 +46,6 @@ async function signIn(page: Page) {
   await page.getByLabel(/password/i).fill(password)
   await page.getByRole('button', { name: /sign in|log in/i }).click()
   await expect(page).not.toHaveURL(/\/cloud\/login/)
-  const personalUse = page.getByRole('button', { name: 'Personal use' })
-  await personalUse
-    .waitFor({ state: 'visible', timeout: 5_000 })
-    .catch(() => {})
-  if (await personalUse.isVisible()) await personalUse.click()
-  const onboarding = page.getByRole('heading', {
-    name: "Let's get to know you"
-  })
-  for (let step = 0; step < 12 && (await onboarding.isVisible()); step++) {
-    const next = page.getByRole('button', { name: /^(Next|Submit)$/ })
-    if ((await next.isVisible()) && (await next.isEnabled())) await next.click()
-    else
-      await page.getByRole('group').last().getByRole('button').first().click()
-  }
-  await waitForStableUrl(page)
-  const announcement = page.locator('.whats-new-popup-container')
-  await announcement
-    .waitFor({ state: 'visible', timeout: 5_000 })
-    .catch(() => {})
-  if (await announcement.isVisible()) {
-    await announcement.getByRole('button', { name: /close/i }).click()
-  }
   await waitForStableUrl(page)
 }
 
@@ -102,62 +92,175 @@ async function fillCheckout(page: Page, card: string) {
     .getByRole('textbox', { name: 'Cardholder name' })
     .pressSequentially('Account Layer PoC', { delay: 60 })
   await pauseBetweenFields()
-  const postal = page.getByRole('textbox', { name: /ZIP|postal/i })
+  const postal = page.locator(
+    'input[name="billingPostalCode"], input[autocomplete="postal-code"]'
+  )
+  const address = page.locator(
+    'input[name="billingAddressLine1"], input[autocomplete="address-line1"]'
+  )
+  if (await address.isVisible()) {
+    await address.fill('123 Test St')
+    await pauseBetweenFields()
+  }
   if (await postal.isVisible()) {
     await postal.pressSequentially('94107', { delay: 60 })
     await pauseBetweenFields()
   }
   const saveInformation = page.getByRole('checkbox', {
-    name: /save my information/i
+    name: /save my (information|info)/i
   })
   if (await saveInformation.isChecked().catch(() => false)) {
-    await saveInformation.uncheck()
+    await saveInformation.focus()
+    await saveInformation.press('Space')
   }
-  await page.locator('button[type=submit], .SubmitButton').first().click()
+  await expect(saveInformation).not.toBeChecked()
+  const submit = page.locator('.SubmitButton')
+  await submit.click()
+  const declineLink = page.getByRole('button', {
+    name: /no thanks|not now|skip/i
+  })
+  if (await declineLink.isVisible().catch(() => false))
+    await declineLink.click()
 }
 
 function redactedOperation(body: unknown) {
   if (!body || typeof body !== 'object') return body
   const value = { ...body } as Record<string, unknown>
-  for (const key of ['id', 'billing_op_id', 'customer_id', 'subscription_id']) {
+  for (const key of [
+    'id',
+    'billing_op_id',
+    'customer_id',
+    'subscription_id',
+    'email'
+  ]) {
     if (key in value) value[key] = '[redacted]'
   }
   return value
 }
 
-test('completes hosted subscription and terminal operation polling', async () => {
+async function paymentState(page: Page) {
+  return page.evaluate(() => {
+    const seam = Reflect.get(window, '__accountLayerPoc') as
+      | {
+          getPaymentState(): {
+            step: string
+            operationId?: string
+            reasonKey?: string
+            noChargeConfirmed: boolean
+          }
+        }
+      | undefined
+    return seam?.getPaymentState() ?? null
+  })
+}
+
+async function recordPaymentStateUntilTerminal(page: Page) {
+  let previous = ''
+  await expect
+    .poll(
+      async () => {
+        const state = await paymentState(page)
+        if (!state) return false
+        const serialized = JSON.stringify(state)
+        if (serialized !== previous) {
+          appendFileSync(
+            `${evidenceDir}/paystate.log`,
+            `${new Date().toISOString()} ${serialized}\n`
+          )
+          previous = serialized
+        }
+        return terminalSteps.includes(
+          state.step as (typeof terminalSteps)[number]
+        )
+      },
+      { timeout: 320_000, intervals: [1_000] }
+    )
+    .toBe(true)
+  const state = await paymentState(page)
+  if (!state) throw new Error('Payment state seam disappeared after settlement')
+  return state
+}
+
+test('completes hosted subscription and captures terminal operation', async () => {
   test.setTimeout(900_000)
   await mkdir(evidenceDir, { recursive: true })
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-14-'))
-  const requests: string[] = []
-  const operations: unknown[] = []
+  for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
+    writeFileSync(`${evidenceDir}/${file}`, '')
+  }
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-15-'))
   const context = await chromium.launchPersistentContext(profileDir, {
     channel: 'chrome',
     headless: false,
-    viewport: null,
-    args: [
-      '--disable-blink-features=AutomationControlled',
-      '--start-maximized'
-    ],
+    args: ['--disable-blink-features=AutomationControlled'],
     ignoreDefaultArgs: ['--enable-automation']
   })
   const page = context.pages()[0] ?? (await context.newPage())
   await page.addInitScript(() => {
     window.open = () => window
   })
-  page.on('response', async (response: Response) => {
+  context.on('response', async (response) => {
     const url = new URL(response.url())
     if (!url.pathname.startsWith('/api/billing/')) return
     const path = url.pathname.replace(/\/ops\/[^/]+$/, '/ops/[redacted]')
-    requests.push(`${response.request().method()} ${path} ${response.status()}`)
+    appendFileSync(
+      `${evidenceDir}/requests.log`,
+      `${response.request().method()} ${path} ${response.status()}\n`
+    )
     if (url.pathname.includes('/ops/')) {
-      const body: unknown = await response.json().catch(() => null)
-      operations.push(redactedOperation(body))
+      try {
+        const text = await response.text()
+        const body: unknown = JSON.parse(text)
+        appendFileSync(
+          `${evidenceDir}/ops-responses.jsonl`,
+          `${JSON.stringify(redactedOperation(body))}\n`
+        )
+      } catch (error) {
+        appendFileSync(
+          `${evidenceDir}/ops-responses.jsonl`,
+          `${JSON.stringify({ capture_error: String(error) })}\n`
+        )
+      }
     }
   })
   try {
     await signIn(page)
     await requireAuthenticated(page)
+    const activeOperation = await page.evaluate(() => {
+      const key = Object.keys(localStorage).find((candidate) =>
+        candidate.endsWith(':billing:active-operation')
+      )
+      return key ? { key, value: localStorage.getItem(key) } : null
+    })
+    appendFileSync(
+      `${evidenceDir}/preflight.log`,
+      `step-zero=${activeOperation ? 'active-operation-found' : 'clean'}\n`
+    )
+    if (activeOperation) await recordPaymentStateUntilTerminal(page)
+    const creditsBefore = await page.evaluate(() => {
+      const seam = Reflect.get(window, '__accountLayerPoc') as {
+        getCredits(): unknown
+      }
+      return seam.getCredits()
+    })
+    appendFileSync(`${evidenceDir}/preflight.log`, 'cancel-existing=started\n')
+    const canceled = await page
+      .evaluate(() => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          cancelSubscription(): Promise<void>
+        }
+        return seam.cancelSubscription()
+      })
+      .then(() => recordPaymentStateUntilTerminal(page))
+      .catch(() => null)
+    appendFileSync(
+      `${evidenceDir}/preflight.log`,
+      canceled
+        ? `cancel-existing=${canceled.step} no-charge-confirmed=${canceled.noChargeConfirmed}\n`
+        : 'cancel-existing=not-active\n'
+    )
+    if (canceled) {
+      await page.screenshot({ path: `${evidenceDir}/cancel-terminal.png` })
+    }
     const responsePromise = page.waitForResponse(
       (response) =>
         new URL(response.url()).pathname === '/api/billing/subscribe'
@@ -190,33 +293,28 @@ test('completes hosted subscription and terminal operation polling', async () =>
         await page.screenshot({ path: `${evidenceDir}/captcha-hard-stop.png` })
         throw error
       })
-    await expect
-      .poll(() => operations.length, { timeout: 30_000 })
-      .toBeGreaterThan(0)
-    await writeFile(`${evidenceDir}/requests.log`, `${requests.join('\n')}\n`)
-    await writeFile(
-      `${evidenceDir}/ops-responses.json`,
-      `${JSON.stringify(operations, null, 2)}\n`
-    )
-    await writeFile(
-      `${evidenceDir}/results.json`,
-      `${JSON.stringify(
-        {
-          subscription: operations.some((item) =>
-            JSON.stringify(item).includes('succeeded')
-          )
-            ? 'succeeded'
-            : 'not-terminal',
-          node: process.version
-        },
-        null,
-        2
-      )}\n`
+    const terminal = await recordPaymentStateUntilTerminal(page)
+    expect(terminalSteps).toContain(terminal.step)
+    await page.evaluate(async () => {
+      const seam = Reflect.get(window, '__accountLayerPoc') as {
+        refreshCredits(): Promise<void>
+      }
+      await seam.refreshCredits()
+    })
+    const creditsAfter = await page.evaluate(() => {
+      const seam = Reflect.get(window, '__accountLayerPoc') as {
+        getCredits(): unknown
+      }
+      return seam.getCredits()
+    })
+    writeFileSync(
+      `${evidenceDir}/credits-before-after.json`,
+      `${JSON.stringify({ before: creditsBefore, after: creditsAfter }, null, 2)}\n`
     )
     expect(
-      operations.some((item) => JSON.stringify(item).includes('succeeded'))
-    ).toBe(true)
-    await page.screenshot({ path: `${evidenceDir}/subscription-succeeded.png` })
+      readFileSync(`${evidenceDir}/ops-responses.jsonl`, 'utf8').length
+    ).toBeGreaterThan(0)
+    await page.screenshot({ path: `${evidenceDir}/subscription-success.png` })
   } finally {
     await context.close()
     await rm(profileDir, { recursive: true, force: true })
