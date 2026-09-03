@@ -29,6 +29,17 @@ export interface SaveTicket {
   readonly revision: number
 }
 
+/** Opaque host graph capability owned and disposed by the document registry. */
+export interface DocumentGraphLease {
+  readonly graph: unknown
+  dispose(): void
+}
+
+export interface GraphHydrationTicket {
+  readonly documentId: DocumentId
+  readonly generation: number
+}
+
 /**
  * The GraphDocument registry (ADR-0024): every workflow document is a
  * first-class entry keyed by a stable frontend `document_id`, whether or not
@@ -40,6 +51,11 @@ export interface SaveTicket {
 export const useGraphDocumentStore = defineStore('graphDocument', () => {
   const documents = shallowReactive(new Map<DocumentId, GraphDocumentEntry>())
   const documentIdByWorkflowId = shallowReactive(new Map<string, DocumentId>())
+  const graphLeases = new Map<
+    DocumentId,
+    { generation: number; lease: DocumentGraphLease }
+  >()
+  const hydrationGenerations = new Map<DocumentId, number>()
 
   function getDocument(documentId: DocumentId): GraphDocumentEntry | null {
     return documents.get(documentId) ?? null
@@ -59,6 +75,54 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
   ): DocumentPersistenceState | null {
     const entry = documents.get(documentId)
     return entry ? persistenceOf(entry.state) : null
+  }
+
+  function graphLeaseOf(documentId: DocumentId): DocumentGraphLease | null {
+    return graphLeases.get(documentId)?.lease ?? null
+  }
+
+  function beginGraphHydration(
+    documentId: DocumentId
+  ): GraphHydrationTicket | null {
+    const entry = documents.get(documentId)
+    if (!entry || entry.state.phase === 'closed') return null
+    const generation = (hydrationGenerations.get(documentId) ?? 0) + 1
+    hydrationGenerations.set(documentId, generation)
+    return { documentId, generation }
+  }
+
+  /**
+   * Publish only the newest hydration result. Replaced and stale leases are
+   * disposed exactly once by registry ownership.
+   */
+  function completeGraphHydration(
+    ticket: GraphHydrationTicket,
+    lease: DocumentGraphLease
+  ): boolean {
+    const entry = documents.get(ticket.documentId)
+    if (
+      !entry ||
+      entry.state.phase === 'closed' ||
+      hydrationGenerations.get(ticket.documentId) !== ticket.generation
+    ) {
+      lease.dispose()
+      return false
+    }
+    const previous = graphLeases.get(ticket.documentId)
+    graphLeases.set(ticket.documentId, {
+      generation: ticket.generation,
+      lease
+    })
+    if (previous && previous.lease !== lease) previous.lease.dispose()
+    return true
+  }
+
+  function disposeGraphLease(documentId: DocumentId): boolean {
+    const current = graphLeases.get(documentId)
+    if (!current) return false
+    graphLeases.delete(documentId)
+    current.lease.dispose()
+    return true
   }
 
   function patch(
@@ -176,6 +240,12 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
       discardChanges: decision.discardChanges
     })
     if (state.phase !== 'closed' || entry.state.phase === 'closed') return false
+    // Invalidate in-flight hydration before disposing the published lease.
+    hydrationGenerations.set(
+      documentId,
+      (hydrationGenerations.get(documentId) ?? 0) + 1
+    )
+    disposeGraphLease(documentId)
     patch(documentId, { state, scope: null })
     return true
   }
@@ -190,6 +260,7 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     )
       documentIdByWorkflowId.delete(entry.workflowId)
     documents.delete(documentId)
+    hydrationGenerations.delete(documentId)
     return true
   }
 
@@ -198,6 +269,10 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     getDocument,
     resolveWorkflowTarget,
     persistenceStateOf,
+    graphLeaseOf,
+    beginGraphHydration,
+    completeGraphHydration,
+    disposeGraphLease,
     assignWorkflowId,
     hydrateDocument,
     rebindScope,
