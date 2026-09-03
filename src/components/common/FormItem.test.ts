@@ -26,7 +26,7 @@ describe('FormItem', () => {
       }
     })
 
-    expect(screen.getByRole('textbox')).toHaveValue('0')
+    expect(screen.getByRole('spinbutton')).toHaveValue('0')
   })
 
   it('renders radio option labels', () => {
