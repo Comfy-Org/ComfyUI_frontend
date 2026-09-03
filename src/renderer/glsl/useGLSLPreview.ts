@@ -8,7 +8,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -158,19 +157,17 @@ function createInnerPreview(
     const node = nodeRef.value
     const graph = node?.graph
     if (!graph) return null
-    const rootGraph = widenToNullish(graph.rootGraph)
-    if (!rootGraph || graph === rootGraph) return null
+    const rootGraph = graph.rootGraph
+    if (graph === rootGraph) return null
 
     return (
-      widenToNullish(rootGraph._nodes)?.find(
+      rootGraph._nodes.find(
         (n) => n.isSubgraphNode() && n.subgraph === graph
       ) ?? null
     )
   })()
 
-  const graphId = computed(
-    () => widenToNullish(nodeRef.value?.graph?.rootGraph)?.id
-  )
+  const graphId = computed(() => nodeRef.value?.graph?.rootGraph.id)
 
   const nodeId = computed(() => {
     const id = nodeRef.value?.id

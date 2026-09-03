@@ -25,7 +25,6 @@ import type {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -112,14 +111,19 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   ])
 
   const captureAdapterFlags = (source: Load3d) => {
-    const detectSplatModel = widenToNullish(source.isSplatModel)
-    isSplatModel.value = detectSplatModel?.call(source) ?? false
-    const detectPlyModel = widenToNullish(source.isPlyModel)
-    isPlyModel.value = detectPlyModel?.call(source) ?? false
-    const getSourceFormat = widenToNullish(source.getSourceFormat)
-    sourceFormat.value = getSourceFormat?.call(source) ?? null
-    const getCapabilities = widenToNullish(source.getCurrentModelCapabilities)
-    const caps = getCapabilities?.call(source)
+    isSplatModel.value =
+      typeof source.isSplatModel === 'function' ? source.isSplatModel() : false
+    isPlyModel.value =
+      typeof source.isPlyModel === 'function' ? source.isPlyModel() : false
+    sourceFormat.value =
+      typeof source.getSourceFormat === 'function'
+        ? source.getSourceFormat()
+        : null
+    const getCapabilities = source.getCurrentModelCapabilities
+    const caps =
+      typeof getCapabilities === 'function'
+        ? getCapabilities.call(source)
+        : undefined
     if (!caps) return
     canFitToViewer.value = caps.fitToViewer
     canUseGizmo.value = caps.gizmoTransform
@@ -387,7 +391,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | ModelConfig
         | undefined
       const cameraConfig = node.properties['Camera Config'] as
-        | CameraConfig
+        | Partial<CameraConfig>
         | undefined
       const lightConfig = node.properties['Light Config'] as
         | LightConfig
@@ -416,8 +420,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       if (cameraConfig) {
         cameraType.value =
-          widenToNullish(cameraConfig.cameraType) ??
-          source.getCurrentCameraType()
+          cameraConfig.cameraType ?? source.getCurrentCameraType()
         fov.value =
           cameraConfig.fov || source.cameraManager.perspectiveCamera.fov
       }

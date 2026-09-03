@@ -358,10 +358,7 @@ describe('useKeybindingStore', () => {
 
     const serializedCombo = defaultKeybinding.combo.serialize()
     const userUnsetKeybindings = store.getUserUnsetKeybindings()
-    expect(userUnsetKeybindings[serializedCombo]).toBeTruthy()
-    expect(
-      userUnsetKeybindings[serializedCombo].equals(defaultKeybinding)
-    ).toBe(true)
+    expect(userUnsetKeybindings[serializedCombo]).toEqual(defaultKeybinding)
 
     const result = store.resetKeybindingForCommand('test.command')
 

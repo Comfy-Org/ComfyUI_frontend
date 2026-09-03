@@ -1,7 +1,6 @@
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 /**
  * Gets an ordered array of InputSpec objects based on input_order.
@@ -13,41 +12,37 @@ import { widenToNullish } from '@/utils/widenToNullish'
  */
 export function getOrderedInputSpecs(
   nodeDefImpl: ComfyNodeDefImpl,
-  inputs: Record<string, InputSpec>
+  inputs: Partial<Record<string, InputSpec>>
 ): InputSpec[] {
   const orderedInputSpecs: InputSpec[] = []
 
   // If no input_order, return default Object.values order
   if (!nodeDefImpl.input_order) {
-    return Object.values(inputs)
+    return Object.values(inputs).filter((input) => input !== undefined)
   }
 
   // Process required inputs in specified order
-  const requiredOrder = widenToNullish(nodeDefImpl.input_order.required)
-  if (requiredOrder) {
-    for (const name of requiredOrder) {
-      const inputSpec = widenToNullish(inputs[name])
-      if (inputSpec && !inputSpec.isOptional) {
-        orderedInputSpecs.push(inputSpec)
-      }
+  const requiredOrder = nodeDefImpl.input_order.required
+  for (const name of requiredOrder) {
+    const inputSpec = inputs[name]
+    if (inputSpec && !inputSpec.isOptional) {
+      orderedInputSpecs.push(inputSpec)
     }
   }
 
   // Process optional inputs in specified order
-  const optionalOrder = widenToNullish(nodeDefImpl.input_order.optional)
-  if (optionalOrder) {
-    for (const name of optionalOrder) {
-      const inputSpec = widenToNullish(inputs[name])
-      if (inputSpec?.isOptional) {
-        orderedInputSpecs.push(inputSpec)
-      }
+  const optionalOrder = nodeDefImpl.input_order.optional
+  for (const name of optionalOrder) {
+    const inputSpec = inputs[name]
+    if (inputSpec?.isOptional) {
+      orderedInputSpecs.push(inputSpec)
     }
   }
 
   // Add any remaining inputs not specified in input_order
   const processedNames = new Set(orderedInputSpecs.map((spec) => spec.name))
   for (const inputSpec of Object.values(inputs)) {
-    if (!processedNames.has(inputSpec.name)) {
+    if (inputSpec && !processedNames.has(inputSpec.name)) {
       orderedInputSpecs.push(inputSpec)
     }
   }

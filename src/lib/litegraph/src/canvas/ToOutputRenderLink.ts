@@ -13,7 +13,6 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 import type { RenderLink } from './RenderLink'
 
@@ -69,13 +68,11 @@ export class ToOutputRenderLink implements RenderLink {
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
-    const inputNode = widenToNullish(this.node)
     const { fromSlot, fromReroute } = this
-    if (!inputNode) return
 
     const newLink = node.connectSlots(
       output,
-      inputNode,
+      this.node,
       fromSlot,
       fromReroute?.id
     )
@@ -105,7 +102,7 @@ export class ToOutputRenderLink implements RenderLink {
       output,
       inputNode,
       fromSlot,
-      widenToNullish(reroute)?.id
+      reroute.id
     )
     events.dispatch('link-created', newLink)
   }

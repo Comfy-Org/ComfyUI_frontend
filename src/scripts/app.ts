@@ -334,7 +334,7 @@ export class ComfyApp {
       else store.setOutputFromLegacy(id, output)
     }
   )
-  nodePreviewImages: Record<string, string[]>
+  nodePreviewImages: Partial<Record<string, string[]>>
 
   private rootGraphInternal: LGraph | undefined
 

@@ -41,7 +41,6 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
@@ -953,8 +952,7 @@ export const useLitegraphService = () => {
 
   function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio || 1, 1)
-    const visibleArea = widenToNullish(app.canvas)?.ds.visible_area
-    if (!visibleArea) return [0, 0]
+    const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }

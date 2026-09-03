@@ -33,7 +33,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -187,22 +186,22 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     'wireframe'
   ])
 
-  const initializeLoad3d = async (containerRef: HTMLElement) => {
+  const initializeLoad3d = async (containerRef: HTMLElement | null) => {
     const rawNode = toRaw(nodeRef.value)
-    if (!widenToNullish(containerRef) || !rawNode) return
+    if (!containerRef || !rawNode) return
 
     const node = rawNode
 
     try {
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
-      const comfyClass = widenToNullish(node.constructor.comfyClass)
+      const comfyClass = node.constructor.comfyClass
+      const isPreviewClass =
+        typeof comfyClass === 'string' &&
+        (isLoad3dResultViewerNode(comfyClass) ||
+          comfyClass.startsWith('Preview'))
 
-      if (
-        isLoad3dResultViewerNode(comfyClass ?? '') ||
-        comfyClass?.startsWith('Preview') ||
-        !(widthWidget && heightWidget)
-      ) {
+      if (isPreviewClass || !(widthWidget && heightWidget)) {
         isPreview.value = true
       }
 
@@ -218,8 +217,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
               })
             : undefined,
         getZoomScale: () => {
-          const canvas = widenToNullish(app.canvas)
-          return widenToNullish(canvas?.ds)?.scale ?? 1
+          return app.canvas.ds.scale
         },
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
@@ -289,9 +287,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (!load3d) return
 
     // Restore configs - watchers will handle applying them to the Three.js scene
-    const savedSceneConfig = widenToNullish(
-      node.properties['Scene Config'] as SceneConfig
-    )
+    const savedSceneConfig = node.properties['Scene Config'] as
+      | Partial<SceneConfig>
+      | undefined
     if (savedSceneConfig) {
       sceneConfig.value = {
         ...sceneConfig.value,
@@ -300,16 +298,20 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     }
 
-    const savedModelConfig = widenToNullish(
-      node.properties['Model Config'] as ModelConfig
-    )
+    const savedModelConfig = node.properties['Model Config'] as
+      | (Omit<Partial<ModelConfig>, 'gizmo'> & {
+          gizmo?: Partial<GizmoConfig>
+        })
+      | undefined
     if (savedModelConfig) {
       modelConfig.value = {
+        ...modelConfig.value,
         ...savedModelConfig,
         gizmo: savedModelConfig.gizmo
           ? {
+              ...modelConfig.value.gizmo!,
               ...savedModelConfig.gizmo,
-              scale: widenToNullish(savedModelConfig.gizmo.scale) ?? {
+              scale: savedModelConfig.gizmo.scale ?? {
                 x: 1,
                 y: 1,
                 z: 1
@@ -325,20 +327,19 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     }
 
-    const savedCameraConfig = widenToNullish(
-      node.properties['Camera Config'] as CameraConfig
-    )
+    const savedCameraConfig = node.properties['Camera Config'] as
+      | CameraConfig
+      | null
+      | undefined
     if (savedCameraConfig) cameraConfig.value = savedCameraConfig
 
-    const savedLightConfig = widenToNullish(
-      node.properties['Light Config'] as LightConfig
-    )
+    const savedLightConfig = node.properties['Light Config'] as
+      | Partial<LightConfig>
+      | undefined
     const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
     if (savedLightConfig) {
       lightConfig.value = {
-        intensity:
-          widenToNullish(savedLightConfig.intensity) ??
-          lightConfig.value.intensity,
+        intensity: savedLightConfig.intensity ?? lightConfig.value.intensity,
         hdri: {
           ...lightConfig.value.hdri!,
           ...savedLightConfig.hdri,

@@ -391,7 +391,7 @@ describe('useLoad3d', () => {
     it('should handle missing container or node', async () => {
       const composable = useLoad3d(mockNode)
 
-      await composable.initializeLoad3d(null!)
+      await composable.initializeLoad3d(null)
 
       expect(createLoad3d).not.toHaveBeenCalled()
     })

@@ -3,7 +3,6 @@ import { nextTick } from 'vue'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { widenToNullish } from '@/utils/widenToNullish'
 import type {
   LGraph,
   LGraphNode,
@@ -38,8 +37,8 @@ export function useFocusNode() {
     if (!canvasStore.canvas || !node.graph) return
 
     await navigateToGraph(node.graph)
-    const canvas = widenToNullish(canvasStore.canvas)
-    if (!canvas || canvas.graph !== node.graph) return
+    const canvas = canvasStore.canvas
+    if (canvas.graph !== node.graph) return
 
     canvas.animateToBounds(node.boundingRect, {
       viewport: visibleCanvasViewport(canvas)

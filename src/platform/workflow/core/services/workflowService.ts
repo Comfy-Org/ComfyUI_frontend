@@ -46,7 +46,6 @@ import {
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid } from '@/utils/uuid'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -279,7 +278,6 @@ export const useWorkflowService = () => {
       }
 
       if (options.isApp !== undefined) {
-        app.rootGraph.extra = widenToNullish(app.rootGraph.extra) ?? {}
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
@@ -610,7 +608,7 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      widenToNullish(activeWorkflow.changeTracker)?.deactivate()
+      activeWorkflow.changeTracker.deactivate()
       persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
@@ -719,7 +717,7 @@ export const useWorkflowService = () => {
             // is the authoritative saved state.
             loadedWorkflow.initialMode =
               linearModeToAppMode(
-                widenToNullish(loadedWorkflow.initialState)?.extra?.linearMode
+                loadedWorkflow.initialState.extra?.linearMode
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
@@ -728,10 +726,7 @@ export const useWorkflowService = () => {
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(
-              workflowData,
-              widenToNullish(loadedWorkflow.activeState)?.id
-            )
+            ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -763,10 +758,7 @@ export const useWorkflowService = () => {
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(
-        workflowData,
-        widenToNullish(loadedWorkflow.activeState)?.id
-      )
+      ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
     )
     loadedWorkflow.changeTracker.restore()
   }

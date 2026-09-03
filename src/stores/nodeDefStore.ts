@@ -30,7 +30,6 @@ import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 export class ComfyNodeDefImpl
   implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
@@ -438,6 +437,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   function removeNodeDef(nodeName: string) {
     delete nodeDefsByName.value[nodeName]
   }
+  function getNodeDefByName(nodeName: string): ComfyNodeDefImpl | undefined {
+    return nodeDefsByName.value[nodeName]
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     const nodeTypeName = node.constructor.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
@@ -554,6 +556,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     removeNodeDef,
+    getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
     registerNodeDefFilter,
@@ -593,7 +596,7 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     return nodeNamesByFrequency.value
       .flatMap((nodeName: string) => {
-        const nodeDef = widenToNullish(nodeDefStore.nodeDefsByName[nodeName])
+        const nodeDef = nodeDefStore.getNodeDefByName(nodeName)
         return nodeDef ? [nodeDef] : []
       })
       .slice(0, topNodeDefLimit.value)

@@ -3,10 +3,9 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 export function nodeWidgetId(node: LGraphNode, name: string): WidgetId | null {
-  const graphId = widenToNullish(node.graph?.rootGraph)?.id
+  const graphId = node.graph?.rootGraph.id
   return graphId ? widgetId(graphId, node.id, name) : null
 }
 

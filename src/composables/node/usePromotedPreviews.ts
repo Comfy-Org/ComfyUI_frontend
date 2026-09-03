@@ -4,7 +4,6 @@ import { computed, toValue } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
@@ -63,8 +62,8 @@ export function usePromotedPreviews(
     const reactiveExecutionPreviews =
       nodeOutputStore.getNodePreviewImagesByExecutionId(leafExecutionId)
     const hasAnySource =
-      widenToNullish(reactiveOutputs)?.images?.length ||
-      widenToNullish(reactivePreviews)?.length ||
+      reactiveOutputs?.images?.length ||
+      reactivePreviews?.length ||
       reactiveExecutionOutputs?.images?.length ||
       reactiveExecutionPreviews?.length
     if (!hasAnySource) return undefined

@@ -10,7 +10,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 export interface PartnerNodeInfo {
   nodeName: string
@@ -28,7 +27,7 @@ export function scanPartnerNodesInGraph(): PartnerNodeInfo[] {
   const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
     app.rootGraph,
     (found, node) => {
-      const nodeDef = widenToNullish(nodeDefStore.nodeDefsByName[node.type])
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       if (nodeDef?.api_node) {
         found.set(nodeDef.name, {
           nodeName: nodeDef.name,

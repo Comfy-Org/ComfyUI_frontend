@@ -5,7 +5,6 @@ import { computed } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { BookmarkCustomization } from '@/schemas/apiSchema'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 import {
   buildNodeDefTree,
@@ -54,7 +53,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         const parts = bookmark.split('/')
         const name = parts.pop() ?? ''
         const category = parts.join('/')
-        const srcNodeDef = widenToNullish(nodeDefStore.allNodeDefsByName[name])
+        const srcNodeDef = nodeDefStore.getNodeDefByName(name)
         if (!srcNodeDef) return null
         const nodeDef = clone(srcNodeDef)
         nodeDef.category = category

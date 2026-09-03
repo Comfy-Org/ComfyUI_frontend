@@ -1,6 +1,5 @@
 import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 interface FeatureUsage {
   useCount: number
@@ -8,7 +7,7 @@ interface FeatureUsage {
   lastUsed: number
 }
 
-type FeatureUsageRecord = Record<string, FeatureUsage>
+type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
@@ -20,13 +19,11 @@ export function useFeatureUsageTracker(featureId: string) {
   const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
 
   const usage = computed(() => usageData.value[featureId])
-  const currentUsage = computed(() => widenToNullish(usage.value))
-
-  const useCount = computed(() => currentUsage.value?.useCount ?? 0)
+  const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {
     const now = Date.now()
-    const existing = widenToNullish(usageData.value[featureId])
+    const existing = usageData.value[featureId]
 
     usageData.value[featureId] = {
       useCount: (existing?.useCount ?? 0) + 1,

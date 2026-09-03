@@ -16,13 +16,14 @@ import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
-function isSubgraphNode(node: LGraphNode): node is SubgraphNode {
-  const predicate = widenToNullish(node.isSubgraphNode)
-  return predicate?.call(node) ?? false
+type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
+  Partial<Pick<LGraphNode, 'isSubgraphNode'>>
+
+function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
+  return node.isSubgraphNode?.call(node) ?? false
 }
 
 /**

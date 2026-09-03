@@ -3,7 +3,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -30,12 +29,12 @@ export function getExecutionContext(): ExecutionContext {
   const nodeCounts = reduceAllNodes<NodeMetrics>(
     app.rootGraph,
     (metrics, node) => {
-      const nodeDef = widenToNullish(nodeDefStore.nodeDefsByName[node.type])
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       const isCustomNode =
-        widenToNullish(nodeDef?.nodeSource)?.type === NodeSourceType.CustomNodes
+        nodeDef?.nodeSource.type === NodeSourceType.CustomNodes
       const isApiNode = nodeDef?.api_node
-      const isSubgraphNode = widenToNullish(node.isSubgraphNode)
-      const isSubgraph = isSubgraphNode?.call(node)
+      const isSubgraph =
+        typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
 
       if (isApiNode) {
         metrics.has_api_nodes = true

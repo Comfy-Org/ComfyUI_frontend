@@ -24,11 +24,12 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+type RuntimeWidget = Omit<IBaseWidget, 'options'> &
+  Partial<Pick<IBaseWidget, 'options'>>
 
 export type WidgetItem = [LGraphNode, IBaseWidget]
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
@@ -382,10 +383,10 @@ function promotePreviewViaExposure(
 
 const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
 
-export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
+export function isPreviewPseudoWidget(widget: RuntimeWidget): boolean {
   if (widget.name.startsWith('$$')) return true
-  const options = widenToNullish(widget.options)
-  if (widget.serialize !== false && options?.serialize !== false) return false
+  if (widget.serialize !== false && widget.options?.serialize !== false)
+    return false
   if (typeof widget.type === 'string' && PREVIEW_WIDGET_TYPES.has(widget.type))
     return true
   return false

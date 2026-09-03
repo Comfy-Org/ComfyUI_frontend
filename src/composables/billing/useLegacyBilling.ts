@@ -12,7 +12,6 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useAuthStore } from '@/stores/authStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 import type {
   BalanceInfo,
@@ -20,6 +19,15 @@ import type {
   BillingState,
   SubscriptionInfo
 } from './types'
+
+type LegacyBalance = NonNullable<ReturnType<typeof useAuthStore>['balance']>
+type RuntimeLegacyBalance = Omit<
+  LegacyBalance,
+  'amount_micros' | 'effective_balance_micros'
+> & {
+  amount_micros?: number
+  effective_balance_micros?: number
+}
 
 /**
  * Adapter for legacy user-scoped billing via /customers/* endpoints.
@@ -72,15 +80,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
   })
 
   const balance = computed<BalanceInfo | null>(() => {
-    const legacyBalance = authStore.balance
+    const legacyBalance: RuntimeLegacyBalance | null = authStore.balance
     if (!legacyBalance) return null
 
     return {
       amountMicros: legacyBalance.amount_micros || 0,
       currency: legacyBalance.currency || 'usd',
       effectiveBalanceMicros:
-        widenToNullish(legacyBalance.effective_balance_micros) ??
-        widenToNullish(legacyBalance.amount_micros) ??
+        legacyBalance.effective_balance_micros ??
+        legacyBalance.amount_micros ??
         0,
       prepaidBalanceMicros: legacyBalance.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0

@@ -52,7 +52,6 @@
 import { computed, reactive, readonly } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { createSharedComposable } from '@vueuse/core'
 
 interface Point {
@@ -96,14 +95,11 @@ function useTransformStateIndividual() {
    * @param canvas - LiteGraph canvas instance with DragAndScale (ds) transform state
    */
   function syncWithCanvas(canvas: LGraphCanvas) {
-    const boundaryCanvas = widenToNullish(canvas)
-    if (!boundaryCanvas?.ds) return
-
     // Mirror LiteGraph's transform state to Vue's reactive state
     // ds.offset = pan offset, ds.scale = zoom level
-    camera.x = boundaryCanvas.ds.offset[0]
-    camera.y = boundaryCanvas.ds.offset[1]
-    camera.z = boundaryCanvas.ds.scale || 1
+    camera.x = canvas.ds.offset[0]
+    camera.y = canvas.ds.offset[1]
+    camera.z = canvas.ds.scale || 1
   }
 
   /**

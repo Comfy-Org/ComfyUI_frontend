@@ -7,7 +7,6 @@ import type {
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'
@@ -94,9 +93,10 @@ class ConversionContext {
     let currentNode: RerouteNode | undefined = node
     while (currentNode?.type === 'Reroute') {
       nodes.push(currentNode)
-      const inputLink = widenToNullish(
-        this.linkById[currentNode.inputs?.[0]?.link ?? 0]
-      )
+      const linkId = currentNode.inputs?.[0]?.link ?? 0
+      const inputLink = Object.hasOwn(this.linkById, linkId)
+        ? this.linkById[linkId]
+        : undefined
       if (!inputLink) break
 
       currentNode = this.nodeById[inputLink.origin_id] as

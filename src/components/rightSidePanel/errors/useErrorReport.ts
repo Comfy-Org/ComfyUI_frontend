@@ -8,7 +8,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 import type { ErrorCardData } from './types'
 
@@ -17,16 +16,14 @@ const FALLBACK_EXCEPTION_TYPE = 'Runtime Error'
 
 export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
   const systemStatsStore = useSystemStatsStore()
-  const enrichedDetails = reactive<Record<number, string>>({})
+  const enrichedDetails = reactive<Partial<Record<number, string>>>({})
 
   const displayedDetailsMap = computed(() => {
     const card = toValue(cardSource)
     return Object.fromEntries(
       card.errors.map((error, idx) => [
         idx,
-        widenToNullish(enrichedDetails[idx]) ??
-          widenToNullish(error.displayDetails) ??
-          widenToNullish(error.details)
+        enrichedDetails[idx] ?? error.displayDetails ?? error.details
       ])
     )
   })

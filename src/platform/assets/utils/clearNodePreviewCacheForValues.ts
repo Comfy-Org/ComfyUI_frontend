@@ -4,7 +4,6 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 /**
  * Clear cached Load Image / Load Video preview state on any node whose widget
@@ -56,7 +55,8 @@ export function findNodesReferencingValues(
   const matches: LGraphNode[] = []
   for (const node of collectAllNodes(rootGraph)) {
     if (!node.widgets?.length) continue
-    if (widenToNullish(node.isSubgraphNode)?.call(node)) continue
+    if (typeof node.isSubgraphNode === 'function' && node.isSubgraphNode())
+      continue
     const referencesDeleted = node.widgets.some(
       (w) => typeof w.value === 'string' && deletedValues.has(w.value)
     )

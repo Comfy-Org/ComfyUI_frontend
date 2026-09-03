@@ -3,15 +3,16 @@ import { debounce } from 'es-toolkit/compat'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import type { Brush } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 const STORAGE_KEY = 'maskeditor_brush_settings'
 
-function loadBrushFromStorage(): Brush | null {
+type StoredBrush = Omit<Brush, 'stepSize'> & { stepSize?: number }
+
+function loadBrushFromStorage(): StoredBrush | null {
   try {
     const brushString = getStorageValue(STORAGE_KEY)
     if (brushString) {
-      return JSON.parse(brushString) as Brush
+      return JSON.parse(brushString) as StoredBrush
     }
     return null
   } catch (error) {
@@ -42,7 +43,7 @@ export function useBrushPersistence() {
     store.setBrushOpacity(cached.opacity)
     store.setBrushHardness(cached.hardness)
     store.brushSettings.type = cached.type
-    store.setBrushStepSize(widenToNullish(cached.stepSize) ?? 5)
+    store.setBrushStepSize(cached.stepSize ?? 5)
   }
 
   return { loadAndApply, save }

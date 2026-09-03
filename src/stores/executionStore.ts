@@ -18,7 +18,6 @@ import type {
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
@@ -46,6 +45,14 @@ import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+
+type RuntimeExecutionError = Omit<
+  ExecutionErrorWsMessage,
+  'node_id' | 'traceback'
+> & {
+  node_id?: ExecutionErrorWsMessage['node_id'] | null
+  traceback?: ExecutionErrorWsMessage['traceback'] | null
+}
 
 interface ExecutionNodeInfo {
   title?: string | null
@@ -617,7 +624,9 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // If we have progress for the currently executing node, update it for backwards compatibility
     if (executingNodeId.value) {
-      const nodeState = widenToNullish(nodes[executingNodeId.value])
+      const nodeState = Object.hasOwn(nodes, executingNodeId.value)
+        ? nodes[executingNodeId.value]
+        : undefined
       if (!nodeState) return
       _executingNodeProgress.value = {
         value: nodeState.value,
@@ -763,10 +772,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleServiceLevelError(
-    detail: ExecutionErrorWsMessage,
+    detail: RuntimeExecutionError,
     runErrorKey: string | null | undefined
   ): boolean {
-    const nodeId = widenToNullish(detail.node_id)
+    const { node_id: nodeId } = detail
     if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
       return false
 
@@ -778,7 +787,7 @@ export const useExecutionStore = defineStore('execution', () => {
         message: detail.exception_type
           ? `${detail.exception_type}: ${detail.exception_message}`
           : detail.exception_message || '',
-        details: widenToNullish(detail.traceback)?.join('\n') ?? ''
+        details: detail.traceback?.join('\n') ?? ''
       },
       runErrorKey
     )

@@ -9,7 +9,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'
 
@@ -30,27 +29,27 @@ export function usePartitionedBadges(nodeData: NodeState) {
   const nodeDefStore = useNodeDefStore()
 
   return computed(() => {
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
+    const rootGraph = canvasStore.currentGraph?.rootGraph
+    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
+    const nodeDef = node ? nodeDefStore.fromLGraphNode(node) : null
     const showComfyLogo =
-      !!widenToNullish(nodeDef)?.isCoreNode &&
+      nodeDef?.isCoreNode === true &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
     const isComfyCloudNode =
-      widenToNullish(nodeDef)?.python_module === COMFY_CLOUD_PYTHON_MODULE
+      nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
 
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
 
-    const rootGraph = canvasStore.currentGraph?.rootGraph
-    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
     for (const row of node ? nodeBadges(node) : []) {
       if (row.kind === 'credits') {
         const [required, rest] = splitAroundFirstSpace(row.text)
         pricing.push({ required, rest })
         continue
       }
-      if (widenToNullish(nodeDef)?.isCoreNode && row.part === 'source') continue
+      if (nodeDef?.isCoreNode && row.part === 'source') continue
       core.push({
         text: row.part === 'lifecycle' ? trim(row.text, ['[', ']']) : row.text
       })

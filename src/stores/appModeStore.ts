@@ -6,16 +6,13 @@ import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDia
 import { useAppMode } from '@/composables/useAppMode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
-  ComfyWorkflow,
   InputWidgetConfig,
   LinearData,
   LinearInput
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -44,26 +41,6 @@ function findWidgetByEntityId(
     if (widget) return widget
   }
   return undefined
-}
-
-function currentRootGraph(rootGraph: LGraph | undefined): LGraph | undefined {
-  return rootGraph
-}
-
-function maybeChangeTracker(
-  changeTracker: ChangeTracker | null
-): ChangeTracker | null {
-  return changeTracker
-}
-
-function maybeInitialState(
-  initialState: ComfyWorkflowJSON | null
-): ComfyWorkflowJSON | null {
-  return initialState
-}
-
-function maybeActiveWorkflow(workflow: ComfyWorkflow | null) {
-  return workflow
 }
 
 export function nodeTypeValidForApp(type: string) {
@@ -107,7 +84,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
     void mode.value
-    return !!widenToNullish(currentRootGraph(app.rootGraph)?.nodes)?.length
+    return app.isGraphReady && app.rootGraph.nodes.length > 0
   })
 
   function pruneLinearData(data: Partial<LinearData> | undefined): {
@@ -116,7 +93,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-    const rootGraph = currentRootGraph(app.rootGraph)
+    const rootGraph = app.isGraphReady ? app.rootGraph : undefined
     if (!rootGraph) {
       return {
         inputs: rawInputs,
@@ -215,7 +192,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   ) {
     if (ChangeTracker.isLoadingGraph) return
 
-    if (!widenToNullish(currentRootGraph(app.rootGraph)?.nodes)?.length) return
+    if (!app.isGraphReady || !app.rootGraph.nodes.length) return
 
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
@@ -223,8 +200,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     console.warn(
       '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
       {
-        inputs: widenToNullish(data)?.inputs,
-        outputs: widenToNullish(data)?.outputs
+        inputs: data.inputs,
+        outputs: data.outputs
       }
     )
   }
@@ -241,15 +218,13 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!activeWorkflow) return
 
     const source =
-      widenToNullish(
-        maybeChangeTracker(activeWorkflow.changeTracker)?.activeState
-      )?.extra?.linearData ??
-      maybeInitialState(activeWorkflow.initialState)?.extra?.linearData
+      activeWorkflow.changeTracker.activeState.extra?.linearData ??
+      activeWorkflow.initialState.extra?.linearData
     loadSelections(source)
   }
 
   useEventListener(
-    () => currentRootGraph(app.rootGraph)?.events,
+    () => (app.isGraphReady ? app.rootGraph.events : undefined),
     'configured',
     resetSelectedToWorkflow
   )
@@ -261,18 +236,14 @@ export const useAppModeStore = defineStore('appMode', () => {
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
-      const graph = currentRootGraph(app.rootGraph)
-      if (!graph) return
-      const extra = (graph.extra = widenToNullish(graph.extra) ?? {})
+      if (!app.isGraphReady) return
+      const graph = app.rootGraph
+      const extra = graph.extra
       extra.linearData = {
         inputs: [...data.inputs],
         outputs: [...data.outputs]
       }
-      const activeWorkflow = maybeActiveWorkflow(workflowStore.activeWorkflow)
-      const changeTracker = activeWorkflow
-        ? maybeChangeTracker(activeWorkflow.changeTracker)
-        : null
-      changeTracker?.captureCanvasState()
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     },
     { deep: true }
   )

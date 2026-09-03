@@ -298,7 +298,6 @@ import {
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 import {
   getNodeByLocatorId,
   locatorIdFromState,
@@ -364,9 +363,7 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
-const isCollapsed = computed(
-  () => widenToNullish(nodeData.flags)?.collapsed ?? false
-)
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
@@ -375,7 +372,7 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
-  if (widenToNullish(nodeData.flags)?.ghost) return globalOpacity * 0.6
+  if (nodeData.flags?.ghost) return globalOpacity * 0.6
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -473,7 +470,7 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0) return
   if (!shouldHandleNodePointerEvents.value) return
-  if (widenToNullish(nodeData.flags)?.pinned) return
+  if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
   startResize(event, corner)
 }
@@ -495,7 +492,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const cursorClass = computed(() => {
-  if (widenToNullish(nodeData.flags)?.pinned) return 'cursor-default'
+  if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
     ? 'cursor-grabbing'
     : 'cursor-grab'
@@ -693,7 +690,7 @@ const nodeMedia = computed(() => {
 
   if (
     !node ||
-    !widenToNullish(newOutputs)?.images?.length ||
+    !newOutputs?.images?.length ||
     node.hideOutputImages ||
     hideExecutedOutput.value
   )

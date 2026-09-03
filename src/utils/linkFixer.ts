@@ -38,7 +38,11 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
-interface BadLinksData<T = ISerialisedGraph | LGraph> {
+type FixableSerialisedGraph = Omit<ISerialisedGraph, 'links'> & {
+  links: (SerialisedLLinkArray | null)[]
+}
+
+interface BadLinksData<T = FixableSerialisedGraph | LGraph> {
   hasBadLinks: boolean
   fixed: boolean
   graph: T
@@ -51,11 +55,14 @@ enum IoDirection {
   OUTPUT
 }
 
-function isLiveGraph(graph: ISerialisedGraph | LGraph): graph is LGraph {
+function isLiveGraph(graph: FixableSerialisedGraph | LGraph): graph is LGraph {
   return 'getNodeById' in graph
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
+function getNodeById(
+  graph: FixableSerialisedGraph | LGraph,
+  id: SerializedNodeId
+) {
   if (isLiveGraph(graph)) {
     const parsedNodeId = parseNodeId(id)
     return parsedNodeId ? graph.getNodeById(parsedNodeId) : null
@@ -99,7 +106,7 @@ function extendLink(link: SerialisedLLinkArray) {
  * result.
  */
 export function fixBadLinks(
-  graph: ISerialisedGraph | LGraph,
+  graph: FixableSerialisedGraph | LGraph,
   options: {
     fix?: boolean
     silent?: boolean
@@ -315,13 +322,14 @@ export function fixBadLinks(
     return hasAny
   }
 
-  const links: Array<SerialisedLLinkArray | LLink> = Array.isArray(graph.links)
-    ? graph.links
-    : Array.from((graph as LGraph).links.values())
+  const links: Array<SerialisedLLinkArray | LLink | null> = isLiveGraph(graph)
+    ? Array.from(graph.links.values())
+    : graph.links
 
   const linksReverse = [...links]
   linksReverse.reverse()
   for (const l of linksReverse) {
+    if (!l) continue
     const link = !Array.isArray(l) ? l : extendLink(l)
 
     const originNode = getNodeById(graph, link.origin_id)
@@ -412,6 +420,7 @@ export function fixBadLinks(
 
   // Now that we've cleaned up the inputs, outputs, run through it looking for dangling links.,
   for (const l of linksReverse) {
+    if (!l) continue
     const link = !Array.isArray(l) ? l : extendLink(l)
     const originNode = getNodeById(graph, link.origin_id)
     const targetNode = getNodeById(graph, link.target_id)
@@ -457,8 +466,9 @@ export function fixBadLinks(
         // data. We make a copy now, but can handle the bastardized objects just in case.
         const idx = links.findIndex(
           (l) =>
-            l[0] === data.deletedLinks[i] ||
-            ('id' in l && l.id === data.deletedLinks[i])
+            l != null &&
+            (l[0] === data.deletedLinks[i] ||
+              ('id' in l && l.id === data.deletedLinks[i]))
         )
         if (idx === -1) {
           logger.log(`INDEX NOT FOUND for #${data.deletedLinks[i]}`)
@@ -469,7 +479,7 @@ export function fixBadLinks(
     }
     // If we're a serialized graph, we can filter out the links because it's just an array.
     if (!isLiveGraph(graph)) {
-      graph.links = [...graph.links]
+      graph.links = graph.links.filter((link) => link !== null)
     }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {

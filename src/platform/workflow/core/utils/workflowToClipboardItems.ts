@@ -6,7 +6,6 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 type WorkflowGraph = ISerialisedGraph | SerialisableGraph
 
@@ -36,7 +35,7 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
       parentId
     ])
   )
-  return (widenToNullish(graph.links) ?? []).map(
+  return graph.links.map(
     ([
       id,
       origin_id,

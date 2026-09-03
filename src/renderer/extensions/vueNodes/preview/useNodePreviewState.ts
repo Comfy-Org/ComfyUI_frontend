@@ -5,7 +5,6 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/types/nodeId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 export const useNodePreviewState = (
   nodeIdMaybe: MaybeRefOrGetter<NodeId>,
@@ -23,7 +22,7 @@ export const useNodePreviewState = (
     const key = locatorId.value
     if (!key) return undefined
     const urls = nodePreviewImages.value[key]
-    return widenToNullish(urls)?.length ? urls : undefined
+    return urls?.length ? urls : undefined
   })
 
   const hasPreview = computed(() => !!previewUrls.value?.length)

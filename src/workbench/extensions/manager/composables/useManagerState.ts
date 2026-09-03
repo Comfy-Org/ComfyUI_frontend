@@ -7,7 +7,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import type { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -57,9 +56,8 @@ export function useManagerState() {
       }
 
       // Get current values
-      const clientSupportsV4 = Boolean(
-        widenToNullish(api.getClientFeatureFlags().supports_manager_v4_ui)
-      )
+      const clientSupportsV4 =
+        api.getClientFeatureFlags().supports_manager_v4_ui === true
       const serverSupportsV4 = api.getServerFeature(
         'extension.manager.supports_v4'
       )

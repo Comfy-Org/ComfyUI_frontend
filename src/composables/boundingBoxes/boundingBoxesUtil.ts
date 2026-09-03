@@ -1,5 +1,4 @@
 import type { BoundingBox, BoundingBoxMetadata } from '@/types/boundingBoxes'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 export type HitMode =
   | 'move'
@@ -227,8 +226,7 @@ export function fromBoundingBoxes(
   const w = width || 1
   const h = height || 1
   return boxes.filter(isBoundingBox).map((box) => {
-    const meta: Partial<BoundingBoxMetadata> =
-      widenToNullish(box.metadata) || {}
+    const meta: Partial<BoundingBoxMetadata> = box.metadata
     return {
       x: box.x / w,
       y: box.y / h,

@@ -2,7 +2,6 @@ import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 class NodeHelpService {
   async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {
@@ -70,8 +69,7 @@ class NodeHelpService {
       return { text: null, errorText: res.statusText }
     }
 
-    const getHeader = widenToNullish(res.headers)?.get
-    const contentType = getHeader?.call(res.headers, 'content-type') ?? ''
+    const contentType = res.headers.get('content-type') ?? ''
     const text = await res.text()
 
     const isHtmlContentType = contentType.includes('text/html')

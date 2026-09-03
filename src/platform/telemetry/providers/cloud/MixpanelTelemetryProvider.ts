@@ -39,7 +39,6 @@ import type {
   WorkspaceInviteMetadata
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { widenToNullish } from '@/utils/widenToNullish'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { OnboardingTourEvents, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -56,9 +55,7 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
-const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
-  Object.values(TelemetryEvents) as TelemetryEventName[]
-)
+const TELEMETRY_EVENT_SET = new Set<string>(Object.values(TelemetryEvents))
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -85,8 +82,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
-    const config = widenToNullish(window.__CONFIG__)
-    this.configureDisabledEvents(config ?? null)
+    const config = Object.hasOwn(window, '__CONFIG__')
+      ? window.__CONFIG__
+      : undefined
     watch(
       remoteConfig,
       (config) => {
@@ -175,14 +173,18 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  private configureDisabledEvents(config: Partial<RemoteConfig> | null): void {
+  private configureDisabledEvents(
+    config: Pick<RemoteConfig, 'telemetry_disabled_events'> | null | undefined
+  ): void {
     const disabledSource =
       config?.telemetry_disabled_events ?? DEFAULT_DISABLED_EVENTS
 
     this.disabledEvents = this.buildEventSet(disabledSource)
   }
 
-  private buildEventSet(values: TelemetryEventName[]): Set<TelemetryEventName> {
+  private buildEventSet(
+    values: readonly TelemetryEventName[]
+  ): Set<TelemetryEventName> {
     return new Set(
       values.filter((value) => {
         const isValid = TELEMETRY_EVENT_SET.has(value)

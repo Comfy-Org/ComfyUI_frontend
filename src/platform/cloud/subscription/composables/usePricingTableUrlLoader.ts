@@ -2,7 +2,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { widenToNullish } from '@/utils/widenToNullish'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -163,8 +162,11 @@ export function usePricingTableUrlLoader() {
         )
       }
 
-      if (!widenToNullish(permissions.value.canManageSubscription)) return
-      if (!widenToNullish<unknown>(teamCreditStops.value)) {
+      const canManageSubscription: unknown =
+        permissions.value.canManageSubscription
+      if (canManageSubscription !== true) return
+      const availableTeamCreditStops: unknown = teamCreditStops.value
+      if (!availableTeamCreditStops) {
         subscriptionDialog.showPricingTable({
           reason: 'deep_link',
           planMode: 'team'
@@ -201,7 +203,9 @@ export function usePricingTableUrlLoader() {
         : undefined
 
     if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
-    if (!widenToNullish(permissions.value.canManageSubscription)) return
+    const canManageSubscription: unknown =
+      permissions.value.canManageSubscription
+    if (canManageSubscription !== true) return
 
     subscriptionDialog.showPricingTable({
       reason: 'deep_link',

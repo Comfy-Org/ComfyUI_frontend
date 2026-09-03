@@ -112,8 +112,7 @@ export interface ExtensionManager {
   setting: {
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Custom extensions declare settings outside the generated schema.
     get: <T = unknown>(id: string) => T | undefined
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Preserve the public extension API's explicit value type.
-    set: <T = unknown>(id: string, value: T) => void
+    set: (id: string, value: unknown) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
 

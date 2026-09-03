@@ -7,10 +7,18 @@ import type { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import type { KeybindingPreset } from './types'
 
+type KeybindingMap = Partial<Record<string, KeybindingImpl>>
+
+function keybindingValues(keybindings: KeybindingMap): KeybindingImpl[] {
+  return Object.values(keybindings).filter(
+    (keybinding): keybinding is KeybindingImpl => keybinding !== undefined
+  )
+}
+
 export const useKeybindingStore = defineStore('keybinding', () => {
-  const defaultKeybindings = shallowRef<Record<string, KeybindingImpl>>({})
-  const userKeybindings = shallowRef<Record<string, KeybindingImpl>>({})
-  const userUnsetKeybindings = shallowRef<Record<string, KeybindingImpl>>({})
+  const defaultKeybindings = shallowRef<KeybindingMap>({})
+  const userKeybindings = shallowRef<KeybindingMap>({})
+  const userUnsetKeybindings = shallowRef<KeybindingMap>({})
 
   const currentPresetName = ref('default')
   const savedPresetData = ref<KeybindingPreset | null>(null)
@@ -32,8 +40,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   })
 
   const isCurrentPresetModified = computed(() => {
-    const newBindings = Object.values(userKeybindings.value)
-    const unsetBindings = Object.values(userUnsetKeybindings.value)
+    const newBindings = keybindingValues(userKeybindings.value)
+    const unsetBindings = keybindingValues(userUnsetKeybindings.value)
 
     if (currentPresetName.value === 'default') {
       return newBindings.length > 0 || unsetBindings.length > 0
@@ -54,16 +62,24 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return userKeybindings.value
   }
 
+  function getUserKeybindingValues() {
+    return keybindingValues(userKeybindings.value)
+  }
+
   function getUserUnsetKeybindings() {
     return userUnsetKeybindings.value
   }
 
-  const keybindingByKeyCombo = computed<Record<string, KeybindingImpl>>(() => {
-    const result: Record<string, KeybindingImpl> = {
+  function getUserUnsetKeybindingValues() {
+    return keybindingValues(userUnsetKeybindings.value)
+  }
+
+  const keybindingByKeyCombo = computed<KeybindingMap>(() => {
+    const result: KeybindingMap = {
       ...defaultKeybindings.value
     }
 
-    for (const keybinding of Object.values(userUnsetKeybindings.value)) {
+    for (const keybinding of keybindingValues(userUnsetKeybindings.value)) {
       const serializedCombo = keybinding.combo.serialize()
       if (result[serializedCombo]?.equals(keybinding)) {
         delete result[serializedCombo]
@@ -77,45 +93,40 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   })
 
   const keybindings = computed<KeybindingImpl[]>(() =>
-    Object.values(keybindingByKeyCombo.value)
+    keybindingValues(keybindingByKeyCombo.value)
   )
 
   function getKeybinding(combo: KeyComboImpl): KeybindingImpl | undefined {
-    const keybindings: Partial<Record<string, KeybindingImpl>> =
-      keybindingByKeyCombo.value
-    return keybindings[combo.serialize()]
+    return keybindingByKeyCombo.value[combo.serialize()]
   }
 
-  const keybindingsByCommandId = computed<Record<string, KeybindingImpl[]>>(
-    () => {
-      return groupBy(keybindings.value, 'commandId')
-    }
-  )
+  const keybindingsByCommandId = computed<
+    Partial<Record<string, KeybindingImpl[]>>
+  >(() => {
+    return groupBy(keybindings.value, 'commandId')
+  })
 
   function getKeybindingsByCommandId(commandId: string) {
     return keybindingsByCommandId.value[commandId] ?? []
   }
 
   const defaultKeybindingsByCommandId = computed<
-    Record<string, KeybindingImpl[]>
-  >(() => {
-    return groupBy(Object.values(defaultKeybindings.value), 'commandId')
-  })
+    Partial<Record<string, KeybindingImpl[]>>
+  >(() => groupBy(keybindingValues(defaultKeybindings.value), 'commandId'))
 
   function getKeybindingByCommandId(commandId: string) {
     return getKeybindingsByCommandId(commandId).at(0)
   }
 
   function addKeybinding(
-    target: Ref<Record<string, KeybindingImpl>>,
+    target: Ref<KeybindingMap>,
     keybinding: KeybindingImpl,
     { existOk = false }: { existOk: boolean }
   ) {
-    if (!existOk && keybinding.combo.serialize() in target.value) {
+    const existing = target.value[keybinding.combo.serialize()]
+    if (!existOk && existing) {
       throw new Error(
-        `Keybinding on ${keybinding.combo} already exists on ${
-          target.value[keybinding.combo.serialize()].commandId
-        }`
+        `Keybinding on ${keybinding.combo} already exists on ${existing.commandId}`
       )
     }
     target.value = {
@@ -130,18 +141,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
     const serializedCombo = keybinding.combo.serialize()
-    const defaultKeybinding = Object.hasOwn(
-      defaultKeybindings.value,
-      serializedCombo
-    )
-      ? defaultKeybindings.value[serializedCombo]
-      : undefined
-    const userUnsetKeybinding = Object.hasOwn(
-      userUnsetKeybindings.value,
-      serializedCombo
-    )
-      ? userUnsetKeybindings.value[serializedCombo]
-      : undefined
+    const defaultKeybinding = defaultKeybindings.value[serializedCombo]
+    const userUnsetKeybinding = userUnsetKeybindings.value[serializedCombo]
 
     if (
       keybinding.equals(defaultKeybinding) &&
@@ -292,7 +293,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   return {
     keybindings,
     getUserKeybindings,
+    getUserKeybindingValues,
     getUserUnsetKeybindings,
+    getUserUnsetKeybindingValues,
     getKeybinding,
     getKeybindingsByCommandId,
     getKeybindingByCommandId,

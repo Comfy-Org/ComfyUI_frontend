@@ -17,7 +17,6 @@ import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { widenToNullish } from '@/utils/widenToNullish'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   GraphOrSubgraph,
@@ -1017,10 +1016,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
     const shapes = slot.linkIds.map(
-      (id) =>
-        widenToNullish(
-          widenToNullish(this.subgraph.links[id])?.resolve(this.subgraph)
-        )?.input?.shape
+      (id) => this.subgraph.getLink(id)?.resolve(this.subgraph).input?.shape
     )
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined

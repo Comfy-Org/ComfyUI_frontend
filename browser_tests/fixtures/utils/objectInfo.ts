@@ -11,21 +11,27 @@ import type {
   InputSpec,
   ObjectInfoResponse
 } from '@/schemas/nodeDefSchema'
-import { widenToNullish } from '@/utils/widenToNullish'
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
 
-function getRequiredInputs(
-  objectInfo: ObjectInfoResponse,
+function getNodeInfo(
+  objectInfo: Partial<ObjectInfoResponse>,
   nodeType: string
-): Record<string, InputSpec> {
-  const nodeInfo = widenToNullish(objectInfo[nodeType])
+) {
+  const nodeInfo = objectInfo[nodeType]
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
   }
+  return nodeInfo
+}
 
+function getRequiredInputs(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string
+): Partial<Record<string, InputSpec>> {
+  const nodeInfo = getNodeInfo(objectInfo, nodeType)
   const requiredInputs = nodeInfo.input?.required
   if (!requiredInputs) {
     throw new Error(`Missing required inputs for ${nodeType}`)
@@ -39,9 +45,7 @@ function getRequiredInput(
   nodeType: string,
   inputName: string
 ): InputSpec {
-  const input = widenToNullish(
-    getRequiredInputs(objectInfo, nodeType)[inputName]
-  )
+  const input = getRequiredInputs(objectInfo, nodeType)[inputName]
   if (!input) {
     throw new Error(`Missing input ${nodeType}.${inputName}`)
   }
@@ -120,10 +124,7 @@ export function addNodeWithDisplayName(
   displayName: string,
   donorNodeType = 'KSampler'
 ): void {
-  const donor = widenToNullish(objectInfo[donorNodeType])
-  if (!donor) {
-    throw new Error(`Missing object_info entry for ${donorNodeType}`)
-  }
+  const donor = getNodeInfo(objectInfo, donorNodeType)
 
   objectInfo[nodeType] = {
     ...structuredClone(donor),

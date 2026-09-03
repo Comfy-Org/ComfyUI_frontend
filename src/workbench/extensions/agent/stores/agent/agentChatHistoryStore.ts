@@ -2,8 +2,6 @@ import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { widenToNullish } from '@/utils/widenToNullish'
-
 export interface ChatSession {
   id: string
   title: string
@@ -54,7 +52,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
-  const customTitles = useLocalStorage<Record<string, string>>(
+  const customTitles = useLocalStorage<Partial<Record<string, string>>>(
     'Comfy.Agent.ChatTitles',
     {}
   )
@@ -63,9 +61,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const titled = computed(() =>
     sessions.value.map((session) => {
       const custom = customTitles.value[session.id]
-      return widenToNullish(custom) === undefined
-        ? session
-        : { ...session, title: custom }
+      return custom === undefined ? session : { ...session, title: custom }
     })
   )
 

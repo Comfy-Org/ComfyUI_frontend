@@ -92,7 +92,7 @@ export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
  * Check if output data indicates animated content (animated webp/png or video).
  */
 export function isAnimatedOutput(
-  output: ExecutedWsMessage['output'] | undefined
+  output: Pick<ExecutedWsMessage['output'], 'animated'> | undefined
 ): boolean {
   return !!output?.animated?.find(Boolean)
 }

@@ -26,7 +26,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { widenToNullish } from '@/utils/widenToNullish'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
@@ -152,8 +151,9 @@ export function scanNodeModelCandidates(
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
-  const isSubgraphNode = widenToNullish(node.isSubgraphNode)
-  const widgets = isSubgraphNode?.call(node)
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  const widgets = isSubgraphNode
     ? promotedInputWidgets(node)
     : (node.widgets ?? [])
   if (!widgets.length) return []
@@ -199,8 +199,9 @@ function getModelWidgetScanTarget(
   const input = getInputForWidget(node, widget)
   if (input && node.isInputConnected(node.inputs.indexOf(input))) return null
 
-  const isSubgraphNode = widenToNullish(node.isSubgraphNode)
-  if (!isSubgraphNode?.call(node)) {
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  if (!isSubgraphNode) {
     return {
       executionId,
       nodeType: node.type,
