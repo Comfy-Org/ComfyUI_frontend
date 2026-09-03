@@ -34,10 +34,6 @@
     "copy": "Copiar",
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
-    "crdtConnected": "conectado",
-    "crdtDisconnected": "desconectado",
-    "crdtNoDocument": "sin documento",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} actualizaciones · {frame}",
     "credits": "créditos",
     "delete": "Eliminar",
     "dismiss": "Descartar",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "Cambió de pestaña",
     "untitledChat": "Sin título",
     "uploading": "Subiendo"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Costo por ejecución",
-    "title": "Nodo(s) de API",
-    "totalCost": "Costo total"
   },
   "apiNodesSignInDialog": {
     "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "sonido",
@@ -5037,8 +5029,10 @@
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
       "invalidEmailCount": "{count} dirección de correo electrónico no válida | {count} direcciones de correo electrónico no válidas",
       "invitedMessage": "Se envió una invitación a {emails} | Se enviaron invitaciones a {emails}",
+      "pendingInviteCount": "{count} de estas personas ya tienen una invitación pendiente. Se omitirán.",
+      "pendingInviteSingle": "Esta persona ya tiene una invitación pendiente",
       "placeholder": "Introduce el correo electrónico de la persona",
-      "seatLimitReached": "Puedes invitar hasta {count} compañero de equipo. | Puedes invitar hasta {count} compañeros de equipo.",
+      "seatLimitExceeded": "Este espacio de trabajo tiene un límite de {max} miembros. Elimina {overage} para continuar.",
       "title": "Invitar a una persona a este espacio de trabajo"
     },
     "inviteUpsellDialog": {
