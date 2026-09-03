@@ -4,6 +4,7 @@
       <ToggleGroup
         v-model="currentBillingCycle"
         type="single"
+        required
         class="rounded-lg bg-secondary-background p-1.5"
       >
         <ToggleGroupItem
