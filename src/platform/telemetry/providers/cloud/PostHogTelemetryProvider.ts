@@ -9,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import type {
   AddCreditsClickMetadata,
@@ -139,7 +140,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
-    this.configureDisabledEvents(window.__CONFIG__)
+    const windowConfig = widenToNullish(window.__CONFIG__)
+    this.configureDisabledEvents(windowConfig ?? null)
     watch(
       remoteConfig,
       (config) => {
@@ -149,17 +151,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
 
     const apiKey =
-      window.__CONFIG__.posthog_project_token ??
+      windowConfig?.posthog_project_token ??
       import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
-            const serverConfig = remoteConfig.value.posthog_config ?? {}
+            const serverConfig =
+              widenToNullish(remoteConfig.value)?.posthog_config ?? {}
             this.posthog.init(apiKey, {
-              api_host:
-                window.__CONFIG__.posthog_api_host || 'https://t.comfy.org',
+              api_host: windowConfig?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: 'history_change',

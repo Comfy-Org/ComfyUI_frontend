@@ -24,6 +24,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -171,7 +172,7 @@ function applySubgraphInputOrder(
   orderedIndices: readonly number[]
 ): void {
   const widgetValues = subgraphNode.inputs.map((input) => {
-    const id = input?.widgetId
+    const id = input.widgetId
     if (!id) return undefined
     return useWidgetValueStore().getWidget(id)?.value
   })
@@ -198,7 +199,7 @@ function isSamePromotedInput(
   inputIndex: number,
   orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
-  const input = subgraphNode.inputs[inputIndex]
+  const input = subgraphNode.inputs.at(inputIndex)
   const linkedInput = input?._subgraphSlot
   if (!input || !linkedInput) return false
 
@@ -290,7 +291,7 @@ export function promoteValueWidgetViaSubgraphInput(
   const inputName = nextUniqueName(sourceWidgetName, existingNames)
   const subgraphInput = subgraphNode.subgraph.addInput(
     inputName,
-    String(sourceSlot.type ?? sourceWidget.type ?? '*')
+    String(sourceSlot.type)
   )
   subgraphInput.label = sourceSlot.label
   const link = subgraphInput.connect(sourceSlot, sourceNode)
@@ -338,7 +339,7 @@ export function seedNestedPromotedInputState(
     {
       type: sourceState.type,
       value: sourceState.value,
-      options: cloneDeep(sourceState.options ?? {}),
+      options: cloneDeep(sourceState.options),
       label: hostInput.label ?? sourceSlot.label ?? inputName,
       serialize: sourceState.serialize,
       disabled: sourceState.disabled
@@ -383,8 +384,8 @@ const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
 
 export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
   if (widget.name.startsWith('$$')) return true
-  if (widget.serialize !== false && widget.options?.serialize !== false)
-    return false
+  const options = widenToNullish(widget.options)
+  if (widget.serialize !== false && options?.serialize !== false) return false
   if (typeof widget.type === 'string' && PREVIEW_WIDGET_TYPES.has(widget.type))
     return true
   return false
@@ -427,8 +428,6 @@ function demotePromotedInput(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
 ): boolean {
-  if (!subgraphNode.subgraph) return false
-
   const hostInput = findHostInputForPromotion(
     subgraphNode,
     source.sourceNodeId,
@@ -454,8 +453,6 @@ export function demoteWidget(
 ) {
   const source = toPromotionSource(node, widget)
   for (const parent of parents) {
-    if (!parent.subgraph) continue
-
     if (demotePromotedInput(parent, source)) continue
 
     if (isPreviewPseudoWidget(widget)) {

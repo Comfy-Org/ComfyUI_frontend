@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 import type {
   ExecutedWsMessage,
   ResultItem,
@@ -53,7 +54,8 @@ interface SetOutputOptions {
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const workflowStore = useWorkflowStore()
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
-  const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+  const scheduledRevoke: Partial<Record<NodeLocatorId, { stop: () => void }>> =
+    {}
   const latestPreview = ref<string[]>([])
   /**
    * Previews belonging to open-but-inactive workflows, keyed by workflow path.
@@ -77,12 +79,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   })
   const nodePreviewImages = ref<Record<string, string[]>>(
     Object.fromEntries(
-      Object.entries(app.nodePreviewImages || {}).map(([id, urls]) => [
-        id,
-        [...urls]
-      ])
+      Object.entries(
+        (app.nodePreviewImages as Record<string, string[]> | undefined) ?? {}
+      ).map(([id, urls]) => [id, [...urls]])
     )
   )
+
+  function getPreviewUrls(nodeLocatorId: string): string[] | undefined {
+    return nodePreviewImages.value[nodeLocatorId]
+  }
 
   function getNodeOutputs(
     node: LGraphNode
@@ -100,12 +105,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ): boolean => {
     if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 
-    if (!outputs?.images?.length) return false
+    const boundaryOutputs = widenToNullish(outputs)
+    if (!boundaryOutputs?.images?.length) return false
 
-    const images = outputs.images.filter((image) => image != null)
-    if (!images.length) return false
+    const images: ((typeof boundaryOutputs.images)[number] | null)[] =
+      boundaryOutputs.images
+    const presentImages = images.filter((image) => image != null)
+    if (!presentImages.length) return false
 
-    if (images.some((image) => image.filename?.toLowerCase().endsWith('.svg')))
+    if (
+      presentImages.some((image) =>
+        image.filename?.toLowerCase().endsWith('.svg')
+      )
+    )
       return false
 
     return true
@@ -127,12 +139,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images
-      .filter((image) => image != null)
-      .map((image) => {
-        const params = new URLSearchParams(image)
-        return api.apiURL(`/view?${params}${previewParam}${rand}`)
-      })
+    return outputs.images.map((image) => {
+      const params = new URLSearchParams(image)
+      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+    })
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
@@ -170,7 +180,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function setOutputsByLocatorId(
     nodeLocatorId: NodeLocatorId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
     options: SetOutputOptions = {}
   ) {
     if (outputs == null) return
@@ -190,7 +200,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     if (options.merge) {
       const existingOutput = nodeOutputs.value[nodeLocatorId]
-      if (existingOutput && outputs) {
+      if (nodeLocatorId in nodeOutputs.value) {
         const mergedOutput = { ...existingOutput }
         for (const k in outputs) {
           const existingValue = existingOutput[k]
@@ -213,7 +223,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function setNodeOutputs(
-    node: LGraphNode,
+    node: LGraphNode | null | undefined,
     filenames: string | string[] | ResultItem,
     {
       folder = 'input',
@@ -233,7 +243,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
-      if (!resultItems?.images?.length) return
+      if (!resultItems.images?.length) return
       setOutputsByLocatorId(locatorId, resultItems)
     }
   }
@@ -296,9 +306,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeLocatorId: NodeLocatorId,
     previewImages: string[]
   ) {
-    const existingPreviews = nodePreviewImages.value[nodeLocatorId]
-    if (scheduledRevoke[nodeLocatorId]) {
-      scheduledRevoke[nodeLocatorId].stop()
+    const existingPreviews = getPreviewUrls(nodeLocatorId)
+    if (nodeLocatorId in scheduledRevoke) {
+      scheduledRevoke[nodeLocatorId]?.stop()
       delete scheduledRevoke[nodeLocatorId]
     }
     if (existingPreviews?.[Symbol.iterator]) {
@@ -326,7 +336,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function revokePreviewsByLocatorId(nodeLocatorId: NodeLocatorId) {
-    const previews = nodePreviewImages.value[nodeLocatorId]
+    const previews = getPreviewUrls(nodeLocatorId)
     if (!previews?.[Symbol.iterator]) return
 
     for (const url of previews) {
@@ -339,7 +349,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function releasePreviewUrls(previews: Record<string, string[]>) {
     for (const urls of Object.values(previews)) {
-      if (!urls?.[Symbol.iterator]) continue
+      if (!urls[Symbol.iterator]) continue
 
       for (const url of urls) {
         releaseSharedObjectUrl(url)
@@ -426,8 +436,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     delete nodeOutputs.value[nodeLocatorId]
     delete app.nodeOutputs[nodeLocatorId]
 
-    if (nodePreviewImages.value[nodeLocatorId]) {
-      const previews = nodePreviewImages.value[nodeLocatorId]
+    if (nodeLocatorId in nodePreviewImages.value) {
+      const previews = getPreviewUrls(nodeLocatorId)
       if (previews?.[Symbol.iterator]) {
         for (const url of previews) {
           releaseSharedObjectUrl(url)
@@ -488,8 +498,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
 
+    if (!(locatorId in nodeOutputs.value)) return
     const outputs = nodeOutputs.value[locatorId]
-    if (!outputs) return
 
     nodeOutputs.value[locatorId] = { ...outputs }
   }

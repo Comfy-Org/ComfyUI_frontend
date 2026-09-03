@@ -12,6 +12,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useAuthStore } from '@/stores/authStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import type {
   BalanceInfo,
@@ -75,10 +76,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (!legacyBalance) return null
 
     return {
-      amountMicros: legacyBalance.amount_micros,
-      currency: legacyBalance.currency,
+      amountMicros: legacyBalance.amount_micros || 0,
+      currency: legacyBalance.currency || 'usd',
       effectiveBalanceMicros:
-        legacyBalance.effective_balance_micros ?? legacyBalance.amount_micros,
+        widenToNullish(legacyBalance.effective_balance_micros) ??
+        widenToNullish(legacyBalance.amount_micros) ??
+        0,
       prepaidBalanceMicros: legacyBalance.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0
     }

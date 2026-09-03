@@ -20,6 +20,7 @@ import {
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 class SharedWorkflowLoadError extends Error {
   readonly status: number | null
@@ -225,9 +226,8 @@ export function useWorkflowShareService() {
   async function getShareableAssets(
     includingPublic = false
   ): Promise<AssetInfo[]> {
-    const graph = app.rootGraph
+    const graph = widenToNullish(app.rootGraph)
     if (!graph) return []
-
     const { output } = await app.graphToPrompt(graph)
     const { assets } = await api.getShareableAssets(output)
 

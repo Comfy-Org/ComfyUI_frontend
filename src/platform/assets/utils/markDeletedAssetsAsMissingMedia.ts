@@ -5,6 +5,7 @@ import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaSca
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
 
@@ -33,8 +34,8 @@ export function markDeletedAssetsAsMissingMedia(
     ...findNodesReferencingValues(rootGraph, deletedValues),
     ...collectAllNodes(rootGraph).filter(
       (node) =>
-        node.isSubgraphNode() &&
-        node.widgets.some(
+        widenToNullish(node.isSubgraphNode)?.call(node) &&
+        widenToNullish(node.widgets)?.some(
           (widget) =>
             typeof widget.value === 'string' && deletedValues.has(widget.value)
         )

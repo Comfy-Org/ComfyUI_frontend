@@ -1,6 +1,7 @@
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 /**
  * Gets an ordered array of InputSpec objects based on input_order.
@@ -22,9 +23,10 @@ export function getOrderedInputSpecs(
   }
 
   // Process required inputs in specified order
-  if (nodeDefImpl.input_order.required) {
-    for (const name of nodeDefImpl.input_order.required) {
-      const inputSpec = inputs[name]
+  const requiredOrder = widenToNullish(nodeDefImpl.input_order.required)
+  if (requiredOrder) {
+    for (const name of requiredOrder) {
+      const inputSpec = widenToNullish(inputs[name])
       if (inputSpec && !inputSpec.isOptional) {
         orderedInputSpecs.push(inputSpec)
       }
@@ -32,10 +34,11 @@ export function getOrderedInputSpecs(
   }
 
   // Process optional inputs in specified order
-  if (nodeDefImpl.input_order.optional) {
-    for (const name of nodeDefImpl.input_order.optional) {
-      const inputSpec = inputs[name]
-      if (inputSpec && inputSpec.isOptional) {
+  const optionalOrder = widenToNullish(nodeDefImpl.input_order.optional)
+  if (optionalOrder) {
+    for (const name of optionalOrder) {
+      const inputSpec = widenToNullish(inputs[name])
+      if (inputSpec?.isOptional) {
         orderedInputSpecs.push(inputSpec)
       }
     }
@@ -66,7 +69,7 @@ export function sortWidgetValuesByInputOrder(
   currentWidgetOrder: string[],
   inputOrder: string[]
 ): TWidgetValue[] {
-  if (!inputOrder || inputOrder.length === 0) {
+  if (inputOrder.length === 0) {
     return widgetValues
   }
 

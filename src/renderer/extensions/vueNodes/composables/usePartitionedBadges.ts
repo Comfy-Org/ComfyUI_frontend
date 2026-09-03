@@ -9,6 +9,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -29,7 +30,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
   return computed(() => {
     const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
     const showComfyLogo =
-      nodeDef.isCoreNode &&
+      !!widenToNullish(nodeDef)?.isCoreNode &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
 
@@ -45,7 +46,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
         pricing.push({ required, rest })
         continue
       }
-      if (nodeDef.isCoreNode && row.part === 'source') continue
+      if (widenToNullish(nodeDef)?.isCoreNode && row.part === 'source') continue
       core.push({
         text: row.part === 'lifecycle' ? trim(row.text, ['[', ']']) : row.text
       })

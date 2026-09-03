@@ -22,7 +22,6 @@ test.describe(
 
     test('lands at the cursor', async ({ comfyPage }) => {
       const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      if (!node) throw new Error('KSampler node not found')
       await node.centerOnNode()
       await node.clickContextMenuOption('Pin')
       await comfyPage.contextMenu.waitForHidden()

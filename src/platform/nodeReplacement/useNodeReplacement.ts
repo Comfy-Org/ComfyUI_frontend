@@ -450,7 +450,7 @@ export function useNodeReplacement() {
         // for nodes whose serialization predates the type field.
         // n.type may have been sanitized by app.ts (HTML special chars stripped);
         // the sanitized variants in targetTypes ensure we still match correctly.
-        const originalType = n.last_serialization.type
+        const originalType = n.last_serialization.type || n.type
         return !!originalType && targetTypes.has(originalType)
       })
 

@@ -102,7 +102,6 @@ const workflowServiceMocks = vi.hoisted(() => ({
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => workflowServiceMocks
 }))
-
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => workflowStoreState
 }))
@@ -118,7 +117,7 @@ function makeSubgraph(id: string): Subgraph {
 }
 
 function getRouteTargetHash(target: VueRouter.RouteLocationRaw): string {
-  return typeof target === 'string' ? target : String(target.hash ?? '')
+  return typeof target === 'string' ? target : (target.hash ?? '')
 }
 
 function applyRouteTarget(target: VueRouter.RouteLocationRaw): void {

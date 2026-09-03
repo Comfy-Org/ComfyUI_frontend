@@ -438,7 +438,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     delete nodeDefsByName.value[nodeName]
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
+    const nodeTypeName = node.constructor.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
     return nodeDef
@@ -592,7 +592,6 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     return nodeNamesByFrequency.value
       .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
-      .filter((nodeDef: ComfyNodeDefImpl) => nodeDef !== undefined)
       .slice(0, topNodeDefLimit.value)
   })
 

@@ -20,7 +20,7 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   function registerCustomWidgets(
-    newWidgets: Record<string, ComfyWidgetConstructor>
+    newWidgets: Record<string, ComfyWidgetConstructor> | null | undefined
   ) {
     // Extensions are untrusted code: `getCustomWidgets` is typed to return
     // `Record<string, ...>`, but in practice an extension can resolve it to

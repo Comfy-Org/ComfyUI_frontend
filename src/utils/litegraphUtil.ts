@@ -116,16 +116,13 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
 }
 
 export function resolveComboValues(widget: IComboWidget): string[] {
-  const values = widget.options?.values
-  if (!values) return []
+  const values = widget.options.values
   if (typeof values === 'function') return values(widget)
   if (Array.isArray(values)) return values
   return Object.keys(values)
 }
 
 export function addToComboValues(widget: IComboWidget, value: string) {
-  if (!widget.options) widget.options = { values: [] }
-  if (!widget.options.values) widget.options.values = []
   // @ts-expect-error Combo widget values may be a dictionary or legacy function type
   if (!widget.options.values.includes(value)) {
     // @ts-expect-error Combo widget values may be a dictionary or legacy function type
@@ -339,7 +336,7 @@ export function resolveNodeWidget(
     if (locator?.subgraphUuid) {
       const host = graph.getNodeById(locator.localNodeId)
       if (host?.isSubgraphNode()) {
-        const widget = host.widgets?.find((w) => w.name === widgetName)
+        const widget = host.widgets.find((w) => w.name === widgetName)
         return widget ? [host, widget] : []
       }
     }
@@ -413,8 +410,6 @@ export function mapLiveWidgetsById(
 
 export function isLoad3dNode(node: LGraphNode) {
   return (
-    node &&
-    node.type &&
-    (node.type === 'Load3D' || node.type === 'Load3DAnimation')
+    node.type && (node.type === 'Load3D' || node.type === 'Load3DAnimation')
   )
 }

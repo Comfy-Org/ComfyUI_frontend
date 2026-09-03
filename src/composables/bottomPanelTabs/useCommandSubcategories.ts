@@ -21,7 +21,7 @@ export function useCommandSubcategories(
   config: SubcategoryConfig
 ) {
   const subcategories = computed(() => {
-    const result: Record<string, ComfyCommandImpl[]> = {}
+    const result: Partial<Record<string, ComfyCommandImpl[]>> = {}
 
     for (const command of commands.value) {
       let subcategory = config.defaultSubcategory
@@ -39,10 +39,11 @@ export function useCommandSubcategories(
         }
       }
 
-      result[subcategory].push(command)
+      const commands = (result[subcategory] ||= [])
+      commands.push(command)
     }
 
-    return result
+    return result as Record<string, ComfyCommandImpl[]>
   })
 
   return {

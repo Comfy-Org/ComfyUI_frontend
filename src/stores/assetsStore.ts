@@ -92,8 +92,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at ?? 0).getTime() -
-      new Date(a.created_at ?? 0).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 }
 
@@ -185,9 +184,9 @@ export const useAssetsStore = defineStore('assets', () => {
           loadedIds.add(asset.id)
 
           // Find insertion index to maintain sorted order (newest first)
-          const assetTime = new Date(asset.created_at ?? 0).getTime()
+          const assetTime = new Date(asset.created_at).getTime()
           const insertIndex = allHistoryItems.value.findIndex(
-            (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+            (item) => new Date(item.created_at).getTime() < assetTime
           )
 
           if (insertIndex === -1) {
@@ -817,7 +816,7 @@ export const useAssetsStore = defineStore('assets', () => {
               category,
               state
             ] of modelStateByCategory.value.entries()) {
-              if (state.assets?.has(asset.id)) {
+              if (state.assets.has(asset.id)) {
                 categoriesToInvalidate.add(category)
               }
             }
@@ -879,7 +878,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const providers = modelToNodeStore
         .getAllNodeProviders(modelType)
-        .filter((provider) => provider.nodeDef?.name)
+        .filter((provider) => provider.nodeDef.name)
 
       const nodeTypeUpdates = providers.map((provider) =>
         updateModelsForNodeType(provider.nodeDef.name).then(

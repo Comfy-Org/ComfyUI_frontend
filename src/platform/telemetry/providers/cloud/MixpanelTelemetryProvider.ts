@@ -39,6 +39,7 @@ import type {
   WorkspaceInviteMetadata
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { widenToNullish } from '@/utils/widenToNullish'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { OnboardingTourEvents, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -84,7 +85,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
-    this.configureDisabledEvents(window.__CONFIG__)
+    const config = widenToNullish(window.__CONFIG__)
+    this.configureDisabledEvents(config ?? null)
     watch(
       remoteConfig,
       (config) => {
@@ -92,7 +94,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       },
       { immediate: true }
     )
-    const token = window.__CONFIG__.mixpanel_token
+    const token = config?.mixpanel_token
 
     if (token) {
       try {

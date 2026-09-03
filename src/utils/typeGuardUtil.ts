@@ -5,6 +5,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ResultItemType } from '@/schemas/apiSchema'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`
@@ -34,7 +35,8 @@ export const isSubgraphIoNode = (
 ): node is LGraphNode & {
   constructor: { comfyClass: 'SubgraphInputNode' | 'SubgraphOutputNode' }
 } => {
-  const nodeClass = node.constructor?.comfyClass
+  const constructor = widenToNullish(node.constructor)
+  const nodeClass = constructor?.comfyClass
   return nodeClass === 'SubgraphInputNode' || nodeClass === 'SubgraphOutputNode'
 }
 

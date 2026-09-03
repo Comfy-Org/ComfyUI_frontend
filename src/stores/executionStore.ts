@@ -18,6 +18,7 @@ import type {
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
@@ -212,11 +213,11 @@ export const useExecutionStore = defineStore('execution', () => {
     { status, endTime, failureReason }: WorkflowStatusUpdate
   ) {
     if (status === 'running' || endTime === undefined) return
+    if (!(jobId in queuedJobs.value)) return
     const queuedJob = queuedJobs.value[jobId]
-    const startTime = queuedJob?.startTime
-    const workflowExecutionIntent = queuedJob?.workflowExecutionIntent
+    const startTime = queuedJob.startTime
+    const workflowExecutionIntent = queuedJob.workflowExecutionIntent
     if (
-      !queuedJob ||
       queuedJob.outcomeTracked ||
       startTime === undefined ||
       workflowExecutionIntent === undefined
@@ -383,7 +384,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const executingNode = computed<ExecutionNodeInfo | null>(() => {
     if (!executingNodeId.value) return null
 
-    return activeJob.value?.nodeLookup?.[String(executingNodeId.value)] ?? null
+    return activeJob.value?.nodeLookup?.[executingNodeId.value] ?? null
   })
 
   // This is the progress of the currently executing node (for backward compatibility)
@@ -515,7 +516,7 @@ export const useExecutionStore = defineStore('execution', () => {
     })
     const queuedJob = queuedJobs.value[jobId]
     const telemetry = useTelemetry()
-    if (queuedJob) {
+    if (jobId in queuedJobs.value) {
       telemetry?.trackExecutionSuccess({
         jobId
       })
@@ -587,10 +588,13 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodes, prompt_id: jobId } = detail
 
     // Revoke previews for nodes that are starting to execute
-    const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
+    const previousForJob =
+      jobId in nodeProgressStatesByJob.value
+        ? nodeProgressStatesByJob.value[jobId]
+        : {}
     for (const nodeId in nodes) {
       const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !previousForJob[nodeId]) {
+      if (nodeState.state === 'running' && !(nodeId in previousForJob)) {
         // This node just started executing, revoke its previews
         // Note that we're doing the *actual* node id instead of the display node id
         // here intentionally. That way, we don't clear the preview every time a new node
@@ -610,7 +614,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value && nodes[executingNodeId.value]) {
+    if (executingNodeId.value) {
       const nodeState = nodes[executingNodeId.value]
       _executingNodeProgress.value = {
         value: nodeState.value,
@@ -689,8 +693,8 @@ export const useExecutionStore = defineStore('execution', () => {
     detail: ExecutionErrorWsMessage
   ): boolean {
     const precondition = resolveAccountPrecondition({
-      exceptionType: detail.exception_type ?? '',
-      exceptionMessage: detail.exception_message ?? ''
+      exceptionType: detail.exception_type,
+      exceptionMessage: detail.exception_message
     })
     if (!precondition) return false
 
@@ -702,18 +706,18 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
-    const nodeId = detail.node_id
+    const nodeId = widenToNullish(detail.node_id)
     if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
       return false
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
     executionErrorStore.recordPromptError({
-      type: detail.exception_type ?? 'error',
+      type: detail.exception_type || 'error',
       message: detail.exception_type
         ? `${detail.exception_type}: ${detail.exception_message}`
-        : (detail.exception_message ?? ''),
-      details: detail.traceback?.join('\n') ?? ''
+        : detail.exception_message || '',
+      details: widenToNullish(detail.traceback)?.join('\n') || ''
     })
     return true
   }
@@ -741,8 +745,8 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function handleNotification(e: CustomEvent<NotificationWsMessage>) {
     const payload = e.detail
-    const text = payload?.value || ''
-    const id = payload?.id ? payload.id : ''
+    const text = payload.value || ''
+    const id = payload.id ? payload.id : ''
     if (!id) return
     // Until cloud implements a proper message
     if (text.includes('Waiting for a machine')) {
@@ -878,18 +882,18 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.workflowContext = workflowContext
     queuedJob.workflowExecutionIntent = workflowExecutionIntent
     queuedJob.workflow = workflow
-    if (workflow) jobIdToWorkflow.set(String(id), workflow)
-    queuedJob.shareId = workflow?.shareId
+    jobIdToWorkflow.set(id, workflow)
+    queuedJob.shareId = workflow.shareId
     queuedJob.viewMode = mode
     queuedJob.isAppMode = isAppModeValue(mode)
-    const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
+    const wid = workflow.activeState?.id ?? workflow.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
     }
-    if (workflow?.path) {
+    if (workflow.path) {
       ensureSessionWorkflowPath(id, workflow.path, workflow.instanceId)
     }
-    flushPendingWorkflowStatus(String(id), workflow)
+    flushPendingWorkflowStatus(id, workflow)
   }
 
   function flushPendingWorkflowStatus(

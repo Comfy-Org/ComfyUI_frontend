@@ -20,7 +20,9 @@ function getRequiredInputs(
   objectInfo: ObjectInfoResponse,
   nodeType: string
 ): Record<string, InputSpec> {
-  const nodeInfo = objectInfo[nodeType]
+  const nodeInfo = Object.entries(objectInfo).find(
+    ([type]) => type === nodeType
+  )?.[1]
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
   }
@@ -38,7 +40,9 @@ function getRequiredInput(
   nodeType: string,
   inputName: string
 ): InputSpec {
-  const input = getRequiredInputs(objectInfo, nodeType)[inputName]
+  const input = Object.entries(getRequiredInputs(objectInfo, nodeType)).find(
+    ([name]) => name === inputName
+  )?.[1]
   if (!input) {
     throw new Error(`Missing input ${nodeType}.${inputName}`)
   }
@@ -53,9 +57,7 @@ export function setStringInputTooltip(
   tooltip: string
 ): void {
   const requiredInputs = getRequiredInputs(objectInfo, nodeType)
-  if (!requiredInputs[inputName]) {
-    throw new Error(`Missing input ${nodeType}.${inputName}`)
-  }
+  getRequiredInput(objectInfo, nodeType, inputName)
 
   const input: InputSpec = ['STRING', { tooltip }]
   requiredInputs[inputName] = input
@@ -119,7 +121,9 @@ export function addNodeWithDisplayName(
   displayName: string,
   donorNodeType = 'KSampler'
 ): void {
-  const donor = objectInfo[donorNodeType]
+  const donor = Object.entries(objectInfo).find(
+    ([type]) => type === donorNodeType
+  )?.[1]
   if (!donor) {
     throw new Error(`Missing object_info entry for ${donorNodeType}`)
   }

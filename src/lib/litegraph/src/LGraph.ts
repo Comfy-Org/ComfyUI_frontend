@@ -573,7 +573,7 @@ export class LGraph
   readonly events = new CustomEventTarget<LGraphEventMap>()
   readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
   _nodes: (LGraphNode | SubgraphNode)[] = []
-  _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = {}
+  _nodes_by_id: Record<NodeId, LGraphNode> = {}
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
@@ -1376,7 +1376,7 @@ export class LGraph
       this.canvasAction((c) => c.startGhostPlacement(node, opts.dragEvent))
     }
 
-    if (node.isSubgraphNode()) {
+    if (typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()) {
       forEachNode(node.subgraph, (innerNode) => {
         if (innerNode.isSubgraphNode())
           this.subgraphs.set(innerNode.subgraph.id, innerNode.subgraph)
@@ -1411,7 +1411,7 @@ export class LGraph
     if (nodesBeingRemoved.has(node)) return
 
     // not found
-    if (this._nodes_by_id[node.id] == null) {
+    if (runtimeOptional(this._nodes_by_id[node.id]) == null) {
       console.warn('LiteGraph: node not found', node)
       return
     }
@@ -1520,7 +1520,7 @@ export class LGraph
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
     return id != null && id !== UNASSIGNED_NODE_ID
-      ? (this._nodes_by_id[id] ?? null)
+      ? this._nodes_by_id[id]
       : null
   }
 
@@ -1865,7 +1865,7 @@ export class LGraph
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    if (existingReroute) reroute.pos = pos
+    if (runtimeOptional(pos) && existingReroute) reroute.pos = pos
     reroute.floating = floating
     if (!this._addReroute(reroute)) return
     return reroute
@@ -2582,7 +2582,7 @@ export class LGraph
     }
 
     for (const nodeId of nodeIdMap.values()) {
-      const node = this._nodes_by_id[nodeId]
+      const node = runtimeOptional(this._nodes_by_id[nodeId])
       if (!node) continue
       node._setConcreteSlots()
       node.arrange()

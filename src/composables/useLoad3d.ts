@@ -33,6 +33,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -188,17 +189,18 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
-    if (!rawNode) return
+    if (!widenToNullish(containerRef) || !rawNode) return
 
     const node = rawNode
 
     try {
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
+      const comfyClass = widenToNullish(node.constructor.comfyClass)
 
       if (
-        isLoad3dResultViewerNode(node.constructor.comfyClass) ||
-        node.constructor.comfyClass.startsWith('Preview') ||
+        isLoad3dResultViewerNode(comfyClass ?? '') ||
+        comfyClass?.startsWith('Preview') ||
         !(widthWidget && heightWidget)
       ) {
         isPreview.value = true
@@ -215,7 +217,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
-        getZoomScale: () => app.canvas.ds.scale,
+        getZoomScale: () => {
+          const canvas = widenToNullish(app.canvas)
+          return widenToNullish(canvas?.ds)?.scale ?? 1
+        },
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
@@ -284,45 +289,64 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (!load3d) return
 
     // Restore configs - watchers will handle applying them to the Three.js scene
-    const savedSceneConfig = node.properties['Scene Config'] as SceneConfig
-    sceneConfig.value = {
-      ...sceneConfig.value,
-      ...savedSceneConfig,
-      backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
-    }
-
-    const savedModelConfig = node.properties['Model Config'] as ModelConfig
-    modelConfig.value = {
-      ...savedModelConfig,
-      gizmo: savedModelConfig.gizmo
-        ? {
-            ...savedModelConfig.gizmo,
-            scale: savedModelConfig.gizmo.scale
-          }
-        : {
-            enabled: false,
-            mode: 'translate',
-            position: { x: 0, y: 0, z: 0 },
-            rotation: { x: 0, y: 0, z: 0 },
-            scale: { x: 1, y: 1, z: 1 }
-          }
-    }
-
-    const savedCameraConfig = node.properties['Camera Config'] as CameraConfig
-
-    cameraConfig.value = savedCameraConfig
-
-    const savedLightConfig = node.properties['Light Config'] as LightConfig
-    const savedHdriEnabled = savedLightConfig.hdri?.enabled ?? false
-    lightConfig.value = {
-      intensity: savedLightConfig.intensity,
-      hdri: {
-        ...lightConfig.value.hdri!,
-        ...savedLightConfig.hdri,
-        enabled: false
+    const savedSceneConfig = widenToNullish(
+      node.properties['Scene Config'] as SceneConfig
+    )
+    if (savedSceneConfig) {
+      sceneConfig.value = {
+        ...sceneConfig.value,
+        ...savedSceneConfig,
+        backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
       }
     }
-    lastNonHdriLightIntensity.value = lightConfig.value.intensity
+
+    const savedModelConfig = widenToNullish(
+      node.properties['Model Config'] as ModelConfig
+    )
+    if (savedModelConfig) {
+      modelConfig.value = {
+        ...savedModelConfig,
+        gizmo: savedModelConfig.gizmo
+          ? {
+              ...savedModelConfig.gizmo,
+              scale: widenToNullish(savedModelConfig.gizmo.scale) ?? {
+                x: 1,
+                y: 1,
+                z: 1
+              }
+            }
+          : {
+              enabled: false,
+              mode: 'translate',
+              position: { x: 0, y: 0, z: 0 },
+              rotation: { x: 0, y: 0, z: 0 },
+              scale: { x: 1, y: 1, z: 1 }
+            }
+      }
+    }
+
+    const savedCameraConfig = widenToNullish(
+      node.properties['Camera Config'] as CameraConfig
+    )
+    if (savedCameraConfig) cameraConfig.value = savedCameraConfig
+
+    const savedLightConfig = widenToNullish(
+      node.properties['Light Config'] as LightConfig
+    )
+    const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
+    if (savedLightConfig) {
+      lightConfig.value = {
+        intensity:
+          widenToNullish(savedLightConfig.intensity) ??
+          lightConfig.value.intensity,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          ...savedLightConfig.hdri,
+          enabled: false
+        }
+      }
+      lastNonHdriLightIntensity.value = lightConfig.value.intensity
+    }
 
     const hdri = lightConfig.value.hdri
     let hdriLoaded = false

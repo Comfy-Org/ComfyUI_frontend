@@ -49,7 +49,7 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
     event.type === 'agent_tool_call' ||
     event.type === 'agent_message_delta' ||
     event.type === 'agent_message_done' ||
-    event.type === 'agent_active_tab'
+    true
   )
 }
 
@@ -127,7 +127,7 @@ describe('agentEventTransport fixture replay', () => {
     )
     const replyText = events
       .filter((e) => e.type === 'agent_message_delta')
-      .map((e) => (e.type === 'agent_message_delta' ? e.data.delta : ''))
+      .map((e) => e.data.delta)
       .join('')
 
     const message = drive(events)

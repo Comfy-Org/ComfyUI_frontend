@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -367,9 +368,9 @@ export function useSubscriptionCheckout(
             plan.duration,
             plan.price_cents,
             plan.credits_cents,
-            plan.seat_summary.seat_count,
-            plan.seat_summary.total_cost_cents,
-            plan.seat_summary.total_credits_cents,
+            widenToNullish(plan.seat_summary)?.seat_count,
+            widenToNullish(plan.seat_summary)?.total_cost_cents,
+            widenToNullish(plan.seat_summary)?.total_credits_cents,
             plan.period_start,
             plan.period_end
           ]
@@ -802,7 +803,7 @@ export function useSubscriptionCheckout(
         (isSubscriptionCancelled() && isReactivationCapablePreview(response)) ||
         (!isSubscriptionCancelled() && isExistingPlanPreview(response))
       ) {
-        installPreview(response)
+        if (widenToNullish(response)) installPreview(response)
         return
       }
       if (!isSubscriptionCancelled()) return
@@ -1351,7 +1352,7 @@ export function useSubscriptionCheckout(
     if (!beginCheckoutMutation()) return
 
     const teamCheckout = selectedTeamCheckout.value
-    if (!teamCheckout.stop.id) {
+    if (!widenToNullish(teamCheckout)?.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),

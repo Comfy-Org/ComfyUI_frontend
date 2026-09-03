@@ -29,22 +29,21 @@ export type ResolvedSelection =
 export function useResolvedSelectedInputs() {
   const appModeStore = useAppModeStore()
 
-  const graphNodes = shallowRef<LGraphNode[]>([...(app.rootGraph?.nodes ?? [])])
-  const refreshGraphNodes = () =>
-    (graphNodes.value = [...(app.rootGraph?.nodes ?? [])])
-  useEventListener(() => app.rootGraph?.events, 'configured', refreshGraphNodes)
+  const graphNodes = shallowRef<LGraphNode[]>([...app.rootGraph.nodes])
+  const refreshGraphNodes = () => (graphNodes.value = [...app.rootGraph.nodes])
+  useEventListener(() => app.rootGraph.events, 'configured', refreshGraphNodes)
   useEventListener(
-    () => app.rootGraph?.events,
+    () => app.rootGraph.events,
     'convert-to-subgraph',
     refreshGraphNodes
   )
   useEventListener(
-    () => app.rootGraph?.events,
+    () => app.rootGraph.events,
     'subgraph-created',
     refreshGraphNodes
   )
   useEventListener(
-    () => app.rootGraph?.events,
+    () => app.rootGraph.events,
     'node:slot-label:changed',
     () => triggerRef(graphNodes)
   )
@@ -52,8 +51,6 @@ export function useResolvedSelectedInputs() {
   return computed<ResolvedSelection[]>(() => {
     void graphNodes.value
     const rootGraph = app.rootGraph
-    if (!rootGraph) return []
-
     return appModeStore.selectedInputs.flatMap(
       ([widgetId, displayName, config]): ResolvedSelection[] => {
         if (!isWidgetId(widgetId)) return []

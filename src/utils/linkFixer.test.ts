@@ -299,7 +299,7 @@ describe('fixBadLinks', () => {
       deleted: 1
     })
     expect(links.has(linkId)).toBe(false)
-    expect(originNode.outputs?.[0]?.links).toEqual([])
+    expect(originNode.outputs[0].links).toEqual([])
   })
 
   it('suppresses logger calls in silent mode while still applying fixes', () => {

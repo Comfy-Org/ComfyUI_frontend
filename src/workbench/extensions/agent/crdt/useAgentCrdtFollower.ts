@@ -372,11 +372,10 @@ export function useAgentCrdtFollower(
       return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
-      actor: detail?.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail?.seq ?? 'unknown'}`
+      actor: detail.actor ?? 'agent-reset',
+      opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined)
-      adapter.clearForReset(detail.workflowId, context)
+    adapter.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type

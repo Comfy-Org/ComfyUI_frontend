@@ -2077,10 +2077,11 @@ export class LGraphNode
       size[1] = Math.max(size[1], widgets_height + this.widgets_start_y)
     else size[1] += widgets_height
 
-    function compute_text_size(text: string, fontStyle: string) {
+    function compute_text_size(text: string | undefined, fontStyle: string) {
+      const value = text ?? ''
       return (
-        LGraphCanvas._measureText?.(text, fontStyle) ??
-        font_size * text.length * 0.6
+        LGraphCanvas._measureText?.(value, fontStyle) ??
+        font_size * value.length * 0.6
       )
     }
 

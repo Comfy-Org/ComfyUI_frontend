@@ -278,8 +278,8 @@ export function useSettingUI(
     }
 
     if (scrollToSettingId) {
-      const setting = settingStore.settingsById[scrollToSettingId]
-      {
+      if (Object.hasOwn(settingStore.settingsById, scrollToSettingId)) {
+        const setting = settingStore.settingsById[scrollToSettingId]
         const { category } = getSettingInfo(setting)
         const found = settingCategories.value.find((c) => c.label === category)
         if (found) return found

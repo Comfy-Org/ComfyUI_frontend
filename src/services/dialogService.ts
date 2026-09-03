@@ -114,7 +114,7 @@ export const useDialogService = () => {
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
-        nodeId: executionError.node_id?.toString(),
+        nodeId: executionError.node_id.toString(),
         nodeType: executionError.node_type,
         traceback: executionError.traceback.join('\n'),
         reportType: 'graphExecutionError'
@@ -483,7 +483,7 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ) {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+    if (!isCloud || !window.__CONFIG__.subscription_required) {
       return
     }
 

@@ -244,13 +244,13 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       const [loadImageNode] =
         await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
-      if (!loadImageNode) throw new Error('Load Image node not found')
 
       await expect
         .poll(() =>
           comfyPage.page.evaluate(
             (nodeId) =>
-              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+              window.app!.graph.nodes.find((node) => node.id === nodeId)?.imgs
+                ?.length ?? 0,
             loadImageNode.id
           )
         )

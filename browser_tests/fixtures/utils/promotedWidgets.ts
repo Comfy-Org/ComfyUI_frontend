@@ -48,12 +48,7 @@ export async function setPromotedHostWidgetValue(
 
       widget.value = value
       widget.callback?.(value)
-      hostNode.onWidgetChanged?.(
-        widget.name ?? widgetName,
-        value,
-        oldValue,
-        widget
-      )
+      hostNode.onWidgetChanged?.(widget.name, value, oldValue, widget)
       return widget.value
     },
     { nodeId, widgetName, value, useSetValue }
@@ -101,9 +96,9 @@ export async function getPromotedWidgets(
   const { widgetSources, previewExposures } = await comfyPage.page.evaluate(
     (id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
-      const previewExposures = node?.serialize()?.properties?.previewExposures
-      if (!node?.isSubgraphNode?.())
-        return { widgetSources: [], previewExposures }
+      if (!node) return { widgetSources: [], previewExposures: undefined }
+      const previewExposures = node.serialize().properties?.previewExposures
+      if (!node.isSubgraphNode()) return { widgetSources: [], previewExposures }
 
       const { subgraph } = node
       const resolveSource = (
@@ -122,7 +117,7 @@ export async function getPromotedWidgets(
             (entry) => entry.link === linkId
           )
           if (!targetInput) continue
-          if (inputNode.isSubgraphNode?.()) {
+          if (inputNode.isSubgraphNode()) {
             return {
               sourceNodeId: String(inputNode.id),
               sourceWidgetName: targetInput.name
@@ -138,7 +133,7 @@ export async function getPromotedWidgets(
         return undefined
       }
 
-      const widgetSources = (node.inputs ?? []).flatMap((input) => {
+      const widgetSources = node.inputs.flatMap((input) => {
         if (!input.widgetId) return []
         const source = resolveSource(input.name)
         return source ? [source] : []

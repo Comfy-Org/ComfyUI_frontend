@@ -178,7 +178,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     rootGraphId() {
       const graph = deps.getGraph()
       if (!graph) return null
-      return String(graph.rootGraph?.id ?? graph.id)
+      return graph.rootGraph?.id ?? graph.id
     },
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
@@ -222,7 +222,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener({
-          graphId: String(graphId),
+          graphId,
           nodeId,
           name: widgetName,
           value: args[1],

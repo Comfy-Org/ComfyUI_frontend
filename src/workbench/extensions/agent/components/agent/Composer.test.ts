@@ -320,9 +320,7 @@ describe('Composer', () => {
       await userEvent.type(screen.getByRole('textbox'), '@')
 
       expect(
-        screen
-          .getAllByRole('option')
-          .map((option) => option.textContent?.trim())
+        screen.getAllByRole('option').map((option) => option.textContent.trim())
       ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
     })
 
@@ -337,7 +335,7 @@ describe('Composer', () => {
 
       const labels = screen
         .getAllByRole('option')
-        .map((option) => option.textContent?.trim())
+        .map((option) => option.textContent.trim())
       expect(labels).not.toContain(NODES[0].title)
       expect(screen.getAllByRole('option')).toHaveLength(NODES.length - 1)
     })

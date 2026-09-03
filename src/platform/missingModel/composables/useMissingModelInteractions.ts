@@ -8,6 +8,10 @@ import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 
+function currentRootGraph(): typeof app.rootGraph | null {
+  return app.rootGraph
+}
+
 export function getModelStateKey(
   modelName: string,
   directory: string | null,
@@ -21,7 +25,7 @@ export function getNodeDisplayLabel(
   nodeId: string | number,
   fallback: string
 ): string {
-  const graph = app.rootGraph
+  const graph = currentRootGraph()
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, String(nodeId))
   return resolveNodeDisplayName(node, {
@@ -54,7 +58,8 @@ export function useMissingModelInteractions() {
     const value = store.selectedLibraryModel[key]
     if (!value) return
 
-    const graph = app.rootGraph
+    const graph = currentRootGraph()
+    if (!graph) return
 
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)
