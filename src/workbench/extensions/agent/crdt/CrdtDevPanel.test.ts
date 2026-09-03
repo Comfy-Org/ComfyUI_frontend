@@ -2,6 +2,8 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as VueUse from '@vueuse/core'
+
 vi.mock('@/scripts/api', () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
@@ -20,7 +22,14 @@ vi.mock('@/stores/extensionStore', () => ({
   useExtensionStore: () => ({ extensions: [] })
 }))
 
-const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+const { clipboardCopy, reportError } = vi.hoisted(() => ({
+  clipboardCopy: vi.fn(async () => {}),
+  reportError: vi.fn()
+}))
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
+  useClipboard: () => ({ copy: clipboardCopy })
+}))
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -251,6 +260,24 @@ describe('CrdtDevPanel', () => {
     expect(copyReportButton.textContent).toContain('Copy failed')
 
     collectSpy.mockRestore()
+  })
+
+  it('keeps copy feedback visible for 1.6 seconds after the latest click', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const panel = renderPanel()
+    await user.click(chip()!)
+
+    const copyLogButton = screen.getByRole('button', { name: 'Copy log' })
+    await user.click(copyLogButton)
+    expect(copyLogButton).toHaveTextContent('Copied')
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await user.click(copyLogButton)
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(copyLogButton).toHaveTextContent('Copied')
+    panel.unmount()
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('passes an identifiers block to the report collector on every copy', async () => {
