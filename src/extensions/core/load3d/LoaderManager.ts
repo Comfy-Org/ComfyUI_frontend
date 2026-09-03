@@ -43,6 +43,23 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 /**
+ * Materials own their maps (`map`, `normalMap`, `roughnessMap`,
+ * `metalnessMap`, `aoMap`, `emissiveMap`, `alphaMap`, `bumpMap`,
+ * `displacementMap`, `envMap`, `clearcoatMap`, ...) but `Material.dispose()`
+ * only releases GPU program/shader state, not the textures it references.
+ * `disposeLoadResult` disposes non-shared materials on every load-generation
+ * change, so leaving their textures alive would retain full-resolution
+ * texture memory for every superseded model. Walk own enumerable properties
+ * rather than a hardcoded map-name list so newly added map types (e.g. a
+ * future `sheenColorMap`) are covered without touching this function.
+ */
+function disposeMaterialTextures(material: THREE.Material): void {
+  for (const value of Object.values(material)) {
+    if (value instanceof THREE.Texture) value.dispose()
+  }
+}
+
+/**
  * Default adapter set: mesh + splat + pointCloud. Each adapter declares the
  * file extensions it owns. For shared extensions (.ply), the adapter with an
  * async `matches()` tiebreaker is tried first; the unconditional adapter acts
@@ -121,42 +138,55 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
+        // The agent path may pass an untrusted, credential-bearing URL —
+        // never embed it in a thrown/reported error (see the redaction in
+        // the catch block and in modelThumbnail.ts's reportError call).
         if (options?.silent) throw new Error('Unknown model file type')
         useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
         return 'empty'
       }
 
-      const result = await this.loadModelInternal(url, fileExtension, loadId)
+      const result = await this.loadModelInternal(
+        url,
+        fileExtension,
+        loadId,
+        options?.silent
+      )
 
       if (loadId !== this.currentLoadId) {
-        // The load context refuses writes from a superseded load, so nothing
-        // reachable references this result and it is ours alone to free.
+        // A newer loadModel has superseded us. createLoadContext gates on
+        // loadId, so a superseded adapter's setOriginalModel /
+        // registerOriginalMaterial writes never landed — the result never
+        // entered the scene (setupModel is skipped below) and nothing else
+        // can reach it, so it is always safe to dispose here regardless of
+        // whether the manager itself has been torn down.
         if (result) this.disposeLoadResult(result)
         return 'cancelled'
       }
 
-      if (!result) {
-        if (options?.silent) {
-          throw new Error(`No model was produced for type: ${fileExtension}`)
-        }
-        this.eventManager.emitEvent('modelLoadingEnd', null)
-        return 'empty'
+      if (!result && options?.silent) {
+        throw new Error(`No model was produced for type: ${fileExtension}`)
       }
 
-      // Publish only after the staleness check so a slow older load
-      // can't clobber adapterRef.current that a newer load already
-      // wrote (or cleared).
-      this.adapterRef.current = result.adapter
-      this.adapterRef.capabilities = result.capabilities
-      await this.modelManager.setupModel(result.object)
+      if (result) {
+        // Publish only after the staleness check so a slow older load
+        // can't clobber adapterRef.current that a newer load already
+        // wrote (or cleared).
+        this.adapterRef.current = result.adapter
+        this.adapterRef.capabilities = result.capabilities
+        await this.modelManager.setupModel(result.object)
+      }
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
-      return 'loaded'
+      return result ? 'loaded' : 'empty'
     } catch (error) {
       if (loadId !== this.currentLoadId) return 'cancelled'
       this.eventManager.emitEvent('modelLoadingEnd', null)
-      // A silent caller owns the reporting; the URL may be untrusted, so
-      // don't echo it to the console on its behalf.
+      // A silent load's error (and the untrusted URL it may embed, e.g.
+      // from three.js's FileLoader "fetch for <url> responded with ...")
+      // is the caller's to report — logging it here on their behalf would
+      // write it to the console unredacted regardless of what the caller
+      // does with the rethrown error.
       if (options?.silent) throw error
       console.error('Error loading model:', error)
       if (!(options?.silentOnNotFound && isNotFoundError(error))) {
@@ -178,7 +208,10 @@ export class LoaderManager implements LoaderManagerInterface {
         ? child.material
         : [child.material]
       for (const material of materials) {
-        if (material !== this.modelManager.standardMaterial) material?.dispose()
+        if (!material || material === this.modelManager.standardMaterial)
+          continue
+        disposeMaterialTextures(material)
+        material.dispose()
       }
     })
   }
@@ -199,6 +232,12 @@ export class LoaderManager implements LoaderManagerInterface {
 
   private createLoadContext(loadId: number): ModelLoadContext {
     const mm = this.modelManager
+    // Adapters call setOriginalModel / registerOriginalMaterial synchronously
+    // during adapter.load(), before loadModel can check whether this load is
+    // still current. Gate those writes on identity here so a superseded
+    // load's result can never land in modelManager — that is what makes it
+    // safe to unconditionally dispose a stale result afterward (see the
+    // loadId !== this.currentLoadId branch in loadModel).
     const isCurrent = () => loadId === this.currentLoadId
     return {
       setOriginalModel: (model) => {
@@ -219,7 +258,8 @@ export class LoaderManager implements LoaderManagerInterface {
   private async loadModelInternal(
     url: string,
     fileExtension: string,
-    loadId: number
+    loadId: number,
+    silent?: boolean
   ): Promise<{
     object: THREE.Object3D
     adapter: ModelAdapter
@@ -229,7 +269,10 @@ export class LoaderManager implements LoaderManagerInterface {
     const filename = params.get('filename')
 
     if (!filename) {
-      console.error('Missing filename in URL:', url)
+      // Silent loads may carry an untrusted, credential-bearing URL (see the
+      // redaction note in loadModel's catch block) — never log it here on
+      // the caller's behalf.
+      if (!silent) console.error('Missing filename in URL:', url)
       return null
     }
 

@@ -384,9 +384,14 @@ class Load3d extends Viewport3d {
         options
       )
 
-      // A cancelled load leaves the managers torn down or owned by a newer
-      // load; touching the camera or renderer here would act on both.
-      if (outcome === 'cancelled') return outcome
+      // A cancelled/failed/empty load clears adapterRef up-front in
+      // LoaderManager but never calls setupModel, so the viewer's
+      // capability flags (format, gizmo, export) would otherwise keep
+      // advertising the *previous* model over an emptied scene. Only a
+      // successful load runs the post-load camera/animation restore below —
+      // those touch state (`currentModel`, camera) that a cancelled load may
+      // have left mid-teardown.
+      if (outcome !== 'loaded') return outcome
 
       if (this.modelManager.currentModel) {
         this.animationManager.setupModelAnimations(
@@ -407,8 +412,13 @@ class Load3d extends Viewport3d {
       }
 
       this.handleResize()
+
       return outcome
     } finally {
+      // Must run even when loaderManager.loadModel throws (the `{ silent:
+      // true }` path) — otherwise loadingPromise stays permanently non-null
+      // and every subsequent loadModel call waits on this settled promise
+      // forever without progressing.
       this.loadingPromise = null
     }
   }

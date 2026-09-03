@@ -409,6 +409,213 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
 })
 
 describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', () => {
+  it('applies the catch-up update when its seq equals the preceding subscribe acknowledgement', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    // The ack alone already tells the follower where the host is…
+    expect(bridge.lastSequence).toBe(1)
+
+    // …but the host then sends the catch-up AT that seq, and it must land:
+    // treating the ack as an applied baseline dropped this frame as stale and
+    // left the follower with an empty doc (the KA-11 schema_version=undefined
+    // symptom on nightly).
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    expect(projected).toHaveLength(1)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(1)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+    expect(nodesMap(bridge.follower.doc).get('1')?.toJSON()).toEqual({
+      type: 'LoadImage',
+      pos: [10, 20]
+    })
+  })
+
+  it('an already-current follower gets an ack and no catch-up, and stays live from the ack seq', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 7
+    })
+
+    // No doc_update follows (the state vector already covered everything), so
+    // the outbound op baseVersion must come from the ack, not sit at 0.
+    expect(bridge.lastSequence).toBe(7)
+
+    // The next LIVE frame is contiguous with the ack: applied, no resubscribe.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 8)
+    )
+    expect(projected).toHaveLength(1)
+    expect(bridge.lastSequence).toBe(8)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('arms the gap detector from the ack: a first frame beyond ack+1 forces a resync', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    // Both the catch-up (1) and the first live frame (2) were lost.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+
+    expect(projected).toHaveLength(0)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+  })
+
+  it('an update that beats the ack to the follower keeps its baseline when the ack lands', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    // The host joined the fanout before acking, so a live frame can overtake
+    // the acknowledgement on the wire.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 5)
+    )
+    expect(bridge.lastSequence).toBe(5)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 4
+    })
+
+    // The ack never rewinds an applied baseline…
+    expect(bridge.lastSequence).toBe(5)
+    // …so the frame it announced is a duplicate here, and 6 is the next one.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 5)
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 6)
+    )
+    expect(projected).toHaveLength(2)
+    expect(bridge.lastSequence).toBe(6)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('still applies the catch-up (seq == ack) after a live frame beat the ack, then stays live', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    // doc_relay.go handleDocSubscribe: join the fanout, THEN ack (seq=N), THEN
+    // the catch-up carrying that same seq N. The fanout writes from another
+    // goroutine, so live N+1 can reach the follower before the ack. The
+    // catch-up is the only frame holding what the follower's state vector
+    // lacked; dropping it as "stale" (N <= N+1) leaves a hole no later seq
+    // ever reveals.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(
+        hostDocUpdate((doc) => {
+          const node = new Y.Map<unknown>()
+          node.set('type', 'SaveImage')
+          nodesMap(doc).set('2', node)
+        }),
+        WORKFLOW_ID,
+        5
+      )
+    )
+    expect(bridge.lastSequence).toBe(5)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 4
+    })
+    expect(bridge.lastSequence).toBe(5)
+
+    const catchUp = hostDocUpdate((doc) => {
+      const node = new Y.Map<unknown>()
+      node.set('type', 'PreviewImage')
+      nodesMap(doc).set('3', node)
+    })
+    transport.deliver('doc_update', docUpdateFrame(catchUp, WORKFLOW_ID, 4))
+    expect(bridge.follower.updatesApplied).toBe(2)
+    expect(nodesMap(bridge.follower.doc).get('3')?.toJSON()).toEqual({
+      type: 'PreviewImage'
+    })
+    // The catch-up never rewinds the applied baseline.
+    expect(bridge.lastSequence).toBe(5)
+
+    // The catch-up window is one frame: a second seq-4 replay is stale again.
+    transport.deliver('doc_update', docUpdateFrame(catchUp, WORKFLOW_ID, 4))
+    expect(bridge.follower.updatesApplied).toBe(2)
+
+    // 6 is contiguous with the applied baseline — no spurious resync.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 6)
+    )
+    expect(projected).toHaveLength(3)
+    expect(bridge.lastSequence).toBe(6)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('a resubscribe forgets the previous ack so the new catch-up re-baselines', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 10
+    })
+    expect(bridge.lastSequence).toBe(10)
+
+    bridge.resubscribe()
+    expect(bridge.lastSequence).toBe(0)
+
+    // Whatever the new ack says is the new arming point.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 12
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 12)
+    )
+    expect(projected).toHaveLength(1)
+    expect(bridge.lastSequence).toBe(12)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+
   it('applies contiguous seqs without resubscribing', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true

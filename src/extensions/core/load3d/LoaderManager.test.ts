@@ -618,19 +618,152 @@ describe('LoaderManager', () => {
         lm.loadModel('api/view?filename=scene.usdz', undefined, {
           silent: true
         })
-      ).rejects.toThrow(/No model was produced for type/)
+      ).rejects.toThrow(/No model was produced/)
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(addAlert).not.toHaveBeenCalled()
     })
 
     it('rejects when the URL carries no filename and silent is set', async () => {
       const { lm } = makeLoaderManager()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
       await expect(
         lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
-      ).rejects.toThrow(/No model was produced for type/)
+      ).rejects.toThrow(/No model was produced/)
       expect(addAlert).not.toHaveBeenCalled()
+      // The URL may carry credentials (e.g. a signed query string) — a
+      // silent load must never log it to the console on the caller's
+      // behalf, matching the "never embeds the requested URL" guarantee
+      // for the thrown-error path below.
+      expect(consoleError).not.toHaveBeenCalled()
+    })
+
+    it('never embeds the requested URL in a silent load error, only the file type', async () => {
+      const { lm } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel(
+          'api/view?filename=secret.usdz&token=abc123&subfolder=priv',
+          undefined,
+          { silent: true }
+        )
+      ).rejects.toSatisfy((error: Error) => {
+        expect(error.message).not.toMatch(/token=abc123|secret|priv/)
+        return true
+      })
+    })
+
+    it('disposes a stale result on a live (non-disposed) manager and never publishes its setOriginalModel write', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.MeshBasicMaterial()
+      const firstModel = new THREE.Mesh(geometry, material)
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeMaterial = vi.spyOn(material, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          // Adapters call setOriginalModel synchronously during load(),
+          // before loadModel can know this result will be superseded.
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      // The manager was never disposed (still live) — the old narrowed
+      // guard (`result && this.disposed`) would have skipped disposal here
+      // and leaked the stale geometry/material.
+      expect(disposeGeometry).toHaveBeenCalledOnce()
+      expect(disposeMaterial).toHaveBeenCalledOnce()
+      // The stale load's setOriginalModel write must never have landed —
+      // createLoadContext gates it on loadId.
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
+    })
+
+    it('disposes textures held by a stale result material, not just the material itself', async () => {
+      // Regression coverage: Material.dispose() releases GPU program/shader
+      // state but not the textures it references — a stale result's
+      // material was disposed but its map/normalMap/etc. textures were
+      // leaked, retaining full-resolution texture memory per superseded
+      // load.
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const map = new THREE.Texture()
+      const normalMap = new THREE.Texture()
+      const material = new THREE.MeshStandardMaterial({ map, normalMap })
+      const firstModel = new THREE.Mesh(geometry, material)
+      const disposeMap = vi.spyOn(map, 'dispose')
+      const disposeNormalMap = vi.spyOn(normalMap, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeMap).toHaveBeenCalledOnce()
+      expect(disposeNormalMap).toHaveBeenCalledOnce()
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
+    })
+
+    it('does not dispose textures on the shared standardMaterial', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const sharedMap = new THREE.Texture()
+      modelManager.standardMaterial.map = sharedMap
+      const firstModel = new THREE.Mesh(geometry, modelManager.standardMaterial)
+      const disposeSharedMap = vi.spyOn(sharedMap, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeSharedMap).not.toHaveBeenCalled()
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {
@@ -663,41 +796,6 @@ describe('LoaderManager', () => {
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )
       expect(endEmits).toHaveLength(1)
-    })
-
-    it('disposes a stale result and ignores its writes on a live manager', async () => {
-      const { lm, modelManager } = makeLoaderManager()
-
-      let resolveFirst!: (value: THREE.Object3D) => void
-      const firstLoad = new Promise<THREE.Object3D>((r) => {
-        resolveFirst = r
-      })
-      const geometry = new THREE.BufferGeometry()
-      const material = new THREE.MeshBasicMaterial()
-      const staleModel = new THREE.Mesh(geometry, material)
-      const disposeGeometry = vi.spyOn(geometry, 'dispose')
-      const disposeMaterial = vi.spyOn(material, 'dispose')
-      const freshModel = new THREE.Object3D()
-
-      meshLoad
-        .mockImplementationOnce((ctx: ModelLoadContext) =>
-          firstLoad.then((model) => {
-            ctx.setOriginalModel(model)
-            return loadResult(model)
-          })
-        )
-        .mockResolvedValueOnce(loadResult(freshModel))
-
-      const stale = lm.loadModel('api/view?filename=stale.glb')
-      const fresh = lm.loadModel('api/view?filename=fresh.glb')
-      resolveFirst(staleModel)
-
-      await expect(stale).resolves.toBe('cancelled')
-      await expect(fresh).resolves.toBe('loaded')
-
-      expect(disposeGeometry).toHaveBeenCalledOnce()
-      expect(disposeMaterial).toHaveBeenCalledOnce()
-      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(staleModel)
     })
 
     it('drops and disposes an in-flight load when disposed', async () => {

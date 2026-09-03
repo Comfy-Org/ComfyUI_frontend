@@ -258,23 +258,6 @@ export interface LoadModelOptions {
   silent?: boolean
 }
 
-/**
- * Why a load stopped.
- *
- * - `loaded` — the model is in the scene.
- * - `cancelled` — the viewer was disposed, or a newer load superseded this
- *   one and now owns the shared state. The managers may be torn down, so
- *   touch nothing.
- * - `empty` — the file type could not be determined, or no adapter claimed
- *   it. Nothing was loaded.
- * - `failed` — loading threw.
- *
- * Only `loaded` means a model is displayed. Every other outcome has already
- * cleared the previous scene, so callers must neither run success work nor
- * assume the old model is still there.
- */
-export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
-
 export interface SceneOverlay {
   attach(scene: THREE.Scene): void
   detach(): void
@@ -282,6 +265,20 @@ export interface SceneOverlay {
   onActiveCameraChange?(camera: THREE.Camera): void
   dispose(): void
 }
+
+/**
+ * Outcome of a `loadModel` call. A caller that ignores this and assumes
+ * success can run its post-load steps (camera restore, widget commit,
+ * capability capture) against a torn-down manager or a scene that never
+ * received a model:
+ * - `'loaded'` — a model was fetched, parsed, and handed to `setupModel`.
+ * - `'cancelled'` — a newer `loadModel` or `dispose()` superseded this load;
+ *   the manager may already be torn down.
+ * - `'empty'` — no adapter claimed the file, or the URL had no filename;
+ *   `{ silent: true }` throws instead of returning this.
+ * - `'failed'` — the load threw (network, parse, or an unknown file type).
+ */
+export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
 
 export interface LoaderManagerInterface {
   init(): void
