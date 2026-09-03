@@ -73,7 +73,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override get type(): SubgraphId {
-    return super.type as SubgraphId
+    return super.type
   }
 
   override set type(value: string) {
@@ -348,7 +348,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         delete input.pos
         delete input.widget
-        delete input.widgetId
+        input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
       },
@@ -650,6 +650,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
+    if (this.id === UNASSIGNED_NODE_ID) {
+      // Registering now would key the store under a construction-time id
+      // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone
+      // that gets discarded), letting a later unrelated instance inherit
+      // this value. onAdded() performs the deferred registration once a
+      // real id is assigned.
+      input.widgetId = undefined
+      return
+    }
+
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
     const registered = store.registerWidget(
@@ -667,7 +677,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!registered) {
       delete input.pos
       delete input.widget
-      delete input.widgetId
+      input.widgetId = undefined
       input._widget = undefined
       return
     }
@@ -710,7 +720,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const store = useWidgetValueStore()
     for (const input of this.inputs) {
       const previousId = input.widgetId
-      if (!previousId) continue
+      if (!previousId) {
+        // Registration deferred by _setWidget while this.id was still
+        // UNASSIGNED_NODE_ID (e.g. widget resolution during construction).
+        // Perform it now that a real id is assigned.
+        if (input._subgraphSlot)
+          this._resolveInputWidget(input._subgraphSlot, input)
+        continue
+      }
       const nextId = widgetId(this.rootGraph.id, this.id, input.name)
       if (nextId === previousId) continue
 

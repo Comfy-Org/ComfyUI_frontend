@@ -164,6 +164,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [Text-to-Image and Image-to-Image Workflows](https://comfy.org/learning/basics/text-to-image-image-to-image/): Build a text-to-image workflow, then adapt it for image-to-image.
 - [LoRAs, Style Transfer, and ControlNets](https://comfy.org/learning/basics/loras-style-transfer-controlnets/): What each one does and how to wire them into a ComfyUI workflow.
 - [Inpainting, Outpainting, and Upscaling](https://comfy.org/learning/basics/inpainting-outpainting-upscaling/): Mask and repaint, extend the frame, and add resolution in ComfyUI.
+- [Image-to-Video, Motion Control, and Upscaling](https://comfy.org/learning/basics/image-to-video-motion-control-upscaling/): Animate a still image, steer the shot with motion control, and finish at higher resolution.
 
 ### Ad Creative
 

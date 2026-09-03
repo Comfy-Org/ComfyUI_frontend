@@ -128,6 +128,24 @@ describe('assertAssetApiGate', () => {
       )
     ).toThrow('return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}')
   })
+
+  it('does not desync the brace counter on a brace inside a string literal', () => {
+    // The gate body contains an unbalanced `{` inside a string. A
+    // string-unaware brace counter would count that stray `{` as real,
+    // never return to depth 0 within this gate's own body, and run off the
+    // end of the chunk - so `assetApiGates` would report "found 0" instead
+    // of correctly extracting the one real gate below (which is then
+    // rejected on its own merits, for having an extra statement, not for
+    // failing to be found at all).
+    expect(() =>
+      assertAssetApiGate(
+        [
+          'function isAssetAPIEnabled() {\n  const label = "{unbalanced"\n  return false\n}'
+        ],
+        'localhost'
+      )
+    ).toThrow('Built Asset API gate is invalid for localhost')
+  })
 })
 
 describe('assertBuildProvenance', () => {
@@ -150,7 +168,9 @@ describe('assertBuildProvenance', () => {
         commit,
         'desktop'
       )
-    ).toThrow(`Build does not contain expected frontend commit ${commit}`)
+    ).toThrow(
+      `Build does not contain expected frontend commit ${commit}, found old`
+    )
   })
 
   it('rejects an artifact built for another distribution', () => {
@@ -192,23 +212,47 @@ describe('assertBuildProvenance', () => {
 })
 
 describe('assertNoTestFixtures', () => {
-  it('accepts production chunks', () => {
+  it('accepts production chunks and sourcemap sources', () => {
     expect(() =>
-      assertNoTestFixtures(['const endpoint="/api/assets"'])
+      assertNoTestFixtures(
+        ['const endpoint="/api/assets"'],
+        ['../../src/platform/assets/services/assetService.ts']
+      )
+    ).not.toThrow()
+  })
+
+  it('accepts a production chunk that merely mentions a path marker in text', () => {
+    // A path marker is only meaningful as a module path (a sourcemap
+    // `sources` entry). A comment or string in bundled production source that
+    // happens to contain the same substring must not fail the build.
+    expect(() =>
+      assertNoTestFixtures([
+        '// see browser_tests/fixtures/ for the fixture format'
+      ])
     ).not.toThrow()
   })
 
   it.for([
-    ['browser_tests/fixtures/assets', 'browser_tests/fixtures/'],
-    ['/__fixtures__/asset', '/__fixtures__/'],
-    [
-      'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL',
-      'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
-    ]
-  ])('rejects leaked test marker %s', ([chunkMarker, reportedMarker]) => {
+    ['browser_tests/fixtures/assets.ts', 'browser_tests/fixtures/'],
+    ['/__fixtures__/asset.ts', '/__fixtures__/'],
+    ['ui-mock-assets/index.ts', 'ui-mock-assets']
+  ])(
+    'rejects a sourcemap source path carrying %s',
+    ([sourcePath, reportedMarker]) => {
+      expect(() => assertNoTestFixtures([], [sourcePath])).toThrow(
+        `Build contains test fixture marker: ${reportedMarker}`
+      )
+    }
+  )
+
+  it('rejects the sentinel anywhere in chunk text', () => {
     expect(() =>
-      assertNoTestFixtures([`const fixture="${chunkMarker}"`])
-    ).toThrow(`Build contains test fixture marker: ${reportedMarker}`)
+      assertNoTestFixtures([
+        'const fixture="COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL"'
+      ])
+    ).toThrow(
+      'Build contains test fixture marker: COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
+    )
   })
 })
 
@@ -286,6 +330,14 @@ describe('checkAssetsFlagArtifact', () => {
 
     expect(() => checkAssetsFlagArtifact(directory)).toThrow(
       'EXPECTED_FRONTEND_COMMIT is required'
+    )
+  })
+
+  it('requires the expected distribution even when the commit is set', () => {
+    vi.stubEnv('EXPECTED_DISTRIBUTION', '')
+
+    expect(() => checkAssetsFlagArtifact(directory)).toThrow(
+      'EXPECTED_DISTRIBUTION is required'
     )
   })
 })
