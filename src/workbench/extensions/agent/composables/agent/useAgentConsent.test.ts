@@ -232,6 +232,19 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
+  it('does not apply an open consent card to a different account', async () => {
+    const onOpen = vi.fn()
+    const request = useAgentConsent().withConsent(onOpen)
+    const dialog = await waitForConsentDialog()
+
+    accountAuthState.identity = 'account-b'
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+
+    expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
   it('authenticates signed-out Local users before saving to their account', async () => {
     authState.loggedIn = false
     accountAuthState.identity = null
