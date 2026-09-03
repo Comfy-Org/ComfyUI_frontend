@@ -44,6 +44,11 @@
       <BillingStatusBanner class="mt-4" />
 
       <TabsContent value="plan" class="mt-4">
+        <AccountLayerBillingPoc
+          v-if="accountLayerPocEnabled"
+          host="settings"
+          class="mb-4"
+        />
         <SubscriptionPanelContentWorkspace />
       </TabsContent>
       <TabsContent value="members" class="mt-4">
@@ -61,6 +66,7 @@ import { whenever } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import AccountLayerBillingPoc from '@/platform/account/AccountLayerBillingPoc.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
@@ -75,6 +81,7 @@ const tabTriggerActive =
   'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
 const tabTriggerInactive =
   'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
+const accountLayerPocEnabled = import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true'
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string

@@ -5,6 +5,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 
 const evidenceDir =
   '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-6-frontend'
+const paymentsEvidenceDir =
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/07-poc/consumer-frontend/evidence/payments'
 const testUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
 const storagePrefix = 'comfyui-frontend-account-layer-poc:'
 
@@ -15,6 +17,17 @@ interface AccountLayerDebug {
   refreshScheduleDelayMs: number | null
   refreshCredits(): Promise<void>
   signOut(): Promise<void>
+  billingPosts: number
+  openUrlCalls: number
+  lastCheckoutUrl: string | null
+  payment: { step: string }
+  injectOperationResponse(response: {
+    status: string
+    action_url?: string
+    reason_code?: string
+    no_charge_confirmed?: boolean
+  }): Promise<void>
+  showBillingModal(): void
 }
 
 function isPackageExchange(request: Request) {
@@ -33,6 +46,20 @@ async function signIn(page: Page) {
   await page.getByLabel(/password/i).fill(password)
   await page.getByRole('button', { name: /sign in|log in/i }).click()
   await expect(page).not.toHaveURL(/\/cloud\/login/)
+  const personalUse = page.getByRole('button', { name: 'Personal use' })
+  await personalUse
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .catch(() => {})
+  if (await personalUse.isVisible()) await personalUse.click()
+  const onboarding = page.getByRole('heading', {
+    name: "Let's get to know you"
+  })
+  for (let step = 0; step < 12 && (await onboarding.isVisible()); step++) {
+    const next = page.getByRole('button', { name: /^(Next|Submit)$/ })
+    if ((await next.isVisible()) && (await next.isEnabled())) await next.click()
+    else
+      await page.getByRole('group').last().getByRole('button').first().click()
+  }
 }
 
 async function snapshot(page: Page) {
@@ -62,7 +89,12 @@ async function packageKeys(page: Page) {
   )
 }
 
-test.beforeAll(async () => mkdir(evidenceDir, { recursive: true }))
+test.beforeAll(async () => {
+  await Promise.all([
+    mkdir(evidenceDir, { recursive: true }),
+    mkdir(paymentsEvidenceDir, { recursive: true })
+  ])
+})
 
 test.setTimeout(60_000)
 
@@ -196,5 +228,116 @@ test('sign-out during a boundary exchange cancels the timer and late write', asy
   await writeFile(
     `${evidenceDir}/signout-race.log`,
     'boundary-exchanges=1\ntimer-cancelled=true\nlate-storage-writes=0\n'
+  )
+})
+
+test('mounts shared checkout in both hosts and drives safe payment states', async ({
+  page
+}) => {
+  await page.addInitScript(() => {
+    window.open = (url) => {
+      Reflect.set(window, '__accountLayerOpenedUrl', String(url))
+      return window
+    }
+  })
+  await signIn(page)
+  await page
+    .getByRole('button', { name: /^Settings/ })
+    .first()
+    .click()
+  const settingsDialog = page.getByTestId('settings-dialog')
+  await settingsDialog
+    .locator('nav')
+    .getByRole('button', { name: 'Plan & Credits' })
+    .click()
+  const settingsHost = settingsDialog.locator(
+    '[data-testid^="account-layer-billing-settings-step-"]'
+  )
+  await expect(settingsHost).toBeVisible()
+  await page.evaluate(() => {
+    const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
+    debug.showBillingModal()
+  })
+  const modalHost = page.locator(
+    '[data-testid^="account-layer-billing-modal-step-"]'
+  )
+  await expect(modalHost).toBeVisible()
+  await expect(settingsHost).toHaveAttribute(
+    'data-copy-key',
+    (await modalHost.getAttribute('data-copy-key')) ?? ''
+  )
+  await modalHost.getByTestId('account-layer-subscribe').dblclick()
+  await expect
+    .poll(async () => (await snapshot(page)).sessionExchanges)
+    .toBeGreaterThan(0)
+  const checkout = await page.evaluate(() => {
+    const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
+    return {
+      billingPosts: debug.billingPosts,
+      openUrlCalls: debug.openUrlCalls,
+      lastCheckoutUrl: debug.lastCheckoutUrl
+    }
+  })
+  expect(checkout.billingPosts).toBe(1)
+  expect(checkout.openUrlCalls).toBe(1)
+  const states = [
+    {
+      name: 'verifying',
+      response: {
+        status: 'pending',
+        action_url: 'https://checkout.stripe.test/verify'
+      }
+    },
+    {
+      name: 'canceled',
+      response: { status: 'canceled', no_charge_confirmed: true }
+    },
+    {
+      name: 'declined',
+      response: { status: 'failed', reason_code: 'insufficient_funds' }
+    },
+    { name: 'processing_error', response: { status: 'timeout' } },
+    {
+      name: 'payment_received_hold',
+      response: { status: 'payment_received_hold' }
+    }
+  ] as const
+  const copyKeys: Record<string, string | null> = {}
+  for (const state of states) {
+    await page.evaluate(async (response) => {
+      const debug = Reflect.get(
+        window,
+        '__accountLayerPoc'
+      ) as AccountLayerDebug
+      await debug.injectOperationResponse(response)
+    }, state.response)
+    await expect(modalHost).toHaveAttribute(
+      'data-testid',
+      `account-layer-billing-modal-step-${state.name}`
+    )
+    copyKeys[state.name] = await modalHost.getAttribute('data-copy-key')
+  }
+  await modalHost.screenshot({
+    path: `${paymentsEvidenceDir}/modal-payment-received-hold.png`
+  })
+  await settingsHost.screenshot({
+    path: `${paymentsEvidenceDir}/settings-payment-received-hold.png`
+  })
+  await writeFile(
+    `${paymentsEvidenceDir}/runtime-proof.json`,
+    JSON.stringify(
+      {
+        bothHostsIdentical:
+          (await settingsHost.getAttribute('data-copy-key')) ===
+          (await modalHost.getAttribute('data-copy-key')),
+        billingPosts: checkout.billingPosts,
+        openUrlCalls: checkout.openUrlCalls,
+        checkoutUrlTestMode:
+          checkout.lastCheckoutUrl?.includes('cs_test_') ?? null,
+        copyKeys
+      },
+      null,
+      2
+    )
   )
 })

@@ -1,6 +1,8 @@
 import {
   AccountError,
   MalformedResponseError,
+  createBillingApiClient,
+  createBillingCommands,
   createBillingClient,
   createSessionClient
 } from '@comfyorg/account/core'
@@ -8,6 +10,9 @@ import type {
   AccountHostAdapter,
   BillingBalanceResponse,
   BillingClient,
+  BillingCommands,
+  BillingOperationResponse,
+  BillingState,
   SessionClient,
   StorageKey,
   TransportRequest,
@@ -29,6 +34,13 @@ export interface AccountLayerPocDebug {
   lastBillingSessionExchange: number | null
   credentialLifetimeMs: number | null
   refreshScheduleDelayMs: number | null
+  billingPosts: number
+  openUrlCalls: number
+  lastCheckoutUrl: string | null
+  payment: BillingState
+  operationStore: { activeId: string | null }
+  injectOperationResponse(response: BillingOperationResponse): Promise<void>
+  showBillingModal(): void
   refreshCredits(): Promise<void>
   runScheduledRefresh(): void
   signOut(): Promise<void>
@@ -48,12 +60,21 @@ const debug: AccountLayerPocDebug = {
   lastBillingSessionExchange: null,
   credentialLifetimeMs: null,
   refreshScheduleDelayMs: null,
+  billingPosts: 0,
+  openUrlCalls: 0,
+  lastCheckoutUrl: null,
+  payment: { step: 'select', noChargeConfirmed: false },
+  operationStore: { activeId: null },
+  injectOperationResponse: async () => undefined,
+  showBillingModal: () => undefined,
   refreshCredits: async () => undefined,
   runScheduledRefresh: () => undefined,
   signOut: async () => undefined
 }
 
 let scheduledRefresh: (() => void) | undefined
+let injectedOperationResponse: BillingOperationResponse | undefined
+let billingCommands: BillingCommands | undefined
 const exchangeError = shallowRef<Error | null>(null)
 
 export const accountLayerPocExchangeError = readonly(exchangeError)
@@ -198,14 +219,109 @@ function createFrontendAccountAdapter(
 export function createFrontendAccountClients(
   auth: Auth,
   getActiveWorkspace: () => string | null
-): { session: SessionClient; billing: BillingClient } {
+): {
+  session: SessionClient
+  billing: BillingClient
+  billingCommands: BillingCommands
+} {
   const adapter = createFrontendAccountAdapter(auth, getActiveWorkspace)
   const session = createSessionClient(adapter)
   const billing = createBillingClient(session, adapter)
+  const operationStore = {
+    namespace,
+    async getActiveId() {
+      const value = localStorage.getItem(
+        paymentStorageKey(auth, getActiveWorkspace)
+      )
+      debug.operationStore.activeId = value
+      return value
+    },
+    async setActiveId(id: string) {
+      localStorage.setItem(paymentStorageKey(auth, getActiveWorkspace), id)
+      debug.operationStore.activeId = id
+    },
+    async clearActiveId() {
+      localStorage.removeItem(paymentStorageKey(auth, getActiveWorkspace))
+      debug.operationStore.activeId = null
+    }
+  }
+  const paymentClient = createBillingApiClient({
+    async transport(request) {
+      if (request.method === 'GET' && injectedOperationResponse) {
+        return { status: 200, body: injectedOperationResponse }
+      }
+      const state = session.getState()
+      if (state.phase !== 'authenticated' && state.phase !== 'refreshing') {
+        throw new AccountError('Account session is unavailable')
+      }
+      if (request.method === 'POST') debug.billingPosts++
+      const response = await adapter.transport({
+        ...request,
+        path: workspaceApiUrl(request.path.replace(/^\/api/, '')),
+        headers: {
+          ...request.headers,
+          Authorization: `Bearer ${state.credential.token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (request.path !== '/api/billing/subscribe') return response
+      const body = record(response.body)
+      return {
+        ...response,
+        body: {
+          ...body,
+          action_url:
+            typeof body.action_url === 'string'
+              ? body.action_url
+              : body.payment_method_url
+        }
+      }
+    }
+  })
+  billingCommands = createBillingCommands({
+    client: paymentClient,
+    ports: {
+      operationStore,
+      clock: {
+        now: Date.now,
+        schedule: (fn, delayMs) => setTimeout(fn, delayMs),
+        cancel: (handle) =>
+          clearTimeout(handle as ReturnType<typeof setTimeout>)
+      },
+      async openUrl(url) {
+        debug.openUrlCalls++
+        debug.lastCheckoutUrl = url
+        return { opened: window.open(url, '_blank') !== null }
+      }
+    }
+  })
+  billingCommands.subscribeState((state) => {
+    debug.payment = state
+  })
+  debug.injectOperationResponse = async (response) => {
+    injectedOperationResponse = response
+    await billingCommands?.start()
+  }
   debug.refreshCredits = () => billing.refreshCredits()
   debug.runScheduledRefresh = () => scheduledRefresh?.()
   debug.signOut = () => signOut(auth)
-  return { session, billing }
+  return { session, billing, billingCommands }
+}
+
+function paymentStorageKey(
+  auth: Auth,
+  getActiveWorkspace: () => string | null
+): string {
+  return `${namespace}:${auth.currentUser?.uid ?? 'signed-out'}:${getActiveWorkspace() ?? 'no-workspace'}:billing:active-operation`
+}
+
+export function getAccountLayerBillingCommands(): BillingCommands {
+  if (!billingCommands) throw new AccountError('Billing commands unavailable')
+  return billingCommands
+}
+
+export function setAccountLayerPocShowBillingModal(show: () => void) {
+  debug.showBillingModal = show
 }
 
 export function getAccountLayerPocDebug(): Readonly<AccountLayerPocDebug> {

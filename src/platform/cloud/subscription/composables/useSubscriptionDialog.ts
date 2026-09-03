@@ -16,6 +16,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
+import { setAccountLayerPocShowBillingModal } from '@/platform/account/accountClient'
 import {
   clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
@@ -100,6 +101,22 @@ export const useSubscriptionDialog = () => {
     if (showInactiveMemberDialog()) return
 
     trackModalOpened(options?.reason)
+
+    if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
+      dialogService.showLayoutDialog({
+        key: DIALOG_KEY,
+        component: defineAsyncComponent(
+          () => import('@/platform/account/AccountLayerBillingPoc.vue')
+        ),
+        props: { host: 'modal' },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
+          dismissableMask: false
+        }
+      })
+      return
+    }
 
     const legacyPricingDialogProps = {
       renderer: 'reka',
@@ -208,6 +225,10 @@ export const useSubscriptionDialog = () => {
     if (isCloud && showInactiveMemberDialog()) return
 
     showPricingTable(options)
+  }
+
+  if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
+    setAccountLayerPocShowBillingModal(() => showPricingTable())
   }
 
   /**
