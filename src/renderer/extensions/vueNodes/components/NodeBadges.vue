@@ -38,7 +38,6 @@ defineProps<{
       class="flex size-6 items-center justify-center rounded-full bg-component-node-widget-background"
     >
       <i
-        data-testid="comfy-badge-icon"
         :class="
           cn(
             'icon-[comfy--comfy-c] size-3',

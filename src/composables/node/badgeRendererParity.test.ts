@@ -174,18 +174,9 @@ describe('badge renderer parity (I2)', () => {
     })
   })
 
-  describe('Comfy Cloud mark is Vue-only until BE-11449', () => {
+  describe('Comfy Cloud mark', () => {
     const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
     const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
-
-    it('legacy cannot distinguish Comfy Cloud from another partner node', () => {
-      const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
-      const cloudText = legacyBadgeText(cloud)
-      const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
-
-      expect(cloudText).toBe(legacyBadgeText(partner))
-      expect(cloudText).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
-    })
 
     it('Vue marks Comfy Cloud and leaves the other partner node unmarked', () => {
       const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)

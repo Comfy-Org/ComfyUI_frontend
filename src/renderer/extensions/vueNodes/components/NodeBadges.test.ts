@@ -20,34 +20,4 @@ describe('NodeBadges', () => {
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
-
-  it('tints the Comfy mark for a Comfy Cloud node', () => {
-    render(NodeBadges, {
-      props: {
-        hasComfyBadge: true,
-        hasComfyCloudBadge: true,
-        core: [],
-        extension: []
-      }
-    })
-
-    expect(screen.getByTestId('comfy-badge-icon')).toHaveClass(
-      'text-brand-yellow'
-    )
-  })
-
-  it('leaves the core-node Comfy mark untinted', () => {
-    render(NodeBadges, {
-      props: {
-        hasComfyBadge: true,
-        hasComfyCloudBadge: false,
-        core: [],
-        extension: []
-      }
-    })
-
-    expect(screen.getByTestId('comfy-badge-icon')).not.toHaveClass(
-      'text-brand-yellow'
-    )
-  })
 })

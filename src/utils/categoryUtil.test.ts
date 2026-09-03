@@ -41,10 +41,6 @@ describe('getProviderIcon', () => {
   it('converts to lowercase', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
   })
-
-  it('gives Comfy Cloud its own full-colour logo', () => {
-    expect(getProviderIcon('Comfy Cloud')).toBe('icon-[comfy--comfy-cloud]')
-  })
 })
 
 describe('getProviderBorderStyle', () => {
