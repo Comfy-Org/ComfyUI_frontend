@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const {
   name,

@@ -39,7 +39,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
-import { isPreviewableMediaType } from '@/utils/formatUtil'
+import { isPreviewableMediaType } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

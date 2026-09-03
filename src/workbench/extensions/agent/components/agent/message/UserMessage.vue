@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 import type { ReplyAsset } from '../../../utils/replyAssets'

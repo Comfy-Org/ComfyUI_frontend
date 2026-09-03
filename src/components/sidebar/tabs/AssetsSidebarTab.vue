@@ -243,7 +243,7 @@ import {
   formatDuration,
   getMediaTypeFromFilename,
   isPreviewableMediaType
-} from '@/utils/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')

@@ -10,7 +10,7 @@ import { useCanvasPositionConversion } from '@/composables/element/useCanvasPosi
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'

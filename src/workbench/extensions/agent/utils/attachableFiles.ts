@@ -1,5 +1,5 @@
-import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaType } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const MEDIA_ATTACHABLE_KINDS = new Set<MediaType>(['image', 'video', 'audio'])
 

@@ -6,7 +6,7 @@ import {
   resolveSupportedLocale
 } from '@/locales/localeConfig'
 import type { SupportedLocale } from '@/locales/localeConfig'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }

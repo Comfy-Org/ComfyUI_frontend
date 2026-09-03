@@ -1,5 +1,3 @@
-import type { operations } from '@comfyorg/registry-types'
-
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
   const isCamelCase = /^([A-Z][a-z]*)+$/.test(str)
@@ -575,12 +573,9 @@ export function formatVersionAnchor(version: string): string {
   return `v${version.replace(/\./g, '-')}`
 }
 
-/**
- * Supported locale types for the application (from OpenAPI schema)
- */
-type SupportedLocale = NonNullable<
-  operations['getReleaseNotes']['parameters']['query']['locale']
->
+const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'ja', 'ko', 'ru', 'zh'] as const
+
+type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 
 /**
  * Converts a string to a valid locale type with 'en' as default
@@ -592,16 +587,7 @@ type SupportedLocale = NonNullable<
  * stringToLocale('') // returns 'en'
  */
 export function stringToLocale(locale: string): SupportedLocale {
-  const supportedLocales: SupportedLocale[] = [
-    'en',
-    'es',
-    'fr',
-    'ja',
-    'ko',
-    'ru',
-    'zh'
-  ]
-  return supportedLocales.includes(locale as SupportedLocale)
+  return SUPPORTED_LOCALES.includes(locale as SupportedLocale)
     ? (locale as SupportedLocale)
     : 'en'
 }

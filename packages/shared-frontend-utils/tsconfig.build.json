@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false,
+    "noEmitOnError": true,
+    "types": []
+  },
+  "include": ["src/formatUtil.ts", "src/networkUtil.ts", "src/piiUtil.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

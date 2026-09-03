@@ -131,7 +131,7 @@ vi.mock('@/services/jobOutputCache', () => ({
 const appendJsonExtMock = vi.fn((value: string) =>
   value.toLowerCase().endsWith('.json') ? value : `${value}.json`
 )
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock('@comfyorg/shared-frontend-utils/formatUtil', () => ({
   appendJsonExt: (...args: Parameters<typeof appendJsonExtMock>) =>
     appendJsonExtMock(...args)
 }))

@@ -22,7 +22,7 @@ import type {
   SearchPacksResult,
   SortableField
 } from '@/types/searchServiceTypes'
-import { paramsToCacheKey } from '@/utils/formatUtil'
+import { paramsToCacheKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type RegistryNodePack = components['schemas']['Node']

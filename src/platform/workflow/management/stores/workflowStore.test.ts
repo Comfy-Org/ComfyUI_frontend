@@ -20,7 +20,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { isValidUuid } from '@/utils/formatUtil'
+import { isValidUuid } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,

@@ -96,7 +96,7 @@ import type { NodeId } from '@/types/nodeId'
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
-import { formatTime } from '@/utils/formatUtil'
+import { formatTime } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const { t } = useI18n()
 

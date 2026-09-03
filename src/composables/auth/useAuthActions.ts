@@ -21,7 +21,7 @@ import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
-import { usdToMicros } from '@/utils/formatUtil'
+import { usdToMicros } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /** Popup outcomes the user or their browser caused, not app faults. */
 const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [

@@ -58,7 +58,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
-import { formatVersionAnchor } from '@/utils/formatUtil'
+import { formatVersionAnchor } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import type { ReleaseNote } from '../common/releaseService'

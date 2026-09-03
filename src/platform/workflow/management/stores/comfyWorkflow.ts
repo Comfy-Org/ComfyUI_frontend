@@ -11,7 +11,7 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
-import { generateUUID } from '@/utils/formatUtil'
+import { generateUUID } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { escapeI18nMessage } from '@/utils/formatUtil'
+import { escapeI18nMessage } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 

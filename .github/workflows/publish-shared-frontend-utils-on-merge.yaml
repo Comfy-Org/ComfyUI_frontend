@@ -1,0 +1,84 @@
+name: Publish Shared Frontend Utils on PR Merge
+
+on:
+  pull_request:
+    types: ['closed']
+    branches: [main, core/*]
+    paths:
+      - 'packages/shared-frontend-utils/package.json'
+
+jobs:
+  resolve:
+    name: Resolve Version and Dist Tag
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      dist_tag: ${{ steps.dist.outputs.dist_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Read shared-frontend-utils version
+        id: get_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(jq -r '.version' packages/shared-frontend-utils/package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Determine dist-tag
+        id: dist
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "dist_tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    name: Publish Shared Frontend Utils to npm
+    needs: resolve
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-shared-frontend-utils.yaml
+    with:
+      version: ${{ needs.resolve.outputs.version }}
+      dist_tag: ${{ needs.resolve.outputs.dist_tag }}
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  comment_shared_frontend_utils_publish:
+    name: Comment Shared Frontend Utils Publish Summary
+    needs:
+      - resolve
+      - publish
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+
+      - name: Post shared-frontend-utils release summary comment
+        uses: ./.github/actions/comment-release-links
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          version_file: packages/shared-frontend-utils/package.json

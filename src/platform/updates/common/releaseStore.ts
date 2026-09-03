@@ -7,7 +7,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { stringToLocale } from '@/utils/formatUtil'
+import { stringToLocale } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { useReleaseService } from './releaseService'
 import type { ReleaseNote } from './releaseService'
