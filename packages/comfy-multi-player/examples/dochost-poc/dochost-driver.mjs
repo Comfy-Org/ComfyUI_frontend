@@ -19,9 +19,10 @@
  * Run:  node examples/dochost-poc/dochost-driver.mjs   (dochost must be on :8095)
  */
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const HOST = process.env.DOC_HOST || "http://127.0.0.1:8095";
-const CMP = process.env.CMP_PIN || new URL("../../", import.meta.url).pathname; // repo root
+const CMP = process.env.CMP_PIN || fileURLToPath(new URL("../../", import.meta.url)); // repo root
 
 const catalog = JSON.parse(readFileSync(`${CMP}/fixtures/catalog.json`, "utf8"));
 // Real base workflow: the team-spike edit-heavy session's base graph.

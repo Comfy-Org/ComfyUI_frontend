@@ -209,7 +209,13 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
  */
 function tryProjectNode(value: unknown, catalog: WidgetCatalog): WorkflowNode | null {
   if (!(value instanceof Y.Map)) return null;
-  if (value.has("widgets") && !(value.get("widgets") instanceof Y.Map)) return null;
+  if (
+    widgetStorageOf(value) === "named" &&
+    value.has("widgets") &&
+    !(value.get("widgets") instanceof Y.Map)
+  ) {
+    return null;
+  }
   return projectNode(value, catalog);
 }
 

@@ -129,6 +129,18 @@ describe("check-import-graph gate", () => {
     expect(run.stderr).toContain("could not parse");
   });
 
+  it("is INCONCLUSIVE (exit 2) when dependency-cruiser output has no summary", () => {
+    writeCleanFixture();
+    rmSync(join(root, "node_modules", ".bin"), { recursive: true, force: true });
+    mkdirSync(join(root, "node_modules", ".bin"), { recursive: true });
+    const fake = join(root, "node_modules", ".bin", "depcruise");
+    writeFileSync(fake, "#!/bin/sh\necho '{}'\n");
+    chmodSync(fake, 0o755);
+    const run = runAgainst(root, 2);
+    expect(run.status).toBe(2);
+    expect(run.stderr).toContain("report has no valid summary");
+  });
+
   // --- one mutant per rule -------------------------------------------------
 
   it("FAILS (exit 1) naming src-no-node-builtins on a Node builtin import (FC-3)", () => {

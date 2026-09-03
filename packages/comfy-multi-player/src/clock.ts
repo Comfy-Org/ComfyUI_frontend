@@ -86,12 +86,12 @@ export function observedDocCounter(doc: Y.Doc): number | undefined {
 }
 
 export function validateLamportCounter(value: unknown, allowZero = false): number {
-  if (!Number.isSafeInteger(value) || (value as number) < (allowZero ? 0 : 1)) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < (allowZero ? 0 : 1)) {
     throw new RangeError(
       `Lamport counter must be a ${allowZero ? "non-negative" : "positive"} safe integer`,
     );
   }
-  return value as number;
+  return value;
 }
 
 export function observeLamport(local: number, ...observed: number[]): number {

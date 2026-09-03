@@ -104,4 +104,21 @@ describe("incarnation-namespaced widget stamps (DQ-11)", () => {
     ]);
     expect(stamps.has(oldKey)).toBe(false);
   });
+
+  it("normalizes numeric widget-stamp node ids and retains the LWW winner", () => {
+    const doc = mint(base(), catalog);
+    const stamps = doc.getMap<unknown>("__stamps");
+    const numericKey = JSON.stringify(["widget", 1, "text"]);
+    const stringKey = JSON.stringify(["widget", "1", "text"]);
+    const migratedKey = JSON.stringify(["widget", "1", LEGACY_NODE_INCARNATION, "text"]);
+    stamps.set(numericKey, [8, "human:b", id("winner")]);
+    stamps.set(stringKey, [7, "human:a", id("loser")]);
+    doc.getMap("meta").set("schema_version", 1);
+
+    migrate(doc, 1);
+
+    expect(stamps.get(migratedKey)).toEqual([8, "human:b", id("winner")]);
+    expect(stamps.has(numericKey)).toBe(false);
+    expect(stamps.has(stringKey)).toBe(false);
+  });
 });

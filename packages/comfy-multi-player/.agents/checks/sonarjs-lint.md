@@ -13,8 +13,11 @@ Run `eslint-plugin-sonarjs` on changed files for SonarQube-grade bug and code-sm
    If install fails, skip and report: "Skipped: could not install eslint/sonarjs." Restore `package-lock.json` afterward if the install touched it (`git checkout -- package-lock.json`).
 4. Run (do not suppress stderr or discard the exit status — a failed lint run must not look like a clean pass). `--no-warn-ignored` is load-bearing, not cosmetic: see the non-vacuousness note below.
    ```bash
+   status=0
    npx eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js \
-     --no-warn-ignored --format json <changed_files>; echo "eslint exit: $?"
+     --no-warn-ignored --format json <changed_files> || status=$?
+   echo "eslint exit: $status"
+   exit "$status"
    ```
    ESLint exits `1` when it reports problems and `2` on a config/execution error. Treat exit `2`, a parse error, or empty/no output as **indeterminate** (report the failure), never as "no issues found".
 5. Parse the JSON. Map eslint `severity 2`→major, `severity 1`→minor. Categorize `sonarjs/no-*`→logic, `*cognitive-complexity*`→dx, others→style.

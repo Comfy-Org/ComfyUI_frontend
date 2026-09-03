@@ -255,6 +255,33 @@ describe("read-only surface — no live handle escapes", () => {
     expect(snapshotValue).toEqual(aliased);
     expect(readMeta(doc)["extra"]).not.toBe(doc.getMap("meta").get("extra"));
   });
+
+  it("preserves __proto__ document keys as own properties", () => {
+    const doc = fixtureDoc();
+    const hostileNode = new Y.Map<unknown>();
+    hostileNode.set("id", "__proto__");
+    hostileNode.set("type", "Note");
+    hostileNode.set("pos", JSON.parse('{"__proto__":{"polluted":true}}'));
+    const hostileWidgets = new Y.Map<unknown>();
+    hostileWidgets.set("__proto__", "widget value");
+    hostileNode.set("widgets", hostileWidgets);
+    nodesMap(doc).set("__proto__", hostileNode);
+    doc.getMap<unknown>(ROOT_LINKS).set("__proto__", [1, 2, 3]);
+
+    const graph = readGraph(doc);
+    const node = graph.nodes["__proto__"]!;
+    const pos = node.pos as Record<string, unknown>;
+    const widgets = node.widgets as Record<string, unknown>;
+    expect(Object.hasOwn(graph.nodes, "__proto__")).toBe(true);
+    expect(Object.hasOwn(graph.links, "__proto__")).toBe(true);
+    expect(Object.hasOwn(pos, "__proto__")).toBe(true);
+    expect(Object.hasOwn(widgets, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(graph.nodes)).toBeNull();
+    expect(Object.getPrototypeOf(graph.links)).toBeNull();
+    expect(Object.getPrototypeOf(pos)).toBeNull();
+    expect(Object.getPrototypeOf(widgets)).toBeNull();
+    expect((pos as { polluted?: unknown }).polluted).toBeUndefined();
+  });
 });
 
 describe("read-only surface — a caller cannot mutate the document through it", () => {

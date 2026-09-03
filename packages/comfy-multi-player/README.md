@@ -474,7 +474,7 @@ arrives on the update stream, not when the ack lists it as applied.
 
 **Batches abort the remainder.** If op *k* fails, ops 0..*k*-1 stay applied and
 ops *k*..*n* are not applied at all. Fix the failing op and resend the whole
-batch with the **same** `op_id`s: the prefix comes back in `skipped`, the
+batch with the **same** `op_id`s: the prefix comes back with `outcome: "no-op"`, the
 remainder applies. Rejected ops consume no `op_id`, so a batch is retryable.
 
 **The four `connect` rejections that used to break this are fixed (#34).**
@@ -491,8 +491,8 @@ Rejection codes: `malformed_op`, `unknown_op`, `op_deferred`,
 `catalog_required`, `invalid_node_payload`, `unknown_widget`,
 `uncatalogued_widget_write`, `opaque_widgets`, `widget_out_of_range`,
 `input_slot_missing`, `output_slot_missing`, `not_a_subgraph`,
-`interior_node_not_found`, `shared_definition_unforked`, and `apply_failed` for
-anything unexpected. Match on `code`, never on `message`.
+`interior_node_not_found`, `shared_definition_unforked`, `batch_aborted`, and
+`apply_failed` for anything unexpected. Match on `code`, never on `message`.
 
 `uncatalogued_widget_write` means a NAME-KEYED widget write named a class the
 pinned catalog does not describe. `add_node` and `set_widget` (and `connect`'s

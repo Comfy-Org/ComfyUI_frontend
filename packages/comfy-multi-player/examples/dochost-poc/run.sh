@@ -26,12 +26,18 @@ echo "== 3/4 start sidecar on :$PORT =="
 ( cd "$DOCHOST_SRC" && PORT="$PORT" node dist/server.js ) &
 SIDECAR=$!
 trap 'kill "$SIDECAR" 2>/dev/null || true' EXIT
+ready=0
 for _ in $(seq 1 30); do
   if curl -sf "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
+    ready=1
     break
   fi
   sleep 0.3
 done
+if [ "$ready" -ne 1 ]; then
+  echo "sidecar did not become healthy on :$PORT within 9s" >&2
+  exit 1
+fi
 
 echo "== 4/4 drive it =="
 DOC_HOST="http://127.0.0.1:$PORT" CMP_PIN="$REPO_ROOT" \

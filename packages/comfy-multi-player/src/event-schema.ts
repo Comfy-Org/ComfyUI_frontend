@@ -62,6 +62,6 @@ export const AGENT_EVENT_JSON_SCHEMA = {
   $schema: "http://json-schema.org/draft-07/schema#",
   $id: "https://github.com/Comfy-Org/comfy-multi-player/src/event-schema.ts",
   title: "Comfy in-app agent broadcast events",
-  oneOf: Object.keys(defs).map((name) => ({ $ref: `#/$defs/${name}` })),
-  $defs: defs,
+  oneOf: Object.keys(defs).map((name) => ({ $ref: `#/definitions/${name}` })),
+  definitions: defs,
 } as const;

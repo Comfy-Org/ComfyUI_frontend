@@ -103,7 +103,7 @@ function snapshot(value: unknown, depth: number): unknown {
     );
   }
   if (value instanceof Y.Map) {
-    const out: Record<string, unknown> = {};
+    const out = Object.create(null) as Record<string, unknown>;
     value.forEach((v, k) => {
       out[k] = snapshot(v, depth + 1);
     });
@@ -127,7 +127,7 @@ function snapshot(value: unknown, depth: number): unknown {
     return Object.freeze(out);
   }
   if (typeof value === "object" && value !== null) {
-    const out: Record<string, unknown> = {};
+    const out = Object.create(null) as Record<string, unknown>;
     for (const [k, v] of Object.entries(value)) out[k] = snapshot(v, depth + 1);
     return Object.freeze(out);
   }
@@ -342,17 +342,17 @@ export interface GraphSnapshot {
  */
 export function readGraph(doc: Y.Doc): GraphSnapshot {
   assertSnapshotReadable(doc, "readGraph");
-  const nodes: Record<string, NodeSnapshot> = {};
+  const nodes = Object.create(null) as Record<string, NodeSnapshot>;
   rootMap(doc, ROOT_NODES)?.forEach((node, id) => {
     if (!(node instanceof Y.Map)) return;
-    const out: Record<string, unknown> = {};
+    const out = Object.create(null) as Record<string, unknown>;
     for (const key of NODE_SNAPSHOT_KEYS) {
       if (node.has(key)) out[key] = snapshot(node.get(key), 1);
     }
     nodes[id] = Object.freeze(out) as NodeSnapshot;
   });
 
-  const links: Record<string, unknown> = {};
+  const links = Object.create(null) as Record<string, unknown>;
   rootMap(doc, ROOT_LINKS)?.forEach((raw, id) => {
     links[id] = snapshot(raw, 1);
   });
