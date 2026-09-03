@@ -6,6 +6,8 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -14,6 +16,7 @@ import {
   createNode,
   getWidgetIdForNode,
   mapLiveWidgetsById,
+  migrateWidgetsValues,
   resolveNode
 } from './litegraphUtil'
 
@@ -105,6 +108,21 @@ describe('createNode', () => {
     const result = await createNode(makeCanvas(new LGraph()), '')
     expect(result).toBeNull()
     expect(mockBringNodeToFront).not.toHaveBeenCalled()
+  })
+
+  it('leaves the graph unchanged when the canvas is select-only', async () => {
+    const graph = new LGraph()
+    const canvas = makeCanvas(graph)
+    canvas.selectOnly = true
+    const createNodeSpy = vi
+      .spyOn(LiteGraph, 'createNode')
+      .mockReturnValue(new LGraphNode('LoadImage'))
+
+    const result = await createNode(canvas, 'LoadImage')
+
+    expect(result).toBeNull()
+    expect(graph._nodes).toHaveLength(0)
+    expect(createNodeSpy).not.toHaveBeenCalled()
   })
 
   it('places the new node at the canvas graph_mouse position', async () => {
@@ -248,8 +266,10 @@ describe('getWidgetIdForNode', () => {
       widgetId(graphId, toNodeId(42), 'shared'),
       widgetId(graphId, toNodeId(42), 'shared#1')
     ])
-    expect([...mapped.values()]).toEqual([first, frozen])
-    expect(node.widgets).toEqual([first, frozen])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared'])
     expect(warn).toHaveBeenCalledOnce()
     warn.mockClear()
     expect(getWidgetIdForNode(node, frozen)).toBe(
@@ -283,8 +303,9 @@ describe('getWidgetIdForNode', () => {
       widgetId(graphId, toNodeId(42), 'shared'),
       widgetId(graphId, toNodeId(42), 'shared#1')
     ])
-    expect([...mapped.values()]).toEqual([first, frozen])
-    expect(node.widgets).toEqual([first, first, frozen])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
     expect(node.widgets.map(({ name }) => name)).toEqual([
       'shared',
       'shared',
@@ -301,5 +322,71 @@ describe('getWidgetIdForNode', () => {
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+})
+
+describe('migrateWidgetsValues', () => {
+  const inputDefs = {
+    forced: fromPartial<InputSpec>({ name: 'forced', forceInput: true }),
+    preview: fromPartial<InputSpec>({ name: 'preview' }),
+    steps: fromPartial<InputSpec>({ name: 'steps' })
+  }
+
+  function makeWidget(name: string, serialize = true): IBaseWidget {
+    return fromPartial<IBaseWidget>({ name, serialize })
+  }
+
+  it('migrates a legacy force-input array with a trailing skipped widget', () => {
+    const widgets = [makeWidget('steps'), makeWidget('preview', false)]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
+  it('compacts a mid-list hole with a trailing skipped widget', () => {
+    const holeInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' }),
+      ui1: fromPartial<InputSpec>({ name: 'ui1' }),
+      b: fromPartial<InputSpec>({ name: 'b' }),
+      ui2: fromPartial<InputSpec>({ name: 'ui2' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui1', false),
+      makeWidget('b'),
+      makeWidget('ui2', false)
+    ]
+
+    expect(
+      migrateWidgetsValues(holeInputDefs, widgets, ['av', null, 'bv'])
+    ).toEqual(['av', 'bv'])
+  })
+
+  it('migrates a sparse value array with a non-trailing skipped widget', () => {
+    const widgets = [makeWidget('preview', false), makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, null, 20])).toEqual([
+      20
+    ])
+  })
+
+  it('preserves compacted values for dynamic widgets after a skipped widget', () => {
+    const dynamicInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui', false),
+      makeWidget('extra')
+    ]
+
+    expect(
+      migrateWidgetsValues(dynamicInputDefs, widgets, ['av', 'extra value'])
+    ).toEqual(['av', 'extra value'])
+  })
+
+  it('continues to migrate a value array without skipped widgets', () => {
+    const widgets = [makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
 })

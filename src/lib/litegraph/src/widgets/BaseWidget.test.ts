@@ -1,3 +1,4 @@
+// oxlint-disable no-misused-spread -- spreading a widget is the compatibility contract under test
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -33,7 +34,7 @@ function createTestWidget(
   )
 }
 
-class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
   drawWidget(
     _ctx: CanvasRenderingContext2D,
     _options: DrawWidgetOptions
@@ -66,6 +67,18 @@ describe('BaseWidget store integration', () => {
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
+  })
+
+  it('preserves name in keys, spread copies, and JSON', () => {
+    const widget = createTestWidget(node, { name: 'custom-name' })
+
+    const widgetKeys = Object.keys(widget)
+    expect(widgetKeys).toContain('_name')
+    expect(widgetKeys).not.toContain('name')
+    expect({ ...widget }).toMatchObject({ _name: 'custom-name' })
+    expect(JSON.parse(JSON.stringify(widget))).toMatchObject({
+      _name: 'custom-name'
+    })
   })
 
   describe('metadata properties before registration', () => {
