@@ -32,6 +32,7 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -968,7 +969,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+    const phaseLoadExt = bootstrapTracer.startPhase('bootstrap/extensions-load')
     await useExtensionService().loadExtensions()
+    phaseLoadExt.stop()
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1063,12 +1066,19 @@ export class ComfyApp {
       }
     })
 
+    const phaseExtInit = bootstrapTracer.startPhase('bootstrap/extensions-init')
     await useExtensionService().invokeExtensionsAsync('init')
+    phaseExtInit.stop()
+
     await this.registerNodes()
 
     this.addDropHandler()
 
+    const phaseExtSetup = bootstrapTracer.startPhase(
+      'bootstrap/extensions-setup'
+    )
     await useExtensionService().invokeExtensionsAsync('setup')
+    phaseExtSetup.stop()
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1170,10 +1180,14 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    // Load node definitions from the backend
+    const phaseObjectInfo = bootstrapTracer.startPhase('bootstrap/object-info')
     const defs = await this.getNodeDefs()
+    phaseObjectInfo.stop()
+
+    const phaseRegister = bootstrapTracer.startPhase('bootstrap/extensions')
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    phaseRegister.stop()
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
