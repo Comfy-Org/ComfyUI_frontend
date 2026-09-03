@@ -14,7 +14,7 @@ import {
   formatUsdFromCents,
   usdToCents,
   usdToCredits
-} from '@/base/credits/comfyCredits'
+} from './creditsUtil'
 
 describe('comfyCredits helpers', () => {
   test('exposes the fixed conversion rate', () => {
