@@ -113,4 +113,41 @@ describe('materializeMissingAdapters', () => {
     expect(materialized).toEqual([])
     expect(nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))).toBeDefined()
   })
+
+  it('materializes under the CRDT id, not a reminted one, on the reconcile path (DrJKL P1)', () => {
+    // Regression for
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3921406436
+    // and https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3921409323:
+    // `graph.add()` internally calls `attachNodeToStores`/`registerNodeState`,
+    // which mints and assigns a NEW id whenever it finds an incumbent store
+    // record still occupying the target id. On the reconcile path (an id
+    // that already has a live adapter, e.g. a remote `update`), the store
+    // record must be cleared BEFORE `graph.add()` runs, or the CRDT id gets
+    // silently reminted and `graph.getNodeById(toNodeId(1))` goes right back
+    // to having no live adapter — the exact bug this module exists to fix.
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    materializeMissingAdapters(graph, ['1']) // first materialization
+
+    expect(graph.getNodeById(toNodeId(1))).not.toBeNull()
+
+    // Simulate a remote `update`: the op layer replaces the store record for
+    // the same id (delete+add under the hood) with fresh serialised state,
+    // then reports the id through the same `lastAddedNodeIds` channel again.
+    const nodeDataStore = useNodeDataStore()
+    const state = nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))
+    expect(state).toBeDefined()
+    if (state) state.lastSerialization = { ...state.lastSerialization, id: 1 }
+
+    const materialized = materializeMissingAdapters(graph, ['1'])
+
+    expect(materialized).toEqual(['1'])
+    // The live adapter must still be reachable under the ORIGINAL CRDT id —
+    // not undefined because `attachNodeToStores` reminted it.
+    const node = graph.getNodeById(toNodeId(1))
+    expect(node).not.toBeNull()
+    expect(node?.id).toBe(toNodeId(1))
+    expect(graph._nodes).toHaveLength(1)
+    expect(graph.serialize().nodes).toHaveLength(1)
+  })
 })

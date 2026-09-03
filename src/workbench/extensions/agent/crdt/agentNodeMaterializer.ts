@@ -30,17 +30,20 @@
  * exists → adopt, don't recreate" branch (`graphLayoutAttachment.ts`) instead
  * of duplicating that logic here.
  *
- * Ordering matches canonical graph loading (`LGraph.configure()`: "add
- * before configure, otherwise configure cannot create links") and stays
- * rollback-safe: `graph.add()` runs first — on an EMPTY node, so a throw
- * there touches neither the store nor a live adapter — then the store
- * record is cleared, then `node.configure()` (which runs node-class /
- * extension code, resolves slot/link references against `node.graph`, and
- * can throw) runs against the now-attached node. A `configure()` throw
- * rolls back both: the node is removed from the graph AND the store record
- * is restored, so the node is never dropped from both the live graph and
- * the store at once — it just stays store-only and is retried on the next
- * frame.
+ * Ordering: the store record is cleared FIRST, then `graph.add()` (which
+ * runs `attachNodeToStores`/`registerNodeState`), then `node.configure()`
+ * (canonical `LGraph.configure()` ordering — "add before configure,
+ * otherwise configure cannot create links"). Clearing before `add()` is
+ * load-bearing, not cosmetic: `registerNodeState` mints and assigns a NEW id
+ * whenever it finds an incumbent record at the target id, so if the old
+ * record were still present when `add()` ran, the CRDT-assigned id would get
+ * silently reminted — reproducing the exact "stored node has no live
+ * adapter" bug this module exists to fix, just one id later. Both fallible
+ * steps stay rollback-safe: an `add()` throw restores the store record
+ * (nothing was attached, so there's no adapter to remove); a `configure()`
+ * throw removes the just-added adapter AND restores the store record. Either
+ * way the node is never dropped from both the live graph and the store at
+ * once — it just stays store-only and is retried on the next frame.
  */
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -167,14 +170,35 @@ export function materializeMissingAdapters(
     }
     node.id = nodeId
 
+    // The incumbent store record at `nodeId` is cleared BEFORE `graph.add()`,
+    // not after. `graph.add()` calls `attachNodeToStores` ->
+    // `registerNodeState`, which only adopts the exact CRDT id if
+    // `nodeDataStore.registerNode` finds no incumbent at that key; if the old
+    // record is still there when `add()` runs, `registerNode` returns
+    // `undefined`, and `attachNodeToStores`'s collision loop mints and
+    // assigns a NEW id to `node` before `add()` returns — silently
+    // reproducing the exact "stored node has no live adapter" bug this
+    // module exists to fix, because the CRDT id now has no adapter again
+    // (DrJKL, https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3921406436;
+    // CodeRabbit, https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3921409323).
+    // Clearing first makes `registerNode` see an empty slot and register the
+    // node under the CRDT id unchanged.
+    //
+    // Rollback-safety is preserved the other way: if `graph.add()` throws (or
+    // returns falsy), the store record is restored via `registerNode` before
+    // continuing, so a failed add() never leaves the id store-less.
+    nodeDataStore.deleteNode(scope, state)
+    // Keyed by rootGraphId, matching every other clearNode call site in
+    // graphMutations.ts's commit() (e.g. the reconcileNode-replace and
+    // deleteNode branches) — widget records are bucketed per root graph,
+    // not per owning (sub)graph.
+    widgetValueStore.clearNode(scope.rootGraphId, nodeId)
+
     // Canonical ordering (`LGraph.configure()`: "add before configure,
     // otherwise configure cannot create links") — `graph.add()` first, THEN
     // `node.configure()`, so `node.graph` is set before slot/link resolution
     // runs inside `configure()` (github-actions Medium,
     // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3917983386).
-    // Both steps stay fallible and rollback-safe: the store record is only
-    // cleared once `graph.add()` has already succeeded, and restored if
-    // `configure()` throws afterward.
     let added: LGraphNode | null | undefined
     try {
       added = graph.add(node)
@@ -185,24 +209,13 @@ export function materializeMissingAdapters(
         context: { graphId: graph.id, nodeId: String(nodeId) }
       })
     }
-    if (!added) continue // leaves the store-only record in place; retried next frame
-
-    // The store record this node is about to recreate is the ONLY thing
-    // standing in the way of `attachNodeToStores`'s registration succeeding
-    // with the CRDT-assigned id (`registerNode` sees an incumbent at this id
-    // and returns undefined, which would otherwise force a mint-a-new-id
-    // retry — wrong here, since this isn't a real collision, it's the same
-    // node already having store state). Clear it only once `graph.add()`
-    // above has already succeeded, and restore it if `configure()` (the
-    // other fallible step — extension/node-class `onConfigure`,
-    // `onConnectionsChange`) throws, so a failure here never drops the node
-    // from the store and the save.
-    nodeDataStore.deleteNode(scope, state)
-    // Keyed by rootGraphId, matching every other clearNode call site in
-    // graphMutations.ts's commit() (e.g. the reconcileNode-replace and
-    // deleteNode branches) — widget records are bucketed per root graph,
-    // not per owning (sub)graph.
-    widgetValueStore.clearNode(scope.rootGraphId, nodeId)
+    if (!added) {
+      // `graph.add()` never attached anything on this path (it threw or
+      // no-op'd before registration), so there is no live adapter to remove
+      // — only the store record needs restoring.
+      nodeDataStore.registerNode(scope, state)
+      continue // leaves the store-only record in place; retried next frame
+    }
 
     try {
       node.configure(withNamedWidgetValues(serialised))
