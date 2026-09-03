@@ -106,6 +106,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const destructiveMutationsAllowed = ref(false)
+  let destructiveRejectionReported = false
 
   let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
@@ -217,6 +218,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     destructiveMutationsAllowed.value = hasExplicitDestructiveIntent(text)
+    destructiveRejectionReported = false
     sending.value = true
     stopRequestedWhileSending = false
     if (workflow?.prepare)
@@ -351,6 +353,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  // The follower retries a refused destructive frame on every later frame, so
+  // the graph layer may call this many times for one blocked change. Report
+  // and cancel once per sent turn.
+  function rejectDestructiveMutation(): void {
+    if (destructiveRejectionReported) return
+    destructiveRejectionReported = true
+    conversationStore.recordActiveNotice(
+      i18n.global.t('agent.destructiveMutationBlocked')
+    )
+    void stopTurn()
+  }
+
   let loadGeneration = 0
 
   function newChat(): void {
@@ -476,6 +490,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       () => destructiveMutationsAllowed.value
     ),
     bindWorkflow,
+    rejectDestructiveMutation,
     isSending,
     editableTurnId,
     start,

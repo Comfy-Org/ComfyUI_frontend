@@ -86,7 +86,6 @@ import type {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
@@ -328,7 +327,8 @@ const {
   bindWorkflow,
   answerAsk,
   answeringAskIds,
-  destructiveMutationsAllowed
+  destructiveMutationsAllowed,
+  rejectDestructiveMutation
 } = useAgentSession({
   rest,
   events,
@@ -342,7 +342,6 @@ const {
   }
 })
 
-const conversationStore = useAgentConversationStore()
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -361,12 +360,7 @@ const graphMutations = (workflowId: string) => {
         : null
     },
     allowDestructiveMutation: () => destructiveMutationsAllowed.value,
-    onDestructiveMutationRejected() {
-      conversationStore.recordActiveNotice(
-        t('agent.destructiveMutationBlocked')
-      )
-      void stopTurn()
-    },
+    onDestructiveMutationRejected: rejectDestructiveMutation,
     layout: {
       createNode(scope, nodeId, layout, context) {
         const { position, size } = layout
