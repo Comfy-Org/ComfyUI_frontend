@@ -77,12 +77,28 @@ async function pauseBetweenFields() {
   await new Promise((resolve) => setTimeout(resolve, 500))
 }
 
+async function challengeFrames(page: Page) {
+  return await Promise.all(
+    page
+      .frames()
+      .filter((frame) => /testmode-acs\.stripe\.com/.test(frame.url()))
+      .map(async (frame) => {
+        const complete = frame.getByRole('button', {
+          name: /^(complete|complete authentication)$/i
+        })
+        const box = await complete.boundingBox().catch(() => null)
+        return { frame, url: frame.url(), completeVisible: box !== null, box }
+      })
+  )
+}
+
 async function findChallengeFrame(page: Page): Promise<Frame> {
   const deadline = Date.now() + 60_000
   while (Date.now() < deadline) {
-    for (const frame of page.frames()) {
-      if (/testmode-acs\.stripe\.com/.test(frame.url())) return frame
-    }
+    const visible = (await challengeFrames(page)).find(
+      ({ completeVisible }) => completeVisible
+    )
+    if (visible) return visible.frame
     await new Promise((resolve) => setTimeout(resolve, 250))
   }
   const frames = await Promise.all(
@@ -191,21 +207,41 @@ async function waitForHostedReturn(page: Page) {
     await new Promise((resolve) => setTimeout(resolve, 1_000))
   }
   if (new URL(page.url()).origin === appOrigin) return
-  const frameTexts = await Promise.all(
-    page.frames().map((frame) =>
-      frame
-        .locator('body')
-        .innerText()
-        .catch(() => '')
-    )
+  const captchaCandidates = await Promise.all(
+    page.frames().map(async (frame) => {
+      const widgets = frame.locator(
+        'iframe[src*="hcaptcha.com"], [data-hcaptcha-widget-id]'
+      )
+      const boxes = await Promise.all(
+        Array.from({ length: await widgets.count() }, (_, index) =>
+          widgets
+            .nth(index)
+            .boundingBox()
+            .catch(() => null)
+        )
+      )
+      return {
+        frameUrl: frame.url(),
+        boxes: boxes.filter((box) => box !== null)
+      }
+    })
   )
-  if (!frameTexts.some((text) => /hcaptcha|verify you are human/i.test(text))) {
+  const captchaVisible = captchaCandidates.some(({ boxes }) => boxes.length > 0)
+  const challengeVisible = (await challengeFrames(page)).some(
+    ({ completeVisible }) => completeVisible
+  )
+  if (!captchaVisible || challengeVisible) {
     await page.waitForURL((url) => url.origin === appOrigin, {
       timeout: 165_000,
       waitUntil: 'commit'
     })
     return
   }
+  await page.screenshot({ path: `${evidenceDir}/captcha-detected.png` })
+  writeFileSync(
+    `${evidenceDir}/captcha-detected.json`,
+    `${JSON.stringify({ captured_at: new Date().toISOString(), frames: captchaCandidates }, null, 2)}\n`
+  )
   const startedAt = Date.now()
   console.log(
     'HUMAN: solve the Stripe hCaptcha in the Chrome window on display :1, then leave the tab alone'
@@ -226,6 +262,60 @@ async function waitForHostedReturn(page: Page) {
     `${JSON.stringify({ appeared: true, human_used: true, wait_ms: Date.now() - startedAt, timed_out: true })}\n`
   )
   throw new Error('Stripe hCaptcha remained after the ten-minute human window')
+}
+
+async function completeChallenge(page: Page) {
+  const frames = await challengeFrames(page)
+  writeFileSync(
+    `${evidenceDir}/3ds-frames.json`,
+    `${JSON.stringify(
+      frames.map(({ url, completeVisible, box }) => ({
+        url,
+        completeVisible,
+        box
+      })),
+      null,
+      2
+    )}\n`
+  )
+  const challenge = frames.find(({ completeVisible }) => completeVisible)
+  if (!challenge) throw new Error('No visible 3DS COMPLETE button')
+  const complete = challenge.frame.getByRole('button', {
+    name: /^(complete|complete authentication)$/i
+  })
+  const attempts: Array<{ attempt: number; method: string; outcome: string }> =
+    []
+  for (const [index, method] of ['click', 'force', 'evaluate'].entries()) {
+    if (method === 'click') await complete.click()
+    // oxlint-disable-next-line playwright/no-force-option -- required fallback for Stripe's cross-origin test challenge
+    if (method === 'force') await complete.click({ force: true })
+    if (method === 'evaluate')
+      await complete.evaluate((element) => {
+        if (element instanceof HTMLElement) element.click()
+      })
+    await page.screenshot({ path: `${evidenceDir}/3ds-click-${index + 1}.png` })
+    const outcome = await Promise.race([
+      page
+        .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
+          timeout: 20_000,
+          waitUntil: 'commit'
+        })
+        .then(() => 'app-return'),
+      complete
+        .waitFor({ state: 'detached', timeout: 20_000 })
+        .then(() => 'frame-detached'),
+      page
+        .getByText(/verify your payment|processing/i)
+        .waitFor({ state: 'visible', timeout: 20_000 })
+        .then(() => 'processing')
+    ]).catch(() => 'button-still-visible')
+    attempts.push({ attempt: index + 1, method, outcome })
+    if (outcome !== 'button-still-visible') break
+  }
+  writeFileSync(
+    `${evidenceDir}/3ds-click.json`,
+    `${JSON.stringify({ frame_url: challenge.url, attempts }, null, 2)}\n`
+  )
 }
 
 test('resumes declined checkout and completes it with a new card', async () => {
@@ -466,12 +556,8 @@ test('resumes declined checkout and completes it with a new card', async () => {
         .toBe(pagesBeforeRetry + 1)
       checkoutPage = context.pages().at(-1)!
       await fillCheckout(checkoutPage, '4000002760003184')
-      const completeChallenge = await findChallengeFrame(checkoutPage)
-      const complete = completeChallenge.getByRole('button', {
-        name: /^(complete|complete authentication)$/i
-      })
-      await expect(complete).toBeVisible({ timeout: 60_000 })
-      await complete.click()
+      await findChallengeFrame(checkoutPage)
+      await completeChallenge(checkoutPage)
       await waitForHostedReturn(checkoutPage)
       const settlementStartedAt = Date.now()
       appendFileSync(
@@ -602,7 +688,15 @@ test('resumes declined checkout and completes it with a new card', async () => {
       )
       return
     }
-    if (process.env.DIAGNOSE_ONLY === 'true') return
+    if (process.env.DIAGNOSE_ONLY === 'true') {
+      await page.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          refreshCredits(): Promise<void>
+        }
+        await seam.refreshCredits()
+      })
+      return
+    }
     const activeOperation = await page.evaluate(() => {
       const key = Object.keys(localStorage).find((candidate) =>
         candidate.endsWith(':billing:active-operation')
