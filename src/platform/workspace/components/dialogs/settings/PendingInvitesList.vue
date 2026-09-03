@@ -71,7 +71,7 @@
       </div>
     </div>
     <div
-      v-if="invites.length === 0"
+      v-if="loaded && invites.length === 0"
       class="flex w-full items-center justify-center py-8 text-sm text-muted-foreground"
     >
       {{
@@ -95,10 +95,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
-const { searchQuery = '' } = defineProps<{
+const { searchQuery = '', loaded = false } = defineProps<{
   invites: WorkspacePendingInvite[]
   gridCols: string
   searchQuery?: string
+  loaded?: boolean
 }>()
 
 defineEmits<{

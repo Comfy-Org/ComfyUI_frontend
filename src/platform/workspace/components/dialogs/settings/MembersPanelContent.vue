@@ -63,6 +63,7 @@
             {{ $t('workspacePanel.invite') }}
             <i class="pi pi-plus text-sm" />
           </Button>
+          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
         </div>
       </div>
     </Teleport>
@@ -184,6 +185,7 @@
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
             :search-query="searchQuery"
+            :loaded="pendingInvitesLoaded"
             @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
@@ -202,7 +204,7 @@
     />
     <!-- Need More Members Footer -->
     <div
-      v-if="hasMemberSeats"
+      v-if="hasMemberSeats && membersLoaded"
       class="flex shrink-0 items-center gap-1 pt-2 pb-6"
     >
       <p class="text-sm text-muted-foreground">
@@ -234,6 +236,7 @@ import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSe
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
@@ -241,10 +244,12 @@ import { useMembersPanel } from '@/platform/workspace/composables/useMembersPane
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
-  'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
+  'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'
 
 const {
   searchQuery,
+  membersLoaded,
+  pendingInvitesLoaded,
   activeView,
   maxSeats,
   isInPersonalWorkspace,
@@ -295,6 +300,8 @@ watch(isHeaderCollapsed, async () => {
 const { t } = useI18n()
 
 const emptyStateMessage = computed(() => {
+  if (!uiConfig.value.showMembersList) return null
+  if (!membersLoaded.value) return null
   if (activeView.value !== 'active') return null
   if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
   if (filteredMembers.value.length > 0) return null
