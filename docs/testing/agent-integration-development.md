@@ -20,12 +20,24 @@ and deletes the temporary agent database.
 
 ## Start here
 
-1. **Replay** the recordings as tests. Needs ComfyUI on 8188 only.
-   [browser_tests/README.md](../../browser_tests/README.md#playbook)
+1. **Replay** the recorded conversations as tests. Needs ComfyUI on 8188 only:
+
+   ```bash
+   DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+   ```
+
+   ```bash
+   PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
+   ```
+
+   Add `--headed -g <case id>` to watch one. The specs and recordings arrive
+   with #16764 and #16776.
+
 2. **Run the agent locally**: dev loop, smoke, record mode. Needs `../cloud`.
-   This doc, below.
-3. **Record** a new conversation. Needs `cloud up` in `../cloud`.
-   [fixtures/data/agent/README.md](../../browser_tests/fixtures/data/agent/README.md#playbook)
+   The Playbook below.
+3. **Record** a new conversation: `cloud up` in `../cloud`, then the third
+   Playbook command below and the recorder command it prints. The recorder
+   arrives with #16782.
 
 ## Playbook
 
