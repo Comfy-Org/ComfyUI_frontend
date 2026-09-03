@@ -826,6 +826,75 @@ describe('EcsFollowerAdapter integration', () => {
     })
   })
 
+  it('materializes an agent add_node into the ECS store and layout port only', () => {
+    // Companion to `does NOT drop an agent-added node from serialize() ...`
+    // in `src/lib/litegraph/src/LGraph.test.ts`. This drives the real
+    // applier + follower + adapter chain and pins the two side effects this
+    // layer owns for a remote `add_node`: the node state is registered in
+    // the ECS node-data store and the injected layout port is asked to
+    // create exactly one layout entry. `graphMutations.ts` is the pure,
+    // litegraph-free op layer, so the layout port is the only outbound seam
+    // here; nothing on this chain can construct an `LGraphNode`, which is
+    // why the serialize-side symptom is asserted in the companion test.
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const createNode = vi.fn()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode, deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const result = applyOps(
+      host,
+      [
+        op('op-1', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [10, 20],
+          node: {
+            id: 1,
+            type: 'Source',
+            title: 'Agent-added node',
+            pos: [10, 20],
+            size: [180, 90],
+            widgets_values: { seed: 1 },
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([{ op_id: 'op-1', outcome: 'applied' }])
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['op-1']
+      })
+    ).toBe(true)
+
+    const [stored] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(stored).toMatchObject({ id: toNodeId(1), type: 'Source' })
+    expect(createNode).toHaveBeenCalledExactlyOnceWith(
+      scope,
+      toNodeId(1),
+      expect.objectContaining({ position: { x: 10, y: 20 } }),
+      expect.objectContaining({ source: 'agent-remote', opId: 'op-1' })
+    )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('keeps follower docs and apply queues isolated by workflow target', () => {
     const followerA = new FollowerDoc()
     const followerB = new FollowerDoc()
