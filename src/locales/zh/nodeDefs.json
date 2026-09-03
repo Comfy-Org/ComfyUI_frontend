@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "将所选分辨率设置为结果的最近倍数。"
+      },
+      "preview": {
+        "name": "预览",
+        "tooltip": "实时预览计算得出的输出分辨率。"
       }
     },
     "outputs": {

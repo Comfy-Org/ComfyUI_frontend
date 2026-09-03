@@ -12977,7 +12977,7 @@
   },
   "MinimaxHailuo03ReferenceNode": {
     "display_name": "MiniMax H3 Reference to Video",
-    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 model. Refer to the references in the prompt by their order: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', and so on.",
+    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 models. Refer to the references in the prompt by their order: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', and so on.",
     "inputs": {
       "model": {
         "name": "model",
@@ -18653,6 +18653,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "Nearest multiple of the result to set the selected resolution to."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Live preview of the calculated output resolution."
       }
     },
     "outputs": {

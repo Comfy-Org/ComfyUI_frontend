@@ -13016,7 +13016,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Genera un video condicionado por imágenes de referencia, videos y audio usando el modelo MiniMax H3. Haz referencia a los elementos en el prompt según su orden: 'Imagen 1', 'Imagen 2', 'Video 1', 'Audio 1', y así sucesivamente.",
+    "description": "Genera vídeo condicionado por imágenes, vídeos y audio de referencia utilizando los modelos MiniMax H3. Haz referencia a los elementos en el prompt según su orden: «Imagen 1», «Imagen 2», «Vídeo 1», «Audio 1», etc.",
     "display_name": "MiniMax H3 Referencia a Video",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "múltiplo",
         "tooltip": "Múltiplo más cercano del resultado para establecer la resolución seleccionada."
+      },
+      "preview": {
+        "name": "vista previa",
+        "tooltip": "Vista previa en tiempo real de la resolución de salida calculada."
       }
     },
     "outputs": {
