@@ -80,6 +80,20 @@ export const WithTitlesFootnoteAndActionMobile: Story = {
   }
 }
 
+export const WithTitlesFootnoteAndTwoActions: Story = {
+  args: {
+    ...WithTitlesAndFootnote.args,
+    primaryCta: {
+      label: 'VIEW DETAILS',
+      href: '#'
+    },
+    secondaryCta: {
+      label: 'REQUEST DEMO',
+      href: '#'
+    }
+  }
+}
+
 export const Mobile: Story = {
   globals: {
     viewport: { value: 'mobile1', isRotated: false }

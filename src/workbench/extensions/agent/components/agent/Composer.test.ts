@@ -8,6 +8,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
@@ -20,6 +21,18 @@ const tooltipDirectiveStub = {
   updated(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   }
+}
+
+const fetchApi = vi.hoisted(() =>
+  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
+)
+vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
@@ -37,7 +50,7 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
-  it('shows the interactive empty-composer hint', () => {
+  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
@@ -153,6 +166,10 @@ describe('Composer', () => {
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
+      fetchApi.mockReset()
+      fetchApi.mockImplementation(async () =>
+        jsonResponse(404, { error: 'not found' })
+      )
     })
 
     it('opens from the mode control with the ask mode selected by default', async () => {
@@ -182,25 +199,48 @@ describe('Composer', () => {
       const save = screen.getByRole('button', { name: 'Save changes' })
       expect(save).toBeEnabled()
       const input = screen.getByRole('spinbutton', { name: 'credits' })
+      expect(input).toHaveValue(300)
       await userEvent.clear(input)
       await userEvent.type(input, '500')
       expect(save).toBeEnabled()
       await userEvent.click(save)
 
-      expect(store.mode).toBe('auto-limit')
-      expect(store.creditLimit).toBe(500)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        screen.getByRole('button', { name: 'Auto (limited)' })
+        await screen.findByRole('button', { name: 'Auto (limited)' })
       ).toBeInTheDocument()
+      expect(store.mode).toBe('auto_limited')
+      expect(store.creditLimit).toBe(500)
+    })
+
+    it('keeps the popover open and reports a failed save', async () => {
+      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Save changes' })
+      )
+
+      expect(
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
+      expect(useToastStore().messagesToAdd).toContainEqual({
+        severity: 'error',
+        detail: i18n.global.t('agent.runModeSaveFailed')
+      })
     })
 
     it('keeps Save disabled while the limit draft is invalid', async () => {
       mount()
       const store = useAgentRunModeStore()
-      store.save('auto-limit', 450)
+      await store.save('auto_limited', 450)
 
       await userEvent.click(
         await screen.findByRole('button', { name: 'Auto (limited)' })
@@ -211,12 +251,17 @@ describe('Composer', () => {
       expect(
         screen.getByRole('button', { name: 'Save changes' })
       ).toBeDisabled()
+
+      await userEvent.type(input, '1.5')
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
     })
 
     it('enables Save when only the credit limit changes', async () => {
       mount()
       const store = useAgentRunModeStore()
-      store.save('auto-limit', 450)
+      await store.save('auto_limited', 450)
 
       await userEvent.click(
         await screen.findByRole('button', { name: 'Auto (limited)' })
@@ -230,12 +275,12 @@ describe('Composer', () => {
       expect(save).toBeEnabled()
 
       await userEvent.click(save)
-      expect(store.creditLimit).toBe(460)
+      await vi.waitFor(() => expect(store.creditLimit).toBe(460))
     })
 
-    it('keeps unlimited auto mode distinct from limited auto mode', () => {
+    it('keeps unlimited auto mode distinct from limited auto mode', async () => {
       const store = useAgentRunModeStore()
-      store.save('auto', 450)
+      await store.save('auto', null)
 
       mount()
 
@@ -246,14 +291,16 @@ describe('Composer', () => {
     })
 
     it.for([
-      ['ask', 'Ask', 'Ask for permission'],
+      ['ask_approval', 'Ask', 'Ask for permission'],
       ['auto', 'Auto', 'Run workflow without permission'],
-      ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
+      ['auto_limited', 'Auto (limited)', 'Ask when credit limit is reached']
     ] as const)(
       'shows the %s mode tooltip copy',
-      ([mode, triggerName, tooltipCopy]) => {
-        useAgentRunModeStore().save(mode, 450)
-
+      async ([mode, triggerName, tooltipCopy]) => {
+        await useAgentRunModeStore().save(
+          mode,
+          mode === 'auto_limited' ? 450 : null
+        )
         mount()
 
         const trigger = screen.getByRole('button', { name: triggerName })
@@ -272,7 +319,7 @@ describe('Composer', () => {
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask')
+      expect(store.mode).toBe('ask_approval')
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
@@ -501,7 +548,7 @@ describe('Composer', () => {
     first.unmount()
 
     mount()
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe(
       'keep me'
     )
   })
