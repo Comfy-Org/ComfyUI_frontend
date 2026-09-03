@@ -180,11 +180,7 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  if (isOpen.value) {
-    hide()
-  } else {
-    show(event as MouseEvent)
-  }
+  contextMenu.value?.toggle(event)
 }
 
 defineExpose({ toggle, hide, isOpen, show })
