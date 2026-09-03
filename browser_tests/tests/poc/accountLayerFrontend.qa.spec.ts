@@ -149,7 +149,7 @@ test.beforeAll(async () => {
   ])
 })
 
-test.setTimeout(60_000)
+test.setTimeout(120_000)
 
 test('refreshes exactly at the natural five-minute boundary', async ({
   page

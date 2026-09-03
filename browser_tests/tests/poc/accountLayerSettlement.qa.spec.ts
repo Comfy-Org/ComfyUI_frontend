@@ -181,14 +181,64 @@ async function paymentState(page: Page) {
   })
 }
 
+async function waitForHostedReturn(page: Page) {
+  const appOrigin = new URL(baseUrl).origin
+  const initialDeadline = Date.now() + 15_000
+  while (
+    Date.now() < initialDeadline &&
+    new URL(page.url()).origin !== appOrigin
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+  }
+  if (new URL(page.url()).origin === appOrigin) return
+  const frameTexts = await Promise.all(
+    page.frames().map((frame) =>
+      frame
+        .locator('body')
+        .innerText()
+        .catch(() => '')
+    )
+  )
+  if (!frameTexts.some((text) => /hcaptcha|verify you are human/i.test(text))) {
+    await page.waitForURL((url) => url.origin === appOrigin, {
+      timeout: 165_000,
+      waitUntil: 'commit'
+    })
+    return
+  }
+  const startedAt = Date.now()
+  console.log(
+    'HUMAN: solve the Stripe hCaptcha in the Chrome window on display :1, then leave the tab alone'
+  )
+  while (Date.now() - startedAt <= 600_000) {
+    if (new URL(page.url()).origin === appOrigin) {
+      writeFileSync(
+        `${evidenceDir}/hcaptcha.json`,
+        `${JSON.stringify({ appeared: true, human_used: true, wait_ms: Date.now() - startedAt })}\n`
+      )
+      return
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5_000))
+  }
+  await page.screenshot({ path: `${evidenceDir}/hcaptcha-timeout.png` })
+  writeFileSync(
+    `${evidenceDir}/hcaptcha.json`,
+    `${JSON.stringify({ appeared: true, human_used: true, wait_ms: Date.now() - startedAt, timed_out: true })}\n`
+  )
+  throw new Error('Stripe hCaptcha remained after the ten-minute human window')
+}
+
 test('resumes declined checkout and completes it with a new card', async () => {
   test.setTimeout(process.env.DIAGNOSE_ONLY === 'true' ? 180_000 : 900_000)
   await mkdir(evidenceDir, { recursive: true })
   for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20g-'))
-  await mkdir(join(profileDir, 'Default'))
+  const persistentProfileDir = process.env.HOSTED_PROFILE_DIR
+  const profileDir = persistentProfileDir
+    ? persistentProfileDir
+    : await mkdtemp(join(tmpdir(), 'account-layer-run-20g-'))
+  await mkdir(join(profileDir, 'Default'), { recursive: true })
   writeFileSync(
     join(profileDir, 'Default', 'Preferences'),
     JSON.stringify({
@@ -422,10 +472,7 @@ test('resumes declined checkout and completes it with a new card', async () => {
       })
       await expect(complete).toBeVisible({ timeout: 60_000 })
       await complete.click()
-      await checkoutPage.waitForURL(
-        (url) => url.origin === new URL(baseUrl).origin,
-        { timeout: 180_000, waitUntil: 'commit' }
-      )
+      await waitForHostedReturn(checkoutPage)
       const settlementStartedAt = Date.now()
       appendFileSync(
         `${evidenceDir}/paystate.log`,
@@ -680,6 +727,7 @@ test('resumes declined checkout and completes it with a new card', async () => {
       `${consoleMessages.join('\n')}\n`
     )
     await context.close()
-    await rm(profileDir, { recursive: true, force: true })
+    if (!persistentProfileDir)
+      await rm(profileDir, { recursive: true, force: true })
   }
 })
