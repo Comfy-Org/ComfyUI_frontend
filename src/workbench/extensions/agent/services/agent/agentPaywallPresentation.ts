@@ -3,7 +3,7 @@ import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallPresentation =
   | { kind: 'unknown' }
-  | { kind: 'topUpAvailable'; showUpgrade: boolean }
+  | { kind: 'topUpAvailable' }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
   | { kind: 'salesManaged' }
@@ -39,8 +39,5 @@ export function resolveAgentPaywallPresentation({
       ? { kind: 'subscriptionRequired' }
       : { kind: 'salesManaged' }
   }
-  return {
-    kind: 'topUpAvailable',
-    showUpgrade: canSubscribeSelfServe
-  }
+  return { kind: 'topUpAvailable' }
 }
