@@ -166,6 +166,8 @@ export const Demo: Story = {
         showPercentText?: boolean
         ticks?: boolean
         stoppable?: boolean
+        thumbnailUrl?: string
+        showThumbnailPlaceholder?: boolean
         rows: Row[]
       }
 
@@ -227,6 +229,18 @@ export const Demo: Story = {
           name: 'Completed',
           verb: 'Completed',
           status: 'done',
+          thumbnailUrl:
+            'data:image/svg+xml;utf8,' +
+            encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%230b8ce9"/><stop offset="1" stop-color="%23b33a3a"/></linearGradient></defs><rect width="48" height="48" fill="url(%23g)"/></svg>'
+            ),
+          rows: []
+        },
+        {
+          name: 'Completed (no preview)',
+          verb: 'Completed',
+          status: 'done',
+          showThumbnailPlaceholder: true,
           rows: []
         },
         {
@@ -353,8 +367,12 @@ export const Demo: Story = {
             :failed-count="current.failedCount ?? 0"
             :show-percent-text="current.showPercentText ?? true"
             :hide-action="!current.stoppable || (runningRows > 1 && expanded)"
+            :thumbnail-url="current.thumbnailUrl ?? null"
+            :show-thumbnail-placeholder="current.showThumbnailPlaceholder ?? false"
+            :interactive="current.status === 'done'"
             :expanded="expanded && current.status === undefined"
             @toggle-expand="expanded = !expanded"
+            @activate="alert('Opens the assets panel')"
           >
             <template #action>
               <button
