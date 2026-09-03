@@ -49,6 +49,8 @@ const adapterState = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
 const apiState = vi.hoisted(() => {
   const target = new EventTarget()
   return {
@@ -96,6 +98,10 @@ vi.mock('./ecsFollowerAdapter', () => ({
 
 vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
@@ -178,6 +184,8 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    reportErrorMock.mockClear()
+    adapterState.applyFrame.mockReturnValue(true)
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -214,6 +222,67 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_connect_failure' })
+    )
+    unmount()
+  })
+
+  it('classifies an exhausted auth refusal for alerting without forwarding server text', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        code: 'unauthorized',
+        message: 'token rejected'
+      })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+
+    // The server-supplied `code`/`message` are unrestricted wire content
+    // (r3911180523): the reported error text is fixed and client-owned, and
+    // an unrecognized code (the server sends 'unauthorized', not one of the
+    // allowlisted classifications) normalizes to 'auth_reject' by pattern,
+    // never forwarded verbatim as a tag.
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
+      expect.objectContaining({
+        errorType: 'crdt_auth_reject',
+        tags: expect.objectContaining({ code: 'auth_reject' })
+      })
+    )
+    const [, options] = reportErrorMock.mock.calls.at(-1)!
+    expect(JSON.stringify(options)).not.toContain('token rejected')
+    unmount()
+  })
+
+  it('normalizes an unrecognized subscribe-refusal code to unknown', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        code: 'some_new_server_code_v7',
+        message: 'a message an attacker could shape'
+      })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
+      expect.objectContaining({
+        errorType: 'crdt_connect_failure',
+        tags: expect.objectContaining({ code: 'unknown' })
+      })
+    )
     unmount()
   })
 
@@ -450,6 +519,212 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
     expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_doc_divergence' })
+    )
+    unmount()
+  })
+
+  it('reports projection failures without changing their throw behavior', () => {
+    const { unmount } = mountFollower('wf-1')
+    const failure = new Error('projection failed')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw failure
+    })
+
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+    ).toThrow(failure)
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({ errorType: 'crdt_apply_error' })
+    )
+    unmount()
+  })
+
+  it('reports an exhausted subscribe refusal once per exhaustion', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    const reports = () =>
+      reportErrorMock.mock.calls.filter(
+        ([, options]) => options.errorType === 'crdt_connect_failure'
+      ).length
+    expect(reports()).toBe(1)
+
+    // Every reconnect resubscribes and the server refuses again: the same
+    // exhaustion must not report a second time.
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    dispatchFrame('doc_subscribed', { ok: false })
+    dispatchFrame('doc_subscribed', { ok: false })
+    expect(reports()).toBe(1)
+
+    // A confirmed subscribe ends the incident; a fresh exhaustion reports.
+    dispatchFrame('doc_subscribed', { ok: true })
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    expect(reports()).toBe(2)
+    unmount()
+  })
+
+  it.for([
+    ['permission_denied', 'auth_reject'],
+    ['stale_author', 'unknown'],
+    ['auth_service_unavailable', 'unknown']
+  ] as const)(
+    'classifies refusal code %s by delimited token as %s',
+    ([code, expected]) => {
+      vi.useFakeTimers()
+      const { unmount } = mountFollower('wf-1')
+
+      for (let attempt = 0; attempt <= 6; attempt++) {
+        dispatchFrame('doc_subscribed', { ok: false, code })
+        vi.advanceTimersByTime(500 * 2 ** attempt)
+      }
+
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ code: expected })
+        })
+      )
+      unmount()
+    }
+  )
+
+  it('reports a persistent schema error once until the doc is confirmed again', () => {
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const divergences = () =>
+      reportErrorMock.mock.calls.filter(
+        ([, options]) => options.errorType === 'crdt_doc_divergence'
+      ).length
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 2 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 2 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 2 })
+    expect(divergences()).toBe(1)
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 2 })
+    expect(divergences()).toBe(2)
+    unmount()
+  })
+
+  it('reports a missing projection target once until a frame applies again', () => {
+    const { unmount } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValue(false)
+    const divergences = () =>
+      reportErrorMock.mock.calls.filter(
+        ([, options]) => options.errorType === 'crdt_doc_divergence'
+      ).length
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    expect(divergences()).toBe(1)
+
+    adapterState.applyFrame.mockReturnValue(true)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3 })
+    adapterState.applyFrame.mockReturnValue(false)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
+    expect(divergences()).toBe(2)
+    unmount()
+  })
+
+  it('ignores socket signals while nothing is subscribed', () => {
+    const { unmount } = mountFollower(null)
+
+    apiState.target.dispatchEvent(
+      new CustomEvent('socketClosed', {
+        detail: { code: 1006, reason: '', wasClean: false }
+      })
+    )
+    for (let i = 0; i < 4; i++)
+      apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    expect(reportErrorMock).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('reports a flapping abnormal close once per window', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    const close = () =>
+      apiState.target.dispatchEvent(
+        new CustomEvent('socketClosed', {
+          detail: { code: 1006, reason: '', wasClean: false }
+        })
+      )
+    const reports = () =>
+      reportErrorMock.mock.calls.filter(
+        ([, options]) => options.errorType === 'crdt_ws_1006'
+      ).length
+
+    close()
+    vi.advanceTimersByTime(300)
+    close()
+    vi.advanceTimersByTime(300)
+    close()
+    expect(reports()).toBe(1)
+
+    vi.advanceTimersByTime(60_001)
+    close()
+    expect(reports()).toBe(2)
+    unmount()
+  })
+
+  it('reports a sustained reconnect storm once until the window empties', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    const reconnect = () =>
+      apiState.target.dispatchEvent(new Event('reconnecting'))
+    const storms = () =>
+      reportErrorMock.mock.calls.filter(
+        ([, options]) => options.errorType === 'crdt_reconnect_storm'
+      ).length
+
+    // A 30 s cadence keeps the pruned window parked on exactly the threshold.
+    for (let i = 0; i < 6; i++) {
+      reconnect()
+      vi.advanceTimersByTime(30_000)
+    }
+    expect(storms()).toBe(1)
+
+    // Quiet for longer than the window, then a fresh storm.
+    vi.advanceTimersByTime(60_001)
+    for (let i = 0; i < 3; i++) reconnect()
+    expect(storms()).toBe(2)
+    unmount()
+  })
+
+  it('reports abnormal closure and a reconnect storm', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    apiState.target.dispatchEvent(
+      new CustomEvent('socketClosed', {
+        detail: { code: 1006, reason: '', wasClean: false }
+      })
+    )
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_ws_1006' })
+    )
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'crdt_reconnect_storm' })
+    )
     unmount()
   })
 
@@ -867,6 +1142,14 @@ describe('useAgentCrdtFollower', () => {
     expect(String(hookErrors[0])).toContain('half-dead bridge')
     expect(clientState.destroy).toHaveBeenCalled()
     expect(adapterState.destroy).toHaveBeenCalled()
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'socketClosed',
+      expect.any(Function)
+    )
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'reconnecting',
+      expect.any(Function)
+    )
     expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
       'reconnected',
       expect.any(Function)
