@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
@@ -170,6 +174,18 @@ describe('useComboWidget', () => {
       })
     )
     expect(widget).toBe(mockWidget)
+  })
+
+  it('registers a loading inventory for remote combos', () => {
+    const node = createMockNode()
+    const widget = useComboWidget()(
+      node,
+      createMockInputSpec({ remote: { route: '/remote-files' } })
+    )
+
+    expect(getComboWidgetInventory(widget as IComboWidget)?.getStatus()).toBe(
+      'loading'
+    )
   })
 
   it('should create normal combo widget when asset API is disabled', () => {

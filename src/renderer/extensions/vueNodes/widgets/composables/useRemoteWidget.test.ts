@@ -719,4 +719,36 @@ describe('useRemoteWidget', () => {
       )
     })
   })
+  describe('inventory', () => {
+    it('reports loading until the in-flight request settles', async () => {
+      const hook = createHookWithData(['option1'])
+      hook.getValue()
+
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports error when the request fails', async () => {
+      mockAxiosError('Network error')
+      const hook = useRemoteWidget(createMockOptions())
+
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it('stays ready when a stale refresh fails', async () => {
+      const refresh = 4096
+      const { hook } = await setupHookWithResponse(['option1'], { refresh })
+
+      mockAxiosError('Network error')
+      vi.advanceTimersByTime(refresh)
+      await getResolvedValue(hook)
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+  })
 })

@@ -22,9 +22,11 @@ export interface MissingModelCandidate {
   /**
    * - `true`  — confirmed missing
    * - `false` — confirmed installed
-   * - `undefined` — pending async verification (asset-supported nodes only)
+   * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
+  /** Runtime-only deferred combo inventory check; never persisted. */
+  pendingVerification?: () => Promise<boolean | undefined>
 }
 
 /** View model grouping multiple candidate references under a single model name. */

@@ -1,4 +1,5 @@
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { MissingModelCandidate, MissingModelViewModel } from './types'
@@ -117,8 +118,9 @@ export function isModelFileName(name: string): boolean {
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
  * Must be called after `graph.configure()` so widget name/value mappings are accurate.
  *
- * Non-asset-supported nodes: `isMissing` resolved immediately via widget options.
- * Asset-supported nodes: `isMissing` left `undefined` for async verification.
+ * Static combos resolve `isMissing` immediately from widget options.
+ * Asset-supported nodes and remote combos whose inventory is still loading
+ * leave it `undefined` for async verification.
  */
 export function scanAllModelCandidates(
   rootGraph: LGraph,
@@ -286,10 +288,7 @@ function scanComboWidget(
     target.nodeType,
     target.definitionWidgetName
   )
-  const options = resolveComboValues(target.definitionWidget)
-  const inOptions = options.includes(value)
-
-  return {
+  const candidate: MissingModelCandidate = {
     nodeId: target.executionId,
     ...(target.sourceExecutionId && {
       sourceExecutionId: target.sourceExecutionId
@@ -299,8 +298,25 @@ function scanComboWidget(
     isAssetSupported: nodeIsAssetSupported,
     name: value,
     directory: getDirectory?.(target.nodeType),
-    isMissing: nodeIsAssetSupported ? undefined : !inOptions
+    isMissing: undefined
   }
+  if (nodeIsAssetSupported) return candidate
+
+  const inventory = getComboWidgetInventory(target.definitionWidget)
+  if (inventory && inventory.getStatus() !== 'ready') {
+    candidate.pendingVerification = async () => {
+      await inventory.waitForSettled()
+      if (inventory.getStatus() !== 'ready') return undefined
+      if (target.valueWidget.value !== value) return undefined
+      return !resolveComboValues(target.definitionWidget).includes(value)
+    }
+    return candidate
+  }
+
+  candidate.isMissing = !resolveComboValues(target.definitionWidget).includes(
+    value
+  )
+  return candidate
 }
 
 export function enrichWithEmbeddedMetadata(
@@ -399,6 +415,18 @@ export async function verifyAssetSupportedCandidates(
   signal?: AbortSignal,
   assetsStore?: AssetVerifier
 ): Promise<void> {
+  if (signal?.aborted) return
+
+  await Promise.all(
+    candidates.map(async (candidate) => {
+      const verify = candidate.pendingVerification
+      if (!verify) return
+      const isMissing = await verify()
+      delete candidate.pendingVerification
+      if (!signal?.aborted) candidate.isMissing = isMissing
+    })
+  )
+
   if (signal?.aborted) return
 
   const pendingCandidates = candidates.filter(

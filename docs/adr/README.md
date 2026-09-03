@@ -37,6 +37,7 @@ An Architecture Decision Record captures an important technical decision made al
 | [0025](0025-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 | [0026](0026-frontend-document-model.md)                                     | Frontend Document Model                                         | Proposed | 2026-08-31 |
 | [0027](0027-defer-promoted-widget-registration-to-onadded.md)               | Defer Promoted-Widget Registration to `onAdded()`               | Accepted | 2026-09-01 |
+| [0028](0028-defer-remote-combo-missing-model-judgement.md)                  | Defer Remote Combo Missing-Model Judgement                      | Proposed | 2026-09-03 |
 
 ## Creating a New ADR
 

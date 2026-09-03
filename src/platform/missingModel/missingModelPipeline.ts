@@ -137,6 +137,9 @@ export async function runMissingModelPipeline({
   const confirmedCandidates = enrichedCandidates.filter(
     (c) => c.isMissing === true
   )
+  const hasPendingVerification = enrichedCandidates.some(
+    (c) => c.pendingVerification
+  )
   const downloadableCandidates = confirmedCandidates.filter(hasDownloadMetadata)
 
   const missingModels: ModelFile[] = downloadableCandidates.map(toModelFile)
@@ -148,7 +151,7 @@ export async function runMissingModelPipeline({
   })
 
   if (enrichedCandidates.length) {
-    if (isCloud) {
+    if (isCloud || hasPendingVerification) {
       void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
         .then(() => {
           if (controller.signal.aborted) return
@@ -178,7 +181,9 @@ export async function runMissingModelPipeline({
             life: 5000
           })
         })
-    } else {
+    }
+
+    if (!isCloud) {
       if (!confirmedCandidates.length) {
         clearMissingModels(activeWf, silent)
         return { missingModels, confirmedCandidates }
@@ -198,10 +203,14 @@ export async function runMissingModelPipeline({
         })
         .finally(() => {
           if (controller.signal.aborted) return
-          useExecutionErrorStore().surfaceMissingModels(confirmedCandidates, {
-            silent
-          })
-          cacheModelCandidates(activeWf, confirmedCandidates)
+          const confirmedAfterFolderPaths = enrichedCandidates.filter(
+            (c) => c.isMissing === true
+          )
+          useExecutionErrorStore().surfaceMissingModels(
+            confirmedAfterFolderPaths,
+            { silent }
+          )
+          cacheModelCandidates(activeWf, confirmedAfterFolderPaths)
         })
 
       const missingModelMetadata =

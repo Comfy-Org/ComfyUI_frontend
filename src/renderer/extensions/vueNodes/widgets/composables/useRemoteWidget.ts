@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
@@ -209,6 +210,22 @@ export function useRemoteWidget<
     return dataCache.get(cacheKey)?.data as T
   }
 
+  function getInventoryStatus(): ComboWidgetInventoryStatus {
+    const entry = dataCache.get(cacheKey)
+    if (isInitialized(entry)) return 'ready'
+    if (isFailed(entry) || entry?.error) return 'error'
+    return 'loading'
+  }
+
+  async function waitForInventory(): Promise<void> {
+    const inFlight = dataCache.get(cacheKey)?.fetchPromise
+    if (inFlight) {
+      await inFlight.catch(() => undefined)
+      return
+    }
+    await fetchValue()
+  }
+
   /**
    * Getter of the remote property of the widget (e.g., options.values, value, etc.).
    * Starts the fetch process then returns the cached value immediately.
@@ -292,6 +309,8 @@ export function useRemoteWidget<
     refreshValue: widget.refresh,
     addRefreshButton,
     getCacheEntry: () => dataCache.get(cacheKey),
+    getInventoryStatus,
+    waitForInventory,
 
     cacheKey
   }
