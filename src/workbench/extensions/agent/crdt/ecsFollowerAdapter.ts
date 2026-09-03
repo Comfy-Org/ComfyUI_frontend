@@ -15,6 +15,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
+import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
 export type MutationsForTarget =
@@ -93,6 +94,33 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
     : 'originOutputs']
 }
 
+/** Slots `prepare` will keep: it drops every non-record entry before indexing. */
+function connectableSlots(slots: readonly unknown[] | undefined): number {
+  return (slots ?? []).filter(
+    (slot) => typeof slot === 'object' && slot !== null && !Array.isArray(slot)
+  ).length
+}
+
+/**
+ * The `prepare` connect rejections observable from the doc alone, mirrored
+ * because it fails the whole batch on the first one. Graph ownership is not
+ * among them: only the link store knows an id already belongs elsewhere.
+ */
+function isConnectable(
+  link: SemanticLinkPayload,
+  projectedIds: ReadonlySet<string>
+): boolean {
+  return (
+    link.id >= 0 &&
+    link.originSlot >= 0 &&
+    link.targetSlot >= 0 &&
+    projectedIds.has(String(link.originNodeId)) &&
+    projectedIds.has(String(link.targetNodeId)) &&
+    link.originSlot < connectableSlots(link.originOutputs) &&
+    link.targetSlot < connectableSlots(link.targetInputs)
+  )
+}
+
 function frameContext(update: DocUpdate): RemoteMutationContext {
   const opIds = update.opIds?.filter((id) => id.length > 0)
   return {
@@ -128,12 +156,18 @@ interface TargetSession {
  */
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
+  private readonly followerWorkflowIds = new WeakMap<FollowerDoc, string>()
 
   constructor(private readonly mutations: MutationsForTarget) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
     const session = this.createSession(workflowId, follower)
+    const previousWorkflowId = this.followerWorkflowIds.get(follower)
+    if (previousWorkflowId && previousWorkflowId !== workflowId) {
+      session.reconcileNextFrame = false
+    }
+    this.followerWorkflowIds.set(follower, workflowId)
     this.targets.set(workflowId, session)
     session.nodes.observeDeep(session.onNodesChanged)
     session.links.observe(session.onLinksChanged)
@@ -167,6 +201,95 @@ export class EcsFollowerAdapter {
       session.applying = false
     }
     return updateCommitted
+  }
+
+  /**
+   * Commit the bound doc's current content under its own provenance, for a doc
+   * preloaded from a saved snapshot: Yjs observers only report what changes
+   * after `bind`, so that content would otherwise stay unprojected until an
+   * unrelated later delta arrived.
+   *
+   * Opt-in, never done by `bind`, because the bridge reuses one long-lived
+   * follower doc across workflow switches: seeding at bind would project the
+   * previous workflow's graph into this one, and re-reconcile every node on an
+   * ordinary unbind/rebind of an unchanged doc.
+   *
+   * An unprojectable link is skipped rather than batched, since `prepare`
+   * rejects a whole batch on its first invalid entry. A self-inconsistent doc
+   * can therefore land a node whose slot mirror still names a skipped link,
+   * leaving that slot pointing at a topology the link store does not hold.
+   *
+   * Additive for nodes: ECS nodes the doc does not mention are left alone, so
+   * this converges the graph on the doc rather than replacing it. A caller
+   * wanting a true replace must clear first, accepting two separate batches.
+   *
+   * Not additive for the slots of a node it reconciles: `reconcileNode` splices
+   * the doc's slot records over the store's, so a store link in a slot the doc
+   * omits is left registered with no slot referencing it. `applyQueuedFrame`
+   * has the same hole on its own reconcile path; both need `linkStore` access
+   * to close, so a caller must not restore onto a populated graph until it is.
+   *
+   * Returns false when nothing is bound, when the doc fails the KA-11 read gate
+   * with a {@link FollowerSchemaError}, or when the batch was rejected.
+   * Restores arrive out of band, so this is the only place that gate can run
+   * for them.
+   *
+   * No production caller yet: nothing persists or restores Yjs bytes today.
+   */
+  projectBaseline(workflowId: string, context: RemoteMutationContext): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session) return false
+    try {
+      assertReadableSchema(session.follower.doc)
+    } catch (error) {
+      if (!(error instanceof FollowerSchemaError)) throw error
+      return false
+    }
+
+    const nodes = [...session.nodes.keys()].flatMap((id) => {
+      const payload = readSemanticNode(session.follower.doc, id)
+      return payload ? [payload] : []
+    })
+    const projectedIds = new Set(nodes.map(({ id }) => String(id)))
+    const links: SemanticLinkPayload[] = []
+    const skippedLinks: string[] = []
+    for (const id of session.links.keys()) {
+      const link = readSemanticLink(session.follower.doc, id)
+      if (link && isConnectable(link, projectedIds)) links.push(link)
+      else skippedLinks.push(id)
+    }
+
+    const skippedNodes = [...session.nodes.keys()].filter(
+      (id) => !projectedIds.has(id)
+    )
+    if (skippedNodes.length > 0 || skippedLinks.length > 0) {
+      console.warn(
+        `[agent-crdt] baseline for ${workflowId} skipped unprojectable nodes ` +
+          `[${skippedNodes.join(', ')}] and links [${skippedLinks.join(', ')}]`
+      )
+    }
+
+    const projected = session.mutations.batch(context, (batch) => {
+      for (const node of nodes) batch.reconcileNode(node)
+      for (const link of links) batch.connect(link)
+    })
+    if (!projected) return false
+
+    // Everything the doc holds, skipped included: a skipped entry left staged
+    // is retried next frame, whose whole batch `prepare` then rejects. A staged
+    // deletion is not in the doc, so it survives — nothing else can find it.
+    for (const id of session.nodes.keys()) {
+      session.nodeActions.delete(id)
+      session.changedWidgets.delete(id)
+    }
+    for (const id of session.links.keys()) session.changedLinks.delete(id)
+
+    // This baseline performed the initial reconciliation. Later wire deltas
+    // must use the normal add/update paths so links are updated atomically.
+    if (nodes.length > 0 || links.length > 0) {
+      session.reconcileNextFrame = false
+    }
+    return true
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
