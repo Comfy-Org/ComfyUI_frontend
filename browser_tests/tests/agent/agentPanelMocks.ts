@@ -33,7 +33,7 @@ export const SOCKET_READY_EVENT = {
 export function agentDocSubscribed() {
   return {
     type: 'doc_subscribed' as const,
-    data: { v: 1 as const, workflow_id: WORKFLOW_ID, ok: true }
+    data: { v: 1 as const, workflow_id: WORKFLOW_ID, ok: true, seq: 1 }
   }
 }
 
@@ -68,7 +68,7 @@ export function agentWorkflowUpdates() {
         workflow_id: WORKFLOW_ID,
         seq: 1,
         update_b64: encodeBase64(initialUpdate),
-        actor: 'agent:e2e',
+        actor: 'agent:e2e:tab-a',
         op_ids: ['agent-e2e-add-node']
       }
     },
@@ -79,7 +79,7 @@ export function agentWorkflowUpdates() {
         workflow_id: WORKFLOW_ID,
         seq: 2,
         update_b64: encodeBase64(reconnectDelta),
-        actor: 'agent:e2e',
+        actor: 'agent:e2e:tab-a',
         op_ids: ['agent-e2e-reconnect-delta']
       }
     }
