@@ -19,6 +19,7 @@
         >
           {{ confirmTitle }}
         </h2>
+        <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
       <div
         v-if="isReactivating"
