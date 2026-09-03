@@ -53,6 +53,11 @@ vi.mock('@/utils/litegraphUtil', () => ({
 }))
 
 vi.mock(
+  '@/workbench/extensions/agent/services/agent/agentIdentityStateTracker',
+  () => ({ registerAgentIdentityStateTracker: vi.fn() })
+)
+
+vi.mock(
   '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
   () => ({ registerWorkflowTabActivityTracker: vi.fn() })
 )

@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     restoreNodeIds: vi.fn(),
     saveNodeIds: vi.fn()
   },
+  registerIdentityTracker: vi.fn(() => () => {}),
   registerTracker: vi.fn(() => () => {}),
   workflowStore: {
     activeWorkflow: { path: 'workflows/first.json' },
@@ -67,6 +68,13 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 vi.mock(
+  '@/workbench/extensions/agent/services/agent/agentIdentityStateTracker',
+  () => ({
+    registerAgentIdentityStateTracker: mocks.registerIdentityTracker
+  })
+)
+
+vi.mock(
   '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
   () => ({
     registerWorkflowTabActivityTracker: mocks.registerTracker
@@ -108,6 +116,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
+    mocks.registerIdentityTracker.mockClear()
     mocks.registerTracker.mockClear()
     mocks.canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
@@ -145,6 +154,11 @@ describe('AgentPanel extension flag gate', () => {
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
     await loadEntryAndSetup()
     expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers the identity-state tracker once at setup', async () => {
+    await loadEntryAndSetup()
+    expect(mocks.registerIdentityTracker).toHaveBeenCalledTimes(1)
   })
 
   it('enables the panel when the flag turns true', async () => {

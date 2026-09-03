@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -571,6 +572,31 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
     expect(session.boundWorkflowId.value).toBe('wf-1')
+  })
+
+  it('clears the workflow binding when an authenticated identity changes', async () => {
+    const identity = ref<string | null>(null)
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+    session.start()
+    await session.sendMessage('bind me')
+
+    identity.value = 'user-a'
+    await nextTick()
+    expect(session.boundWorkflowId.value).toBe('wf-1')
+
+    identity.value = 'user-b'
+    await nextTick()
+    expect(session.boundWorkflowId.value).toBeNull()
+
+    session.bindWorkflow('wf-2')
+    identity.value = null
+    await nextTick()
+    expect(session.boundWorkflowId.value).toBeNull()
+    session.newChat()
   })
 
   it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {

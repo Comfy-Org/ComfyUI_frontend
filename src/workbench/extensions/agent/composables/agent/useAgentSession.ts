@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
@@ -9,6 +9,10 @@ import type {
   DraftSnapshot,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
+import {
+  AGENT_THREAD_STORAGE_KEY,
+  forgetAgentSessionMemory
+} from '../../services/agent/agentSessionMemory'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
 export interface AgentEventSource {
@@ -45,6 +49,7 @@ type PromptEditState =
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
+  identity?: () => string | null
   workflow?: {
     current(): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
@@ -55,7 +60,6 @@ export interface AgentSessionDeps {
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
@@ -81,6 +85,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  let loadGeneration = 0
+
+  if (deps.identity) {
+    watch(deps.identity, (_identity, previousIdentity) => {
+      // The app-scoped identity tracker purges the stores and persisted keys.
+      // Clear session-local state too so an open panel cannot keep following
+      // the previous account's workflow or complete one of its pending loads.
+      if (previousIdentity === null) return
+      loadGeneration++
+      promptEditState.value = { phase: 'idle' }
+      boundWorkflowId.value = null
+      rememberedWorkflowId = null
+    })
+  }
 
   let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
@@ -108,7 +126,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
+      localStorage.getItem(AGENT_THREAD_STORAGE_KEY) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
@@ -128,7 +146,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
+      const stored = localStorage.getItem(AGENT_THREAD_STORAGE_KEY)
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
@@ -156,7 +174,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError && error.status === 404) {
         if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        forgetAgentSessionMemory()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
@@ -222,7 +240,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
       conversationStore.setThreadId(ack.thread_id)
-      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+      localStorage.setItem(AGENT_THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
         bindWorkflow(ack.workflow_id)
         workflow?.adopted(ack.workflow_id, wfContext)
@@ -287,8 +305,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let loadGeneration = 0
-
   function newChat(): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -296,7 +312,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    forgetAgentSessionMemory()
   }
 
   function listThreads() {
@@ -312,7 +328,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    localStorage.setItem(AGENT_THREAD_STORAGE_KEY, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }

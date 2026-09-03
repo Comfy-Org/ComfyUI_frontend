@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia'
 
+import { registerAgentIdentityStateTracker } from '@/workbench/extensions/agent/services/agent/agentIdentityStateTracker'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -68,6 +69,7 @@ export function registerAgentPanelExtension(): void {
     },
     setup() {
       const { enabled } = storeToRefs(useAgentPanelStore())
+      registerAgentIdentityStateTracker()
       registerWorkflowTabActivityTracker(enabled)
       return setupFlagGate()
     }
