@@ -1615,7 +1615,7 @@ packages:
     engines: {node: '>= 20.12.0'}
 
   '@comfyorg/account@file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz':
-    resolution: {integrity: sha512-xmuMwvAyLlNmlksfOcfozpPRVWeWaOznyF8t7nemMTyJXSgrfp5p+K3AqxfxYsg2f+FNOZ0aRZF4wBkmt7rvOg==, tarball: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz}
+    resolution: {integrity: sha512-jHWsfmDbFYvFz82PD9Gmf9zXRNo2gdW1jo6Hsi2nMffjeODFte6GR6pNKz4/W5D5YjAN26LslpldSyw2LlZX0w==, tarball: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz}
     version: 0.0.0-poc
     peerDependencies:
       vue: '>=3.5 <4'

@@ -395,7 +395,7 @@ export function createFrontendAccountClients(
     resubscribe: () =>
       readyMutation(
         { kind: 'resubscribe', started_at: Date.now(), return_url: null },
-        () => billingCommands!.resubscribe({ plan_slug: 'pro-monthly' })
+        () => billingCommands!.resubscribe({})
       ),
     openPaymentPortal: async () => {
       await waitUntilAuthenticated(session)
