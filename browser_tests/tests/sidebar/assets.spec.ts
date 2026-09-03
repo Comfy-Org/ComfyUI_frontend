@@ -186,24 +186,15 @@ test.describe('Assets sidebar remote flag lifecycle', { tag: '@oss' }, () => {
     await apiCard.click()
     await expect(tab.selectionFooter).toBeVisible()
     const requestCountBeforeFlagOff = assetListRequests.length
-    const fallbackHistoryResponse = page.waitForResponse((response) => {
-      const url = new URL(response.url())
-      return (
-        url.pathname === '/api/jobs' &&
-        url.searchParams.get('status') === 'completed,failed,cancelled'
-      )
-    })
 
     await comfyPage.featureFlags.setServerFlags({ assets: false })
-    await fallbackHistoryResponse
-
-    await expect(
-      tab.getAssetCardByName('output_legacy-after-flag-off')
-    ).toBeVisible()
     await expect(apiCard).toHaveCount(0)
     await expect(tab.selectionFooter).toHaveCount(0)
     await expect(tab.filterButton).toHaveCount(0)
     expect(assetListRequests).toHaveLength(requestCountBeforeFlagOff)
+    await expect(
+      tab.getAssetCardByName('output_legacy-after-flag-off')
+    ).toBeVisible()
   })
 })
 
