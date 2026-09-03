@@ -80,6 +80,21 @@ describe('agentRestClient route + method', () => {
     expect(JSON.parse(init.body as string)).toEqual(preference)
   })
 
+  it('accepts unlimited auto mode with a null credit limit', async () => {
+    const preference = { mode: 'auto' as const, credit_limit: null }
+    respond(jsonResponse(200, preference))
+
+    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
+      preference
+    )
+  })
+
+  it('rejects a non-positive limited mode response', async () => {
+    respond(jsonResponse(200, { mode: 'auto_limited', credit_limit: 0 }))
+
+    await expect(createAgentRestClient().getRunMode()).rejects.toThrow()
+  })
+
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
     await makeClient().cancelMessage('t7', 'm3')
