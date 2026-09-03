@@ -347,6 +347,20 @@ class NodeWithPreAttachLegacyWidgets:
         return ()
 
 
+class NodeWithComparerWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_comparer_widget"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node whose web extension mirrors rgthree's image comparer"
+
+    def node_with_comparer_widget(self):
+        return ()
+
+
 class NodeWithHiddenAriaDialog:
     @classmethod
     def INPUT_TYPES(cls):
@@ -449,6 +463,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
     "DevToolsNodeWithPreAttachLegacyWidgets": NodeWithPreAttachLegacyWidgets,
+    "DevToolsNodeWithComparerWidget": NodeWithComparerWidget,
     "DevToolsNodeWithHiddenAriaDialog": NodeWithHiddenAriaDialog,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
@@ -473,6 +488,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
     "DevToolsNodeWithPreAttachLegacyWidgets": "Node With Pre-Attach Legacy Widgets",
+    "DevToolsNodeWithComparerWidget": "Node With Comparer Widget",
     "DevToolsNodeWithHiddenAriaDialog": "Node With Hidden ARIA Dialog",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",

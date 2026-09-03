@@ -106,7 +106,7 @@ describe('NodePreview', () => {
     const nodeHeader = screen.getByTestId('node-header')
 
     expect(nodeHeader).toHaveAttribute('title', longNameNodeDef.display_name)
-    expect(nodeHeader).toHaveTextContent(longNameNodeDef.display_name!)
+    expect(nodeHeader).toHaveTextContent(longNameNodeDef.display_name)
   })
 
   it('handles short node names without issues', () => {

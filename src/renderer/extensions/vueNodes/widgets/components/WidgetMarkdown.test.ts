@@ -31,7 +31,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     options: SimplifiedWidget<string>['options'] = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_markdown',
       type: 'string',

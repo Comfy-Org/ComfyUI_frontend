@@ -1,8 +1,11 @@
 import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import { isNodeLocatorId } from '@/types/nodeIdentification'
+
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
+export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
 export const zAgentTurnAccepted = z
   .object({
@@ -81,9 +84,10 @@ const zAgentThinkingData = z
 
 const zAgentToolCallData = z
   .object({
+    tool_call_id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
-    args: z.array(z.string()),
+    status: z.enum(['running', 'success', 'error']),
+    args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()
@@ -119,6 +123,11 @@ const zAgentMessageDoneData = z
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
+    node_locator_id: z
+      .string()
+      .max(256)
+      .refine((value): boolean => isNodeLocatorId(value))
+      .optional(),
     name: z.string().optional(),
     thread_id: z.string().optional(),
     message_id: z.string().optional()

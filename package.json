@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.54.0",
+  "version": "1.54.1",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
+    "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
@@ -53,6 +54,7 @@
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
     "stylelint": "stylelint --cache '{apps,packages,src}/**/*.{css,vue}'",
     "comfy-test": "tsx tools/test-recorder/src/index.ts",
+    "test:assets-flag-artifact": "tsx scripts/checkAssetsFlagArtifact.ts",
     "test:browser": "pnpm exec playwright test",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",

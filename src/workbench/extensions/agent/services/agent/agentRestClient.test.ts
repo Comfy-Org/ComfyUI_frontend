@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
@@ -69,24 +71,45 @@ describe('agentRestClient route + method', () => {
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
-    const page = (data: unknown[], hasMore: boolean) =>
+    const page = (
+      offset: number,
+      data: CloudWorkflowEntry[],
+      hasMore: boolean,
+      nextCursor?: string
+    ) =>
       jsonResponse(200, {
         data,
         pagination: {
-          offset: 0,
+          offset,
           limit: 100,
           total: data.length,
-          has_more: hasMore
+          has_more: hasMore,
+          next_cursor: nextCursor
         }
       })
-    respond(page([{ id: 'wf-1', name: 'one' }], true))
-    respond(page([{ id: 'wf-2', name: 'two' }], false))
+    respond(page(0, [{ id: 'wf-1', name: 'one' }], true, 'next page'))
+    respond(page(1, [{ id: 'wf-2', name: 'two' }], false))
 
     const workflows = await makeClient().listCloudWorkflows()
 
-    expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100&offset=0')
-    expect(fetchApi.mock.calls[1][0]).toBe('/workflows?limit=100&offset=100')
+    expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100')
+    expect(fetchApi.mock.calls[1][0]).toBe(
+      '/workflows?limit=100&after=next%20page'
+    )
     expect(workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
+  })
+
+  it('stops pagination when the server does not provide a new cursor', async () => {
+    respond(
+      jsonResponse(200, {
+        data: [],
+        pagination: { offset: 0, limit: 100, total: 0, has_more: true }
+      })
+    )
+
+    await makeClient().listCloudWorkflows()
+
+    expect(fetchApi).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -120,6 +143,31 @@ describe('postMessage wire body', () => {
       unknown
     >
     expect(Object.keys(parsed)).toEqual(['content'])
+  })
+
+  it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: "what's on my canvas",
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: "what's on my canvas",
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+    })
+  })
+
+  it('forwards draft.version when the client has previously seen one', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'edit it',
+      draft: { content: { nodes: [], links: [] }, version: 4 }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
+      draft: { version: 4 }
+    })
   })
 })
 

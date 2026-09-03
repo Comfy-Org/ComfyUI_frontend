@@ -25,17 +25,15 @@ vi.mock('@/services/litegraphService', () => ({
   })
 }))
 
-type EmitAddFilter = (
-  filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
-) => void
+type EmitAddFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl>) => void
 type EmitAddNode = (nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) => void
 
 function createFilter(
   id: string,
   value: string
-): FuseFilterWithValue<ComfyNodeDefImpl, string> {
+): FuseFilterWithValue<ComfyNodeDefImpl> {
   return {
-    filterDef: { id } as FuseFilter<ComfyNodeDefImpl, string>,
+    filterDef: { id } as FuseFilter<ComfyNodeDefImpl>,
     value
   }
 }
