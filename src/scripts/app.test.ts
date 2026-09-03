@@ -1993,6 +1993,40 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
+    it('opens the overlay for an in-flight active job before storeJob', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+
+      const executionStore = useExecutionStore()
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.setActiveGraph(workflowAId, workflowA.path)
+      executionStore.activeJobId = 'job-fast'
+
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executionErrorHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'execution_error'
+      )?.[1] as EventListener | undefined
+
+      executionErrorHandler?.(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-fast',
+            node_id: '1',
+            node_type: 'DevToolsErrorRaiseNode',
+            exception_message: 'Error node was called!',
+            exception_type: 'RuntimeError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(executionErrorHandler).toBeTypeOf('function')
+      expect(executionErrorStore.isErrorOverlayOpen).toBe(true)
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()

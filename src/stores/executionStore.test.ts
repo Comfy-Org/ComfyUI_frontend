@@ -1179,6 +1179,23 @@ describe('useExecutionStore - background workflow error routing', () => {
 
     expect(errorStore.lastExecutionError).toBeNull()
   })
+
+  it('files an in-flight active-job error before storeJob attaches the mapping', () => {
+    fireExecutionStart('job-fast')
+    expect(store.isJobErrorForActiveWorkflow('job-fast')).toBe(true)
+
+    fireExecutionError('job-fast')
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-fast')
+  })
+
+  it('does not treat a different in-flight job as the visible workflow', () => {
+    fireExecutionStart('job-visible')
+    fireExecutionError('job-other')
+
+    expect(errorStore.lastExecutionError).toBeNull()
+    expect(store.isJobErrorForActiveWorkflow('job-other')).toBe(false)
+  })
 })
 
 describe('useExecutionStore - clearActiveJobIfStale', () => {

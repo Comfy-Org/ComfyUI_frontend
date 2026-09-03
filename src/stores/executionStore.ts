@@ -688,8 +688,22 @@ export const useExecutionStore = defineStore('execution', () => {
     return executionErrorStore.runErrorKey(graphId, path)
   }
 
+  /**
+   * `runErrorKeyForJob` needs storeJob (or queue/history polling). execution_start
+   * can set `activeJobId` before that HTTP response, so a terminal error in
+   * that window has no mapping yet but is still the visible run.
+   */
+  function resolveRunErrorKey(jobId: string): string | null {
+    return (
+      runErrorKeyForJob(jobId) ??
+      (activeJobId.value === jobId
+        ? executionErrorStore.captureRunErrorKey()
+        : null)
+    )
+  }
+
   function isJobErrorForActiveWorkflow(jobId: string): boolean {
-    const runErrorKey = runErrorKeyForJob(jobId)
+    const runErrorKey = resolveRunErrorKey(jobId)
     return (
       runErrorKey !== null &&
       runErrorKey === executionErrorStore.captureRunErrorKey()
@@ -700,7 +714,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const endTime = performance.now()
     // Resolved up front: resetExecutionState() drops the job's workflow entry
     // before the handlers below record anything.
-    const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
+    const runErrorKey = resolveRunErrorKey(e.detail.prompt_id)
     setWorkflowStatus(e.detail.prompt_id, {
       status: 'failed',
       endTime,
