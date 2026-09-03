@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { zAgentConversation } from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { AgentBackendCapture } from './agentConversationCapture'
 import { exportAgentConversation } from './agentConversationCapture'
 
-const turn = {
+const turn: AgentBackendCapture['turns'][number] = {
   message_id: 'message-1',
   request: { content: 'Add a node' },
   frames: [
@@ -42,7 +43,7 @@ const turn = {
       }
     }
   ]
-} as const
+}
 
 const capture = {
   schema_version: 'agent-backend-capture.v2',
@@ -63,7 +64,7 @@ const capture = {
     seed: { nodes: [], links: [] }
   },
   turns: [turn]
-} as const
+}
 
 const withTurn = (patch: Partial<typeof turn>) => ({
   ...capture,
