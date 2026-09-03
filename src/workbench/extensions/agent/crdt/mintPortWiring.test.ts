@@ -209,6 +209,30 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
+  it('mints once when a store write is mirrored through the widget shim', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+
+    useWidgetValueStore().setValue(id, 42)
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
   it('mints nothing for a setValue that did not apply', () => {
     useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
 

@@ -177,18 +177,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return this._state.value
   }
   set value(value: TWidget['value']) {
-    const graphId = this.node.graph?.rootGraph.id
-    const nodeId = this._state.nodeId
-    if (
-      graphId &&
-      nodeId !== undefined &&
-      useWidgetValueStore().setValue(
-        widgetId(graphId, nodeId, this.name),
-        value
-      )
-    ) {
-      return
-    }
     this._state.value = value
   }
 
