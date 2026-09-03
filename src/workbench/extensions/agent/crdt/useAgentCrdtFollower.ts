@@ -103,7 +103,10 @@ function readPersistedDocId(): string | null {
     }
     if (Date.now() >= record.expiresAt) return null
     if (record.nonce !== pageSessionNonce) {
-      if (!isReloadNavigation()) return null
+      if (!isReloadNavigation()) {
+        clearPersistedDocId()
+        return null
+      }
       persistDocId(record.docId)
     }
     return record.docId
