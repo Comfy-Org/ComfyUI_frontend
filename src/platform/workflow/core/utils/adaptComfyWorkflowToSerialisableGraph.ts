@@ -210,6 +210,14 @@ function adaptWidgetValues(
   if (values === undefined || Array.isArray(values)) return values
   if (typeof values.length !== 'number') return Object.values(values)
   const length = values.length
+  const keys = Object.keys(values)
+  const hasIndexedEntry = keys.some((key) => {
+    const index = Number(key)
+    return String(index) === key && index >= 0 && index < length
+  })
+  if (!hasIndexedEntry && keys.some((key) => key !== 'length')) {
+    return Object.values(values)
+  }
   return Array.from({ length }, (_, index) => values[index])
 }
 

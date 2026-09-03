@@ -147,6 +147,16 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
       links: [{ id: 4, type: 'MODEL,LATENT', parentId: 5 }],
       reroutes: [{ id: 5, pos: [60, 70], linkIds: [] }]
     })
+
+    const workflowWithNamedLength = structuredClone(workflow)
+    workflowWithNamedLength.nodes[0].widgets_values = {
+      length: 1,
+      ckpt_name: 'model.safetensors'
+    }
+    expect(
+      adaptComfyWorkflowToSerialisableGraph(workflowWithNamedLength).nodes?.[0]
+        ?.widgets_values
+    ).toEqual([1, 'model.safetensors'])
     expect(workflow.nodes[0].inputs?.[0].type).toEqual(['MODEL', 'LATENT'])
   })
 
