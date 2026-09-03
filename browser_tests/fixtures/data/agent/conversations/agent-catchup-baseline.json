@@ -3,7 +3,7 @@
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
-    "case_id": "agent-fix-16285-catchup-baseline",
+    "case_id": "agent-catchup-baseline",
     "response_side": "synthesized",
     "note": "Regression fixture for PR #16285 (apply CRDT catch-up at acknowledged sequence). The host sends doc_subscribed(seq=N) and then the catch-up doc_update(seq=N); pre-fix the bridge recorded N as the applied baseline and dropped the catch-up as stale, leaving a fresh follower empty. The conversation only binds; the seeded graph projecting at all IS the regression surface. Response synthesized: no model output is asserted."
   },

@@ -637,7 +637,8 @@ fix so the bug stays fixed:
    run lines in the PR description. A replay case that never went red
    against the bug does not count as regression coverage.
 
-Name the case after the fix PR (`agent-fix-<PR>-<slug>.json`) and note
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`,
+with the fix PR cited in the spec header and the fixture's `source.note`) and note
 the fixture's source rows (thread id + seq range) in the JSON's
 metadata block so the recording can be re-exported.
 

@@ -38,10 +38,10 @@ interface LayoutStoreModule {
 }
 
 test.describe(
-  'Agent replay regression: #16611 subgraph scope',
+  'Agent replay regression: subgraph mint scope (PR #16611)',
   { tag: '@cloud' },
   () => {
-    test.use({ conversationCase: 'agent-fix-16611-subgraph-scope' })
+    test.use({ conversationCase: 'agent-subgraph-mint-scope' })
 
     test('a human delete inside a subgraph does not mint a root wire op', async ({
       agentConversation,

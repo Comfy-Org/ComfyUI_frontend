@@ -3,7 +3,7 @@
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
-    "case_id": "agent-fix-16611-subgraph-scope",
+    "case_id": "agent-subgraph-mint-scope",
     "response_side": "synthesized",
     "note": "Regression fixture for PR #16611 (preserve root semantics for human graph edits). The conversation only binds the follower to a doc whose seed carries a subgraph definition and instance; the regression surface is the HUMAN edit the spec performs afterwards. Response synthesized: no model output is asserted."
   },

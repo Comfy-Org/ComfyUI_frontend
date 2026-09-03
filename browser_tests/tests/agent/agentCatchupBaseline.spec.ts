@@ -20,10 +20,10 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
  * together reproduce the pre-fix drop (status shows `0 updates`).
  */
 test.describe(
-  'Agent replay regression: #16285 catch-up baseline',
+  'Agent replay regression: catch-up baseline (PR #16285)',
   { tag: '@cloud' },
   () => {
-    test.use({ conversationCase: 'agent-fix-16285-catchup-baseline' })
+    test.use({ conversationCase: 'agent-catchup-baseline' })
 
     test('the subscription catch-up projects the seeded graph', async ({
       agentConversation
