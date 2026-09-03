@@ -30,14 +30,15 @@ and deletes the temporary agent database.
    PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
    ```
 
-   Add `--headed -g <case id>` to watch one. The specs and recordings arrive
-   with #16764 and #16776.
+   Add `--headed -g <case id>` to watch one. The specs and recordings arrive with
+   [#16764](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16764) and
+   [#16776](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16776).
 
 2. **Run the agent locally**: dev loop, smoke, record mode. Needs `../cloud`.
    The Playbook below.
 3. **Record** a new conversation: `cloud up` in `../cloud`, then the third
    Playbook command below and the recorder command it prints. The recorder
-   arrives with #16782.
+   arrives with [#16782](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16782).
 
 ## Playbook
 
