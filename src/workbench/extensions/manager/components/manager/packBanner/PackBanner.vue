@@ -21,24 +21,21 @@
       ></div>
       <!-- image -->
       <img
-        v-if="isImageError"
-        :src="DEFAULT_BANNER"
+        :src="isImageError ? DEFAULT_BANNER : imgSrc"
         :alt="bannerAlt"
-        class="relative z-10 size-full object-cover"
-      />
-      <img
-        v-else
-        :src="imgSrc"
-        :alt="bannerAlt"
-        class="relative z-10 size-full object-contain"
+        :class="
+          isImageError
+            ? 'relative z-10 size-full object-cover'
+            : 'relative z-10 size-full object-contain'
+        "
+        @error="isImageError = true"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -48,11 +45,9 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
+const isImageError = ref(false)
+
 const showDefaultBanner = computed(() => !nodePack.banner_url && !nodePack.icon)
 const imgSrc = computed(() => nodePack.banner_url || nodePack.icon || '')
 const bannerAlt = computed(() => `${nodePack.name} banner`)
-
-const { error: isImageError } = useImage(
-  computed(() => ({ src: imgSrc.value, alt: bannerAlt.value }))
-)
 </script>

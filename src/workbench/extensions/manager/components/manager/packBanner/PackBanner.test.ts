@@ -1,24 +1,8 @@
-import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Ref } from 'vue'
-import { nextTick } from 'vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { components } from '@/types/comfyRegistryTypes'
-
-const useImageMock = vi.hoisted(() => ({
-  error: null as Ref<unknown> | null
-}))
-
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  const { ref } = await import('vue')
-  useImageMock.error = ref<unknown>(null)
-  return {
-    ...(actual as Record<string, unknown>),
-    useImage: () => ({ error: useImageMock.error })
-  }
-})
 
 import PackBanner from './PackBanner.vue'
 
@@ -54,10 +38,6 @@ function renderPackBanner(nodePack: components['schemas']['Node']) {
 }
 
 describe('PackBanner', () => {
-  beforeEach(() => {
-    if (useImageMock.error) useImageMock.error.value = null
-  })
-
   it('renders the default banner when both banner_url and icon are missing', () => {
     renderPackBanner(makePack())
     const img = screen.getByRole('img')
@@ -87,8 +67,7 @@ describe('PackBanner', () => {
       'https://example.com/broken.png'
     )
 
-    useImageMock.error!.value = new Event('error')
-    await nextTick()
+    await fireEvent.error(screen.getByRole('img'))
 
     expect(screen.getByRole('img')).toHaveAttribute('src', DEFAULT_BANNER)
   })
