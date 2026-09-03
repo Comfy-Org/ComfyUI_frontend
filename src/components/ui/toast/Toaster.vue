@@ -16,6 +16,10 @@ const toast = useToast()
 const { toasts } = storeToRefs(toast)
 const latestToastId = computed(() => toasts.value.at(-1)?.id)
 
+function preserveToastOnEscape(event: KeyboardEvent) {
+  event.preventDefault()
+}
+
 const icons = {
   success: 'icon-[lucide--circle-check] text-success-background',
   error: 'icon-[lucide--circle-x] text-destructive-background',
@@ -34,6 +38,7 @@ const icons = {
       :role="message.role"
       data-testid="toast"
       :data-toast-kind="message.kind"
+      @escape-key-down="preserveToastOnEscape"
       @update:open="(open) => !open && toast.dismiss(message.id)"
     >
       <template v-if="message.kind === 'custom'">

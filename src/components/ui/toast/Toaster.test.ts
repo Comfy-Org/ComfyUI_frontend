@@ -72,6 +72,21 @@ describe('Toaster', () => {
     expect(screen.queryByText('Uploaded')).not.toBeInTheDocument()
   })
 
+  it('preserves notifications when Escape is pressed', async () => {
+    const user = userEvent.setup()
+    renderToaster()
+
+    const toast = useToast()
+    toast.info('First')
+    toast.warning('Second')
+    await nextTick()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.getByText('First')).toBeInTheDocument()
+    expect(screen.getByText('Second')).toBeInTheDocument()
+  })
+
   it('dismisses a notification from its close button', async () => {
     const user = userEvent.setup()
     renderToaster()
