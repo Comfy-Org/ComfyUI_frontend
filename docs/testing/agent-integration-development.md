@@ -46,7 +46,10 @@ panel code, to run the unmocked smoke, or as the first step of recording.
 pnpm tsx scripts/dev-agent-integration.ts
 ```
 
-The smoke against it:
+It prints the frontend URL once the agent is healthy; Ctrl-C stops Vite and Air
+and deletes the temporary SQLite directory; `--help` lists the path and port
+overrides. In a second terminal, the unmocked smoke (any spec under
+`browser_tests/tests/agent` runs the same way):
 
 ```bash
 PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:6207 pnpm exec playwright test agentHarnessSmoke --project=agent-harness
@@ -84,24 +87,13 @@ The root dependency on `@comfyorg/comfy-multi-player` must use `workspace:`. The
 launcher refuses an npm pin or `pnpm link`, because either one would bypass the source
 tree whose HMR behavior this environment exists to exercise.
 
-## Run and stop
-
-From the frontend checkout:
-
-```bash
-pnpm tsx scripts/dev-agent-integration.ts --cloud-repo ../cloud
-```
-
-The command prints the frontend URL after the standalone agent is healthy. Press
-Ctrl-C once to stop Vite and Air and remove the temporary SQLite data directory. Run
-`pnpm tsx scripts/dev-agent-integration.ts --help` to override the frontend, agent,
-ComfyUI, Cloud checkout, or Air paths.
+## How it works
 
 The Vite proxy keeps the standalone session token server-side. Browser REST and event
 WebSocket traffic use same-origin `/api/agent` routes, while all other `/api` and `/ws`
 traffic continues to reach ComfyUI.
 
-## Modes
+### Modes
 
 |                     | Standalone (no flag)                               | Record (`--record`)                                                                                |
 | ------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -109,19 +101,6 @@ traffic continues to reach ComfyUI.
 | Who uses it         | the dev loop; the smoke drives one real turn on it | whoever records a replay fixture                                                                   |
 | Records graph edits | no: this configuration writes no per-op audit rows | yes                                                                                                |
 | Cancels a turn      | no: the inline engine has no cancellation handle   | yes, with `--engine temporal`                                                                      |
-
-## Playwright entrypoint
-
-Leave the environment running, then use a second terminal:
-
-```bash
-PLAYWRIGHT_LOCAL=1 \
-PLAYWRIGHT_TEST_URL=http://127.0.0.1:6207 \
-pnpm exec playwright test browser_tests/tests/agent
-```
-
-Pass a narrower spec or `--headed` after the directory as needed. Playwright traces,
-screenshots, and videos follow the repository's normal `browser_tests` configuration.
 
 ## Glossary
 
