@@ -416,22 +416,14 @@ export function createFrontendAccountClients(
     }
   }
   Object.assign(debug, seam, {
-    recoverSubscription: (planId: string, intent: string) =>
+    recoverSubscription: (_planId: string, _intent: string) =>
       readyMutation(
         {
           kind: 'subscribe',
           started_at: Date.now(),
           return_url: `${window.location.origin}/payment/success`
         },
-        () =>
-          billingCommands!.subscribe(
-            {
-              plan_slug: planId,
-              return_url: `${window.location.origin}/payment/success`,
-              cancel_url: `${window.location.origin}/payment/failed`
-            },
-            intent
-          )
+        () => billingCommands!.start()
       )
   })
   return { session, billing, billingCommands }

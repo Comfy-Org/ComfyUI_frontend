@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-16-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-17-frontend'
 const terminalSteps = [
   'success',
   'canceled',
@@ -50,6 +50,13 @@ async function signIn(page: Page) {
 }
 
 async function requireAuthenticated(page: Page) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => Boolean(Reflect.get(window, '__accountLayerPoc'))),
+      { timeout: 30_000 }
+    )
+    .toBe(true)
   expect(
     await page.evaluate(async () => {
       const seam = Reflect.get(window, '__accountLayerPoc') as {
@@ -102,6 +109,13 @@ async function fillCheckout(page: Page, card: string) {
     await address.fill('123 Test St')
     await pauseBetweenFields()
   }
+  const city = page.locator(
+    'input[name="billingLocality"], input[autocomplete="address-level2"]'
+  )
+  if (await city.isVisible()) {
+    await city.fill('San Francisco')
+    await pauseBetweenFields()
+  }
   if (await postal.isVisible()) {
     await postal.pressSequentially('94107', { delay: 60 })
     await pauseBetweenFields()
@@ -121,21 +135,6 @@ async function fillCheckout(page: Page, card: string) {
   })
   if (await declineLink.isVisible().catch(() => false))
     await declineLink.click()
-}
-
-function redactedOperation(body: unknown) {
-  if (!body || typeof body !== 'object') return body
-  const value = { ...body } as Record<string, unknown>
-  for (const key of [
-    'id',
-    'billing_op_id',
-    'customer_id',
-    'subscription_id',
-    'email'
-  ]) {
-    if (key in value) value[key] = '[redacted]'
-  }
-  return value
 }
 
 async function paymentState(page: Page) {
@@ -184,12 +183,7 @@ async function recordPaymentStateUntilTerminal(page: Page) {
 test('completes hosted subscription and captures terminal operation', async () => {
   test.setTimeout(900_000)
   await mkdir(evidenceDir, { recursive: true })
-  for (const file of [
-    'preflight.log',
-    'requests.log',
-    'ops-responses.jsonl',
-    'paystate.log'
-  ]) {
+  for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
   const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-16-'))
@@ -227,7 +221,7 @@ test('completes hosted subscription and captures terminal operation', async () =
         const body: unknown = JSON.parse(text)
         appendFileSync(
           `${evidenceDir}/ops-responses.jsonl`,
-          `${JSON.stringify(redactedOperation(body))}\n`
+          `${JSON.stringify(body)}\n`
         )
       } catch (error) {
         appendFileSync(
