@@ -4,7 +4,7 @@ Catch breaking changes to this package's public surface. Applies to `src/index.t
 
 ## What to check
 
-1. **Public exports** — `src/index.ts` re-exports the op layer, KA-11 read gate, ADR-004 follower reads, #71's payload-bound constants and `opBoundsRefusal` from `src/limits.ts`, the snapshot surface from `src/read.ts`, and everything from `types` and `stamps`. A removed or renamed export without a compatibility alias is breaking. New exports are fine only when deliberately classified.
+1. **Public exports** — `src/index.ts` re-exports the op layer (including ADR-022's pure `inspectOps` storage preflight), KA-11 read gate, ADR-004 follower reads, #71's payload-bound constants and `opBoundsRefusal` from `src/limits.ts`, the snapshot surface from `src/read.ts`, and everything from `types` and `stamps`. A removed or renamed export without a compatibility alias is breaking. New exports are fine only when deliberately classified.
    Most of `src/doc.ts` stays private because its accessors and mutators bypass the op layer (KA-1, KA-2, KA-4, FC-5). Re-adding `export * from "./doc.js"`, or adding a `./doc` subpath, or exposing any further `doc.ts` runtime export from the entrypoint, is a blocking finding, not a compatibility fix. The named exceptions are `nodesMap`, `linksMap`, and `OPAQUE_WIDGETS_KEY` (ADR-004's frontend-follower reads) plus `encodingLosses` (KA-1's read-only value diagnostic, which takes no document); `test/public-api.regression.test.ts` guards that exact list, and widening it is a diff rather than a silent consequence of adding an export.
    Prefer snapshot reads for new consumers: values returned by `src/read.ts` must not expose a live `Y.AbstractType`, at any depth. `test/readonly-surface.test.ts` proves its current functions return deep-copied, deep-frozen plain data, and that they refuse a document carrying content under an unreadable schema on the same predicate `project()` uses (KA-11). Not the same DISPOSITION, and do not report it as such: for a document carrying NOTHING the snapshot surface returns its empty value where `project()` refuses — Amendment A12 records that divergence against A5's consumer-impact note. Two things are blocking findings here: a gate on this surface that asks "does the document carry content" by enumerating the §1 root NAMES (blind to a v2 that renamed them, which is the canonical bump trigger), and a new entrypoint export not classified by that test.
 
@@ -31,7 +31,7 @@ Staleness anchors for rule 1 (the public export surface this profile restates).
 verbatim in the cited file; if an export is removed or renamed, this profile fails
 CI so the prose above cannot silently describe a contract that no longer exists.
 -->
-<!-- claim: export { applyOps } from "./applier.js" :: src/index.ts -->
+<!-- claim: export { applyOps, inspectOps } from "./applier.js" :: src/index.ts -->
 <!-- claim: export { project } from "./project.js" :: src/index.ts -->
 <!-- claim: export * from "./clock.js" :: src/index.ts -->
 <!-- claim: export { mint } from "./mint.js" :: src/index.ts -->
