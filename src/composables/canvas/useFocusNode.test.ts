@@ -17,10 +17,11 @@ const { canvasStore, createCanvas } = vi.hoisted(() => {
     return canvas
   }
 
+  const canvasStore: {
+    canvas: ReturnType<typeof createCanvas> | undefined
+  } = { canvas: createCanvas() }
   return {
-    canvasStore: {
-      canvas: createCanvas() as ReturnType<typeof createCanvas> | undefined
-    },
+    canvasStore,
     createCanvas
   }
 })

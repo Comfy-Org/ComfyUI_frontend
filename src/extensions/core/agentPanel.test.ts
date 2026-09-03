@@ -96,6 +96,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.capturedExtensions.length = 0
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
+    mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
@@ -156,6 +157,18 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.agentStore.isOpen).toBe(true)
   })
 
+  it('finishes a pending selection restore when the flag is disabled', async () => {
+    await loadEntryAndSetup()
+    mocks.flagEnabled = true
+    mocks.flagListener!()
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+
+    mocks.flagEnabled = false
+    mocks.flagListener!()
+
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
   it('restores each workflow reference after the shared graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()
@@ -165,6 +178,7 @@ describe('AgentPanel extension flag gate', () => {
     const secondNode = { id: 12 }
     const rootGraph = {}
     const selectItems = vi.fn()
+    mocks.agentStore.enabled = true
 
     extension!.beforeLoadGraph!({} as never)
 
@@ -200,6 +214,7 @@ describe('AgentPanel extension flag gate', () => {
     const rootGraph = {}
     const selectItems = vi.fn()
 
+    mocks.agentStore.enabled = true
     mocks.nodeSelectionStore.isLoadingWorkflow = true
     mocks.nodeSelectionStore.nodeIds.mockReturnValue([locator])
     mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
@@ -211,6 +226,19 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([
       locator
     ])
+  })
+
+  it('skips graph-load selection tracking while the panel is closed', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.agentStore.isOpen = false
+
+    extension!.beforeLoadGraph!({} as never)
+
+    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
@@ -227,5 +255,50 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
     expect(mocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
+  })
+
+  it('finishes restoration when graph configuration fails', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+
+    extension!.onGraphLoadError!(new Error('bad workflow json'), {} as never)
+
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
+  it('finishes restoration when selection restoration throws', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.agentStore.enabled = true
+    mocks.agentStore.isOpen = true
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+    mocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
+    mocks.getNodeByLocatorId.mockImplementation(() => {
+      throw new Error('selection restore failed')
+    })
+
+    expect(() =>
+      extension!.afterLoadGraph!({ rootGraph: {} } as never)
+    ).toThrow('selection restore failed')
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
+  it('does not start selection restoration while the flag is disabled', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+
+    extension!.beforeLoadGraph!({} as never)
+
+    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 })

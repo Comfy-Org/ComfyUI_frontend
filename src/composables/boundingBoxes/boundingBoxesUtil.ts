@@ -191,7 +191,7 @@ export function tagRects(
   return rects
 }
 
-function isBoundingBox(b: unknown): b is BoundingBox {
+export function isBoundingBox(b: unknown): b is BoundingBox {
   if (!b || typeof b !== 'object') return false
   const box = b as Record<string, unknown>
   return (

@@ -57,7 +57,6 @@ describe('overlapping graph-load mint suppression', () => {
       isDocBound: () => true,
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: () => () => {},
-      withLayoutActor: (_actor, apply) => apply(),
       localActorPrefix: 'user-',
       getGraph: () => ({
         id: ROOT_ID,
