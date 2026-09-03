@@ -9,6 +9,7 @@ import {
   getEffectiveHardness
 } from '@/composables/maskeditor/brushUtils'
 import { StrokeProcessor } from '@/composables/maskeditor/StrokeProcessor'
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -94,10 +95,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function writeWidgetValue(name: string, value: number | string): void {
-    const widget = litegraphNode.value?.widgets?.find((w) => w.name === name)
-    if (!widget || widget.value === value) return
-    widget.value = value
-    widget.callback?.(value)
+    const node = litegraphNode.value
+    const widget = node?.widgets?.find((w) => w.name === name)
+    if (!node || !widget || widget.value === value) return
+    setNodeWidgetValue(node, name, value)
   }
 
   function numberWidgetProjection(name: string, fallback: number) {

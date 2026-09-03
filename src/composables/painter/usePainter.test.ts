@@ -199,11 +199,12 @@ describe('usePainter', () => {
       expect(mainCtx.drawImage).toHaveBeenCalledWith(tmpCanvas, 0, 0)
     })
 
-    it('writes size edits through the widget and notifies its callback', async () => {
-      const { callbacks } = makePaintNode([
+    it('writes size edits through the widget notification lifecycle', async () => {
+      const { node, callbacks } = makePaintNode([
         { name: 'width', type: 'number', value: 512 },
         { name: 'height', type: 'number', value: 512 }
       ])
+      node.onWidgetChanged = vi.fn()
 
       const { painter } = mountPainter()
 
@@ -215,6 +216,12 @@ describe('usePainter', () => {
       expect(storedValue('height')).toBe(600)
       expect(callbacks['width']).toHaveBeenCalledWith(800)
       expect(callbacks['height']).toHaveBeenCalledWith(600)
+      expect(node.onWidgetChanged).toHaveBeenCalledWith(
+        'width',
+        800,
+        512,
+        widgetOf('width')
+      )
     })
 
     it('skips the widget callback when the value is unchanged', () => {
