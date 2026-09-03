@@ -34,8 +34,10 @@ and deletes the temporary agent database.
    [#16764](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16764) and
    [#16776](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16776).
 
-2. **Run the agent locally**: dev loop, smoke, record mode. Needs `../cloud`.
-   The Playbook below.
+2. **Run the real agent locally.** Not needed for replay; the agent's side is
+   data there. Do this when you change agent or panel code and want to drive
+   the real model with hot reload, when you run the unmocked smoke, or as the
+   first step of recording. Needs `../cloud`. The Playbook below.
 3. **Record** a new conversation: `cloud up` in `../cloud`, then the third
    Playbook command below and the recorder command it prints. The recorder
    arrives with [#16782](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16782).
