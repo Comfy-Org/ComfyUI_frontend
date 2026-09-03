@@ -157,10 +157,11 @@ function dragDrop(e: DragEvent) {
           <SplitterPanel
             v-if="leftPanelVisible"
             id="linear-left-panel"
+            data-testid="linear-left-panel"
             :order="1"
             :default-size="leftPanelDefaultSize"
             :min-size="sidePanelMinSize(showLeftBuilder)"
-            class="arrange-panel overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
           >
             <AppBuilder v-if="showLeftBuilder" />
             <div
@@ -203,10 +204,11 @@ function dragDrop(e: DragEvent) {
           <SplitterPanel
             v-if="rightPanelVisible"
             id="linear-right-panel"
+            data-testid="linear-right-panel"
             :order="3"
             :default-size="rightPanelDefaultSize"
             :min-size="sidePanelMinSize(showRightBuilder)"
-            class="arrange-panel overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
           >
             <AppBuilder v-if="showRightBuilder" />
             <LinearControls
