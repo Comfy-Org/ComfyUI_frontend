@@ -6,7 +6,7 @@ import { widgetId } from '@/types/widgetId'
 const IMAGE_WIDGET = 'image'
 
 function imageWidgetId(node: LGraphNode): WidgetId | null {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   return graphId ? widgetId(graphId, node.id, IMAGE_WIDGET) : null
 }
 
@@ -25,5 +25,5 @@ export function writeImageWidgetValue(node: LGraphNode, value: string): void {
     if (!widget) return
     widget.value = value
   }
-  if (node.properties) node.properties[IMAGE_WIDGET] = value
+  node.properties[IMAGE_WIDGET] = value
 }

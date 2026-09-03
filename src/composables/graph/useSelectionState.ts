@@ -54,9 +54,7 @@ export function useSelectionState() {
     () => hasSingleSelection.value && isLGraphNode(selectedItems.value[0])
   )
   const isSingleSubgraph = computed(
-    () =>
-      isSingleNode.value &&
-      (selectedItems.value[0] as LGraphNode)?.isSubgraphNode?.()
+    () => isSingleNode.value && selectedNodes.value.at(0)?.isSubgraphNode()
   )
   const isSingleImageNode = computed(
     () =>
@@ -87,7 +85,7 @@ export function useSelectionState() {
   ): NodeSelectionState => {
     if (!nodes.length) return { collapsed: false, pinned: false }
     return {
-      collapsed: nodes.some((n) => n.flags?.collapsed),
+      collapsed: nodes.some((n) => n.flags.collapsed),
       pinned: nodes.some((n) => n.pinned)
     }
   }

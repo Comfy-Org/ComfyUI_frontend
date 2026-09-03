@@ -226,7 +226,7 @@ export function fromBoundingBoxes(
   const w = width || 1
   const h = height || 1
   return boxes.filter(isBoundingBox).map((box) => {
-    const meta = (box.metadata ?? {}) as Partial<BoundingBoxMetadata>
+    const meta = box.metadata
     return {
       x: box.x / w,
       y: box.y / h,

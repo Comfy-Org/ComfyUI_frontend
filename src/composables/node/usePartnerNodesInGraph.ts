@@ -28,7 +28,7 @@ export function scanPartnerNodesInGraph(): PartnerNodeInfo[] {
     app.rootGraph,
     (found, node) => {
       const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      if (nodeDef?.api_node) {
+      if (nodeDef.api_node) {
         found.set(nodeDef.name, {
           nodeName: nodeDef.name,
           displayName: nodeDef.display_name || nodeDef.name

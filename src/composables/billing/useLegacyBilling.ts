@@ -75,12 +75,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (!legacyBalance) return null
 
     return {
-      amountMicros: legacyBalance.amount_micros ?? 0,
-      currency: legacyBalance.currency ?? 'usd',
+      amountMicros: legacyBalance.amount_micros,
+      currency: legacyBalance.currency,
       effectiveBalanceMicros:
-        legacyBalance.effective_balance_micros ??
-        legacyBalance.amount_micros ??
-        0,
+        legacyBalance.effective_balance_micros ?? legacyBalance.amount_micros,
       prepaidBalanceMicros: legacyBalance.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0
     }

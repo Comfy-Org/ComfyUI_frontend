@@ -907,7 +907,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     graph.remove(node)
 
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
-    expect(verifySpy.mock.calls[0][1]?.signal?.aborted).toBe(true)
+    expect(verifySpy.mock.calls[0][1].signal?.aborted).toBe(true)
 
     resolveVerification()
     await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
@@ -1436,8 +1436,7 @@ describe('realtime verification staleness guards', () => {
   it('skips verified media whose host widget value changed while verification was pending', async () => {
     const { outerHost, resolveVerification } =
       await startPendingPromotedMediaVerification()
-    const hostWidget = outerHost.widgets?.[0]
-    if (!hostWidget) throw new Error('Expected promoted image host widget')
+    const hostWidget = outerHost.widgets[0]
 
     hostWidget.value = 'corrected.png'
     resolveVerification()
@@ -1710,7 +1709,6 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       hosts: [outerHost],
       intermediateHosts: [innerHost]
     } = createPromotedMediaRuntime({ depth: 2 })
-    if (!innerHost) throw new Error('Expected nested promoted image host')
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
     installErrorClearingHooks(outerSubgraph)
 

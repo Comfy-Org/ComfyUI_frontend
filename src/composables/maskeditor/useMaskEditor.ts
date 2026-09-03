@@ -5,11 +5,6 @@ import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
 
 export function useMaskEditor() {
   const openMaskEditor = (node: LGraphNode) => {
-    if (!node) {
-      console.error('[MaskEditor] No node provided')
-      return
-    }
-
     if (!node.imgs?.length && node.previewMediaType !== 'image') {
       console.error('[MaskEditor] Node has no images')
       return

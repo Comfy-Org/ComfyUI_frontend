@@ -39,9 +39,6 @@ export function useCommandSubcategories(
         }
       }
 
-      if (!result[subcategory]) {
-        result[subcategory] = []
-      }
       result[subcategory].push(command)
     }
 

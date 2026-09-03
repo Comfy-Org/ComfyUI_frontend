@@ -171,8 +171,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   function syncCanvasSizeFromWidgets() {
     const w = getWidgetByName('width')
     const h = getWidgetByName('height')
-    canvasWidth.value = (w?.value as number) ?? 512
-    canvasHeight.value = (h?.value as number) ?? 512
+    canvasWidth.value = w ? (w.value as number) : 512
+    canvasHeight.value = h ? (h.value as number) : 512
   }
 
   function activeHardness(): number {
@@ -602,7 +602,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     subfolder: string
     type: string
   } | null {
-    const trimmed = value?.trim()
+    const trimmed = value.trim()
     if (!trimmed) return null
 
     const typeMatch = trimmed.match(/^(.+?) \[([^\]]+)\]$/)
@@ -670,7 +670,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       throw new Error(err, { cause: e })
     }
 
-    if (!data?.name) {
+    if (!data.name) {
       const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
       toastStore.addAlert(detail)
       throw new Error(detail)

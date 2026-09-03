@@ -122,35 +122,32 @@ export const useContextMenuTranslation = () => {
       }
 
       // for capture translation text of input and widget
-      const extraInfo = (options.extra ||
-        options.parentMenu?.options?.extra) as
+      const extraInfo = (options.extra || options.parentMenu?.options.extra) as
         | { inputs?: INodeInputSlot[]; widgets?: IWidget[] }
         | undefined
+      const inputs = extraInfo?.inputs ?? []
+      const widgets = extraInfo?.widgets ?? []
       // widgets and inputs
-      const matchInput = value.content?.match(reInput)
+      const matchInput = value.content.match(reInput)
       if (matchInput) {
         let match = matchInput[1]
-        extraInfo?.inputs?.find((i: INodeInputSlot) => {
-          if (i.name != match) return false
-          match = i.label ? i.label : i.name
+        inputs.forEach((i: INodeInputSlot) => {
+          if (i.name === match) match = i.name
         })
-        extraInfo?.widgets?.find((i: IWidget) => {
-          if (i.name != match) return false
-          match = i.label ? i.label : i.name
+        widgets.forEach((i: IWidget) => {
+          if (i.name === match) match = i.name
         })
         value.content = cvt + match + tinp
         continue
       }
-      const matchWidget = value.content?.match(reWidget)
+      const matchWidget = value.content.match(reWidget)
       if (matchWidget) {
         let match = matchWidget[1]
-        extraInfo?.inputs?.find((i: INodeInputSlot) => {
-          if (i.name != match) return false
-          match = i.label ? i.label : i.name
+        inputs.forEach((i: INodeInputSlot) => {
+          if (i.name === match) match = i.name
         })
-        extraInfo?.widgets?.find((i: IWidget) => {
-          if (i.name != match) return false
-          match = i.label ? i.label : i.name
+        widgets.forEach((i: IWidget) => {
+          if (i.name === match) match = i.name
         })
         value.content = cvt + match + twgt
         continue
