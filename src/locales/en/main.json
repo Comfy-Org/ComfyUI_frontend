@@ -18,6 +18,7 @@
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
     "increment": "Increment",
+    "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
@@ -2527,6 +2528,8 @@
     }
   },
   "auth": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "apiKey": {
       "title": "API Key",
       "label": "API Key",

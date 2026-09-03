@@ -393,17 +393,6 @@ describe('PartnerNodeAccessPanel', () => {
     ).toBe('false')
   })
 
-  it('uses checkbox-backed switches for provider access', () => {
-    restrictPolicy()
-    renderComponent()
-
-    expect(
-      screen.getByRole('switch', {
-        name: 'Set access for OpenAI (inc. Sora)'
-      })
-    ).toHaveAttribute('type', 'checkbox')
-  })
-
   it('hides provider controls while access is unrestricted', () => {
     mockPolicy.value = {
       enforcementEnabled: false,

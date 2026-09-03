@@ -313,6 +313,20 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
+  it('keeps the close button hidden while an active status indicator shows', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('invisible')
+    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
+      'visible'
+    )
+  })
+
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()

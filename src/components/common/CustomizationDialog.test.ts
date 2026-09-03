@@ -16,14 +16,6 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
   })
 }))
 
-vi.mock('primevue/selectbutton', () => ({
-  default: {
-    name: 'SelectButton',
-    template: '<div />',
-    props: ['modelValue', 'options']
-  }
-}))
-
 vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))

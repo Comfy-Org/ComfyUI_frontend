@@ -57,7 +57,12 @@
             "
           />
           <Button
-            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
+            :class="
+              cn(
+                'close-button size-4 rounded-none p-0 text-smoke-800 group-hover:visible',
+                isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible'
+              )
+            "
             variant="muted-textonly"
             size="unset"
             :aria-label="t('g.close')"
@@ -235,6 +240,14 @@ const workflowStatusLabel = computed(() =>
   workflowStatus.value
     ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
     : undefined
+)
+
+const hasStatusIndicator = computed(
+  () =>
+    isAgentEditing.value ||
+    showUnseenAgentDot.value ||
+    workflowStatus.value !== undefined ||
+    shouldShowUnsavedIndicator.value
 )
 
 const thumbnailUrl = computed(() => {

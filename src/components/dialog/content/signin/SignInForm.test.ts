@@ -1,15 +1,14 @@
 import { Form } from '@primevue/forms'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -75,7 +74,7 @@ describe('SignInForm', () => {
     const result = render(SignInForm, {
       global: {
         plugins: [PrimeVue, i18n, ToastService],
-        components: { Form, Button, InputText, Password, ProgressSpinner }
+        components: { Form, Button, Input, ProgressSpinner }
       },
       props
     })
@@ -178,6 +177,20 @@ describe('SignInForm', () => {
       const passwordInput = getPasswordInput()
       expect(passwordInput).toHaveAttribute('id', 'comfy-org-sign-in-password')
       expect(passwordInput).toHaveAttribute('name', 'password')
+      expect(passwordInput).toHaveAttribute('type', 'password')
+    })
+
+    it('toggles password visibility', async () => {
+      const { user } = renderComponent()
+
+      await user.click(
+        screen.getByRole('button', { name: enMessages.auth.showPassword })
+      )
+
+      expect(getPasswordInput()).toHaveAttribute('type', 'text')
+      expect(
+        screen.getByRole('button', { name: enMessages.auth.hidePassword })
+      ).toHaveAttribute('aria-pressed', 'true')
     })
   })
 

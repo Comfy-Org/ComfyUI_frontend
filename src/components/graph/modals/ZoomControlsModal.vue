@@ -51,17 +51,13 @@
           class="zoomInputContainer flex items-center gap-1 rounded-sm bg-input-surface p-2"
           data-testid="zoom-percentage-input"
         >
-          <InputNumber
-            :default-value="canvasStore.appScalePercentage"
+          <FormattedNumberStepper
+            :model-value="canvasStore.appScalePercentage"
             :min="1"
             :max="1000"
-            :show-buttons="false"
-            :use-grouping="false"
-            :unstyled="true"
-            input-class="bg-transparent border-none outline-hidden text-sm shadow-none my-0 w-full"
-            fluid
-            @input="applyZoom"
-            @keyup.enter="applyZoom"
+            :clamp-on-input="false"
+            :format-options="{ useGrouping: false }"
+            @update:model-value="applyZoom"
           />
           <span class="shrink-0 text-sm text-text-primary">%</span>
         </div>
@@ -71,10 +67,9 @@
 </template>
 
 <script setup lang="ts">
-import type { InputNumberInputEvent } from 'primevue'
-import { InputNumber } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
 
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
@@ -92,8 +87,7 @@ const props = defineProps<Props>()
 
 const interval = ref<number | null>(null)
 
-const applyZoom = (val: InputNumberInputEvent) => {
-  const inputValue = val.value as number
+const applyZoom = (inputValue: number) => {
   if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
     return
   }

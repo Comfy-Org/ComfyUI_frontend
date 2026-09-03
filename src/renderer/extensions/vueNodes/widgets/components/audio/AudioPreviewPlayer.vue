@@ -118,7 +118,7 @@
               item.label
             }}</label>
             <Slider
-              :model-value="volume * 10"
+              :model-value="[volume * 10]"
               :min="0"
               :max="10"
               :step="1"
@@ -144,7 +144,6 @@
 </template>
 
 <script setup lang="ts">
-import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -154,6 +153,7 @@ import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { formatTime } from '@/utils/formatUtil'
@@ -260,8 +260,8 @@ const setPlaybackSpeed = (speed: number) => {
   }
 }
 
-const handleVolumeChange = (value: number | number[]) => {
-  const numValue = Array.isArray(value) ? value[0] : value
+const handleVolumeChange = (value: number[] | undefined) => {
+  const numValue = value?.[0] ?? 0
   volume.value = numValue / 10
   if (audioRef.value) {
     audioRef.value.volume = volume.value

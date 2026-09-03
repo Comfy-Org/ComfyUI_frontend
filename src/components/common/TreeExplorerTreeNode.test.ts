@@ -1,9 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -30,11 +27,6 @@ describe('TreeExplorerTreeNode', () => {
   } as RenderedTreeExplorerNode
 
   const mockHandleEditLabel = vi.fn()
-
-  beforeAll(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
-  })
 
   it('renders correctly', () => {
     render(TreeExplorerTreeNode, {
@@ -65,8 +57,8 @@ describe('TreeExplorerTreeNode', () => {
         }
       },
       global: {
-        components: { EditableText, Badge, InputText },
-        plugins: [createTestingPinia(), i18n, PrimeVue],
+        components: { EditableText, Badge },
+        plugins: [createTestingPinia(), i18n],
         provide: {
           [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
         }
@@ -87,9 +79,9 @@ describe('TreeExplorerTreeNode', () => {
         }
       },
       global: {
-        components: { EditableText, Badge, InputText },
+        components: { EditableText, Badge },
         provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabelMock },
-        plugins: [createTestingPinia(), i18n, PrimeVue]
+        plugins: [createTestingPinia(), i18n]
       }
     })
 

@@ -214,6 +214,7 @@
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-azure-600);
 
+  --text-muted: var(--color-zinc-500);
   --text-secondary: var(--color-smoke-800);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
@@ -370,6 +371,7 @@
   );
   --color-interface-panel-job-progress-border: var(--base-foreground);
 
+  --text-muted: #a1a1aa;
   --text-secondary: var(--color-smoke-700);
   --text-primary: var(--color-white);
 
@@ -523,6 +525,7 @@
   --color-node-stroke-selected: var(--node-stroke-selected);
   --color-node-stroke-error: var(--node-stroke-error);
   --color-node-stroke-executing: var(--node-stroke-executing);
+  --color-text-muted: var(--text-muted);
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);

@@ -288,9 +288,9 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.getByLabel('Customize').click()
 
     // Click a color option multiple times
-    const customColorOption = comfyPage.page.locator(
-      '.p-togglebutton-content > .pi-palette'
-    )
+    const customColorOption = comfyPage.page.getByRole('button', {
+      name: '_custom'
+    })
     await customColorOption.click()
     await customColorOption.click()
 

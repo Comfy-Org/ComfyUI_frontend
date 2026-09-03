@@ -213,24 +213,6 @@ function renderComponent() {
         Button
       },
       stubs: {
-        SelectButton: {
-          template: `
-            <div>
-              <button
-                v-for="option in options"
-                :key="option.value"
-                type="button"
-                @click="$emit('update:modelValue', option.value)"
-              >
-                <slot name="option" :option="option">
-                  {{ option.label }}
-                </slot>
-              </button>
-            </div>
-          `,
-          props: ['modelValue', 'options'],
-          emits: ['update:modelValue']
-        },
         Popover: { template: '<div><slot /></div>' }
       }
     }
