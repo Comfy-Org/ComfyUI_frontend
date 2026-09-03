@@ -1,7 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -29,14 +31,16 @@ export type MaterializableGraph = Pick<
 >
 
 /**
- * Bring the live graph's node adapters in line with the node records the op
- * layer already committed to the stores.
+ * Bring the live graph's node and link adapters in line with the records the
+ * op layer already committed to the stores.
  *
  * Remote frames mutate the stores only. A remote add leaves a record with no
  * live node; a remote update re-registers the record under a new state object,
  * so the node that was bound to the old state no longer owns anything; a
- * remote delete leaves a node bound to nothing. All three are derived from
- * store state here, without the op layer telling us which ids changed.
+ * remote delete leaves a node bound to nothing. A remote connect likewise
+ * registers topology without constructing its live `LLink` facade. All four
+ * are derived from store state here, without the op layer telling us which ids
+ * changed.
  *
  * Only the scope of `graph` is reconciled. The follower passes the root graph,
  * which matches the op layer: remote operations are applied against the root
@@ -50,6 +54,13 @@ export function reconcileAgentAdapters(graph: MaterializableGraph): NodeId[] {
 
 function reconcile(graph: MaterializableGraph): NodeId[] {
   const scope = graphScopeOf(graph)
+  // Remote connect registers canonical topology without importing LiteGraph.
+  // Install its facade before node.configure() can query links; otherwise the
+  // occupied input is real in the store but graph lookup and painting miss it.
+  for (const topology of useLinkStore().graphTopologies(scope)) {
+    materializeLinkAdapter(graph, topology)
+  }
+
   const nodeStore = useNodeDataStore()
   const records = nodeStore.getGraphNodesFor(
     scope.rootGraphId,

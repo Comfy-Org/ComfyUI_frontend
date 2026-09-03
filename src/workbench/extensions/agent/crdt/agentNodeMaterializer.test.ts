@@ -1,6 +1,14 @@
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -11,15 +19,19 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 import { attachMintPortWiring } from './mintPortWiring'
 import type { MintPortWiring } from './mintPortWiring'
@@ -55,6 +67,19 @@ const REMOTE: RemoteMutationContext = {
   source: 'agent-remote',
   actor: 'agent:test',
   opId: 'op-test'
+}
+const CATALOG: WidgetCatalog = {
+  types: { dummy: { widget_order: [] } }
+}
+
+function agentOperation(id: string, version: number, payload: object) {
+  return {
+    op_id: id,
+    actor: 'agent:test',
+    base_version: version,
+    stamp: [version, 'agent:test', id],
+    ...payload
+  }
 }
 
 /**
@@ -135,6 +160,133 @@ beforeEach(() => {
 })
 
 describe('reconcileAgentAdapters', () => {
+  it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(remoteMutations(scope))
+    adapter.bind('workflow', follower)
+
+    let sequence = 0
+    let initialFrame = true
+    const deliver = (payload: object) => {
+      const stateVector = Y.encodeStateVector(host)
+      const opId = `agent-op-${++sequence}`
+      const result = applyOps(
+        host,
+        [agentOperation(opId, sequence, payload)] as Parameters<
+          typeof applyOps
+        >[1],
+        CATALOG
+      )
+      expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
+
+      const update = initialFrame
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, stateVector)
+      initialFrame = false
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: sequence,
+          update,
+          actor: 'agent:test',
+          opIds: [opId]
+        })
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+    }
+
+    deliver({
+      op: 'add_node',
+      node_id: 1,
+      class_type: 'dummy',
+      pos: [10, 20],
+      node: {
+        id: 1,
+        type: 'dummy',
+        pos: [10, 20],
+        size: [100, 80],
+        inputs: [],
+        outputs: [{ name: 'image', type: 'IMAGE', links: [] }]
+      }
+    })
+    deliver({
+      op: 'add_node',
+      node_id: 2,
+      class_type: 'dummy',
+      pos: [300, 20],
+      node: {
+        id: 2,
+        type: 'dummy',
+        pos: [300, 20],
+        size: [100, 80],
+        inputs: [{ name: 'image', type: 'IMAGE', link: null }],
+        outputs: []
+      }
+    })
+    deliver({
+      op: 'connect',
+      link_id: 9,
+      from_node: 1,
+      from_slot: 0,
+      to_node: 2,
+      to_slot: 0,
+      link_type: 'IMAGE'
+    })
+
+    const source = graph.getNodeById(toNodeId(1))
+    const target = graph.getNodeById(toNodeId(2))
+    expect(source).toBeTruthy()
+    expect(target).toBeTruthy()
+    target?.updateArea()
+    expect(graph.getNodeOnPos(350, 60)).toBe(target)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map(({ id }) => id)
+    ).toEqual(graph._nodes.map(({ id }) => id))
+
+    const topology = useLinkStore().getInputSlotLink(scope, toNodeId(2), 0)
+    expect(topology?.id).toBe(toLinkId(9))
+    expect(graph.getLink(toLinkId(9))).toMatchObject({
+      origin_id: toNodeId(1),
+      target_id: toNodeId(2)
+    })
+    expect(nodesMap(follower.doc).has('2')).toBe(true)
+    expect(linksMap(follower.doc).has('9')).toBe(true)
+
+    const saved = structuredClone(graph.asSerialisable({ sortNodes: true }))
+    expect(saved.nodes.map(({ id }) => id)).toEqual([1, 2])
+    expect(saved.links?.map(({ id }) => id)).toEqual([toLinkId(9)])
+
+    graph.configure(saved)
+    expect(graph.getNodeById(toNodeId(1))).toBeTruthy()
+    expect(graph.getNodeById(toNodeId(2))).toBeTruthy()
+    expect(graph.getLink(toLinkId(9))).toBeTruthy()
+
+    deliver({ op: 'delete_node', node_id: 2, removed_links: [9] })
+
+    expect(nodesMap(follower.doc).has('2')).toBe(false)
+    expect(linksMap(follower.doc).has('9')).toBe(false)
+    expect(graph.getNodeById(toNodeId(1))).toBeTruthy()
+    expect(graph.getNodeById(toNodeId(2))).toBeFalsy()
+    expect(graph.getLink(toLinkId(9))).toBeUndefined()
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map(({ id }) => id)
+    ).toEqual(graph._nodes.map(({ id }) => id))
+    expect(graph.asSerialisable().nodes.map(({ id }) => id)).toEqual([1])
+    expect(graph.asSerialisable().links).toBeUndefined()
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   describe('store record without a live node', () => {
     it('gives the record a live node under its own id', () => {
       const graph = new LGraph()
