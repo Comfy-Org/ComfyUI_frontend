@@ -27,6 +27,18 @@ async function waitForStableUrl(page: Page, stableMs = 1_500) {
 }
 
 async function closePostLoginOverlays(page: Page) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const dialogs = page.getByRole('dialog')
+    const count = await dialogs.count()
+    if (count === 0) break
+    const dialog = dialogs.last()
+    const close = dialog
+      .getByRole('button', { name: /close|skip|done/i })
+      .last()
+    if (await close.isVisible().catch(() => false)) await close.click()
+    else await page.keyboard.press('Escape')
+    await dialog.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {})
+  }
   const announcement = page.locator('.whats-new-popup-container')
   await announcement
     .waitFor({ state: 'visible', timeout: 5_000 })
