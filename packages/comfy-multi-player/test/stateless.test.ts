@@ -1,10 +1,14 @@
 import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { applyOps, mint, project, type Op } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const add: Op = {
   op: "add_node",
   op_id: "1".repeat(32),
@@ -23,6 +27,38 @@ async function freshApi() {
 }
 
 describe("KA-13: cmp is stateless modulo caller-owned documents", () => {
+  it.each([
+    ["module-level mutable state", "const cache = new Map<string, unknown>();\nvoid cache;\n", "no module-level mutable collection"],
+    ["a module-level let", "let current = 0;\ncurrent += 1;\n", "no module-level let/var"],
+    ["a UI import", 'import { ref } from "vue";\nvoid ref;\n', "cmp is DOM/framework-free and stateless"],
+  ])("makes the production gate fail on planted %s", (_name, source, expected) => {
+    const root = mkdtempSync(join(tmpdir(), "stateless-"));
+    try {
+      mkdirSync(join(root, ".agents", "checks"), { recursive: true });
+      mkdirSync(join(root, "src"));
+      mkdirSync(join(root, "node_modules"));
+      symlinkSync(
+        join(repoRoot, ".agents", "checks", "eslint.strict.config.js"),
+        join(root, ".agents", "checks", "eslint.strict.config.js"),
+      );
+      for (const dependency of [".bin", "@typescript-eslint", "eslint", "eslint-plugin-sonarjs"]) {
+        symlinkSync(join(repoRoot, "node_modules", dependency), join(root, "node_modules", dependency), "dir");
+      }
+      writeFileSync(join(root, "package.json"), JSON.stringify({ name: "stateless-fixture" }));
+      writeFileSync(join(root, "src", "leak.ts"), source);
+
+      const run = spawnSync(process.execPath, [join(repoRoot, "scripts", "check-stateless.mjs")], {
+        encoding: "utf8",
+        env: { ...process.env, STATELESS_ROOT: root },
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain(expected);
+      expect(run.stderr).toContain("src/leak.ts");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not share document state between calls in one module instance", async () => {
     const api = await freshApi();
     const untouched = api.mint({ nodes: [], links: [] }, catalog);

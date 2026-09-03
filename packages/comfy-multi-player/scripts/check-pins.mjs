@@ -54,7 +54,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = process.env.PINS_ROOT ?? dirname(dirname(fileURLToPath(import.meta.url)));
 const registryPath = join(root, "docs", "upstream-pins.json");
 const verifyRemote = process.argv.includes("--verify-remote");
 

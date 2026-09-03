@@ -10,7 +10,9 @@
  * resolves upstream is a network question, and a test that silently degrades to
  * "assume fine" when the network is absent is worse than no test.
  */
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -59,6 +61,50 @@ const REQUIRED_SITES = ["src/index.ts", "src/types.ts", "docs/multiplayer-schema
 const VOCABULARY_PIN = "7e732242d971daf0d2d30f22f997abfacd78986e";
 
 describe("FC-10 — upstream citations are pinned by SHA, not by branch", () => {
+  it("makes the production gate fail on a planted moving upstream citation", () => {
+    const fixture = mkdtempSync(join(tmpdir(), "pins-"));
+    try {
+      mkdirSync(join(fixture, "docs"));
+      const commit = "a".repeat(40);
+      const citedBy = ["citation-1.md", "citation-2.md", "citation-3.md", "citation-4.md"];
+      writeFileSync(
+        join(fixture, "docs", "upstream-pins.json"),
+        JSON.stringify({
+          pins: {
+            vocabulary: {
+              commit,
+              repo: "https://github.com/example/op-vocabulary",
+              path: "README.md",
+              established_by: "resolved from an immutable upstream revision with audit evidence",
+              sections_cited: ["Vocabulary"],
+              cited_by: citedBy,
+            },
+          },
+        }),
+      );
+      for (const site of citedBy) writeFileSync(join(fixture, site), `Pinned at ${commit}.\n`);
+      writeFileSync(
+        join(fixture, citedBy[0]!),
+        `comfy-cli op-vocabulary citation (branch \`moving/main\`) at ${commit}.\n`,
+      );
+      for (let index = 0; index < 20; index += 1) {
+        writeFileSync(join(fixture, `tracked-${index}.md`), `fixture ${index}\n`);
+      }
+      expect(spawnSync("git", ["init", "--quiet"], { cwd: fixture }).status).toBe(0);
+      expect(spawnSync("git", ["add", "."], { cwd: fixture }).status).toBe(0);
+
+      const run = spawnSync(process.execPath, [join(root, "scripts", "check-pins.mjs")], {
+        encoding: "utf8",
+        env: { ...process.env, PINS_ROOT: fixture },
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("upstream citation uses a moving reference");
+      expect(run.stderr).toContain("citation-1.md:1");
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
   it("registers at least the vocabulary, its v1.2 amendment, and the minting module", () => {
     // "At least", as the title says. This asserted exact set equality, which
     // made it a change detector: registering a NEW cross-repo pin — the thing
