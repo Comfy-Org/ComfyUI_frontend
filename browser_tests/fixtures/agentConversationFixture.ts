@@ -145,7 +145,7 @@ class HostDoc {
   }
 }
 
-interface NodeBody {
+type NodeBody = {
   id: number | string
   type: string
   title?: string
@@ -162,12 +162,6 @@ interface RecordedWidgetValue {
   nodeId: string
   widget: string
   value: string | number
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-    ? (value as Record<string, unknown>)
-    : {}
 }
 
 // The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
@@ -298,15 +292,11 @@ class AgentConversationHarness {
 
   // Doc-id filter: a stray template node must not pin the template here.
   private nodeBodies(): NodeBody[] {
-    const seed = (
-      this.conversation.workflow.seed as unknown as { nodes: NodeBody[] }
-    ).nodes
+    const seed = this.conversation.workflow.seed.nodes as NodeBody[]
     const added = this.conversation.response.flatMap((entry) =>
       entry.kind === 'graph_ops'
         ? entry.ops.flatMap((op) =>
-            asRecord(op).op === 'add_node'
-              ? [asRecord(asRecord(op).node) as unknown as NodeBody]
-              : []
+            op.op === 'add_node' ? [op.node as NodeBody] : []
           )
         : []
     )
@@ -351,18 +341,31 @@ class AgentConversationHarness {
 
   // The panel starts a new tool group whenever thinking or text interrupts the calls.
   // ToolCallGroup.vue merges consecutive calls of the same tool into one row.
-  toolRowLabels(): Map<string, number> {
-    const counts = new Map<string, number>()
+  // One row per run of same-tool calls; the card shows ×N for a run longer than one.
+  toolRowCounts(): Array<{ label: string; times: number; rows: number }> {
+    const rows = new Map<
+      string,
+      { label: string; times: number; rows: number }
+    >()
     for (const group of this.toolCallGroups()) {
-      let previous: string | undefined
+      const runs: Array<{ name: string; times: number }> = []
       for (const call of group) {
-        if (call.name === previous) continue
-        previous = call.name
-        const label = toolRowLabel(call.name)
-        counts.set(label, (counts.get(label) ?? 0) + 1)
+        const previous = runs.at(-1)
+        if (previous?.name === call.name) previous.times += 1
+        else runs.push({ name: call.name, times: 1 })
+      }
+      for (const { name, times } of runs) {
+        const key = `${name}/${times}`
+        const row = rows.get(key) ?? {
+          label: toolRowLabel(name),
+          times,
+          rows: 0
+        }
+        row.rows += 1
+        rows.set(key, row)
       }
     }
-    return counts
+    return [...rows.values()]
   }
 
   toolCallGroups(): RecordedToolCall[][] {
@@ -397,12 +400,14 @@ class AgentConversationHarness {
     const latest = new Map<string, RecordedWidgetValue>()
     for (const entry of this.conversation.response) {
       if (entry.kind !== 'graph_ops') continue
-      for (const rawOp of entry.ops) {
-        const op = asRecord(rawOp)
+      for (const op of entry.ops) {
         if (op.op !== 'set_widget') continue
         const nodeId = String(op.node_id)
-        const widget = String(op.widget)
-        const value = asRecord(graph.nodes[nodeId]?.widgets)[widget]
+        const widget = op.widget
+        const widgets = graph.nodes[nodeId]?.widgets as
+          | Record<string, unknown>
+          | undefined
+        const value = widgets?.[widget]
         if (typeof value === 'string' || typeof value === 'number')
           latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
       }
@@ -413,9 +418,7 @@ class AgentConversationHarness {
   addedNodeIds(): string[] {
     const graph = this.host.graph()
     const seedIds = new Set(
-      (
-        this.conversation.workflow.seed as unknown as { nodes: NodeBody[] }
-      ).nodes.map((node) => String(node.id))
+      this.conversation.workflow.seed.nodes.map((node) => String(node.id))
     )
     return this.nodeBodies()
       .map((body) => String(body.id))
