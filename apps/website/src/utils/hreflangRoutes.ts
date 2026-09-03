@@ -13,6 +13,18 @@ export const ZH_HREFLANG = 'zh-CN'
 export const ZH_PREFIX = '/zh-CN'
 
 /**
+ * Japanese. Its URL prefix is the short form while Chinese keeps `/zh-CN`; the
+ * asymmetry is legacy rather than designed, and preserved deliberately because
+ * the Chinese URLs rank and a migration would risk that for no SEO gain. See
+ * `context/decision-zh-hreflang-value.md`.
+ */
+export const JA_HREFLANG = 'ja'
+export const JA_PREFIX = '/ja'
+
+/** Every locale prefix this site serves, longest first so `/zh-CN` wins. */
+export const LOCALE_PREFIXES = [ZH_PREFIX, JA_PREFIX] as const
+
+/**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
  *
  * Exported so a caller asking "which route is this file?" derives it here rather
@@ -39,10 +51,16 @@ export interface Alternate {
  * whatever page happens to own that path.
  */
 export function unprefixed(pathname: string): string {
-  const isLocalePrefixed =
-    pathname === ZH_PREFIX || pathname.startsWith(`${ZH_PREFIX}/`)
-  const path = isLocalePrefixed
-    ? pathname.slice(ZH_PREFIX.length) || '/'
-    : pathname
-  return path.endsWith('/') ? path : `${path}/`
+  for (const prefix of LOCALE_PREFIXES) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      const path = pathname.slice(prefix.length) || '/'
+      return path.endsWith('/') ? path : `${path}/`
+    }
+  }
+  return pathname.endsWith('/') ? pathname : `${pathname}/`
+}
+
+/** The URL of `path` in a locale, given that locale's prefix. */
+export function localizedHref(prefix: string, path: string): string {
+  return `${prefix}${path === '/' ? '/' : path}`
 }

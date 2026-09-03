@@ -6,7 +6,12 @@ import { describe, expect, it } from 'vitest'
 
 import { isNoindexPathname } from '../config/indexing'
 import { redirects } from '../config/redirects'
-import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
+import {
+  JA_HREFLANG,
+  JA_PREFIX,
+  routeOf,
+  ZH_PREFIX
+} from '../utils/hreflangRoutes'
 import {
   hreflangAlternates,
   ogLocale,
@@ -31,15 +36,45 @@ describe('hreflangAlternates', () => {
     )
   })
 
-  it('handles the home page in both locales', () => {
+  it('handles the home page in every locale that has one', () => {
+    // The home page is the one route with all three locales, so it is the only
+    // place the full cluster shape can be asserted today.
     const home = hreflangAlternates('/', ORIGIN)
-    expect(home.map((a) => a.href)).toEqual([
-      'https://comfy.org/',
-      'https://comfy.org/zh-CN/',
-      'https://comfy.org/'
+    expect(home).toEqual([
+      { hreflang: 'en', href: 'https://comfy.org/' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/' },
+      { hreflang: 'ja', href: 'https://comfy.org/ja/' },
+      { hreflang: 'x-default', href: 'https://comfy.org/' }
     ])
     expect(hreflangAlternates('/zh-CN/', ORIGIN)).toEqual(home)
     expect(hreflangAlternates('/zh-CN', ORIGIN)).toEqual(home)
+  })
+
+  // BE-11285. Previously `/ja/` was read as the English route `/ja`, so it was
+  // labelled `en` and its cluster pointed at `/zh-CN/ja/`, which 404s.
+  it('labels the Japanese home page ja and clusters it with the others', () => {
+    expect(hreflangAlternates('/ja/', ORIGIN)).toEqual(
+      hreflangAlternates('/', ORIGIN)
+    )
+    expect(hreflangAlternates('/ja', ORIGIN)).toEqual(
+      hreflangAlternates('/', ORIGIN)
+    )
+  })
+
+  it('never treats a locale prefix as part of the English path', () => {
+    const hrefs = hreflangAlternates('/ja/', ORIGIN).map((a) => a.href)
+    expect(hrefs).not.toContain('https://comfy.org/zh-CN/ja/')
+    expect(hrefs).not.toContain('https://comfy.org/ja/ja/')
+  })
+
+  // Japanese has exactly one page. A blanket rule like Chinese's would
+  // advertise a Japanese URL for every route on the site.
+  it('offers no ja alternate for routes that have no Japanese page', () => {
+    for (const pathname of ['/cli/', '/zh-CN/cli/', '/mcp/']) {
+      expect(
+        hreflangAlternates(pathname, ORIGIN).map((a) => a.hreflang)
+      ).toEqual(['en', 'zh-CN', 'x-default'])
+    }
   })
 
   it('covers dynamic routes that exist in both locales', () => {
@@ -73,12 +108,13 @@ describe('sitemapAlternates', () => {
     ])
   })
 
-  it('emits nothing for Japanese, from either locale prefix', () => {
-    // /ja/ has no twin rule yet, so a cluster here would advertise
-    // /zh-CN/ja/, which 404s. The prefixed form must be suppressed too, or a
-    // locale-prefixed request slips past a check that only reads the raw path.
-    expect(hreflangAlternates('/ja/', ORIGIN)).toEqual([])
-    expect(hreflangAlternates('/zh-CN/ja/', ORIGIN)).toEqual([])
+  it('gives the Japanese home page a cluster with no 404 in it', () => {
+    expect(sitemapAlternates('https://comfy.org/ja/')).toEqual([
+      { url: 'https://comfy.org/', lang: 'en' },
+      { url: 'https://comfy.org/zh-CN/', lang: 'zh-CN' },
+      { url: 'https://comfy.org/ja/', lang: 'ja' },
+      { url: 'https://comfy.org/', lang: 'x-default' }
+    ])
   })
 
   it('leaves English-only entries without links', () => {
@@ -100,6 +136,14 @@ describe('og locale', () => {
     expect(ogLocaleAlternate('en', clustered)).toBe('zh_CN')
     expect(ogLocaleAlternate('zh-CN', clustered)).toBe('en_US')
     expect(ogLocaleAlternate('en', [])).toBeNull()
+  })
+
+  it('pairs a Japanese page with English, not with Chinese', () => {
+    // OG takes one alternate. Testing for `zh-CN` rather than `en` sent every
+    // localized page to zh_CN, so a Japanese page named a language it has
+    // nothing to do with.
+    const clustered = hreflangAlternates('/ja/', ORIGIN)
+    expect(ogLocaleAlternate('ja', clustered)).toBe('en_US')
   })
 })
 
@@ -124,12 +168,15 @@ describe('the emitter agrees with the page tree', () => {
 
   const english = new Set<string>()
   const chinese = new Set<string>()
+  const japanese = new Set<string>()
   for (const file of astroFiles(pagesDir)) {
     const rel = relative(pagesDir, file).split(sep).join('/')
     if (rel.includes('[')) continue
     const route = routeOf(`/src/pages/${rel}`)
     if (route.startsWith(`${ZH_PREFIX}/`)) {
       chinese.add(route.slice(ZH_PREFIX.length) || '/')
+    } else if (route.startsWith(`${JA_PREFIX}/`)) {
+      japanese.add(route.slice(JA_PREFIX.length) || '/')
     } else {
       english.add(route)
     }
@@ -160,5 +207,32 @@ describe('the emitter agrees with the page tree', () => {
       (route) => clusters(`${ZH_PREFIX}${route}`) && !english.has(route)
     )
     expect(lying, 'the English twin was moved or removed').toEqual([])
+  })
+
+  const advertisesJa = (route: string): boolean =>
+    hreflangAlternates(route, ORIGIN).some(
+      (alternate) => alternate.hreflang === JA_HREFLANG
+    )
+
+  /**
+   * The two directions `JA_ROUTES` can rot in. Chinese needs neither check
+   * because it has a blanket rule; Japanese is an explicit list, so both the
+   * list claiming too much and the list claiming too little have to be caught.
+   */
+  it('never advertises a ja page that does not exist', () => {
+    const lying = [...english].filter(
+      (route) => advertisesJa(route) && !japanese.has(route)
+    )
+    expect(
+      lying,
+      'add the Japanese page or drop the route from JA_ROUTES'
+    ).toEqual([])
+  })
+
+  it('clusters every Japanese page that was built', () => {
+    const unlisted = [...japanese].filter(
+      (route) => clusters(route) && !advertisesJa(route)
+    )
+    expect(unlisted, 'add the route to JA_ROUTES in hreflang.ts').toEqual([])
   })
 })

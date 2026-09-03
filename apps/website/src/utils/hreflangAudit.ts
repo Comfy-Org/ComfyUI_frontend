@@ -7,7 +7,14 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
-import { unprefixed, ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
+import {
+  JA_HREFLANG,
+  JA_PREFIX,
+  localizedHref,
+  unprefixed,
+  ZH_HREFLANG,
+  ZH_PREFIX
+} from './hreflangRoutes'
 
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
@@ -32,17 +39,30 @@ export interface BuiltSite {
  */
 function expectedAlternates(
   route: string,
-  origin: string
+  origin: string,
+  builtRoutes: ReadonlySet<string>
 ): Map<string, string> {
   const path = unprefixed(route)
   const english = `${origin}${path}`
-  const chinese = `${origin}${ZH_PREFIX}${path === '/' ? '/' : path}`
+  const chinese = `${origin}${localizedHref(ZH_PREFIX, path)}`
+  const japaneseRoute = localizedHref(JA_PREFIX, path)
 
-  return new Map([
+  const expected = new Map([
     ['en', english],
-    [ZH_HREFLANG, chinese],
-    ['x-default', english]
+    [ZH_HREFLANG, chinese]
   ])
+  // Japanese is a partial locale: it has one page today, so it belongs in a
+  // cluster only where its page was actually built. Deciding that from the BUILT
+  // site rather than from the emitter's own route list is what keeps this an
+  // independent check. A stale list fails here both ways round: claim a Japanese
+  // page that was not built and the "was not built (404)" rule fires; build one
+  // and forget to list it and the "expects ja -> ... but does not declare it"
+  // rule fires.
+  if (builtRoutes.has(japaneseRoute)) {
+    expected.set(JA_HREFLANG, `${origin}${japaneseRoute}`)
+  }
+  expected.set('x-default', english)
+  return expected
 }
 
 /**
@@ -57,10 +77,11 @@ function clusterErrors(
   route: string,
   alternates: Alternate[],
   origin: string,
-  source: string
+  source: string,
+  builtRoutes: ReadonlySet<string>
 ): string[] {
   const errors: string[] = []
-  const expected = expectedAlternates(route, origin)
+  const expected = expectedAlternates(route, origin, builtRoutes)
   const seen = new Set<string>()
   for (const { hreflang, href } of alternates) {
     if (seen.has(hreflang)) {
@@ -72,8 +93,9 @@ function clusterErrors(
 
     // Checking only that the expected pairs are present accepts extras beside
     // them. A locale this site does not publish still resolves and can still be
-    // reciprocal, so nothing downstream catches it: /ja/ pages that exist for
-    // some other reason would silently enter the cluster. The set is closed.
+    // reciprocal, so nothing downstream catches it. The set stays closed: `ja`
+    // is admitted above only for a route whose Japanese page was actually
+    // built, so a cluster naming `ja` on any other route is still rejected.
     if (!expected.has(hreflang)) {
       errors.push(
         `${route}: ${source} declares hreflang="${hreflang}", which is not one of ${[...expected.keys()].join(', ')}`
@@ -112,9 +134,14 @@ export function auditBuiltSite({
 }: BuiltSite): string[] {
   const errors: string[] = []
   const routeOfHref = (href: string) => href.slice(origin.length) || '/'
+  // Which locales a route SHOULD cluster is read off the built site, so the
+  // audit never inherits the emitter's opinion of what exists.
+  const builtRoutes: ReadonlySet<string> = new Set(pages.keys())
 
   for (const [route, alternates] of pages) {
-    errors.push(...clusterErrors(route, alternates, origin, 'page'))
+    errors.push(
+      ...clusterErrors(route, alternates, origin, 'page', builtRoutes)
+    )
 
     // Only the pages can be checked against what was actually built.
     for (const { hreflang, href } of alternates) {
@@ -164,7 +191,9 @@ export function auditBuiltSite({
       continue
     }
 
-    errors.push(...clusterErrors(route, sitemapAlternates, origin, 'sitemap'))
+    errors.push(
+      ...clusterErrors(route, sitemapAlternates, origin, 'sitemap', builtRoutes)
+    )
 
     const langs = new Set(
       sitemapAlternates.map((alternate) => alternate.hreflang)
