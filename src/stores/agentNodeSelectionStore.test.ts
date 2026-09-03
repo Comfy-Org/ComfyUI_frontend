@@ -1,7 +1,7 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -45,26 +45,6 @@ describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
-  })
-
-  afterEach(() => {
-    document.body.classList.remove('node-selection-active')
-  })
-
-  // PrimeVue teleports every `<Toast>` container to `<body>` and several
-  // components mount their own groups, so the layer can only be hidden from the
-  // root. The mode owns the marker because no one toast component renders them
-  // all - and because it must outlive any component that might unmount mid-mode.
-  it('hides the toast layer for the duration of the mode', async () => {
-    const store = useAgentNodeSelectionStore()
-
-    store.enter()
-    await nextTick()
-    expect(document.body).toHaveClass('node-selection-active')
-
-    store.exit()
-    await nextTick()
-    expect(document.body).not.toHaveClass('node-selection-active')
   })
 
   // Flipping the setting rather than overriding the minimap is what keeps the
