@@ -56,7 +56,7 @@ export interface AgentSessionDeps {
     prepare?(): Promise<void>
     tabs?(originTabPath?: string): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
-    draft?(): DraftSnapshot | undefined
+    draft?(originTabPath?: string): DraftSnapshot | undefined
   }
 }
 
@@ -224,9 +224,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const wfContext = workflow?.current(originTabPath)
     const tabs = workflow?.tabs?.(originTabPath)
     async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.()
+      const draft = workflow?.draft?.(originTabPath)
+      // An unsaved tab now yields a context carrying only its tabPath, so a
+      // merely-defined wfContext no longer implies the tab has a workflow the
+      // thread could own. An existing thread takes a draft only from a tab
+      // with a real workflow id; otherwise an unbound scratch tab would leak
+      // its canvas into someone else's thread.
       const shouldSendDraft =
-        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
+        draft !== undefined &&
+        (threadId === 'new' || wfContext?.id !== undefined)
       const input = {
         content: text,
         tabs,

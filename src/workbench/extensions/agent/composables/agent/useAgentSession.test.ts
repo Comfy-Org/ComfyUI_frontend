@@ -818,6 +818,55 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (originTabPath) => {
+          const path = originTabPath ?? activePath
+          return { id: idForPath(path), tabPath: path }
+        },
+        adopted: vi.fn(),
+        prepare,
+        // The draft is read on the same post-await leg as current()/tabs(), so
+        // it has to honor the same pinned identity or the turn ships one tab's
+        // canvas under another tab's workflow id.
+        draft: (originTabPath) => {
+          const path = originTabPath ?? activePath
+          return { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('what is on my canvas')
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      draft: { content: { nodes: [{ id: 1, type: 'tab-a' }], links: [] } }
+    })
+  })
+
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()

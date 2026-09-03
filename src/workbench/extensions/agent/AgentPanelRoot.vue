@@ -308,11 +308,22 @@ function activeWorkflowTurnContext(
     : { id, tabPath: active.path }
 }
 
-function activeWorkflowDraft(): DraftSnapshot | undefined {
+function activeWorkflowDraft(
+  originTabPath?: string
+): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
-  const active = workflowStore.activeWorkflow
+  const active =
+    originTabPath === undefined
+      ? workflowStore.activeWorkflow
+      : (workflowStore.getWorkflowByPath(originTabPath) ??
+        workflowStore.activeWorkflow)
   if (!active) return undefined
-  active.changeTracker?.captureCanvasState()
+  // captureCanvasState() folds the LIVE canvas into whichever workflow it is
+  // called on, so it is only correct while that workflow is still the active
+  // tab. If the user switched away mid-turn, the originating tab's own
+  // serialized activeState is the snapshot that belongs with this send.
+  if (active.path === workflowStore.activeWorkflow?.path)
+    active.changeTracker?.captureCanvasState()
   const content = active.activeState
   if (!content) return undefined
   return { content }
