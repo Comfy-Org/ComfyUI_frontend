@@ -100,6 +100,18 @@ test.describe('Enterprise pages @smoke', () => {
     await expect(
       page.getByText(/5,000\+ extensions and 60,000\+ community nodes/)
     ).toBeVisible()
+    const stepsSection = page.locator('section').filter({
+      has: page.getByRole('heading', {
+        level: 2,
+        name: 'From one working setup to an approved fleet.'
+      })
+    })
+    await expect(stepsSection.getByRole('heading', { level: 3 })).toHaveText([
+      'Define the build',
+      'Build it once',
+      'Update deliberately',
+      'Roll out to the fleet'
+    ])
     await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toBeVisible()
