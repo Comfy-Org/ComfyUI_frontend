@@ -621,6 +621,7 @@ export function useAgentCrdtFollower(
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
+      if (active && next !== null && next === subscribedWorkflowId.value) return
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
