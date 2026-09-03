@@ -491,15 +491,18 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      await load3d.loadModel(modelUrl)
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome === 'cancelled') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
 
       isPreview.value = true
 
+      // One-time wiring for this composable instance: later loads go through
+      // loadStandaloneModel, which never registers these.
       setupAnimationEvents()
-      persistStandaloneThumbnail(modelUrl)
+      if (outcome === 'loaded') persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
       useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
@@ -527,11 +530,12 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      await load3d.loadModel(modelUrl)
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome === 'cancelled') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
-      persistStandaloneThumbnail(modelUrl)
+      if (outcome === 'loaded') persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
@@ -821,9 +825,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      await load3d.loadModel(modelUrl)
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome === 'cancelled') return
 
       captureAdapterFlags(load3d)
+      if (outcome !== 'loaded') return
 
       const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
       if (modelWidget) {

@@ -134,6 +134,58 @@ describe('generateModelThumbnail', () => {
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 
+  it('redacts the request URL from a loader error before reporting', async () => {
+    const loaderError = new Error(
+      'fetch for "https://tok:sec@host/api/view?filename=a.glb&sig=abc" responded with 404'
+    )
+    // A stack the redacted copy cannot reproduce on its own: the frame proves
+    // the original stack was carried over, the token proves it was scrubbed.
+    loaderError.stack =
+      'Error: fetch failed\n    at GLTFLoader.parse (https://host/api/view?filename=a.glb&stacksecret=zzz:1:1)'
+    const instance = mockInstance({
+      loadModel: vi.fn().mockRejectedValue(loaderError)
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await expect(generateModelThumbnail('/a.glb', 'a.glb')).resolves.toEqual({
+      status: 'failed'
+    })
+
+    const [reported, options] = reportError.mock.calls[0]
+    const { message, stack } = reported as Error
+    expect(message).not.toContain('sig=abc')
+    expect(message).not.toContain('tok:sec')
+    expect(message).toContain('https://host/api/view')
+    expect(stack).toContain('GLTFLoader.parse')
+    expect(stack).not.toContain('stacksecret=zzz')
+    expect((reported as Error).cause).toBeUndefined()
+    expect(options).toEqual({
+      errorType: 'agent_model_thumbnail_generation_failure'
+    })
+  })
+
+  it('redacts a root-relative agent asset URL from a loader error', async () => {
+    const instance = mockInstance({
+      loadModel: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'fetch for "/api/view?filename=mesh-0.glb&token=xyz" responded with 403'
+          )
+        )
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await expect(
+      generateModelThumbnail('/mesh-0.glb', 'mesh-0.glb')
+    ).resolves.toEqual({ status: 'failed' })
+
+    const { message } = reportError.mock.calls[0][0] as Error
+    expect(message).not.toContain('token=xyz')
+    expect(message).not.toContain('filename=mesh-0.glb')
+    expect(message).toContain('/api/view')
+  })
+
   it('runs generations one at a time', async () => {
     let releaseFirst!: () => void
     const first = mockInstance({

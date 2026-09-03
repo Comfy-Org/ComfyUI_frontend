@@ -163,7 +163,7 @@ describe('useLoad3d', () => {
       setFOV: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn().mockResolvedValue('loaded'),
       refreshViewport: vi.fn(),
       updateStatusMouseOnNode: vi.fn(),
       updateStatusMouseOnScene: vi.fn(),
