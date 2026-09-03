@@ -4,17 +4,17 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+
+import { useAgentConsentStore } from './agentConsentStore'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
-  const settingStore = useSettingStore()
+  const consentStore = useAgentConsentStore()
   const { isLoggedIn } = useCurrentUser()
   const enabled = ref(false)
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
@@ -27,7 +27,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     () =>
       enabled.value &&
       isOpen.value &&
-      settingStore.get(AGENT_CONSENT_SETTING_ID) === true &&
+      consentStore.accepted &&
       (isCloud || isLoggedIn.value)
   )
 

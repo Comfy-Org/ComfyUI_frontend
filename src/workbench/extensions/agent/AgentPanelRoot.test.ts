@@ -9,8 +9,6 @@ import { defineComponent, h, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -26,6 +24,10 @@ const focusNodeInstance = vi.hoisted(() => vi.fn())
 
 vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: () => ({ focusNodeInstance })
+}))
+
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
 }))
 
 const ws = vi.hoisted(() => {
@@ -1524,7 +1526,6 @@ describe('AgentPanelRoot auto fit after generation', () => {
     ws.clear()
     vi.mocked(app.loadGraphData).mockClear()
     vi.stubGlobal('devicePixelRatio', 1)
-    useSettingStore().settingValues[AGENT_CONSENT_SETTING_ID] = true
     const panel = useAgentPanelStore()
     panel.enabled = true
     panel.isOpen = true

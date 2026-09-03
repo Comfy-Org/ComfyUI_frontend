@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 const access = vi.hoisted(() => ({ accepted: true, loggedIn: true }))
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: () => access.accepted
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({
+    get accepted() {
+      return access.accepted
+    }
   })
 }))
 vi.mock('@/composables/auth/useCurrentUser', () => ({

@@ -1,5 +1,10 @@
+import { watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { reportError } from '@/platform/telemetry/reportError'
 import { createPostHogFlagSource } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -41,7 +46,19 @@ useExtensionService().registerExtension({
   },
   setup() {
     const agentPanelStore = useAgentPanelStore()
+    const consentStore = useAgentConsentStore()
+    const { isLoggedIn } = useCurrentUser()
     registerWorkflowTabActivityTracker()
+
+    const loadConsentIfEligible = (): void => {
+      if (!agentPanelStore.enabled || !isLoggedIn.value) return
+      void consentStore.load().catch((error: unknown) => {
+        reportError(error, {
+          errorType: 'agent_consent_setting_load_failure'
+        })
+      })
+    }
+    watch(isLoggedIn, loadConsentIfEligible, { immediate: true })
 
     async function setupFlagGate(): Promise<void> {
       // posthog-js is a lazy chunk and is commonly blocked by ad blockers; a failed
@@ -52,6 +69,7 @@ useExtensionService().registerExtension({
         const sync = (): void => {
           const forceInDev = import.meta.env.MODE === 'development'
           agentPanelStore.enabled = forceInDev || source.isEnabled()
+          loadConsentIfEligible()
         }
         source.onChange?.(sync)
         sync()

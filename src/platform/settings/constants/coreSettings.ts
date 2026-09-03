@@ -5,7 +5,6 @@ import {
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
@@ -1243,12 +1242,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.37.0'
-  },
-  {
-    id: AGENT_CONSENT_SETTING_ID,
-    name: 'Comfy Agent consent accepted',
-    type: 'hidden',
-    defaultValue: false
   },
   {
     id: 'Comfy.Queue.QPOV2',

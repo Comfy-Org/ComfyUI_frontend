@@ -14,8 +14,8 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => true })
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
 }))
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ isLoggedIn: { value: true } })

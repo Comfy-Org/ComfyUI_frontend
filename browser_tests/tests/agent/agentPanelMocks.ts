@@ -228,8 +228,7 @@ async function mockAgentBoot(
     r.fulfill(
       jsonRoute({
         'Comfy.TutorialCompleted': true,
-        'Comfy.RightSidePanel.ShowErrorsTab': false,
-        [AGENT_CONSENT_SETTING_ID]: consentAccepted
+        'Comfy.RightSidePanel.ShowErrorsTab': false
       })
     )
   )
