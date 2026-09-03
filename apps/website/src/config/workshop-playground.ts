@@ -232,6 +232,8 @@ export function validateForm(
       } else if (typeof value === 'object') {
         if (!field.accept.includes(value.type)) errors[field.name] = 'badType'
         else if (value.size > field.maxBytes) errors[field.name] = 'tooLarge'
+      } else {
+        errors[field.name] = 'badType'
       }
     } else if (field.kind === 'number') {
       if (typeof value !== 'number' || !isWithinRange(value, field)) {
@@ -311,5 +313,5 @@ export function exampleValues(
 }
 
 export function isVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|mov)(\?|$)/i.test(url)
+  return /\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)
 }

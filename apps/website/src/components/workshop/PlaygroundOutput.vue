@@ -70,17 +70,21 @@ watch(latest, () => {
   viewing.value = undefined
 })
 
-const blurred = computed(
-  () =>
-    state.status === 'succeeded' &&
-    state.nsfw &&
-    !revealed.value &&
-    !viewing.value
+// Earlier runs carry their own flag, so switching away from the latest output
+// must not drop the gate.
+const shownIsSensitive = computed(() =>
+  viewing.value
+    ? viewing.value.nsfw === true
+    : state.status === 'succeeded' && state.nsfw
 )
+const blurred = computed(() => shownIsSensitive.value && !revealed.value)
+watch(shown, () => {
+  revealed.value = false
+})
 
 const earlierClass = (active: boolean) =>
   cn(
-    'text-primary-warm-white flex size-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 text-xs transition-opacity',
+    'flex size-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 text-xs text-primary-warm-white transition-opacity',
     active
       ? 'border-primary-comfy-yellow'
       : 'border-transparent opacity-60 hover:opacity-100'
@@ -89,13 +93,13 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="bg-transparency-white-t4 border-transparency-white-t8 flex min-h-96 flex-col overflow-hidden rounded-2xl border"
+    class="bg-transparency-white-t4 flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8"
     aria-live="polite"
     data-testid="playground-output"
     :data-state="state.status"
   >
     <header
-      class="border-transparency-white-t8 text-primary-warm-gray flex items-center justify-between border-b px-5 py-3 text-xs font-bold tracking-wider uppercase"
+      class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
     >
       <span>{{ t('workshop.output.title', locale) }}</span>
       <span
@@ -127,12 +131,12 @@ const earlierClass = (active: boolean) =>
       class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
     >
       <span
-        class="border-transparency-white-t20 text-primary-warm-gray grid size-12 place-items-center rounded-2xl border border-dashed"
+        class="grid size-12 place-items-center rounded-2xl border border-dashed border-transparency-white-t20 text-primary-warm-gray"
         aria-hidden="true"
       >
         <ImageIcon class="size-5" />
       </span>
-      <p class="text-primary-warm-gray text-sm">
+      <p class="text-sm text-primary-warm-gray">
         {{ t('workshop.output.placeholder', locale) }}
       </p>
     </div>
@@ -146,12 +150,12 @@ const earlierClass = (active: boolean) =>
         class="text-primary-comfy-yellow size-8 animate-spin"
         aria-hidden="true"
       />
-      <p class="text-primary-warm-white text-sm">
+      <p class="text-sm text-primary-warm-white">
         {{ t('workshop.run.running', locale) }}
       </p>
       <p
         v-if="modality === 'video'"
-        class="text-primary-warm-gray max-w-xs text-xs"
+        class="max-w-xs text-xs text-primary-warm-gray"
       >
         {{ t('workshop.run.videoHint', locale) }}
       </p>
@@ -171,10 +175,10 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
       data-testid="run-expired"
     >
-      <p class="text-primary-comfy-canvas text-sm">
+      <p class="text-sm text-primary-comfy-canvas">
         {{ t('workshop.output.expired', locale) }}
       </p>
-      <p class="text-primary-warm-gray max-w-sm text-xs">
+      <p class="max-w-sm text-xs text-primary-warm-gray">
         {{ t('workshop.output.expiredHint', locale) }}
       </p>
       <Button variant="outline" size="sm" @click="emit('retry')">
@@ -187,7 +191,7 @@ const earlierClass = (active: boolean) =>
       v-else-if="state.status === 'cancelled'"
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
-      <p class="text-primary-comfy-canvas text-sm">
+      <p class="text-sm text-primary-comfy-canvas">
         {{ t('workshop.output.cancelled', locale) }}
       </p>
       <Button variant="outline" size="sm" @click="emit('retry')">
@@ -217,7 +221,7 @@ const earlierClass = (active: boolean) =>
 
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
-      <div class="bg-primary-comfy-ink relative flex-1">
+      <div class="relative flex-1 bg-primary-comfy-ink">
         <div
           :class="blurred ? 'blur-2xl select-none' : ''"
           class="size-full transition-[filter]"
@@ -240,7 +244,7 @@ const earlierClass = (active: boolean) =>
           />
           <pre
             v-else-if="shown.kind === 'text'"
-            class="text-primary-warm-white p-5 font-mono text-sm whitespace-pre-wrap"
+            class="p-5 font-mono text-sm whitespace-pre-wrap text-primary-warm-white"
             >{{ shown.text }}</pre>
           <div
             v-else
@@ -262,7 +266,7 @@ const earlierClass = (active: boolean) =>
           data-testid="output-reveal"
           @click="revealed = true"
         >
-          <span class="text-primary-warm-white text-sm">
+          <span class="text-sm text-primary-warm-white">
             {{ t('workshop.output.nsfw', locale) }}
           </span>
           <span
@@ -275,7 +279,7 @@ const earlierClass = (active: boolean) =>
 
       <div
         v-if="outputs.length > 1 && !blurred"
-        class="border-transparency-white-t8 grid grid-cols-4 gap-2 border-t p-4 sm:grid-cols-6 lg:grid-cols-9"
+        class="grid grid-cols-4 gap-2 border-t border-transparency-white-t8 p-4 sm:grid-cols-6 lg:grid-cols-9"
         data-testid="output-thumbnails"
       >
         <button
@@ -314,11 +318,11 @@ const earlierClass = (active: boolean) =>
 
       <div
         v-if="earlier.length && state.status === 'succeeded'"
-        class="border-transparency-white-t8 flex items-center gap-2 overflow-x-auto border-t px-4 py-3"
+        class="flex items-center gap-2 overflow-x-auto border-t border-transparency-white-t8 px-4 py-3"
         data-testid="earlier-runs"
       >
         <span
-          class="text-2xs text-primary-warm-gray shrink-0 font-bold tracking-wider uppercase"
+          class="shrink-0 text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
         >
           {{ t('workshop.output.earlier', locale) }}
         </span>
@@ -343,7 +347,7 @@ const earlierClass = (active: boolean) =>
           <video
             v-if="isVideoUrl(run.url)"
             :src="run.url"
-            class="size-full object-cover"
+            :class="cn('size-full object-cover', run.nsfw && 'blur-md')"
             muted
             playsinline
             preload="metadata"
@@ -352,14 +356,14 @@ const earlierClass = (active: boolean) =>
             v-else-if="run.kind !== 'text'"
             :src="run.url"
             alt=""
-            class="size-full object-cover"
+            :class="cn('size-full object-cover', run.nsfw && 'blur-md')"
           />
           <span v-else>{{ index + 2 }}</span>
         </button>
       </div>
 
       <p
-        class="border-transparency-white-t8 text-primary-warm-gray border-t px-5 py-2 text-xs"
+        class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
         :data-testid="
           state.status === 'example' ? 'output-example-hint' : undefined
         "
@@ -372,7 +376,7 @@ const earlierClass = (active: boolean) =>
       </p>
       <div
         v-if="state.status === 'succeeded'"
-        class="border-transparency-white-t8 flex flex-wrap items-center gap-2 border-t p-4"
+        class="flex flex-wrap items-center gap-2 border-t border-transparency-white-t8 p-4"
       >
         <Button
           v-if="currentUrl"

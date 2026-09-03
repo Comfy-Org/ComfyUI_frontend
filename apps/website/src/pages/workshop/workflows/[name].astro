@@ -47,7 +47,7 @@ const statsLine = t('workshop.workflow.stats')
   .replace('{avg}', String(stats.avgSeconds))
   .replace('{credits}', String(stats.creditsPerRun))
   .replace('{clone}', stats.cloneCredits.toLocaleString('en-US'))
-const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${template.name}.json`
+const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
 const clone = { credits: stats.cloneCredits, href: downloadUrl, author: `@${author}` }
 const comments = [
   { author: '@midframe', stars: 5, text: t('workshop.workflow.comment1') },

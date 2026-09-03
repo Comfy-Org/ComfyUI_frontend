@@ -16,13 +16,19 @@ export function useSignInHref(locale: Locale = 'en') {
   return href
 }
 
-// Only same-origin paths: no protocol-relative URLs and no backslashes,
-// which browsers normalise into slashes.
+// Resolving against a fixed base is the only reliable same-origin test: browsers
+// strip tabs and newlines and fold backslashes into slashes before parsing, so
+// `/\tevil.example` and `/\\evil.example` both escape a character blocklist.
+const RESOLUTION_BASE = 'https://return-path.invalid'
+
 export function safeReturnPath(value: string | null, fallback: string): string {
-  return value &&
-    value.startsWith('/') &&
-    !value.startsWith('//') &&
-    !value.includes('\\')
-    ? value
-    : fallback
+  if (!value?.startsWith('/')) return fallback
+  try {
+    const resolved = new URL(value, RESOLUTION_BASE)
+    return resolved.origin === RESOLUTION_BASE
+      ? `${resolved.pathname}${resolved.search}${resolved.hash}`
+      : fallback
+  } catch {
+    return fallback
+  }
 }

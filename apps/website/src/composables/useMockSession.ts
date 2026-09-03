@@ -138,11 +138,16 @@ function readStoredSession(): MockSession {
         typeof parsed.account.workspace === 'string'
           ? parsed.account.workspace
           : BASE_ACCOUNT.workspace
+      const role =
+        'role' in parsed.account && parsed.account.role === 'member'
+          ? ('member' as const)
+          : BASE_ACCOUNT.role
       return {
         status: 'signedIn',
         account: {
           ...BASE_ACCOUNT,
           workspace,
+          role,
           credits: parsed.account.credits,
           subscribed
         }

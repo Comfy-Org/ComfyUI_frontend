@@ -6,6 +6,7 @@ import {
   exampleValues,
   examplesForModel,
   schemaForModel,
+  isVideoUrl,
   validateForm
 } from './workshop-playground'
 import type { GeneratedField } from './workshop'
@@ -105,6 +106,9 @@ describe('validateForm', () => {
         image: { name: 'clip.mp4', size: 10, type: 'video/mp4' }
       })
     ).toEqual({ image: 'badType' })
+    expect(validateForm(schema, { ...valid, image: true })).toEqual({
+      image: 'badType'
+    })
     expect(
       validateForm(schema, {
         ...valid,
@@ -200,5 +204,14 @@ describe('exampleValues', () => {
       previewUrl: 'https://example.com/out.webp'
     })
     expect(validateForm(schema, values)).toEqual({})
+  })
+})
+
+describe('isVideoUrl', () => {
+  it('recognises a video regardless of what trails the extension', () => {
+    expect(isVideoUrl('https://cdn.example/output.mp4')).toBe(true)
+    expect(isVideoUrl('https://cdn.example/output.mp4?sig=abc')).toBe(true)
+    expect(isVideoUrl('https://cdn.example/output.mp4#t=0')).toBe(true)
+    expect(isVideoUrl('https://cdn.example/output.png')).toBe(false)
   })
 })

@@ -18,6 +18,8 @@ export interface RunOutput {
   readonly text?: string
   readonly urls?: readonly string[]
   readonly fileName: string
+  // Kept on the output itself so earlier runs stay gated once the run state moves on.
+  readonly nsfw?: boolean
 }
 
 export type RunState =

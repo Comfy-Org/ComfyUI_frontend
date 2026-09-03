@@ -102,6 +102,21 @@ describe('useMockSession persistence', () => {
     })
   })
 
+  it('keeps a stored member in their role after a reload', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        status: 'signedIn',
+        account: { credits: 0, subscribed: true, role: 'member' }
+      })
+    )
+    const api = await mountFresh()
+    expect(api.session.value).toMatchObject({
+      status: 'signedIn',
+      account: { role: 'member' }
+    })
+  })
+
   it('falls back to signed out on malformed or incomplete storage', async () => {
     localStorage.setItem(STORAGE_KEY, 'not json')
     expect((await mountFresh()).session.value).toEqual(signedOut)
