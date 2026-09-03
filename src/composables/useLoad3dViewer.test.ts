@@ -178,7 +178,21 @@ describe('useLoad3dViewer', () => {
       } as Load3d['modelManager'],
       setBackgroundImage: vi.fn().mockResolvedValue(undefined),
       setBackgroundRenderMode: vi.fn(),
-      forceRender: vi.fn()
+      forceRender: vi.fn(),
+      // captureAdapterFlags(source) reads these during initializeViewer.
+      // Without them it throws and the rest of initialization never runs.
+      isSplatModel: vi.fn().mockReturnValue(false),
+      isPlyModel: vi.fn().mockReturnValue(false),
+      getSourceFormat: vi.fn().mockReturnValue('glb'),
+      getCurrentModelCapabilities: vi.fn().mockReturnValue({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe'],
+        fitTargetSize: 5
+      })
     }
 
     vi.mocked(Load3d).mockImplementation(function () {
