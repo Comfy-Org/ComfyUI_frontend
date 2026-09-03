@@ -1,11 +1,30 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
+import { workshopModelSchema } from '../content/workshop-models.schema'
 import type { WorkshopBrowseModel } from './workshop'
 import {
   countWorkshopOutputs,
   filterWorkshopModels,
-  workshopModels
+  toBrowseModel
 } from './workshop'
+
+const COLLECTION = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'content',
+  'workshop-models'
+)
+
+const collection = readdirSync(COLLECTION)
+  .filter((file) => file.endsWith('.json'))
+  .map((file) =>
+    workshopModelSchema.parse(
+      JSON.parse(readFileSync(join(COLLECTION, file), 'utf8'))
+    )
+  )
 
 const models: WorkshopBrowseModel[] = [
   {
@@ -32,8 +51,19 @@ const models: WorkshopBrowseModel[] = [
 
 describe('Workshop catalog', () => {
   it('contains every model in the committed Router snapshot', () => {
-    expect(workshopModels).toHaveLength(268)
-    expect(new Set(workshopModels.map((model) => model.id)).size).toBe(268)
+    expect(collection).toHaveLength(268)
+    expect(new Set(collection.map((model) => model.id)).size).toBe(268)
+  })
+
+  it('projects a card without the model input schema', () => {
+    // The browse island receives these over the wire, and `parameters` is the
+    // bulk of an entry, so a projection that leaked it would quietly multiply
+    // the page weight.
+    const card = toBrowseModel(collection[0])
+
+    expect(card.id).toBe(collection[0].id)
+    expect(card.href).toBe(`/workshop/models/${collection[0].slug}/`)
+    expect(Object.keys(card)).not.toContain('parameters')
   })
 
   it('searches names, providers, descriptions, and tags', () => {
