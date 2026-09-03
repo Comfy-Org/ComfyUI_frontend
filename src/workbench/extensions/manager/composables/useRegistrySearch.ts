@@ -38,18 +38,23 @@ export function useRegistrySearch(inputs: {
 
   async function doLoadMore() {
     if (!morePages.value) return
-    const { nodePacks, querySuggestions } = await searchPacks(
-      toValue(inputs.query),
-      {
-        pageSize: DEFAULT_PAGE_SIZE,
-        pageNumber,
-        restrictSearchableAttributes: searchableAttributes()
-      }
-    )
-    morePages.value = nodePacks.length >= DEFAULT_PAGE_SIZE
-    items.value.push(...nodePacks)
-    suggestions.value = querySuggestions
-    pageNumber++
+    try {
+      const { nodePacks, querySuggestions } = await searchPacks(
+        toValue(inputs.query),
+        {
+          pageSize: DEFAULT_PAGE_SIZE,
+          pageNumber,
+          restrictSearchableAttributes: searchableAttributes()
+        }
+      )
+      morePages.value = nodePacks.length >= DEFAULT_PAGE_SIZE
+      items.value.push(...nodePacks)
+      suggestions.value = querySuggestions
+      pageNumber++
+    } catch (err) {
+      console.error(err)
+      morePages.value = false
+    }
   }
 
   const reload = () =>
