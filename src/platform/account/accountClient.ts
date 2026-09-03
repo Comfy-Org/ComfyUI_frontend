@@ -57,6 +57,13 @@ export interface AccountLayerPocDebug extends Partial<AccountLayerPocSeam> {
   lastOpenedUrl: string | null
   payment: BillingState
   operationStore: { activeId: string | null }
+  exchangeError: string | null
+  workspace: {
+    initState: string
+    error: string | null
+    activeWorkspaceId: string | null
+    workspaces: Array<{ id: string; type: string }>
+  }
   injectOperationResponse(response: BillingOperationResponse): Promise<void>
   recoverSubscription(planId: string, intent: string): Promise<void>
   showBillingModal(): void
@@ -85,6 +92,13 @@ const debug: AccountLayerPocDebug = {
   lastOpenedUrl: null,
   payment: { step: 'select', noChargeConfirmed: false },
   operationStore: { activeId: null },
+  exchangeError: null,
+  workspace: {
+    initState: 'uninitialized',
+    error: null,
+    activeWorkspaceId: null,
+    workspaces: []
+  },
   injectOperationResponse: async () => undefined,
   recoverSubscription: async () => undefined,
   showBillingModal: () => undefined,
@@ -103,10 +117,18 @@ export const accountLayerPocExchangeError = readonly(exchangeError)
 export function setAccountLayerPocExchangeError(error: unknown) {
   exchangeError.value =
     error instanceof Error ? error : new Error('Account exchange failed')
+  debug.exchangeError = exchangeError.value.message
 }
 
 export function clearAccountLayerPocExchangeError() {
   exchangeError.value = null
+  debug.exchangeError = null
+}
+
+export function setAccountLayerPocWorkspaceDebug(
+  workspace: AccountLayerPocDebug['workspace']
+) {
+  debug.workspace = workspace
 }
 
 function storageName(key: StorageKey): string {

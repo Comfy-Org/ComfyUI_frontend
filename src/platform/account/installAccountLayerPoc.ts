@@ -9,7 +9,8 @@ import {
   clearAccountLayerPocExchangeError,
   createFrontendAccountClients,
   getAccountLayerPocDebug,
-  setAccountLayerPocExchangeError
+  setAccountLayerPocExchangeError,
+  setAccountLayerPocWorkspaceDebug
 } from '@/platform/account/accountClient'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -35,6 +36,16 @@ export function installAccountLayerPoc(
     clearAccountLayerPocExchangeError()
     try {
       const workspaceStore = useTeamWorkspaceStore(pinia)
+      await workspaceStore.initialize()
+      setAccountLayerPocWorkspaceDebug({
+        initState: workspaceStore.initState,
+        error: workspaceStore.error?.message ?? null,
+        activeWorkspaceId: workspaceStore.activeWorkspaceId,
+        workspaces: workspaceStore.workspaces.map(({ id, type }) => ({
+          id,
+          type
+        }))
+      })
       await until(() => workspaceStore.initState).toMatch(
         (state) => state === 'ready' || state === 'error'
       )

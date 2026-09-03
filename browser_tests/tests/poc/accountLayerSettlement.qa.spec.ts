@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20c-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20d-frontend'
 const terminalSteps = [
   'success',
   'canceled',
@@ -220,17 +220,20 @@ test('completes hosted subscription and captures terminal operation', async () =
   const page = context.pages()[0] ?? (await context.newPage())
   context.on('response', async (response) => {
     const url = new URL(response.url())
-    if (
-      !url.pathname.startsWith('/api/billing/') &&
-      !url.pathname.startsWith('/api/workspaces') &&
-      url.pathname !== '/api/auth/token'
-    )
+    if (!['stagingapi.comfy.org', 'stagingcloud.comfy.org'].includes(url.host))
       return
     const path = url.pathname.replace(/\/ops\/[^/]+$/, '/ops/[redacted]')
     appendFileSync(
       `${evidenceDir}/requests.log`,
-      `${response.request().method()} ${path} ${response.status()}\n`
+      `${response.request().method()} ${url.origin}${path} ${response.status()}\n`
     )
+    if (!response.ok()) {
+      const body = await response.text().catch(() => '')
+      appendFileSync(
+        `${evidenceDir}/requests.log`,
+        `${body.replaceAll(/Bearer\s+\S+/g, 'Bearer [redacted]')}\n`
+      )
+    }
     if (url.pathname.includes('/ops/')) {
       try {
         const text = await response.text()
@@ -250,6 +253,32 @@ test('completes hosted subscription and captures terminal operation', async () =
   try {
     await signIn(page)
     await requireAuthenticated(page)
+    writeFileSync(
+      `${evidenceDir}/readiness-debug.json`,
+      `${JSON.stringify(
+        await page.evaluate(() => {
+          const seam = Reflect.get(window, '__accountLayerPoc') as {
+            exchangeError: string | null
+            workspace: unknown
+            sessionExchanges: number
+            getSessionPhase(): string
+          }
+          return {
+            sessionPhase: seam.getSessionPhase(),
+            sessionExchanges: seam.sessionExchanges,
+            exchangeError: seam.exchangeError,
+            workspace: seam.workspace
+          }
+        }),
+        null,
+        2
+      )}\n`
+    )
+    await page.screenshot({
+      path: `${evidenceDir}/frontend-after-sign-in.png`,
+      fullPage: true
+    })
+    if (process.env.DIAGNOSE_ONLY === 'true') return
     const activeOperation = await page.evaluate(() => {
       const key = Object.keys(localStorage).find((candidate) =>
         candidate.endsWith(':billing:active-operation')
@@ -304,12 +333,6 @@ test('completes hosted subscription and captures terminal operation', async () =
     expect(checkoutUrl).toContain('cs_test_')
     const checkoutPage = await checkoutPagePromise
     await fillCheckout(checkoutPage, '4242424242424242')
-    const captcha = checkoutPage
-      .getByText(/hcaptcha|verify you are human/i)
-      .first()
-    console.log(
-      `HUMAN: complete any visible Stripe verification in Chrome on display :1; captcha visible=${await captcha.isVisible().catch(() => false)}; waiting up to 600 s for settlement`
-    )
     await checkoutPage
       .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
         timeout: 600_000,
