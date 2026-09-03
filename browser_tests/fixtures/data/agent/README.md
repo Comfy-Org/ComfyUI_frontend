@@ -34,9 +34,12 @@ first, because the replay subscribes to the document only on an
 `agent_active_tab` frame and switching to an already-focused tab publishes
 nothing.
 
-Recording runs against the lean stack: frames come from its Redis channel
-and rows from Postgres. That is the only path, because the graph operations
-a replay asserts exist only where the doc host writes audit rows.
+Recording runs against the cloud agent in its non-standalone mode, with
+Postgres, Redis and the doc host beside it (the lean stack): frames come from
+its Redis channel and rows from Postgres. That is the only path. The same agent
+in standalone mode (SQLite, no doc host) never writes the audit rows that carry
+the graph operations a replay asserts, so it can only produce text-only or
+tool-error turns.
 
 The recording agent shells out to `comfy-cli` for its read and edit tools inside
 a sandbox that overrides `HOME`, so point `COMFY_BIN` at an installation that
