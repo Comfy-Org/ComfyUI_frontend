@@ -343,7 +343,7 @@ import TableRow from '@/components/ui/table/TableRow.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
+import { useOverlayChildStyle } from '@/composables/usePopoverSizing'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -366,7 +366,7 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const primeVueOverlay = useOverlayChildStyle()
 const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
 
 const presetNames = ref<string[]>([])

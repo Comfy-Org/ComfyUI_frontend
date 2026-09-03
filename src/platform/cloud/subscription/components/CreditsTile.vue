@@ -228,9 +228,10 @@ import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'

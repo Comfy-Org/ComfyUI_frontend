@@ -97,7 +97,7 @@
 import { computed } from 'vue'
 
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
+import { useOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
@@ -111,7 +111,7 @@ const { uploadContext } = defineProps<{
 const modelValue = defineModel<string | undefined>()
 
 const { modelTypes, isLoading } = useModelTypes()
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const primeVueOverlay = useOverlayChildStyle()
 const selectContentStyle = primeVueOverlay.contentStyle
 
 const isMissingModelResolution = computed(

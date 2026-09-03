@@ -103,7 +103,7 @@ import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
+import { useOverlayChildStyle } from '@/composables/usePopoverSizing'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
@@ -123,7 +123,7 @@ const { flags } = useFeatureFlags()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const primeVueOverlay = useOverlayChildStyle()
 const selectContentStyle = primeVueOverlay.contentStyle
 
 const props = defineProps<{

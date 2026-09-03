@@ -2,7 +2,6 @@
 <template>
   <template v-for="item in dialogStore.dialogStack" :key="item.key">
     <Dialog
-      v-if="isRekaItem(item)"
       :open="item.visible"
       :modal="item.dialogComponentProps.modal ?? true"
       @update:open="(open) => onRekaOpenChange(item.key, open)"
@@ -98,43 +97,10 @@
         </DialogContent>
       </DialogPortal>
     </Dialog>
-    <PrimeDialog
-      v-else
-      v-model:visible="item.visible"
-      class="global-dialog"
-      v-bind="item.dialogComponentProps"
-      :aria-labelledby="item.key"
-    >
-      <template #header>
-        <div v-if="!item.dialogComponentProps?.headless">
-          <component
-            :is="item.headerComponent"
-            v-if="item.headerComponent"
-            v-bind="item.headerProps"
-            :id="item.key"
-          />
-          <h3 v-else :id="item.key">
-            {{ item.title || ' ' }}
-          </h3>
-        </div>
-      </template>
-
-      <component
-        :is="item.component"
-        v-bind="item.contentProps"
-        :maximized="item.dialogComponentProps.maximized"
-      />
-
-      <template v-if="item.footerComponent" #footer>
-        <component :is="item.footerComponent" v-bind="item.footerProps" />
-      </template>
-    </PrimeDialog>
   </template>
 </template>
 
 <script setup lang="ts">
-import PrimeDialog from 'primevue/dialog'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -155,10 +121,6 @@ import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-
-function isRekaItem(item: DialogInstance) {
-  return item.dialogComponentProps.renderer === 'reka'
-}
 
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
@@ -184,44 +146,3 @@ function toggleMaximize(item: DialogInstance) {
   item.dialogComponentProps.maximized = !item.dialogComponentProps.maximized
 }
 </script>
-
-<style>
-.global-dialog {
-  max-width: calc(100vw - 1rem);
-}
-
-.global-dialog .p-dialog-header {
-  padding: calc(var(--spacing) * 2);
-  padding-bottom: 0;
-}
-
-.global-dialog .p-dialog-content {
-  padding: calc(var(--spacing) * 2);
-  padding-top: 0;
-}
-
-@media (min-width: 1536px) {
-  .global-dialog .p-dialog-header {
-    padding: var(--p-dialog-header-padding);
-    padding-bottom: 0;
-  }
-
-  .global-dialog .p-dialog-content {
-    padding: var(--p-dialog-content-padding);
-    padding-top: 0;
-  }
-}
-
-.manager-dialog {
-  height: 80vh;
-  max-width: 1724px;
-  max-height: 1026px;
-}
-
-@media (min-width: 3000px) {
-  .manager-dialog {
-    max-width: 2200px;
-    max-height: 1320px;
-  }
-}
-</style>

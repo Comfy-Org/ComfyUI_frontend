@@ -126,70 +126,6 @@ function mountDialog() {
   })
 }
 
-describe('GlobalDialog renderer branching', () => {
-  it('renders the Reka branch when renderer is omitted (default)', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'renderer-default',
-      title: 'Default renderer dialog',
-      component: Body
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.length).toBeGreaterThan(0)
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
-  })
-
-  it("renders the legacy PrimeVue branch when renderer is 'primevue'", async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'primevue-escape-hatch',
-      title: 'PrimeVue dialog',
-      component: Body,
-      dialogComponentProps: { renderer: 'primevue' }
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(true)
-  })
-
-  it('renders the Reka branch when renderer is reka', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-opt-in',
-      title: 'Reka dialog',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.length).toBeGreaterThan(0)
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
-  })
-
-  it('preserves the renderer flag on the dialog stack item', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-flag-check',
-      title: 'Reka',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
-    })
-
-    await screen.findByRole('dialog')
-    const item = store.dialogStack.find((d) => d.key === 'reka-flag-check')
-    expect(item?.dialogComponentProps.renderer).toBe('reka')
-  })
-})
-
 describe('GlobalDialog Reka parity with PrimeVue', () => {
   it('omits the close button when closable is false', async () => {
     mountDialog()
@@ -383,8 +319,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await user.click(screen.getByRole('button', { name: 'Maximize' }))
 
-    // Maximized dimensions win over the caller's fixed dimensions,
-    // mirroring PrimeVue's `.p-dialog-maximized` !important behavior.
     expect(dialog.classList.contains('size-auto')).toBe(true)
     expect(dialog.classList.contains('max-h-none')).toBe(true)
     expect(dialog.classList.contains('w-[80vw]')).toBe(false)
@@ -598,8 +532,7 @@ describe('shouldPreventRekaDismiss', () => {
     'p-colorpicker-panel',
     'p-popover',
     'p-autocomplete-overlay',
-    'p-overlay-mask',
-    'p-dialog'
+    'p-overlay-mask'
   ])('prevents dismiss when target is inside %s', (className) => {
     const overlay = document.createElement('div')
     overlay.className = className
@@ -642,7 +575,7 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay'])(
+  it.for(['p-select-overlay'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
     (className) => {
       const overlay = document.createElement('div')

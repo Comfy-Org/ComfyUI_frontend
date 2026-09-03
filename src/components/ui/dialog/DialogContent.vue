@@ -28,6 +28,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 <template>
   <DialogContent
     v-bind="forwarded"
+    data-reka-dialog-content
     :class="
       cn(
         dialogContentVariants({ size, maximized }),
