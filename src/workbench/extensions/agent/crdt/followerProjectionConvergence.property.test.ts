@@ -117,12 +117,12 @@ function phases(scenario: Scenario): Op[][] {
   const adds = ids.map((id, index) => {
     const type: 'Source' | 'Sink' = index % 2 === 0 ? 'Source' : 'Sink'
     const position = [
-      scenario.positions[index * 2]!,
-      scenario.positions[index * 2 + 1]!
+      scenario.positions[index * 2],
+      scenario.positions[index * 2 + 1]
     ] as const
     const size = [
-      scenario.sizes[index * 2]!,
-      scenario.sizes[index * 2 + 1]!
+      scenario.sizes[index * 2],
+      scenario.sizes[index * 2 + 1]
     ] as const
     return {
       ...envelope(serial++),
@@ -137,12 +137,12 @@ function phases(scenario: Scenario): Op[][] {
     if (!scenario.moveMask[index]) return []
     const type: 'Source' | 'Sink' = index % 2 === 0 ? 'Source' : 'Sink'
     const position = [
-      scenario.positions[index * 2]! + 17,
-      scenario.positions[index * 2 + 1]! - 23
+      scenario.positions[index * 2] + 17,
+      scenario.positions[index * 2 + 1] - 23
     ] as const
     const size = [
-      scenario.sizes[index * 2]!,
-      scenario.sizes[index * 2 + 1]!
+      scenario.sizes[index * 2],
+      scenario.sizes[index * 2 + 1]
     ] as const
     return [
       {
@@ -160,7 +160,7 @@ function phases(scenario: Scenario): Op[][] {
     op: 'set_widget',
     node_id: id,
     widget: index % 2 === 0 ? 'seed' : 'strength',
-    value: scenario.widgetValues[index]!,
+    value: scenario.widgetValues[index],
     path: null,
     inner_widget: null
   })) satisfies Op[]
@@ -171,9 +171,9 @@ function phases(scenario: Scenario): Op[][] {
         ...envelope(serial++),
         op: 'connect',
         link_id: 1000 + index,
-        from_node: ids[index * 2]!,
+        from_node: ids[index * 2],
         from_slot: 0,
-        to_node: ids[index * 2 + 1]!,
+        to_node: ids[index * 2 + 1],
         to_slot: 0,
         link_type: 'IMAGE'
       }) satisfies Op
@@ -200,7 +200,7 @@ function permutePhases(causalPhases: Op[][], keys: number[]): Op[] {
     const ordered = phase
       .map((operation, index) => ({
         operation,
-        key: keys[(offset + index) % keys.length]!
+        key: keys[(offset + index) % keys.length]
       }))
       .sort(
         (left, right) =>
@@ -296,7 +296,7 @@ function consume(ops: Op[], batchSizes: number[]): Projection {
 
   while (cursor < ops.length) {
     const before = Y.encodeStateVector(host)
-    const size = batchSizes[batchIndex++ % batchSizes.length]!
+    const size = batchSizes[batchIndex++ % batchSizes.length]
     const batch = ops.slice(cursor, cursor + size)
     const result = applyOps(host, batch, catalog)
     expect(
