@@ -1,0 +1,379 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-second-prompt-encoder",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 70f97c01-00e9-4e8d-86bc-ff73cf7500e2; message b55b90fa-b206-4c7b-9696-79fcb22ab8db; workflow 087617ce-c168-4bb8-86b2-05492db91a8d (seeded by throwaway turn 1bdaa2f6-3560-4405-92ec-bbe4c8f5370f; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['8e612681-1ad2-4fdb-8395-1d3e68566c7f', '156eed82-d0f4-40d1-994a-9a3c864169e0', '9c7e33ca-d9b0-4623-99a0-7f5b6a095b51', '0860390b-de13-44e2-927b-ed75988f387a', 'bebaa9e9-242f-4ba5-82e8-7d7b29664009']; rows agent-rec-second-prompt-encoder.r2-a1.rows.json; raw capture sha256 09f8ce5f32c0c30a565a65f43ef572f8ff52b8fb1793de667a056dc87b1ab4a9",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "70f97c01-00e9-4e8d-86bc-ff73cf7500e2",
+      "message_id": "b55b90fa-b206-4c7b-9696-79fcb22ab8db",
+      "exported_at": "2026-09-03T01:04:16Z"
+    }
+  },
+  "workflow": {
+    "id": "087617ce-c168-4bb8-86b2-05492db91a8d",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Text to image', then add a second CLIPTextEncode node fed from the checkpoint loader's CLIP output and wire its conditioning into the KSampler's negative input."
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch to that tab and take a look at what's there."
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Text to image",
+          "workflow_id": "087617ce-c168-4bb8-86b2-05492db91a8d"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 8,
+          "status": "success",
+          "tool_call_id": "toolu_01RxsV9XAFq5tdPvcjqxzf7X",
+          "tool_name": "switch_tab"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 867,
+          "status": "success",
+          "tool_call_id": "toolu_01JUkZjF5v8B1g5B4oiPUbhh",
+          "tool_name": "print_workflow"
+        }
+      }
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "add_node",
+          "pos": [715, 280],
+          "node": {
+            "id": 2904574201837211,
+            "pos": [715, 280],
+            "mode": 0,
+            "size": [240, 86],
+            "type": "CLIPTextEncode",
+            "flags": {},
+            "order": 0,
+            "inputs": [
+              {
+                "link": null,
+                "name": "clip",
+                "type": "CLIP"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": [null]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "30fc2175ec794e10bd7ba38aa43a063c",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 2904574201837211,
+          "class_type": "CLIPTextEncode",
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "4b4bf9278ba840028f7ca4a4c03a7648",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 967330603592352,
+          "to_node": 2904574201837211,
+          "to_slot": 0,
+          "from_node": 4,
+          "from_slot": 1,
+          "link_type": "CLIP",
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "5469e1e4858b4565a0a0244011298a93",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 2932910430668226,
+          "to_node": 3,
+          "to_slot": 2,
+          "from_node": 2904574201837211,
+          "from_slot": 0,
+          "link_type": "CONDITIONING",
+          "base_version": 2
+        },
+        {
+          "op": "set_widget",
+          "old": null,
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "e11c18ea33a1402396bf6743884f9efa",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "value": "blurry, low quality, watermark",
+          "widget": "text",
+          "node_id": 2904574201837211,
+          "base_version": 2
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 225,
+          "status": "success",
+          "tool_call_id": "toolu_012JnLUhqxiargezRkF2zY4J",
+          "tool_name": "apply_ops"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 209,
+          "status": "success",
+          "tool_call_id": "toolu_01Wn2YU8i3efNRfoQNgBRN9d",
+          "tool_name": "print_workflow"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 256,
+          "status": "error",
+          "tool_call_id": "toolu_011Cqp8r4x5nnjChpoJNnTg1",
+          "tool_name": "validate"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "Done — that tab now has a second text encode node reading from the checkpoint's CLIP, feeding the sampler's negative input. I gave it a starter negative prompt (\"blurry, low quality, \") — change the text to whatever you like.\n\nTwo pre-existing issues in that graph, unrelated to this change: the sampler still has nothing wired into its latent input (it needs an empty latent to set the image size), and the checkpoint it points at isn't installed here. Want me to add the empty latent and pick an available checkpoint?"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 2524,
+            "cache_read_input_tokens": 232347,
+            "input_tokens": 12,
+            "output_tokens": 854,
+            "total_tokens": 866
+          }
+        }
+      }
+    }
+  ]
+}
