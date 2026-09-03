@@ -1,7 +1,7 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { GraphSnapshot } from '@comfyorg/comfy-multi-player'
+import type { GraphSnapshot, Op } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
@@ -448,7 +448,8 @@ class AgentConversationHarness {
         ops?: unknown
       }
       if (workflow_id === this.conversation.workflow.id && Array.isArray(ops)) {
-        const applied = this.host.applyClient(ops)
+        // The applier validates each payload; the wire frame only guarantees an array.
+        const applied = this.host.applyClient(ops as Op[])
         this.send({
           type: 'doc_ops_result',
           data: {
