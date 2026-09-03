@@ -336,6 +336,73 @@ describe('payments claims', () => {
       noChargeConfirmed: false
     })
   })
+  it.for([
+    {
+      name: 'FREE active subscribes',
+      status: {
+        is_active: true,
+        subscription_tier: 'FREE',
+        subscription_status: 'active'
+      },
+      expected: { subscribe: 1, resubscribe: 0 }
+    },
+    {
+      name: 'PRO active is already subscribed',
+      status: {
+        is_active: true,
+        subscription_tier: 'PRO',
+        subscription_status: 'active'
+      },
+      expected: { subscribe: 0, resubscribe: 0 }
+    },
+    {
+      name: 'PRO canceled resubscribes',
+      status: {
+        is_active: true,
+        subscription_tier: 'PRO',
+        subscription_status: 'canceled'
+      },
+      expected: { subscribe: 0, resubscribe: 1 }
+    }
+  ])('$name', async ({ status, expected }) => {
+    const subscribe = vi.fn(async () => ({
+      billing_op_id: 'subscription-op',
+      status: 'subscribed' as const
+    }))
+    const resubscribe = vi.fn(async () => ({ status: 'active' as const }))
+    const commands = createBillingCommands({
+      client: {
+        subscribe,
+        topup: vi.fn(),
+        resubscribe,
+        cancel: vi.fn(),
+        paymentPortal: vi.fn(),
+        getOperation: vi.fn(),
+        getStatus: vi.fn(async () => status)
+      },
+      ports: {
+        openUrl: vi.fn(async () => ({ opened: true })),
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => null,
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        }
+      }
+    })
+
+    await commands.start()
+    await commands.subscribe({
+      plan_slug: 'pro-monthly',
+      return_url: 'https://host/success',
+      cancel_url: 'https://host/cancel'
+    })
+
+    expect(subscribe).toHaveBeenCalledTimes(expected.subscribe)
+    expect(resubscribe).toHaveBeenCalledTimes(expected.resubscribe)
+    expect(commands.getState().step).toBe('success')
+  })
   it('branches an active canceled subscription to resubscribe', async () => {
     const resubscribe = vi.fn(async () => ({ status: 'active' as const }))
     const subscribe = vi.fn()
@@ -349,6 +416,7 @@ describe('payments claims', () => {
         getOperation: vi.fn(),
         getStatus: vi.fn(async () => ({
           subscription_status: 'canceled',
+          subscription_tier: 'PRO',
           is_active: true
         }))
       },

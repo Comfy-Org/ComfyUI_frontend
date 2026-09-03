@@ -79,7 +79,10 @@ export function createBillingCommands(options: {
       await follow(status.pending_billing_op_id, kind, status.action_url)
     },
     async subscribe(input) {
-      if (billingStatus?.is_active) {
+      if (
+        billingStatus?.is_active &&
+        billingStatus.subscription_tier !== 'FREE'
+      ) {
         if (billingStatus.subscription_status === 'canceled') {
           await this.resubscribe({})
         } else {

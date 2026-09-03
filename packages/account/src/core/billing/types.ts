@@ -81,6 +81,7 @@ export interface BillingStatusResponse {
   pending_billing_op_id?: string
   pending_billing_op_type?: 'subscription' | 'topup'
   action_url?: string
+  subscription_tier?: string
   subscription_status?: string
   is_active?: boolean
 }
