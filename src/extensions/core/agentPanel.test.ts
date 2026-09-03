@@ -9,10 +9,12 @@ const mocks = vi.hoisted(() => ({
   agentStore: {
     enabled: false,
     isOpen: true,
-    isVisible: true,
+    get isVisible() {
+      return this.enabled && this.isOpen
+    },
     close: vi.fn()
   },
-  consentStore: { load: vi.fn<() => Promise<boolean>>() },
+  consentStore: { load: vi.fn(() => Promise.resolve(false)) },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
@@ -121,11 +123,9 @@ describe('AgentPanel extension flag gate', () => {
     mocks.notifyAfterGraphConfigure.mockClear()
     mocks.notifyBeforeGraphLoad.mockClear()
     mocks.agentStore.close.mockClear()
+    mocks.consentStore.load.mockClear()
     mocks.agentStore.enabled = false
     mocks.agentStore.isOpen = true
-    mocks.agentStore.isVisible = true
-    mocks.consentStore.load.mockReset()
-    mocks.consentStore.load.mockResolvedValue(true)
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
@@ -292,7 +292,7 @@ describe('AgentPanel extension flag gate', () => {
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    mocks.agentStore.isVisible = false
+    mocks.agentStore.isOpen = false
     mocks.nodeSelectionStore.isLoadingWorkflow = true
 
     extension!.afterLoadGraph!({} as never)

@@ -16,6 +16,12 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
+}))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ isLoggedIn: { value: true } })
+}))
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const fetchApi = vi.hoisted(() =>
@@ -29,12 +35,6 @@ function jsonResponse(status: number, body: unknown): Response {
     headers: { 'Content-Type': 'application/json' }
   })
 }
-vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
-  useAgentConsentStore: () => ({ accepted: true })
-}))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ isLoggedIn: { value: true } })
-}))
 
 const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
 
