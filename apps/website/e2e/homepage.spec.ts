@@ -44,16 +44,19 @@ test.describe('Homepage @smoke', () => {
     await expect(cta).toHaveAttribute('href', '/workshop/models/seedance-2/')
   })
 
-  test('ModelDiscoverySection links models to the Workshop', async ({
+  test('ModelDiscoverySection links providers to the Workshop', async ({
     page
   }) => {
     const section = page.getByTestId('model-discovery')
     await expect(
       section.getByRole('heading', { name: /ready to run/i })
     ).toBeVisible()
-    await expect(
-      section.getByRole('link', { name: /Seedance 2/ }).first()
-    ).toHaveAttribute('href', '/workshop?provider=ByteDance')
+    const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
+    await expect(bytedance).toHaveAttribute(
+      'href',
+      '/workshop?provider=ByteDance'
+    )
+    await expect(bytedance).toContainText(/\d+ models/)
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/workshop')
