@@ -136,12 +136,32 @@ function materialize(
   const rollback = (cause: unknown) => {
     // `add()` may throw after attaching (from `onAdded`); only then is there
     // a live node to take back out.
-    if (graph._nodes_by_id[node.id] === node) graph.remove(node)
+    //
+    // Taking it out is best-effort and `restore()` is not: `LGraph.remove()`
+    // runs `onRemoved()` uncaught, so an extension that throws on both halves
+    // of the lifecycle would otherwise escape here and strand the records this
+    // function deleted -- the store record gone and a partial adapter live,
+    // which is worse than either failure alone. Put the authoritative state
+    // back first and report the cleanup failure separately.
+    let cleanupCause: unknown
+    let cleanupFailed = false
+    try {
+      if (graph._nodes_by_id[node.id] === node) graph.remove(node)
+    } catch (error) {
+      cleanupCause = error
+      cleanupFailed = true
+    }
     restore()
     reportError(cause, {
       errorType: 'agent_node_materialize_add_failed',
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
+    if (cleanupFailed) {
+      reportError(cleanupCause, {
+        errorType: 'agent_node_materialize_rollback_failed',
+        context: { graphId: graph.id, nodeId: String(state.id) }
+      })
+    }
     return false
   }
 

@@ -61,6 +61,11 @@ class ThrowsOnAddedNode extends LGraphNode {
   override onAdded(): void {
     throw new Error('extension code blew up in onAdded')
   }
+
+  // Declared (as a no-op) so a test can make the rollback's own cleanup throw.
+  // `LGraphNode.onRemoved` is optional, so it is absent from the prototype and
+  // cannot be spied on otherwise.
+  override onRemoved(): void {}
 }
 
 const REMOTE: RemoteMutationContext = {
@@ -607,6 +612,45 @@ describe('reconcileAgentAdapters', () => {
       await settle()
 
       expect(graph._nodes).toHaveLength(1)
+      expect(minted).toEqual([])
+    })
+
+    it('restores the record when the rollback cleanup itself throws', () => {
+      // `LGraph.remove()` runs `onRemoved()` uncaught, so an extension that
+      // throws on BOTH halves of the lifecycle used to escape the rollback
+      // before `restore()`, leaving the record deleted with a partial adapter
+      // still live -- worse than either failure alone. Cleanup is best-effort
+      // now; putting the authoritative record back is not.
+      const scope = seedAgentAddedNode(graph, 1, 'throws-on-added')
+      const onRemoved = vi
+        .spyOn(ThrowsOnAddedNode.prototype, 'onRemoved')
+        .mockImplementation(() => {
+          throw new Error('extension code blew up in onRemoved')
+        })
+
+      expect(() => reconcileAgentAdapters(graph)).not.toThrow()
+      expect(onRemoved).toHaveBeenCalled()
+
+      // The record the rollback deleted is registered again, so the store still
+      // owns the node the agent added.
+      const state = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+      expect(state).toBeDefined()
+      expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
+
+      // Both failures are reported: the original `onAdded` throw, and the
+      // cleanup that could not complete.
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_add_failed'
+        })
+      )
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_rollback_failed'
+        })
+      )
       expect(minted).toEqual([])
     })
 
