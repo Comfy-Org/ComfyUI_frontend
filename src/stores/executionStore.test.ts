@@ -1009,7 +1009,7 @@ describe('useExecutionStore - background workflow error routing', () => {
   const workflowB = makeWorkflow('/workflows/b.json', graphBId)
 
   function callStoreJob(jobId: string, workflow: Workflow) {
-    store.storeJob({
+    return store.storeJob({
       nodes: ['1'],
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
@@ -1099,6 +1099,18 @@ describe('useExecutionStore - background workflow error routing', () => {
     callStoreJob('job-a', workflowA)
     fireExecutionError('job-a')
 
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-a')
+    expect(errorStore.totalErrorCount).toBe(1)
+  })
+
+  it('replays a visible workflow error that arrives before its job metadata', () => {
+    fireExecutionError('job-a')
+
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    const deferredError = callStoreJob('job-a', workflowA)
+
+    expect(deferredError).toMatchObject({ prompt_id: 'job-a' })
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-a')
     expect(errorStore.totalErrorCount).toBe(1)
   })
