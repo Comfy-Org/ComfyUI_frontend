@@ -5,6 +5,7 @@ import {
   defaultBillingCopy
 } from './copy.js'
 import { createBillingApiClient } from './client.js'
+import { createBillingCommands } from './commands.js'
 import { createBillingPoller } from './poller.js'
 import { resolveBillingReason } from './reasons.js'
 import { initialBillingState, reduceBilling } from './reducer.js'
@@ -38,7 +39,7 @@ describe('payments claims', () => {
       })
     )
   })
-  it.each<[string, BillingState, BillingStep]>([
+  it.for<[string, BillingState, BillingStep]>([
     ['select', initialBillingState, 'select'],
     [
       'preview',
@@ -134,6 +135,42 @@ describe('payments claims', () => {
     ])
     expect([a, b]).toEqual([1, 1])
     expect(task).toHaveBeenCalledOnce()
+  })
+  it('opens a returned checkout URL through the host port and surfaces a blocked popup', async () => {
+    const openUrl = vi.fn(async () => ({ opened: false }))
+    const commands = createBillingCommands({
+      client: {
+        subscribe: vi.fn(async () => ({
+          billing_op_id: 'op',
+          action_url: 'https://checkout.example/test'
+        })),
+        topup: vi.fn(),
+        resubscribe: vi.fn(),
+        cancel: vi.fn(),
+        paymentPortal: vi.fn(),
+        getOperation: vi.fn()
+      },
+      ports: {
+        openUrl,
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => null,
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        }
+      }
+    })
+    await commands.subscribe({
+      plan_slug: 'pro',
+      return_url: 'https://host/ok',
+      cancel_url: 'https://host/no'
+    })
+    expect(openUrl).toHaveBeenCalledWith(
+      'https://checkout.example/test',
+      'new_tab'
+    )
+    expect(commands.getState().step).toBe('processing_error')
   })
   it('TP-7 TP-8 TP-9 TP-15 PM-9 EC-P-2 EC-P-3 EC-P-4: resumes durable polling and clears on success', async () => {
     const delays: number[] = []
