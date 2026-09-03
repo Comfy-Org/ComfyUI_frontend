@@ -207,6 +207,7 @@ describe('reconcileAgentAdapters', () => {
         adapter.applyFrame({
           workflowId: 'workflow',
           seq: sequence,
+          lineageSeq: 1,
           update,
           actor: 'agent:test',
           opIds: [opId]

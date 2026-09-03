@@ -889,6 +889,7 @@ describe('EcsFollowerAdapter integration', () => {
       adapter.applyFrame({
         workflowId: 'wf',
         seq: 1,
+        lineageSeq: 1,
         update,
         actor: 'agent:test',
         opIds: ['op-1']
