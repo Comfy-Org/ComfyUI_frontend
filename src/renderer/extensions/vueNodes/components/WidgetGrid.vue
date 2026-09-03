@@ -9,69 +9,73 @@
     }"
   >
     <template v-for="row in renderedRows" :key="row.widget.renderKey">
-      <Tooltip
-        :config="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-        side="left"
+      <div
+        :data-testid="row.testId"
+        :class="
+          cn(
+            'group col-span-full grid grid-cols-subgrid items-stretch',
+            row.showsControl && 'lg-node-widget'
+          )
+        "
       >
         <div
-          :data-testid="row.testId"
           :class="
             cn(
-              'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget'
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              row.widget.slotMetadata?.linked && 'opacity-100'
             )
           "
         >
-          <div
-            :class="
-              cn(
-                'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-                row.widget.slotMetadata?.linked && 'opacity-100'
-              )
-            "
-          >
-            <InputSlot
-              v-if="row.widget.slotMetadata"
-              :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
-              :slot-data="{
-                name: row.widget.simplified.name,
-                type: row.widget.slotMetadata.type,
-                boundingRect: [0, 0, 0, 0]
-              }"
-              :node-id
-              :has-error="row.widget.hasError"
-              :index="row.widget.slotMetadata.index"
-              :socketless="row.widget.simplified.spec?.socketless"
-              :standalone="row.standalone"
-              dot-only
-            />
-          </div>
-          <AppInput
-            v-if="row.showsControl"
-            :widget-id="row.widget.widgetId"
-            :name="row.widget.simplified.name"
-            :enable="canSelectInputs && !row.widget.simplified.options?.disabled"
-          >
-            <component
-              :is="row.widget.vueComponent"
-              :model-value="row.widget.simplified.value"
-              :widget="row.widget.simplified"
-              :node-id
-              :node-type
-              :invalid="row.widget.hasError"
-              :aria-invalid="row.widget.hasError || undefined"
-              :class="
-                cn(
-                  'col-span-2',
-                  row.widget.hasError && 'font-bold text-node-stroke-error'
-                )
-              "
-              @update:model-value="row.widget.updateHandler"
-              @contextmenu="row.widget.handleContextMenu"
-            />
-          </AppInput>
+          <InputSlot
+            v-if="row.widget.slotMetadata"
+            :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
+            :slot-data="{
+              name: row.widget.simplified.name,
+              type: row.widget.slotMetadata.type,
+              boundingRect: [0, 0, 0, 0]
+            }"
+            :node-id
+            :has-error="row.widget.hasError"
+            :index="row.widget.slotMetadata.index"
+            :socketless="row.widget.simplified.spec?.socketless"
+            :standalone="row.standalone"
+            dot-only
+          />
         </div>
-      </Tooltip>
+        <Tooltip
+          v-if="row.showsControl"
+          :config="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
+          side="left"
+        >
+          <div class="contents">
+            <AppInput
+              :widget-id="row.widget.widgetId"
+              :name="row.widget.simplified.name"
+              :enable="
+                canSelectInputs && !row.widget.simplified.options?.disabled
+              "
+            >
+              <component
+                :is="row.widget.vueComponent"
+                :model-value="row.widget.simplified.value"
+                :widget="row.widget.simplified"
+                :node-id
+                :node-type
+                :invalid="row.widget.hasError"
+                :aria-invalid="row.widget.hasError || undefined"
+                :class="
+                  cn(
+                    'col-span-2',
+                    row.widget.hasError && 'font-bold text-node-stroke-error'
+                  )
+                "
+                @update:model-value="row.widget.updateHandler"
+                @contextmenu="row.widget.handleContextMenu"
+              />
+            </AppInput>
+          </div>
+        </Tooltip>
+      </div>
     </template>
   </div>
 </template>
