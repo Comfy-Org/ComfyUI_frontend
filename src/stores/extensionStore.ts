@@ -25,8 +25,8 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
-  const extensionByName = ref<Record<string, ComfyExtension>>({})
-  const extensions = computed(() => Object.values(extensionByName.value))
+  const extensionByName = ref(new Map<string, ComfyExtension>())
+  const extensions = computed(() => [...extensionByName.value.values()])
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
@@ -36,12 +36,11 @@ export const useExtensionStore = defineStore('extension', () => {
   // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
-      (name) => !Object.hasOwn(extensionByName.value, name)
+      (name) => !extensionByName.value.has(name)
     )
   })
 
-  const isExtensionInstalled = (name: string) =>
-    Object.hasOwn(extensionByName.value, name)
+  const isExtensionInstalled = (name: string) => extensionByName.value.has(name)
 
   const isExtensionEnabled = (name: string) =>
     !disabledExtensionNames.value.has(name)
@@ -67,7 +66,7 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    if (Object.hasOwn(extensionByName.value, extension.name)) {
+    if (extensionByName.value.has(extension.name)) {
       // Duplicate registrations are usually caused by the same extension file
       // being served under two URLs (so the module executes twice) or by two
       // node packs shipping a copy of the same extension file. The first
@@ -85,7 +84,7 @@ export const useExtensionStore = defineStore('extension', () => {
       console.warn(`Extension ${extension.name} is disabled.`)
     }
 
-    extensionByName.value[extension.name] = markRaw(extension)
+    extensionByName.value.set(extension.name, markRaw(extension))
     return true
   }
 
