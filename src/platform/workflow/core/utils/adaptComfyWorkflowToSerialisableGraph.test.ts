@@ -112,7 +112,11 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
           order: 0,
           mode: 0,
           inputs: [{ name: 'input', type: ['MODEL', 'LATENT'] }],
-          properties: {}
+          properties: {},
+          widgets_values: {
+            ckpt_name: 'model.safetensors',
+            strength: 0.5
+          }
         }
       ],
       links: [
@@ -134,7 +138,12 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
     expect(graph).toMatchObject({
       version: 1,
       state: workflow.state,
-      nodes: [{ inputs: [{ type: 'MODEL,LATENT' }] }],
+      nodes: [
+        {
+          inputs: [{ type: 'MODEL,LATENT' }],
+          widgets_values: ['model.safetensors', 0.5]
+        }
+      ],
       links: [{ id: 4, type: 'MODEL,LATENT', parentId: 5 }],
       reroutes: [{ id: 5, pos: [60, 70], linkIds: [] }]
     })

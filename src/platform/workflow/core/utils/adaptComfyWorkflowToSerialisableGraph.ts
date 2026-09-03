@@ -208,7 +208,8 @@ function adaptWidgetValues(
   values: ComfyNode['widgets_values']
 ): TWidgetValue[] | undefined {
   if (values === undefined || Array.isArray(values)) return values
-  const length = typeof values.length === 'number' ? values.length : 0
+  if (typeof values.length !== 'number') return Object.values(values)
+  const length = values.length
   return Array.from({ length }, (_, index) => values[index])
 }
 
