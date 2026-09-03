@@ -36,12 +36,9 @@ function trySend(send: () => boolean): boolean {
  */
 export class LayoutFollowerBridge extends EventTarget {
   /**
-   * Reassigned only on a lineage break — an explicit `doc_reset`
-   * ({@link onDocReset}) or a subscribe to a DIFFERENT workflow
-   * ({@link subscribe}) — because folding one document's history into another
-   * merges two unrelated lineages: the next subscribe would carry the old
-   * doc's state vector, the host would compute a nonsense delta against it,
-   * and both workflows' nodes would land on one canvas (FEB-5).
+   * Reassigned only on a lineage break — an explicit or implied reset, or a
+   * subscribe to a DIFFERENT workflow ({@link subscribe}) — because folding
+   * one document's history into another merges unrelated lineages.
    */
   private followerDoc = new FollowerDoc()
   /**
@@ -51,6 +48,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * a later subscribe to a DIFFERENT workflow must still re-mint it.
    */
   private lineageWorkflowId: string | null = null
+  private lineageSeq: number | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -159,6 +157,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
       this.dropDocForNewLineage()
+      this.lineageSeq = null
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
       )
@@ -186,7 +185,13 @@ export class LayoutFollowerBridge extends EventTarget {
     }
     if (desired === null || this.sentWorkflowId === desired) return
     if (
-      trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
+      trySend(() =>
+        this.client.subscribe(
+          desired,
+          this.follower.stateVector(),
+          this.lineageSeq ?? 0
+        )
+      )
     ) {
       this.sentWorkflowId = desired
       this.lastSeq = null
@@ -236,6 +241,17 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
 
+    if (this.lineageSeq !== null && update.lineageSeq < this.lineageSeq) {
+      this.dispatchStale(update.workflowId, update.seq)
+      return
+    }
+    if (this.lineageSeq !== null && update.lineageSeq > this.lineageSeq) {
+      this.replaceLineage(update.workflowId, update.lineageSeq, update.seq)
+      this.resubscribe()
+      return
+    }
+    this.lineageSeq ??= update.lineageSeq
+
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
@@ -245,17 +261,13 @@ export class LayoutFollowerBridge extends EventTarget {
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
-      this.dispatchEvent(
-        new CustomEvent('doc_stale', {
-          detail: { workflowId: update.workflowId, seq: update.seq }
-        })
-      )
+      this.dispatchStale(update.workflowId, update.seq)
       return
     }
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
+    // follower doc. Only a newer lineage identity may replace it (ADR-0024).
     //
     // Before the first applied update the detector is armed from the ack seq
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
@@ -310,10 +322,12 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
-    this.dropDocForNewLineage()
+    if (this.lineageSeq !== null && reset.lineageSeq <= this.lineageSeq) {
+      this.dispatchStale(reset.workflowId, reset.seq)
+      return
+    }
+    this.replaceLineage(reset.workflowId, reset.lineageSeq, reset.seq, reset)
     this.resubscribe()
-    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
   /**
@@ -324,6 +338,24 @@ export class LayoutFollowerBridge extends EventTarget {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
+  }
+
+  private replaceLineage(
+    workflowId: string,
+    lineageSeq: number,
+    seq: number,
+    reset: DocReset = { workflowId, lineageSeq, seq }
+  ): void {
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.dropDocForNewLineage()
+    this.lineageSeq = lineageSeq
+    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
+  }
+
+  private dispatchStale(workflowId: string, seq: number): void {
+    this.dispatchEvent(
+      new CustomEvent('doc_stale', { detail: { workflowId, seq } })
+    )
   }
 
   /**
@@ -347,6 +379,20 @@ export class LayoutFollowerBridge extends EventTarget {
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
     if (subscribed.ok) {
+      const lineageSeq = subscribed.lineageSeq
+      if (lineageSeq === undefined) return
+      if (this.lineageSeq !== null && lineageSeq < this.lineageSeq) {
+        this.dispatchStale(subscribed.workflowId, subscribed.seq ?? 0)
+        return
+      }
+      if (this.lineageSeq !== null && lineageSeq > this.lineageSeq) {
+        this.replaceLineage(
+          subscribed.workflowId,
+          lineageSeq,
+          subscribed.seq ?? lineageSeq
+        )
+      }
+      this.lineageSeq = lineageSeq
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null

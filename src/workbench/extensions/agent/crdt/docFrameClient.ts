@@ -12,6 +12,7 @@ export interface DocOp {
 export interface DocUpdate {
   workflowId: string
   seq: number
+  lineageSeq: number
   update: Uint8Array
   actor?: string
   /** Accepted semantic op identities folded into this effect frame (DQ-9). */
@@ -22,6 +23,7 @@ export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number
+  lineageSeq?: number
   code?: string
   message?: string
 }
@@ -57,6 +59,7 @@ interface DocAwareness {
 export interface DocReset {
   workflowId: string
   seq: number
+  lineageSeq: number
   actor?: string
 }
 
@@ -89,6 +92,7 @@ interface WireData {
   v?: unknown
   workflow_id?: unknown
   seq?: unknown
+  lineage_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -169,6 +173,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (
     frame.type === 'doc_update' &&
     typeof data.seq === 'number' &&
+    isNonNegativeInteger(data.lineage_seq) &&
     typeof data.update_b64 === 'string'
   ) {
     return {
@@ -176,6 +181,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
+        lineageSeq: data.lineage_seq,
         update: decodeBase64(data.update_b64),
         ...(typeof data.actor === 'string' && { actor: data.actor }),
         ...(Array.isArray(data.op_ids) && {
@@ -187,13 +193,18 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_subscribed' && typeof data.ok === 'boolean') {
+  if (
+    frame.type === 'doc_subscribed' &&
+    typeof data.ok === 'boolean' &&
+    (!data.ok || isNonNegativeInteger(data.lineage_seq))
+  ) {
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         ok: data.ok,
         ...(typeof data.seq === 'number' && { seq: data.seq }),
+        ...(data.ok && { lineageSeq: data.lineage_seq as number }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message })
       }
@@ -225,12 +236,18 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_reset' && typeof data.seq === 'number') {
+  if (
+    frame.type === 'doc_reset' &&
+    typeof data.seq === 'number' &&
+    isNonNegativeInteger(data.lineage_seq) &&
+    data.lineage_seq === data.seq
+  ) {
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
+        lineageSeq: data.lineage_seq,
         ...(typeof data.actor === 'string' && { actor: data.actor })
       }
     }
@@ -284,11 +301,16 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the subscribe frame actually left the transport. */
-  subscribe(workflowId: string, stateVector: Uint8Array): boolean {
+  subscribe(
+    workflowId: string,
+    stateVector: Uint8Array,
+    knownLineageSeq: number
+  ): boolean {
     return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
-      state_vector_b64: encodeBase64(stateVector)
+      state_vector_b64: encodeBase64(stateVector),
+      known_lineage_seq: knownLineageSeq
     })
   }
 

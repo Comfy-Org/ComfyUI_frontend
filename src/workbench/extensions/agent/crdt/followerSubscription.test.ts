@@ -64,7 +64,14 @@ class SocketTransport extends EventTarget implements DocFrameTransport {
 
   /** Simulate a server → client frame arriving on the socket. */
   deliver(type: string, data: unknown): void {
-    this.dispatchEvent(new CustomEvent(type, { detail: data }))
+    if (typeof data !== 'object' || data === null) {
+      this.dispatchEvent(new CustomEvent(type, { detail: data }))
+      return
+    }
+    const frame = { ...data } as Record<string, unknown>
+    if (type === 'doc_subscribed' && frame.ok === true) frame.lineage_seq ??= 1
+    if (type === 'doc_reset') frame.lineage_seq ??= frame.seq
+    this.dispatchEvent(new CustomEvent(type, { detail: frame }))
   }
 
   framesOfType(type: string): unknown[] {
@@ -85,11 +92,17 @@ function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
   return Y.encodeStateAsUpdate(doc)
 }
 
-function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
+function docUpdateFrame(
+  update: Uint8Array,
+  workflowId = WORKFLOW_ID,
+  seq = 1,
+  lineageSeq = 1
+) {
   return {
     v: 1,
     workflow_id: workflowId,
     seq,
+    lineage_seq: lineageSeq,
     update_b64: encodeBase64(update)
   }
 }
@@ -347,6 +360,52 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(projected).toHaveLength(1)
   })
 
+  it('treats a newer-lineage update as a missed reset and requests a cold sync', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
+    )
+
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(projected).toHaveLength(1)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { known_lineage_seq: number; state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data).toMatchObject({
+      known_lineage_seq: 43,
+      state_vector_b64: encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    })
+  })
+
+  it('ignores an old reset after adopting a newer lineage', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
+    )
+    const currentDoc = bridge.follower
+
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 1,
+      lineage_seq: 1
+    })
+
+    expect(bridge.follower).toBe(currentDoc)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
   it('replaces the follower doc and resubscribes with an empty state vector', () => {
     const { transport, bridge, projected } = wire()
     const resets: unknown[] = []
@@ -369,7 +428,9 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
-    expect(resets).toEqual([{ workflowId: WORKFLOW_ID, seq: 43 }])
+    expect(resets).toEqual([
+      { workflowId: WORKFLOW_ID, seq: 43, lineageSeq: 43 }
+    ])
     expect(followerSeenDuringReset).toBe(oldDoc)
 
     // The resubscribe carries the FRESH doc's state vector — the empty one —
@@ -384,7 +445,10 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
     // The next update lands on the fresh lineage and is projected.
-    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
+    )
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(projected).toHaveLength(2)
 

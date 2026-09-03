@@ -41,6 +41,7 @@ describe('doc frame client', () => {
         v: 1,
         workflow_id: 'wf-1',
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(encoded),
         actor: 'agent:turn-1',
         op_ids: ['op-1', 42, 'op-2']
@@ -95,7 +96,7 @@ describe('doc frame client', () => {
     const client = new DocFrameClient(transport)
     const stateVector = Uint8Array.from([1, 2, 3])
 
-    client.subscribe('wf-1', stateVector)
+    client.subscribe('wf-1', stateVector, 7)
     client.sendOps('wf-1', 'tab-a', [
       { op_id: 'op-1', actor: 'human:user:tab-a', type: 'node.move' }
     ])
@@ -107,7 +108,8 @@ describe('doc frame client', () => {
         data: {
           v: 1,
           workflow_id: 'wf-1',
-          state_vector_b64: encodeBase64(stateVector)
+          state_vector_b64: encodeBase64(stateVector),
+          known_lineage_seq: 7
         }
       },
       {
@@ -139,6 +141,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 1,
       update_b64: encodeBase64(update)
     })
     bridge.resubscribe()
@@ -148,6 +151,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 1,
       update_b64: encodeBase64(update)
     })
 
@@ -165,11 +169,17 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 2 }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: true,
+          seq: 2,
+          lineage_seq: 1
+        }
       })
     ).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true, seq: 2 }
+      data: { workflowId: 'wf-1', ok: true, seq: 2, lineageSeq: 1 }
     })
     expect(
       parseServerDocFrame({
@@ -196,11 +206,22 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_reset',
-        data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 43,
+          lineage_seq: 43,
+          actor: 'agent:th-1:turn-2'
+        }
       })
     ).toEqual({
       type: 'doc_reset',
-      data: { workflowId: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+      data: {
+        workflowId: 'wf-1',
+        seq: 43,
+        lineageSeq: 43,
+        actor: 'agent:th-1:turn-2'
+      }
     })
     expect(
       parseServerDocFrame({
@@ -222,5 +243,31 @@ describe('doc frame client', () => {
         expiresAt: 123
       }
     })
+  })
+
+  it('rejects server frames without a valid lineage identity', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 1,
+          update_b64: encodeBase64(new Uint8Array())
+        }
+      })
+    ).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 1 }
+      })
+    ).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_reset',
+        data: { v: 1, workflow_id: 'wf-1', seq: 43, lineage_seq: 42 }
+      })
+    ).toBeNull()
   })
 })
