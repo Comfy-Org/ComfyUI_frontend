@@ -1,5 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
+
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import { useToast } from './toastStore'
 
@@ -24,6 +27,37 @@ describe('useToast', () => {
     ])
 
     toast.dismiss(id)
+    expect(toast.toasts).toEqual([])
+  })
+
+  it('queues notifications during node selection and replays them in order', async () => {
+    const selection = useAgentNodeSelectionStore()
+    const toast = useToast()
+    selection.isActive = true
+
+    toast.info('First')
+    toast.error('Second')
+    expect(toast.toasts).toEqual([])
+
+    selection.isActive = false
+    await nextTick()
+
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({ title: 'First' }),
+      expect.objectContaining({ title: 'Second' })
+    ])
+  })
+
+  it('does not replay queued notifications after dismissing all', async () => {
+    const selection = useAgentNodeSelectionStore()
+    const toast = useToast()
+    selection.isActive = true
+    toast.info('Old')
+
+    toast.dismissAll()
+    selection.isActive = false
+    await nextTick()
+
     expect(toast.toasts).toEqual([])
   })
 })

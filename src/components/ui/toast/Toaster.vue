@@ -4,6 +4,8 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+
 import ToastClose from './ToastClose.vue'
 import ToastDescription from './ToastDescription.vue'
 import ToastProvider from './ToastProvider.vue'
@@ -14,6 +16,9 @@ import { useToast } from './toastStore'
 
 const toast = useToast()
 const { toasts } = storeToRefs(toast)
+const { isActive: agentNodeSelectionActive } = storeToRefs(
+  useAgentNodeSelectionStore()
+)
 const latestToastId = computed(() => toasts.value.at(-1)?.id)
 
 function preserveToastOnEscape(event: KeyboardEvent) {
@@ -64,6 +69,7 @@ const icons = {
     </ToastRoot>
     <ToastViewport
       :z-index-version="latestToastId"
+      :class="agentNodeSelectionActive ? 'hidden' : undefined"
       data-testid="toast-viewport"
     />
   </ToastProvider>
