@@ -343,7 +343,7 @@ describe('useWorkflowPersistenceV2', () => {
       const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
       writeActivePath(savedWorkflow.path)
 
-      const gate = createDeferred<void>()
+      const gate = createDeferred()
       loadWorkflowsSpy.mockReturnValue(gate.promise)
 
       const { initializeWorkflow } = mountWorkflowPersistence()
@@ -431,7 +431,7 @@ describe('useWorkflowPersistenceV2', () => {
       const workflowB = workflowStore.createTemporary('WorkflowB.json')
       writeTabState([workflowA.path, workflowB.path], 1)
 
-      const gate = createDeferred<void>()
+      const gate = createDeferred()
       loadWorkflowsSpy.mockReturnValue(gate.promise)
 
       const { restoreWorkflowTabsState } = mountWorkflowPersistence()

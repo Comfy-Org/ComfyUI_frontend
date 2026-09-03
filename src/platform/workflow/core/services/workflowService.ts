@@ -446,7 +446,7 @@ export const useWorkflowService = () => {
       // Cancel
       if (confirmed === null) return false
 
-      if (confirmed === true) {
+      if (confirmed) {
         const saved = await saveWorkflow(workflow)
         if (!saved) return false
       }
@@ -498,7 +498,7 @@ export const useWorkflowService = () => {
         // the close (a real configure failure resolves false - the dialog
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          if ((await openWorkflow(replacementWorkflow)) === false) return false
+          if (!(await openWorkflow(replacementWorkflow))) return false
         } else {
           if ((await loadDefaultWorkflow()) === false) return false
         }
