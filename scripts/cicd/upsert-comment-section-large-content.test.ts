@@ -12,7 +12,7 @@ function findOversizedReport() {
     const result = spawnSync(process.execPath, ['-e', ''], {
       env: { ...process.env, INPUT_SECTION_CONTENT: report }
     })
-    if ((result.error)?.code === 'E2BIG') {
+    if (result.error?.code === 'E2BIG') {
       return report
     }
     if (result.error) throw result.error
