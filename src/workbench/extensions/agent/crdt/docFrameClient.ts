@@ -204,7 +204,11 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_ops_result' && typeof data.ok === 'boolean') {
+  if (
+    frame.type === 'doc_ops_result' &&
+    typeof data.ok === 'boolean' &&
+    (data.seq === undefined || isNonNegativeInteger(data.seq))
+  ) {
     return {
       type: frame.type,
       data: {

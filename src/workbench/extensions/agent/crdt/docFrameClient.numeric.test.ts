@@ -35,6 +35,23 @@ const sequencedFrame = (
   }
 })
 
+const docOpsResultFrame = (seq?: unknown) => ({
+  type: 'doc_ops_result',
+  data: {
+    v: 1,
+    workflow_id: 'wf-1',
+    ok: true,
+    applied: [],
+    skipped: [],
+    ...(seq !== undefined && { seq })
+  }
+})
+
+const sequencedFrameTypes: ReadonlyArray<'doc_subscribed' | 'doc_reset'> = [
+  'doc_subscribed',
+  'doc_reset'
+]
+
 describe('doc frame numeric domains', () => {
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN])(
     'rejects an invalid doc_update seq: %s',
@@ -50,7 +67,7 @@ describe('doc frame numeric domains', () => {
     }
   )
 
-  describe.for(['doc_subscribed', 'doc_reset'] as const)('%s seq', (type) => {
+  describe.for(sequencedFrameTypes)('%s seq', (type) => {
     it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
       'rejects an invalid value: %s',
       (seq) => {
@@ -63,6 +80,25 @@ describe('doc frame numeric domains', () => {
         seq: 0
       })
     })
+  })
+
+  it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+    'rejects an invalid doc_ops_result seq: %s',
+    (seq) => {
+      expect(parseServerDocFrame(docOpsResultFrame(seq))).toBeNull()
+    }
+  )
+
+  it('accepts a valid doc_ops_result seq', () => {
+    expect(parseServerDocFrame(docOpsResultFrame(0))?.data).toMatchObject({
+      seq: 0
+    })
+  })
+
+  it('accepts doc_ops_result without seq', () => {
+    expect(parseServerDocFrame(docOpsResultFrame())?.data).not.toHaveProperty(
+      'seq'
+    )
   })
 
   it('accepts finite non-negative integer sequence and expiry values', () => {
