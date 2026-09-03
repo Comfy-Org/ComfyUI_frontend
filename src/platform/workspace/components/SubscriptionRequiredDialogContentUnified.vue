@@ -12,21 +12,26 @@
         // panel stays fixed; below xl the whole dialog scrolls as before.
         isEmbeddedPaymentStep &&
           'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
-        (isEmbeddedSuccessStep || isEmbeddedConfirmStep || isVerifyingStep) &&
+        (isEmbeddedSuccessStep ||
+          isEmbeddedConfirmStep ||
+          isVerifyingStep ||
+          isDeclinedStep) &&
           'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
-          isVerifyingStep) &&
+          isVerifyingStep ||
+          isDeclinedStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
-          isVerifyingStep) &&
+          isVerifyingStep ||
+          isDeclinedStep) &&
           'max-xl:w-[min(430px,92vw)]',
-        isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
+        isEmbeddedPaymentStep && 'max-xl:h-[min(740px,85vh)]'
       )
     "
   >
@@ -64,7 +69,8 @@
         !isEmbeddedPaymentStep &&
         !isEmbeddedSuccessStep &&
         !isEmbeddedConfirmStep &&
-        !isVerifyingStep
+        !isVerifyingStep &&
+        !isDeclinedStep
       "
       class="flex flex-col items-center gap-3"
     >
@@ -73,7 +79,13 @@
       </h2>
     </div>
 
-    <div v-if="reason === 'out_of_credits'" class="text-center">
+    <div
+      v-if="
+        reason === 'out_of_credits' &&
+        (checkoutStep === 'pricing' || checkoutStep === 'preview')
+      "
+      class="text-center"
+    >
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h2>
@@ -226,6 +238,13 @@
       @cancel-payment="handleCancelPendingPayment"
     />
 
+    <SubscriptionDeclinedWorkspace
+      v-if="checkoutStep === 'declined'"
+      :decline-reason="checkoutDeclineReason"
+      @update-payment="handleDeclinedUpdatePayment"
+      @back="handleDeclinedBack"
+    />
+
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
       v-if="checkoutStep === 'success' && (selectedTierKey || isTeamCheckout)"
@@ -252,6 +271,7 @@ import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSub
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
+import SubscriptionDeclinedWorkspace from './SubscriptionDeclinedWorkspace.vue'
 import SubscriptionVerifyingWorkspace from './SubscriptionVerifyingWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
@@ -284,6 +304,8 @@ const collectingNewPaymentMethod = ref(false)
 
 const {
   checkoutStep,
+  checkoutDeclineReason,
+  handleDeclinedBack,
   isCancelingPayment,
   cancelUnavailable,
   cancelUnreachable,
@@ -375,6 +397,14 @@ function selectSavedPaymentMethod(id: string | null) {
 }
 
 const isVerifyingStep = computed(() => checkoutStep.value === 'verifying')
+const isDeclinedStep = computed(() => checkoutStep.value === 'declined')
+
+// The decline CTA returns to confirm and opens method collection, which is
+// dialog state rather than checkout state.
+function handleDeclinedUpdatePayment() {
+  handleDeclinedBack()
+  selectSavedPaymentMethod(null)
+}
 
 onMounted(() => {
   if (!initialCheckout) return

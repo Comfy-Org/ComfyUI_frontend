@@ -39,7 +39,7 @@ import {
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
-type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success'
+type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success' | 'declined'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -164,6 +164,7 @@ export function useSubscriptionCheckout(
       ? 'verifying'
       : 'pricing'
   )
+  const checkoutDeclineReason = ref<string | null>(null)
   const isCancelingPayment = ref(false)
   const cancelUnavailable = ref(false)
   const cancelUnreachable = ref(false)
@@ -928,6 +929,18 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
+  // Declined is not terminal: back returns to the confirm step with the quote
+  // and selection intact so the same charge can be retried. A decline reached
+  // on re-entry has no preserved quote to land on — plan selection is the only
+  // step that can host it.
+  function handleDeclinedBack() {
+    checkoutDeclineReason.value = null
+    const opId = activeCheckoutOperation.value?.opId
+    if (opId) billingOperationStore.clearOperation(opId)
+    activeCheckoutOperationId.value = null
+    checkoutStep.value = previewData.value ? 'preview' : 'pricing'
+  }
+
   async function handleSubscription(
     confirmReactivation = false,
     confirmationToken?: string,
@@ -1435,10 +1448,9 @@ export function useSubscriptionCheckout(
         return
       }
       if (status === 'failed') {
-        // The declined outcome step arrives one PR up; until it does, the
-        // store's failure toast carries the verdict and the dialog returns
-        // to plan selection.
-        checkoutStep.value = 'pricing'
+        checkoutDeclineReason.value =
+          activeCheckoutOperation.value?.errorMessage ?? null
+        checkoutStep.value = 'declined'
         return
       }
       if (status === undefined) {
@@ -1642,6 +1654,8 @@ export function useSubscriptionCheckout(
 
   return {
     checkoutStep,
+    checkoutDeclineReason,
+    handleDeclinedBack,
     isLoadingPreview,
     loadingTier,
     isSubscribing,

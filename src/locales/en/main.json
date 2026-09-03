@@ -3150,6 +3150,12 @@
       "addNewPaymentMethod": "Add new payment method",
       "alipay": "Alipay"
     },
+    "declined": {
+      "title": "Payment declined",
+      "body": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.",
+      "reasonLabel": "What your bank said",
+      "updatePaymentMethod": "Update payment method"
+    },
     "success": {
       "allSet": "You're all set",
       "inviteEmailsPlaceholder": "Enter emails separated by commas",
