@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
@@ -434,7 +433,6 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy.Queue.ShowRunProgressBar': z.boolean(),
-  [AGENT_CONSENT_SETTING_ID]: z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

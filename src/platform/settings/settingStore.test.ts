@@ -715,48 +715,6 @@ describe('useSettingStore', () => {
       expect(trackSettingChanged).not.toHaveBeenCalled()
     })
 
-    it('restores the previous value when persistence fails', async () => {
-      store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
-        type: 'text',
-        defaultValue: 'default'
-      })
-      vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
-
-      await expect(store.set('test.setting', 'newvalue')).rejects.toThrow(
-        'offline'
-      )
-
-      expect(store.get('test.setting')).toBe('default')
-    })
-
-    it('does not roll back a newer value when an older write fails', async () => {
-      let rejectFirstWrite = (_error: Error): void => {}
-      const firstWrite = new Promise<Response>((_resolve, reject) => {
-        rejectFirstWrite = reject
-      })
-      vi.mocked(api.storeSetting)
-        .mockReturnValueOnce(firstWrite)
-        .mockResolvedValueOnce(new Response())
-      store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
-        type: 'text',
-        defaultValue: 'default'
-      })
-
-      const staleSet = store.set('test.setting', 'first')
-      await vi.waitFor(() => {
-        expect(api.storeSetting).toHaveBeenCalledTimes(1)
-      })
-      await store.set('test.setting', 'second')
-      rejectFirstWrite(new Error('offline'))
-
-      await expect(staleSet).rejects.toThrow('offline')
-      expect(store.get('test.setting')).toBe('second')
-    })
-
     describe('object mutation prevention', () => {
       beforeEach(() => {
         const setting: SettingParams = {

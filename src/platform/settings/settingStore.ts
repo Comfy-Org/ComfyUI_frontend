@@ -28,9 +28,7 @@ export interface SettingTreeNode extends TreeNode {
 
 interface AppliedSetting<TValue> {
   previousValue: TValue
-  previousValueExists: boolean
   newValue: TValue
-  write: number
 }
 
 function resolveDefaultValue<T>(value: T | (() => T)): T {
@@ -194,7 +192,6 @@ export const useSettingStore = defineStore('setting', () => {
     if (newValue === oldValue) return undefined
 
     const typedNewValue = newValue as Settings[K]
-    const previousValueExists = exists(key)
     settingValues.value[key] = typedNewValue
     const write = (latestWrite.get(key) ?? 0) + 1
     latestWrite.set(key, write)
@@ -206,29 +203,8 @@ export const useSettingStore = defineStore('setting', () => {
     if (latestWrite.get(key) !== write) return undefined
     return {
       previousValue: oldValue,
-      previousValueExists,
-      newValue: typedNewValue,
-      write
+      newValue: typedNewValue
     }
-  }
-
-  async function rollbackSettingLocally<K extends keyof Settings>(
-    key: K,
-    applied: AppliedSetting<Settings[K]>
-  ): Promise<void> {
-    if (latestWrite.get(key) !== applied.write) return
-
-    latestWrite.set(key, applied.write + 1)
-    if (applied.previousValueExists) {
-      settingValues.value[key] = cloneDeep(applied.previousValue)
-    } else {
-      delete settingValues.value[key]
-    }
-    await onChange(
-      settingsById.value[key],
-      applied.previousValue,
-      applied.newValue
-    )
   }
 
   /**
@@ -239,12 +215,7 @@ export const useSettingStore = defineStore('setting', () => {
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     const applied = await applySettingLocally(key, value)
     if (applied === undefined) return
-    try {
-      await api.storeSetting(key, applied.newValue)
-    } catch (error) {
-      await rollbackSettingLocally(key, applied)
-      throw error
-    }
+    await api.storeSetting(key, applied.newValue)
 
     const event = settingChangedEvent(settingsById.value[key], key, applied)
     if (event) useTelemetry()?.trackSettingChanged(event)

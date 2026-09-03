@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     isVisible: true,
     close: vi.fn()
   },
+  consentStore: { load: vi.fn<() => Promise<boolean>>() },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
@@ -49,6 +50,17 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => mocks.agentStore
 }))
+
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => mocks.consentStore
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { ref } = await import('vue')
+  return { useCurrentUser: () => ({ isLoggedIn: ref(true) }) }
+})
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mocks.workflowStore
@@ -112,6 +124,8 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.enabled = false
     mocks.agentStore.isOpen = true
     mocks.agentStore.isVisible = true
+    mocks.consentStore.load.mockReset()
+    mocks.consentStore.load.mockResolvedValue(true)
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
@@ -141,11 +155,13 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
 
     expect(mocks.agentStore.enabled).toBe(true)
+    expect(mocks.consentStore.load).toHaveBeenCalledOnce()
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
     expect(mocks.agentStore.enabled).toBe(false)
+    expect(mocks.consentStore.load).not.toHaveBeenCalled()
   })
 
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {

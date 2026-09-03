@@ -37,6 +37,10 @@ vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
 
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
+}))
+
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
   const listeners = new Map<string, Set<Listener>>()

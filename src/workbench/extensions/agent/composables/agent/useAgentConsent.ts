@@ -1,14 +1,13 @@
-import { computed, defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
@@ -22,24 +21,13 @@ const AgentConsentCard = defineAsyncComponent(
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
   const dialogService = useDialogService()
-  const settingStore = useSettingStore()
+  const consentStore = useAgentConsentStore()
   const toastStore = useToastStore()
   const { isLoggedIn } = useCurrentUser()
+  const { accepted } = storeToRefs(consentStore)
   const { t } = i18n.global
 
-  const accepted = computed(
-    () => settingStore.get(AGENT_CONSENT_SETTING_ID) === true
-  )
-
-  async function continueAfterConsent(onAccept: () => void): Promise<void> {
-    if (!isCloud && !isLoggedIn.value) {
-      const signedIn = await dialogService.showSignInDialog()
-      if (!signedIn) return
-    }
-    onAccept()
-  }
-
-  function showConsentDialog(): Promise<boolean> {
+  function showConsentDialog(persistOnAccept = true): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       let settled = false
       let saving = false
@@ -64,8 +52,8 @@ export function useAgentConsent() {
         })
 
         try {
-          await settingStore.set(AGENT_CONSENT_SETTING_ID, true)
-          closeWith(true)
+          const saved = persistOnAccept ? await consentStore.accept() : true
+          closeWith(saved)
         } catch (error) {
           saving = false
           reportError(error, {
@@ -120,9 +108,29 @@ export function useAgentConsent() {
   }
 
   async function withConsent(onAccept: () => void): Promise<void> {
+    if (!isLoggedIn.value) {
+      if (!(await showConsentDialog(false))) return
+      if (!(await dialogService.showSignInDialog())) return
+
+      try {
+        if (!(await consentStore.accept())) return
+      } catch (error) {
+        reportError(error, {
+          errorType: 'agent_consent_setting_write_failure'
+        })
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('agent.consent.saveError')
+        })
+        return
+      }
+      onAccept()
+      return
+    }
+
     try {
-      await settingStore.load()
-      if (settingStore.error) throw settingStore.error
+      await consentStore.load()
     } catch (error) {
       reportError(error, {
         errorType: 'agent_consent_setting_load_failure'
@@ -136,7 +144,7 @@ export function useAgentConsent() {
     }
 
     if (!accepted.value && !(await showConsentDialog())) return
-    await continueAfterConsent(onAccept)
+    onAccept()
   }
 
   return { accepted, withConsent }
