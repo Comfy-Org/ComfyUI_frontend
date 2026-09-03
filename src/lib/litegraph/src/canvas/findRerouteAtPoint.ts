@@ -1,6 +1,7 @@
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import type { LGraph } from '../LGraph'
+import type { LinkSegment } from '../interfaces'
 import type { Reroute } from '../Reroute'
 
 /**
@@ -11,14 +12,17 @@ export function findRerouteAtPoint(
   graph: LGraph,
   x: number,
   y: number,
-  visibleReroutes: Iterable<Reroute>
+  visibleReroutes: Iterable<Reroute>,
+  renderedPaths: ReadonlySet<LinkSegment>
 ): Reroute | undefined {
   const layoutHit = layoutStore.queryRerouteAtPoint(graph.rootGraph.id, {
     x,
     y
   })
+  const layoutReroute = layoutHit ? graph.getReroute(layoutHit.id) : undefined
   return (
-    (layoutHit ? graph.getReroute(layoutHit.id) : undefined) ??
-    graph.getRerouteOnPos(x, y, visibleReroutes)
+    (layoutReroute && renderedPaths.has(layoutReroute)
+      ? layoutReroute
+      : undefined) ?? graph.getRerouteOnPos(x, y, visibleReroutes)
   )
 }
