@@ -1,23 +1,38 @@
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
-import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createConnection } from 'node:net'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 interface Options {
   agentPort: number
   airBin: string
+  catalog: string
   cloudRepo: string
   comfyUrl: string
+  docHostPort: number
   frontendPort: number
   healthPort: number
   help: boolean
+  pgExec: string
+  record: boolean
 }
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const execFileAsync = promisify(execFile)
+// The ports the cloud repo's own local stack publishes.
+const PG_PORT = 54331
+const REDIS_PORT = 6379
+const CLOUD_QUICKSTART =
+  'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
+// Fixed so a rerun seeds nothing and the printed recorder command never moves.
+const RECORD_USER_ID = 'rec-local-user'
+const RECORD_WORKSPACE_ID = 'w-1f2e3d4c-5b6a-4798-8899-aabbccddeeff'
 const USAGE = `Usage: pnpm tsx scripts/dev-agent-integration.ts [options]
 
 Options:
@@ -26,6 +41,10 @@ Options:
   --frontend-port PORT  Vite port (default: 6207)
   --agent-port PORT     Standalone agent port (default: 6286)
   --air-bin PATH        Air executable (default: $AIR_BIN or ~/go/bin/air)
+  --record              Record mode: the cloud stack's agent plus the doc host
+  --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
+  --doc-host-port PORT  Doc host port in record mode (default: 8095)
+  --pg-exec CMD         Command taking one SQL string, ending in -c
   --help                Show this help
 `
 
@@ -47,11 +66,15 @@ function parseOptions(args: string[]): Options {
   const options: Options = {
     agentPort: 6286,
     airBin: process.env.AIR_BIN ?? resolve(homedir(), 'go/bin/air'),
+    catalog: '',
     cloudRepo: resolve(PROJECT_ROOT, '../cloud'),
     comfyUrl: 'http://127.0.0.1:8188',
+    docHostPort: 8095,
     frontendPort: 6207,
     healthPort: 0,
-    help: false
+    help: false,
+    pgExec: '',
+    record: false
   }
   for (let index = 0; index < args.length; index++) {
     const arg = args[index]
@@ -63,6 +86,21 @@ function parseOptions(args: string[]): Options {
       case '--air-bin':
         options.airBin = resolve(optionValue(args, index, arg))
         index++
+        break
+      case '--catalog':
+        options.catalog = resolve(optionValue(args, index, arg))
+        index++
+        break
+      case '--doc-host-port':
+        options.docHostPort = port(optionValue(args, index, arg), arg)
+        index++
+        break
+      case '--pg-exec':
+        options.pgExec = optionValue(args, index, arg)
+        index++
+        break
+      case '--record':
+        options.record = true
         break
       case '--cloud-repo':
         options.cloudRepo = resolve(optionValue(args, index, arg))
@@ -85,6 +123,9 @@ function parseOptions(args: string[]): Options {
   }
   if (options.agentPort === options.frontendPort) {
     throw new Error('Agent and frontend ports must be different')
+  }
+  if (options.record && !options.catalog) {
+    throw new Error('--record requires --catalog <conversation fixture>')
   }
   options.healthPort = options.agentPort + 1
   if (options.healthPort > 65535) {
@@ -212,6 +253,187 @@ function standaloneEnv(options: Options, dataDir: string, token: string) {
   }
 }
 
+// Neither Postgres nor Redis speaks HTTP, so a TCP connect is the whole check.
+function assertListening(portNumber: number, label: string): Promise<void> {
+  return new Promise((resolveCheck, rejectCheck) => {
+    const socket = createConnection({ host: '127.0.0.1', port: portNumber })
+    const fail = () => {
+      socket.destroy()
+      rejectCheck(
+        new Error(
+          `${label} is not listening on ${portNumber}; ${CLOUD_QUICKSTART}`
+        )
+      )
+    }
+    socket.setTimeout(3000)
+    socket.once('connect', () => {
+      socket.end()
+      resolveCheck()
+    })
+    socket.once('timeout', fail)
+    socket.once('error', fail)
+  })
+}
+
+// psql is not required on PATH: reach Postgres through whichever container publishes it.
+async function pgExecCommand(override: string): Promise<string> {
+  if (override) return override
+  const { stdout } = await execFileAsync('docker', [
+    'ps',
+    '--format',
+    '{{.Names}} {{.Ports}}'
+  ])
+  const name = stdout
+    .split('\n')
+    .find((line) => line.includes(`:${PG_PORT}->`))
+    ?.split(' ')[0]
+  if (!name) {
+    throw new Error(
+      `No container publishes Postgres ${PG_PORT}; pass --pg-exec "<command ending in -c>"`
+    )
+  }
+  return `docker exec -i ${name} psql -U postgres -d postgres -At -c`
+}
+
+// Every value is a module constant, so the statement carries no caller input.
+async function seedIdentity(command: string): Promise<void> {
+  const parts = command.split(' ').filter(Boolean)
+  const sql = [
+    `insert into users (id, create_time, update_time, email, name) values ('${RECORD_USER_ID}', now(), now(), 'recorder@local', 'recorder') on conflict (id) do nothing;`,
+    `insert into workspaces (id, create_time, update_time, name, created_by_user_id) values ('${RECORD_WORKSPACE_ID}', now(), now(), 'recorder', '${RECORD_USER_ID}') on conflict (id) do nothing;`,
+    `insert into workspace_memberships (id, create_time, update_time, role, user_id, workspace_id) values ('${RECORD_WORKSPACE_ID}:${RECORD_USER_ID}', now(), now(), 'owner', '${RECORD_USER_ID}', '${RECORD_WORKSPACE_ID}') on conflict (workspace_id, user_id) do nothing;`
+  ].join(' ')
+  await execFileAsync(parts[0], [...parts.slice(1), sql])
+}
+
+// AGENT_CRDT_MODE=on fails closed without a catalog; the doc host takes its own per request.
+async function writeCatalog(fixture: string, dataDir: string): Promise<string> {
+  const parsed = JSON.parse(await readFile(fixture, 'utf8')) as {
+    workflow?: { catalog?: unknown }
+  }
+  if (!parsed.workflow?.catalog) {
+    throw new Error(`${fixture} has no workflow.catalog`)
+  }
+  const path = resolve(dataDir, 'widget-catalog.json')
+  await writeFile(path, JSON.stringify(parsed.workflow.catalog))
+  return path
+}
+
+function recordEnv(options: Options, catalogPath: string, secret: string) {
+  return {
+    ...process.env,
+    AGENT_COMFY_URL: options.comfyUrl,
+    AGENT_CRDT_MODE: 'on',
+    AGENT_M2M_SECRET: secret,
+    AGENT_PORT: String(options.agentPort),
+    // Without this the non-standalone default is cloud, and comfy-cli edits 401 against cloud.comfy.org.
+    AGENT_TARGET: 'local',
+    AGENT_WIDGET_CATALOG_PATH: catalogPath,
+    DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${PG_PORT}/postgres?sslmode=disable`,
+    DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
+    HEALTH_PORT: String(options.healthPort),
+    REDIS_URL: `redis://localhost:${REDIS_PORT}/1`
+  }
+}
+
+async function runRecord(options: Options): Promise<number> {
+  const agentDir = resolve(options.cloudRepo, 'services/agent')
+  await access(resolve(agentDir, 'start.sh'))
+  await access(resolve(agentDir, 'dochost/start.sh'))
+  await assertListening(PG_PORT, 'Postgres')
+  await assertListening(REDIS_PORT, 'Redis')
+  await assertReachable(`${options.comfyUrl.replace(/\/$/, '')}/system_stats`)
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_BASE_URL) {
+    throw new Error('Set ANTHROPIC_API_KEY or ANTHROPIC_BASE_URL')
+  }
+
+  const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-record-'))
+  const secretPath = resolve(dataDir, 'm2m.secret')
+  const secret = randomBytes(32).toString('hex')
+  await writeFile(secretPath, secret, { mode: 0o600 })
+  const catalogPath = await writeCatalog(options.catalog, dataDir)
+  await seedIdentity(await pgExecCommand(options.pgExec))
+
+  const agentUrl = `http://127.0.0.1:${options.agentPort}`
+  const docHost = spawnGroup('bash', ['dochost/start.sh'], agentDir, {
+    ...process.env,
+    DOC_HOST_PORT: String(options.docHostPort)
+  })
+  const agent = spawnGroup(
+    'bash',
+    ['start.sh'],
+    agentDir,
+    recordEnv(options, catalogPath, secret)
+  )
+  let stopping = false
+  let requestedExitCode: number | null = null
+  let resolveExitRequest: (code: number) => void = () => {}
+  const exitRequested = new Promise<number>((resolveExit) => {
+    resolveExitRequest = resolveExit
+  })
+  const requestExit = (code: number) => {
+    if (requestedExitCode !== null) return
+    requestedExitCode = code
+    resolveExitRequest(code)
+  }
+  const onSigint = () => requestExit(130)
+  const onSigterm = () => requestExit(143)
+  process.once('SIGINT', onSigint)
+  process.once('SIGTERM', onSigterm)
+  for (const child of [agent, docHost]) {
+    child.once('exit', (code) => requestExit(code ?? 1))
+    child.once('error', () => requestExit(1))
+  }
+
+  async function stop(exitCode: number): Promise<number> {
+    if (stopping) return exitCode
+    stopping = true
+    for (const child of [agent, docHost]) stopGroup(child, 'SIGTERM')
+    await Promise.all([agent, docHost].map((child) => waitForExit(child, 2000)))
+    for (const child of [agent, docHost]) {
+      if (!hasExited(child)) stopGroup(child, 'SIGKILL')
+    }
+    await Promise.all([agent, docHost].map((child) => waitForExit(child, 1000)))
+    await rm(dataDir, { force: true, recursive: true })
+    process.removeListener('SIGINT', onSigint)
+    process.removeListener('SIGTERM', onSigterm)
+    return exitCode
+  }
+
+  try {
+    const startupResult = await Promise.race([
+      waitForAgent(agent, agentUrl, () => requestedExitCode !== null).then(
+        () => null
+      ),
+      exitRequested
+    ])
+    if (startupResult !== null) return await stop(startupResult)
+    const cloudSha = (
+      await execFileAsync('git', ['-C', options.cloudRepo, 'rev-parse', 'HEAD'])
+    ).stdout.trim()
+    process.stdout.write(
+      `
+Recording stack ready: agent ${agentUrl}, doc host http://127.0.0.1:${options.docHostPort}
+Record a case with:
+
+AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL="$AGENT_MODEL" \\
+AGENT_M2M_SECRET_FILE=${secretPath} AGENT_FULLSTACK_URL=${agentUrl} \\
+REC_WORKSPACE_ID=${RECORD_WORKSPACE_ID} REC_USER_ID=${RECORD_USER_ID} \\
+pnpm exec tsx scripts/agentConversationRecord.ts \\
+  agent-rec-<slug> "<prompt>" <seedFixture.json> \\
+  --out browser_tests/fixtures/data/agent/conversations/agent-rec-<slug>.json
+
+Press Ctrl-C to stop the agent and doc host.
+
+`
+    )
+    return await stop(await exitRequested)
+  } catch (error) {
+    await stop(1)
+    throw error
+  }
+}
+
 async function run(options: Options): Promise<number> {
   await assertWorkspacePackage()
   await access(options.airBin, constants.X_OK)
@@ -327,7 +549,9 @@ async function main(): Promise<void> {
       process.stdout.write(USAGE)
       return
     }
-    process.exitCode = await run(options)
+    process.exitCode = options.record
+      ? await runRecord(options)
+      : await run(options)
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1
