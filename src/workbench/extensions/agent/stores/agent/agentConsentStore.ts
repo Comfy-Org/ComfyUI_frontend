@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getAccountSetting,
@@ -10,11 +11,13 @@ import { useAuthStore } from '@/stores/authStore'
 
 export const useAgentConsentStore = defineStore('agentConsent', () => {
   const authStore = useAuthStore()
+  const { resolvedUserInfo } = useCurrentUser()
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
   let operation = 0
 
-  const currentIdentity = () => authStore.currentUserIdentity()
+  const currentIdentity = () => resolvedUserInfo.value?.id ?? null
+  const identity = computed(currentIdentity)
   const accepted = computed(
     () =>
       currentIdentity() !== null && acceptedIdentity.value === currentIdentity()
@@ -57,8 +60,10 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     return accepted.value
   }
 
-  async function accept(): Promise<boolean> {
+  async function accept(expectedIdentity?: string): Promise<boolean> {
     const identity = requireIdentity()
+    if (expectedIdentity && identity !== expectedIdentity) return false
+
     const operationId = ++operation
     const authHeader = await authStore.getUserAuthHeader()
     if (!stillOwns(operationId, identity)) return false
@@ -72,5 +77,5 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     return true
   }
 
-  return { accepted, load, accept }
+  return { accepted, identity, load, accept }
 })

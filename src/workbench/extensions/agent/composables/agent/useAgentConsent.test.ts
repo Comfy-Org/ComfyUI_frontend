@@ -27,23 +27,28 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-const authState = vi.hoisted(() => ({ loggedIn: false }))
+const authState = vi.hoisted(() => ({
+  loggedIn: false,
+  identity: 'account-a' as string | null
+}))
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
     get isLoggedIn() {
       return { value: authState.loggedIn }
     },
-    resolvedUserInfo: { value: null }
+    resolvedUserInfo: {
+      get value() {
+        return authState.identity ? { id: authState.identity } : null
+      }
+    }
   })
 }))
 
 const accountAuthState = vi.hoisted(() => ({
-  identity: 'account-a' as string | null,
   getUserAuthHeader: vi.fn()
 }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    currentUserIdentity: () => accountAuthState.identity,
     getUserAuthHeader: accountAuthState.getUserAuthHeader
   })
 }))
@@ -104,7 +109,7 @@ describe('useAgentConsent', () => {
       settingState.accepted = value
     })
     authState.loggedIn = true
-    accountAuthState.identity = 'account-a'
+    authState.identity = 'account-a'
     accountAuthState.getUserAuthHeader.mockReset()
     accountAuthState.getUserAuthHeader.mockResolvedValue({
       Authorization: 'Bearer account-a-token'
@@ -237,7 +242,7 @@ describe('useAgentConsent', () => {
     const request = useAgentConsent().withConsent(onOpen)
     const dialog = await waitForConsentDialog()
 
-    accountAuthState.identity = 'account-b'
+    authState.identity = 'account-b'
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
@@ -247,10 +252,10 @@ describe('useAgentConsent', () => {
 
   it('authenticates signed-out Local users before saving to their account', async () => {
     authState.loggedIn = false
-    accountAuthState.identity = null
+    authState.identity = null
     showSignInDialog.mockImplementationOnce(async () => {
       authState.loggedIn = true
-      accountAuthState.identity = 'account-a'
+      authState.identity = 'account-a'
       return true
     })
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
@@ -274,7 +279,7 @@ describe('useAgentConsent', () => {
 
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
     authState.loggedIn = false
-    accountAuthState.identity = null
+    authState.identity = null
     showSignInDialog.mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 
