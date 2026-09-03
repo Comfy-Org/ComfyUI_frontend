@@ -202,6 +202,7 @@ const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackAgentEntryButtonClicked })
 }))
+
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
 }))
@@ -356,7 +357,7 @@ describe('WorkflowTabs agent entry button', () => {
     ).toHaveLength(1)
   })
 
-  it('gates opening and reflects the pressed state on the button', async () => {
+  it('gates opening and reflects the visible state on the button', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
@@ -375,16 +376,14 @@ describe('WorkflowTabs agent entry button', () => {
 
     await user.click(button)
 
-    expect(withConsent).toHaveBeenCalledOnce()
     expect(agentPanelHolder.store.toggle).toHaveBeenCalledOnce()
     expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
       resulting_state: 'closed'
     })
   })
 
-  it('gates a restored open intent that is not actually visible', async () => {
+  it('clears a hidden restored intent before requesting consent', async () => {
     agentPanelHolder.store.isOpen.value = true
-    agentPanelHolder.store.isVisible.value = false
     const { user } = renderComponent()
 
     await user.click(

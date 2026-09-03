@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -35,6 +36,9 @@ async function mockAgentBoot(
     }
   })
   await mockBilling(page)
+  await page.route(`**/api/settings/${AGENT_CONSENT_SETTING_ID}`, (route) =>
+    route.fulfill(jsonRoute({ value: true }))
+  )
   const emptyAssets: ListAssetsResponse = {
     assets: [],
     total: 0,
@@ -67,11 +71,6 @@ export async function bootAgentApp(
   page: Page,
   agentFlag: boolean
 ): Promise<void> {
-  // The shell's onboarding coach is a modal; pre-seed its dismissal so the
-  // panel chrome is interactable, as the canonical agent suite does.
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
   await mockAgentBoot(page, { agentFlag })
   await bootCloud(page)
   await page.goto(APP_URL)
