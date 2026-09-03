@@ -1,0 +1,211 @@
+{
+  "last_node_id": 14,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "HowTo/ConstantText",
+      "pos": [80, 80],
+      "size": [280, 80],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "text", "type": "STRING", "links": [1], "slot_index": 0 }
+      ],
+      "properties": {},
+      "widgets_values": ["Hello from the How-To packs"]
+    },
+    {
+      "id": 2,
+      "type": "HowTo/Reroute",
+      "pos": [420, 80],
+      "size": [180, 60],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [{ "name": "in", "type": "*", "link": 1 }],
+      "outputs": [
+        { "name": "out", "type": "*", "links": [2], "slot_index": 0 }
+      ],
+      "properties": {}
+    },
+    {
+      "id": 3,
+      "type": "HowToTextOutput",
+      "pos": [680, 80],
+      "size": [280, 120],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [{ "name": "text", "type": "STRING", "link": 2 }],
+      "outputs": [],
+      "properties": { "Node name for S&R": "HowToTextOutput" },
+      "widgets_values": ["Run this node"]
+    },
+    {
+      "id": 4,
+      "type": "HowTo/WidgetEvents",
+      "pos": [80, 280],
+      "size": [260, 120],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "count", "type": "INT", "links": null, "slot_index": 0 }
+      ],
+      "properties": {},
+      "widgets_values": [0, null]
+    },
+    {
+      "id": 5,
+      "type": "HowTo/CanvasMeter",
+      "pos": [400, 280],
+      "size": [260, 120],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "amount", "type": "FLOAT", "links": null, "slot_index": 0 }
+      ],
+      "properties": {},
+      "widgets_values": [0.5]
+    },
+    {
+      "id": 6,
+      "type": "HowTo/MountedSlider",
+      "pos": [720, 280],
+      "size": [260, 120],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "amount", "type": "FLOAT", "links": null, "slot_index": 0 }
+      ],
+      "properties": {},
+      "widgets_values": [0.5]
+    },
+    {
+      "id": 7,
+      "type": "HowTo/LifecycleBadge",
+      "pos": [1040, 280],
+      "size": [240, 100],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "howToState": "paused"
+    },
+    {
+      "id": 8,
+      "type": "HowTo/DropTextFile",
+      "pos": [80, 500],
+      "size": [280, 160],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "text", "type": "STRING", "links": null, "slot_index": 0 }
+      ],
+      "properties": {},
+      "widgets_values": ["Drop a .txt file on this node"]
+    },
+    {
+      "id": 9,
+      "type": "HowTo/GraphBuilder",
+      "pos": [420, 500],
+      "size": [260, 160],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [null, null, null]
+    },
+    {
+      "id": 10,
+      "type": "HowTo/BackendPing",
+      "pos": [740, 500],
+      "size": [260, 140],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [null]
+    },
+    {
+      "id": 11,
+      "type": "HowTo/BackendEvent",
+      "pos": [1060, 500],
+      "size": [260, 140],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [null]
+    },
+    {
+      "id": 12,
+      "type": "HowTo/SettingsStorage",
+      "pos": [80, 740],
+      "size": [280, 180],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["Hello from storage", null, null, null]
+    },
+    {
+      "id": 13,
+      "type": "HowToRating",
+      "pos": [420, 740],
+      "size": [280, 120],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "rating", "type": "INT", "links": null, "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "HowToRating" },
+      "widgets_values": [3]
+    },
+    {
+      "id": 14,
+      "type": "HowToTemplateText",
+      "pos": [760, 740],
+      "size": [280, 160],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "text", "type": "STRING", "links": null, "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "HowToTemplateText" },
+      "widgets_values": ["rendered-%date:yyyy-MM-dd%"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "*"],
+    [2, 2, 0, 3, 0, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "offset": [0, 0], "scale": 1 } },
+  "version": 0.4
+}
