@@ -203,7 +203,7 @@ export const usePaste = () => {
     const { items } = data
 
     const currentNode = canvas.current_node as LGraphNode
-    const isNodeSelected = currentNode?.is_selected
+    const isNodeSelected = currentNode.is_selected
 
     const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
     const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)
@@ -253,7 +253,7 @@ export const usePaste = () => {
       }
     }
 
-    if (workflow && workflow.version && workflow.nodes && workflow.extra) {
+    if (workflow && workflow.version) {
       await app.loadGraphData(workflow)
     } else {
       if (

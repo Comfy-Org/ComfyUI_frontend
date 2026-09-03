@@ -67,7 +67,7 @@ export function useBoundingBoxes(
   const { width: containerWidth } = useElementSize(canvasContainer)
 
   const litegraphNode = computed(() =>
-    nodeId && app.canvas?.graph ? app.canvas.graph.getNodeById(nodeId) : null
+    nodeId && app.canvas.graph ? app.canvas.graph.getNodeById(nodeId) : null
   )
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
@@ -81,7 +81,7 @@ export function useBoundingBoxes(
 
   const state = ref({
     regions: fromBoundingBoxes(
-      modelValue.value ?? [],
+      modelValue.value,
       widthValue.value,
       heightValue.value
     )
@@ -253,7 +253,7 @@ export function useBoundingBoxes(
     for (const i of order) {
       const b = state.value.regions[i]
       const active = i === aIdx
-      const pal = (b.palette || []).filter(Boolean)
+      const pal = b.palette.filter(Boolean)
       const col = pal.length ? pal[0] : '#8c8c8c'
       const x1 = b.x * W
       const y1 = b.y * H
@@ -377,8 +377,7 @@ export function useBoundingBoxes(
     const py = mN.y * H
     for (let i = state.value.regions.length - 1; i >= 0; i--) {
       const r = rects[i]
-      if (r && px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h)
-        return i
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return i
     }
     return null
   }
@@ -464,9 +463,9 @@ export function useBoundingBoxes(
   function onDocPointerUp(e: PointerEvent) {
     if (!drawing.value) return
     drawing.value = false
-    canvasEl.value?.releasePointerCapture?.(e.pointerId)
+    canvasEl.value?.releasePointerCapture(e.pointerId)
     const b = state.value.regions[activeIndex.value]
-    if (b && (b.w < 0.005 || b.h < 0.005)) {
+    if (b.w < 0.005 || b.h < 0.005) {
       removeRegion(activeIndex.value)
     }
     syncState()
@@ -516,7 +515,6 @@ export function useBoundingBoxes(
       activeIndex.value
     )
     const target = cands.find((c) => c.index === activeIndex.value) || cands[0]
-    if (!target) return
     openInlineEditor(target.index)
   }
 
@@ -532,7 +530,6 @@ export function useBoundingBoxes(
 
   function openInlineEditor(index: number) {
     const b = state.value.regions[index]
-    if (!b) return
     activeIndex.value = index
     const { w: W, h: H } = logicalSize()
     const w = Math.min(W, Math.max(70, b.w * W))
@@ -547,7 +544,7 @@ export function useBoundingBoxes(
         top: `${top}px`,
         width: `${w}px`,
         height: `${h}px`,
-        borderColor: (b.palette || []).find(Boolean) || '#46b4e6'
+        borderColor: b.palette.find(Boolean) || '#46b4e6'
       }
     }
     void nextTick(() => {
@@ -568,7 +565,7 @@ export function useBoundingBoxes(
     const ed = inlineEditor.value
     if (!ed) return
     const b = state.value.regions[ed.index]
-    if (b) b.desc = ed.value
+    b.desc = ed.value
     inlineEditor.value = null
     syncState()
   }

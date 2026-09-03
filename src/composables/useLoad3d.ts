@@ -188,7 +188,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
-    if (!containerRef || !rawNode) return
+    if (!rawNode) return
 
     const node = rawNode
 
@@ -197,8 +197,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
       if (
-        isLoad3dResultViewerNode(node.constructor.comfyClass ?? '') ||
-        node.constructor.comfyClass?.startsWith('Preview') ||
+        isLoad3dResultViewerNode(node.constructor.comfyClass) ||
+        node.constructor.comfyClass.startsWith('Preview') ||
         !(widthWidget && heightWidget)
       ) {
         isPreview.value = true
@@ -215,7 +215,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
-        getZoomScale: () => app.canvas?.ds?.scale ?? 1,
+        getZoomScale: () => app.canvas.ds.scale,
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
@@ -255,20 +255,21 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       nodeToLoad3dMap.set(node, load3d)
 
       handleEvents('add')
+      const initializedLoad3d = load3d
 
       const callbacks = pendingCallbacks.get(node)
 
-      if (callbacks && load3d) {
+      if (callbacks) {
         callbacks.forEach((callback) => {
-          if (load3d) invokeReadyCallback(callback, load3d)
+          invokeReadyCallback(callback, initializedLoad3d)
         })
         pendingCallbacks.delete(node)
       }
 
       const persistent = persistentReadyCallbacks.get(node)
-      if (persistent && load3d) {
+      if (persistent) {
         persistent.forEach((callback) => {
-          if (load3d) invokeReadyCallback(callback, load3d)
+          invokeReadyCallback(callback, initializedLoad3d)
         })
       }
     } catch (error) {
@@ -284,52 +285,44 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
     // Restore configs - watchers will handle applying them to the Three.js scene
     const savedSceneConfig = node.properties['Scene Config'] as SceneConfig
-    if (savedSceneConfig) {
-      sceneConfig.value = {
-        ...sceneConfig.value,
-        ...savedSceneConfig,
-        backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
-      }
+    sceneConfig.value = {
+      ...sceneConfig.value,
+      ...savedSceneConfig,
+      backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
     }
 
     const savedModelConfig = node.properties['Model Config'] as ModelConfig
-    if (savedModelConfig) {
-      modelConfig.value = {
-        ...savedModelConfig,
-        gizmo: savedModelConfig.gizmo
-          ? {
-              ...savedModelConfig.gizmo,
-              scale: savedModelConfig.gizmo.scale ?? { x: 1, y: 1, z: 1 }
-            }
-          : {
-              enabled: false,
-              mode: 'translate',
-              position: { x: 0, y: 0, z: 0 },
-              rotation: { x: 0, y: 0, z: 0 },
-              scale: { x: 1, y: 1, z: 1 }
-            }
-      }
+    modelConfig.value = {
+      ...savedModelConfig,
+      gizmo: savedModelConfig.gizmo
+        ? {
+            ...savedModelConfig.gizmo,
+            scale: savedModelConfig.gizmo.scale
+          }
+        : {
+            enabled: false,
+            mode: 'translate',
+            position: { x: 0, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 }
+          }
     }
 
     const savedCameraConfig = node.properties['Camera Config'] as CameraConfig
 
-    if (savedCameraConfig) {
-      cameraConfig.value = savedCameraConfig
-    }
+    cameraConfig.value = savedCameraConfig
 
     const savedLightConfig = node.properties['Light Config'] as LightConfig
-    const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
-    if (savedLightConfig) {
-      lightConfig.value = {
-        intensity: savedLightConfig.intensity ?? lightConfig.value.intensity,
-        hdri: {
-          ...lightConfig.value.hdri!,
-          ...savedLightConfig.hdri,
-          enabled: false
-        }
+    const savedHdriEnabled = savedLightConfig.hdri?.enabled ?? false
+    lightConfig.value = {
+      intensity: savedLightConfig.intensity,
+      hdri: {
+        ...lightConfig.value.hdri!,
+        ...savedLightConfig.hdri,
+        enabled: false
       }
-      lastNonHdriLightIntensity.value = lightConfig.value.intensity
     }
+    lastNonHdriLightIntensity.value = lightConfig.value.intensity
 
     const hdri = lightConfig.value.hdri
     let hdriLoaded = false
@@ -610,7 +603,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   })
 
   watch(selectedAnimation, (newValue) => {
-    if (load3d && newValue !== undefined) {
+    if (load3d) {
       load3d.updateSelectedAnimation(newValue)
     }
     markDirty()
@@ -998,7 +991,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const rawNode = toRaw(nodeRef.value)
       if (rawNode) {
         const node = rawNode
-        if (!node.properties) node.properties = {}
         const cameraConfigProp = node.properties['Camera Config']
 
         if (cameraConfigProp) {

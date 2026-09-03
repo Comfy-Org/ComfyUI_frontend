@@ -38,7 +38,7 @@ export function useFocusNode() {
 
     await navigateToGraph(node.graph)
     const canvas = canvasStore.canvas
-    if (!canvas || canvas.graph !== node.graph) return
+    if (canvas.graph !== node.graph) return
 
     canvas.animateToBounds(node.boundingRect, {
       viewport: visibleCanvasViewport(canvas)

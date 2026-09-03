@@ -507,7 +507,7 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      mockNode.onRemoved?.()
+      mockNode.onRemoved()
 
       expect(existingOnRemoved).toHaveBeenCalledTimes(1)
     })
@@ -520,7 +520,7 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      mockNode.onResize?.([512, 512] as Size)
+      mockNode.onResize([512, 512] as Size)
 
       expect(existingOnResize).toHaveBeenCalledTimes(1)
     })
@@ -1745,7 +1745,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(document.createElement('div'))
       expect(cb).toHaveBeenCalledTimes(1)
 
-      mockNode.onRemoved?.()
+      if (mockNode.onRemoved) mockNode.onRemoved()
 
       composable.cleanup()
       await composable.initializeLoad3d(document.createElement('div'))
@@ -1806,7 +1806,7 @@ describe('useLoad3d', () => {
       composable.waitForLoad3d(leakedWait)
       composable.onLoad3dReady(leakedReady)
 
-      mockNode.onRemoved?.()
+      if (mockNode.onRemoved) mockNode.onRemoved()
 
       await composable.initializeLoad3d(document.createElement('div'))
 
@@ -1823,7 +1823,7 @@ describe('useLoad3d', () => {
       composable.onLoad3dReady(vi.fn())
       composable.onLoad3dReady(vi.fn())
 
-      mockNode.onRemoved?.()
+      mockNode.onRemoved()
 
       expect(originalOnRemoved).toHaveBeenCalledTimes(1)
     })

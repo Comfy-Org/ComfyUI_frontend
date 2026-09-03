@@ -57,7 +57,7 @@ function seedNodeDef(name: string, pythonModule: string) {
 
 function legacyBadgeText(node: LGraphNode): string {
   const badge = badgeDrawObjects(node, nodeBadges(node))[0]
-  return badge?.text.replaceAll('[', '').replaceAll(']', '') ?? ''
+  return badge.text.replaceAll('[', '').replaceAll(']', '')
 }
 
 function vueBadgeText(node: LGraphNode): string {

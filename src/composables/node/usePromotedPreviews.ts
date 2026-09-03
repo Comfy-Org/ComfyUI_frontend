@@ -62,8 +62,8 @@ export function usePromotedPreviews(
     const reactiveExecutionPreviews =
       nodeOutputStore.getNodePreviewImagesByExecutionId(leafExecutionId)
     const hasAnySource =
-      reactiveOutputs?.images?.length ||
-      reactivePreviews?.length ||
+      reactiveOutputs.images?.length ||
+      reactivePreviews.length ||
       reactiveExecutionOutputs?.images?.length ||
       reactiveExecutionPreviews?.length
     if (!hasAnySource) return undefined

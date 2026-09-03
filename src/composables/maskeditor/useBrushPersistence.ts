@@ -41,7 +41,7 @@ export function useBrushPersistence() {
     store.setBrushOpacity(cached.opacity)
     store.setBrushHardness(cached.hardness)
     store.brushSettings.type = cached.type
-    store.setBrushStepSize(cached.stepSize ?? 5)
+    store.setBrushStepSize(cached.stepSize)
   }
 
   return { loadAndApply, save }

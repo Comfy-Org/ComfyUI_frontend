@@ -81,7 +81,7 @@ function loadHdrTexture(
     createLoader(url).load(
       url,
       (texture, texData) => {
-        const chromaticities = (texData as ExrTexData)?.header?.chromaticities
+        const chromaticities = (texData as ExrTexData).header?.chromaticities
         resolve({
           texture,
           gamut: detectGamutFromChromaticities(chromaticities)
@@ -365,7 +365,7 @@ export function useHdrViewer() {
     pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
     raycaster.setFromCamera(pointerNdc, camera)
     const hit = raycaster.intersectObject(mesh)[0]
-    if (!hit?.uv) {
+    if (!hit.uv) {
       pixel.value = null
       return
     }
