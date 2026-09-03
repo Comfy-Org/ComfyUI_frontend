@@ -49,7 +49,11 @@ async function request<T>(
   }
   const response = await transport.transport(value)
   if (response.status < 200 || response.status >= 300)
-    throw new AccountError('Billing request failed', response.status)
+    throw new AccountError(
+      'Billing request failed',
+      response.status,
+      response.body
+    )
   return decode<T>(response.body)
 }
 

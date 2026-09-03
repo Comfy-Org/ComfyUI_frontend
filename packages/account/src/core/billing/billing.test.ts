@@ -18,6 +18,20 @@ import type {
 } from './types.js'
 
 describe('payments claims', () => {
+  it('preserves the HTTP status and response body on billing failures', async () => {
+    const body = {
+      code: 'SUBSCRIPTION_NOT_CANCELING',
+      message: 'Already active'
+    }
+    const client = createBillingApiClient({
+      transport: vi.fn(async () => ({ status: 400, body }))
+    })
+
+    await expect(client.resubscribe({}, 'attempt')).rejects.toEqual(
+      expect.objectContaining({ status: 400, body })
+    )
+  })
+
   it('TP-6 PM-8 PM-10 EC-P-1: sends the production subscribe body without an idempotency header', async () => {
     const transport = vi.fn(async () => ({
       status: 200,
