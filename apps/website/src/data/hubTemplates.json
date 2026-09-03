@@ -2,7 +2,7 @@
   {
     "name": "video_minimax_h3_i2v",
     "title": "MiniMax H3: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["MiniMax H3"],
@@ -18,7 +18,7 @@
   {
     "name": "video_minimax_h3_r2v",
     "title": "MiniMax H3: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Reference to Video", "Video"],
     "models": ["MiniMax H3"],
@@ -34,7 +34,7 @@
   {
     "name": "video_minimax_h3_t2v",
     "title": "MiniMax H3: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["MiniMax H3"],
@@ -50,11 +50,15 @@
   {
     "name": "api_seedance2_5_video_editing",
     "title": "Seedance2.5: Video Editing",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 799,
     "date": "2026-08-07",
     "thumbnails": [
@@ -68,11 +72,15 @@
   {
     "name": "api_seedance2_5_r2v",
     "title": "Seedance 2.5: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Reference to Video"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 2715,
     "date": "2026-08-07",
     "thumbnails": [
@@ -84,11 +92,15 @@
   {
     "name": "api_seedance2_5_t2v",
     "title": "Seedance 2.5: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 562,
     "date": "2026-08-07",
     "thumbnails": [
@@ -100,11 +112,15 @@
   {
     "name": "api_seedance2_5_i2v_1080p",
     "title": "Seedance2.5 1080P: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 1980,
     "date": "2026-08-17",
     "thumbnails": [
@@ -116,11 +132,15 @@
   {
     "name": "api_seedance2_5_t2v_1080p",
     "title": "Seedance2.5 1080P: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 156,
     "date": "2026-08-17",
     "thumbnails": [
@@ -132,11 +152,15 @@
   {
     "name": "api_seedance2_5_flf2v",
     "title": "Seedance 2.5: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 246,
     "date": "2026-08-07",
     "thumbnails": [
@@ -148,7 +172,7 @@
   {
     "name": "video_ltx2_5_i2v",
     "title": "LTX-2.5: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["LTX-2.5"],
@@ -164,11 +188,15 @@
   {
     "name": "api_seedance2_0_r2v",
     "title": "Seedance 2.0: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 1030,
     "date": "2026-05-25",
     "thumbnails": [
@@ -180,11 +208,15 @@
   {
     "name": "api_minimax_h3_max_i2v",
     "title": "MiniMax H3 Max: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["MiniMax H3"],
-    "logos": [{ "provider": "MiniMax" }],
+    "logos": [
+      {
+        "provider": "MiniMax"
+      }
+    ],
     "usage": 0,
     "date": "2026-09-01",
     "thumbnails": [
@@ -196,11 +228,15 @@
   {
     "name": "api_minimax_h3_max_flf2v",
     "title": "MiniMax H3 Max: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V"],
     "models": ["MiniMax H3"],
-    "logos": [{ "provider": "MiniMax" }],
+    "logos": [
+      {
+        "provider": "MiniMax"
+      }
+    ],
     "usage": 0,
     "date": "2026-09-01",
     "thumbnails": [
@@ -212,11 +248,15 @@
   {
     "name": "api_minimax_h3_max_t2v",
     "title": "MiniMax H3 Max: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["MiniMax H3"],
-    "logos": [{ "provider": "MiniMax" }],
+    "logos": [
+      {
+        "provider": "MiniMax"
+      }
+    ],
     "usage": 0,
     "date": "2026-09-01",
     "thumbnails": [
@@ -228,11 +268,15 @@
   {
     "name": "api_wan3_0_r2v",
     "title": "Wan3.0: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Reference to Video"],
     "models": ["Wan3.0"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 477,
     "date": "2026-08-24",
     "thumbnails": [
@@ -244,11 +288,15 @@
   {
     "name": "api_wan3_0_i2v",
     "title": "Wan3.0: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Wan3.0"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 537,
     "date": "2026-08-24",
     "thumbnails": [
@@ -260,11 +308,15 @@
   {
     "name": "api_wan3_0_t2v",
     "title": "Wan3.0: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Wan3.0"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 192,
     "date": "2026-08-24",
     "thumbnails": [
@@ -276,11 +328,15 @@
   {
     "name": "api_pixverse6_i2v",
     "title": "PixVerse 6.0: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["PixVerse"],
-    "logos": [{ "provider": "Pixverse" }],
+    "logos": [
+      {
+        "provider": "Pixverse"
+      }
+    ],
     "usage": 0,
     "date": "2026-08-30",
     "thumbnails": [
@@ -292,11 +348,15 @@
   {
     "name": "api_pixverse6_t2v",
     "title": "PixVerse 6.0: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["PixVerse"],
-    "logos": [{ "provider": "Pixverse" }],
+    "logos": [
+      {
+        "provider": "Pixverse"
+      }
+    ],
     "usage": 0,
     "date": "2026-08-30",
     "thumbnails": [
@@ -308,11 +368,15 @@
   {
     "name": "api_google_gemini_omni_flash_1_1_t2v",
     "title": "Gemini Omni 1.1 Flash: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Gemini Omni 1.1 Flash"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 134,
     "date": "2026-08-27",
     "thumbnails": [
@@ -324,11 +388,15 @@
   {
     "name": "api_google_gemini_omni_flash_1_1_i2v",
     "title": "Gemini Omni 1.1 Flash: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Gemini Omni 1.1 Flash"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 317,
     "date": "2026-08-27",
     "thumbnails": [
@@ -340,11 +408,15 @@
   {
     "name": "api_google_gemini_omni_flash_1_1_edit",
     "title": "Gemini Omni 1.1 Flash: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Gemini Omni 1.1 Flash"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 145,
     "date": "2026-08-27",
     "thumbnails": [
@@ -358,11 +430,15 @@
   {
     "name": "api_google_gemini_omni_flash_1_1_r2v",
     "title": "Gemini Omni 1.1 Flash: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Reference to Video"],
     "models": ["Gemini Omni 1.1 Flash"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 97,
     "date": "2026-08-27",
     "thumbnails": [
@@ -374,11 +450,15 @@
   {
     "name": "api_ltx2_5_flf2v",
     "title": "LTX-2.5 (Pro): FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V"],
     "models": ["LTX-2.5"],
-    "logos": [{ "provider": "Lightricks" }],
+    "logos": [
+      {
+        "provider": "Lightricks"
+      }
+    ],
     "usage": 128,
     "date": "2026-08-11",
     "thumbnails": [
@@ -390,7 +470,7 @@
   {
     "name": "video_ltx2_5_flf2v",
     "title": "LTX-2.5: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video"],
     "models": ["LTX-2.5"],
@@ -406,7 +486,7 @@
   {
     "name": "video_ltx2_5_t2v",
     "title": "LTX-2.5: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Text to Video"],
     "models": ["LTX-2.5"],
@@ -422,7 +502,7 @@
   {
     "name": "video_ltx2_3_i2v",
     "title": "LTX-2.3: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["LTX-2.3", "Lightricks"],
@@ -438,7 +518,7 @@
   {
     "name": "video_ltx2_3_ia2v",
     "title": "LTX-2.3: Image Audio to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Lip Sync", "Video"],
     "models": ["LTX-2.3"],
@@ -454,11 +534,15 @@
   {
     "name": "api_ltx2_5_t2v",
     "title": "LTX-2.5 (Pro): Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["LTX-2.5"],
-    "logos": [{ "provider": "Lightricks" }],
+    "logos": [
+      {
+        "provider": "Lightricks"
+      }
+    ],
     "usage": 36,
     "date": "2026-08-11",
     "thumbnails": [
@@ -470,11 +554,15 @@
   {
     "name": "api_ltx2_5_i2v",
     "title": "LTX-2.5 (Pro): Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["LTX-2.5"],
-    "logos": [{ "provider": "Lightricks" }],
+    "logos": [
+      {
+        "provider": "Lightricks"
+      }
+    ],
     "usage": 247,
     "date": "2026-08-11",
     "thumbnails": [
@@ -486,7 +574,7 @@
   {
     "name": "video_wan2_2_14B_i2v",
     "title": "Wan 2.2 14B Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["Wan", "Wan2.2"],
@@ -504,7 +592,7 @@
   {
     "name": "video_wan_animate2",
     "title": "Wan Animate 2: Motion Transfer",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Motion Control"],
     "models": ["Wan Animate"],
@@ -520,11 +608,15 @@
   {
     "name": "api_seedance2_0_flf2v",
     "title": "Seedance2.0: First-Last-Frame to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 392,
     "date": "2026-04-13",
     "thumbnails": [
@@ -536,11 +628,15 @@
   {
     "name": "api_seedance2_0_mini_r2v",
     "title": "Seedance 2.0 Mini: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Reference to Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 231,
     "date": "2026-06-25",
     "thumbnails": [
@@ -552,11 +648,15 @@
   {
     "name": "api_seedance2_0_mini_t2v",
     "title": "Seedance 2.0 Mini: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 68,
     "date": "2026-06-25",
     "thumbnails": [
@@ -568,7 +668,7 @@
   {
     "name": "api_grok_video",
     "title": "Grok: Video generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video", "Text to Video", "API"],
     "models": ["Grok"],
@@ -584,11 +684,15 @@
   {
     "name": "api_minimax_h3_r2v",
     "title": "MiniMax H3: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Reference to Video", "Image to Video"],
     "models": ["MiniMax H3"],
-    "logos": [{ "provider": "MiniMax" }],
+    "logos": [
+      {
+        "provider": "MiniMax"
+      }
+    ],
     "usage": 368,
     "date": "2026-07-30",
     "thumbnails": [
@@ -600,11 +704,15 @@
   {
     "name": "api_minimax_h3_t2v",
     "title": "MiniMax H3: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "API", "Video"],
     "models": ["MiniMax H3"],
-    "logos": [{ "provider": "MiniMax" }],
+    "logos": [
+      {
+        "provider": "MiniMax"
+      }
+    ],
     "usage": 37,
     "date": "2026-07-30",
     "thumbnails": [
@@ -616,11 +724,15 @@
   {
     "name": "api_minimax_h3_flf2v",
     "title": "MiniMax H3: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Video"],
     "models": ["MiniMax H3"],
-    "logos": [{ "provider": "MiniMax" }],
+    "logos": [
+      {
+        "provider": "MiniMax"
+      }
+    ],
     "usage": 130,
     "date": "2026-07-30",
     "thumbnails": [
@@ -632,11 +744,15 @@
   {
     "name": "api_bfl_flux3_t2v",
     "title": "FLUX 3 Video: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Flux.3 Video"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 51,
     "date": "2026-08-04",
     "thumbnails": [
@@ -648,11 +764,15 @@
   {
     "name": "api_bfl_flux3_i2v",
     "title": "FLUX 3 Video: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Flux.3 Video"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 171,
     "date": "2026-08-04",
     "thumbnails": [
@@ -664,7 +784,7 @@
   {
     "name": "video_wan_animate2_distilled",
     "title": "Wan Animate 2 Distilled: Motion Transfer",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Motion Control"],
     "models": ["Wan Animate"],
@@ -698,7 +818,7 @@
   {
     "name": "video_wan21_scail2_character_replacement_int8",
     "title": "SCAIL-2 Int8: Character Replacement",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Character Replacement", "Int8"],
     "models": ["SCAIL-2"],
@@ -716,7 +836,7 @@
   {
     "name": "video_ltx2_3_t2v",
     "title": "LTX-2.3: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["LTX-2.3", "Lightricks"],
@@ -732,7 +852,7 @@
   {
     "name": "video_ltx2_3_id_lora",
     "title": "LTX-2.3: ID LoRA",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Lip Sync", "Video", "Voice Cloning"],
     "models": ["LTX-2.3"],
@@ -748,11 +868,15 @@
   {
     "name": "api_kling_v3_video",
     "title": "Kling 3.0: Video Generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video"],
     "models": ["Kling 3.0"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 401,
     "date": "2026-02-10",
     "thumbnails": [
@@ -764,11 +888,15 @@
   {
     "name": "api_seedance2_0_t2v",
     "title": "Seedance 2.0: Text to Video ",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video", "Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 50,
     "date": "2026-05-02",
     "thumbnails": [
@@ -780,11 +908,15 @@
   {
     "name": "api_google_gemini_omni_flash_i2v",
     "title": "Gemini Omni Flash: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Gemini Omni"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 208,
     "date": "2026-06-30",
     "thumbnails": [
@@ -796,7 +928,7 @@
   {
     "name": "video_ltx2_3_flf2v",
     "title": "LTX-2.3: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video"],
     "models": ["LTX-2.3"],
@@ -812,11 +944,15 @@
   {
     "name": "api_seedance2_0_r2v_4k",
     "title": "Seedance2.0 4K: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Reference to Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 287,
     "date": "2026-06-30",
     "thumbnails": [
@@ -828,11 +964,15 @@
   {
     "name": "api_google_gemini_omni_flash_video_edit",
     "title": "Gemini Omni Flash: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Gemini Omni"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 111,
     "date": "2026-06-30",
     "thumbnails": [
@@ -846,11 +986,15 @@
   {
     "name": "api_sync_so_talking_image",
     "title": "Sync 3: Talking Image",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Lip Sync"],
     "models": ["Sync 3"],
-    "logos": [{ "provider": "Sync.so" }],
+    "logos": [
+      {
+        "provider": "Sync.so"
+      }
+    ],
     "usage": 42,
     "date": "2026-07-15",
     "thumbnails": [
@@ -862,11 +1006,15 @@
   {
     "name": "api_sync_so_lip_sync_video",
     "title": "Sync 3: Video Lip-Sync",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Lip Sync"],
     "models": ["Sync 3"],
-    "logos": [{ "provider": "Sync.so" }],
+    "logos": [
+      {
+        "provider": "Sync.so"
+      }
+    ],
     "usage": 59,
     "date": "2026-07-15",
     "thumbnails": [
@@ -878,7 +1026,7 @@
   {
     "name": "api_grok_imagine_video_1_5",
     "title": "Grok Imagine Video 1.5: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Grok"],
@@ -894,11 +1042,15 @@
   {
     "name": "api_bytedance_seedance1_5_image_to_video",
     "title": "Seedance 1.5 Pro: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Seedance"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 246,
     "date": "2026-01-19",
     "thumbnails": [
@@ -910,11 +1062,15 @@
   {
     "name": "api_bytedance_image_to_video",
     "title": "Seedance 1.0 Pro: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video"],
     "models": ["Seedance1.0 Pro", "ByteDance"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 354,
     "date": "2025-10-06",
     "thumbnails": [
@@ -926,7 +1082,7 @@
   {
     "name": "video_ltx2_3_ic_lora",
     "title": "LTX 2.3 IC-LoRA Union Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["ControlNet", "Video"],
     "models": ["LTX-2.3"],
@@ -944,11 +1100,15 @@
   {
     "name": "api_google_gemini_omni_flash_t2v",
     "title": "Gemini Omni Flash: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Gemini Omni"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 23,
     "date": "2026-06-30",
     "thumbnails": [
@@ -960,11 +1120,15 @@
   {
     "name": "api_happyhorse1_1_i2v",
     "title": "HappyHorse 1.1: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["HappyHorse 1.1"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 17,
     "date": "2026-06-23",
     "thumbnails": [
@@ -976,11 +1140,15 @@
   {
     "name": "api_happyhorse1_1_r2v",
     "title": "HappyHorse 1.1: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Reference to Video"],
     "models": ["HappyHorse 1.1"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 9,
     "date": "2026-06-23",
     "thumbnails": [
@@ -992,11 +1160,15 @@
   {
     "name": "api_happyhorse1_1_t2v",
     "title": "HappyHorse 1.1: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["HappyHorse 1.1"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 5,
     "date": "2026-06-23",
     "thumbnails": [
@@ -1008,7 +1180,7 @@
   {
     "name": "video_bernini_r_video_editing",
     "title": "Bernini-R: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Edit"],
     "models": ["Bernini-R"],
@@ -1024,11 +1196,15 @@
   {
     "name": "api_grok_reference_to_video",
     "title": "Grok: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Character Reference", "Video"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 52,
     "date": "2026-03-24",
     "thumbnails": [
@@ -1040,7 +1216,7 @@
   {
     "name": "api_grok_video_edit",
     "title": "Grok: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Grok"],
@@ -1058,7 +1234,7 @@
   {
     "name": "video_wan2_2_14B_t2v",
     "title": "Wan 2.2 14B Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.2", "Wan"],
@@ -1074,11 +1250,15 @@
   {
     "name": "api_heygen_avatar_video",
     "title": "HeyGen: Avatar Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Lip Sync", "Video"],
     "models": ["HeyGen"],
-    "logos": [{ "provider": "HeyGen" }],
+    "logos": [
+      {
+        "provider": "HeyGen"
+      }
+    ],
     "usage": 21,
     "date": "2026-07-21",
     "thumbnails": [
@@ -1090,11 +1270,15 @@
   {
     "name": "api_heygen_video_translate",
     "title": "HeyGen: Video Translate",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Lip Sync"],
     "models": ["HeyGen"],
-    "logos": [{ "provider": "HeyGen" }],
+    "logos": [
+      {
+        "provider": "HeyGen"
+      }
+    ],
     "usage": 24,
     "date": "2026-07-21",
     "thumbnails": [
@@ -1106,11 +1290,15 @@
   {
     "name": "api_heygen_talking_photo",
     "title": "HeyGen: Talking Photo",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Lip Sync"],
     "models": ["HeyGen"],
-    "logos": [{ "provider": "HeyGen" }],
+    "logos": [
+      {
+        "provider": "HeyGen"
+      }
+    ],
     "usage": 36,
     "date": "2026-07-21",
     "thumbnails": [
@@ -1122,7 +1310,7 @@
   {
     "name": "video_ltx2_i2v",
     "title": "LTX-2: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1138,11 +1326,15 @@
   {
     "name": "api_wan2_7_i2v",
     "title": "Wan2.7: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video"],
     "models": ["Wan2.7"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 83,
     "date": "2026-04-02",
     "thumbnails": [
@@ -1154,11 +1346,15 @@
   {
     "name": "api_kling_v3_flf2v",
     "title": "Kling 3.0: First Last Frame to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "FLF2V"],
     "models": ["Kling 3.0"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 169,
     "date": "2026-02-10",
     "thumbnails": [
@@ -1170,11 +1366,15 @@
   {
     "name": "api_kling_o3_video_edit",
     "title": "Kling O3: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Edit", "API", "Video"],
     "models": ["Kling O3"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 179,
     "date": "2026-02-10",
     "thumbnails": [
@@ -1188,11 +1388,15 @@
   {
     "name": "api_kling_motion_control3",
     "title": "Kling 3.0: Motion Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Motion Control"],
     "models": ["Kling 3.0"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 120,
     "date": "2026-03-06",
     "thumbnails": [
@@ -1206,11 +1410,15 @@
   {
     "name": "api_happyhorse1_0_video_edit",
     "title": "HappyHorse: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Edit", "API"],
     "models": ["HappyHorse 1.0"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 16,
     "date": "2026-04-27",
     "thumbnails": [
@@ -1224,11 +1432,15 @@
   {
     "name": "api_happyhorse1_0_i2v",
     "title": "HappyHorse: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["HappyHorse 1.0"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 5,
     "date": "2026-04-27",
     "thumbnails": [
@@ -1240,11 +1452,15 @@
   {
     "name": "api_happyhorse1_0_t2v",
     "title": "HappyHorse: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["HappyHorse 1.0"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 17,
     "date": "2026-04-27",
     "thumbnails": [
@@ -1256,11 +1472,15 @@
   {
     "name": "api_happyhorse1_0_r2v",
     "title": "HappyHorse: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Reference to Video", "API"],
     "models": ["HappyHorse 1.0"],
-    "logos": [{ "provider": "HappyHorse" }],
+    "logos": [
+      {
+        "provider": "HappyHorse"
+      }
+    ],
     "usage": 10,
     "date": "2026-04-27",
     "thumbnails": [
@@ -1272,11 +1492,15 @@
   {
     "name": "api_runway_aleph2_video_edit",
     "title": "Runway Aleph2: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Runway"],
-    "logos": [{ "provider": "Runway" }],
+    "logos": [
+      {
+        "provider": "Runway"
+      }
+    ],
     "usage": 57,
     "date": "2026-06-15",
     "thumbnails": [
@@ -1290,11 +1514,15 @@
   {
     "name": "api_luma_ray3_3_t2v",
     "title": "Luma Ray 3.2: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Luma"],
-    "logos": [{ "provider": "Luma" }],
+    "logos": [
+      {
+        "provider": "Luma"
+      }
+    ],
     "usage": 5,
     "date": "2026-06-18",
     "thumbnails": [
@@ -1306,7 +1534,7 @@
   {
     "name": "api_luma_ray3_3_i2v",
     "title": "Luma Ray 3.2: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "API"],
     "models": ["Luma"],
@@ -1322,11 +1550,15 @@
   {
     "name": "api_luma_ray3_2_video_edit",
     "title": "Luma Ray 3.2: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Luma"],
-    "logos": [{ "provider": "Luma" }],
+    "logos": [
+      {
+        "provider": "Luma"
+      }
+    ],
     "usage": 10,
     "date": "2026-06-22",
     "thumbnails": [
@@ -1340,11 +1572,15 @@
   {
     "name": "api_wan2_7_video_edit",
     "title": "Wan2.7: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Video Edit"],
     "models": ["Wan2.7"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 69,
     "date": "2026-04-02",
     "thumbnails": [
@@ -1358,7 +1594,7 @@
   {
     "name": "video_ltx2_t2v",
     "title": "LTX-2 Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1374,11 +1610,15 @@
   {
     "name": "api_wan2_7_t2v",
     "title": "Wan2.7: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Lip Sync", "Text to Video", "Video"],
     "models": ["Wan2.7"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 11,
     "date": "2026-04-02",
     "thumbnails": [
@@ -1390,11 +1630,15 @@
   {
     "name": "api_wan2_7_r2v",
     "title": "Wan2.7: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Reference to Video"],
     "models": ["Wan2.7"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 29,
     "date": "2026-04-02",
     "thumbnails": [
@@ -1406,7 +1650,7 @@
   {
     "name": "video_wan_vace_14B_v2v",
     "title": "Wan2.1 VACE Control Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video to Video", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -1424,7 +1668,7 @@
   {
     "name": "video_ltx_2_audio_to_video",
     "title": "LTX-2: Audio to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Audio to Video", "Video"],
     "models": ["LTX-2"],
@@ -1440,7 +1684,7 @@
   {
     "name": "video_causal_forcing_i2v",
     "title": "Causal Forcing: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video"],
     "models": ["Wan2.1"],
@@ -1456,11 +1700,15 @@
   {
     "name": "api_kling_o3_flf2v",
     "title": "Kling O3: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V"],
     "models": ["Kling O3"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 21,
     "date": "2026-02-10",
     "thumbnails": [
@@ -1472,11 +1720,15 @@
   {
     "name": "api_king_o3_t2v",
     "title": "Kling O3: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Kling O3"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 14,
     "date": "2026-02-10",
     "thumbnails": [
@@ -1488,7 +1740,7 @@
   {
     "name": "api_kling_omni_v2v",
     "title": "Kling O1: Video to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Character Reference", "Video"],
     "models": ["Kling O1"],
@@ -1506,7 +1758,7 @@
   {
     "name": "video_wan2_2_14B_animate",
     "title": "Wan2.2 Animate, Character Animation and Replacement",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["Wan", "wan2.2 Animate"],
@@ -1522,7 +1774,7 @@
   {
     "name": "video_ltx2_i2v_lora",
     "title": "Squish Anything with LTX-2 I2V and LoRA",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video"],
     "models": ["LTX-2"],
@@ -1538,11 +1790,15 @@
   {
     "name": "api_kling_o3_i2v",
     "title": "Kling O3: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Character Reference", "Image to Video"],
     "models": ["Kling O3"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 57,
     "date": "2026-02-10",
     "thumbnails": [
@@ -1554,7 +1810,7 @@
   {
     "name": "api_bytedance_seedance1_5_flf2v",
     "title": "Seedance 1.5 Pro: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Image to Video", "API"],
     "models": ["ByteDance", "Seedance"],
@@ -1570,7 +1826,7 @@
   {
     "name": "video_wan2_2_14B_flf2v",
     "title": "Wan 2.2 14B First-Last Frame to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video"],
     "models": ["Wan2.2", "Wan"],
@@ -1588,7 +1844,7 @@
   {
     "name": "video_wan2_2_14B_fun_control",
     "title": "Wan 2.2 14B Fun Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video to Video", "Video", "ControlNet"],
     "models": ["Wan2.2", "Wan"],
@@ -1604,7 +1860,7 @@
   {
     "name": "api_vidu_q3_text_to_video",
     "title": "Vidu Q3 Audio-Visual Video Generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video", "Video"],
     "models": ["Vidu", "Vidu Q3"],
@@ -1620,11 +1876,15 @@
   {
     "name": "api_vidu_q3_image_to_video",
     "title": "Vidu Q3 Image-to-Video with Audio",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video"],
     "models": ["Vidu", "Vidu Q3"],
-    "logos": [{ "provider": "Vidu" }],
+    "logos": [
+      {
+        "provider": "Vidu"
+      }
+    ],
     "usage": 14,
     "date": "2026-02-02",
     "thumbnails": [
@@ -1636,7 +1896,7 @@
   {
     "name": "api_wan2_6_i2v",
     "title": "Wan2.6: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["Wan2.6", "Wan"],
@@ -1652,7 +1912,7 @@
   {
     "name": "api_kling_motion_control",
     "title": "Kling2.6: Motion Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Motion Control", "API"],
     "models": ["Kling 2.6", "Kling"],
@@ -1668,7 +1928,7 @@
   {
     "name": "api_kling2_6_i2v",
     "title": "Kling2.6: Animate Images with Audio",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API", "Audio"],
     "models": ["Kling 2.6", "Kling"],
@@ -1684,7 +1944,7 @@
   {
     "name": "api_vidu_q2_i2v",
     "title": "Vidu Q2: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "API"],
     "models": ["Vidu Q2", "Vidu"],
@@ -1700,7 +1960,7 @@
   {
     "name": "video_ltx2_i2v_distilled",
     "title": "LTX-2 Image to Video (Distilled)",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1716,7 +1976,7 @@
   {
     "name": "video_ltx2_pose_to_video",
     "title": "LTX-2 Pose to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["ControlNet", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1734,7 +1994,7 @@
   {
     "name": "video_ltx2_t2v_distilled",
     "title": "LTX-2 Text to Video (Distilled)",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1750,7 +2010,7 @@
   {
     "name": "video_ltx2_canny_to_video",
     "title": "LTX-2 Canny to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["ControlNet", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1768,7 +2028,7 @@
   {
     "name": "video_ltx2_depth_to_video",
     "title": "LTX-2 Depth to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["ControlNet", "Video"],
     "models": ["LTX-2", "Lightricks"],
@@ -1786,7 +2046,7 @@
   {
     "name": "video-wan21_scail",
     "title": "Wan2.1 SCAIL",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Motion Control", "Video"],
     "models": ["Wan2.1 SCAIL"],
@@ -1802,7 +2062,7 @@
   {
     "name": "video_hunyuan_video_1.5_720p_i2v",
     "title": "Hunyuan Video 1.5 Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["Hunyuan Video"],
@@ -1818,7 +2078,7 @@
   {
     "name": "api_kling_omni_edit_video",
     "title": "Kling O1: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "API", "Video Edit", "Text to Video", "Image to Video"],
     "models": ["Kling"],
@@ -1836,7 +2096,7 @@
   {
     "name": "api_kling_omni_i2v",
     "title": "Kling O1: Image to Video ",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Character Reference"],
     "models": ["Kling O1"],
@@ -1852,7 +2112,7 @@
   {
     "name": "api_wan_image_to_video",
     "title": "Wan2.5: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["Wan2.5", "Wan"],
@@ -1868,11 +2128,15 @@
   {
     "name": "api_seedance2_0_flf2v_real_human",
     "title": "Seedance2.0 Real Human: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "FLF2V"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 6,
     "date": "2026-04-23",
     "thumbnails": [
@@ -1884,11 +2148,15 @@
   {
     "name": "api_seedance2_0_r2v_real_human",
     "title": "Seedance2.0 Real Human: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Reference to Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 12,
     "date": "2026-04-23",
     "thumbnails": [
@@ -1900,7 +2168,7 @@
   {
     "name": "api_vidu_q2_flf2v",
     "title": "Vidu Q2: FLF2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video", "API"],
     "models": ["Vidu Q2"],
@@ -1916,7 +2184,7 @@
   {
     "name": "video_wan2_2_5B_ti2v",
     "title": "Wan 2.2 5B Video Generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.2", "Wan"],
@@ -1932,7 +2200,7 @@
   {
     "name": "video_wan2_2_14B_s2v",
     "title": "Wan2.2-S2V Audio-Driven Video Generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Audio to Video"],
     "models": ["Wan2.2", "Wan"],
@@ -1948,7 +2216,7 @@
   {
     "name": "video_wan_vace_inpainting",
     "title": "Wan2.1 VACE Inpainting",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Inpainting", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -1966,7 +2234,7 @@
   {
     "name": "api_bytedance_flf2v",
     "title": "Seedance1.0 Pro: Start End to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Video"],
     "models": ["Seedance1.0 Pro", "ByteDance"],
@@ -1982,7 +2250,7 @@
   {
     "name": "api_vidu_q2_r2v",
     "title": "Vidu Q2: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Character Reference", "Image to Video", "API"],
     "models": ["Vidu Q2", "Vidu"],
@@ -1998,7 +2266,7 @@
   {
     "name": "api_kling_omni_t2v",
     "title": "Kling O1: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video", "Video"],
     "models": ["Kling O1"],
@@ -2014,7 +2282,7 @@
   {
     "name": "video_wan2_2_14B_fun_inpaint",
     "title": "Wan 2.2 14B Fun Inp",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video"],
     "models": ["Wan2.2", "Wan"],
@@ -2030,7 +2298,7 @@
   {
     "name": "api_runway_gen4_turo_image_to_video",
     "title": "Runway: Gen4 Turbo Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["Runway"],
@@ -2046,7 +2314,7 @@
   {
     "name": "ltxv_image_to_video",
     "title": "LTXV Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["LTX-0.9.5"],
@@ -2062,7 +2330,7 @@
   {
     "name": "api_wan2_6_t2v",
     "title": "Wan2.6: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video", "API"],
     "models": ["Wan2.6", "Wan"],
@@ -2078,7 +2346,7 @@
   {
     "name": "video_hunyuan_video_1.5_720p_t2v",
     "title": "Hunyuan Video 1.5 Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Hunyuan Video"],
@@ -2094,7 +2362,7 @@
   {
     "name": "wan2.1_fun_control",
     "title": "Wan 2.1 ControlNet",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video to Video", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2112,7 +2380,7 @@
   {
     "name": "video_wan_vace_14B_ref2v",
     "title": "Wan2.1 VACE Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2128,7 +2396,7 @@
   {
     "name": "video_wan2_1_infinitetalk",
     "title": "InfiniteTalk: Audio-Driven Full-Body Video Dubbing",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Audio to Video", "Lip Sync", "Video"],
     "models": ["Wan2.1 InfiniteTalk"],
@@ -2144,7 +2412,7 @@
   {
     "name": "video_wanmove_480p",
     "title": "Wan-Move Motion-Control Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Motion Control", "Video"],
     "models": ["Wan", "Wan2.1"],
@@ -2160,7 +2428,7 @@
   {
     "name": "video_wanmove_480p_hallucination",
     "title": "WanMove: Daydream Illusion",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Motion Control", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2176,7 +2444,7 @@
   {
     "name": "api_wan_r2v",
     "title": "WAN2.6: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Character Reference", "Video"],
     "models": ["Wan2.6", "Wan"],
@@ -2192,7 +2460,7 @@
   {
     "name": "video_wan_vace_outpainting",
     "title": "Wan2.1 VACE Outpainting",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Outpainting", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2210,7 +2478,7 @@
   {
     "name": "video_wan2_2_5B_fun_control",
     "title": "Wan 2.2 5B Fun Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video", "ControlNet"],
     "models": ["Wan2.2", "Wan"],
@@ -2226,7 +2494,7 @@
   {
     "name": "api_bytedance_seedance1_5_text_to_video",
     "title": "Seedance1.5 Pro: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video"],
     "models": ["Seedance"],
@@ -2242,7 +2510,7 @@
   {
     "name": "video_humo",
     "title": "HuMo Video Generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Text to Video"],
     "models": ["HuMo"],
@@ -2258,7 +2526,7 @@
   {
     "name": "text_to_video_wan",
     "title": "Wan 2.1 Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2274,7 +2542,7 @@
   {
     "name": "video_wan_dancer",
     "title": "Wan Dancer: Music to Dance",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Audio to Video"],
     "models": ["Wan"],
@@ -2290,7 +2558,7 @@
   {
     "name": "video_wan2_2_14B_fun_camera",
     "title": "Wan 2.2 14B Fun Camera Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video to Video", "Video"],
     "models": ["Wan2.2", "Wan"],
@@ -2306,7 +2574,7 @@
   {
     "name": "api_vidu_reference_to_video",
     "title": "Vidu Q1: Reference to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video", "API"],
     "models": ["Vidu Q1", "Vidu"],
@@ -2322,7 +2590,7 @@
   {
     "name": "wan2.1_flf2v_720_f16",
     "title": "Wan 2.1 FLF2V 720p F16",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2338,7 +2606,7 @@
   {
     "name": "image_to_video_wan",
     "title": "Wan 2.1 Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2354,7 +2622,7 @@
   {
     "name": "video_wan_vace_flf2v",
     "title": "Wan2.1 VACE First-Last Frame",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2370,7 +2638,7 @@
   {
     "name": "video_minimax_h3_i2v_continuation",
     "title": "Image to Video ",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["MiniMax H3"],
@@ -2386,7 +2654,7 @@
   {
     "name": "api_kling2_6_t2v",
     "title": "Kling2.6: Storytelling Videos with Audio",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Audio", "Text to Video", "Video"],
     "models": ["Kling", "Kling 2.6"],
@@ -2402,7 +2670,7 @@
   {
     "name": "video_kandinsky5_i2v",
     "title": "Kandinsky 5.0 Video Lite Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["Kandinsky"],
@@ -2418,7 +2686,7 @@
   {
     "name": "api_vidu_q2_t2v",
     "title": "Vidu Q2: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Video", "Video"],
     "models": ["Vidu Q2", "Vidu"],
@@ -2434,7 +2702,7 @@
   {
     "name": "api_wan_text_to_video",
     "title": "Wan2.5: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["Wan2.5", "Wan"],
@@ -2450,7 +2718,7 @@
   {
     "name": "video_kandinsky5_t2v",
     "title": "Kandinsky 5.0 Video Lite Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Kandinsky"],
@@ -2466,7 +2734,7 @@
   {
     "name": "api_vidu_start_end_to_video",
     "title": "Vidu Q1: Start End to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "API", "FLF2V"],
     "models": ["Vidu Q1", "Vidu"],
@@ -2482,7 +2750,7 @@
   {
     "name": "api_pixverse_t2v",
     "title": "PixVerse: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video", "API"],
     "models": ["PixVerse"],
@@ -2498,7 +2766,7 @@
   {
     "name": "video_wan2.1_alpha_t2v_14B",
     "title": "Wan2.1 Alpha T2V",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2514,7 +2782,7 @@
   {
     "name": "video_capybara_v0_1_image_to_video",
     "title": "Capybara: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video"],
     "models": ["Capybara"],
@@ -2530,7 +2798,7 @@
   {
     "name": "video_capybara_v0_1_video_edit",
     "title": "Capybara: Video Edit",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Edit"],
     "models": ["Capybara"],
@@ -2548,7 +2816,7 @@
   {
     "name": "txt_to_image_to_video",
     "title": "SVD Text to Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["SVD", "Stability"],
@@ -2564,7 +2832,7 @@
   {
     "name": "api_luma_i2v",
     "title": "Luma: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["Luma"],
@@ -2580,7 +2848,7 @@
   {
     "name": "video_wan_ati",
     "title": "Wan2.1 ATI",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Motion Control"],
     "models": ["Wan2.1", "Wan"],
@@ -2598,7 +2866,7 @@
   {
     "name": "api_vidu_text_to_video",
     "title": "Vidu Q1: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video", "API"],
     "models": ["Vidu Q1", "Vidu"],
@@ -2614,7 +2882,7 @@
   {
     "name": "api_bytedance_text_to_video",
     "title": "Seedance1.0 Pro: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "API", "Text to Video"],
     "models": ["Seedance1.0 Pro", "ByteDance"],
@@ -2630,7 +2898,7 @@
   {
     "name": "api_vidu_image_to_video",
     "title": "Vidu Q1: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["Vidu Q1", "Vidu"],
@@ -2646,7 +2914,7 @@
   {
     "name": "video_wan2_2_5B_fun_inpaint",
     "title": "Wan 2.2 5B Fun Inpaint",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.2", "Wan"],
@@ -2662,7 +2930,7 @@
   {
     "name": "ltxv_text_to_video",
     "title": "LTXV Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["LTX-0.9.5"],
@@ -2678,7 +2946,7 @@
   {
     "name": "api_luma_t2v",
     "title": "Luma: Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video", "API"],
     "models": ["Luma"],
@@ -2694,7 +2962,7 @@
   {
     "name": "api_pixverse_i2v",
     "title": "PixVerse: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["PixVerse"],
@@ -2710,7 +2978,7 @@
   {
     "name": "api_pixverse_template_i2v",
     "title": "PixVerse Templates: Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "Video", "API"],
     "models": ["PixVerse"],
@@ -2726,7 +2994,7 @@
   {
     "name": "video_wan2.1_fun_camera_v1.1_14B",
     "title": "Wan 2.1 Fun Camera 14B",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2742,7 +3010,7 @@
   {
     "name": "video_wan_vace_14B_t2v",
     "title": "Wan2.1 VACE Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2758,7 +3026,7 @@
   {
     "name": "video_wan2.1_fun_camera_v1.1_1.3B",
     "title": "Wan 2.1 Fun Camera 1.3B",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2774,7 +3042,7 @@
   {
     "name": "wan2.1_fun_inp",
     "title": "Wan 2.1 Inpainting",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Inpainting", "Video"],
     "models": ["Wan2.1", "Wan"],
@@ -2790,7 +3058,7 @@
   {
     "name": "hunyuan_video_text_to_video",
     "title": "Hunyuan Video Text to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Text to Video", "Video"],
     "models": ["Hunyuan Video", "Tencent"],
@@ -2842,7 +3110,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Google", "Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 3973,
     "date": "2026-02-26",
     "thumbnails": [
@@ -2942,7 +3214,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Grok Imagine Image 2.0"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 904,
     "date": "2026-08-13",
     "thumbnails": [
@@ -2958,7 +3234,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 3014,
     "date": "2026-01-28",
     "thumbnails": [
@@ -2976,7 +3256,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Grok Imagine Image 2.0"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 2022,
     "date": "2026-08-13",
     "thumbnails": [
@@ -3010,7 +3294,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Seedream 5.0 Pro"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 3539,
     "date": "2026-07-08",
     "thumbnails": [
@@ -3028,7 +3316,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit"],
     "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 4540,
     "date": "2025-11-21",
     "thumbnails": [
@@ -3046,7 +3338,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 502,
     "date": "2026-06-30",
     "thumbnails": [
@@ -3064,7 +3360,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 294,
     "date": "2026-06-30",
     "thumbnails": [
@@ -3080,7 +3380,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Qwen Image 3.0 Pro"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 523,
     "date": "2026-08-06",
     "thumbnails": [
@@ -3096,7 +3400,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Qwen Image 3.0 Pro"],
-    "logos": [{ "provider": "WAN" }],
+    "logos": [
+      {
+        "provider": "WAN"
+      }
+    ],
     "usage": 219,
     "date": "2026-08-06",
     "thumbnails": [
@@ -3112,7 +3420,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 315,
     "date": "2026-01-28",
     "thumbnails": [
@@ -3128,7 +3440,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Seedream 5.0 Pro"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 2014,
     "date": "2026-07-08",
     "thumbnails": [
@@ -3144,7 +3460,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit", "Text to Image"],
     "models": ["ByteDance", "Seedream 4.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 1107,
     "date": "2025-09-11",
     "thumbnails": [
@@ -3160,7 +3480,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Seedream 5.0 Lite"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 719,
     "date": "2026-02-24",
     "thumbnails": [
@@ -3178,7 +3502,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["GPT Image 2"],
-    "logos": [{ "provider": "OpenAI" }],
+    "logos": [
+      {
+        "provider": "OpenAI"
+      }
+    ],
     "usage": 1383,
     "date": "2026-04-22",
     "thumbnails": [
@@ -3194,7 +3522,11 @@
     "mediaSubtype": "webp",
     "tags": ["Image Edit", "API"],
     "models": ["GPT Image 2"],
-    "logos": [{ "provider": "OpenAI" }],
+    "logos": [
+      {
+        "provider": "OpenAI"
+      }
+    ],
     "usage": 2102,
     "date": "2026-04-22",
     "thumbnails": [
@@ -3228,7 +3560,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Ideogram"],
-    "logos": [{ "provider": "Ideogram" }],
+    "logos": [
+      {
+        "provider": "Ideogram"
+      }
+    ],
     "usage": 39,
     "date": "2026-07-30",
     "thumbnails": [
@@ -3294,7 +3630,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 648,
     "date": "2026-06-16",
     "thumbnails": [
@@ -3344,7 +3684,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Ideogram"],
-    "logos": [{ "provider": "Ideogram" }],
+    "logos": [
+      {
+        "provider": "Ideogram"
+      }
+    ],
     "usage": 35,
     "date": "2026-06-03",
     "thumbnails": [
@@ -3360,7 +3704,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 172,
     "date": "2026-07-28",
     "thumbnails": [
@@ -3376,7 +3724,11 @@
     "mediaSubtype": "webp",
     "tags": ["Vector", "API"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 78,
     "date": "2026-07-28",
     "thumbnails": [
@@ -3392,7 +3744,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 83,
     "date": "2026-05-06",
     "thumbnails": [
@@ -3408,7 +3764,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Seedream 5.0 Lite"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 125,
     "date": "2026-02-24",
     "thumbnails": [
@@ -3424,7 +3784,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 7,
     "date": "2026-05-06",
     "thumbnails": [
@@ -3458,7 +3822,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Image"],
     "models": ["Krea 2"],
-    "logos": [{ "provider": "Krea" }],
+    "logos": [
+      {
+        "provider": "Krea"
+      }
+    ],
     "usage": 147,
     "date": "2026-05-27",
     "thumbnails": [
@@ -3474,7 +3842,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Style Reference"],
     "models": ["Krea 2"],
-    "logos": [{ "provider": "Krea" }],
+    "logos": [
+      {
+        "provider": "Krea"
+      }
+    ],
     "usage": 230,
     "date": "2026-05-27",
     "thumbnails": [
@@ -3678,7 +4050,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Style Reference"],
     "models": ["Luma UNI-1"],
-    "logos": [{ "provider": "Luma" }],
+    "logos": [
+      {
+        "provider": "Luma"
+      }
+    ],
     "usage": 86,
     "date": "2026-05-05",
     "thumbnails": [
@@ -3694,7 +4070,11 @@
     "mediaSubtype": "webp",
     "tags": ["Image Edit", "API"],
     "models": ["Luma UNI-1"],
-    "logos": [{ "provider": "Luma" }],
+    "logos": [
+      {
+        "provider": "Luma"
+      }
+    ],
     "usage": 60,
     "date": "2026-05-05",
     "thumbnails": [
@@ -3778,7 +4158,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Text to Image"],
     "models": ["Kling O3"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 130,
     "date": "2026-02-10",
     "thumbnails": [
@@ -3878,7 +4262,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 8,
     "date": "2026-02-17",
     "thumbnails": [
@@ -3928,7 +4316,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit"],
     "models": ["Flux", "Flux.2"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 206,
     "date": "2025-12-22",
     "thumbnails": [
@@ -3946,7 +4338,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["Kling", "Kling 3.0"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 44,
     "date": "2026-02-10",
     "thumbnails": [
@@ -4014,7 +4410,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Style Reference"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 43,
     "date": "2026-02-05",
     "thumbnails": [
@@ -4030,7 +4430,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Vector"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 23,
     "date": "2026-02-17",
     "thumbnails": [
@@ -4252,7 +4656,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Vector"],
     "models": ["Quiver"],
-    "logos": [{ "provider": "Quiver" }],
+    "logos": [
+      {
+        "provider": "Quiver"
+      }
+    ],
     "usage": 11,
     "date": "2026-03-23",
     "thumbnails": [
@@ -4268,7 +4676,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Vector"],
     "models": ["Quiver"],
-    "logos": [{ "provider": "Quiver" }],
+    "logos": [
+      {
+        "provider": "Quiver"
+      }
+    ],
     "usage": 34,
     "date": "2026-03-23",
     "thumbnails": [
@@ -4612,7 +5024,7 @@
   {
     "name": "api_from_photo_2_miniature",
     "title": "Photo to Blueprint to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Image", "3D"],
     "models": ["Gemini3 Pro Image Preview", "Nano Banana Pro", "Google"],
@@ -4632,7 +5044,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 9,
     "date": "2026-01-20",
     "thumbnails": [
@@ -4650,7 +5066,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Outpainting"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 31,
     "date": "2026-01-20",
     "thumbnails": [
@@ -4704,7 +5124,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Google", "Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 117,
     "date": "2026-08-24",
     "thumbnails": [
@@ -4908,7 +5332,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit"],
     "models": ["Flux", "Flux.1 Kontext"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 55,
     "date": "2025-05-29",
     "thumbnails": [
@@ -4976,7 +5404,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Style Reference"],
     "models": ["Magnific"],
-    "logos": [{ "provider": "Magnific" }],
+    "logos": [
+      {
+        "provider": "Magnific"
+      }
+    ],
     "usage": 67,
     "date": "2026-01-26",
     "thumbnails": [
@@ -5078,7 +5510,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit"],
     "models": ["Flux", "Flux.1"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 12,
     "date": "2025-05-01",
     "thumbnails": [
@@ -5264,7 +5700,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["GPT-Image-1", "OpenAI"],
-    "logos": [{ "provider": "OpenAI" }],
+    "logos": [
+      {
+        "provider": "OpenAI"
+      }
+    ],
     "usage": 14,
     "date": "2025-03-01",
     "thumbnails": [
@@ -5280,7 +5720,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["OpenAI"],
-    "logos": [{ "provider": "OpenAI" }],
+    "logos": [
+      {
+        "provider": "OpenAI"
+      }
+    ],
     "usage": 6,
     "date": "2025-03-01",
     "thumbnails": [
@@ -5296,7 +5740,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["OpenAI"],
-    "logos": [{ "provider": "OpenAI" }],
+    "logos": [
+      {
+        "provider": "OpenAI"
+      }
+    ],
     "usage": 7,
     "date": "2025-03-01",
     "thumbnails": [
@@ -5478,7 +5926,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Text to Image"],
     "models": ["Luma"],
-    "logos": [{ "provider": "Luma" }],
+    "logos": [
+      {
+        "provider": "Luma"
+      }
+    ],
     "usage": 5,
     "date": "2025-03-01",
     "thumbnails": [
@@ -5492,7 +5944,7 @@
   {
     "name": "template_ltx2_3_ic_lora_ingredients",
     "title": "LTX-2.3 IC-LoRA: Reference Sheet Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Reference to Video"],
     "models": ["LTX-2.3"],
@@ -5524,11 +5976,15 @@
   {
     "name": "template_seedance2_storyboard_to_video",
     "title": "Storyboard To Video - Seedance 2.0",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video"],
     "models": ["Seedance 2.0"],
-    "logos": [{ "provider": ["Google", "OpenAI"] }],
+    "logos": [
+      {
+        "provider": ["Google", "OpenAI"]
+      }
+    ],
     "usage": 129,
     "date": "2026-06-15",
     "thumbnails": [
@@ -5540,11 +5996,15 @@
   {
     "name": "template_seedance_2_0_plus_llm_prompt_helper",
     "title": "Seedance 2.0 + LLM Prompt Helper",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Reference to Video"],
     "models": ["Gemini-3.1-Pro", "Seedance 2.0"],
-    "logos": [{ "provider": ["Google", "ByteDance"] }],
+    "logos": [
+      {
+        "provider": ["Google", "ByteDance"]
+      }
+    ],
     "usage": 30,
     "date": "2026-05-10",
     "thumbnails": [
@@ -5556,11 +6016,15 @@
   {
     "name": "template_seedance2_0_viral_videos_character_swap",
     "title": "Seedance 2.0: Viral Videos Character Swap",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Character Replacement", "Image to Video"],
     "models": ["GPT Image 2", "Google Gemini", "Seedance 2.0"],
-    "logos": [{ "provider": ["Google", "OpenAI", "ByteDance"] }],
+    "logos": [
+      {
+        "provider": ["Google", "OpenAI", "ByteDance"]
+      }
+    ],
     "usage": 11,
     "date": "2026-05-19",
     "thumbnails": [
@@ -5574,7 +6038,7 @@
   {
     "name": "template_ltx2_3_obscura_remova_lora_remove_object_from_video",
     "title": "Remove Object from Video - LTX 2.3 Obscura Remova LoRA",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["LoRA", "Video Edit"],
     "models": ["LTX-2.3"],
@@ -5606,7 +6070,7 @@
   {
     "name": "template_ltx2_3_lora_googly_eyes",
     "title": "Googly Eyes",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["LoRA", "Video Edit"],
     "models": ["LTX-2.3"],
@@ -5638,7 +6102,7 @@
   {
     "name": "template_ltx2_3_lora_remove_subtitles_from_video",
     "title": "Remove Subtitles from Video - LTX 2.3 LoRA",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Edit", "LoRA"],
     "models": ["LTX-2.3"],
@@ -5654,7 +6118,7 @@
   {
     "name": "template_ltx2_3_remove_watermark_from_video",
     "title": "Remove Watermark from Video - LTX 2.3 LoRA",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "LoRA", "Video Edit"],
     "models": ["LTX-2.3"],
@@ -5670,7 +6134,7 @@
   {
     "name": "template_ltx2_3_lora_restore_archival_footage",
     "title": "Restore Archival Footage - LTX 2.3 Dearchive LoRA",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["LoRA", "Video Edit"],
     "models": ["LTX-2.3"],
@@ -5706,7 +6170,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Outpainting"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 16,
     "date": "2026-05-04",
     "thumbnails": [
@@ -5736,7 +6204,7 @@
   {
     "name": "template_purz_wan22_animate_auto_character_replace",
     "title": "Wan2.2 Animate: Automatic Character Replacement",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Character Replacement", "Video Edit"],
     "models": ["wan2.2 Animate"],
@@ -5754,7 +6222,7 @@
   {
     "name": "templates-wan2_1_infinitetalk_music",
     "title": "Audio-Driven Character Lip Sync Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Audio to Video", "Lip Sync", "Video"],
     "models": ["Wan2.1 InfiniteTalk"],
@@ -5774,7 +6242,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Character Replacement", "Image to Video"],
     "models": ["wan2.2 Animate"],
-    "logos": [{ "provider": ["Google", "WAN"] }],
+    "logos": [
+      {
+        "provider": ["Google", "WAN"]
+      }
+    ],
     "usage": 46,
     "date": "2026-03-21",
     "thumbnails": [
@@ -5806,7 +6278,7 @@
   {
     "name": "templates_rob_wan_ati_motion_control",
     "title": "Wan ATI Motion Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Motion Control", "Image to Video"],
     "models": ["Wan ATI"],
@@ -5822,7 +6294,7 @@
   {
     "name": "template_ltx2_3_style_transition",
     "title": "LTX-2.3 Style Transition ",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "LoRA", "Video"],
     "models": ["LTX-2.3"],
@@ -5858,7 +6330,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Style Transfer", "Image Edit"],
     "models": ["Nano Banana 2", "Grok", "Qwen-Image-Edit"],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 8,
     "date": "2026-03-09",
     "thumbnails": [
@@ -5874,7 +6350,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 9,
     "date": "2026-03-30",
     "thumbnails": [
@@ -5886,11 +6366,15 @@
   {
     "name": "template_contact_sheet-step_2.app",
     "title": "Step 2: Contact Sheet Workflow",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Image Edit"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 6,
     "date": "2026-03-30",
     "thumbnails": [
@@ -5902,11 +6386,15 @@
   {
     "name": "template_contact_sheet-step_3.app",
     "title": "Step 3: Contact Sheet Workflow",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Video"],
     "models": ["Gemini-3.1-flash-lite", "Kling 3.0"],
-    "logos": [{ "provider": ["Google", "Kling"] }],
+    "logos": [
+      {
+        "provider": ["Google", "Kling"]
+      }
+    ],
     "usage": 9,
     "date": "2026-03-30",
     "thumbnails": [
@@ -5922,7 +6410,11 @@
     "mediaSubtype": "webp",
     "tags": ["Relight", "Portrait", "API"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 61,
     "date": "2026-04-06",
     "thumbnails": [
@@ -5938,7 +6430,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Brand Design"],
     "models": ["Nano Banana 2", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 10,
     "date": "2026-03-30",
     "thumbnails": [
@@ -5950,11 +6446,15 @@
   {
     "name": "template_image_speech_to_video",
     "title": "Generate UGC Video With Voice Clone",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Lip Sync"],
     "models": ["ElevenLabs", "LTX-2.3"],
-    "logos": [{ "provider": ["ElevenLabs", "Google", "Lightricks"] }],
+    "logos": [
+      {
+        "provider": ["ElevenLabs", "Google", "Lightricks"]
+      }
+    ],
     "usage": 8,
     "date": "2026-04-06",
     "thumbnails": [
@@ -5966,7 +6466,7 @@
   {
     "name": "template_rob_split_stack_qwen_multi_wan22",
     "title": "1 image input Split Stack - Qwen Multiangle + Wan 2.2",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["Qwen-Image-Edit", "Wan2.2"],
@@ -5998,11 +6498,15 @@
   {
     "name": "template_product_placement",
     "title": "Product Placement",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Video"],
     "models": ["Gemini-3.1-Pro", "Kling 3.0", "Nano Banana 2"],
-    "logos": [{ "provider": ["Google", "Kling"] }],
+    "logos": [
+      {
+        "provider": ["Google", "Kling"]
+      }
+    ],
     "usage": 12,
     "date": "2026-03-30",
     "thumbnails": [
@@ -6014,7 +6518,7 @@
   {
     "name": "template_animate_diff_loops",
     "title": "Animate Diff High Res Loops",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video"],
     "models": ["IP Adapter"],
@@ -6066,7 +6570,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Edit"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 28,
     "date": "2026-03-21",
     "thumbnails": [
@@ -6078,11 +6586,15 @@
   {
     "name": "templates_ohneis_i2v",
     "title": "Image to Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Text to Image", "Video"],
     "models": ["Kling 2.6", "Nano Banana Pro", "Z-Image-Turbo"],
-    "logos": [{ "provider": ["Google", "Kling"] }],
+    "logos": [
+      {
+        "provider": ["Google", "Kling"]
+      }
+    ],
     "usage": 6,
     "date": "2026-03-19",
     "thumbnails": [
@@ -6100,7 +6612,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 9,
     "date": "2026-03-21",
     "thumbnails": [
@@ -6116,7 +6632,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Virtual Try-On"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 8,
     "date": "2026-03-09",
     "thumbnails": [
@@ -6128,11 +6648,15 @@
   {
     "name": "templates_rob_kling3_0_multishot_llm_product",
     "title": "Kling 3.0: 1 Click Multishot",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Text to Video"],
     "models": ["Kling 3.0"],
-    "logos": [{ "provider": ["Kling", "Google"] }],
+    "logos": [
+      {
+        "provider": ["Kling", "Google"]
+      }
+    ],
     "usage": 10,
     "date": "2026-03-18",
     "thumbnails": [
@@ -6148,7 +6672,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Image Upscale"],
     "models": ["Grok", "Z-Image-Turbo"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 39,
     "date": "2026-03-09",
     "thumbnails": [
@@ -6164,7 +6692,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Character Reference"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 42,
     "date": "2026-01-26",
     "thumbnails": [
@@ -6198,7 +6730,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Style Transfer"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 103,
     "date": "2026-03-16",
     "thumbnails": [
@@ -6228,7 +6764,7 @@
   {
     "name": "templates_ingi_infl8",
     "title": "Inflation Lora Character Expansion Effect Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["wan2.2 Animate"],
@@ -6250,7 +6786,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Game", "Style Reference"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 15,
     "date": "2026-03-06",
     "thumbnails": [
@@ -6264,7 +6804,7 @@
   {
     "name": "templates_text_prompt_to_360hdr.app",
     "title": "Equirectangular HDR Skybox Generator",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Game", "LoRA", "3D"],
     "models": ["Qwen-Image", "SeedVR2"],
@@ -6284,7 +6824,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Image"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 4,
     "date": "2026-03-30",
     "thumbnails": [
@@ -6296,7 +6840,7 @@
   {
     "name": "templates_liveportrait.app",
     "title": "LivePortrait for Facial Expression",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Lip Sync"],
     "models": ["LivePortrait"],
@@ -6314,11 +6858,15 @@
   {
     "name": "template_sirolim_image_script_video",
     "title": "Image to Script to Kling Video Generation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video"],
     "models": ["Google Gemini", "Kling O3", "Nano Banana 2"],
-    "logos": [{ "provider": ["Kling", "Google"] }],
+    "logos": [
+      {
+        "provider": ["Kling", "Google"]
+      }
+    ],
     "usage": 6,
     "date": "2026-03-09",
     "thumbnails": [
@@ -6334,7 +6882,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale", "Text to Image"],
     "models": ["Grok", "Z-Image-Turbo"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 10,
     "date": "2026-03-08",
     "thumbnails": [
@@ -6352,7 +6904,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Character Reference"],
     "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 191,
     "date": "2026-01-13",
     "thumbnails": [
@@ -6402,7 +6958,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image", "Outpainting", "Image Edit"],
     "models": ["Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 55,
     "date": "2026-03-08",
     "thumbnails": [
@@ -6434,7 +6994,7 @@
   {
     "name": "template_sirolim_seamless_loop",
     "title": "Video to Seamless Loop Converter",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["Wan2.1 VACE"],
@@ -6454,7 +7014,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Game"],
     "models": ["Nano Banana 2"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 18,
     "date": "2026-03-08",
     "thumbnails": [
@@ -6468,7 +7032,7 @@
   {
     "name": "templates_purz_animatediff_simple_weighted_ipadapters_looping_animation",
     "title": "AnimateDiff -  IPAdapters Looping Animation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["SD1.5"],
@@ -6484,7 +7048,7 @@
   {
     "name": "templates_shane_video_restyle",
     "title": "Video Restyle",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Video to Video"],
     "models": ["Wan2.1 VACE"],
@@ -6506,7 +7070,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Virtual Try-On"],
     "models": ["Seedream 4.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 9,
     "date": "2026-03-08",
     "thumbnails": [
@@ -6518,7 +7086,7 @@
   {
     "name": "templates_shane_change_any_objects",
     "title": "Change Any Objects",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Inpainting", "Video"],
     "models": ["SAM3", "Wan2.1 VACE"],
@@ -6534,11 +7102,15 @@
   {
     "name": "templates_shane_single_image_to_3d_model",
     "title": "Single Image to 3D model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D", "Image to 3D"],
     "models": ["Hunyuan3D", "Qwen-Image-Edit"],
-    "logos": [{ "provider": ["Hunyuan", "WAN"] }],
+    "logos": [
+      {
+        "provider": ["Hunyuan", "WAN"]
+      }
+    ],
     "usage": 21,
     "date": "2026-03-04",
     "thumbnails": [
@@ -6550,7 +7122,7 @@
   {
     "name": "templates_mjm_airt_machIne",
     "title": "AIrt MAchIne",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Text to Image"],
     "models": ["Wan2.2", "Z-Image-Turbo"],
@@ -6566,11 +7138,15 @@
   {
     "name": "template_eric_exploded_view",
     "title": "Exploded View Animation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Video"],
     "models": ["Nano Banana 2", "Seedance 1.5 Pro"],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 31,
     "date": "2026-03-06",
     "thumbnails": [
@@ -6591,7 +7167,11 @@
       "Google",
       "Gemini3 Pro Image Preview"
     ],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 137,
     "date": "2025-12-15",
     "thumbnails": [
@@ -6607,7 +7187,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Style Transfer"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 7,
     "date": "2026-02-11",
     "thumbnails": [
@@ -6639,7 +7223,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 4,
     "date": "2026-02-19",
     "thumbnails": [
@@ -6651,7 +7239,7 @@
   {
     "name": "templates-photo_to_product_vid",
     "title": "Phone Image to Product Video: Shoe",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "API"],
     "models": ["Seedream", "MiniMax"],
@@ -6667,7 +7255,7 @@
   {
     "name": "templates-6-key-frames",
     "title": "Multi-Keyframe Video Stitching",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["FLF2V", "Image to Video"],
     "models": ["Wan2.2"],
@@ -6695,7 +7283,11 @@
       "Qwen-Image-Edit",
       "Seedream"
     ],
-    "logos": [{ "provider": ["Google", "WAN", "OpenAI", "ByteDance", "Grok"] }],
+    "logos": [
+      {
+        "provider": ["Google", "WAN", "OpenAI", "ByteDance", "Grok"]
+      }
+    ],
     "usage": 9,
     "date": "2026-02-18",
     "thumbnails": [
@@ -6711,7 +7303,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Nano Banana Pro", "Google", "Google Gemini Image"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 2,
     "date": "2026-01-13",
     "thumbnails": [
@@ -6727,7 +7323,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 15,
     "date": "2025-12-18",
     "thumbnails": [
@@ -6743,7 +7343,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Relight"],
     "models": ["ByteDance", "Seedream"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 30,
     "date": "2025-12-15",
     "thumbnails": [
@@ -6757,11 +7361,15 @@
   {
     "name": "templates-sprite_sheet",
     "title": "Sprite Sheet Generator",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Image Edit"],
     "models": ["Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 28,
     "date": "2026-02-05",
     "thumbnails": [
@@ -6773,11 +7381,15 @@
   {
     "name": "templates_mjm_airt_machine_api",
     "title": "AIrt MAchIne (API version)",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Video"],
     "models": ["Google Gemini", "Kling 3.0", "Z-Image-Turbo"],
-    "logos": [{ "provider": ["Google", "BRIA"] }],
+    "logos": [
+      {
+        "provider": ["Google", "BRIA"]
+      }
+    ],
     "usage": 10,
     "date": "2026-03-03",
     "thumbnails": [
@@ -6789,11 +7401,15 @@
   {
     "name": "templates_mjm_looped_restyler",
     "title": "Looped Restyler",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to Video", "Video", "FLF2V"],
     "models": ["Nano Banana", "Google Gemini", "Wan2.2"],
-    "logos": [{ "provider": ["Google", "WAN"] }],
+    "logos": [
+      {
+        "provider": ["Google", "WAN"]
+      }
+    ],
     "usage": 6,
     "date": "2026-03-03",
     "thumbnails": [
@@ -6821,11 +7437,15 @@
   {
     "name": "templates-3D_logo_texture_animation",
     "title": "Dynamic 3D Logo Animations",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Brand Design", "FLF2V"],
     "models": ["ByteDance", "Seedream", "Google Gemini", "Nano Banana Pro"],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 7,
     "date": "2025-12-15",
     "thumbnails": [
@@ -6837,7 +7457,7 @@
   {
     "name": "templates-stitched_vid_contact_sheet",
     "title": "Character & Outfit to Fashion Video",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video", "FLF2V", "API"],
     "models": [
@@ -6848,7 +7468,11 @@
       "Kling O1",
       "OpenAI"
     ],
-    "logos": [{ "provider": ["Google", "Kling", "OpenAI"] }],
+    "logos": [
+      {
+        "provider": ["Google", "Kling", "OpenAI"]
+      }
+    ],
     "usage": 3,
     "date": "2025-12-18",
     "thumbnails": [
@@ -6860,7 +7484,7 @@
   {
     "name": "templates-car_product",
     "title": "1 Image to Car Product Shots",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "FLF2V", "Image to Video"],
     "models": ["Kling", "Seedream"],
@@ -6880,7 +7504,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Character Reference"],
     "models": ["Google Gemini Image", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 3,
     "date": "2026-01-13",
     "thumbnails": [
@@ -6896,7 +7524,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Nano Banana Pro", "Google", "Gemini3 Pro Image Preview"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 6,
     "date": "2025-12-18",
     "thumbnails": [
@@ -6908,7 +7540,7 @@
   {
     "name": "templates_mjm_Injected",
     "title": "Noise Injected VideoGen",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Image to Video"],
     "models": ["SD1.5"],
@@ -6925,7 +7557,7 @@
   {
     "name": "templates-textured_logo_elements",
     "title": "Apply Texture + Elements to Logo",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Brand Design", "Image to Video"],
     "models": [
@@ -6935,7 +7567,11 @@
       "ByteDance",
       "Seedance"
     ],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 6,
     "date": "2025-12-11",
     "thumbnails": [
@@ -6947,7 +7583,7 @@
   {
     "name": "template-Animation_Trajectory_Control_Wan_ATI",
     "title": "Animation Trajectory Control",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Image to Video"],
     "models": ["Wan2.1"],
@@ -6967,7 +7603,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Portrait"],
     "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 8,
     "date": "2025-12-18",
     "thumbnails": [
@@ -6979,7 +7619,7 @@
   {
     "name": "templates-textured_logotype-v2.1",
     "title": "Apply Texture to Logo",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Brand Design", "Image to Video", "FLF2V"],
     "models": [
@@ -6989,7 +7629,11 @@
       "ByteDance",
       "Seedance"
     ],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 14,
     "date": "2025-12-03",
     "thumbnails": [
@@ -7005,7 +7649,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Google", "Google Gemini Image", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 29,
     "date": "2025-12-15",
     "thumbnails": [
@@ -7029,7 +7677,11 @@
       "ByteDance",
       "Seedance"
     ],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 20,
     "date": "2025-12-03",
     "thumbnails": [
@@ -7045,7 +7697,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Portrait"],
     "models": ["Nano Banana Pro", "Gemini3 Pro Image Preview", "Google"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 4,
     "date": "2026-01-19",
     "thumbnails": [
@@ -7079,7 +7735,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 6,
     "date": "2025-12-20",
     "thumbnails": [
@@ -7097,7 +7757,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit", "Brand Design"],
     "models": ["Nano Banana Pro", "Google"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 2,
     "date": "2025-12-06",
     "thumbnails": [
@@ -7109,11 +7773,15 @@
   {
     "name": "templates_product_scene_transformation",
     "title": "Product Scene Transformation",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Style Transfer", "Video"],
     "models": ["Kling", "Nano Banana Pro", "Wan"],
-    "logos": [{ "provider": ["Kling", "Google", "WAN"] }],
+    "logos": [
+      {
+        "provider": ["Kling", "Google", "WAN"]
+      }
+    ],
     "usage": 17,
     "date": "2026-02-10",
     "thumbnails": [
@@ -7134,7 +7802,11 @@
       "Google",
       "Gemini3 Pro Image Preview"
     ],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 2,
     "date": "2025-12-15",
     "thumbnails": [
@@ -7166,7 +7838,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["Nano Banana Pro", "Google"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 7,
     "date": "2025-12-06",
     "thumbnails": [
@@ -7182,7 +7858,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Edit"],
     "models": ["ByteDance", "Google Gemini", "Seedream"],
-    "logos": [{ "provider": ["ByteDance", "Google"] }],
+    "logos": [
+      {
+        "provider": ["ByteDance", "Google"]
+      }
+    ],
     "usage": 5,
     "date": "2025-12-15",
     "thumbnails": [
@@ -7205,7 +7885,11 @@
       "Kling",
       "Nano Banana Pro"
     ],
-    "logos": [{ "provider": ["Kling", "Google"] }],
+    "logos": [
+      {
+        "provider": ["Kling", "Google"]
+      }
+    ],
     "usage": 1,
     "date": "2026-01-19",
     "thumbnails": [
@@ -7217,7 +7901,7 @@
   {
     "name": "audio_minimax_music_3",
     "title": "MiniMax Music 3: Text to Music",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Audio", "Text to Music"],
     "models": ["MiniMax Music 3"],
@@ -7233,11 +7917,15 @@
   {
     "name": "api_bytedance_seed_audio1_0_t2a",
     "title": "Seed Audio 1.0: Text to Audio",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Text to Audio", "API", "Audio"],
     "models": ["Seed Audio 1.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 321,
     "date": "2026-07-06",
     "thumbnails": [
@@ -7249,11 +7937,15 @@
   {
     "name": "api_bytedance_seed_audio1_0_ta2a",
     "title": "Seed Audio 1.0: Text + Audio to Audio",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Audio", "Audio Editing"],
     "models": ["Seed Audio 1.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 191,
     "date": "2026-07-06",
     "thumbnails": [
@@ -7265,11 +7957,15 @@
   {
     "name": "api_bytedance_seed_audio1_0_ti2a",
     "title": "Seed Audio 1.0: Text + Image to Audio",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Audio"],
     "models": ["Seed Audio 1.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 21,
     "date": "2026-07-06",
     "thumbnails": [
@@ -7281,7 +7977,7 @@
   {
     "name": "audio_stable_audio_3_medium_base",
     "title": "Stable Audio 3.0 Medium Base",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Text to Audio"],
     "models": ["Stable Audio"],
@@ -7297,7 +7993,7 @@
   {
     "name": "audio_stable_audio_3_medium",
     "title": "Stable Audio 3.0 Medium",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Text to Audio"],
     "models": ["Stable Audio"],
@@ -7313,11 +8009,15 @@
   {
     "name": "api_fishaudio_text_to_speech",
     "title": "Fish Audio: Text to Speech",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "TTS"],
     "models": ["Fish Audio"],
-    "logos": [{ "provider": "Fish Audio" }],
+    "logos": [
+      {
+        "provider": "Fish Audio"
+      }
+    ],
     "usage": 0,
     "date": "2026-08-31",
     "thumbnails": [
@@ -7329,11 +8029,15 @@
   {
     "name": "api_fishaudio_voice_clone_tts",
     "title": "Fish Audio: Voice Clone to Speech",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "TTS", "Voice Cloning"],
     "models": ["Fish Audio"],
-    "logos": [{ "provider": "Fish Audio" }],
+    "logos": [
+      {
+        "provider": "Fish Audio"
+      }
+    ],
     "usage": 0,
     "date": "2026-08-31",
     "thumbnails": [
@@ -7349,7 +8053,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Speech to Text"],
     "models": ["Fish Audio"],
-    "logos": [{ "provider": "Fish Audio" }],
+    "logos": [
+      {
+        "provider": "Fish Audio"
+      }
+    ],
     "usage": 0,
     "date": "2026-08-31",
     "thumbnails": [
@@ -7361,11 +8069,15 @@
   {
     "name": "api_heygen_text_to_speech",
     "title": "HeyGen: Text to Speech",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Speech"],
     "models": ["HeyGen"],
-    "logos": [{ "provider": "HeyGen" }],
+    "logos": [
+      {
+        "provider": "HeyGen"
+      }
+    ],
     "usage": 50,
     "date": "2026-07-21",
     "thumbnails": [
@@ -7377,11 +8089,15 @@
   {
     "name": "api_sonilo_v2m",
     "title": "Sonilo: Video Soundtrack Generation",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Audio", "Music"],
     "models": ["Sonilo"],
-    "logos": [{ "provider": "Sonilo" }],
+    "logos": [
+      {
+        "provider": "Sonilo"
+      }
+    ],
     "usage": 64,
     "date": "2026-04-12",
     "thumbnails": [
@@ -7393,11 +8109,15 @@
   {
     "name": "api_sonilo_t2m",
     "title": "Sonilo: Text to Music Generation",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Audio", "Text to Music"],
     "models": ["Sonilo"],
-    "logos": [{ "provider": "Sonilo" }],
+    "logos": [
+      {
+        "provider": "Sonilo"
+      }
+    ],
     "usage": 87,
     "date": "2026-04-12",
     "thumbnails": [
@@ -7409,7 +8129,7 @@
   {
     "name": "audio_ace_step1_5_xl_base",
     "title": "ACE-Step 1.5XL Base: Text to Music",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Text to Music"],
     "models": ["ACE-Step"],
@@ -7425,7 +8145,7 @@
   {
     "name": "audio_ace_step1_5_xl_turbo",
     "title": "ACE-Step 1.5XL Turbo: Text to Music",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Music", "Text to Music"],
     "models": ["ACE-Step"],
@@ -7441,7 +8161,7 @@
   {
     "name": "audio_ace_step1_5_xl_sft",
     "title": "ACE-Step 1.5XL SFT： Text to Music",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Text to Music"],
     "models": ["ACE-Step"],
@@ -7457,11 +8177,15 @@
   {
     "name": "api_elevenlabs_text_to_speech",
     "title": "ElevenLabs: Text to Speech",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Text to Speech", "Audio", "API"],
     "models": ["ElevenLabs"],
-    "logos": [{ "provider": "ElevenLabs" }],
+    "logos": [
+      {
+        "provider": "ElevenLabs"
+      }
+    ],
     "usage": 334,
     "date": "2026-02-23",
     "thumbnails": [
@@ -7473,11 +8197,15 @@
   {
     "name": "api_elevenlabs_text_to_dialogue",
     "title": "ElevenLabs: Text to Dialogue",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Text to Speech"],
     "models": ["ElevenLabs"],
-    "logos": [{ "provider": "ElevenLabs" }],
+    "logos": [
+      {
+        "provider": "ElevenLabs"
+      }
+    ],
     "usage": 40,
     "date": "2026-02-23",
     "thumbnails": [
@@ -7489,11 +8217,15 @@
   {
     "name": "api_elevenlabs_speech_to_speech",
     "title": "ElevenLabs: Speech to Speech",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Voice Cloning", "API"],
     "models": ["ElevenLabs"],
-    "logos": [{ "provider": "ElevenLabs" }],
+    "logos": [
+      {
+        "provider": "ElevenLabs"
+      }
+    ],
     "usage": 92,
     "date": "2026-02-23",
     "thumbnails": [
@@ -7505,11 +8237,15 @@
   {
     "name": "api_elevenlabs_voice_isolation",
     "title": "ElevenLabs：Voice Isolation",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["API", "Audio Editing"],
     "models": ["ElevenLabs"],
-    "logos": [{ "provider": "ElevenLabs" }],
+    "logos": [
+      {
+        "provider": "ElevenLabs"
+      }
+    ],
     "usage": 5,
     "date": "2026-02-21",
     "thumbnails": [
@@ -7527,7 +8263,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Speech to Text"],
     "models": ["ElevenLabs"],
-    "logos": [{ "provider": "ElevenLabs" }],
+    "logos": [
+      {
+        "provider": "ElevenLabs"
+      }
+    ],
     "usage": 5,
     "date": "2026-02-23",
     "thumbnails": [
@@ -7539,11 +8279,15 @@
   {
     "name": "api_elevenlabs_text_to_sound_effects",
     "title": "ElevenLabs: Text to Sound Effects",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Audio", "Text to Audio", "API"],
     "models": ["ElevenLabs"],
-    "logos": [{ "provider": "ElevenLabs" }],
+    "logos": [
+      {
+        "provider": "ElevenLabs"
+      }
+    ],
     "usage": 40,
     "date": "2026-02-21",
     "thumbnails": [
@@ -7555,7 +8299,7 @@
   {
     "name": "audio_melbandroformer_audio_separation",
     "title": "MelBandRoFormer Audio Separation",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Audio", "Audio Editing"],
     "models": [],
@@ -7575,7 +8319,11 @@
     "mediaSubtype": "mp3",
     "tags": ["API", "Text to Audio"],
     "models": ["ACE-Step", "Google Gemini"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 5,
     "date": "2026-02-09",
     "thumbnails": [],
@@ -7683,7 +8431,7 @@
   {
     "name": "audio_stable_audio_example",
     "title": "Stable Audio 1.0: Text to Audio",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Audio", "Text to Audio"],
     "models": ["Stability", "Stable Audio"],
@@ -7741,7 +8489,7 @@
   {
     "name": "utility-audioseparation",
     "title": "Audio Separation",
-    "mediaType": "image",
+    "mediaType": "audio",
     "mediaSubtype": "webp",
     "tags": ["Audio", "Audio Editing"],
     "models": [],
@@ -7757,7 +8505,7 @@
   {
     "name": "utility_sam3d_body",
     "title": "SAM 3D Body:  3D Human Mesh Extraction From Video",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D"],
     "models": ["SAM 3D Body"],
@@ -7773,7 +8521,7 @@
   {
     "name": "3d_pixal3d_trellis2_image_to_model",
     "title": "Pixal3D & TRELLIS.2: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to 3D"],
     "models": ["Pixal3D", "TRELLIS.2"],
@@ -7789,7 +8537,7 @@
   {
     "name": "api_hunyuan3d_image_to_model",
     "title": "HY 3D: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Image to Model"],
     "models": ["Hunyuan3D"],
@@ -7805,11 +8553,15 @@
   {
     "name": "api_tripo3_1_image_to_model",
     "title": "Tripo H3.1: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Image to 3D"],
     "models": ["Tripo"],
-    "logos": [{ "provider": "Tripo" }],
+    "logos": [
+      {
+        "provider": "Tripo"
+      }
+    ],
     "usage": 298,
     "date": "2026-05-09",
     "thumbnails": [
@@ -7821,11 +8573,15 @@
   {
     "name": "api_tripo_p1_image_to_model",
     "title": "Tripo P1: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Image to 3D"],
     "models": ["Tripo P1"],
-    "logos": [{ "provider": "Tripo" }],
+    "logos": [
+      {
+        "provider": "Tripo"
+      }
+    ],
     "usage": 72,
     "date": "2026-05-28",
     "thumbnails": [
@@ -7837,11 +8593,15 @@
   {
     "name": "api_tripo_p1_text_to_model",
     "title": "Tripo P1: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D", "Text to Model"],
     "models": ["Tripo P1"],
-    "logos": [{ "provider": "Tripo" }],
+    "logos": [
+      {
+        "provider": "Tripo"
+      }
+    ],
     "usage": 29,
     "date": "2026-05-28",
     "thumbnails": [
@@ -7853,11 +8613,15 @@
   {
     "name": "api_rodin3d_gen2_5_image_to_3d",
     "title": "Rodin Gen2.5: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Image to 3D"],
     "models": ["Rodin"],
-    "logos": [{ "provider": "Rodin" }],
+    "logos": [
+      {
+        "provider": "Rodin"
+      }
+    ],
     "usage": 41,
     "date": "2026-05-23",
     "thumbnails": [
@@ -7869,11 +8633,15 @@
   {
     "name": "api_tripo_p1_mv_to_model",
     "title": "Tripo P1: Multiview to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Image to 3D"],
     "models": ["Tripo P1"],
-    "logos": [{ "provider": "Tripo" }],
+    "logos": [
+      {
+        "provider": "Tripo"
+      }
+    ],
     "usage": 30,
     "date": "2026-05-28",
     "thumbnails": [
@@ -7885,7 +8653,7 @@
   {
     "name": "3d_triposplat_image_to_gaussian_splat",
     "title": "TripoSplat: Image to Gaussian Splat",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to 3D"],
     "models": ["TripoSplat"],
@@ -7901,11 +8669,15 @@
   {
     "name": "api_meshy7_image_to_model",
     "title": "Meshy 7: Image to 3D",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "Image to 3D"],
     "models": ["Meshy"],
-    "logos": [{ "provider": "Meshy" }],
+    "logos": [
+      {
+        "provider": "Meshy"
+      }
+    ],
     "usage": 113,
     "date": "2026-08-24",
     "thumbnails": [
@@ -7917,11 +8689,15 @@
   {
     "name": "api_meshy7_text_to_model",
     "title": "Meshy 7: Text to 3D",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D"],
     "models": ["Meshy"],
-    "logos": [{ "provider": "Meshy" }],
+    "logos": [
+      {
+        "provider": "Meshy"
+      }
+    ],
     "usage": 9,
     "date": "2026-08-24",
     "thumbnails": [
@@ -7933,7 +8709,7 @@
   {
     "name": "api_meshy_image_to_model",
     "title": "Meshy 6: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to Model", "API"],
     "models": ["Meshy"],
@@ -7949,11 +8725,15 @@
   {
     "name": "api_rodin3d_gen2_5_text_to_3d",
     "title": "Rodin Gen2.5: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Text to Model"],
     "models": ["Rodin"],
-    "logos": [{ "provider": "Rodin" }],
+    "logos": [
+      {
+        "provider": "Rodin"
+      }
+    ],
     "usage": 5,
     "date": "2026-05-23",
     "thumbnails": [
@@ -7965,7 +8745,7 @@
   {
     "name": "api_meshy_multi_image_to_model",
     "title": "Meshy 6: Multi-Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Image to 3D"],
     "models": ["Meshy"],
@@ -7981,11 +8761,15 @@
   {
     "name": "api_hunyuan3d_part",
     "title": "HY 3D: 3D Parts Decomposition",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API"],
     "models": ["Hunyuan3D"],
-    "logos": [{ "provider": "Hunyuan" }],
+    "logos": [
+      {
+        "provider": "Hunyuan"
+      }
+    ],
     "usage": 5,
     "date": "2026-02-13",
     "thumbnails": [
@@ -7997,7 +8781,7 @@
   {
     "name": "api_hunyuan3d_text_to_model",
     "title": "HunYuan3D: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D", "Text to Model"],
     "models": ["Hunyuan3D"],
@@ -8013,11 +8797,15 @@
   {
     "name": "api_hunyuan3d_smart_topology",
     "title": "HY 3D: Smart Topology",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D"],
     "models": ["Hunyuan3D"],
-    "logos": [{ "provider": "Hunyuan" }],
+    "logos": [
+      {
+        "provider": "Hunyuan"
+      }
+    ],
     "usage": 10,
     "date": "2026-03-07",
     "thumbnails": [
@@ -8031,11 +8819,15 @@
   {
     "name": "api_tripo3_1_text_to_model",
     "title": "Tripo H3.1: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "API", "Text to Model"],
     "models": ["Tripo"],
-    "logos": [{ "provider": "Tripo" }],
+    "logos": [
+      {
+        "provider": "Tripo"
+      }
+    ],
     "usage": 7,
     "date": "2026-05-09",
     "thumbnails": [
@@ -8047,11 +8839,15 @@
   {
     "name": "api_tripo3_1_multiview_to_model",
     "title": "Tripo H3.1: Multiview to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D", "Image to 3D"],
     "models": ["Tripo"],
-    "logos": [{ "provider": "Tripo" }],
+    "logos": [
+      {
+        "provider": "Tripo"
+      }
+    ],
     "usage": 24,
     "date": "2026-05-09",
     "thumbnails": [
@@ -8063,7 +8859,7 @@
   {
     "name": "api_tripo3_0_image_to_model",
     "title": "Tripo3.0: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to Model", "3D", "API"],
     "models": ["Tripo"],
@@ -8079,11 +8875,15 @@
   {
     "name": "templates_mjm_image_to_3d",
     "title": "Generate 3D Model From Single Image",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D", "Image to 3D"],
     "models": ["Meshy", "Nano Banana 2"],
-    "logos": [{ "provider": ["Google", "Meshy"] }],
+    "logos": [
+      {
+        "provider": ["Google", "Meshy"]
+      }
+    ],
     "usage": 82,
     "date": "2026-03-19",
     "thumbnails": [
@@ -8097,7 +8897,7 @@
   {
     "name": "api_meshy_text_to_model",
     "title": "Meshy 6: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Text to Model", "API"],
     "models": ["Meshy"],
@@ -8113,7 +8913,7 @@
   {
     "name": "api_tripo3_0_text_to_model",
     "title": "Tripo3.0: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Text to Model", "3D", "API"],
     "models": ["Tripo"],
@@ -8129,7 +8929,7 @@
   {
     "name": "api_tripo_text_to_model",
     "title": "Tripo: Text to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Text to Model", "3D", "API"],
     "models": ["Tripo"],
@@ -8145,7 +8945,7 @@
   {
     "name": "api_tripo_image_to_model",
     "title": "Tripo: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to Model", "API"],
     "models": ["Tripo"],
@@ -8161,7 +8961,7 @@
   {
     "name": "api_tripo_multiview_to_model",
     "title": "Tripo: Multiview to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D", "API"],
     "models": ["Tripo"],
@@ -8177,7 +8977,7 @@
   {
     "name": "api_rodin_gen2",
     "title": "Rodin: Gen-2 Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D", "API"],
     "models": ["Rodin"],
@@ -8193,7 +8993,7 @@
   {
     "name": "api_rodin_image_to_model",
     "title": "Rodin: Image to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D", "API"],
     "models": ["Rodin"],
@@ -8209,7 +9009,7 @@
   {
     "name": "api_rodin_multiview_to_model",
     "title": "Rodin: Multiview to Model",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D", "API"],
     "models": ["Rodin"],
@@ -8225,7 +9025,7 @@
   {
     "name": "3d_hunyuan3d-v2.1",
     "title": "HY 3D 2.1",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D"],
     "models": ["Hunyuan3D", "Tencent"],
@@ -8241,7 +9041,7 @@
   {
     "name": "3d_hunyuan3d_image_to_model",
     "title": "HY 3D 2.0",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D"],
     "models": ["Hunyuan3D", "Tencent"],
@@ -8257,7 +9057,7 @@
   {
     "name": "3d_hunyuan3d_multiview_to_model",
     "title": "HY 3D 2.0 MV",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to 3D"],
     "models": ["Hunyuan3D", "Tencent"],
@@ -8275,7 +9075,7 @@
   {
     "name": "3d_hunyuan3d_multiview_to_model_turbo",
     "title": "HY 3D 2.0 MV Turbo",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["Image to 3D", "3D"],
     "models": ["Hunyuan3D", "Tencent"],
@@ -8293,11 +9093,15 @@
   {
     "name": "api_hunyuan3d_retopo_uv",
     "title": "Hunyuan3D: Model Retopology and UV Unwrapping",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D"],
     "models": ["Hunyuan3D"],
-    "logos": [{ "provider": "Hunyuan" }],
+    "logos": [
+      {
+        "provider": "Hunyuan"
+      }
+    ],
     "usage": 13,
     "date": "2026-03-07",
     "thumbnails": [
@@ -8311,11 +9115,15 @@
   {
     "name": "api_hunyuan3d_model2uv",
     "title": "HY 3D: UV Unwrapping",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["API", "3D"],
     "models": ["Hunyuan3D"],
-    "logos": [{ "provider": "Hunyuan" }],
+    "logos": [
+      {
+        "provider": "Hunyuan"
+      }
+    ],
     "usage": 10,
     "date": "2026-03-07",
     "thumbnails": [
@@ -8329,7 +9137,7 @@
   {
     "name": "3d_moge_panorama_to_mesh",
     "title": "Moge: Panorama to Mesh",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to 3D"],
     "models": ["MoGe"],
@@ -8345,7 +9153,7 @@
   {
     "name": "3d_moge_perspective_to_mesh",
     "title": "MoGe: Perspective Geometry Estimation",
-    "mediaType": "image",
+    "mediaType": "3d",
     "mediaSubtype": "webp",
     "tags": ["3D", "Image to 3D"],
     "models": ["MoGe"],
@@ -8365,7 +9173,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["ChatGPT"],
-    "logos": [{ "provider": "OpenRouter" }],
+    "logos": [
+      {
+        "provider": "OpenRouter"
+      }
+    ],
     "usage": 36,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8381,7 +9193,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["ChatGPT"],
-    "logos": [{ "provider": "OpenRouter" }],
+    "logos": [
+      {
+        "provider": "OpenRouter"
+      }
+    ],
     "usage": 8,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8397,7 +9213,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["ChatGPT"],
-    "logos": [{ "provider": "OpenRouter" }],
+    "logos": [
+      {
+        "provider": "OpenRouter"
+      }
+    ],
     "usage": 57,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8413,7 +9233,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Grok"],
-    "logos": [{ "provider": "OpenRouter" }],
+    "logos": [
+      {
+        "provider": "OpenRouter"
+      }
+    ],
     "usage": 138,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8429,7 +9253,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Kimi K3"],
-    "logos": [{ "provider": "OpenRouter" }],
+    "logos": [
+      {
+        "provider": "OpenRouter"
+      }
+    ],
     "usage": 33,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8445,7 +9273,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Claude"],
-    "logos": [{ "provider": "Anthropic" }],
+    "logos": [
+      {
+        "provider": "Anthropic"
+      }
+    ],
     "usage": 19,
     "date": "2026-07-28",
     "thumbnails": [
@@ -8461,7 +9293,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Claude"],
-    "logos": [{ "provider": "Anthropic" }],
+    "logos": [
+      {
+        "provider": "Anthropic"
+      }
+    ],
     "usage": 8,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8477,7 +9313,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Claude"],
-    "logos": [{ "provider": "Anthropic" }],
+    "logos": [
+      {
+        "provider": "Anthropic"
+      }
+    ],
     "usage": 33,
     "date": "2026-07-22",
     "thumbnails": [
@@ -8509,7 +9349,11 @@
     "mediaSubtype": "webp",
     "tags": ["Text Generation", "API"],
     "models": ["OpenRouter"],
-    "logos": [{ "provider": "OpenRouter" }],
+    "logos": [
+      {
+        "provider": "OpenRouter"
+      }
+    ],
     "usage": 12,
     "date": "2026-05-21",
     "thumbnails": [
@@ -8525,7 +9369,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Claude"],
-    "logos": [{ "provider": "Anthropic" }],
+    "logos": [
+      {
+        "provider": "Anthropic"
+      }
+    ],
     "usage": 18,
     "date": "2026-05-01",
     "thumbnails": [
@@ -8589,7 +9437,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["ChatGPT"],
-    "logos": [{ "provider": "OpenAI" }],
+    "logos": [
+      {
+        "provider": "OpenAI"
+      }
+    ],
     "usage": 39,
     "date": "2025-03-01",
     "thumbnails": [
@@ -8605,7 +9457,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Google", "Google Gemini"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 30,
     "date": "2025-03-01",
     "thumbnails": [
@@ -8621,7 +9477,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Text Generation"],
     "models": ["Seed 2.0"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 108,
     "date": "2026-05-19",
     "thumbnails": [
@@ -8691,7 +9551,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 271,
     "date": "2026-08-04",
     "thumbnails": [
@@ -8709,7 +9573,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 411,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8727,7 +9595,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 146,
     "date": "2026-08-04",
     "thumbnails": [
@@ -8745,7 +9617,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Magnific"],
-    "logos": [{ "provider": "Magnific" }],
+    "logos": [
+      {
+        "provider": "Magnific"
+      }
+    ],
     "usage": 135,
     "date": "2026-02-13",
     "thumbnails": [
@@ -8781,7 +9657,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Magnific"],
-    "logos": [{ "provider": "Magnific" }],
+    "logos": [
+      {
+        "provider": "Magnific"
+      }
+    ],
     "usage": 106,
     "date": "2026-02-13",
     "thumbnails": [
@@ -8799,7 +9679,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["WaveSpeed"],
-    "logos": [{ "provider": "WaveSpeed" }],
+    "logos": [
+      {
+        "provider": "WaveSpeed"
+      }
+    ],
     "usage": 38,
     "date": "2026-01-23",
     "thumbnails": [
@@ -8817,7 +9701,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 90,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8853,7 +9741,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 30,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8871,7 +9763,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["SeedVR2", "WaveSpeed"],
-    "logos": [{ "provider": "WaveSpeed" }],
+    "logos": [
+      {
+        "provider": "WaveSpeed"
+      }
+    ],
     "usage": 11,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8907,7 +9803,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Recraft"],
-    "logos": [{ "provider": "Recraft" }],
+    "logos": [
+      {
+        "provider": "Recraft"
+      }
+    ],
     "usage": 23,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8925,7 +9825,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 16,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8943,7 +9847,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Nano Banana Pro"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 18,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8961,7 +9869,11 @@
     "mediaSubtype": "webp",
     "tags": ["Image Upscale", "API"],
     "models": ["Reimagine", "Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 13,
     "date": "2025-11-25",
     "thumbnails": [
@@ -8979,7 +9891,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 23,
     "date": "2026-02-02",
     "thumbnails": [
@@ -8997,7 +9913,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Image Upscale"],
     "models": ["HitPaw"],
-    "logos": [{ "provider": "HitPaw" }],
+    "logos": [
+      {
+        "provider": "HitPaw"
+      }
+    ],
     "usage": 6,
     "date": "2026-02-02",
     "thumbnails": [
@@ -9083,7 +10003,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Layer Decompose"],
     "models": ["Seedream 5.0 Pro"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 158,
     "date": "2026-08-07",
     "thumbnails": [
@@ -9167,7 +10091,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Outpainting"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 12,
     "date": "2026-08-16",
     "thumbnails": [
@@ -9239,7 +10167,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Portrait"],
     "models": ["Magnific"],
-    "logos": [{ "provider": "Magnific" }],
+    "logos": [
+      {
+        "provider": "Magnific"
+      }
+    ],
     "usage": 126,
     "date": "2026-01-26",
     "thumbnails": [
@@ -9275,7 +10207,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Remove Background", "Image"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 40,
     "date": "2026-02-16",
     "thumbnails": [
@@ -9293,7 +10229,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Inpainting"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 84,
     "date": "2026-08-16",
     "thumbnails": [
@@ -9311,7 +10251,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Inpainting"],
     "models": ["Flux"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 14,
     "date": "2026-06-04",
     "thumbnails": [
@@ -9329,7 +10273,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Inpainting"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 15,
     "date": "2026-08-16",
     "thumbnails": [
@@ -9381,7 +10329,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Virtual Try-On"],
     "models": ["Flux"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 17,
     "date": "2026-06-04",
     "thumbnails": [
@@ -9399,7 +10351,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Relight"],
     "models": ["Magnific"],
-    "logos": [{ "provider": "Magnific" }],
+    "logos": [
+      {
+        "provider": "Magnific"
+      }
+    ],
     "usage": 15,
     "date": "2026-01-26",
     "thumbnails": [
@@ -9417,7 +10373,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Relight", "Image Edit"],
     "models": ["SwitchX"],
-    "logos": [{ "provider": "Beeble" }],
+    "logos": [
+      {
+        "provider": "Beeble"
+      }
+    ],
     "usage": 9,
     "date": "2026-05-29",
     "thumbnails": [
@@ -9429,7 +10389,7 @@
   {
     "name": "utility_seedvr2_3b_int8_upscale_video",
     "title": "Video Upscale: SeedVR2 3B Int8",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Int8", "Video Upscale"],
     "models": ["SeedVR2"],
@@ -9447,7 +10407,7 @@
   {
     "name": "utility_seedvr2_video_upscale",
     "title": "Video Upscale: SeedVR2",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Upscale"],
     "models": ["SeedVR2"],
@@ -9465,11 +10425,15 @@
   {
     "name": "api_topaz_starlight_precise25",
     "title": "Video Upscale: Topaz Starlight Precise 2.5",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Upscale", "API"],
     "models": ["Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 193,
     "date": "2026-03-26",
     "thumbnails": [
@@ -9481,7 +10445,7 @@
   {
     "name": "utility_video_upscale",
     "title": "Video Upscale: Wan 2.2 Creative",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Upscale"],
     "models": ["Wan2.2"],
@@ -9499,11 +10463,15 @@
   {
     "name": "api_wavespeed_flshvsr_video_upscale",
     "title": "Video Upscale: WaveSpeed FlashVSR",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Upscale"],
     "models": ["FlashVSR", "WaveSpeed"],
-    "logos": [{ "provider": "WaveSpeed" }],
+    "logos": [
+      {
+        "provider": "WaveSpeed"
+      }
+    ],
     "usage": 89,
     "date": "2026-01-23",
     "thumbnails": [
@@ -9517,11 +10485,15 @@
   {
     "name": "api_topaz_astra2",
     "title": "Video Upscale: Topaz Astra 2 Creative",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Upscale"],
     "models": ["Topaz"],
-    "logos": [{ "provider": "Topaz" }],
+    "logos": [
+      {
+        "provider": "Topaz"
+      }
+    ],
     "usage": 58,
     "date": "2026-05-03",
     "thumbnails": [
@@ -9535,7 +10507,7 @@
   {
     "name": "utility-gan_upscaler",
     "title": "Video Upscale: Real-ESRGAN",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Upscale", "API"],
     "models": ["Real-ESRGAN"],
@@ -9553,11 +10525,15 @@
   {
     "name": "api_bytedance_vcube_video_enhance",
     "title": "Video Upscale: ByteDance vCube",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Upscale"],
     "models": ["ByteDance"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 88,
     "date": "2026-08-24",
     "thumbnails": [
@@ -9569,7 +10545,7 @@
   {
     "name": "api_topaz_video_enhance",
     "title": "Video Upscale: Topaz Astra Fast",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Upscale"],
     "models": ["Topaz"],
@@ -9587,11 +10563,15 @@
   {
     "name": "utility_hitpaw_video_enhance",
     "title": "Video Upscale: HitPaw",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Upscale", "API"],
     "models": ["HitPaw"],
-    "logos": [{ "provider": "HitPaw" }],
+    "logos": [
+      {
+        "provider": "HitPaw"
+      }
+    ],
     "usage": 33,
     "date": "2026-02-02",
     "thumbnails": [
@@ -9605,11 +10585,15 @@
   {
     "name": "api_bfl_flux_video_upscale",
     "title": "Video Upscale: Flux 3",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Upscale"],
     "models": ["Flux"],
-    "logos": [{ "provider": "Black Forest Labs" }],
+    "logos": [
+      {
+        "provider": "Black Forest Labs"
+      }
+    ],
     "usage": 92,
     "date": "2026-08-20",
     "thumbnails": [
@@ -9711,11 +10695,15 @@
   {
     "name": "api_grok_video_extend",
     "title": "Video Extend: Grok",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Video Extend"],
     "models": ["Grok"],
-    "logos": [{ "provider": "Grok" }],
+    "logos": [
+      {
+        "provider": "Grok"
+      }
+    ],
     "usage": 110,
     "date": "2026-03-24",
     "thumbnails": [
@@ -9727,11 +10715,15 @@
   {
     "name": "api_seedance2_5_video_extend",
     "title": "Video Extend: Seedance 2.5",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Extend"],
     "models": ["Seedance 2.5"],
-    "logos": [{ "provider": "ByteDance" }],
+    "logos": [
+      {
+        "provider": "ByteDance"
+      }
+    ],
     "usage": 87,
     "date": "2026-08-17",
     "thumbnails": [
@@ -9743,11 +10735,15 @@
   {
     "name": "template_horizontal_vertical_extension",
     "title": "Aspect Ratio Extend: Kling O3",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video", "Video Edit", "Outpainting"],
     "models": ["Kling O3"],
-    "logos": [{ "provider": "Kling" }],
+    "logos": [
+      {
+        "provider": "Kling"
+      }
+    ],
     "usage": 50,
     "date": "2026-03-30",
     "thumbnails": [
@@ -9761,11 +10757,15 @@
   {
     "name": "api_vidu_video_extension",
     "title": "Video Extend: Vidu Q2",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Video Extend", "API"],
     "models": ["Vidu Q2", "Vidu"],
-    "logos": [{ "provider": "Vidu" }],
+    "logos": [
+      {
+        "provider": "Vidu"
+      }
+    ],
     "usage": 11,
     "date": "2026-02-01",
     "thumbnails": [
@@ -9777,11 +10777,15 @@
   {
     "name": "api_google_gemini_omni_flash_1_1_extend",
     "title": "Video Extend: Gemini Omni 1.1 Flash",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Extend"],
     "models": ["Gemini Omni 1.1 Flash"],
-    "logos": [{ "provider": "Google" }],
+    "logos": [
+      {
+        "provider": "Google"
+      }
+    ],
     "usage": 21,
     "date": "2026-08-27",
     "thumbnails": [
@@ -9793,7 +10797,7 @@
   {
     "name": "utility_video_frame_interpolation",
     "title": "Frame Interpolation: FILM or RIFE",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Frame Interpolation"],
     "models": ["FILM", "RIFE"],
@@ -9811,7 +10815,7 @@
   {
     "name": "utility-frame_interpolation-film",
     "title": "Frame Interpolation: FILM",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Frame Interpolation"],
     "models": ["none"],
@@ -9827,7 +10831,7 @@
   {
     "name": "utility_gimm_frame_interpolation",
     "title": "Frame Interpolation: GIMM-VFI",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Frame Interpolation", "Video"],
     "models": ["none"],
@@ -9845,7 +10849,7 @@
   {
     "name": "utility_void_video_inpainting",
     "title": "Video Inpainting: VOID",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video Edit", "Inpainting"],
     "models": ["VOID"],
@@ -9863,11 +10867,15 @@
   {
     "name": "api_bria_video_replace_background",
     "title": "Replace Background: Bria",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit", "Remove Background"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 44,
     "date": "2026-06-10",
     "thumbnails": [
@@ -9885,7 +10893,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Remove Background"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 20,
     "date": "2026-06-04",
     "thumbnails": [
@@ -9903,7 +10915,11 @@
     "mediaSubtype": "webp",
     "tags": ["API", "Remove Background"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 15,
     "date": "2026-06-04",
     "thumbnails": [
@@ -9921,7 +10937,11 @@
     "mediaSubtype": "webp",
     "tags": ["Remove Background", "API"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 12,
     "date": "2026-06-04",
     "thumbnails": [
@@ -9935,11 +10955,15 @@
   {
     "name": "utility-bria_remove_video_background",
     "title": "Remove Background: Bria Local",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Remove Background"],
     "models": ["BRIA"],
-    "logos": [{ "provider": "BRIA" }],
+    "logos": [
+      {
+        "provider": "BRIA"
+      }
+    ],
     "usage": 4,
     "date": "2026-02-16",
     "thumbnails": [
@@ -9953,11 +10977,15 @@
   {
     "name": "api_beeble_switchx_video_edit",
     "title": "Video Edit: Beeble SwitchX",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["API", "Video Edit"],
     "models": ["SwitchX"],
-    "logos": [{ "provider": "Beeble" }],
+    "logos": [
+      {
+        "provider": "Beeble"
+      }
+    ],
     "usage": 45,
     "date": "2026-05-29",
     "thumbnails": [
@@ -9971,7 +10999,7 @@
   {
     "name": "templates_purz_crossfade",
     "title": "Video Edit: Crossfade Merge",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Video", "Video Edit"],
     "models": [],
@@ -10005,7 +11033,7 @@
   {
     "name": "utility_sdpose_ood_video_to_pose_map",
     "title": "Pose Map: SDPose-OOD",
-    "mediaType": "image",
+    "mediaType": "video",
     "mediaSubtype": "webp",
     "tags": ["Pose Map"],
     "models": ["SDPose-OOD"],

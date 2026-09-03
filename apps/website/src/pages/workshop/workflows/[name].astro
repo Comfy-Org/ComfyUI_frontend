@@ -1,11 +1,9 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
-import HubBrowse from '../../../components/hub/HubBrowse.vue'
+import RelatedWorkflows from '../../../components/hub/RelatedWorkflows.vue'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
-import StaticFrame from '../../../components/workshop/StaticFrame.vue'
 import { getRoutes } from '../../../config/routes'
-import { formatRuns } from '../../../config/workshop'
 import { hubWorkflowUrl } from '../../../lib/hub/routes'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
 import {
@@ -39,16 +37,19 @@ const mediaLabel: Record<string, string> = {
 }
 const pillClass =
   'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
-const ratingLine = t('workshop.workflow.ratingLine')
-  .replace('{rating}', stats.rating)
-  .replace('{ratings}', String(stats.ratings))
-  .replace('{runs}', formatRuns(template.usage, 'en'))
-const statsLine = t('workshop.workflow.stats')
-  .replace('{avg}', String(stats.avgSeconds))
-  .replace('{credits}', String(stats.creditsPerRun))
-  .replace('{clone}', stats.cloneCredits.toLocaleString('en-US'))
 const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
 const clone = { credits: stats.cloneCredits, href: downloadUrl, author: `@${author}` }
+// Only node graphs, and only the ones that share ground with this workflow.
+const related = listHubWorkflows()
+  .filter(
+    (other) =>
+      other.name !== template.name &&
+      !other.isApp &&
+      (other.tags.some((tag) => template.tags.includes(tag)) ||
+        other.models.some((model) => template.models.includes(model)))
+  )
+  .sort((a, b) => b.usage - a.usage)
+  .slice(0, 8)
 const comments = [
   { author: '@midframe', stars: 5, text: t('workshop.workflow.comment1') },
   { author: '@rui.v', stars: 4, text: t('workshop.workflow.comment2') }
@@ -84,43 +85,26 @@ const comments = [
       class="relative mb-12 overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light"
       data-testid="workflow-hero"
     >
-      {
-        template.thumbnails[0] && (
-          <StaticFrame
-            src={template.thumbnails[0]}
-            class="absolute inset-0 size-full object-cover opacity-40"
-            client:load
-          />
-        )
-      }
-      <div
-        class="absolute inset-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/75 to-primary-comfy-ink/10"
-      />
-      <div
-        class="relative flex min-h-52 flex-col justify-center gap-6 p-8 lg:min-h-60 lg:p-10"
-      >
-        <div class="flex max-w-2xl flex-col gap-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <p class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase">
-              {t('workshop.workflow.by').replace('{author}', author)}
-            </p>
-            <span class={pillClass}>{kindLabel}</span>
-            {mediaLabel[mediaType] && <span class={pillClass}>{mediaLabel[mediaType]}</span>}
-            {isPartner && <span class={pillClass} data-testid="workflow-serverless">{t('workshop.workflow.serverless')}</span>}
-          </div>
-
-          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
+      <div class="relative flex flex-col justify-center gap-6 p-8 lg:p-10">
+        <div class="flex min-w-0 flex-col gap-3">
+          <h1 class="truncate text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
             {template.title}
           </h1>
 
-          <p class="text-sm text-primary-comfy-canvas/70" data-testid="workflow-rating">
-            <span class="text-primary-comfy-yellow">★</span> {ratingLine}
-          </p>
-          <p class="text-xs text-primary-comfy-canvas/60" data-testid="workflow-stats">
-            {statsLine}
+          <p class="text-content-secondary flex items-center gap-2 text-base">
+            <span
+              class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
+              aria-hidden="true"
+            >
+              {author.charAt(0).toUpperCase()}
+            </span>
+            <span class="ppformula-text-center-sm truncate">{author}</span>
           </p>
 
-          <ul class="mt-2 flex flex-wrap gap-2" data-testid="workflow-tags">
+          <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="workflow-tags">
+            <li><span class={pillClass}>{kindLabel}</span></li>
+            {mediaLabel[mediaType] && <li><span class={pillClass}>{mediaLabel[mediaType]}</span></li>}
+            {isPartner && <li><span class={pillClass} data-testid="workflow-serverless">{t('workshop.workflow.serverless')}</span></li>}
             {
               template.tags.map((tag) => (
                 <li>
@@ -256,12 +240,13 @@ const comments = [
         </div>
       </ModelDetail>
 
-      <section class="mt-24 border-t border-transparency-white-t8 pt-12" data-testid="related-workflows">
-        <h2 class="mb-8 text-3xl font-medium tracking-tight text-primary-comfy-canvas">
-          {t('workshop.workflow.related')}
-        </h2>
-        <HubBrowse embedded client:only="vue" />
-      </section>
+      <div class="mt-24 border-t border-transparency-white-t8 pt-12">
+        <RelatedWorkflows
+          templates={related}
+          allHref={`${routes.workshop}?version=v2&tab=nodeGraphs`}
+          client:load
+        />
+      </div>
     </div>
   </div>
   <PrototypeTweaks show-run-controls client:load />

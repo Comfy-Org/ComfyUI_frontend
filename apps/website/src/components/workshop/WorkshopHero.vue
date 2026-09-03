@@ -28,7 +28,7 @@ const backdrop = computed(() =>
 
 <template>
   <header
-    class="relative isolate mb-10 overflow-hidden rounded-4xl px-8 py-10 lg:px-12 lg:py-12"
+    class="relative isolate -mx-6 -mt-16 mb-10 overflow-hidden px-6 pt-16 pb-8 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24"
     data-testid="workshop-hero"
   >
     <div class="absolute inset-0 -z-10 flex" aria-hidden="true">
@@ -40,7 +40,7 @@ const backdrop = computed(() =>
       />
     </div>
     <div
-      class="from-page via-page/70 to-page/40 absolute inset-0 -z-10 bg-gradient-to-r"
+      class="from-page/95 via-page/75 to-page/95 absolute inset-0 -z-10 bg-gradient-to-b"
       aria-hidden="true"
     />
 
@@ -58,5 +58,7 @@ const backdrop = computed(() =>
     >
       {{ t(subtitleKey, locale) }}
     </p>
+
+    <slot />
   </header>
 </template>

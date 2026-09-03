@@ -214,7 +214,9 @@ describe('ModelDetail', () => {
     await nextTick()
     expect(screen.queryByTestId('tab-examples')).toBeNull()
     expect(screen.getByTestId('clone-button').textContent).toContain('2,900')
-    expect(screen.getByTestId('clone-note').textContent).toContain('@studioX')
+    expect(screen.getByTestId('clone-button').getAttribute('href')).toBe(
+      '/x.json'
+    )
     await user().click(screen.getByTestId('tab-details'))
     expect(screen.getByTestId('details-tab').textContent).toContain(
       'About this workflow'

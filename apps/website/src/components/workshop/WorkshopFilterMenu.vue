@@ -199,6 +199,7 @@ function clearAll() {
               </li>
               <li
                 v-if="!visibleOptions(entry).length"
+                role="none"
                 class="text-content-muted px-3 py-2 text-xs"
               >
                 {{ t('workshop.filter.noMatches', locale) }}

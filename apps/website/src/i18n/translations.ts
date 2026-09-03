@@ -8888,15 +8888,6 @@ Enterprise`
     en: 'Serverless API',
     'zh-CN': '无服务器 API'
   },
-  'workshop.workflow.ratingLine': {
-    en: '{rating} · {ratings} ratings · {runs} runs',
-    'zh-CN': '{rating} · {ratings} 条评分 · {runs} 次运行'
-  },
-  'workshop.workflow.stats': {
-    en: '{avg}s avg on A100 · Cloud-ready · {credits} cr/run · Clone {clone} cr',
-    'zh-CN':
-      'A100 平均 {avg} 秒 · 云端就绪 · 每次 {credits} 积分 · 克隆 {clone} 积分'
-  },
   'workshop.workflow.about': { en: 'About', 'zh-CN': '关于' },
   'workshop.workflow.customNodes': {
     en: 'Requires custom nodes',
@@ -8933,21 +8924,20 @@ Enterprise`
     'zh-CN': '身份保持是我用过最好的。希望轮廓光能加一个强度滑块。'
   },
   'workshop.workflow.related': {
-    en: 'View all workflows',
-    'zh-CN': '查看全部工作流'
+    en: 'Related workflows',
+    'zh-CN': '相关工作流'
+  },
+  'workshop.workflow.relatedAll': {
+    en: 'Browse all',
+    'zh-CN': '浏览全部'
   },
   'workshop.workflow.clone': {
     en: 'Clone to your machine — {credits} credits',
     'zh-CN': '克隆到本机 — {credits} 积分'
   },
-  'workshop.workflow.cloneNote': {
-    en: 'Runs on Comfy Cloud · signed in as {user} · 20% of run credits accrue to {author}',
-    'zh-CN':
-      '在 Comfy Cloud 上运行 · 已登录为 {user} · 每次运行积分的 20% 归 {author}'
-  },
-  'workshop.workflow.cloneNoteSignedOut': {
-    en: 'Runs on Comfy Cloud · 20% of run credits accrue to {author}',
-    'zh-CN': '在 Comfy Cloud 上运行 · 每次运行积分的 20% 归 {author}'
+  'workshop.workflow.cloneSignedOut': {
+    en: 'Clone to your machine',
+    'zh-CN': '克隆到本机'
   },
   'workshop.hub.sort.popular': { en: 'Most Popular', 'zh-CN': '最受欢迎' },
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },

@@ -135,9 +135,8 @@ const controlClass =
       </TabsList>
     </TabsRoot>
 
-    <div class="min-w-48 flex-1"><slot name="search" /></div>
-
-    <div class="flex shrink-0 items-center gap-2">
+    <div class="ml-auto flex shrink-0 items-center gap-2">
+      <slot name="search" />
       <PopoverRoot v-model:open="filterOpen">
         <PopoverTrigger
           :class="
@@ -268,6 +267,7 @@ const controlClass =
                   </li>
                   <li
                     v-if="visibleValues(group).length === 0"
+                    role="none"
                     class="text-content-muted px-3 py-4 text-center text-xs"
                   >
                     {{ labels.noResults }}

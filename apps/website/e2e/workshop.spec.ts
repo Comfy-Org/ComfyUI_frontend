@@ -55,12 +55,15 @@ test.describe('Workshop V2', () => {
       'MiniMax H3'
     )
     await expect(page.getByTestId('playground-tab')).toBeVisible()
-    await expect(page.getByTestId('clone-button')).toContainText('credits')
+    await expect(page.getByTestId('clone-button')).toHaveAttribute(
+      'href',
+      /video_minimax_h3_i2v\.json$/
+    )
     await page.getByTestId('tab-details').click()
     await expect(page.getByTestId('workflow-io')).toContainText('image')
     await expect(
-      page.getByTestId('related-workflows').getByTestId('hub-showing')
-    ).toContainText('30 of 610')
+      page.getByTestId('related-workflows').getByTestId('hub-card')
+    ).toHaveCount(8)
   })
 })
 

@@ -182,36 +182,36 @@ const filteredTemplates = computed(() => {
       heading-key="workshop.hub.title"
       :locale
       data-testid="hub-heading"
-    />
-
-    <nav
-      v-if="!embedded"
-      class="-mx-1 mb-2 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10 px-1"
-      :aria-label="t('workshop.useCase.label', locale)"
-      data-testid="hub-use-cases"
     >
-      <button
-        v-for="entry in useCases"
-        :key="entry.value"
-        type="button"
-        :aria-pressed="useCase === entry.value"
-        :data-testid="`hub-use-case-${entry.value}`"
-        :class="
-          cn(
-            'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
-            useCase === entry.value
-              ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'text-content-secondary hover:text-content border-transparent'
-          )
-        "
-        @click="useCase = entry.value"
+      <nav
+        class="mt-10 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
+        :aria-label="t('workshop.useCase.label', locale)"
+        data-testid="hub-use-cases"
       >
-        {{ t(useCaseLabelKey[entry.value], locale) }}
-        <span class="text-content-muted text-xs tabular-nums">
-          {{ entry.total }}
-        </span>
-      </button>
-    </nav>
+        <button
+          v-for="entry in useCases"
+          :key="entry.value"
+          type="button"
+          :aria-pressed="useCase === entry.value"
+          :data-testid="`hub-use-case-${entry.value}`"
+          :class="
+            cn(
+              'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
+              useCase === entry.value
+                ? 'border-primary-comfy-yellow text-primary-warm-white'
+                : 'text-content-secondary hover:text-content border-transparent'
+            )
+          "
+          @click="useCase = entry.value"
+        >
+          {{ t(useCaseLabelKey[entry.value], locale) }}
+          <span class="text-content-muted text-xs tabular-nums">
+            {{ entry.total }}
+          </span>
+        </button>
+      </nav>
+    </WorkshopHero>
+
     <WorkflowGrid
       :templates="filteredTemplates"
       :facet-templates="templates"

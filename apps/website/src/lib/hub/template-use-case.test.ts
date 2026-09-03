@@ -8,11 +8,15 @@ import type { HubTemplate } from './types'
 
 const templates = hubTemplates as HubTemplate[]
 
-function template(tags: string[], models: string[] = []): HubTemplate {
+function template(
+  tags: string[],
+  models: string[] = [],
+  mediaType: HubTemplate['mediaType'] = 'image'
+): HubTemplate {
   return {
     name: 'demo',
     title: 'Demo',
-    mediaType: 'image',
+    mediaType,
     tags,
     models,
     logos: [],
@@ -49,6 +53,18 @@ describe('partnerModelFor', () => {
     ).toBeUndefined()
   })
 
+  it('falls back to the generated join for a name-only template', () => {
+    const tmpl = { ...template(['API']), name: 'api_bytedance_text_to_video' }
+    expect(partnerModelFor(tmpl, workshopModels)?.slug).toBe(
+      'seedance-bytedance'
+    )
+  })
+
+  it('has no join row for a workflow that disagreed on the medium', () => {
+    const tmpl = { ...template(['API']), name: 'api_topaz_video_enhance' }
+    expect(partnerModelFor(tmpl, workshopModels)).toBeUndefined()
+  })
+
   it('leaves a community workflow alone', () => {
     expect(
       partnerModelFor(template([], ['Kling O3']), [model('Kling O3')])
@@ -74,16 +90,19 @@ describe('useCaseForTemplate', () => {
     ).toBe('generate-videos')
   })
 
-  it('falls back to the medium for a conditioning method on its own', () => {
-    expect(useCaseForTemplate(template(['ControlNet', 'Video']), [])).toBe(
+  it('falls back to what the workflow outputs when the tags only name a method', () => {
+    expect(useCaseForTemplate(template(['ControlNet'], [], 'video'), [])).toBe(
       'generate-videos'
+    )
+    expect(useCaseForTemplate(template(['ControlNet'], [], 'image'), [])).toBe(
+      'generate-images'
     )
   })
 
-  it('places all but a handful of the real catalogue', () => {
-    const placed = templates.filter((tmpl) =>
-      useCaseForTemplate(tmpl, workshopModels)
+  it('places every workflow in the real catalogue', () => {
+    const unplaced = templates.filter(
+      (tmpl) => useCaseForTemplate(tmpl, workshopModels) === undefined
     )
-    expect(placed.length / templates.length).toBeGreaterThan(0.98)
+    expect(unplaced).toEqual([])
   })
 })

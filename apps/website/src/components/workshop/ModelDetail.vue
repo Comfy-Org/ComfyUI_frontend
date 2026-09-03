@@ -142,17 +142,15 @@ const gate = computed(() =>
         : undefined
   })
 )
-const cloneNote = computed(() =>
-  clone
-    ? session.value.status === 'signedIn'
-      ? t('workshop.workflow.cloneNote', locale)
-          .replace('{user}', session.value.account.name)
-          .replace('{author}', clone.author)
-      : t('workshop.workflow.cloneNoteSignedOut', locale).replace(
-          '{author}',
-          clone.author
+const cloneLabel = computed(() =>
+  clone === undefined
+    ? ''
+    : session.value.status === 'signedIn'
+      ? t('workshop.workflow.clone', locale).replace(
+          '{credits}',
+          clone.credits.toLocaleString('en-US')
         )
-    : ''
+      : t('workshop.workflow.cloneSignedOut', locale)
 )
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
@@ -496,30 +494,16 @@ function useInCode() {
           >
             {{ t('workshop.run.degraded', locale) }}
           </p>
-          <template v-if="clone">
-            <Button
-              as="a"
-              :href="clone.href"
-              download
-              variant="outline"
-              size="lg"
-              class="w-full px-5 text-sm tracking-normal normal-case"
-              data-testid="clone-button"
-            >
-              <template #prepend>
-                <Copy class="size-4" aria-hidden="true" />
-              </template>
-              {{
-                t('workshop.workflow.clone', locale).replace(
-                  '{credits}',
-                  clone.credits.toLocaleString('en-US')
-                )
-              }}
-            </Button>
-            <p class="text-xs text-primary-warm-gray" data-testid="clone-note">
-              {{ cloneNote }}
-            </p>
-          </template>
+          <a
+            v-if="clone"
+            :href="clone.href"
+            download
+            class="text-primary-warm-gray hover:text-primary-warm-white inline-flex items-center justify-center gap-2 self-center text-xs transition-colors"
+            data-testid="clone-button"
+          >
+            <Copy class="size-3.5" aria-hidden="true" />
+            {{ cloneLabel }}
+          </a>
         </div>
       </div>
 
