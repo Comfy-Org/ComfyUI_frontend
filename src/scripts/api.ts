@@ -1415,17 +1415,10 @@ export class ComfyApi extends EventTarget {
    * Stores a setting for the current user
    */
   async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
-    const response = await this.fetchApi(
-      `/settings/${encodeURIComponent(id)}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(value)
-      }
-    )
-    if (!response.ok) {
-      throw new Error(`Failed to store setting ${id}: ${response.status}`)
-    }
-    return response
+    return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
+      method: 'POST',
+      body: JSON.stringify(value)
+    })
   }
 
   /**

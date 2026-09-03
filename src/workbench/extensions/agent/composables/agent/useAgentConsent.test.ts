@@ -58,13 +58,6 @@ vi.mock('@/platform/auth/unified/remintRetry', () => ({
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
 
-const distribution = vi.hoisted(() => ({ isCloud: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return distribution.isCloud
-  }
-}))
-
 const showSignInDialog = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({ showSignInDialog })
@@ -118,7 +111,6 @@ describe('useAgentConsent', () => {
     })
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
-    distribution.isCloud = true
     showSignInDialog.mockReset()
     reportError.mockReset()
     addToast.mockReset()
@@ -139,6 +131,9 @@ describe('useAgentConsent', () => {
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
 
+    await vi.waitFor(() => {
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    })
     finishLoad(settingResponse(false))
     const dialog = await waitForConsentDialog()
     ;(dialog.contentProps.onReject as () => void)()
@@ -240,7 +235,6 @@ describe('useAgentConsent', () => {
   it('authenticates signed-out Local users before saving to their account', async () => {
     authState.loggedIn = false
     accountAuthState.identity = null
-    distribution.isCloud = false
     showSignInDialog.mockImplementationOnce(async () => {
       authState.loggedIn = true
       accountAuthState.identity = 'account-a'
@@ -268,7 +262,6 @@ describe('useAgentConsent', () => {
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
     authState.loggedIn = false
     accountAuthState.identity = null
-    distribution.isCloud = false
     showSignInDialog.mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 

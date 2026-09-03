@@ -164,19 +164,4 @@ describe('api.fetchApi', () => {
       )
     })
   })
-
-  describe('settings persistence', () => {
-    it('rejects a setting write when the server response is not successful', async () => {
-      vi.mocked(global.fetch).mockResolvedValue(
-        new Response(null, {
-          status: 500,
-          statusText: 'Internal Server Error'
-        })
-      )
-
-      await expect(
-        api.storeSetting('Comfy.ConfirmClear', true)
-      ).rejects.toThrow('Failed to store setting Comfy.ConfirmClear: 500')
-    })
-  })
 })
