@@ -1,7 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro'
 
-import WorkshopForm from '../../../components/workshop/WorkshopForm.vue'
+import WorkshopPlayground from '../../../components/workshop/WorkshopPlayground.vue'
 import type { WorkshopDetailModel } from '../../../config/workshop-detail'
 import {
   relatedWorkshopModels,
@@ -61,9 +61,7 @@ const related = relatedWorkshopModels(model)
       </ul>
     </header>
 
-    <div class="max-w-2xl">
-      <WorkshopForm model={model} client:load />
-    </div>
+    <WorkshopPlayground model={model} client:load />
 
     <section class="mt-20 border-t border-primary-comfy-canvas/10 pt-10">
       <div class="flex items-center justify-between gap-4">
