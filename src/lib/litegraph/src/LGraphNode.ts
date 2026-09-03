@@ -63,6 +63,7 @@ import {
 } from './node/slotLinks'
 import {
   createInputSlotView,
+  createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
@@ -406,6 +407,8 @@ export class LGraphNode
 
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
+  /** @internal Set when inputs/outputs change; cleared by {@link _setConcreteSlots}. */
+  _slotsDirty: boolean = true
 
   get properties(): Dictionary<NodeProperty | undefined> {
     return this._state.properties
@@ -1011,7 +1014,7 @@ export class LGraphNode
     initializeWidgetsView(this)
     this._state = createNodeShellState(title, type, this.title_mode)
     this._inputs = createInputSlotView(this, this._state.inputs)
-    this._outputs = this._state.outputs
+    this._outputs = createOutputSlotView(this, this._state.outputs)
     for (const property of [
       'inputs',
       'outputs',
@@ -1094,6 +1097,7 @@ export class LGraphNode
     this.inputs = this.inputs.map((input) =>
       toClass(NodeInputSlot, input, this)
     )
+    this._slotsDirty = true
     for (const [i, input] of this.inputs.entries()) {
       const serialisedLink = info.inputs?.[i]?.link
       const link =
@@ -1886,6 +1890,7 @@ export class LGraphNode
 
     this.outputs ||= []
     this.outputs.push(output)
+    this._slotsDirty = true
     const added = this.outputs.at(-1) as NodeOutputSlot & TProperties
     this.onOutputAdded?.(added)
 
@@ -1907,6 +1912,7 @@ export class LGraphNode
     }
     const { outputs } = this
     outputs.splice(slot, 1)
+    this._slotsDirty = true
 
     // Only update link indices if node is part of a graph. Ascending order:
     // each decrement re-keys the link to an already-processed slot index.
@@ -1953,6 +1959,7 @@ export class LGraphNode
 
     this.inputs ||= []
     this.inputs.push(input)
+    this._slotsDirty = true
     const added = this.inputs.at(-1) as NodeInputSlot & TProperties
     this.expandToFitContent()
 
@@ -1991,6 +1998,7 @@ export class LGraphNode
     } else {
       inputs.splice(slot, 1)
     }
+    this._slotsDirty = true
     this.onInputRemoved?.(slot, slotInfo)
     this.setDirtyCanvas(true, true)
   }
@@ -4300,33 +4308,36 @@ export class LGraphNode
     ctx: CanvasRenderingContext2D,
     { fromSlot, colorContext, editorAlpha, lowQuality }: DrawSlotsOptions
   ) {
-    for (const slot of [...this._concreteInputs, ...this._concreteOutputs]) {
-      const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
-      const isMouseOverSlot = this._isMouseOverSlot(slot)
+    for (const slots of [this._concreteInputs, this._concreteOutputs]) {
+      for (let s = 0; s < slots.length; s++) {
+        const slot = slots[s]
+        const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
+        const isMouseOverSlot = this._isMouseOverSlot(slot)
 
-      // change opacity of incompatible slots when dragging a connection
-      const isValid = !fromSlot || isValidTarget
-      const highlight = isValid && isMouseOverSlot
+        // change opacity of incompatible slots when dragging a connection
+        const isValid = !fromSlot || isValidTarget
+        const highlight = isValid && isMouseOverSlot
 
-      // Show slot if it's not a widget input slot
-      // or if it's a widget input slot and satisfies one of the following:
-      // - the mouse is over the widget
-      // - the slot is valid during link drop
-      // - the slot is connected
-      if (
-        isMouseOverSlot ||
-        isValidTarget ||
-        !slot.isWidgetInputSlot ||
-        this._isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
-        slot.isConnected ||
-        slot.alwaysVisible
-      ) {
-        ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
-        slot.draw(ctx, {
-          colorContext,
-          lowQuality,
-          highlight
-        })
+        // Show slot if it's not a widget input slot
+        // or if it's a widget input slot and satisfies one of the following:
+        // - the mouse is over the widget
+        // - the slot is valid during link drop
+        // - the slot is connected
+        if (
+          isMouseOverSlot ||
+          isValidTarget ||
+          !slot.isWidgetInputSlot ||
+          this._isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
+          slot.isConnected ||
+          slot.alwaysVisible
+        ) {
+          ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
+          slot.draw(ctx, {
+            colorContext,
+            lowQuality,
+            highlight
+          })
+        }
       }
     }
   }
@@ -4458,6 +4469,8 @@ export class LGraphNode
    * invalidate slot-array subscribers.
    */
   _setConcreteSlots(): void {
+    if (!this._slotsDirty) return
+
     const { inputs, outputs } = this
     this._concreteInputs = inputs.map((slot, i) => {
       const concrete = toClass(NodeInputSlot, slot, this)
@@ -4469,6 +4482,7 @@ export class LGraphNode
       if (concrete !== slot) outputs[i] = concrete
       return concrete
     })
+    this._slotsDirty = false
   }
 
   /**

@@ -1,5 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { toClass } from '@/lib/litegraph/src/utils/type'
 
@@ -13,19 +16,45 @@ export function createInputSlotView(
   inputs: INodeInputSlot[]
 ): INodeInputSlot[] {
   const assignedViews = new WeakMap<INodeInputSlot, INodeInputSlot>()
-  const view = new Proxy(inputs, {
-    set(target, property, value: unknown, receiver) {
-      const input =
-        isArrayIndex(property) && isInputSlot(value)
-          ? toClass(NodeInputSlot, value, node)
-          : value
-      if (isInputSlot(value) && isInputSlot(input) && value !== input)
-        assignedViews.set(value, input)
-      return Reflect.set(target, property, input, receiver)
-    }
+  const view = createSlotView(node, inputs, (value) => {
+    const input = isInputSlot(value)
+      ? toClass(NodeInputSlot, value, node)
+      : value
+    if (isInputSlot(value) && isInputSlot(input) && value !== input)
+      assignedViews.set(value, input)
+    return input
   })
   assignedInputViews.set(view, assignedViews)
   return view
+}
+
+export function createOutputSlotView(
+  node: LGraphNode,
+  outputs: INodeOutputSlot[]
+): INodeOutputSlot[] {
+  return createSlotView(node, outputs)
+}
+
+function createSlotView<T>(
+  node: LGraphNode,
+  slots: T[],
+  normalize: (value: unknown) => unknown = (value) => value
+): T[] {
+  return new Proxy(slots, {
+    set(target, property, value: unknown, receiver) {
+      const nextValue = isArrayIndex(property) ? normalize(value) : value
+      const changed = Reflect.get(target, property) !== nextValue
+      const updated = Reflect.set(target, property, nextValue, receiver)
+      if (updated && changed) node._slotsDirty = true
+      return updated
+    },
+    deleteProperty(target, property) {
+      const changed = Reflect.has(target, property)
+      const updated = Reflect.deleteProperty(target, property)
+      if (updated && changed) node._slotsDirty = true
+      return updated
+    }
+  })
 }
 
 export function resolveInputSlotView(

@@ -35,6 +35,8 @@ import type { Serialisable, SerialisableLLink } from './types/serialisation'
 import { toRaw } from 'vue'
 
 export type { LinkId } from '@/types/linkId'
+
+const EMPTY_REROUTES: readonly Reroute[] = Object.freeze([])
 export type SerialisedLLinkArray = [
   id: number,
   origin_id: SerializedNodeId,
@@ -325,9 +327,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static getReroutes(
     network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
     linkSegment: LinkSegment
-  ): Reroute[] {
-    if (linkSegment.parentId === undefined) return []
-    return network.reroutes.get(linkSegment.parentId)?.getReroutes() ?? []
+  ): readonly Reroute[] {
+    if (linkSegment.parentId === undefined) return EMPTY_REROUTES
+    return (
+      network.reroutes.get(linkSegment.parentId)?.getReroutes() ??
+      EMPTY_REROUTES
+    )
   }
 
   static getFirstReroute(
