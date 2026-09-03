@@ -1,10 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import {
-  expectedGraphSnapshot,
-  recordedSpanMs
-} from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { expectedGraphSnapshot } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 
 test.describe('Agent conversation replay timing', { tag: '@cloud' }, () => {
   test.use({
@@ -16,7 +13,10 @@ test.describe('Agent conversation replay timing', { tag: '@cloud' }, () => {
     agentConversation
   }) => {
     test.setTimeout(120_000)
-    const span = recordedSpanMs(agentConversation.conversation)
+    const offsets = agentConversation.conversation.response.flatMap((entry) =>
+      entry.at_ms === undefined ? [] : [entry.at_ms]
+    )
+    const span = offsets.length ? Math.max(...offsets) : undefined
     expect(span, 'the fixture carries at_ms offsets').toBeDefined()
 
     await agentConversation.sendPrompt()
@@ -26,6 +26,11 @@ test.describe('Agent conversation replay timing', { tag: '@cloud' }, () => {
     expect(agentConversation.replayElapsedMs).toBeGreaterThanOrEqual(span!)
     await expect
       .poll(() => agentConversation.graphSnapshot())
-      .toEqual(expectedGraphSnapshot(agentConversation.conversation))
+      .toEqual(
+        expectedGraphSnapshot(
+          agentConversation.conversation,
+          agentConversation.hostGraph()
+        )
+      )
   })
 })
