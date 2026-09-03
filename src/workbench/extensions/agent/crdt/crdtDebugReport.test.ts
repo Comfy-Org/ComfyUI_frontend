@@ -294,6 +294,45 @@ describe('collectCrdtDebugReport', () => {
     expect(report).not.toContain('private prompt')
   })
 
+  it('redacts the previous widget value and reset workflows from settled ops', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        {
+          seq: 1,
+          at: 0,
+          kind: 'human_ops_settled',
+          scope: 'doc',
+          level: 'debug',
+          detail: {
+            ok: true,
+            ops: [
+              {
+                op: 'set_widget',
+                op_id: 'op-old',
+                node_id: 'A',
+                widget: 'text',
+                value: 'new prompt',
+                old: 'previous prompt'
+              },
+              {
+                op: 'reset_doc',
+                op_id: 'op-reset',
+                workflow: { nodes: [{ widgets_values: ['reset prompt'] }] }
+              }
+            ]
+          }
+        }
+      ]
+    })
+
+    expect(report).toContain('op-old')
+    expect(report).toContain('op-reset')
+    expect(report).not.toContain('new prompt')
+    expect(report).not.toContain('previous prompt')
+    expect(report).not.toContain('reset prompt')
+  })
+
   it('keeps binary event details summarized instead of flattening them', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,

@@ -40,8 +40,8 @@ describe('crdtDebugGate', () => {
     const getItem = vi.spyOn(localStorage, 'getItem')
     const gate = await loadGate('')
 
-    gate.isCrdtDebugOptedOut()
-    gate.isCrdtDebugOptedOut()
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
 
     expect(getItem).toHaveBeenCalledTimes(1)
     expect(getItem).toHaveBeenCalledWith('Comfy.Agent.CrdtDebug.enabled')

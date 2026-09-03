@@ -250,6 +250,22 @@ export function redactEventPayloads(value: unknown): unknown {
 }
 
 /**
+ * Every wire-op field that carries user workflow content: `set_widget.value`
+ * and its informational `old` (the value before the write), the verbatim node
+ * snapshot on `add_node`, `widgets_values` inside any snapshot, and the full
+ * `reset_doc.workflow`. Events record whole ops (`ws_out` frames,
+ * `human_ops_settled` outcomes), so masking `value` alone still leaks the
+ * previous prompt through `old`.
+ */
+const CONTENT_KEYS: ReadonlySet<string> = new Set([
+  'value',
+  'old',
+  'widgets_values',
+  'node',
+  'workflow'
+])
+
+/**
  * Runs before `devEventReplacer`, so anything it rebuilds is what the
  * replacer sees. Binary views stay intact for the replacer to summarize
  * (`Object.entries(new Uint8Array(4))` would otherwise flatten them into
@@ -265,9 +281,7 @@ function redactPayloadTree(value: unknown, depth: number): unknown {
   return Object.fromEntries(
     Object.entries(value).map(([key, nested]) => [
       key,
-      key === 'value' || key === 'widgets_values' || key === 'node'
-        ? REDACTED
-        : redactPayloadTree(nested, depth + 1)
+      CONTENT_KEYS.has(key) ? REDACTED : redactPayloadTree(nested, depth + 1)
     ])
   )
 }
