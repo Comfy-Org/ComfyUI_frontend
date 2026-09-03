@@ -35,10 +35,10 @@ Options:
   --air-bin PATH        Air executable (default: $AIR_BIN or ~/go/bin/air)
   --record              Record mode: the cloud stack's agent plus the doc host
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
-  --doc-host-port PORT  Doc host port in record mode (default: 8095)
+  --doc-host-port PORT  Doc host port in record mode (default: 8096)
   --pg-exec CMD         Command taking one SQL string, ending in -c
   --engine NAME         Record mode engine: inline or temporal (default: inline)
-  --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7233)
+  --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7234)
   --help                Show this help
 `
 
@@ -63,14 +63,15 @@ export function parseOptions(args: string[]): Options {
     catalog: '',
     cloudRepo: resolve(PROJECT_ROOT, '../cloud'),
     comfyUrl: 'http://127.0.0.1:8188',
-    docHostPort: 8095,
+    // Beside the cloud stack's own doc host (8095) and Temporal (7233).
+    docHostPort: 8096,
     engine: 'inline',
     frontendPort: 6207,
     healthPort: 0,
     help: false,
     pgExec: '',
     record: false,
-    temporalPort: 7233,
+    temporalPort: 7234,
     temporalUiPort: 0
   }
   for (let index = 0; index < args.length; index++) {
