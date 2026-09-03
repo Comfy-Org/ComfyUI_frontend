@@ -526,7 +526,7 @@ async function runRecord(options: Options): Promise<number> {
 Recording stack ready: agent ${agentUrl}, doc host http://127.0.0.1:${options.docHostPort}
 Record a case with:
 
-AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL="$AGENT_MODEL" \\
+AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL=<model> \\
 AGENT_M2M_SECRET_FILE=${secretPath} AGENT_FULLSTACK_URL=${agentUrl} \\
 AGENT_WORKSPACE_ID=${RECORD_WORKSPACE_ID} AGENT_USER_ID=${RECORD_USER_ID} \\
 AGENT_PG_EXEC="${pgExec}" \\
