@@ -110,6 +110,25 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
   }
 
+  function moveRunErrors(
+    graphId: UUID,
+    oldWorkflowPath: string,
+    newWorkflowPath: string
+  ) {
+    const oldKey = runErrorKey(graphId, oldWorkflowPath)
+    const newKey = runErrorKey(graphId, newWorkflowPath)
+    if (oldKey === newKey) return
+
+    const runErrors = runErrorsByWorkflow.value.get(oldKey)
+    if (runErrors) runErrorsByWorkflow.value.set(newKey, runErrors)
+    else runErrorsByWorkflow.value.delete(newKey)
+    runErrorsByWorkflow.value.delete(oldKey)
+
+    if (activeRunErrorKey.value === oldKey) {
+      activeRunErrorKey.value = newKey
+    }
+  }
+
   function captureRunErrorKey() {
     return activeRunErrorKey.value
   }
@@ -676,6 +695,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Workflow scoping
     captureRunErrorKey,
     runErrorKey,
+    moveRunErrors,
     setActiveGraph,
 
     // Clearing
