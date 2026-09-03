@@ -48,6 +48,31 @@ An Architecture Decision Record captures an important architectural decision mad
 4. Update this index
 5. Submit as part of your PR
 
+### Identifier grammar
+
+Identifiers are a composable domain hierarchy, not an acronym. Four rules
+decide the tags:
+
+1. **Ordered broad-to-narrow.** The identifier reads outermost domain first,
+   so `RENDERING-INVALIDATION-0021`, never `INVALIDATION-RENDERING-0021`.
+2. **At most two semantic tags** before the four-digit suffix. A tag may itself
+   be hyphenated when it names a single concept (`DESIGN-SYSTEM`, `PUBLIC-API`),
+   which is why the count is of tags rather than of hyphen-separated segments.
+   A single tag is fine when no narrower concern applies (`ECS-0008`).
+3. **The first tag names the owning subsystem**; the second names the narrower
+   concern within it. `DEPS-LITEGRAPH-0001` is a dependency decision about
+   LiteGraph, not a LiteGraph decision that happens to touch dependencies.
+4. **Cross-cutting decisions take the subsystem that owns the invariant**, not
+   every applicable tag. `DEPS-DESIGN-SYSTEM-0004` also touches component
+   libraries and vendoring, but the decision it records is a dependency one, so
+   the design-system concern is the second tag and the rest stay out of the
+   identifier.
+
+Rules 1, 3, and 4 are judgement calls at authoring time and are reviewed rather
+than linted; `pnpm adr:check` enforces the mechanical parts (filename shape,
+identifier uniqueness, index rows, and the absence of legacy `ADR-NNNN`
+references).
+
 ## ADR Template
 
 ```markdown
