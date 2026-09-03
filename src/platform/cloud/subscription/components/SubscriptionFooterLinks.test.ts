@@ -42,7 +42,6 @@ vi.mock(
   () => ({
     useSubscriptionActions: () => ({
       isLoadingSupport: ref(false),
-      handleLearnMoreClick: state.handleLearnMoreClick,
       handleMessageSupport: state.handleMessageSupport
     })
   })
@@ -54,7 +53,7 @@ const i18n = createI18n({
   messages: {
     en: {
       subscription: {
-        learnMore: 'Learn more',
+        plansAndPricing: 'Plans & pricing',
         partnerNodesPricingTable: 'Partner Nodes pricing',
         messageSupport: 'Message support',
         invoiceHistory: 'Invoice history',
@@ -87,6 +86,20 @@ describe('SubscriptionFooterLinks', () => {
     state.isCloud = true
   })
 
+  it('emits viewPlans from the plans link only when enabled', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Plans & pricing' })
+    ).not.toBeInTheDocument()
+
+    await rerender({ showPlansLink: true })
+    await user.click(screen.getByRole('button', { name: 'Plans & pricing' }))
+
+    expect(emitted()).toHaveProperty('viewPlans')
+  })
+
   it('renders working support links without a duplicate invoice action', async () => {
     const user = userEvent.setup()
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
@@ -96,17 +109,11 @@ describe('SubscriptionFooterLinks', () => {
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Learn more' })
-    ).toBeInTheDocument()
-    expect(
       screen.getByRole('button', { name: 'Partner Nodes pricing' })
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Message support' })
     ).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Learn more' }))
-    expect(state.handleLearnMoreClick).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Message support' }))
     expect(state.handleMessageSupport).toHaveBeenCalledOnce()

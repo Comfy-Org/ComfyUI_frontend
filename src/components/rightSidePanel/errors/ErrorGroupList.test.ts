@@ -330,13 +330,13 @@ describe('ErrorGroupList selection emphasis', () => {
 
     await user.click(screen.getByRole('button', { name: 'SamplerNode - clip' }))
 
-    expect(canvas.setGraph).not.toHaveBeenCalled()
     await waitFor(() => {
       expect(canvas.animateToBounds).toHaveBeenCalledWith(
         SAMPLER_NODE.boundingRect,
         { viewport: [0, 0, 900, 700] }
       )
     })
+    expect(canvas.setGraph).not.toHaveBeenCalled()
   })
 
   it('locates an execution error through the real subgraph navigation path', async () => {

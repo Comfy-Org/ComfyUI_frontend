@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   useDocumentVisibility,
   useElementVisibility,
@@ -41,6 +42,14 @@ const workflowIndex = ref(0)
 
 const workflow = computed(() => WORKFLOWS[workflowIndex.value])
 
+// The dashed connectors animate stroke-dashoffset, which cannot be composited,
+// so they are parked on the same condition as the rotation above rather than
+// running behind a scrolled-past section. Reduced motion is handled by the
+// animate-dash-flow utility itself.
+const animated = computed(
+  () => visible.value && documentVisibility.value === 'visible'
+)
+
 const { pause, resume } = useIntervalFn(
   () => {
     workflowIndex.value = (workflowIndex.value + 1) % WORKFLOWS.length
@@ -73,146 +82,153 @@ watchEffect(() => {
 
     <ol
       ref="root"
-      class="relative mx-auto mt-10 flex max-w-4xl flex-col gap-12 lg:mt-14"
+      class="mt-8 grid list-none grid-cols-1 gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3"
     >
       <li
         v-for="step in steps"
         :key="step.number"
-        class="grid grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-12"
+        class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6"
       >
-        <div class="flex items-start gap-4">
-          <span
-            class="text-primary-comfy-yellow shrink-0 font-mono text-2xl font-light lg:text-3xl"
-          >
-            {{ step.number }}
-          </span>
-          <div>
-            <h3
-              class="text-base font-normal text-primary-warm-white lg:text-lg"
-            >
-              {{ step.title }}
-            </h3>
-            <p
-              class="mt-2 max-w-md text-sm/relaxed font-light text-primary-comfy-canvas"
-            >
-              {{ step.description }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Step 1: the workflow JSON becoming an endpoint -->
-        <div
-          v-if="step.number === 1"
-          aria-hidden="true"
-          class="flex flex-col items-center gap-2"
-        >
+        <article class="h-full">
           <div
-            class="w-64 rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-[10px]/relaxed text-primary-comfy-canvas"
-          >
-            <Transition name="crossfade" mode="out-in">
-              <p :key="workflow.file" class="text-primary-comfy-yellow">
-                {{ workflow.file }}
-              </p>
-            </Transition>
-            <p class="mt-1.5 text-smoke-700">{ "nodes": [...],</p>
-            <p class="text-smoke-700">&nbsp;&nbsp;"models": [...],</p>
-            <p class="text-smoke-700">&nbsp;&nbsp;"deps": [...] }</p>
-          </div>
-          <svg viewBox="0 0 8 28" class="h-7 w-2" aria-hidden="true">
-            <line
-              x1="4"
-              y1="0"
-              x2="4"
-              y2="28"
-              class="animate-dash-flow stroke-primary-comfy-yellow/60"
-              stroke-width="1.5"
-              stroke-dasharray="4 5"
-            />
-          </svg>
-          <div
-            class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 rounded-full border px-4 py-2 font-mono text-[10px] text-primary-comfy-canvas"
-          >
-            <span class="text-primary-comfy-yellow">POST&#32;</span>
-            <Transition name="crossfade" mode="out-in">
-              <span :key="workflow.endpoint"
-                >https://{{ workflow.endpoint }}.run.comfy.app</span
-              >
-            </Transition>
-          </div>
-        </div>
-
-        <!-- Step 2: the endpoint handed to colleagues -->
-        <div
-          v-else-if="step.number === 2"
-          aria-hidden="true"
-          class="flex items-center justify-center gap-3"
-        >
-          <div
-            class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 rounded-full border px-4 py-2 font-mono text-[10px] text-primary-comfy-canvas"
-          >
-            <Transition name="crossfade" mode="out-in">
-              <span :key="workflow.endpoint">{{ workflow.endpoint }}</span>
-            </Transition>
-          </div>
-          <svg viewBox="0 0 28 8" class="h-2 w-7" aria-hidden="true">
-            <line
-              x1="0"
-              y1="4"
-              x2="28"
-              y2="4"
-              class="animate-dash-flow stroke-primary-comfy-canvas/40"
-              stroke-width="1.5"
-              stroke-dasharray="4 5"
-            />
-          </svg>
-          <div class="flex -space-x-2">
-            <span
-              v-for="member in TEAM"
-              :key="member"
-              class="bg-transparency-white-t4 flex size-9 items-center justify-center rounded-full border-2 border-primary-comfy-ink font-mono text-[10px] text-primary-comfy-canvas"
-            >
-              {{ member }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Step 3: the endpoint fanning out to applications -->
-        <div
-          v-else
-          aria-hidden="true"
-          class="flex items-center justify-center gap-3"
-        >
-          <div
-            class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 shrink-0 rounded-full border px-4 py-2 font-mono text-[10px] text-primary-comfy-canvas"
-          >
-            <Transition name="crossfade" mode="out-in">
-              <span :key="workflow.endpoint">{{ workflow.endpoint }}</span>
-            </Transition>
-          </div>
-          <svg
-            viewBox="0 0 40 96"
-            class="h-24 w-10 shrink-0"
             aria-hidden="true"
+            class="border-transparency-white-t4 flex min-h-52 items-center justify-center overflow-hidden rounded-2xl border bg-primary-comfy-ink p-4"
           >
-            <path
-              v-for="(app, index) in APPS"
-              :key="app"
-              :d="`M 0 48 C 20 48, 20 ${12 + index * 24}, 40 ${12 + index * 24}`"
-              class="animate-dash-flow fill-none stroke-primary-comfy-canvas/40"
-              stroke-width="1.5"
-              stroke-dasharray="4 5"
-            />
-          </svg>
-          <div class="flex flex-col gap-1.5">
-            <span
-              v-for="app in APPS"
-              :key="app"
-              class="bg-transparency-white-t4 rounded-lg border border-white/10 px-3 py-1 font-mono text-[10px] text-primary-comfy-canvas"
+            <div
+              v-if="step.number === 1"
+              class="flex size-full flex-col items-center justify-center gap-1"
             >
-              {{ app }}
-            </span>
+              <div
+                class="border-transparency-white-t4 bg-transparency-ink-t80 w-full max-w-60 rounded-xl border p-3 font-mono text-sm/relaxed text-primary-comfy-canvas"
+              >
+                <Transition name="crossfade" mode="out-in">
+                  <p :key="workflow.file" class="text-primary-comfy-yellow">
+                    {{ workflow.file }}
+                  </p>
+                </Transition>
+                <p class="mt-1 text-smoke-700">{ "nodes": [...],</p>
+                <p class="text-smoke-700">&nbsp;&nbsp;"models": [...],</p>
+                <p class="text-smoke-700">&nbsp;&nbsp;"deps": [...] }</p>
+              </div>
+              <svg viewBox="0 0 8 18" class="h-4.5 w-2" aria-hidden="true">
+                <line
+                  x1="4"
+                  y1="0"
+                  x2="4"
+                  y2="18"
+                  :class="
+                    cn(
+                      'stroke-primary-comfy-yellow/60',
+                      animated && 'animate-dash-flow'
+                    )
+                  "
+                  stroke-width="1.5"
+                  stroke-dasharray="4 5"
+                />
+              </svg>
+              <div
+                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 w-full max-w-60 rounded-xl border px-3 py-1.5 text-center font-mono text-sm text-primary-comfy-canvas"
+              >
+                <span class="text-primary-comfy-yellow">POST&#32;</span>
+                <Transition name="crossfade" mode="out-in">
+                  <span :key="workflow.endpoint" class="break-all"
+                    >https://{{ workflow.endpoint }}.run.comfy.app</span
+                  >
+                </Transition>
+              </div>
+            </div>
+
+            <div
+              v-else-if="step.number === 2"
+              class="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap lg:flex-nowrap"
+            >
+              <div
+                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 max-w-full rounded-full border px-3 py-2 text-center font-mono text-sm text-primary-comfy-canvas"
+              >
+                <Transition name="crossfade" mode="out-in">
+                  <span :key="workflow.endpoint" class="break-all">
+                    {{ workflow.endpoint }}
+                  </span>
+                </Transition>
+              </div>
+              <svg viewBox="0 0 28 8" class="h-2 w-7" aria-hidden="true">
+                <line
+                  x1="0"
+                  y1="4"
+                  x2="28"
+                  y2="4"
+                  :class="
+                    cn(
+                      'stroke-primary-comfy-canvas/40',
+                      animated && 'animate-dash-flow'
+                    )
+                  "
+                  stroke-width="1.5"
+                  stroke-dasharray="4 5"
+                />
+              </svg>
+              <div class="flex -space-x-2">
+                <span
+                  v-for="member in TEAM"
+                  :key="member"
+                  class="bg-transparency-white-t4 flex size-9 items-center justify-center rounded-full border-2 border-primary-comfy-ink font-mono text-sm text-primary-comfy-canvas"
+                >
+                  {{ member }}
+                </span>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="flex w-full flex-col items-center justify-center gap-2 sm:flex-row sm:flex-wrap lg:flex-nowrap"
+            >
+              <div
+                class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 max-w-full shrink-0 rounded-full border px-3 py-2 text-center font-mono text-sm text-primary-comfy-canvas"
+              >
+                <Transition name="crossfade" mode="out-in">
+                  <span :key="workflow.endpoint" class="break-all">
+                    {{ workflow.endpoint }}
+                  </span>
+                </Transition>
+              </div>
+              <svg
+                viewBox="0 0 40 96"
+                class="h-20 w-5 shrink-0"
+                aria-hidden="true"
+              >
+                <path
+                  v-for="(app, index) in APPS"
+                  :key="app"
+                  :d="`M 0 48 C 20 48, 20 ${12 + index * 24}, 40 ${12 + index * 24}`"
+                  :class="
+                    cn(
+                      'fill-none stroke-primary-comfy-canvas/40',
+                      animated && 'animate-dash-flow'
+                    )
+                  "
+                  stroke-width="1.5"
+                  stroke-dasharray="4 5"
+                />
+              </svg>
+              <div class="flex flex-col gap-1">
+                <span
+                  v-for="app in APPS"
+                  :key="app"
+                  class="border-transparency-white-t4 bg-transparency-white-t4 rounded-md border px-1 py-0.5 font-mono text-sm text-primary-comfy-canvas"
+                >
+                  {{ app }}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+
+          <h3 class="mt-4 text-base font-normal text-primary-warm-white">
+            {{ step.title }}
+          </h3>
+          <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
+            {{ step.description }}
+          </p>
+        </article>
       </li>
     </ol>
   </section>
