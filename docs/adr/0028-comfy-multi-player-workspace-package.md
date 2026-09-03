@@ -35,8 +35,13 @@ of truth.
   to be pinned by SHA, which addressed a package resolved from another repository. That
   clause is amended there rather than left to contradict this one. Every consumer
   outside this repository, including the cloud `services/agent/dochost` sidecar, still
-  pins the published version exactly, so the two repositories cannot drift onto
-  different applier bytes.
+  pins the published version exactly. That exact pin prevents an unintended version
+  change; it does not by itself prevent drift, because workspace source can advance
+  ahead of the last published artifact. The two repositories are held on the same
+  applier bytes by the release order instead: the external pin advances only after the
+  matching frontend commit is tagged `comfy-multi-player-v<version>`, published, and
+  tested, per
+  [`agent-cross-repo-release-order.md`](../architecture/agent-cross-repo-release-order.md).
 - Releases are cut from namespaced `comfy-multi-player-v*` tags in this
   repository. Package-specific CI, mutation testing, and publishing remain
   independently scoped to the package boundary.

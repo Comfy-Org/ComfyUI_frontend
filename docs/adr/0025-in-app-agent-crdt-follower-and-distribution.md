@@ -73,11 +73,16 @@ snapshot-diff, no `LitegraphMutator` in the end state.
   **Amended 2026-09-03 — see [ADR-0028](0028-comfy-multi-player-workspace-package.md).**
   The single-applier half stands and is the load-bearing half. The SHA-pin half applied
   only while the package lived in a separate repository: the frontend now depends on it
-  with `workspace:*` against in-repo source, so there is no external ref to pin and the
-  guarantee the SHA gave (frontend and doc host run the same applier bytes) is instead
-  given by the package having exactly one writable source of truth. Consumers outside
-  this repository, including the cloud `services/agent/dochost` sidecar, still pin the
-  published artifact exactly.
+  with `workspace:*` against in-repo source, so there is no external ref for the frontend
+  to pin. What one writable source of truth removes is divergent applier _sources_;
+  it does not by itself make the frontend and the doc host run the same applier _bytes_.
+  Consumers outside this repository, including the cloud `services/agent/dochost`
+  sidecar, still pin the published artifact exactly, and an exact pin prevents an
+  unintended version change but lags workspace source until the matching
+  `comfy-multi-player-v<version>` artifact is tagged, published, and the pin is moved.
+  Same-bytes is therefore an invariant of the release order, not of the pin: the external
+  pin advances only after that commit is tagged, published, and tested, per
+  [`agent-cross-repo-release-order.md`](../architecture/agent-cross-repo-release-order.md).
 - ~~V1 is follow-only and needs no public graph-mutations API; the "internal API" is the
   Yjs binding into the domain stores. The human write-back path (canvas edit to op to
   host) is a later, separate step.~~ **Amended 2026-08-22 — see the Amendment section
