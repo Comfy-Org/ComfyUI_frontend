@@ -106,51 +106,43 @@ describe('useExtensionService', () => {
 
     it('skips contribution processing for duplicate registrations', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      try {
-        const service = useExtensionService()
-        const first: ComfyExtension = { name: 'dup' }
+      const service = useExtensionService()
+      const first: ComfyExtension = { name: 'dup' }
 
-        service.registerExtension(first)
-        service.registerExtension({ name: 'dup' })
+      service.registerExtension(first)
+      service.registerExtension({ name: 'dup' })
 
-        expect(warnSpy).toHaveBeenCalledWith(
-          "Extension named 'dup' already registered. Skipping duplicate registration."
-        )
-        // The first registration wins and is processed exactly once.
-        expect(
-          useExtensionStore().extensions.filter((ext) => ext.name === 'dup')
-        ).toEqual([first])
-        expect(useCommandStore().loadExtensionCommands).toHaveBeenCalledTimes(1)
-        expect(
-          useMenuItemStore().loadExtensionMenuCommands
-        ).toHaveBeenCalledTimes(1)
-        expect(
-          useBottomPanelStore().registerExtensionBottomPanelTabs
-        ).toHaveBeenCalledTimes(1)
-      } finally {
-        warnSpy.mockRestore()
-      }
+      expect(warnSpy).toHaveBeenCalledWith(
+        "Extension named 'dup' already registered. Skipping duplicate registration."
+      )
+      // The first registration wins and is processed exactly once.
+      expect(
+        useExtensionStore().extensions.filter((ext) => ext.name === 'dup')
+      ).toEqual([first])
+      expect(useCommandStore().loadExtensionCommands).toHaveBeenCalledTimes(1)
+      expect(
+        useMenuItemStore().loadExtensionMenuCommands
+      ).toHaveBeenCalledTimes(1)
+      expect(
+        useBottomPanelStore().registerExtensionBottomPanelTabs
+      ).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('loadExtensions', () => {
     it('warns and continues when a custom extension fails to load', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      try {
-        vi.mocked(api.getExtensions).mockResolvedValue([
-          '/extensions/BadPack/bad.js'
-        ])
+      vi.mocked(api.getExtensions).mockResolvedValue([
+        '/extensions/BadPack/bad.js'
+      ])
 
-        await useExtensionService().loadExtensions()
+      await useExtensionService().loadExtensions()
 
-        expect(warnSpy).toHaveBeenCalledWith(
-          'Error loading extension',
-          '/extensions/BadPack/bad.js',
-          expect.any(Error)
-        )
-      } finally {
-        warnSpy.mockRestore()
-      }
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Error loading extension',
+        '/extensions/BadPack/bad.js',
+        expect.any(Error)
+      )
     })
   })
 })
