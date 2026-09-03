@@ -678,6 +678,7 @@ describe('useAgentSession (v1 composition root)', () => {
       tabPath: 'tab-a'
     })
     expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
       tabs: { current_tab: 'wf-a' }
     })
   })

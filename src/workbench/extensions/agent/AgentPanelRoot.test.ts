@@ -1361,7 +1361,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       ],
       links: []
     })
-    hostStores.workflow.activeWorkflow = {
+    const activeWorkflow = {
       path: 'workflows/video_minimax_h3_i2v.json',
       directory: 'workflows',
       filename: 'video_minimax_h3_i2v',
@@ -1369,6 +1369,8 @@ describe('AgentPanelRoot canvas draft on send', () => {
       isModified: false,
       activeState
     }
+    hostStores.workflow.tabs.set(activeWorkflow.path, activeWorkflow)
+    hostStores.workflow.activeWorkflow = activeWorkflow
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -3073,6 +3075,56 @@ describe('AgentPanelRoot workflow binding', () => {
         String(frame).includes('doc_subscribe')
       )
     ).toBe(false)
+  })
+
+  it('does not reattribute a send when its originating tab closes during preparation', async () => {
+    const origin = makeTab('wf-origin')
+    origin.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'origin-draft' })
+    const replacement = addTab('workflows/replacement.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'replacement-draft' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-replacement', replacement.path)
+    const bodies: Record<string, unknown>[] = []
+    let workflowRequests = 0
+    let releasePreparation: () => void = () => undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
+          return json(202, ack('wf-fresh', 'm-1'))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/workflows')) {
+          workflowRequests++
+          if (workflowRequests > 1)
+            await new Promise<void>((resolve) => {
+              releasePreparation = resolve
+            })
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() => expect(workflowRequests).toBe(1))
+    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(workflowRequests).toBe(2))
+    hostStores.workflow.tabs.delete(origin.path)
+    hostStores.workflow.activeWorkflow = replacement
+    releasePreparation()
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('current_tab')
+    expect(bodies[0]).not.toHaveProperty('draft')
   })
 
   it('sends only the remaining chip after one is dismissed', async () => {
