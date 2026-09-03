@@ -8366,6 +8366,18 @@ export function t(key: TranslationKey, locale: Locale = 'en'): string {
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
 
+/**
+ * The raw entry for a key, every locale it carries, with no English fallback.
+ *
+ * `t()` deliberately cannot answer "does this key have Chinese?", because it
+ * falls back to English and so reports a value either way. The translation
+ * pipeline has to tell those apart: a present value is approved human work and
+ * must never be re-translated, while an absent one is the model's to fill.
+ */
+export function localizedEntry(key: TranslationKey): LocalizedText {
+  return translations[key]
+}
+
 export function hasKey(key: string): boolean {
   return key in translations
 }

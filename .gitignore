@@ -114,3 +114,8 @@ matrix-proof/
 
 # Agent telemetry working files
 /telemetry/
+
+# Per-locale work list for the translation pipeline: derived from en.json plus
+# the approved and machine layers on every run, so committing it would churn a
+# 2,000-key file for no information. Regenerate with `pnpm i18n:build-source`.
+apps/website/src/i18n/pending/
