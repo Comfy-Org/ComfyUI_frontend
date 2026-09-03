@@ -1447,7 +1447,7 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', { node })
+    this.events.dispatch('node:before-removed', { node, successor })
 
     if (!successor) {
       const { inputs, outputs } = node

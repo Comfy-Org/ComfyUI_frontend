@@ -1108,6 +1108,24 @@ describe('node:before-removed event', () => {
     expect(node.graph).toBeNull()
   })
 
+  it('identifies the successor when preserving same-id canonical state', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const successor = new LGraphNode('test')
+    successor.id = node.id
+    graph._nodes.push(successor)
+    graph._nodes_by_id[node.id] = successor
+
+    const beforeRemoved = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemoved)
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    expect(beforeRemoved).toHaveBeenCalledOnce()
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({ node, successor })
+  })
+
   it('does not fire node:before-removed for a node not in the graph', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
