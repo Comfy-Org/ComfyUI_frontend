@@ -41,8 +41,7 @@ const stubs = {
   BillingStatusBanner,
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
-  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' },
-  WorkspaceProfilePic: { template: '<div />' }
+  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' }
 }
 
 describe('WorkspaceSettingsPanelContent', () => {
@@ -59,9 +58,6 @@ describe('WorkspaceSettingsPanelContent', () => {
 
     expect(screen.getByTestId('plan-body')).toBeInTheDocument()
     expect(screen.queryByTestId('members-body')).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'Acme Team' })
-    ).toBeInTheDocument()
     expect(mockBannerMounted).toHaveBeenCalledTimes(1)
     expect(mockBannerUnmounted).not.toHaveBeenCalled()
 

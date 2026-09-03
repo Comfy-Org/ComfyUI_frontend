@@ -31,11 +31,8 @@
       </nav>
 
       <div class="flex flex-col overflow-hidden bg-base-background">
-        <header
-          v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
-        >
-          <div class="flex min-w-0 flex-1 gap-2">
+        <header v-if="$slots.header" :class="headerClass">
+          <div :class="headerContentClass">
             <Button
               v-if="!notMobile && !showLeftPanel"
               size="lg"
@@ -78,7 +75,10 @@
           >
             {{ contentTitle }}
           </h2>
-          <div :class="contentContainerClass">
+          <div
+            :class="contentContainerClass"
+            @scroll="$emit('contentScroll', $event)"
+          >
             <slot name="content" />
           </div>
         </main>
@@ -155,6 +155,7 @@ const SIZE_CLASSES = {
 
 type ModalSize = keyof typeof SIZE_CLASSES
 type ContentPadding = 'default' | 'compact' | 'none'
+type HeaderPadding = 'default' | 'symmetric'
 
 const {
   contentTitle,
@@ -162,6 +163,7 @@ const {
   size = 'lg',
   leftPanelWidth = '14rem',
   contentPadding = 'default',
+  headerPadding = 'default',
   closeButtonVariant
 } = defineProps<{
   contentTitle: string
@@ -169,10 +171,13 @@ const {
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  headerPadding?: HeaderPadding
   closeButtonVariant?: ButtonVariants['variant']
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
+
+defineEmits<{ contentScroll: [event: Event] }>()
 
 const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
   default: false
@@ -204,6 +209,20 @@ const showLeftPanel = computed(() => {
     : mobileMenuOpen.value
   return shouldShow
 })
+
+const headerClass = computed(() =>
+  cn(
+    'flex w-full items-center justify-between gap-2',
+    headerPadding === 'symmetric' ? 'min-h-11 p-6' : 'h-18 px-6'
+  )
+)
+
+const headerContentClass = computed(() =>
+  cn(
+    'flex min-w-0 flex-1 gap-2',
+    headerPadding === 'symmetric' && 'min-h-11 items-center'
+  )
+)
 
 const contentContainerClass = computed(() =>
   cn(

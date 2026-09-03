@@ -1,6 +1,11 @@
 <template>
   <div
-    class="flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white"
+    :class="
+      cn(
+        'flex aspect-square items-center justify-center rounded-md font-semibold text-white',
+        size === 'lg' ? 'size-11 text-2xl' : 'size-8 text-base'
+      )
+    "
     :style="{
       background: gradient,
       textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
@@ -11,10 +16,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-const { workspaceName } = defineProps<{
+const { workspaceName, size = 'sm' } = defineProps<{
   workspaceName: string
+  size?: 'sm' | 'lg'
 }>()
 
 const letter = computed(() => workspaceName?.charAt(0)?.toUpperCase() ?? '?')

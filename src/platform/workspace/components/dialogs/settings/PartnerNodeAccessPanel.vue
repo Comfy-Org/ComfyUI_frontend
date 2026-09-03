@@ -2,6 +2,7 @@
   <section
     class="flex min-h-0 grow flex-col gap-6 overflow-auto"
     aria-labelledby="partner-node-access-title"
+    @scroll="handlePanelScroll"
   >
     <h2 id="partner-node-access-title" class="sr-only">
       {{ $t('workspacePanel.partnerNodes.title') }}
@@ -357,6 +358,7 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -375,6 +377,8 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const governanceStore = usePartnerNodeGovernanceStore()
 const { governedWorkspaceId, isSaving, policy, providers, status } =
