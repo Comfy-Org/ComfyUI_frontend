@@ -598,6 +598,31 @@ describe('useAgentSession (v1 composition root)', () => {
     session.newChat()
   })
 
+  it('clears notices when an authenticated identity changes', async () => {
+    const identity = ref<string | null>('user-a')
+    const session = useAgentSession({
+      rest: fakeRest({
+        cancelMessage: vi.fn(async () => {
+          throw new TypeError('network down')
+        })
+      }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+    session.start()
+    await session.sendMessage('start a turn')
+    await session.stopTurn()
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'network down' }
+    ])
+
+    identity.value = 'user-b'
+    await nextTick()
+
+    expect(session.notices.value).toEqual([])
+    session.newChat()
+  })
+
   it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',

@@ -100,6 +100,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Clear session-local state too so an open panel cannot keep following
       // the previous account's workflow or complete one of its pending loads.
       loadGeneration++
+      notices.value = []
       promptEditState.value = { phase: 'idle' }
       boundWorkflowId.value = null
       rememberedWorkflowId = null
