@@ -32,3 +32,9 @@ export function createUuidv4(): UUID {
     (Number(a) ^ ((Math.random() * 16) >> (Number(a) * 0.25))).toString(16)
   )
 }
+
+/** Ensures an entity has a stable, non-zero UUID and returns it. */
+export function ensureNonZeroUuid(entity: { id: UUID }): UUID {
+  if (entity.id === zeroUuid) entity.id = createUuidv4()
+  return entity.id
+}
