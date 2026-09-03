@@ -104,7 +104,8 @@ test.describe('Events page — desktop @smoke', () => {
       const prevSlide = hero.getByRole('button', {
         name: t('events.hero.prevSlide', locale)
       })
-      const slideTitle = (index: number) => featuredEvents[index].title[locale]
+      const slideTitle = (index: number) =>
+        featuredEvents[index].title[locale] || featuredEvents[index].title.en
 
       await expect(activeSlide).toHaveAccessibleName(slideTitle(0))
 
@@ -204,16 +205,22 @@ test.describe('Events page — desktop @smoke', () => {
 
       for (const [i, event] of upcomingEvents.entries()) {
         const row = rows.nth(i)
-        await expect(row).toContainText(event.title[locale])
-        await expect(row).toContainText(event.location![locale])
-        await expect(row).toContainText(event.dateLabel![locale])
+        await expect(row).toContainText(event.title[locale] || event.title.en)
+        await expect(row).toContainText(
+          event.location![locale] || event.location!.en
+        )
+        await expect(row).toContainText(
+          event.dateLabel![locale] || event.dateLabel!.en
+        )
 
         // In-person events override the CTA label (e.g. "Register"); the rest
         // fall back to the default "Livestream" label.
         const ctaLabel =
-          event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale)
+          event.ctaLabel?.[locale] ||
+          event.ctaLabel?.en ||
+          t('events.upcoming.livestream', locale)
         const ctaLink = row.getByRole('link', {
-          name: `${event.title[locale]} — ${ctaLabel}`,
+          name: `${event.title[locale] || event.title.en} — ${ctaLabel}`,
           exact: true
         })
         // Events with a stream open their own detail page (dialog over the
@@ -221,7 +228,7 @@ test.describe('Events page — desktop @smoke', () => {
         const eventLink = event.link
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : eventLink?.href[locale]
+          : eventLink?.href[locale] || eventLink?.href.en
         if (expectedHref) {
           await expect(ctaLink).toHaveAttribute('href', expectedHref)
         }
@@ -248,17 +255,22 @@ test.describe('Events page — desktop @smoke', () => {
 
       await section
         .getByRole('link', {
-          name: `${event.title[locale]} — ${t('events.upcoming.livestream', locale)}`
+          name: `${event.title[locale] || event.title.en} — ${t('events.upcoming.livestream', locale)}`
         })
         .click()
 
       await expect(page).toHaveURL(
         new RegExp(`${localizeHref(eventPath(event), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', { name: event.title[locale] })
+      const dialog = page.getByRole('dialog', {
+        name: event.title[locale] || event.title.en
+      })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', { level: 1, name: event.title[locale] })
+        dialog.getByRole('heading', {
+          level: 1,
+          name: event.title[locale] || event.title.en
+        })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
@@ -314,7 +326,7 @@ test.describe('Events page — desktop @smoke', () => {
 
       for (const [i, event] of pastCardEvents.entries()) {
         const card = cards.nth(i)
-        await expect(card).toContainText(event.title[locale])
+        await expect(card).toContainText(event.title[locale] || event.title.en)
         const watch = card.getByRole('link', {
           name: new RegExp(t('events.past.watchNow', locale))
         })
@@ -322,7 +334,7 @@ test.describe('Events page — desktop @smoke', () => {
         // event's external page.
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link!.href[locale]
+          : event.link!.href[locale] || event.link!.href.en
         await expect(watch).toHaveAttribute('href', expectedHref)
       }
     }

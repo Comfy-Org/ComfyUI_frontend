@@ -176,7 +176,7 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    const [payload] = emitted().subscribe![0] as [
+    const [payload] = emitted().subscribe[0] as [
       { tierKey: string; billingCycle: string }
     ]
     expect(payload).toMatchObject({
@@ -276,7 +276,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Change plan' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    const [teamPayload] = emitted().subscribeTeam[0] as [{ isChange: boolean }]
     expect(teamPayload).toMatchObject({ isChange: true })
   })
 
@@ -296,7 +296,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Change plan' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    const [teamPayload] = emitted().subscribeTeam[0] as [{ isChange: boolean }]
     expect(teamPayload).toMatchObject({ isChange: true })
     expect(emitted().resubscribe).toBeFalsy()
   })
@@ -367,7 +367,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    const [teamPayload] = emitted().subscribeTeam[0] as [{ isChange: boolean }]
     expect(teamPayload).toMatchObject({ isChange: false })
     expect(emitted().resubscribe).toBeFalsy()
   })
