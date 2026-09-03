@@ -138,6 +138,51 @@ describe('agentRunModeStore', () => {
     expect(store.mode).toBe('auto_limited')
   })
 
+  it('keeps the latest save when an earlier PUT resolves last', async () => {
+    const resolvers: Array<(response: Response) => void> = []
+    fetchApi.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const store = useAgentRunModeStore()
+
+    const first = store.save('auto_limited', 20)
+    const second = store.save('auto', null)
+    expect(resolvers).toHaveLength(2)
+
+    resolvers[1]!(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+    await second
+    resolvers[0]!(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    await first
+
+    expect(store.mode).toBe('auto')
+    expect(store.creditLimit).toBeNull()
+  })
+
+  it('applies an earlier save when the latest one fails', async () => {
+    const resolvers: Array<(response: Response) => void> = []
+    fetchApi.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const store = useAgentRunModeStore()
+
+    const first = store.save('auto_limited', 20)
+    const second = store.save('auto', null)
+
+    resolvers[1]!(jsonResponse(500, { error: 'boom' }))
+    await expect(second).rejects.toThrow()
+    resolvers[0]!(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    await first
+
+    expect(store.mode).toBe('auto_limited')
+    expect(store.creditLimit).toBe(20)
+  })
+
   it('keeps a valid local preference when the endpoint is unavailable', async () => {
     localStorage.setItem(
       'Comfy.Agent.RunModePreference',
