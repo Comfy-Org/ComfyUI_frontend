@@ -1,28 +1,17 @@
 import { expect } from '@playwright/test'
 
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
-  listRecordedConversations,
-  loadAgentConversation
-} from '@e2e/fixtures/data/agent/agentConversation'
-import {
-  expectedGraphSnapshot,
-  expectedUpdateCount,
-  recordedAddedNodeIds,
-  recordedToolCallGroups,
-  recordedWidgetValues,
+  agentConversationTest as test,
   toolRowLabel
-} from '@e2e/fixtures/data/agent/agentConversationExpectations'
+} from '@e2e/fixtures/agentConversationFixture'
+import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 
 test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
   for (const conversationCase of listRecordedConversations()) {
-    const conversation = loadAgentConversation(conversationCase)
-    const groups = recordedToolCallGroups(conversation)
-
     test.describe(`recorded ${conversationCase}`, () => {
       test.use({ conversationCase })
 
-      test(`replays: ${conversation.request.content}`, async ({
+      test('replays the recorded turn onto the panel and the canvas', async ({
         agentConversation,
         page
       }) => {
@@ -33,6 +22,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         await agentConversation.replayResponse()
         await agentConversation.waitForTurnComplete()
 
+        const groups = agentConversation.toolCallGroups()
         const groupButtons = panel.getByRole('button', {
           name: /^Ran \d+ tool call/
         })
@@ -59,7 +49,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
 
         await expect(
           panel.getByRole('button', {
-            name: `Open ${conversation.workflow.name}`
+            name: `Open ${agentConversation.conversation.workflow.name}`
           })
         ).toBeVisible()
         await expect(
@@ -69,17 +59,17 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
           'connected'
         )
         await expect(panel.getByTestId('agent-crdt-status')).toContainText(
-          `${expectedUpdateCount(conversation)} updates`
+          `${agentConversation.expectedUpdateCount()} updates`
         )
 
-        const graph = agentConversation.hostGraph()
-        for (const id of recordedAddedNodeIds(conversation, graph)) {
+        for (const id of agentConversation.addedNodeIds()) {
           await expect(page.locator(`[data-node-id="${id}"]`)).toBeVisible()
         }
-        for (const { nodeId, widget, value } of recordedWidgetValues(
-          conversation,
-          graph
-        )) {
+        for (const {
+          nodeId,
+          widget,
+          value
+        } of agentConversation.recordedWidgetValues()) {
           const field = page
             .locator(`[data-node-id="${nodeId}"]`)
             .getByLabel(widget, { exact: true })
@@ -90,7 +80,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
 
         await expect
           .poll(() => agentConversation.graphSnapshot())
-          .toEqual(expectedGraphSnapshot(conversation, graph))
+          .toEqual(agentConversation.expectedGraph())
       })
     })
   }
