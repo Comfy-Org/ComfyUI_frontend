@@ -21,6 +21,9 @@
   Pick a slug that names the failure, not the symptom, and reuse the existing
   one if the failure already has a name.
 
+  Follow [ADR-TELEMETRY-ERRORS-0030](../docs/adr/TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md) for
+  agent-consumable tags, assertion modes, catch classification, and PII rules.
+
 ## Security
 
 - Sanitize HTML with DOMPurify
