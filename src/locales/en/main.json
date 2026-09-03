@@ -4750,13 +4750,15 @@
     "cancel": "Stop this run",
     "starting": "Starting",
     "queuedCount": "Queued {count}",
-    "runningPosition": "Running {position}/{total}",
     "recentResults": "Recent results",
     "viewResult": "Open result",
     "goToHistory": "View all history",
     "pause": "Pause",
     "pauseUnavailable": "Pause is not available yet",
-    "chooseRunToStop": "Choose which run to stop"
+    "chooseRunToStop": "Choose which run to stop",
+    "resolveErrors": "Resolve errors",
+    "onCanvas": "Shown on canvas",
+    "queueHeading": "Queued · {count}"
   },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
