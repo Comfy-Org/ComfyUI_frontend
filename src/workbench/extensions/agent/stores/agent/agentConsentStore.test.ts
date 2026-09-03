@@ -16,9 +16,18 @@ const authState = vi.hoisted(() => ({
   identity: 'account-a' as string | null,
   getUserAuthHeader: vi.fn()
 }))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    resolvedUserInfo: {
+      get value() {
+        return authState.identity ? { id: authState.identity } : null
+      }
+    }
+  })
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    currentUserIdentity: () => authState.identity,
     getUserAuthHeader: authState.getUserAuthHeader
   })
 }))

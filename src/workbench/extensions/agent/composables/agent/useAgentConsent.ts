@@ -24,10 +24,13 @@ export function useAgentConsent() {
   const consentStore = useAgentConsentStore()
   const toastStore = useToastStore()
   const { isLoggedIn } = useCurrentUser()
-  const { accepted } = storeToRefs(consentStore)
+  const { accepted, identity } = storeToRefs(consentStore)
   const { t } = i18n.global
 
-  function showConsentDialog(persistOnAccept = true): Promise<boolean> {
+  function showConsentDialog(
+    persistOnAccept = true,
+    expectedIdentity?: string
+  ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       let settled = false
       let saving = false
@@ -52,7 +55,9 @@ export function useAgentConsent() {
         })
 
         try {
-          const saved = persistOnAccept ? await consentStore.accept() : true
+          const saved = persistOnAccept
+            ? await consentStore.accept(expectedIdentity)
+            : true
           closeWith(saved)
         } catch (error) {
           saving = false
@@ -129,6 +134,9 @@ export function useAgentConsent() {
       return
     }
 
+    const decisionIdentity = identity.value
+    if (!decisionIdentity) return
+
     try {
       await consentStore.load()
     } catch (error) {
@@ -143,7 +151,9 @@ export function useAgentConsent() {
       return
     }
 
-    if (!accepted.value && !(await showConsentDialog())) return
+    if (identity.value !== decisionIdentity) return
+    if (!accepted.value && !(await showConsentDialog(true, decisionIdentity)))
+      return
     onAccept()
   }
 
