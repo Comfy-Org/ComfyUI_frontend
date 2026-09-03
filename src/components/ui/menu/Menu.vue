@@ -99,7 +99,13 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
       <DropdownMenuContent
         ref="content"
         v-bind="$attrs"
-        :class="cn(menuContentClass, $attrs.class)"
+        :class="
+          cn(
+            menuContentClass,
+            'max-h-(--reka-dropdown-menu-content-available-height)',
+            $attrs.class
+          )
+        "
         :style="contentStyle"
         :side-offset="2"
         align="start"

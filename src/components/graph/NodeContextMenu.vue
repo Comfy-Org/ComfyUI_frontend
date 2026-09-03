@@ -2,7 +2,6 @@
   <ContextMenu
     ref="contextMenu"
     :model="menuItems"
-    class="max-h-[calc(100vh-1rem)] overflow-y-auto"
     @show="onMenuShow"
     @hide="onMenuHide"
   >
@@ -36,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
+import { useElementBounding, useRafFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
@@ -72,10 +71,7 @@ let lastOffsetY = 0
 const updateMenuPosition = () => {
   if (!isOpen.value) return
 
-  const menuInstance = contextMenu.value as unknown as {
-    container?: HTMLElement
-  }
-  const menuEl = menuInstance?.container
+  const menuEl = contextMenu.value?.container?.$el
   if (!menuEl) return
 
   const { scale, offset } = lgCanvas.ds
@@ -115,27 +111,6 @@ watchEffect(() => {
     stopSync()
   }
 })
-
-// Close on touch outside to handle mobile devices where click might be swallowed
-useEventListener(
-  window,
-  'touchstart',
-  (event: TouchEvent) => {
-    if (!isOpen.value || !contextMenu.value) return
-
-    const target = event.target as Node
-    const contextMenuInstance = contextMenu.value as unknown as {
-      container?: HTMLElement
-      $el?: HTMLElement
-    }
-    const menuEl = contextMenuInstance.container || contextMenuInstance.$el
-
-    if (menuEl && !menuEl.contains(target)) {
-      hide()
-    }
-  },
-  { passive: true }
-)
 
 function convertToMenuItem(option: MenuOption): MenuItem {
   if (option.type === 'divider') return { separator: true }
