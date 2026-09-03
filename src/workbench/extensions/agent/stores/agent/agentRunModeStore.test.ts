@@ -90,6 +90,35 @@ describe('agentRunModeStore', () => {
     expect(store.creditLimit).toBe(20)
   })
 
+  it('invalidates a pending load as soon as a save starts', async () => {
+    let resolveGet!: (response: Response) => void
+    let resolvePut!: (response: Response) => void
+    const getResponse = new Promise<Response>((resolve) => {
+      resolveGet = resolve
+    })
+    const putResponse = new Promise<Response>((resolve) => {
+      resolvePut = resolve
+    })
+    fetchApi.mockImplementation((_route, init) =>
+      init?.method === 'GET' ? getResponse : putResponse
+    )
+    localStorage.setItem(
+      'Comfy.Agent.RunModePreference',
+      JSON.stringify({ mode: 'auto', credit_limit: null })
+    )
+    const store = useAgentRunModeStore()
+
+    const load = store.load()
+    const save = store.save('auto_limited', 20)
+    resolveGet(jsonResponse(200, { mode: 'ask_approval', credit_limit: null }))
+    await load
+
+    expect(store.mode).toBe('auto')
+    resolvePut(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    await save
+    expect(store.mode).toBe('auto_limited')
+  })
+
   it('keeps a valid local preference when the endpoint is unavailable', async () => {
     localStorage.setItem(
       'Comfy.Agent.RunModePreference',

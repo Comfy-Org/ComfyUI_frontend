@@ -109,13 +109,12 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       mode: nextMode,
       credit_limit: nextLimit
     })
+    saveRevision++
     try {
       const savedPreference = await api.putRunMode(preference)
-      saveRevision++
       apply(savedPreference)
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error
-      saveRevision++
       apply(preference)
     }
   }
