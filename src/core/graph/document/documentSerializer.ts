@@ -2,6 +2,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import { assert } from '@/base/assert'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -19,9 +20,11 @@ const MAX_CANONICALIZE_DEPTH = 32
 
 function canonicalize(value: unknown, depth = 0): unknown {
   if (depth > MAX_CANONICALIZE_DEPTH) {
-    throw new Error(
-      `serializeDocumentScope: exceeded max canonicalization depth of ${MAX_CANONICALIZE_DEPTH}; semantic state likely contains a cycle or runtime-only object`
+    assert(
+      false,
+      'serializeDocumentScope: exceeded max canonicalization depth; semantic state likely contains a cycle or runtime-only object'
     )
+    return undefined
   }
   if (Array.isArray(value))
     return value.map((entry) => canonicalize(entry, depth + 1))
