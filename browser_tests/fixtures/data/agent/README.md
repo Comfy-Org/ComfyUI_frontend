@@ -18,10 +18,9 @@ message ID and an export timestamp.
 cd ../cloud && cloud up
 ```
 
-Then record mode from `docs/testing/agent-integration-development.md` (Playbook,
-third command), paste the recorder command it prints with one `--prompt` per
-turn, and replay the new case with the command in `browser_tests/README.md`
-(Playbook) plus `-g <case id>`.
+Then job 3 in `docs/testing/agent-integration-development.md` ("Start here"):
+record mode, then the recorder command it prints with one `--prompt` per turn.
+Replay the new case with job 1 there plus `-g <case id>`.
 
 ## Recording a conversation
 
