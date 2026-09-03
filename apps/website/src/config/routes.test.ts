@@ -24,6 +24,11 @@ describe('localizeHref', () => {
       '/enterprise/managed-builds'
     )
   })
+
+  it('only localizes the Japanese homepage', () => {
+    expect(localizeHref('/', 'ja')).toBe('/ja/')
+    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+  })
 })
 
 describe('getRoutes models', () => {
@@ -113,6 +118,16 @@ describe('getRoutes flux3', () => {
 
   it('serves a localized flux 3 path for zh-CN', () => {
     expect(getRoutes('zh-CN').flux3).toBe('/zh-CN/flux-3')
+  })
+})
+
+describe('getRoutes agent', () => {
+  it('serves the agent page at its canonical path for en', () => {
+    expect(getRoutes('en').agent).toBe('/agent')
+  })
+
+  it('serves a localized agent path for zh-CN', () => {
+    expect(getRoutes('zh-CN').agent).toBe('/zh-CN/agent')
   })
 })
 

@@ -34,10 +34,6 @@
     "copy": "Kopieren",
     "copyMarkdown": "Als Markdown kopieren",
     "copyUnavailable": "In dieser Version kann nur die aktuelle Unterhaltung kopiert werden",
-    "crdtConnected": "verbunden",
-    "crdtDisconnected": "getrennt",
-    "crdtNoDocument": "kein Dokument",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} Aktualisierungen · {frame}",
     "credits": "Credits",
     "delete": "Löschen",
     "dismiss": "Verwerfen",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "Tabs gewechselt",
     "untitledChat": "Ohne Titel",
     "uploading": "Wird hochgeladen"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Kosten pro Ausführung",
-    "title": "API-Node(s)",
-    "totalCost": "Gesamtkosten"
   },
   "apiNodesSignInDialog": {
     "message": "Dieser Workflow enthält API-Nodes, für deren Ausführung Sie bei Ihrem Konto angemeldet sein müssen.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "Scheduler",
     "scheduling": "Planung",
+    "sensenova": "sensenova",
     "shader": "Shader",
     "sigmas": "Sigmas",
     "sound": "Ton",
@@ -5038,8 +5030,10 @@
       "failedCount": "{count} Einladung konnte nicht gesendet werden. Versuchen Sie es erneut. | {count} Einladungen konnten nicht gesendet werden. Versuchen Sie es erneut.",
       "invalidEmailCount": "{count} ungültige E-Mail-Adresse | {count} ungültige E-Mail-Adressen",
       "invitedMessage": "Eine Einladung wurde an {emails} gesendet | Einladungen wurden an {emails} gesendet",
+      "pendingInviteCount": "{count} dieser Personen haben bereits eine ausstehende Einladung. Sie werden übersprungen.",
+      "pendingInviteSingle": "Für diese Person liegt bereits eine Einladung aus",
       "placeholder": "Durch Kommas getrennte E-Mail-Adressen eingeben",
-      "seatLimitReached": "Sie können bis zu {count} Teammitglied einladen. | Sie können bis zu {count} Teammitglieder einladen.",
+      "seatLimitExceeded": "Dieser Workspace ist auf {max} Mitglieder begrenzt. Entfernen Sie {overage}, um fortzufahren.",
       "title": "Mitglieder in diesen Workspace einladen"
     },
     "inviteUpsellDialog": {

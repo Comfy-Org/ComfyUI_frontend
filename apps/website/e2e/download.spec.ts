@@ -337,14 +337,14 @@ test.describe('Download page @smoke', () => {
     await expect(cards).toHaveCount(3)
   })
 
-  test('ProductCardsSection links to cloud, api, enterprise', async ({
+  test('ProductCardsSection links to cloud, platform, enterprise', async ({
     page
   }) => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
 
-    for (const href of ['/cloud', '/api', '/enterprise']) {
+    for (const href of ['/cloud', '/platform', '/enterprise']) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })

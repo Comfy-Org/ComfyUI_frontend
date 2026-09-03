@@ -4,11 +4,13 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
+import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { sitemapAlternates } from './src/lib/hreflang'
 
-const LOCALES = ['en', 'zh-CN'] as const
+const LOCALES = ['en', 'zh-CN', 'ja'] as const
 const DEFAULT_LOCALE = 'en'
+
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
@@ -19,17 +21,7 @@ export default defineConfig({
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.
   markdown: { smartypants: false },
-  redirects: {
-    '/cloud/enterprise': { status: 301, destination: '/enterprise/' },
-    '/zh-CN/cloud/enterprise': { status: 301, destination: '/enterprise/' },
-    '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
-      '/customers/moment-factory/',
-    '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
-      '/customers/series-entertainment/',
-    '/zh-CN/terms-of-service': '/terms-of-service/',
-    '/minimax': { status: 307, destination: '/minimax-h3/' },
-    '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
-  },
+  redirects,
   build: {
     assets: '_website'
   },
