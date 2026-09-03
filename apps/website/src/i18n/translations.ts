@@ -8460,8 +8460,8 @@ Enterprise`
   'workshop.useCase.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.useCase.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.search.label': {
-    en: 'Search by model, task, category and more',
-    'zh-CN': '按模型、任务、类别等搜索'
+    en: 'Search models by name, provider or what they do',
+    'zh-CN': '按名称、提供商或用途搜索模型'
   },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
@@ -9016,6 +9016,10 @@ Enterprise`
   'workshop.hub.showing': {
     en: 'Showing {shown} of {total} templates',
     'zh-CN': '显示 {shown} / {total} 个模板'
+  },
+  'workshop.proto.families': {
+    en: 'Group releases behind the newest',
+    'zh-CN': '将旧版本折叠到最新版本下'
   },
   'workshop.proto.statuses': {
     en: 'Show deprecated and degraded models',

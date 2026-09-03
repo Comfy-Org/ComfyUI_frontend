@@ -91,6 +91,23 @@ function dedupeByName(sorted: readonly WorkshopModel[]): WorkshopModel[] {
   })
 }
 
+// Grouping is a prototype variant, not a settled decision: the TDD describes a
+// catalogue of every partner model, one card and one page each. Off, each
+// release stands alone; on, the releases collapse behind the newest.
+export function groupModels(
+  models: readonly WorkshopModel[],
+  grouped: boolean
+): ModelFamily[] {
+  return grouped
+    ? groupByFamily(models)
+    : models.map((model) => ({
+        key: model.slug,
+        name: model.name,
+        latest: model,
+        versions: [model]
+      }))
+}
+
 export function familyOf(
   models: readonly WorkshopModel[],
   slug: string

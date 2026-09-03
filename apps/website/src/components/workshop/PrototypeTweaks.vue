@@ -43,8 +43,14 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 
 const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
   useMockSession()
-const { outcome, modelState, version, showStatuses, outputCount } =
-  usePrototypeTweaks()
+const {
+  outcome,
+  modelState,
+  version,
+  showStatuses,
+  outputCount,
+  groupVersions
+} = usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
   'signedOut',
@@ -78,6 +84,8 @@ onMounted(() => {
   if (shared.version) version.value = shared.version
   if (shared.showStatuses !== undefined)
     showStatuses.value = shared.showStatuses
+  if (shared.groupVersions !== undefined)
+    groupVersions.value = shared.groupVersions
   if (shared.outcome) outcome.value = shared.outcome
   if (shared.modelState) modelState.value = shared.modelState
   if (shared.outputCount) outputCount.value = shared.outputCount
@@ -96,6 +104,7 @@ const pageSearch = ref('')
 const shareState = computed<ShareState>(() => ({
   version: version.value,
   showStatuses: showStatuses.value,
+  groupVersions: groupVersions.value,
   session: sessionChoice.value,
   subscribed: account.value?.subscribed ?? true,
   balance: zeroBalance.value ? 'zero' : lowBalance.value ? 'low' : 'normal',
@@ -219,6 +228,22 @@ const selectClass =
                 aria-hidden="true"
               />
             </span>
+          </label>
+
+          <label class="flex items-center justify-between gap-3">
+            <span class="text-primary-comfy-canvas">
+              {{ t('workshop.proto.families', locale) }}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="groupVersions"
+              data-testid="tweak-families"
+              :class="switchClass(groupVersions)"
+              @click="groupVersions = !groupVersions"
+            >
+              <span :class="knobClass(groupVersions)" />
+            </button>
           </label>
 
           <label class="flex items-center justify-between gap-3">

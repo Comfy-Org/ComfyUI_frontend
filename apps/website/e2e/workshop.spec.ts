@@ -26,7 +26,7 @@ test.describe('Workshop V2', () => {
     await expect(hub.getByTestId('hub-heading')).toContainText(
       'Browse the Workshop'
     )
-    await expect(hub.getByTestId('hub-use-case-all')).toContainText('667')
+    await expect(hub.getByTestId('hub-use-case-all')).toContainText('700')
     await expect(hub.getByTestId('hub-card').first()).toBeVisible()
     await hub.getByTestId('hub-tab-comfyApps').click()
     await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(
@@ -77,10 +77,9 @@ test.describe('Workshop catalog', () => {
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
     await page.getByTestId('use-case-video').click()
-    await expect(cards).toHaveCount(17)
-    await expect(cards.first().getByTestId('model-card-task')).toHaveText(
-      'Text to Video'
-    )
+    await expect(cards).toHaveCount(39)
+    const tasks = await grid.getByTestId('model-card-task').allTextContents()
+    expect(tasks.every((task) => task.includes('Video'))).toBe(true)
     await page.getByTestId('use-case-all').click()
 
     await page.getByTestId('workshop-search').fill('kling')
@@ -107,7 +106,7 @@ test.describe('Workshop catalog', () => {
       page
         .getByTestId('workshop-models-grid')
         .getByTestId('workshop-model-card')
-    ).toHaveCount(11)
+    ).toHaveCount(20)
 
     await page.getByTestId('section-back').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
@@ -141,7 +140,7 @@ test.describe('Workshop catalog', () => {
     ).toHaveText('1')
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(cards).toHaveCount(57)
+    await expect(cards).toHaveCount(90)
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {

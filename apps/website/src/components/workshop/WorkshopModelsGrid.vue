@@ -19,7 +19,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { groupByFamily } from '../../config/model-family'
+import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
@@ -57,7 +57,7 @@ const modality = ref<ModalityFilter>('all')
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const { showStatuses, version } = usePrototypeTweaks()
+const { showStatuses, version, groupVersions } = usePrototypeTweaks()
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
@@ -149,7 +149,7 @@ const providerOptions = computed<FacetMenuOption[]>(() =>
 )
 
 const visible = computed(() =>
-  groupByFamily(
+  groupModels(
     sortWorkshopModels(
       filterWorkshopModels(models, {
         query: query.value,
@@ -159,7 +159,8 @@ const visible = computed(() =>
         capabilities: capabilities.value
       }),
       sort.value
-    )
+    ),
+    groupVersions.value
   )
 )
 const isFiltered = computed(
@@ -443,7 +444,7 @@ const menuItemClass =
                 'grid grid-cols-1 gap-5 sm:grid-cols-2',
                 railBeside
                   ? 'xl:grid-cols-3 2xl:grid-cols-4'
-                  : 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+                  : 'min-[2200px]:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4'
               )
             "
             aria-labelledby="workshop-models-heading"

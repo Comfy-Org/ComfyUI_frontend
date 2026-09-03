@@ -4,10 +4,14 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import HubBrowse from './HubBrowse.vue'
+
+const { groupVersions } = usePrototypeTweaks()
 
 afterEach(() => {
   useHubStore().reset()
+  groupVersions.value = false
 })
 
 describe('HubBrowse', () => {
@@ -58,14 +62,24 @@ describe('HubBrowse', () => {
   it('browses by output and keeps models and workflows under one count', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
-    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('667')
+    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('700')
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
     const lead = screen.getAllByTestId('hub-models-lead')
     expect(lead[0].textContent).toContain('Tripo')
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 40')
 
-    // Meshy AI and Meshy 7 are one family, so they share a card.
+    await user.click(screen.getByTestId('hub-tab-models'))
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(6)
+    expect(screen.queryByTestId('model-card-versions')).toBeNull()
+  })
+
+  it('collapses the releases of a family when the prototype asks for it', async () => {
+    const user = userEvent.setup()
+    groupVersions.value = true
+    render(HubBrowse)
+
+    await user.click(screen.getByTestId('hub-use-case-3d'))
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(4)
     expect(

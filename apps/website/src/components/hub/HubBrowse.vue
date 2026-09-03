@@ -5,9 +5,10 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useHubStore } from '../../composables/useHubStore'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { ModalityFilter } from '../../config/workshop'
 import { MODALITIES, modalityOf, workshopModels } from '../../config/workshop'
-import { groupByFamily } from '../../config/model-family'
+import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
 import { partnerModelFor } from '../../lib/hub/template-use-case'
@@ -28,6 +29,7 @@ const { locale = 'en', embedded = false } = defineProps<{
 
 const templates = hubTemplates as HubTemplate[]
 const store = useHubStore()
+const { groupVersions } = usePrototypeTweaks()
 onUnmounted(() => store.reset())
 
 const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
@@ -58,12 +60,14 @@ const entryFor = (value: ModalityFilter) => {
   const { models, templates: scoped } = inMedium(value)
   return {
     value,
-    total: groupByFamily(models).length + scoped.length
+    total: groupModels(models, groupVersions.value).length + scoped.length
   }
 }
 
-const allEntry = entryFor('all')
-const media = MODALITIES.map(entryFor).filter((entry) => entry.total > 0)
+const mediaTabs = computed(() => [
+  entryFor('all'),
+  ...MODALITIES.map(entryFor).filter((entry) => entry.total > 0)
+])
 
 const scoped = computed(() => inMedium(medium.value))
 
@@ -148,8 +152,9 @@ const filteredModels = computed(() => {
 // Models open the All tab, in the same grid as the workflows behind them.
 const LEAD_MODELS = 5
 
-// One card per family: the newest release leads, the rest sit behind it.
-const modelFamilies = computed(() => groupByFamily(filteredModels.value))
+const modelFamilies = computed(() =>
+  groupModels(filteredModels.value, groupVersions.value)
+)
 
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value
@@ -186,7 +191,7 @@ const filteredTemplates = computed(() => {
         data-testid="hub-use-cases"
       >
         <button
-          v-for="entry in [allEntry, ...media]"
+          v-for="entry in mediaTabs"
           :key="entry.value"
           type="button"
           :aria-pressed="medium === entry.value"
@@ -267,7 +272,7 @@ const filteredTemplates = computed(() => {
 
       <template #models>
         <ul
-          class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+          class="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           data-testid="hub-models"
         >
           <li v-for="family in modelFamilies" :key="family.key">

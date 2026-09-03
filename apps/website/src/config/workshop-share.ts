@@ -19,6 +19,7 @@ type OutputCount = (typeof OUTPUT_COUNTS)[number]
 export interface ShareState {
   readonly version: Version
   readonly showStatuses: boolean
+  readonly groupVersions: boolean
   readonly session: SessionChoice
   readonly subscribed: boolean
   readonly balance: BalanceChoice
@@ -31,6 +32,7 @@ export interface ShareState {
 export const SHARE_DEFAULTS: ShareState = {
   version: 'v1',
   showStatuses: false,
+  groupVersions: false,
   session: 'signedOut',
   subscribed: true,
   balance: 'normal',
@@ -50,6 +52,7 @@ const BALANCE_CHOICES: readonly BalanceChoice[] = ['normal', 'zero', 'low']
 const KEYS = {
   version: 'version',
   showStatuses: 'statuses',
+  groupVersions: 'families',
   session: 'session',
   subscribed: 'subscribed',
   balance: 'balance',
@@ -97,6 +100,7 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
   const decoded: Partial<ShareState> = {
     version: pick(VERSIONS, params.get(KEYS.version)),
     showStatuses: pickFlag(params.get(KEYS.showStatuses)),
+    groupVersions: pickFlag(params.get(KEYS.groupVersions)),
     session: pick(SESSION_CHOICES, params.get(KEYS.session)),
     subscribed: pickFlag(params.get(KEYS.subscribed)),
     balance: pick(BALANCE_CHOICES, params.get(KEYS.balance)),

@@ -38,6 +38,9 @@ const version = ref<Version>('v1')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 const outputCount = ref<OutputCount>(1)
+// The catalogue lists one card per model, as the TDD describes. Grouping the
+// releases of a family behind the newest is an unsettled variant.
+const groupVersions = ref(false)
 let hydrated = false
 
 function isVersion(value: unknown): value is Version {
@@ -71,6 +74,7 @@ export function usePrototypeTweaks() {
     modelState,
     version,
     showStatuses,
-    outputCount
+    outputCount,
+    groupVersions
   }
 }
