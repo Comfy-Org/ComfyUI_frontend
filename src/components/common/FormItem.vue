@@ -21,7 +21,7 @@
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
-        v-model:model-value="formValue"
+        v-model:model-value="componentValue"
         :aria-labelledby="`${props.id}-label`"
         v-bind="getFormAttrs(props.item)"
       />
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { markRaw } from 'vue'
+import { computed, markRaw } from 'vue'
 import type { Component } from 'vue'
 
 import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
@@ -53,6 +53,17 @@ const props = defineProps<{
   id?: string
   labelClass?: string | Record<string, boolean>
 }>()
+
+const componentValue = computed({
+  get: () => {
+    if (props.item.type !== 'number' || typeof formValue.value === 'number') {
+      return formValue.value
+    }
+    const min = props.item.attrs?.min
+    return typeof min === 'number' && Number.isFinite(min) ? min : 0
+  },
+  set: (value: unknown) => (formValue.value = value)
+})
 
 function getFormAttrs(item: FormItem) {
   const attrs = { ...(item.attrs || {}) }
