@@ -109,7 +109,7 @@ describe('ZoomControlsModal', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    const input = screen.getByRole('textbox')
+    const input = screen.getByRole('spinbutton')
     await user.tripleClick(input)
     await user.keyboard('150')
 
@@ -122,7 +122,7 @@ describe('ZoomControlsModal', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    const input = screen.getByRole('textbox')
+    const input = screen.getByRole('spinbutton')
     await user.tripleClick(input)
     await user.keyboard('0')
 
@@ -135,7 +135,7 @@ describe('ZoomControlsModal', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    const input = screen.getByRole('textbox')
+    const input = screen.getByRole('spinbutton')
     await user.tripleClick(input)
     await user.keyboard('100')
     vi.mocked(useCanvasStore().setAppZoomFromPercentage).mockClear()
