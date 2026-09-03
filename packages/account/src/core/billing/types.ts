@@ -42,7 +42,7 @@ export interface TopupRequest {
   idempotency_key: string
 }
 export interface ResubscribeRequest {
-  plan_slug?: string
+  idempotency_key?: string
 }
 export interface CancelRequest {
   idempotency_key?: string
@@ -61,15 +61,18 @@ export interface SubscribeResponse {
   effective_at?: string
 }
 export interface TopupResponse extends BillingOperationRef {
-  status?: string
+  topup_id?: string
+  amount_cents: number
+  status: 'pending' | 'completed' | 'failed'
 }
 export interface ResubscribeResponse {
-  status: 'resubscribed' | 'pending'
+  status: 'active' | 'pending'
   billing_op_id?: string
+  message?: string
 }
 export interface CancelResponse {
-  status: 'canceled' | 'pending'
-  billing_op_id?: string
+  billing_op_id: string
+  cancel_at: string
 }
 export interface PaymentPortalResponse {
   url: string
@@ -78,6 +81,8 @@ export interface BillingStatusResponse {
   pending_billing_op_id?: string
   pending_billing_op_type?: 'subscription' | 'topup'
   action_url?: string
+  subscription_status?: string
+  is_active?: boolean
 }
 export interface BillingOperationResponse {
   status: BillingOperationStatus

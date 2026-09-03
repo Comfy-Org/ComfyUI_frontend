@@ -4,6 +4,7 @@ import type {
   BillingClock,
   BillingOperationKind,
   BillingOperationStore,
+  OpenUrlMode,
   BillingState
 } from './types.js'
 
@@ -19,9 +20,11 @@ export function createBillingPoller(options: {
   clock: BillingClock
   store: BillingOperationStore
   onState(state: BillingState): void
+  openUrl?(url: string, mode: OpenUrlMode): Promise<{ opened: boolean }>
 }) {
   let handle: unknown
   let stopped = false
+  let openedActionUrl: string | undefined
   async function poll(
     id: string,
     kind: BillingOperationKind,
@@ -54,6 +57,10 @@ export function createBillingPoller(options: {
         type: 'urlReceived',
         url: response.action_url
       })
+    if (response.action_url && response.action_url !== openedActionUrl) {
+      openedActionUrl = response.action_url
+      await options.openUrl?.(response.action_url, 'new_tab')
+    }
     state = reduceBilling(state, {
       type: 'opStatus',
       status: response.status,
@@ -66,18 +73,20 @@ export function createBillingPoller(options: {
       await options.store.clearActiveId()
       return
     }
+    const scheduledDelay = response.action_url ? 30_000 : delay
     const next = Math.min(
-      delay * billingPollTiming.multiplier,
+      scheduledDelay * billingPollTiming.multiplier,
       billingPollTiming.capMs
     )
     handle = options.clock.schedule(
       () => void poll(id, kind, startedAt, next),
-      delay
+      scheduledDelay
     )
   }
   return {
-    async start(id: string, kind: BillingOperationKind) {
+    async start(id: string, kind: BillingOperationKind, actionUrl?: string) {
       stopped = false
+      openedActionUrl = actionUrl
       await options.store.setActiveId(id)
       await poll(id, kind, options.clock.now())
     },

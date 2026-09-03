@@ -5,6 +5,7 @@ import type {
   BillingApiClient,
   BillingHostPorts,
   BillingOperationKind,
+  BillingStatusResponse,
   BillingState,
   CancelRequest,
   PaymentPortalRequest,
@@ -26,6 +27,7 @@ export interface BillingCommands {
   getState(): BillingState
   subscribeState(listener: (state: BillingState) => void): () => void
   reset(): void
+  getBillingStatus(): BillingStatusResponse | undefined
 }
 
 export function createBillingCommands(options: {
@@ -37,6 +39,7 @@ export function createBillingCommands(options: {
   let state = initialBillingState
   const listeners = new Set<(state: BillingState) => void>()
   const singleFlight = createSingleFlight()
+  let billingStatus: BillingStatusResponse | undefined
   function publish(next: BillingState) {
     state = next
     listeners.forEach((listener) => listener(state))
@@ -45,7 +48,8 @@ export function createBillingCommands(options: {
     client: options.client,
     clock: options.ports.clock,
     store: options.ports.operationStore,
-    onState: publish
+    onState: publish,
+    openUrl: options.ports.openUrl
   })
   async function follow(
     id: string,
@@ -63,17 +67,28 @@ export function createBillingCommands(options: {
         return
       }
     }
-    await poller.start(id, kind)
+    await poller.start(id, kind, actionUrl)
   }
   return {
     async start() {
       const status = await options.client.getStatus()
+      billingStatus = status
       if (!status.pending_billing_op_id) return
       const kind =
         status.pending_billing_op_type === 'topup' ? 'topup' : 'subscribe'
       await follow(status.pending_billing_op_id, kind, status.action_url)
     },
     async subscribe(input) {
+      if (billingStatus?.is_active) {
+        if (billingStatus.subscription_status === 'canceled') {
+          await this.resubscribe({})
+        } else {
+          publish(
+            reduceBilling(state, { type: 'opStatus', status: 'succeeded' })
+          )
+        }
+        return
+      }
       await singleFlight('subscribe', async () =>
         options.client.subscribe(input).then(async (result) => {
           if (result.status === 'subscribed') {
@@ -113,10 +128,7 @@ export function createBillingCommands(options: {
       intent = input.idempotency_key ?? attemptIntent('cancel')
     ) {
       const result = await options.client.cancel(input, intent)
-      if (result.status === 'pending' && result.billing_op_id)
-        await follow(result.billing_op_id, 'cancel')
-      else
-        publish(reduceBilling(state, { type: 'opStatus', status: 'succeeded' }))
+      await follow(result.billing_op_id, 'cancel')
     },
     async openPaymentPortal(input, intent = attemptIntent('portal')) {
       const result = await options.client.paymentPortal(input, intent)
@@ -129,6 +141,7 @@ export function createBillingCommands(options: {
     },
     reset() {
       publish(initialBillingState)
-    }
+    },
+    getBillingStatus: () => billingStatus
   }
 }

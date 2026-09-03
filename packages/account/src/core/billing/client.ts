@@ -71,8 +71,8 @@ export function createBillingApiClient(
         transport,
         billingPaths.topup,
         'POST',
-        key,
-        input,
+        undefined,
+        { ...input, idempotency_key: key },
         signal
       ),
     resubscribe: (
@@ -84,8 +84,8 @@ export function createBillingApiClient(
         transport,
         billingPaths.resubscribe,
         'POST',
-        key,
-        input,
+        undefined,
+        { ...input, idempotency_key: key },
         signal
       ),
     cancel: (input: CancelRequest, key: string, signal?: AccountAbortSignal) =>
@@ -93,20 +93,20 @@ export function createBillingApiClient(
         transport,
         billingPaths.cancel,
         'POST',
-        key,
-        input,
+        undefined,
+        { ...input, idempotency_key: key },
         signal
       ),
     paymentPortal: (
       input: PaymentPortalRequest,
-      key: string,
+      _key: string,
       signal?: AccountAbortSignal
     ) =>
       request<PaymentPortalResponse>(
         transport,
         billingPaths.paymentPortal,
         'POST',
-        key,
+        undefined,
         input,
         signal
       ),
