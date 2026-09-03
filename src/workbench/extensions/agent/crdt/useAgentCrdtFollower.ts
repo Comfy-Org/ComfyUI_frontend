@@ -490,7 +490,7 @@ export function useAgentCrdtFollower(
     refreshPersistedDocId()
     lastFrameType.value = event.type
     try {
-      if (adapter.applyFrame(update) === false) {
+      if (!adapter.applyFrame(update)) {
         updatesSkipped.value += 1
         outcomes.value = {
           ...outcomes.value,
