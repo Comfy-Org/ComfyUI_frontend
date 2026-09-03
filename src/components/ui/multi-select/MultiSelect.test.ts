@@ -199,6 +199,17 @@ describe('MultiSelect', () => {
     })
   })
 
+  it('shows selected option labels in the trigger', () => {
+    const { unmount } = renderInParent({}, [
+      { name: 'Option A', value: 'a' },
+      { name: 'Option B', value: 'b' }
+    ])
+
+    expect(screen.getByText('Option A, Option B')).toBeInTheDocument()
+
+    unmount()
+  })
+
   it('lets the user type in the search box when nested in a trapped focus scope', async () => {
     const user = userEvent.setup()
     const InTrap = {

@@ -44,6 +44,19 @@ function renderWidget(
 }
 
 describe('MultiSelectWidget', () => {
+  it('renders selected values as chips when requested by the schema', () => {
+    renderWidget(
+      {
+        options: ['Alpha', 'Beta'],
+        multi_select: { chip: true }
+      },
+      ['Alpha', 'Beta']
+    )
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.getByText('Beta')).toBeInTheDocument()
+  })
+
   it('commits selected option values to the widget model', async () => {
     const user = userEvent.setup()
     const { value } = renderWidget(

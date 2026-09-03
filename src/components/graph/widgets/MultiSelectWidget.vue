@@ -4,6 +4,7 @@
       v-model="selectedOptions"
       :options="options"
       show-search-box
+      :chips="inputSpec.multi_select?.chip"
       :label="placeholder"
       class="w-full"
     />
