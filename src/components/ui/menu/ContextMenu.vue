@@ -31,6 +31,15 @@ const anchor = ref({ x: 0, y: 0 })
 const showRequest = ref(0)
 const contentStyle = useModalLiftedZIndex(visible)
 
+function setOpen(value: boolean) {
+  if (visible.value === value) return
+  visible.value = value
+  void nextTick(() => {
+    if (value) emit('show')
+    else emit('hide')
+  })
+}
+
 function show(event: Event) {
   const mouseEvent = event instanceof MouseEvent ? event : undefined
   const target = event.currentTarget ?? event.target
@@ -39,16 +48,16 @@ function show(event: Event) {
     x: mouseEvent?.clientX ?? rect?.left ?? 0,
     y: mouseEvent?.clientY ?? rect?.top ?? 0
   }
-  visible.value = false
+  setOpen(false)
   const request = ++showRequest.value
   void nextTick(() => {
-    if (request === showRequest.value) visible.value = true
+    if (request === showRequest.value) setOpen(true)
   })
 }
 
 function hide() {
   showRequest.value++
-  visible.value = false
+  setOpen(false)
 }
 
 function toggle(event: Event) {
@@ -65,11 +74,7 @@ function toggle(event: Event) {
 }
 
 function updateOpen(value: boolean) {
-  visible.value = value
-  void nextTick(() => {
-    if (value) emit('show')
-    else emit('hide')
-  })
+  setOpen(value)
 }
 
 defineExpose({ container: content, hide, show, toggle, visible })
