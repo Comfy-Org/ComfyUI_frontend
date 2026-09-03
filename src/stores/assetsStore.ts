@@ -30,6 +30,7 @@ import {
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
@@ -131,6 +132,7 @@ export const useAssetsStore = defineStore('assets', () => {
     resetOnExecute: false,
     onError: (err) => {
       console.error('Error fetching input assets:', err)
+      reportError(err, { errorType: 'assets_input_fetch_failure' })
     }
   })
 
@@ -237,6 +239,7 @@ export const useAssetsStore = defineStore('assets', () => {
         historyAssets.value = allHistoryItems.value
       } catch (err) {
         console.error('Error fetching history assets:', err)
+        reportError(err, { errorType: 'assets_history_fetch_failure' })
         historyError.value = err
         // Keep existing data when error occurs
         if (!historyAssets.value.length) {
@@ -262,6 +265,7 @@ export const useAssetsStore = defineStore('assets', () => {
         historyAssets.value = allHistoryItems.value
       } catch (err) {
         console.error('Error loading more history:', err)
+        reportError(err, { errorType: 'assets_history_load_more_failure' })
         historyError.value = err
         // Keep existing data when error occurs (consistent with updateHistory)
         if (!historyAssets.value.length) {
@@ -605,6 +609,10 @@ export const useAssetsStore = defineStore('assets', () => {
             }
             if (isStale(category, state)) return
             console.error(`Error loading batch for ${category}:`, err)
+            reportError(err, {
+              errorType: 'assets_model_category_batch_failure',
+              tags: { category }
+            })
 
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
@@ -752,6 +760,7 @@ export const useAssetsStore = defineStore('assets', () => {
         updateAssetInCache(asset.id, updatedAsset, cacheKey)
       } catch (error) {
         console.error('Failed to update asset metadata:', error)
+        reportError(error, { errorType: 'assets_metadata_update_failure' })
         updateAssetInCache(
           asset.id,
           { user_metadata: originalMetadata },
@@ -801,6 +810,7 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       } catch (error) {
         console.error('Failed to update asset tags:', error)
+        reportError(error, { errorType: 'assets_tag_update_failure' })
         updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
 
         if (removedTagsOnServer.length > 0) {
@@ -811,6 +821,9 @@ export const useAssetsStore = defineStore('assets', () => {
               'Failed to restore tags after partial failure; invalidating cache to force refetch:',
               compensationError
             )
+            reportError(compensationError, {
+              errorType: 'assets_tag_restore_failure'
+            })
             const categoriesToInvalidate = new Set<string>()
             const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
             if (resolved) {
@@ -906,6 +919,9 @@ export const useAssetsStore = defineStore('assets', () => {
           console.error(
             `Failed to refresh model cache for provider: ${result.reason}`
           )
+          reportError(result.reason, {
+            errorType: 'assets_model_cache_refresh_failure'
+          })
         }
       }
     }
