@@ -188,7 +188,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-4. Avoid new usage of PrimeVue components
+4. PrimeVue has been removed. Its imports are permanently banned; use components from `src/components/ui`.
 5. Write tests for all changes, especially bug fixes to catch future regressions
 6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
