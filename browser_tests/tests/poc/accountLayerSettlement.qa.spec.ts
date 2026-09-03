@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20d-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20e-frontend'
 const terminalSteps = [
   'success',
   'canceled',
@@ -192,12 +192,12 @@ async function recordPaymentStateUntilTerminal(page: Page) {
 }
 
 test('completes hosted subscription and captures terminal operation', async () => {
-  test.setTimeout(900_000)
+  test.setTimeout(process.env.DIAGNOSE_ONLY === 'true' ? 180_000 : 900_000)
   await mkdir(evidenceDir, { recursive: true })
   for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20c-'))
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20e-'))
   await mkdir(join(profileDir, 'Default'))
   writeFileSync(
     join(profileDir, 'Default', 'Preferences'),
@@ -218,21 +218,28 @@ test('completes hosted subscription and captures terminal operation', async () =
     ignoreDefaultArgs: ['--enable-automation']
   })
   const page = context.pages()[0] ?? (await context.newPage())
+  context.setDefaultTimeout(120_000)
+  context.setDefaultNavigationTimeout(120_000)
+  const consoleMessages: string[] = []
+  page.on('console', (message) => consoleMessages.push(message.text()))
   context.on('response', async (response) => {
     const url = new URL(response.url())
-    if (!['stagingapi.comfy.org', 'stagingcloud.comfy.org'].includes(url.host))
-      return
     const path = url.pathname.replace(/\/ops\/[^/]+$/, '/ops/[redacted]')
+    const isBilling = url.pathname.includes('/api/billing/')
+    const body =
+      isBilling || !response.ok() ? await response.text().catch(() => '') : ''
     appendFileSync(
       `${evidenceDir}/requests.log`,
-      `${response.request().method()} ${url.origin}${path} ${response.status()}\n`
+      `${response.request().method()} ${url.origin}${path}${url.search} ${response.status()}${body ? ` ${body}` : ''}\n`
     )
-    if (!response.ok()) {
-      const body = await response.text().catch(() => '')
-      appendFileSync(
-        `${evidenceDir}/requests.log`,
-        `${body.replaceAll(/Bearer\s+\S+/g, 'Bearer [redacted]')}\n`
-      )
+    if (isBilling && url.pathname.endsWith('/status')) {
+      writeFileSync(`${evidenceDir}/preflight-status.json`, `${body}\n`)
+    }
+    if (isBilling && url.pathname.endsWith('/balance')) {
+      writeFileSync(`${evidenceDir}/preflight-balance.json`, `${body}\n`)
+    }
+    if (isBilling && !response.ok()) {
+      writeFileSync(`${evidenceDir}/error-billing.json`, `${body}\n`)
     }
     if (url.pathname.includes('/ops/')) {
       try {
@@ -296,21 +303,30 @@ test('completes hosted subscription and captures terminal operation', async () =
       }
       return seam.getCredits()
     })
-    appendFileSync(`${evidenceDir}/preflight.log`, 'cancel-existing=started\n')
-    const canceled = await page
-      .evaluate(() => {
-        const seam = Reflect.get(window, '__accountLayerPoc') as {
-          cancelSubscription(): Promise<void>
-        }
-        return seam.cancelSubscription()
-      })
-      .then(() => recordPaymentStateUntilTerminal(page))
-      .catch(() => null)
+    const shouldCancelExisting =
+      process.env.E2E_EMAIL !== process.env.FIXTURE_B_EMAIL
+    appendFileSync(
+      `${evidenceDir}/preflight.log`,
+      `cancel-existing=${shouldCancelExisting ? 'started' : 'skipped-free-fixture'}\n`
+    )
+    const canceled = shouldCancelExisting
+      ? await page
+          .evaluate(() => {
+            const seam = Reflect.get(window, '__accountLayerPoc') as {
+              cancelSubscription(): Promise<void>
+            }
+            return seam.cancelSubscription()
+          })
+          .then(() => recordPaymentStateUntilTerminal(page))
+          .catch(() => null)
+      : null
     appendFileSync(
       `${evidenceDir}/preflight.log`,
       canceled
         ? `cancel-existing=${canceled.step} no-charge-confirmed=${canceled.noChargeConfirmed}\n`
-        : 'cancel-existing=not-active\n'
+        : shouldCancelExisting
+          ? 'cancel-existing=not-active\n'
+          : 'cancel-existing=free-fixture\n'
     )
     if (canceled) {
       await page.screenshot({ path: `${evidenceDir}/cancel-terminal.png` })
@@ -319,7 +335,9 @@ test('completes hosted subscription and captures terminal operation', async () =
       (response) =>
         new URL(response.url()).pathname === '/api/billing/subscribe'
     )
-    const checkoutPagePromise = context.waitForEvent('page')
+    const checkoutPagePromise = context
+      .waitForEvent('page', { timeout: 20_000 })
+      .catch(() => null)
     await page.evaluate(() => {
       const seam = Reflect.get(window, '__accountLayerPoc') as {
         subscribe(planId: string): Promise<void>
@@ -331,7 +349,15 @@ test('completes hosted subscription and captures terminal operation', async () =
     const body = (await response.json()) as Record<string, unknown>
     const checkoutUrl = String(body.payment_method_url ?? body.action_url ?? '')
     expect(checkoutUrl).toContain('cs_test_')
-    const checkoutPage = await checkoutPagePromise
+    const openedCheckoutPage = await checkoutPagePromise
+    const checkoutPage = openedCheckoutPage ?? (await context.newPage())
+    if (!openedCheckoutPage) {
+      appendFileSync(
+        `${evidenceDir}/harness.log`,
+        'window.open did not create a page within 20s; navigated a second tab to the captured checkout URL\n'
+      )
+      await checkoutPage.goto(checkoutUrl, { timeout: 120_000 })
+    }
     await fillCheckout(checkoutPage, '4242424242424242')
     await checkoutPage
       .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
@@ -367,7 +393,50 @@ test('completes hosted subscription and captures terminal operation', async () =
       readFileSync(`${evidenceDir}/ops-responses.jsonl`, 'utf8').length
     ).toBeGreaterThan(0)
     await page.screenshot({ path: `${evidenceDir}/subscription-success.png` })
+  } catch (error) {
+    const diagnostic = await page
+      .evaluate(() => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as
+          | {
+              getSessionPhase?(): string
+              getPaymentState?(): unknown
+              workspace?: unknown
+              exchangeError?: string | null
+            }
+          | undefined
+        return {
+          url: window.location.href,
+          sessionPhase: seam?.getSessionPhase?.() ?? null,
+          paymentState: seam?.getPaymentState?.() ?? null,
+          workspace: seam?.workspace ?? null,
+          exchangeError: seam?.exchangeError ?? null
+        }
+      })
+      .catch(() => ({ url: page.url(), evaluationFailed: true }))
+    writeFileSync(
+      `${evidenceDir}/failure-diagnostic.json`,
+      `${JSON.stringify(
+        {
+          error: String(error),
+          diagnostic,
+          consoleMessages,
+          lastRequests: readFileSync(`${evidenceDir}/requests.log`, 'utf8')
+            .split('\n')
+            .slice(-51)
+        },
+        null,
+        2
+      )}\n`
+    )
+    await page
+      .screenshot({ path: `${evidenceDir}/failure.png`, fullPage: true })
+      .catch(() => {})
+    throw error
   } finally {
+    writeFileSync(
+      `${evidenceDir}/console.log`,
+      `${consoleMessages.join('\n')}\n`
+    )
     await context.close()
     await rm(profileDir, { recursive: true, force: true })
   }
