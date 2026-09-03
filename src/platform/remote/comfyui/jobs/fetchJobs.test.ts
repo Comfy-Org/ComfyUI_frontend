@@ -55,6 +55,7 @@ function createMockResponse(
 
 describe('fetchJobs', () => {
   beforeEach(() => {
+    vi.resetAllMocks()
     dispatchPageTransition('pageshow', { persisted: true })
   })
 
@@ -159,7 +160,6 @@ describe('fetchJobs', () => {
         '[Jobs API] Error fetching jobs:',
         expect.any(Error)
       )
-      errorSpy.mockRestore()
     })
 
     it('reports a server error and returns an empty array', async () => {
@@ -175,7 +175,6 @@ describe('fetchJobs', () => {
       expect(errorSpy).toHaveBeenCalledWith(
         '[Jobs API] Failed to fetch jobs: 500'
       )
-      errorSpy.mockRestore()
     })
 
     it('reports a malformed response body as an error', async () => {
@@ -192,7 +191,6 @@ describe('fetchJobs', () => {
         '[Jobs API] Error fetching jobs:',
         expect.anything()
       )
-      errorSpy.mockRestore()
     })
 
     it('warns instead of erroring on an unauthenticated response', async () => {
@@ -210,8 +208,6 @@ describe('fetchJobs', () => {
         '[Jobs API] Failed to fetch jobs: 401'
       )
       expect(errorSpy).not.toHaveBeenCalled()
-      errorSpy.mockRestore()
-      warnSpy.mockRestore()
     })
 
     it('does not report a request cancelled by page teardown', async () => {
@@ -225,7 +221,6 @@ describe('fetchJobs', () => {
 
       expect(result).toEqual([])
       expect(errorSpy).not.toHaveBeenCalled()
-      errorSpy.mockRestore()
     })
 
     it('still reports a failure when the page is only frozen', async () => {
@@ -242,7 +237,6 @@ describe('fetchJobs', () => {
         '[Jobs API] Error fetching jobs:',
         expect.any(TypeError)
       )
-      errorSpy.mockRestore()
     })
 
     it('still reports network errors after the page is restored', async () => {
@@ -260,7 +254,6 @@ describe('fetchJobs', () => {
         '[Jobs API] Error fetching jobs:',
         expect.any(TypeError)
       )
-      errorSpy.mockRestore()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -431,7 +424,6 @@ describe('fetchJobs', () => {
         'Failed to fetch job detail for job job1:',
         expect.any(Error)
       )
-      errorSpy.mockRestore()
     })
 
     it('does not report a request cancelled by page teardown', async () => {
@@ -445,7 +437,6 @@ describe('fetchJobs', () => {
 
       expect(result).toBeUndefined()
       expect(errorSpy).not.toHaveBeenCalled()
-      errorSpy.mockRestore()
     })
   })
 
@@ -509,7 +500,6 @@ describe('fetchJobs', () => {
         '[extractWorkflow] Workflow validation failed:',
         expect.any(String)
       )
-      consoleSpy.mockRestore()
     })
   })
 })
