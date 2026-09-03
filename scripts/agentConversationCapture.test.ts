@@ -123,6 +123,30 @@ describe('exportAgentConversation', () => {
     )
   })
 
+  it('refuses a tool-call frame with a missing status', () => {
+    const [running, success] = capture.frames
+    const { status: _status, ...withoutStatus } = success.data
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        frames: [running, { ...success, data: withoutStatus }]
+      })
+    ).toThrow(/status undefined/)
+  })
+
+  it('refuses a tool-call frame with an unknown status', () => {
+    const [running, success] = capture.frames
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        frames: [
+          running,
+          { ...success, data: { ...success.data, status: 'done' } }
+        ]
+      })
+    ).toThrow(/status "done"/)
+  })
+
   it('refuses an accepted op missing from the recorded result', () => {
     expect(() =>
       exportAgentConversation({

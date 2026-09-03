@@ -27,6 +27,7 @@ import type {
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 
+import { compareNodeIds, toNodeId } from '@/types/nodeId'
 import { knownTool } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -327,10 +328,25 @@ class AgentConversationHarness {
           )
         }
       })
-      .sort((a, b) => Number(a.id) - Number(b.id))
+      .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
   }
 
   // The panel starts a new tool group whenever thinking or text interrupts the calls.
+  // ToolCallGroup.vue merges consecutive calls of the same tool into one row.
+  toolRowLabels(): Map<string, number> {
+    const counts = new Map<string, number>()
+    for (const group of this.toolCallGroups()) {
+      let previous: string | undefined
+      for (const call of group) {
+        if (call.name === previous) continue
+        previous = call.name
+        const label = toolRowLabel(call.name)
+        counts.set(label, (counts.get(label) ?? 0) + 1)
+      }
+    }
+    return counts
+  }
+
   toolCallGroups(): RecordedToolCall[][] {
     const groups: RecordedToolCall[][] = []
     let current: RecordedToolCall[] = []
@@ -357,22 +373,23 @@ class AgentConversationHarness {
     return groups
   }
 
+  // Last write wins per widget; the rendered control shows only the final value.
   recordedWidgetValues(): RecordedWidgetValue[] {
     const graph = this.host.graph()
-    return this.conversation.response.flatMap((entry) =>
-      entry.kind === 'graph_ops'
-        ? entry.ops.flatMap((rawOp) => {
-            const op = asRecord(rawOp)
-            const nodeId = String(op.node_id)
-            const widget = String(op.widget)
-            const value = asRecord(graph.nodes[nodeId]?.widgets)[widget]
-            return op.op === 'set_widget' &&
-              (typeof value === 'string' || typeof value === 'number')
-              ? [{ nodeId, widget, value }]
-              : []
-          })
-        : []
-    )
+    const latest = new Map<string, RecordedWidgetValue>()
+    for (const entry of this.conversation.response) {
+      if (entry.kind !== 'graph_ops') continue
+      for (const rawOp of entry.ops) {
+        const op = asRecord(rawOp)
+        if (op.op !== 'set_widget') continue
+        const nodeId = String(op.node_id)
+        const widget = String(op.widget)
+        const value = asRecord(graph.nodes[nodeId]?.widgets)[widget]
+        if (typeof value === 'string' || typeof value === 'number')
+          latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
+      }
+    }
+    return [...latest.values()]
   }
 
   addedNodeIds(): string[] {
@@ -422,7 +439,7 @@ class AgentConversationHarness {
       )
     return snapshot
       .filter((node) => docNodeIds.has(node.id))
-      .sort((a, b) => Number(a.id) - Number(b.id))
+      .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
   }
 
   private async mockAgentApi(): Promise<void> {

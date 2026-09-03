@@ -117,6 +117,11 @@ export function exportAgentConversation(input: unknown) {
     if (event.type === 'agent_tool_call') {
       const toolCallId = event.data.tool_call_id
       const status = event.data.status
+      if (status !== 'running' && status !== 'success' && status !== 'error') {
+        throw new Error(
+          `recorded agent_tool_call frame carries status ${JSON.stringify(status)}; only running, success or error are known`
+        )
+      }
       if (
         typeof toolCallId === 'string' &&
         status !== 'running' &&
