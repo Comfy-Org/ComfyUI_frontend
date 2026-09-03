@@ -755,6 +755,25 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it('surfaces doc_update_error without projecting when the follower rejects an update', () => {
+    const { transport, bridge, projected, updateOutcomes } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    vi.spyOn(bridge.follower, 'applyRemoteUpdate').mockImplementation(() => {
+      throw new Error('corrupt Yjs update')
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+
+    expect(updateOutcomes).toEqual(['received', 'errored'])
+    expect(projected).toHaveLength(0)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+  })
+
   it('s5-metrics-1: dispatches doc_stale at the exact boundary a duplicate is discarded', () => {
     const { transport, bridge } = wire()
     transport.open = true
