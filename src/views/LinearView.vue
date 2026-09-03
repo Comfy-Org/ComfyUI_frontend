@@ -16,6 +16,7 @@ import {
   SplitterResizeHandle
 } from '@/components/ui/splitter'
 import {
+  getSplitterStorageKey,
   loadSplitterSizes,
   saveSplitterSizes
 } from '@/components/ui/splitter/persistence'
@@ -83,17 +84,24 @@ function sidePanelMinSize(isBuilder: boolean) {
   return SIDEBAR_MIN_SIZE
 }
 
-const splitterKey = computed(() => {
-  const left = leftPanelVisible.value ? 'L' : ''
-  const right = rightPanelVisible.value ? 'R' : ''
-  return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
-})
-const splitterStateKey = 'linear-view-splitter'
-const panelCount = computed(
-  () => 1 + Number(leftPanelVisible.value) + Number(rightPanelVisible.value)
+const panelComposition = computed(() => [
+  ...(leftPanelVisible.value ? ['left'] : []),
+  'center',
+  ...(rightPanelVisible.value ? ['right'] : [])
+])
+const layoutMode = computed(() => (isArrangeMode.value ? 'arrange' : 'app'))
+const splitterKey = computed(
+  () => `${layoutMode.value}-${panelComposition.value.join('-')}`
 )
+const splitterStateKey = computed(() =>
+  getSplitterStorageKey('linear-view-splitter', [
+    layoutMode.value,
+    ...panelComposition.value
+  ])
+)
+const panelCount = computed(() => panelComposition.value.length)
 const savedPanelSizes = computed(() =>
-  loadSplitterSizes(splitterStateKey, panelCount.value)
+  loadSplitterSizes(splitterStateKey.value, panelCount.value)
 )
 const leftPanelDefaultSize = computed(
   () => savedPanelSizes.value?.[0] ?? SIDE_PANEL_SIZE
@@ -111,7 +119,7 @@ const rightPanelDefaultSize = computed(
 )
 
 function saveSplitterLayout(sizes: number[]) {
-  saveSplitterSizes(splitterStateKey, sizes)
+  saveSplitterSizes(splitterStateKey.value, sizes)
 }
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
