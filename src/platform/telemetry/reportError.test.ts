@@ -199,6 +199,20 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledTimes(2)
   })
 
+  it('retries only Sentry when its cloud delivery fails', async () => {
+    mockIsCloud.value = true
+    captureException.mockImplementationOnce(() => {
+      throw new Error('sentry exploded')
+    })
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('boom'), { errorType: 'invariant_assert' })
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
   it('still reports to Datadog when Sentry throws', async () => {
     captureException.mockImplementation(() => {
       throw new Error('sentry exploded')

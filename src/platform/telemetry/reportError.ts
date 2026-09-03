@@ -22,6 +22,7 @@ interface PendingReport {
   error: Error
   options: ReportErrorOptions
   sentryDelivered: boolean
+  datadogDelivered: boolean
 }
 
 /**
@@ -44,12 +45,13 @@ const definedEntriesOf = (
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
-  sentryAlreadyDelivered = false
+  sentryAlreadyDelivered = false,
+  datadogAlreadyDelivered = false
 ): { sentry: boolean; datadog: boolean } {
   const { errorType, context, level } = options
   const tags = definedEntriesOf(options.tags)
   const sentryLive = !sentryAlreadyDelivered && isSentryEnabled()
-  const datadogLive = isDatadogRumLive()
+  const datadogLive = !datadogAlreadyDelivered && isDatadogRumLive()
   let sentryDelivered = false
   let datadogDelivered = false
 
@@ -112,10 +114,21 @@ export function flushErrorReports(): void {
   for (const report of drained) {
     const { error, options } = report
     try {
-      const delivered = dispatch(error, options, report.sentryDelivered)
+      const delivered = dispatch(
+        error,
+        options,
+        report.sentryDelivered,
+        report.datadogDelivered
+      )
       const sentryDelivered = report.sentryDelivered || delivered.sentry
-      if (isCloud && !delivered.datadog) {
-        enqueuePendingReport({ error, options, sentryDelivered })
+      const datadogDelivered = report.datadogDelivered || delivered.datadog
+      if (isCloud && (!sentryDelivered || !datadogDelivered)) {
+        enqueuePendingReport({
+          error,
+          options,
+          sentryDelivered,
+          datadogDelivered
+        })
       }
     } catch (reporterFailure) {
       enqueuePendingReport(report)
@@ -140,17 +153,23 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
 
     const error = toError(cause)
     const delivered = dispatch(error, options)
-    if (isCloud && !delivered.datadog) {
+    if (isCloud && (!delivered.sentry || !delivered.datadog)) {
       enqueuePendingReport({
         error,
         options,
-        sentryDelivered: delivered.sentry
+        sentryDelivered: delivered.sentry,
+        datadogDelivered: delivered.datadog
       })
       return
     }
     if (delivered.sentry || delivered.datadog) return
 
-    enqueuePendingReport({ error, options, sentryDelivered: false })
+    enqueuePendingReport({
+      error,
+      options,
+      sentryDelivered: false,
+      datadogDelivered: false
+    })
   } catch (reporterFailure) {
     console.error('[reportError] failed to report', reporterFailure, cause)
   }
