@@ -23,29 +23,23 @@
     >
       <!-- Provider-unreachable state (1b): when the Stripe SDK cannot load at
            mount (ad blocker, network), this stands in for the card form so the
-           customer learns before typing anything. The target div stays in the
-           DOM (v-show) so Try again can remount the element in place. -->
+           customer learns before typing anything. Try again lives in the pay
+           button's slot below; the target div stays in the DOM (v-show) so the
+           retry can remount the element in place. -->
       <div
         v-if="providerUnreachable"
         role="alert"
-        class="flex flex-col items-start gap-3 rounded-lg border border-interface-stroke bg-secondary-background p-4"
+        class="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center"
       >
-        <p class="m-0 font-semibold text-base-foreground">
+        <i
+          class="icon-[lucide--circle-alert] size-10 text-warning-background"
+        />
+        <p class="m-0 text-base font-semibold text-base-foreground">
           {{ $t('subscription.preview.providerUnreachableTitle') }}
         </p>
-        <p class="m-0 text-sm text-muted-foreground">
+        <p class="m-0 max-w-sm text-sm text-balance text-muted-foreground">
           {{ $t('subscription.preview.providerUnreachableBody') }}
         </p>
-        <Button
-          type="button"
-          variant="secondary"
-          size="lg"
-          class="rounded-lg"
-          :loading="isRetryingLoad"
-          @click="retryProviderLoad"
-        >
-          {{ $t('subscription.preview.providerUnreachableRetry') }}
-        </Button>
       </div>
       <div v-show="!providerUnreachable" ref="paymentElementTarget" />
       <div
@@ -61,19 +55,27 @@
       </div>
     </div>
     <Button
+      v-if="!providerUnreachable"
       type="submit"
       :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
-      :disabled="
-        !stripeElements ||
-        providerUnreachable ||
-        !canSubmit ||
-        verificationPending
-      "
+      :disabled="!stripeElements || !canSubmit || verificationPending"
       :loading="isLoading || isSubmitting"
     >
       {{ $t('subscription.preview.payAndSubscribe') }}
+    </Button>
+    <!-- With no way to pay, retrying the provider IS the primary action. -->
+    <Button
+      v-else
+      type="button"
+      variant="inverted"
+      size="lg"
+      class="w-full rounded-lg"
+      :loading="isRetryingLoad"
+      @click="retryProviderLoad"
+    >
+      {{ $t('subscription.preview.providerUnreachableRetry') }}
     </Button>
   </form>
 </template>
@@ -113,6 +115,7 @@ const {
 const emit = defineEmits<{
   confirm: [confirmationToken: string]
   submittingChange: [submitting: boolean]
+  providerUnreachableChange: [unreachable: boolean]
 }>()
 
 const { t } = useI18n()
@@ -255,6 +258,14 @@ async function retryProviderLoad() {
     isRetryingLoad.value = false
   }
 }
+
+// Immediate so a remount (the parent keys this component on quote identity)
+// clears any stale unreachable flag the previous instance reported.
+watch(
+  providerUnreachable,
+  (unreachable) => emit('providerUnreachableChange', unreachable),
+  { immediate: true }
+)
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
   if (!stripeElements.value || amount <= 0) return

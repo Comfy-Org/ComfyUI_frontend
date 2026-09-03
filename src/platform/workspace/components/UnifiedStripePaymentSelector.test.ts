@@ -205,7 +205,7 @@ describe('UnifiedStripePaymentSelector', () => {
   it('shows the provider-unreachable state instead of the card form when the SDK fails to load', async () => {
     stripeMocks.loadStripe.mockRejectedValue(new Error('load failed'))
 
-    renderSelector()
+    const { emitted } = renderSelector()
 
     expect(
       await screen.findByText("We can't take payments right now")
@@ -215,9 +215,12 @@ describe('UnifiedStripePaymentSelector', () => {
     ).toBeTruthy()
     expect(stripeMocks.stripe.elements).not.toHaveBeenCalled()
     expect(stripeMocks.mount).not.toHaveBeenCalled()
+    // Try again replaces the pay button outright: there is nothing to pay with.
     expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(emitted().providerUnreachableChange).toEqual([[false], [true]])
   })
 
   it('re-attempts the SDK load in place from Try again', async () => {
@@ -235,6 +238,7 @@ describe('UnifiedStripePaymentSelector', () => {
     await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
     expect(stripeMocks.loadStripe).toHaveBeenCalledTimes(2)
     expect(screen.queryByText("We can't take payments right now")).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeEnabled()
@@ -274,8 +278,9 @@ describe('UnifiedStripePaymentSelector', () => {
     ).toBeTruthy()
     expect(stripeMocks.destroy).toHaveBeenCalledTimes(1)
     expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
   })
 
   it('updates Stripe Elements when the quote changes', async () => {
