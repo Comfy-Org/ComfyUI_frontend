@@ -63,18 +63,17 @@ describe('agentRestClient route + method', () => {
 
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
+    const client: AgentRestClient = createAgentRestClient()
     respond(jsonResponse(200, preference))
 
-    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
-      preference
-    )
+    await expect(client.getRunMode()).resolves.toEqual(preference)
     expect(lastCall()).toMatchObject({
       route: '/agent/run-mode',
       init: { method: 'GET' }
     })
 
     respond(jsonResponse(200, preference))
-    await createAgentRestClient().putRunMode(preference)
+    await client.putRunMode(preference)
     const { route, init } = lastCall()
     expect(route).toBe('/agent/run-mode')
     expect(init.method).toBe('PUT')
@@ -94,23 +93,6 @@ describe('agentRestClient route + method', () => {
     respond(jsonResponse(200, { mode: 'auto_limited', credit_limit: 0 }))
 
     await expect(createAgentRestClient().getRunMode()).rejects.toThrow()
-  })
-
-  it('keeps the exported AgentRestClient alias free of the run-mode methods', () => {
-    // Contract pin for the Omit on the exported alias: it deliberately
-    // subtracts getRunMode/putRunMode so existing useAgentSession test doubles
-    // keep satisfying it structurally, while store code reaches the methods
-    // through the inferred return type of createAgentRestClient(). If this
-    // stops compiling, the Omit was widened — update the useAgentSession
-    // doubles deliberately in the same change (review thread
-    // PRRT_kwDOMIrOxs6etRo7 on #16432).
-    type Pin = 'getRunMode' extends keyof AgentRestClient
-      ? true
-      : 'putRunMode' extends keyof AgentRestClient
-        ? true
-        : false
-    const contractPin: Pin = false
-    expect(contractPin).toBe(false)
   })
 
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {

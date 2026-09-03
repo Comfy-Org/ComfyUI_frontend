@@ -225,13 +225,4 @@ export function createAgentRestClient() {
   }
 }
 
-// Deliberately subtracts getRunMode/putRunMode: existing useAgentSession test
-// doubles implement this alias structurally (see fakeRest in
-// useAgentSession.test.ts), and run-mode access is store-mediated through the
-// inferred return type of createAgentRestClient(). Widen only with a
-// deliberate update to those doubles. Pinned by contract test in
-// agentRestClient.test.ts.
-export type AgentRestClient = Omit<
-  ReturnType<typeof createAgentRestClient>,
-  'getRunMode' | 'putRunMode'
->
+export type AgentRestClient = ReturnType<typeof createAgentRestClient>
