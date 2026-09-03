@@ -349,6 +349,9 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
     this.lineageSeq = lineageSeq
+    this.lastSeq = null
+    this.ackSeq = null
+    this.catchUpPending = false
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 

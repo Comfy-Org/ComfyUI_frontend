@@ -406,6 +406,32 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it('replaces before accepting a newer-lineage acknowledgement and its full catch-up', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 43,
+      lineage_seq: 43
+    })
+
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
+    )
+    expect(bridge.follower.updatesApplied).toBe(1)
+  })
+
   it('replaces the follower doc and resubscribes with an empty state vector', () => {
     const { transport, bridge, projected } = wire()
     const resets: unknown[] = []
