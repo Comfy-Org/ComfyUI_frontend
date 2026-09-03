@@ -2400,8 +2400,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     const minted = hostStores.workflow.tabs.get('workflows/Video test.json')
     expect(minted?.filename).toBe('Video test')
-    // Blank, not the default template: the follower reconciles onto whatever
-    // the tab holds and keeps template links it does not displace.
+    // Blank, not the default template: the follower keeps template links it does not displace.
     expect(minted?.activeState).toMatchObject({ nodes: [], links: [] })
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
