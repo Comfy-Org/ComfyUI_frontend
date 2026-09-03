@@ -164,13 +164,31 @@ describe('materializeMissingAdapters', () => {
 
     expect(graph.getNodeById(toNodeId(1))).not.toBeNull()
 
-    // Simulate a remote `update`: the op layer replaces the store record for
-    // the same id (delete+add under the hood) with fresh serialised state,
-    // then reports the id through the same `lastAddedNodeIds` channel again.
+    // Simulate a remote `update`: the op layer reconciles the store record
+    // for the same id with fresh serialised state (same shape
+    // `ecsFollowerAdapter.ts` uses), then reports the id through the same
+    // `lastAddedNodeIds` channel again.
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    mutations.batch(
+      { source: 'agent-remote', actor: 'agent:test', opId: 'op-1-update' },
+      (batch) =>
+        batch.reconcileNode({
+          id: 1,
+          type: 'dummy',
+          pos: [10, 20],
+          size: [100, 80],
+          inputs: [],
+          outputs: []
+        })
+    )
+
     const nodeDataStore = useNodeDataStore()
-    const state = nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))
-    expect(state).toBeDefined()
-    if (state) state.lastSerialization = { ...state.lastSerialization, id: 1 }
+    expect(
+      nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))?.lastSerialization
+    ).toBeDefined()
 
     const materialized = materializeMissingAdapters(graph, ['1'])
 
