@@ -26,6 +26,8 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 const TURN_ID = '0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5f60'
+/** Mirrors THREAD_STORAGE_KEY in useAgentSession.ts (module-private there). */
+const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const HOST_ACTOR = 'agent:comfy'
 const DOC_PROTOCOL_VERSION = 1
@@ -213,6 +215,19 @@ class AgentConversationHarness {
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     await expect.poll(() => this.postedMessages.length).toBeGreaterThan(0)
     expect(this.postedMessages[0]).toContain(content)
+    // The page applies the acknowledgement (thread id, then the user turn)
+    // only once the mocked POST resolves, which can land after the request
+    // is captured above. Replay frames are stamped with THREAD_ID and the
+    // active-tab handler drops them until the thread id matches, so wait for
+    // the id the session persists right after applying it.
+    await expect
+      .poll(() =>
+        this.page.evaluate(
+          (key) => localStorage.getItem(key),
+          THREAD_STORAGE_KEY
+        )
+      )
+      .toBe(THREAD_ID)
   }
 
   async replayResponse(): Promise<void> {
