@@ -77,16 +77,22 @@ const hasTools = computed(() =>
         :parts="group.parts"
         :active="message.streaming && index === groups.length - 1"
       />
-      <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
+      <div
+        v-else-if="group.kind === 'tabLinks'"
+        role="group"
+        class="flex flex-col gap-1"
+      >
         <TabLinkCard
           v-for="(link, linkIndex) in group.parts"
           :key="linkIndex"
           :workflow-id="link.workflowId"
+          :locator-id="link.locatorId"
           :name="link.name"
         />
       </div>
       <div
         v-else
+        :role="group.part.level === 'error' ? 'alert' : 'status'"
         :class="
           cn(
             'rounded-agent flex items-start gap-2 border px-3 py-2 text-sm',

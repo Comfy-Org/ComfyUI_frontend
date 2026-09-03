@@ -149,11 +149,6 @@
       "count": 1
     }
   },
-  "src/platform/assets/composables/useMediaAssetActions.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
       "count": 20

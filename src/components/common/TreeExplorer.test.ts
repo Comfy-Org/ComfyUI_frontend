@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -42,7 +41,7 @@ async function submitRename(
 
   render(TreeExplorer, {
     props: { expandedKeys: {}, root },
-    global: { plugins: [PrimeVue, i18n] }
+    global: { plugins: [i18n] }
   })
 
   const user = userEvent.setup()

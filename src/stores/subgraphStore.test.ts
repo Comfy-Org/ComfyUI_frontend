@@ -181,13 +181,13 @@ describe('useSubgraphStore', () => {
     expect(first).toBeDefined()
     if (!first) return
     first.nodes[0].id = -1
-    first.definitions!.subgraphs![0].id = 'corrupted'
+    first.definitions!.subgraphs[0].id = 'corrupted'
 
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second).toBeDefined()
     if (!second) return
     expect(second.nodes[0].id).not.toBe(-1)
-    expect(second.definitions!.subgraphs![0].id).toBe('123')
+    expect(second.definitions!.subgraphs[0].id).toBe('123')
   })
   it('should return undefined and log a stale blueprint lookup', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})

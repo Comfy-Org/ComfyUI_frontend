@@ -34,10 +34,6 @@
     "copy": "复制",
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
-    "crdtConnected": "已连接",
-    "crdtDisconnected": "已断开连接",
-    "crdtNoDocument": "无文档",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
     "credits": "积分",
     "delete": "删除",
     "dismiss": "关闭",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "已切换标签页",
     "untitledChat": "未命名",
     "uploading": "正在上传"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次运行的成本",
-    "title": "API节点",
-    "totalCost": "总成本"
   },
   "apiNodesSignInDialog": {
     "message": "此工作流包含API节点，需要您登录账户才能运行。",

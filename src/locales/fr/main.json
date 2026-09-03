@@ -34,10 +34,6 @@
     "copy": "Copier",
     "copyMarkdown": "Copier au format markdown",
     "copyUnavailable": "Seule la conversation actuelle peut être copiée dans cette version",
-    "crdtConnected": "connecté",
-    "crdtDisconnected": "déconnecté",
-    "crdtNoDocument": "aucun document",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} mises à jour · {frame}",
     "credits": "crédits",
     "delete": "Supprimer",
     "dismiss": "Fermer",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "A changé d’onglet",
     "untitledChat": "Sans titre",
     "uploading": "Envoi en cours"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Coût par exécution",
-    "title": "Nœud(s) API",
-    "totalCost": "Coût total"
   },
   "apiNodesSignInDialog": {
     "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",

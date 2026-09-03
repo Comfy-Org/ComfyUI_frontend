@@ -68,7 +68,7 @@ function makeWidget(): SimplifiedWidget {
     type: 'cameraInfo',
     value: [],
     options: {}
-  } as unknown as SimplifiedWidget
+  }
 }
 
 function renderComponent() {

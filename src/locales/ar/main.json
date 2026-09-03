@@ -34,10 +34,6 @@
     "copy": "نسخ",
     "copyMarkdown": "نسخ بصيغة markdown",
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
-    "crdtConnected": "متصل",
-    "crdtDisconnected": "غير متصل",
-    "crdtNoDocument": "لا يوجد مستند",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} تحديثات · {frame}",
     "credits": "الرصيد",
     "delete": "حذف",
     "dismiss": "تجاهل",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "بدّل علامات التبويب",
     "untitledChat": "بلا عنوان",
     "uploading": "جارٍ الرفع"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "التكلفة لكل تشغيل",
-    "title": "عقد API",
-    "totalCost": "التكلفة الإجمالية"
   },
   "apiNodesSignInDialog": {
     "message": "يحتوي سير العمل هذا على عقد API، والتي تتطلب تسجيل دخولك إلى حسابك لتشغيلها.",
