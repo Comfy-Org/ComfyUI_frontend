@@ -129,6 +129,7 @@ onBeforeUnmount(() => {
         <slot />
       </TooltipTrigger>
       <TooltipContent
+        :open
         :side
         :side-offset
         :class="contentClass ?? normalizedConfig?.contentClass"

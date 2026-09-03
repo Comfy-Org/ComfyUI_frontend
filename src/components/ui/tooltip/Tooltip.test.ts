@@ -219,18 +219,30 @@ describe('Tooltip', () => {
     })
   })
 
-  it('lifts above the shared modal z-index', async () => {
-    const dialog = document.createElement('div')
-    ZIndex.set('modal', dialog, 2400)
-    openDialogs.push(dialog)
+  it('recomputes its modal lift each time it opens', async () => {
+    const firstDialog = document.createElement('div')
+    ZIndex.set('modal', firstDialog, 2400)
+    openDialogs.push(firstDialog)
     const user = userEvent.setup()
     renderTooltip()
+    const trigger = screen.getByRole('button')
 
-    await user.hover(screen.getByRole('button'))
-    const tooltip = await screen.findByRole('tooltip')
+    await user.hover(trigger)
+    expect(Number((await screen.findByRole('tooltip')).style.zIndex)).toBe(
+      Number(firstDialog.style.zIndex) + 1
+    )
+    await user.unhover(trigger)
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
 
-    expect(Number(tooltip.style.zIndex)).toBeGreaterThan(
-      Number(dialog.style.zIndex)
+    const laterDialog = document.createElement('div')
+    ZIndex.set('modal', laterDialog, 2400)
+    openDialogs.push(laterDialog)
+    await user.hover(trigger)
+
+    expect(Number((await screen.findByRole('tooltip')).style.zIndex)).toBe(
+      Number(laterDialog.style.zIndex) + 1
     )
   })
 
