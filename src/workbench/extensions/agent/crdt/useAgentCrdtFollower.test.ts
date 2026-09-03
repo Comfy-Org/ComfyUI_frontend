@@ -104,12 +104,9 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import {
-  STALE_AFTER_MS,
-  peekPersistedDocId,
-  useAgentCrdtFollower
-} from './useAgentCrdtFollower'
+import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import { reconcilePersistedDocId } from './persistedDocId'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -260,21 +257,21 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1969: peekPersistedDocId mirrors what the next rebind would restore', () => {
+  it('FE-1969: the persisted doc reconciler mirrors the next rebind', () => {
     const { unmount } = mountFollower('wf-1')
-    expect(peekPersistedDocId()).toBeNull()
+    expect(reconcilePersistedDocId()).toBeNull()
 
     dispatchFrame('doc_subscribed', { ok: true })
-    expect(peekPersistedDocId()).toBe('wf-1')
+    expect(reconcilePersistedDocId()).toBe('wf-1')
 
     writeRawRecord({ docId: 'wf-1', nonce: 'foreign-nonce' })
-    expect(peekPersistedDocId()).toBeNull()
+    expect(reconcilePersistedDocId()).toBeNull()
     expect(persistedRecord()).toBeNull()
 
     vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
       { type: 'reload' } as PerformanceNavigationTiming
     ])
-    expect(peekPersistedDocId()).toBeNull()
+    expect(reconcilePersistedDocId()).toBeNull()
     unmount()
   })
 

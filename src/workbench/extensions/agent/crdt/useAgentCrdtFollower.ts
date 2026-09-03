@@ -14,118 +14,12 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
-
-// FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount or reload loses the binding until the NEXT turn ack. Persist it
-// per-tab in sessionStorage so the follower can rebind immediately.
-//
-// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
-// (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
-// to whichever workflow last confirmed a subscribe, not necessarily the one
-// about to become active - and (b) a browser-tab duplication, which clones
-// sessionStorage verbatim into a second tab that never subscribed to that doc
-// at all. Neither case can be caught by re-checking `workflowId`, because the
-// whole reason a rebind is attempted is that the caller does NOT yet know
-// which workflow it's asking about. Instead the persisted record carries (1)
-// a per-page-load session nonce, so a duplicated tab gets a fresh nonce and
-// its inherited record is refused unless this navigation is an explicit
-// reload, and (2) a short expiry that
-// slides while the doc keeps delivering frames, so a tab left idle past the
-// window a doc realistically stays relevant is refused rather than trusted
-// indefinitely. (1) closes case (b). Case (a) happens inside one page load,
-// so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
-// `fec-docid-1` reproducer tracks the remaining same-tab window.
-const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
-const DOC_ID_TTL_MS = 5 * 60 * 1000
-// Re-stamp the expiry on doc traffic at most this often, so a busy channel
-// does not turn every frame into a sessionStorage write.
-const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
-
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
-
-interface PersistedDocIdRecord {
-  docId: string
-  nonce: string
-  expiresAt: number
-}
-
-function safeSessionStorage(): Storage | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
-function persistDocId(docId: string): void {
-  try {
-    const record: PersistedDocIdRecord = {
-      docId,
-      nonce: pageSessionNonce,
-      expiresAt: Date.now() + DOC_ID_TTL_MS
-    }
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
-  } catch {
-    // Quota / privacy mode: persistence is best-effort.
-  }
-}
-
-function isReloadNavigation(): boolean {
-  return performance
-    .getEntriesByType('navigation')
-    .some((entry) => (entry as PerformanceNavigationTiming).type === 'reload')
-}
-
-function readPersistedDocId(): string | null {
-  try {
-    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
-    if (!raw) return null
-    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
-    if (
-      typeof record.docId !== 'string' ||
-      typeof record.nonce !== 'string' ||
-      typeof record.expiresAt !== 'number'
-    ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
-      return null
-    }
-    if (Date.now() >= record.expiresAt) return null
-    if (record.nonce !== pageSessionNonce) {
-      if (!isReloadNavigation()) {
-        clearPersistedDocId()
-        return null
-      }
-      persistDocId(record.docId)
-    }
-    return record.docId
-  } catch {
-    return null
-  }
-}
-
-/**
- * The doc id the follower would rebind to on its next `[null, active]`
- * evaluation, or null when there is no record this page load can honour. Lets
- * the composition root scope its activity fallback to that one doc instead of
- * to every tab that still carries a persisted tab binding.
- */
-export function peekPersistedDocId(): string | null {
-  return readPersistedDocId()
-}
-
-function clearPersistedDocId(): void {
-  try {
-    safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)
-  } catch {
-    // Best-effort.
-  }
-}
+import {
+  clearPersistedDocId,
+  DOC_ID_REFRESH_INTERVAL_MS,
+  persistDocId,
+  reconcilePersistedDocId
+} from './persistedDocId'
 
 /**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
@@ -514,7 +408,7 @@ export function useAgentCrdtFollower(
         return
       }
       if (next === null) {
-        const persisted = initialBind ? readPersistedDocId() : null
+        const persisted = initialBind ? reconcilePersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })

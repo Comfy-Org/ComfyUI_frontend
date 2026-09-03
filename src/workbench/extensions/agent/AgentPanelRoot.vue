@@ -84,10 +84,8 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import {
-  peekPersistedDocId,
-  useAgentCrdtFollower
-} from './crdt/useAgentCrdtFollower'
+import { reconcilePersistedDocId } from './crdt/persistedDocId'
+import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -389,7 +387,7 @@ const {
 function restorableWorkflowIdFor(tabPath: string): string | null {
   const persisted = bindingStore.workflowIdFor(tabPath)
   if (persisted === undefined) return null
-  return persisted === peekPersistedDocId() ? persisted : null
+  return persisted === reconcilePersistedDocId() ? persisted : null
 }
 const isBoundWorkflowActive = computed(() => {
   if (workflowDetached.value) return false

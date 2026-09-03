@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import type * as PersistedDocIdModule from './crdt/persistedDocId'
 import type * as AgentCrdtFollowerModule from './crdt/useAgentCrdtFollower'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
@@ -296,11 +297,17 @@ const crdtFollowerCalls = vi.hoisted(
     }[]
 )
 const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
+vi.mock('./crdt/persistedDocId', async (importOriginal) => {
+  const actual = await importOriginal<typeof PersistedDocIdModule>()
+  return {
+    ...actual,
+    reconcilePersistedDocId: () => persistedCrdtDocId.value
+  }
+})
 vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentCrdtFollowerModule>()
   return {
     ...actual,
-    peekPersistedDocId: () => persistedCrdtDocId.value,
     useAgentCrdtFollower: (
       ...args: Parameters<typeof actual.useAgentCrdtFollower>
     ) => {
