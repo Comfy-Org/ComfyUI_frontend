@@ -1,0 +1,105 @@
+{
+  "id": "elevenlabs/text-to-dialogue",
+  "slug": "elevenlabs--text-to-dialogue",
+  "displayName": "ElevenLabs Text-to-Dialogue",
+  "provider": "elevenlabs",
+  "modality": "audio",
+  "description": "Synthesises a multi-speaker dialogue from a list of {text, voice} pairs, up to 10 entries (ElevenLabs).",
+  "tags": ["elevenlabs", "audio", "tts", "dialogue", "multi-speaker"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["elevenlabs/text-to-dialogue"]
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295,
+        "description": "Seed for reproducibility.",
+        "default": 1
+      },
+      "apply_text_normalization": {
+        "type": "string",
+        "enum": ["auto", "on", "off"],
+        "description": "Text normalization mode. 'auto' lets the system decide, 'on' always applies normalization, 'off' skips it.",
+        "default": "auto"
+      },
+      "inputs": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Text content for the dialogue entry."
+            },
+            "voice_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Roger (male, american)",
+                    "Sarah (female, american)",
+                    "Laura (female, american)",
+                    "Charlie (male, australian)",
+                    "George (male, british)",
+                    "Callum (male, american)",
+                    "River (neutral, american)",
+                    "Harry (male, american)",
+                    "Liam (male, american)",
+                    "Alice (female, british)",
+                    "Matilda (female, american)",
+                    "Will (male, american)",
+                    "Jessica (female, american)",
+                    "Eric (male, american)",
+                    "Bella (female, american)",
+                    "Chris (male, american)",
+                    "Brian (male, american)",
+                    "Daniel (male, british)",
+                    "Lily (female, british)",
+                    "Adam (male, american)",
+                    "Bill (male, american)"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "description": "Voice ID for the dialogue entry. Resolve a friendly key via ELEVENLABS_VOICE_CODES or pass a custom voice_id. Available voices: Roger (male, american); Sarah (female, american); Laura (female, american); Charlie (male, australian); George (male, british); Callum (male, american); River (neutral, american); Harry (male, american); Liam (male, american); Alice (female, british); Matilda (female, american); Will (male, american); Jessica (female, american); Eric (male, american); Bella (female, american); Chris (male, american); Brian (male, american); Daniel (male, british); Lily (female, british); Adam (male, american); Bill (male, american)."
+            }
+          },
+          "required": ["text", "voice_id"],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 10,
+        "description": "List of dialogue entries (1..10)."
+      },
+      "language_code": {
+        "type": "string",
+        "description": "ISO-639-1 or ISO-639-3 language code (e.g., 'en', 'es', 'fra'). Leave empty for automatic detection.",
+        "default": ""
+      },
+      "output_format": {
+        "type": "string",
+        "enum": ["mp3_44100_192", "opus_48000_192"],
+        "description": "Audio output format.",
+        "default": "mp3_44100_192"
+      },
+      "stability": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Voice stability. Lower values give broader emotional range, higher values produce more consistent but potentially monotonous speech.",
+        "default": 0.5
+      }
+    },
+    "required": ["model", "inputs"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

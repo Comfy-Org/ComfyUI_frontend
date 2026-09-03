@@ -1,0 +1,110 @@
+{
+  "id": "bria/generative-fill",
+  "slug": "bria--generative-fill",
+  "displayName": "Bria Generative Fill",
+  "provider": "bria",
+  "modality": "image",
+  "description": "Generates objects or scenery inside a masked image region.",
+  "tags": ["bria", "generative-fill", "inpaint", "mask", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bria/generative-fill"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "default": ""
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647,
+        "default": 42
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["mask"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "moderation": {
+        "type": "string",
+        "enum": ["false", "true"],
+        "default": "false"
+      },
+      "negative_prompt": {
+        "type": "string",
+        "default": ""
+      },
+      "prompt_content_moderation": {
+        "type": "boolean"
+      },
+      "refine_prompt": {
+        "type": "boolean",
+        "default": true
+      },
+      "visual_input_moderation": {
+        "type": "boolean"
+      },
+      "visual_output_moderation": {
+        "type": "boolean"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "mask",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

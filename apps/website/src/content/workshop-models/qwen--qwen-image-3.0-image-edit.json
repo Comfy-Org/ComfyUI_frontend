@@ -1,0 +1,80 @@
+{
+  "id": "qwen/qwen-image-3.0-image-edit",
+  "slug": "qwen--qwen-image-3.0-image-edit",
+  "displayName": "Qwen Image 3.0 Edit",
+  "provider": "qwen",
+  "modality": "image",
+  "description": "Edits one to three images with Qwen Image 3.0.",
+  "tags": ["qwen", "image-edit", "edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["qwen/qwen-image-3.0-image-edit"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 6,
+        "default": 1
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "negative_prompt": {
+        "type": "string"
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "prompt_extend_mode": {
+        "type": "string",
+        "enum": ["direct", "agent"],
+        "default": "direct"
+      },
+      "size": {
+        "type": "string"
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 3
+    }
+  ]
+}

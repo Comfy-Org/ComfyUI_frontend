@@ -1,24 +1,9 @@
-import snapshot from './workshop-catalog.generated.json'
+import type { WorkshopModelEntry } from '../content/workshop-models.schema'
 
 export const WORKSHOP_OUTPUTS = ['image', 'video', 'audio', '3d'] as const
 
 type WorkshopOutput = (typeof WORKSHOP_OUTPUTS)[number]
 export type WorkshopOutputFilter = WorkshopOutput | 'all'
-
-interface CatalogModel {
-  readonly id: string
-  readonly slug: string
-  readonly displayName: string
-  readonly provider: string
-  readonly modality: WorkshopOutput | 'music' | 'svg'
-  readonly description: string
-  readonly tags: readonly string[]
-}
-
-interface CatalogSnapshot {
-  readonly sourceRef: string
-  readonly models: readonly CatalogModel[]
-}
 
 export interface WorkshopBrowseModel {
   readonly id: string
@@ -31,25 +16,29 @@ export interface WorkshopBrowseModel {
   readonly tags: readonly string[]
 }
 
-function outputFor(modality: CatalogModel['modality']): WorkshopOutput {
+function outputFor(modality: WorkshopModelEntry['modality']): WorkshopOutput {
   if (modality === 'music') return 'audio'
   if (modality === 'svg') return 'image'
   return modality
 }
 
-const catalog = snapshot as CatalogSnapshot
-
-export const workshopModels: readonly WorkshopBrowseModel[] =
-  catalog.models.map((model) => ({
-    id: model.id,
-    slug: model.slug,
-    href: `/workshop/models/${model.slug}/`,
-    name: model.displayName,
-    provider: model.provider,
-    output: outputFor(model.modality),
-    description: model.description,
-    tags: model.tags
-  }))
+/**
+ * The card-sized view of a model. Deliberately a projection rather than the
+ * whole entry: `parameters` is the largest field on a model and the browse
+ * page has no use for it, so it never reaches the browser.
+ */
+export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
+  return {
+    id: entry.id,
+    slug: entry.slug,
+    href: `/workshop/models/${entry.slug}/`,
+    name: entry.displayName,
+    provider: entry.provider,
+    output: outputFor(entry.modality),
+    description: entry.description,
+    tags: entry.tags
+  }
+}
 
 export interface WorkshopFilter {
   readonly query?: string

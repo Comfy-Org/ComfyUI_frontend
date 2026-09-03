@@ -1,0 +1,166 @@
+{
+  "id": "topaz/video-enhance",
+  "slug": "topaz--video-enhance",
+  "displayName": "Topaz Video Enhance",
+  "provider": "topaz",
+  "modality": "video",
+  "description": "Upscales a video and/or interpolates frames for higher resolution and frame rate (Topaz Video Enhance).",
+  "tags": [
+    "topaz",
+    "video-enhance",
+    "upscale",
+    "starlight",
+    "interpolation",
+    "frame-rate"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["topaz/video-enhance"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["video"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "duration_sec": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Source video duration in seconds. Required."
+      },
+      "dynamic_compression_level": {
+        "type": "string",
+        "enum": ["Low", "Mid", "High"],
+        "description": "CQP level for output encoding.",
+        "default": "Low"
+      },
+      "frame_count": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Source video frame count. Required."
+      },
+      "interpolation_duplicate": {
+        "type": "boolean",
+        "description": "Analyze the input for duplicate frames and remove them.",
+        "default": false
+      },
+      "interpolation_duplicate_threshold": {
+        "type": "number",
+        "minimum": 0.001,
+        "maximum": 0.1,
+        "description": "Detection sensitivity for duplicate frames.",
+        "default": 0.01
+      },
+      "interpolation_enabled": {
+        "type": "boolean",
+        "description": "Enable the frame-interpolation filter. At least one of `upscaler_enabled` or `interpolation_enabled` must be true.",
+        "default": false
+      },
+      "interpolation_frame_rate": {
+        "type": "integer",
+        "minimum": 15,
+        "maximum": 240,
+        "description": "Output frame rate when interpolation is enabled.",
+        "default": 60
+      },
+      "interpolation_model": {
+        "type": "string",
+        "enum": ["apo-8"],
+        "default": "apo-8"
+      },
+      "interpolation_slowmo": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16,
+        "description": "Slow-motion factor. e.g. 2 makes the output twice as slow and doubles the duration.",
+        "default": 1
+      },
+      "src_frame_rate": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Source video frame rate (fps). Required."
+      },
+      "src_height": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Source video height in pixels. Required (no ffprobe in node)."
+      },
+      "src_size_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Source video file size in bytes. Required."
+      },
+      "src_width": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Source video width in pixels. Required (no ffprobe in node)."
+      },
+      "upscaler_creativity": {
+        "type": "string",
+        "enum": ["low", "middle", "high"],
+        "description": "Creativity level (applies only to 'Starlight (Astra) Creative').",
+        "default": "low"
+      },
+      "upscaler_enabled": {
+        "type": "boolean",
+        "description": "Enable the upscaling filter. At least one of `upscaler_enabled` or `interpolation_enabled` must be true.",
+        "default": true
+      },
+      "upscaler_model": {
+        "type": "string",
+        "enum": [
+          "Starlight (Astra) Fast",
+          "Starlight (Astra) Creative",
+          "Starlight Precise 2.5"
+        ],
+        "description": "Upscaler model: 'Starlight (Astra) Fast' (slf-1), 'Starlight (Astra) Creative' (slc-1, supports `upscaler_creativity`), or 'Starlight Precise 2.5' (slp-2.5)."
+      },
+      "upscaler_resolution": {
+        "type": "string",
+        "enum": ["FullHD (1080p)", "4K (2160p)"],
+        "description": "Target upscaler resolution: 'FullHD (1080p)' (long-side cap 1920) or '4K (2160p)' (long-side cap 3840). Aspect ratio is preserved and target dims are rounded up to even."
+      }
+    },
+    "required": [
+      "model",
+      "duration_sec",
+      "frame_count",
+      "src_frame_rate",
+      "src_height",
+      "src_size_bytes",
+      "src_width",
+      "upscaler_model",
+      "upscaler_resolution"
+    ],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "id": "recraft/v4.1-text-to-vector",
+  "slug": "recraft--v4.1-text-to-vector",
+  "displayName": "Recraft V4.1 Text-to-Vector",
+  "provider": "recraft",
+  "modality": "svg",
+  "description": "Generates SVG illustrations with Recraft V4.1.",
+  "tags": ["recraft", "v4.1", "svg", "vector"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["recraft/v4.1-text-to-vector"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 6,
+        "default": 1
+      },
+      "size": {
+        "type": "string",
+        "enum": [
+          "1024x1024",
+          "1536x768",
+          "768x1536",
+          "1280x832",
+          "832x1280",
+          "1216x896",
+          "896x1216",
+          "1152x896",
+          "896x1152",
+          "832x1344",
+          "1280x896",
+          "896x1280",
+          "1344x768",
+          "768x1344"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

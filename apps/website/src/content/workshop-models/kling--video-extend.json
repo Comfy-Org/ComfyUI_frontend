@@ -1,0 +1,49 @@
+{
+  "id": "kling/video-extend",
+  "slug": "kling--video-extend",
+  "displayName": "Kling Video Extend",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Extends an existing Kling video clip up to three minutes total (Kling).",
+  "tags": ["kling", "video", "video-extend"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/video-extend"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2500,
+        "description": "Positive text prompt for guiding the video extension."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "cfg_scale": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Classifier-free guidance scale.",
+        "default": 0.5
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative text prompt for elements to avoid. Empty → dropped from the wire body.",
+        "default": ""
+      },
+      "video_id": {
+        "type": "string",
+        "description": "ID of the video to be extended. Cannot exceed 3 minutes total duration after extension."
+      }
+    },
+    "required": ["model", "prompt", "video_id"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

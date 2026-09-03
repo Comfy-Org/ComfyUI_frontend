@@ -214,7 +214,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     })
   })
 
-  it('documents status contamination from a late workflow A result while workflow B is active', async () => {
+  it('guards status from a late workflow A result while workflow B is active', async () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
@@ -255,19 +255,25 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       )
     ).toHaveLength(1)
 
-    // Documented defect expectation for R-73: result frames carry workflowId,
-    // but the composable updates workflow B's status from workflow A's frame.
-    // Flip this assertion when the result path gates status by workflowId.
+    // R-73 regression guard: result frames carry workflowId, and the guard
+    // added alongside this test (onOpsResult in useAgentCrdtFollower.ts)
+    // drops a result whose workflowId no longer matches the subscribed
+    // workflow, so workflow B's status is never updated from workflow A's
+    // late frame, and the composable never re-emits that frame as a
+    // 'doc_ops_result' dev event.
     expect(status()).toMatchObject({
       workflowId: 'wf-b',
-      lastFrameType: 'doc_ops_result'
+      lastFrameType: null
     })
-    expect(devLogState.recordDevEvent).toHaveBeenCalledWith('doc_ops_result', {
-      workflowId: 'wf-a',
-      ok: true,
-      applied: [operationAId],
-      skipped: []
-    })
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'doc_ops_result',
+      {
+        workflowId: 'wf-a',
+        ok: true,
+        applied: [operationAId],
+        skipped: []
+      }
+    )
     expect(operationBId).not.toBe(operationAId)
   })
 

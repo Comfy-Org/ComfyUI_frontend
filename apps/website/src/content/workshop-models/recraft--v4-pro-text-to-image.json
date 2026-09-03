@@ -1,0 +1,52 @@
+{
+  "id": "recraft/v4-pro-text-to-image",
+  "slug": "recraft--v4-pro-text-to-image",
+  "displayName": "Recraft V4 Pro Text-to-Image",
+  "provider": "recraft",
+  "modality": "image",
+  "description": "Generates a premium raster image with higher quality and larger output than V4 (Recraft V4 Pro).",
+  "tags": ["recraft", "v4", "v4-pro", "text-to-image", "raster", "premium"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["recraft/v4-pro-text-to-image"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 6,
+        "default": 1
+      },
+      "size": {
+        "type": "string",
+        "enum": [
+          "2048x2048",
+          "3072x1536",
+          "1536x3072",
+          "2560x1664",
+          "1664x2560",
+          "2432x1792",
+          "1792x2432",
+          "2304x1792",
+          "1792x2304",
+          "1664x2688",
+          "2688x1536",
+          "1536x2688",
+          "2560x1792",
+          "1792x2560"
+        ],
+        "default": "2048x2048"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

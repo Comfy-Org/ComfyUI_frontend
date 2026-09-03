@@ -1,0 +1,155 @@
+{
+  "id": "heygen/talking-photo",
+  "slug": "heygen--talking-photo",
+  "displayName": "HeyGen Talking Photo",
+  "provider": "heygen",
+  "modality": "video",
+  "description": "Creates a talking-photo video from an image and script or audio.",
+  "tags": ["heygen", "video", "talking-photo"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["heygen/talking-photo"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "4:5", "5:4", "1:1", "auto"]
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 4,
+        "maximum": 15
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["audio"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "avatar_id": {
+        "type": "string"
+      },
+      "expressiveness": {
+        "type": "string",
+        "enum": ["low", "medium", "high"],
+        "default": "low"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720p", "1080p", "4k"]
+      },
+      "script": {
+        "type": "string"
+      },
+      "voice": {
+        "type": "string",
+        "enum": [
+          "Cassidy (English, female)",
+          "Hope (English, female)",
+          "Archer (English, male)",
+          "Brittney (English, female)",
+          "Mark (English, male)",
+          "Andrew (English, male)",
+          "Spuds Oxley (English, male)",
+          "Patrick (English, male)",
+          "David Castlemore (English, male)",
+          "Michael C (English, male)",
+          "Adam Stone (English, male)",
+          "Alex (English, male)",
+          "Monika Sogam (English, female)",
+          "Jessica Anne Bogart (English, female)",
+          "John Doe (English, male)",
+          "Ivy (English, female)",
+          "Chill Brian (English, male)",
+          "Allison (English, female)",
+          "Mia Starset (Norwegian, female)",
+          "William Shanks (Spanish, male)",
+          "Zain (English, female)",
+          "Jora Slobod (Romanian, male)",
+          "Narrator Mateo - Excited 🤩 (Spanish, male)",
+          "Aria (English, female)",
+          "Caryns (English, female)",
+          "Klara (English, female)",
+          "Son Tran (Vietnamese, male)",
+          "Bold Kasia - Excited 🤩 (Polish, female)",
+          "Marc Aurèle (French, male)",
+          "Shaun (English, male)",
+          "Senthil (English, male)",
+          "Cody (English, male)",
+          "Saffron (English, female)",
+          "Blanka - Lifelike (English, female)",
+          "Rami (English, male)",
+          "Rhodes (English, female)",
+          "Michelle - Voice 1 (English, female)",
+          "Tuba (, female)",
+          "Autumn - UGC 3 (English, female)",
+          "Reassuring Rupert (English, male)"
+        ],
+        "description": "Curated HeyGen narration voice for a text script."
+      },
+      "voice_id": {
+        "type": "string",
+        "description": "Custom HeyGen voice ID. Overrides `voice`."
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "audio",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

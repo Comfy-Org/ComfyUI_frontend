@@ -1,0 +1,31 @@
+{
+  "id": "tripo/rig",
+  "slug": "tripo--rig",
+  "displayName": "Tripo Rig",
+  "provider": "tripo",
+  "modality": "3d",
+  "description": "Auto-rigs a Tripo 3D mesh for animation (Tripo Rig).",
+  "tags": ["tripo", "3d", "rig", "rigging", "animation", "model-to-model"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tripo/rig"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "original_model_task_id": {
+        "type": "string",
+        "description": "The task_id of the model to rig."
+      }
+    },
+    "required": ["model", "original_model_task_id"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

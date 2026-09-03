@@ -1,0 +1,88 @@
+{
+  "id": "freepik/magnific-skin-enhancer",
+  "slug": "freepik--magnific-skin-enhancer",
+  "displayName": "Magnific Skin Enhancer",
+  "provider": "freepik",
+  "modality": "image",
+  "description": "Enhances skin in a portrait, tuned for portrait skin (Magnific Skin Enhancer).",
+  "tags": ["freepik", "magnific", "skin-enhancer", "portrait", "edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["freepik/magnific-skin-enhancer"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["creative", "faithful", "flexible"],
+        "description": "Processing mode (DynamicCombo parent). Determines the submit endpoint: creative→/skin-enhancer/creative, faithful→/skin-enhancer/faithful, flexible→/skin-enhancer/flexible."
+      },
+      "optimized_for": {
+        "type": "string",
+        "enum": [
+          "enhance_skin",
+          "improve_lighting",
+          "enhance_everything",
+          "transform_to_real",
+          "no_make_up"
+        ],
+        "description": "Optimization target. Only honored when mode === 'flexible'."
+      },
+      "sharpen": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Sharpening intensity level.",
+        "default": 0
+      },
+      "skin_detail": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Skin detail enhancement level. Only honored when mode === 'faithful' (node.py default: 80 if absent)."
+      },
+      "smart_grain": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Smart grain intensity level.",
+        "default": 2
+      }
+    },
+    "required": ["model", "mode"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

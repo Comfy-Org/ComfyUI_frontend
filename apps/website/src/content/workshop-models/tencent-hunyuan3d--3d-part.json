@@ -1,0 +1,57 @@
+{
+  "id": "tencent-hunyuan3d/3d-part",
+  "slug": "tencent-hunyuan3d--3d-part",
+  "displayName": "Hunyuan3D Part",
+  "provider": "tencent-hunyuan3d",
+  "modality": "3d",
+  "description": "Decomposes an FBX 3D mesh into separate component parts (Tencent Hunyuan3D 3D Part).",
+  "tags": ["tencent", "hunyuan3d", "3d", "part", "fbx", "model-to-model"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tencent-hunyuan3d/3d-part"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["model_3d"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "model_3d_format": {
+        "type": "string",
+        "enum": ["fbx"],
+        "description": "File format of `model_3d_url`. Only `fbx` is supported."
+      }
+    },
+    "required": ["model", "model_3d_format"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "model_3d",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

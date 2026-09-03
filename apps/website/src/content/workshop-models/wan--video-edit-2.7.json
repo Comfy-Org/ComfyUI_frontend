@@ -1,0 +1,116 @@
+{
+  "id": "wan/video-edit-2.7",
+  "slug": "wan--video-edit-2.7",
+  "displayName": "Wan 2.7 Video Edit",
+  "provider": "wan",
+  "modality": "video",
+  "description": "Edits an existing video from a prompt and optional reference images (Wan 2.7).",
+  "tags": ["wan", "wan2.7", "video", "video-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wan/video-edit-2.7"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Editing instructions or style transfer."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "1:1", "4:3", "3:4"],
+        "description": "Aspect ratio. If unchanged from input, approximates the input video ratio."
+      },
+      "duration": {
+        "type": "string",
+        "enum": ["auto", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+        "description": "Output duration. `auto` matches input duration; specific values truncate from the start.",
+        "default": "auto"
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["video"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "audio_setting": {
+        "type": "string",
+        "enum": ["auto", "origin"],
+        "description": "`auto` may regenerate audio; `origin` preserves the input video's audio.",
+        "default": "auto"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720P", "1080P"],
+        "description": "Output video resolution tier (720P or 1080P)."
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Watermark toggle.",
+        "default": false
+      }
+    },
+    "required": ["model", "prompt", "aspect_ratio", "resolution"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "reference_image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 4
+    },
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

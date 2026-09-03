@@ -1,0 +1,111 @@
+{
+  "id": "vertexai/veo-3",
+  "slug": "vertexai--veo-3",
+  "displayName": "Veo 3",
+  "provider": "vertexai",
+  "modality": "video",
+  "description": "Generates a cinematic video clip with native audio from text (Veo 3).",
+  "tags": [
+    "veo",
+    "google",
+    "video",
+    "audio",
+    "text-to-video",
+    "image-to-video"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["vertexai/veo-3"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Text description of the video",
+        "default": ""
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16"],
+        "description": "Aspect ratio of the output video",
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 8,
+        "description": "Duration of the output video in seconds",
+        "default": 8
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295,
+        "description": "Seed for video generation (0 for random; dropped from wire when 0).",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "enhance_prompt": {
+        "type": "boolean",
+        "description": "Deprecated/ignored at L2 — assembly always sends enhancePrompt=true for Veo 3.",
+        "default": true
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "description": "Generate audio for the video. Supported by all Veo 3 models.",
+        "default": false
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative text prompt to guide what to avoid in the video. Empty string drops the field on the wire (L2 builder).",
+        "default": ""
+      },
+      "person_generation": {
+        "type": "string",
+        "enum": ["ALLOW", "BLOCK"],
+        "description": "Whether to allow generating people in the video",
+        "default": "ALLOW"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720p", "1080p", "4k"],
+        "description": "Output video resolution. 4K is only supported by veo-3.1 (non-lite) models.",
+        "default": "720p"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

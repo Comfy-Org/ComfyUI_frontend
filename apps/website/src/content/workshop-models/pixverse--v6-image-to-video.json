@@ -1,0 +1,110 @@
+{
+  "id": "pixverse/v6-image-to-video",
+  "slug": "pixverse--v6-image-to-video",
+  "displayName": "PixVerse V6 Image-to-Video",
+  "provider": "pixverse",
+  "modality": "video",
+  "description": "Animates a still image with PixVerse V6, optionally with native audio. The output keeps the input image's aspect ratio.",
+  "tags": ["pixverse", "pixverse-v6", "video", "image-to-video", "audio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["pixverse/v6-image-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 5000,
+        "description": "Prompt for the video generation."
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 15,
+        "description": "Length of the generated video in seconds (1-15).",
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed for video generation (recorded, not reproducible).",
+        "default": 42
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "description": "Generate a native audio track together with the video. Audio raises the per-second rate.",
+        "default": true
+      },
+      "img_id": {
+        "type": "string",
+        "description": "Pre-existing PixVerse image handle from `createPartnerAsset({ model: 'pixverse/image-handle' })`. Mutually exclusive with `image`."
+      },
+      "multi_clip": {
+        "type": "boolean",
+        "description": "Let the model cut the video into several shots instead of one continuous take.",
+        "default": false
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Optional description of undesired elements. Empty is dropped.",
+        "default": ""
+      },
+      "quality": {
+        "type": "string",
+        "enum": ["360p", "540p", "720p", "1080p"],
+        "description": "Output resolution — the long edge: 360p 640px, 540p 1024px, 720p 1280px, 1080p 1920px.",
+        "default": "720p"
+      },
+      "style": {
+        "type": "string",
+        "enum": [
+          "none",
+          "anime",
+          "3d_animation",
+          "clay",
+          "comic",
+          "cyberpunk",
+          "realistic"
+        ],
+        "description": "Optional visual style. `none` leaves the model unstyled.",
+        "default": "none"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}
