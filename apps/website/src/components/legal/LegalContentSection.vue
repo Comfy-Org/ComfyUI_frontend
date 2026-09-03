@@ -8,7 +8,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { hasKey, t, translationKeys } from '../../i18n/translations'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { scrollTo } from '../../scripts/smoothScroll'
-import SafeRichText from '../common/SafeRichTextContent'
+import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const {
   prefix,

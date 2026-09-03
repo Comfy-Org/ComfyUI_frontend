@@ -3,7 +3,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { Clock } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
-import SafeRichText from '../common/SafeRichTextContent'
+import SafeRichText from '@/components/common/SafeRichTextContent'
 import CheckIcon from '../icons/CheckIcon.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
