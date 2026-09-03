@@ -45,7 +45,12 @@ describe('useReconnectQueueRefresh', () => {
     const refresh = useReconnectQueueRefresh()
     await refresh()
 
-    expect(clearSpy).toHaveBeenCalledTimes(1)
+    // Called twice: once inside queueStore.update() itself (routine
+    // reconciliation, added so a dropped terminal WS message recovers on
+    // every poll, not just reconnect) and once here for the reconnect path's
+    // own explicit reconciliation. Both compute the same set and the call is
+    // idempotent, so the duplication is harmless.
+    expect(clearSpy).toHaveBeenCalledTimes(2)
     expect(clearSpy).toHaveBeenCalledWith(
       new Set(['run-1', 'pend-1', 'pend-2'])
     )

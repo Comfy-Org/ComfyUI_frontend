@@ -566,6 +566,14 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+        // Recover from a dropped terminal WS message: if the active job no
+        // longer appears in the fresh Running/Pending snapshot, clear it here
+        // rather than waiting for a WS reconnect. Independent of whether the
+        // job has shown up in `historyResult` yet — `getQueue` and
+        // `getHistory` are fetched concurrently and can disagree in the
+        // narrow window right after a job finishes, so gating this on
+        // history would reintroduce the same race.
+        executionStore.clearActiveJobIfStale(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }

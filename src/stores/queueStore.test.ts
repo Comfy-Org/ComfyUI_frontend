@@ -1168,4 +1168,48 @@ describe('useQueueStore', () => {
       expect(store.isLoading).toBe(false)
     })
   })
+
+  describe('update() - stale active job recovery', () => {
+    it('reconciles the active job against the fresh queue snapshot, independent of history', async () => {
+      // Regression for the race in PR #11866 review thread
+      // (discussion_r3178588879): getQueue and getHistory are fetched
+      // concurrently, so a job that just finished can be absent from
+      // Running/Pending while not yet present in history. If a terminal WS
+      // message is dropped, executionStore.activeJobId must still be
+      // recovered from the queue snapshot alone — it cannot wait on history.
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([]) // job not yet in history either
+      const executionStore = useExecutionStore()
+      const clearSpy = vi.spyOn(executionStore, 'clearActiveJobIfStale')
+
+      await store.update()
+
+      expect(clearSpy).toHaveBeenCalledWith(new Set())
+    })
+
+    it('does not clear the active job when it is still in the queue snapshot', async () => {
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(0, 'run-1')],
+        Pending: []
+      })
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = useExecutionStore()
+      const clearSpy = vi.spyOn(executionStore, 'clearActiveJobIfStale')
+
+      await store.update()
+
+      expect(clearSpy).toHaveBeenCalledWith(new Set(['run-1']))
+    })
+
+    it('skips stale-job reconciliation when the queue fetch fails', async () => {
+      mockGetQueue.mockRejectedValue(new Error('queue down'))
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = useExecutionStore()
+      const clearSpy = vi.spyOn(executionStore, 'clearActiveJobIfStale')
+
+      await store.update()
+
+      expect(clearSpy).not.toHaveBeenCalled()
+    })
+  })
 })
