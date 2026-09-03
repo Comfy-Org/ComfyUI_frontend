@@ -91,10 +91,12 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 }))
 
 const mockCloseDialog = vi.fn()
+const mockIsDialogOpen = vi.fn(() => false)
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
-    closeDialog: mockCloseDialog
+    closeDialog: mockCloseDialog,
+    isDialogOpen: mockIsDialogOpen
   })
 }))
 
@@ -129,6 +131,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
+    mockIsDialogOpen.mockReturnValue(false)
     mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
     mockFeatureFlags.embeddedCheckoutEnabled = true
@@ -418,7 +421,7 @@ describe('billingOperationStore', () => {
       expect(mockSettingsDialogShow).not.toHaveBeenCalled()
     })
 
-    it('closes the top-up dialog and opens settings on topup success', async () => {
+    it('surfaces settings on topup success when nobody is watching the dialog', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -430,8 +433,49 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+    })
+
+    it('leaves an open top-up dialog to render its own outcome', async () => {
+      mockIsDialogOpen.mockReturnValue(true)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup', {
+        suppressProcessingToast: true
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('suppresses the failure toast while the top-up dialog is open', async () => {
+      mockIsDialogOpen.mockReturnValue(true)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'card_declined',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup', {
+        suppressProcessingToast: true
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
 
     it('opens Credits settings after a polled local topup succeeds', async () => {

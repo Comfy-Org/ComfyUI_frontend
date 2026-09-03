@@ -6,16 +6,16 @@
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
-          v-if="step === 'confirm'"
+          v-if="step === 'confirm' || step === 'declined'"
           class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
-          :disabled="paymentLocked"
+          :disabled="step === 'confirm' && paymentLocked"
           :aria-label="$t('g.back')"
-          @click="step = 'amount'"
+          @click="handleBack"
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
         <h2
-          v-if="step !== 'verifying'"
+          v-if="step === 'amount' || step === 'confirm'"
           class="m-0 text-base font-bold text-base-foreground"
         >
           {{
@@ -108,6 +108,94 @@
     </template>
 
     <!-- Preset amount buttons -->
+    <template v-if="step === 'success'">
+      <div class="flex flex-col items-center gap-3 px-8 text-center">
+        <i
+          class="icon-[lucide--circle-check-big] size-10 text-success-background"
+        />
+        <h2
+          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ $t('credits.topUp.successTitle') }}
+        </h2>
+        <i18n-t
+          keypath="credits.topUp.successBody"
+          tag="p"
+          class="m-0 text-sm text-balance text-muted-foreground"
+        >
+          <template #link>
+            <button
+              class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground underline"
+              @click="openBillingAndInvoices"
+            >
+              {{ $t('subscription.billingAndInvoices') }}
+            </button>
+          </template>
+        </i18n-t>
+      </div>
+
+      <div
+        v-if="balanceBeforeCharge !== null"
+        class="mx-8 mt-6 flex flex-col gap-2 rounded-xl bg-secondary-background p-4"
+      >
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-muted-foreground">
+            {{ $t('credits.topUp.previousBalance') }}
+          </span>
+          <span class="text-base-foreground tabular-nums">
+            {{ formatNumber(balanceBeforeCharge) }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-muted-foreground">
+            {{ $t('credits.topUp.added') }}
+          </span>
+          <span class="text-base-foreground tabular-nums">
+            +{{ formatNumber(creditsAdded) }}
+          </span>
+        </div>
+        <div
+          class="mt-1 flex items-center justify-between border-t border-border-subtle pt-3 text-sm font-semibold"
+        >
+          <span class="text-base-foreground">
+            {{ $t('credits.topUp.newBalance') }}
+          </span>
+          <span
+            class="flex items-center gap-1 text-base-foreground tabular-nums"
+          >
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            {{ formatNumber(newBalanceCredits) }}
+          </span>
+        </div>
+      </div>
+    </template>
+
+    <template v-if="step === 'declined'">
+      <div class="flex flex-col items-center gap-3 px-8 text-center">
+        <i
+          class="icon-[lucide--circle-alert] size-10 text-warning-background"
+        />
+        <h2
+          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ $t('credits.topUp.declinedTitle') }}
+        </h2>
+        <p class="m-0 text-sm text-balance text-muted-foreground">
+          {{ $t('credits.topUp.declinedBody') }}
+        </p>
+      </div>
+
+      <div
+        v-if="declineReason"
+        class="mx-8 mt-6 flex flex-col gap-1 rounded-xl bg-secondary-background p-4"
+      >
+        <span class="text-sm text-muted-foreground">
+          {{ $t('credits.topUp.declinedReasonLabel') }}
+        </span>
+        <span class="text-sm text-base-foreground">{{ declineReason }}</span>
+      </div>
+    </template>
+
     <div
       v-if="canceledNoticeVisible && step === 'amount'"
       class="mx-8 mb-2 rounded-lg bg-secondary-background px-4 py-2 text-center text-xs text-muted-foreground"
@@ -213,7 +301,27 @@
     </p>
 
     <div class="mt-auto flex flex-col gap-8 p-8">
-      <div v-if="step === 'verifying'">
+      <div v-if="step === 'success'">
+        <Button
+          variant="secondary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          @click="() => handleClose()"
+        >
+          {{ $t('g.close') }}
+        </Button>
+      </div>
+      <div v-else-if="step === 'declined'">
+        <Button
+          variant="secondary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          @click="openManageBilling"
+        >
+          {{ $t('credits.topUp.updatePaymentMethod') }}
+        </Button>
+      </div>
+      <div v-else-if="step === 'verifying'">
         <Button
           v-if="topupCanRetryAuthentication"
           variant="primary"
@@ -309,23 +417,28 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  creditsToUsd,
+  usdToCredits
+} from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { isCloud } from '@/platform/distribution/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
+import { isCloud } from '@/platform/distribution/types'
+import { useCancelPendingPayment } from '@/platform/workspace/composables/useCancelPendingPayment'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -336,11 +449,11 @@ const { isInsufficientCredits = false } = defineProps<{
 
 const { n, t } = useI18n()
 const dialogStore = useDialogStore()
-const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
+const settingsDialog = useSettingsDialog()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, manageSubscription, topup } =
+const { balance, fetchBalance, fetchStatus, manageSubscription, topup } =
   useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
@@ -376,61 +489,52 @@ const payAmount = ref(50)
 const showCeilingWarning = ref(false)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
-const step = ref<'amount' | 'confirm' | 'verifying'>(
+const step = ref<'amount' | 'confirm' | 'verifying' | 'success' | 'declined'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
 const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
 
-const isCancelingPayment = ref(false)
-const cancelUnavailable = ref(false)
-const cancelUnreachable = ref(false)
-const canceledNoticeVisible = ref(false)
-let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
+const {
+  isCancelingPayment,
+  cancelUnavailable,
+  cancelUnreachable,
+  canceledNoticeVisible,
+  cancelPendingPayment,
+  showCanceledNotice,
+  resetCancelVerdict
+} = useCancelPendingPayment()
 
 async function handleCancelPendingPayment() {
   const opId = topupOperation.value?.opId
-  if (!opId || isCancelingPayment.value) return
-  isCancelingPayment.value = true
-  try {
-    const result = await billingOperationStore.cancelOperation(opId)
-    if (result === 'unavailable') {
-      cancelUnreachable.value = false
-      cancelUnavailable.value = true
-      return
-    }
-    // No verdict reached: the charge stands, and so does the cancel button.
-    if (result === 'unreachable') {
-      cancelUnreachable.value = true
-      return
-    }
-    // Canceled is not failed: the typed amount survives so paying again does
-    // not mean entering it again.
-    cancelUnavailable.value = false
-    cancelUnreachable.value = false
-    canceledNoticeVisible.value = true
-    step.value = 'amount'
-    clearTimeout(canceledNoticeTimer)
-    canceledNoticeTimer = setTimeout(() => {
-      canceledNoticeVisible.value = false
-    }, 5000)
-  } finally {
-    isCancelingPayment.value = false
-  }
+  if (!opId) return
+  const result = await cancelPendingPayment(opId)
+  if (result !== 'canceled') return
+  // Canceled is not failed: the typed amount survives so paying again does
+  // not mean entering it again.
+  showCanceledNotice()
+  step.value = 'amount'
 }
 
 // A cancel verdict describes one operation. A different operation — a fresh
 // attempt, a recovered charge — must not inherit it, or a stale refusal
 // removes the cancel affordance from a charge it never judged.
-watch(
-  () => topupOperation.value?.opId,
-  () => {
-    cancelUnavailable.value = false
-    cancelUnreachable.value = false
-  }
-)
+watch(() => topupOperation.value?.opId, resetCancelVerdict)
 
-onScopeDispose(() => clearTimeout(canceledNoticeTimer))
+// The refresh that follows a successful charge overwrites the balance, so the
+// "previous" figure is captured before the charge rather than derived after
+// it. A charge recovered on re-entry has no snapshot — null withholds the
+// breakdown instead of reconstructing figures the client never observed.
+const balanceBeforeCharge = ref<number | null>(null)
+const creditsAdded = ref(0)
+const newBalanceCredits = ref(0)
+const declineReason = ref<string | null>(null)
+
+function currentBalanceCredits(): number {
+  return centsToCredits(
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+  )
+}
 
 // Computed
 const pricingUrl = computed(() =>
@@ -474,8 +578,31 @@ const paymentLocked = computed(
     !!topupOperation.value
 )
 
+// The selector stops matching a terminal operation, but the operation stays
+// readable by id — that's how a charge recovered on re-entry reports its
+// outcome. In-flight charges are routed by handleBuy's own resolution.
+const observedTopupOpId = ref<string | null>(null)
+watch(
+  () => topupOperation.value?.opId,
+  (opId) => {
+    if (opId) observedTopupOpId.value = opId
+  },
+  { immediate: true }
+)
+
 watch([isPolling, topupOperation], ([polling, operation]) => {
   if (step.value === 'verifying' && !polling && !operation) {
+    const settled = observedTopupOpId.value
+      ? billingOperationStore.getOperation(observedTopupOpId.value)
+      : undefined
+    if (!paymentSubmitted.value && settled?.status === 'succeeded') {
+      showSuccess()
+      return
+    }
+    if (!paymentSubmitted.value && settled?.status === 'failed') {
+      showDeclined(settled.errorMessage ?? null)
+      return
+    }
     step.value = 'amount'
     return
   }
@@ -557,6 +684,37 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
+// A receipt states server facts: the balance is read after the refresh that
+// follows the charge, and "Added" is the observed delta from the snapshot —
+// never client arithmetic on the typed amount.
+function showSuccess() {
+  const after = currentBalanceCredits()
+  newBalanceCredits.value = after
+  if (balanceBeforeCharge.value !== null) {
+    creditsAdded.value = after - balanceBeforeCharge.value
+  }
+  step.value = 'success'
+}
+
+function showDeclined(reason: string | null) {
+  declineReason.value = reason
+  step.value = 'declined'
+}
+
+function handleBack() {
+  if (step.value === 'declined') {
+    declineReason.value = null
+    step.value = 'confirm'
+    return
+  }
+  step.value = 'amount'
+}
+
+function openBillingAndInvoices() {
+  handleClose()
+  settingsDialog.show(isCloud ? 'workspace' : 'credits')
+}
+
 async function handleBuy() {
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
@@ -564,6 +722,7 @@ async function handleBuy() {
 
   loading.value = true
   paymentSubmitted.value = true
+  balanceBeforeCharge.value = balance.value ? currentBalanceCredits() : null
   const attemptStartedAt = Date.now()
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
@@ -617,22 +776,21 @@ async function handleBuy() {
         billing_op_id: response.billing_op_id,
         duration_ms: Date.now() - attemptStartedAt
       })
-      toast.add({
-        severity: 'success',
-        summary: t('credits.topUp.purchaseSuccess'),
-        life: 5000
-      })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
-      handleClose(false)
-      settingsDialog.show(isCloud ? 'workspace' : 'credits')
+      showSuccess()
     } else if (response.status === 'pending') {
       void billingOperationStore
         .startOperation(response.billing_op_id, 'topup', {
           attemptStartedAt,
           autoHandleRequiresAction: true
         })
-        .then(() => {
+        .then((operation) => {
           paymentSubmitted.value = false
+          if (operation.status === 'succeeded') {
+            showSuccess()
+          } else if (operation.status === 'failed') {
+            showDeclined(operation.errorMessage)
+          }
         })
         .catch(() => {
           reportPurchaseError(attemptStartedAt, response.billing_op_id)
@@ -657,11 +815,7 @@ async function handleBuy() {
         failure_category: 'provider_decline',
         duration_ms: Date.now() - attemptStartedAt
       })
-      toast.add({
-        severity: 'error',
-        summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError')
-      })
+      showDeclined(null)
     }
   } catch (error) {
     reportPurchaseError(attemptStartedAt, undefined, error)

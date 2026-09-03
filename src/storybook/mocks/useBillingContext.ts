@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import type { BillingContext } from '@/composables/billing/types'
+import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 
 type Subscription = BillingContext['subscription']['value']
 
@@ -14,6 +15,10 @@ export interface BillingContextMockState {
   renewalDate: string | null
   maxSeats: number | null
   occupiedSeats: number | null
+  /** Credit balance in cents, or null for "no balance loaded". */
+  balanceCents: number | null
+  /** What a charge submitted from the top-up dialog resolves to. */
+  topupStatus: CreateTopupResponse['status']
 }
 
 const defaultState: BillingContextMockState = {
@@ -24,7 +29,9 @@ const defaultState: BillingContextMockState = {
   subscriptionStatus: null,
   renewalDate: null,
   maxSeats: null,
-  occupiedSeats: null
+  occupiedSeats: null,
+  balanceCents: null,
+  topupStatus: 'completed'
 }
 
 const state = ref<BillingContextMockState>({ ...defaultState })
@@ -51,7 +58,11 @@ export function useBillingContext(): BillingContext {
     type: computed(() => 'legacy' as const),
     isInitialized: ref(true),
     subscription: computed(() => state.value.subscription),
-    balance: computed(() => null),
+    balance: computed(() =>
+      state.value.balanceCents === null
+        ? null
+        : { amountMicros: state.value.balanceCents, currency: 'usd' }
+    ),
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
@@ -85,7 +96,12 @@ export function useBillingContext(): BillingContext {
     manageSubscription: async () => {},
     cancelSubscription: async () => {},
     resubscribe: async () => {},
-    topup: async () => {},
+    topup: async (amountCents: number) => ({
+      amount_cents: amountCents,
+      billing_op_id: 'op-storybook',
+      topup_id: 'topup-storybook',
+      status: state.value.topupStatus
+    }),
     fetchPlans: async () => {},
     requireActiveSubscription: async () => {},
     showSubscriptionDialog: () => {}
