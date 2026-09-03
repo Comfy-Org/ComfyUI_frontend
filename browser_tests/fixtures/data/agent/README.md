@@ -21,7 +21,8 @@ turn; they run in order on one thread:
 ```bash
 AGENT_CLOUD_SHA=$(git -C ../cloud rev-parse HEAD) AGENT_MODEL=claude-opus-5 \
 AGENT_M2M_SECRET_FILE=/path/to/m2m.secret \
-REC_WORKSPACE_ID=... REC_USER_ID=... \
+AGENT_WORKSPACE_ID=... AGENT_USER_ID=... \
+AGENT_REDIS_EXEC="<redis-cli command>" AGENT_PG_EXEC="<psql command>" \
 pnpm exec tsx scripts/agentConversationRecord.ts \
   agent-rec-<slug> \
   browser_tests/fixtures/data/agent/conversations/agent-l4-zimage-string-node-prompt.json \
@@ -39,9 +40,9 @@ nothing; later turns inherit that subscription, so only the first one needs it.
 Turn 1 opens the thread, and every later turn posts to it the way the panel
 does.
 
-One command brings that stack up (launcher record mode, #16781): with the
-cloud repo's own local stack running (`cloud up`, or `scripts/start-all.sh`, in
-the cloud checkout), run
+The stack that command needs comes from the launcher's record mode (#16781):
+with the cloud repo's own local stack running (`cloud up` in the cloud
+checkout), run
 
 ```bash
 pnpm exec tsx scripts/dev-agent-integration.ts --record \
@@ -52,12 +53,11 @@ pnpm exec tsx scripts/dev-agent-integration.ts --record \
 It asserts Postgres on 54331 and Redis on 6379, starts the doc host the cloud
 repo ships, starts the agent non-standalone with `AGENT_CRDT_MODE=on` and
 `AGENT_TARGET=local`, seeds the recorder's workspace and user, and prints the
-recorder command with the secret by path. The manual recipe below is the
-fallback.
+recorder command above with every value filled, the secret by path.
 
 Recording runs against the cloud agent in its non-standalone mode, with
-Postgres, Redis and the doc host beside it (the lean stack): frames come from
-its Redis channel and rows from Postgres. That is the only path. The same agent
+Postgres, Redis and the doc host beside it: frames come from its Redis channel
+and rows from Postgres. That is the only path. The same agent
 in standalone mode (SQLite, no doc host) never writes the audit rows that carry
 the graph operations a replay asserts, so it can only produce text-only or
 tool-error turns.
@@ -69,15 +69,16 @@ reporting tool failures rather than a usable fixture.
 
 Environment, all optional except the two provenance values:
 
-| Variable                              | Purpose                                                            |
-| ------------------------------------- | ------------------------------------------------------------------ |
-| `AGENT_CLOUD_SHA`, `AGENT_MODEL`      | recorded into the fixture note; both required                      |
-| `AGENT_FULLSTACK_URL`                 | agent base URL, default `http://127.0.0.1:8086`                    |
-| `AGENT_M2M_SECRET_FILE`               | path to the shared secret, read at runtime and never printed       |
-| `AGENT_WORKSPACE_ID`, `AGENT_USER_ID` | identity headers; `REC_WORKSPACE_ID` / `REC_USER_ID` also accepted |
-| `AGENT_REDIS_EXEC`, `AGENT_PG_EXEC`   | commands that reach the stack's Redis and Postgres                 |
-| `AGENT_ATTEMPT`                       | attempt label in every artifact name; defaults to a UTC stamp      |
-| `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                  |
+| Variable                              | Purpose                                                          |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| `AGENT_CLOUD_SHA`, `AGENT_MODEL`      | recorded into the fixture note; both required                    |
+| `AGENT_FULLSTACK_URL`                 | agent base URL, default `http://127.0.0.1:8086`                  |
+| `AGENT_M2M_SECRET_FILE`               | path to the shared secret, read at runtime and never printed     |
+| `AGENT_WORKSPACE_ID`, `AGENT_USER_ID` | identity headers, as seeded by the launcher                      |
+| `AGENT_REDIS_EXEC`, `AGENT_PG_EXEC`   | commands that reach the stack's Redis and Postgres (the launcher |
+|                                       | prints `docker exec` forms when the CLIs are not on PATH)        |
+| `AGENT_ATTEMPT`                       | attempt label in every artifact name; defaults to a UTC stamp    |
+| `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                |
 
 Alongside the fixture the command writes a `recordings/` directory holding the
 raw frames, one retrieved row set per turn, the intermediate

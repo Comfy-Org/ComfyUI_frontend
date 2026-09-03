@@ -55,12 +55,8 @@ const zEnv = z.object({
   AGENT_WORKSPACE_ID: z.string().min(1),
   AGENT_USER_ID: z.string().min(1),
   AGENT_FULLSTACK_URL: z.string().default('http://127.0.0.1:8086'),
-  AGENT_REDIS_EXEC: z
-    .string()
-    .default('docker exec -i be11470-redis redis-cli'),
-  AGENT_PG_EXEC: z
-    .string()
-    .default('docker exec -i be11470-pg psql -U postgres -d postgres -At -c'),
+  AGENT_REDIS_EXEC: z.string().default('redis-cli'),
+  AGENT_PG_EXEC: z.string().default('psql -U postgres -d postgres -At -c'),
   AGENT_TURN_TIMEOUT: z.coerce.number().positive().default(180_000),
   AGENT_ATTEMPT: z.string().default('')
 })
@@ -889,9 +885,8 @@ async function main(argv: string[]): Promise<void> {
     zEnv,
     {
       ...process.env,
-      AGENT_WORKSPACE_ID:
-        process.env.AGENT_WORKSPACE_ID ?? process.env.REC_WORKSPACE_ID,
-      AGENT_USER_ID: process.env.AGENT_USER_ID ?? process.env.REC_USER_ID
+      AGENT_WORKSPACE_ID: process.env.AGENT_WORKSPACE_ID,
+      AGENT_USER_ID: process.env.AGENT_USER_ID
     },
     'environment'
   )
