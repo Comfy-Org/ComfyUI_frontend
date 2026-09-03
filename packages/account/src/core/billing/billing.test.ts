@@ -247,7 +247,7 @@ describe('payments claims', () => {
     await commands.openPaymentPortal({ return_url: 'https://host/return' })
     expect(new Set(intents)).toHaveLength(6)
   })
-  it('resumes the backend pending operation from billing status', async () => {
+  it('resumes the backend pending operation without reopening its action URL', async () => {
     const openUrl = vi.fn(async () => ({ opened: true }))
     const getOperation = vi.fn(async () => ({ status: 'succeeded' as const }))
     const commands = createBillingCommands({
@@ -278,12 +278,105 @@ describe('payments claims', () => {
 
     await commands.start()
 
-    expect(openUrl).toHaveBeenCalledWith(
-      'https://checkout.example/resume',
-      'new_tab'
-    )
+    expect(openUrl).not.toHaveBeenCalled()
     expect(getOperation).toHaveBeenCalledWith('server-op')
     expect(commands.getState().step).toBe('success')
+  })
+  it('resumes the stored operation when billing status omits it', async () => {
+    let active: string | null = 'stored-op'
+    const openUrl = vi.fn(async () => ({ opened: true }))
+    const getOperation = vi.fn(async () => ({ status: 'succeeded' as const }))
+    const commands = createBillingCommands({
+      client: {
+        subscribe: vi.fn(),
+        topup: vi.fn(),
+        resubscribe: vi.fn(),
+        cancel: vi.fn(),
+        paymentPortal: vi.fn(),
+        getOperation,
+        getStatus: vi.fn(async () => ({}))
+      },
+      ports: {
+        openUrl,
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => active,
+          setActiveId: async (id) => {
+            active = id
+          },
+          clearActiveId: async () => {
+            active = null
+          }
+        }
+      }
+    })
+
+    await commands.start()
+
+    expect(getOperation).toHaveBeenCalledWith('stored-op')
+    expect(openUrl).not.toHaveBeenCalled()
+    expect(active).toBeNull()
+  })
+  it('does nothing when neither status nor the store has an operation', async () => {
+    const getOperation = vi.fn()
+    const commands = createBillingCommands({
+      client: {
+        subscribe: vi.fn(),
+        topup: vi.fn(),
+        resubscribe: vi.fn(),
+        cancel: vi.fn(),
+        paymentPortal: vi.fn(),
+        getOperation,
+        getStatus: vi.fn(async () => ({}))
+      },
+      ports: {
+        openUrl: vi.fn(async () => ({ opened: true })),
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => null,
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        }
+      }
+    })
+
+    await commands.start()
+
+    expect(getOperation).not.toHaveBeenCalled()
+    expect(commands.getState()).toEqual(initialBillingState)
+  })
+  it('prefers the server operation over the stored operation', async () => {
+    const getOperation = vi.fn(async () => ({ status: 'succeeded' as const }))
+    const commands = createBillingCommands({
+      client: {
+        subscribe: vi.fn(),
+        topup: vi.fn(),
+        resubscribe: vi.fn(),
+        cancel: vi.fn(),
+        paymentPortal: vi.fn(),
+        getOperation,
+        getStatus: vi.fn(async () => ({
+          pending_billing_op_id: 'server-op',
+          pending_billing_op_type: 'subscription' as const
+        }))
+      },
+      ports: {
+        openUrl: vi.fn(async () => ({ opened: true })),
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => 'stored-op',
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        }
+      }
+    })
+
+    await commands.start()
+
+    expect(getOperation).toHaveBeenCalledWith('server-op')
   })
   it('maps mutation idempotency keys into production request bodies', async () => {
     const transport = vi.fn(async () => ({
@@ -478,8 +571,8 @@ describe('payments claims', () => {
       store,
       onState: (state) => states.push(state)
     })
-    await poller.resume('topup')
-    expect(delays).toEqual([1_000])
+    await poller.resume('saved', 'topup')
+    expect(delays).toEqual([3_000])
     callbacks[0]()
     await vi.waitFor(() => expect(getOperation).toHaveBeenCalledTimes(2))
     expect(active).toBeNull()

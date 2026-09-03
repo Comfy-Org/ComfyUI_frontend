@@ -73,10 +73,16 @@ export function createBillingCommands(options: {
     async start() {
       const status = await options.client.getStatus()
       billingStatus = status
-      if (!status.pending_billing_op_id) return
+      const operationId =
+        status.pending_billing_op_id ??
+        (await options.ports.operationStore.getActiveId())
+      if (!operationId) return
       const kind =
         status.pending_billing_op_type === 'topup' ? 'topup' : 'subscribe'
-      await follow(status.pending_billing_op_id, kind, status.action_url)
+      publish(
+        reduceBilling(state, { type: 'started', operationId: operationId })
+      )
+      await poller.resume(operationId, kind)
     },
     async subscribe(input) {
       if (

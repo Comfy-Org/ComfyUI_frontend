@@ -15,6 +15,7 @@ export const billingPollTiming = {
   mutationTimeoutMs: 120_000,
   checkoutExpiryMs: 6 * 60 * 60 * 1_000
 } as const
+const resumeDelaysMs = [3_000, 10_000, 30_000] as const
 export function createBillingPoller(options: {
   client: Pick<BillingApiClient, 'getOperation'>
   clock: BillingClock
@@ -29,7 +30,8 @@ export function createBillingPoller(options: {
   async function poll(
     id: string,
     startedAt: number,
-    delay: number = billingPollTiming.initialMs
+    delay: number = billingPollTiming.initialMs,
+    resumeAttempt?: number
   ): Promise<void> {
     if (stopped) return
     if (
@@ -75,7 +77,7 @@ export function createBillingPoller(options: {
     }
     let state: BillingState = {
       operationId: id,
-      step: 'preview',
+      step: resumeAttempt === undefined ? 'preview' : 'verifying',
       noChargeConfirmed: false
     }
     const actionUrl = response.action_url ?? openedActionUrl
@@ -100,13 +102,24 @@ export function createBillingPoller(options: {
       await options.store.clearActiveId()
       return
     }
-    const scheduledDelay = response.action_url ? 30_000 : delay
+    const scheduledDelay =
+      resumeAttempt === undefined
+        ? response.action_url
+          ? 30_000
+          : delay
+        : (resumeDelaysMs[resumeAttempt] ?? 30_000)
     const next = Math.min(
       scheduledDelay * billingPollTiming.multiplier,
       billingPollTiming.capMs
     )
     handle = options.clock.schedule(
-      () => void poll(id, startedAt, next),
+      () =>
+        void poll(
+          id,
+          startedAt,
+          next,
+          resumeAttempt === undefined ? undefined : resumeAttempt + 1
+        ),
       scheduledDelay
     )
   }
@@ -119,11 +132,13 @@ export function createBillingPoller(options: {
       await options.store.setActiveId(id)
       await poll(id, options.clock.now())
     },
-    async resume(kind: BillingOperationKind) {
+    async resume(id: string, kind: BillingOperationKind) {
       void kind
-      const id = await options.store.getActiveId()
-      if (id) await poll(id, options.clock.now())
-      return id
+      stopped = false
+      openedActionUrl = undefined
+      actionRequired = true
+      await options.store.setActiveId(id)
+      await poll(id, options.clock.now(), billingPollTiming.initialMs, 0)
     },
     stop() {
       stopped = true
