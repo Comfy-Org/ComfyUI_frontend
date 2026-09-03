@@ -9,45 +9,45 @@
     }"
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
-      <Tooltip
+      <div
         v-if="shouldRenderRow(widget)"
-        :config="widget.tooltipConfig ?? EMPTY_TOOLTIP"
-        side="left"
+        :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
+        :class="
+          cn(
+            'group col-span-full grid grid-cols-subgrid items-stretch',
+            !isConvertedWidget(widget) && 'lg-node-widget'
+          )
+        "
       >
         <div
-          :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
           :class="
             cn(
-              'group col-span-full grid grid-cols-subgrid items-stretch',
-              !isConvertedWidget(widget) && 'lg-node-widget'
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              widget.slotMetadata?.linked && 'opacity-100'
             )
           "
         >
-          <div
-            :class="
-              cn(
-                'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-                widget.slotMetadata?.linked && 'opacity-100'
-              )
-            "
-          >
-            <InputSlot
-              v-if="widget.slotMetadata"
-              :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
-              :slot-data="{
-                name: widget.simplified.name,
-                type: widget.slotMetadata.type,
-                boundingRect: [0, 0, 0, 0]
-              }"
-              :node-id
-              :has-error="widget.hasError"
-              :index="widget.slotMetadata.index"
-              :socketless="widget.simplified.spec?.socketless"
-              dot-only
-            />
-          </div>
+          <InputSlot
+            v-if="widget.slotMetadata"
+            :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
+            :slot-data="{
+              name: widget.simplified.name,
+              type: widget.slotMetadata.type,
+              boundingRect: [0, 0, 0, 0]
+            }"
+            :node-id
+            :has-error="widget.hasError"
+            :index="widget.slotMetadata.index"
+            :socketless="widget.simplified.spec?.socketless"
+            dot-only
+          />
+        </div>
+        <Tooltip
+          v-if="!isConvertedWidget(widget)"
+          :config="widget.tooltipConfig ?? EMPTY_TOOLTIP"
+          side="left"
+        >
           <AppInput
-            v-if="!isConvertedWidget(widget)"
             :widget-id="widget.widgetId"
             :name="widget.simplified.name"
             :enable="canSelectInputs && !widget.simplified.options?.disabled"
@@ -70,8 +70,8 @@
               @contextmenu="widget.handleContextMenu"
             />
           </AppInput>
-        </div>
-      </Tooltip>
+        </Tooltip>
+      </div>
     </template>
   </div>
 </template>
