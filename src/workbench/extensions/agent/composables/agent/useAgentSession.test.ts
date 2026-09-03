@@ -582,7 +582,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        snapshot: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] }, version: 1 })
       }
     })
     session.start()

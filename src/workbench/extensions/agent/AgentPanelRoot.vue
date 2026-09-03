@@ -16,7 +16,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { fitGraphToView } from '@/composables/canvas/fitGraphToView'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -87,7 +86,6 @@ import type {
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import {
-  AgentApiError,
   createAgentRestClient
 } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
