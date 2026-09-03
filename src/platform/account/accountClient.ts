@@ -8,6 +8,8 @@ import {
 } from '@comfyorg/account/core'
 import type {
   AccountHostAdapter,
+  AccountLayerOperationRecord,
+  AccountLayerPocSeam,
   BillingBalanceResponse,
   BillingClient,
   BillingCommands,
@@ -26,7 +28,7 @@ import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
 const namespace = 'comfyui-frontend-account-layer-poc'
 
-export interface AccountLayerPocDebug {
+export interface AccountLayerPocDebug extends Partial<AccountLayerPocSeam> {
   billingRequests: number
   sessionExchanges: number
   lastBillingToken: string | null
@@ -37,6 +39,7 @@ export interface AccountLayerPocDebug {
   billingPosts: number
   openUrlCalls: number
   lastCheckoutUrl: string | null
+  lastOpenedUrl: string | null
   payment: BillingState
   operationStore: { activeId: string | null }
   injectOperationResponse(response: BillingOperationResponse): Promise<void>
@@ -63,6 +66,7 @@ const debug: AccountLayerPocDebug = {
   billingPosts: 0,
   openUrlCalls: 0,
   lastCheckoutUrl: null,
+  lastOpenedUrl: null,
   payment: { step: 'select', noChargeConfirmed: false },
   operationStore: { activeId: null },
   injectOperationResponse: async () => undefined,
@@ -291,6 +295,7 @@ export function createFrontendAccountClients(
       async openUrl(url) {
         debug.openUrlCalls++
         debug.lastCheckoutUrl = url
+        debug.lastOpenedUrl = url
         return { opened: window.open(url, '_blank') !== null }
       }
     }
@@ -306,6 +311,48 @@ export function createFrontendAccountClients(
   debug.refreshCredits = () => billing.refreshCredits()
   debug.runScheduledRefresh = () => scheduledRefresh?.()
   debug.signOut = () => signOut(auth)
+  const getOperationStore = (): AccountLayerOperationRecord | null =>
+    debug.operationStore.activeId
+      ? {
+          id: debug.operationStore.activeId,
+          kind: 'subscribe',
+          started_at: Date.now(),
+          return_url: `${window.location.origin}/payment/success`
+        }
+      : null
+  const seam: AccountLayerPocSeam = {
+    subscribe: (planId = 'pro-monthly') =>
+      billingCommands!.subscribe({
+        plan_slug: planId,
+        return_url: `${window.location.origin}/payment/success`,
+        cancel_url: `${window.location.origin}/payment/failed`
+      }),
+    topUp: (amount = 500) =>
+      billingCommands!.topUp({
+        amount_cents: amount,
+        idempotency_key: crypto.randomUUID()
+      }),
+    cancelSubscription: () => billingCommands!.cancelSubscription({}),
+    resubscribe: () =>
+      billingCommands!.resubscribe({ plan_slug: 'pro-monthly' }),
+    openPaymentPortal: async () => {
+      await billingCommands!.openPaymentPortal({
+        return_url: `${window.location.origin}/payment`
+      })
+    },
+    projectPaymentState: async (state) => {
+      debug.payment = state
+    },
+    getPaymentState: () => debug.payment,
+    getOperationStore,
+    refreshCredits: () => billing.refreshCredits(),
+    getCredits: () => billing.getCreditsState(),
+    signOut: () => signOut(auth),
+    get lastOpenedUrl() {
+      return debug.lastOpenedUrl
+    }
+  }
+  Object.assign(debug, seam)
   return { session, billing, billingCommands }
 }
 

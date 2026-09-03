@@ -37,13 +37,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccountLayerBillingPoc from '@/platform/account/AccountLayerBillingPoc.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
@@ -52,6 +51,11 @@ type View = 'overview' | 'activity'
 
 const { t } = useI18n()
 const accountLayerPocEnabled = import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true'
+const AccountLayerBillingPoc = accountLayerPocEnabled
+  ? defineAsyncComponent(
+      () => import('@/platform/account/AccountLayerBillingPoc.vue')
+    )
+  : null
 
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },

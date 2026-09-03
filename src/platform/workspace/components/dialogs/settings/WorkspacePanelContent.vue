@@ -60,13 +60,12 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { whenever } from '@vueuse/core'
 
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import AccountLayerBillingPoc from '@/platform/account/AccountLayerBillingPoc.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
@@ -82,6 +81,11 @@ const tabTriggerActive =
 const tabTriggerInactive =
   'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
 const accountLayerPocEnabled = import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true'
+const AccountLayerBillingPoc = accountLayerPocEnabled
+  ? defineAsyncComponent(
+      () => import('@/platform/account/AccountLayerBillingPoc.vue')
+    )
+  : null
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string

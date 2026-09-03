@@ -16,7 +16,6 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
-import { setAccountLayerPocShowBillingModal } from '@/platform/account/accountClient'
 import {
   clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
@@ -228,7 +227,10 @@ export const useSubscriptionDialog = () => {
   }
 
   if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
-    setAccountLayerPocShowBillingModal(() => showPricingTable())
+    void import('@/platform/account/accountClient').then(
+      ({ setAccountLayerPocShowBillingModal }) =>
+        setAccountLayerPocShowBillingModal(() => showPricingTable())
+    )
   }
 
   /**

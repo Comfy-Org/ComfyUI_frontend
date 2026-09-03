@@ -633,6 +633,7 @@ export default defineConfig({
       },
       output: {
         keepNames: true,
+        sourcemapExcludeSources: process.env.VITE_ACCOUNT_LAYER_POC !== 'true',
         codeSplitting: {
           groups: [
             // Framework core - highest priority, very stable

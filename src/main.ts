@@ -1,5 +1,4 @@
 import { definePreset } from '@primevue/themes'
-import { billingClientKey } from '@comfyorg/account/vue'
 import Aura from '@primevue/themes/aura'
 import {
   browserApiErrorsIntegration,
@@ -7,7 +6,6 @@ import {
   init as sentryInit
 } from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -15,7 +13,6 @@ import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
-import { until } from '@vueuse/core'
 
 import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
@@ -27,12 +24,6 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
-import {
-  clearAccountLayerPocExchangeError,
-  createFrontendAccountClients,
-  getAccountLayerPocDebug,
-  setAccountLayerPocExchangeError
-} from '@/platform/account/accountClient'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -40,7 +31,6 @@ import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -173,34 +163,11 @@ app
     modules: [VueFireAuth()]
   })
 
-const accountClients = createFrontendAccountClients(
-  getAuth(firebaseApp),
-  () => useTeamWorkspaceStore(pinia).activeWorkspaceId
-)
-app.provide(billingClientKey, accountClients.billing)
-Object.assign(window, { __accountLayerPoc: getAccountLayerPocDebug() })
-
-getAuth(firebaseApp).onAuthStateChanged(async (user) => {
-  if (!user) {
-    clearAccountLayerPocExchangeError()
-    void accountClients.session.clearSession()
-    return
-  }
-  clearAccountLayerPocExchangeError()
-  try {
-    const workspaceStore = useTeamWorkspaceStore(pinia)
-    await until(() => workspaceStore.initState).toMatch(
-      (state) => state === 'ready' || state === 'error'
-    )
-    if (workspaceStore.initState !== 'ready') {
-      throw workspaceStore.error ?? new Error('Workspace initialization failed')
-    }
-    await accountClients.session.establishSession()
-    await accountClients.billing.refreshCredits()
-  } catch (error) {
-    setAccountLayerPocExchangeError(error)
-  }
-})
+if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
+  const { installAccountLayerPoc } =
+    await import('@/platform/account/installAccountLayerPoc')
+  installAccountLayerPoc(app, pinia, firebaseApp)
+}
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
