@@ -27,6 +27,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
+import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
 
 function createModeTestWorkflow(
@@ -1964,6 +1965,49 @@ describe('useWorkflowService', () => {
       expect(isValidUuid(resetArg?.id)).toBe(true)
       expect(resetArg?.id).not.toBe('different-legacy-name')
       expect(resetArg?.id).not.toBe('legacy-workflow-name')
+    })
+
+    describe('root graph id adoption', () => {
+      const rootGraphId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      const incomingId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+
+      beforeEach(() => {
+        Reflect.set(app, 'isGraphReady', true)
+      })
+
+      afterEach(() => {
+        Reflect.deleteProperty(app, 'isGraphReady')
+        Reflect.deleteProperty(app.rootGraph, 'id')
+      })
+
+      it('mints a root graph id for a zero-id graph and writes it into the workflow data', async () => {
+        app.rootGraph.id = zeroUuid
+        const workflowData = makeWorkflowDataWithId(zeroUuid)
+
+        await useWorkflowService().afterLoadNewGraph('repeat', workflowData)
+
+        expect(app.rootGraph.id).not.toBe(zeroUuid)
+        expect(isValidUuid(app.rootGraph.id)).toBe(true)
+        expect(workflowData.id).toBe(app.rootGraph.id)
+        expect(useExecutionErrorStore().setActiveGraph).toHaveBeenCalledWith(
+          app.rootGraph.id,
+          existingWorkflow.path
+        )
+      })
+
+      it('leaves the incoming workflow id alone when the root graph already has one', async () => {
+        app.rootGraph.id = rootGraphId
+        const workflowData = makeWorkflowDataWithId(incomingId)
+
+        await useWorkflowService().afterLoadNewGraph('repeat', workflowData)
+
+        expect(workflowData.id).toBe(incomingId)
+        expect(app.rootGraph.id).toBe(rootGraphId)
+        expect(useExecutionErrorStore().setActiveGraph).toHaveBeenCalledWith(
+          rootGraphId,
+          existingWorkflow.path
+        )
+      })
     })
   })
 

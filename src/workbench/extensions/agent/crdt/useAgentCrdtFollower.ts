@@ -434,9 +434,6 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
-    // The bridge already replaced its doc for this lineage break, whether or
-    // not this target is active, so count it before the filter like the other
-    // bridge-decided outcomes (gap, dropped, errored).
     outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
@@ -502,10 +499,6 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  // s5-metrics-1: the bridge withholds a frame and forces a resubscribe when
-  // it detects a seq jump (FEB-2) — that frame never becomes a `doc_update`
-  // event, so `gap` can only be counted from the bridge's own `doc_gap`
-  // signal, not inferred inside `onUpdate`.
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
@@ -513,9 +506,6 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  // s5-metrics-1: a stale/duplicate frame is discarded inside the bridge
-  // before it becomes a `doc_update` event, so `dropped` is likewise counted
-  // from the bridge's own `doc_stale` signal.
   const onStale: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
     recordDevEvent(
