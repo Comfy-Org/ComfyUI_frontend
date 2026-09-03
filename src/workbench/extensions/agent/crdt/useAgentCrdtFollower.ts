@@ -425,14 +425,19 @@ export function useAgentCrdtFollower(
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    if (
+      !isTargetActive.value ||
+      detail?.workflowId !== subscribedWorkflowId.value
+    )
+      return
     if (staleProbeTimer !== null) {
       armStaleProbe()
       refreshPersistedDocId()
     }
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
-    }
+    recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
     const detail =

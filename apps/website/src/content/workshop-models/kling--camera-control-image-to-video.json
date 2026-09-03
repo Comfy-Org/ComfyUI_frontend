@@ -1,0 +1,129 @@
+{
+  "id": "kling/camera-control-image-to-video",
+  "slug": "kling--camera-control-image-to-video",
+  "displayName": "Kling 1.5 Camera Control Image-to-Video",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Animates a still image with explicit camera moves from a start frame (Kling 1.5).",
+  "tags": ["kling", "video", "image-to-video", "camera-control"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/camera-control-image-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500,
+        "description": "Positive text prompt."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "1:1"],
+        "description": "Video aspect ratio.",
+        "default": "16:9"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["start_image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "camera_control": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "simple",
+              "down_back",
+              "forward_up",
+              "right_turn_forward",
+              "left_turn_forward"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "horizontal": {
+                "type": "number",
+                "minimum": -10,
+                "maximum": 10
+              },
+              "vertical": {
+                "type": "number",
+                "minimum": -10,
+                "maximum": 10
+              },
+              "pan": {
+                "type": "number",
+                "minimum": -10,
+                "maximum": 10
+              },
+              "roll": {
+                "type": "number",
+                "minimum": -10,
+                "maximum": 10
+              },
+              "tilt": {
+                "type": "number",
+                "minimum": -10,
+                "maximum": 10
+              },
+              "zoom": {
+                "type": "number",
+                "minimum": -10,
+                "maximum": 10
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "description": "Required camera-control object (typically built via createKlingCameraControl)."
+      },
+      "cfg_scale": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Classifier-free guidance scale.",
+        "default": 0.75
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative text prompt. Empty → dropped.",
+        "default": ""
+      }
+    },
+    "required": ["model", "prompt", "camera_control"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

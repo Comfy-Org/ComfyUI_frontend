@@ -94,9 +94,25 @@ const acceptByType = {
       type="text"
       :value="textValue()"
       :required="field.required"
+      :list="field.suggestions ? `${field.name}-suggestions` : undefined"
       class="focus:border-primary-comfy-yellow h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none"
       @input="onText"
     />
+    <!--
+      Values the schema names without restricting the field to them, e.g. the
+      stock voices on a text-to-speech model. Offered as completions rather
+      than a closed dropdown so a caller's own cloned voice id stays typable.
+    -->
+    <datalist
+      v-if="field.kind === 'text' && field.suggestions"
+      :id="`${field.name}-suggestions`"
+    >
+      <option
+        v-for="option in field.suggestions"
+        :key="option"
+        :value="option"
+      />
+    </datalist>
     <select
       v-else-if="field.kind === 'select'"
       :value="values[field.name] ?? field.defaultValue"

@@ -1,0 +1,209 @@
+{
+  "id": "ideogram/v2-turbo",
+  "slug": "ideogram--v2-turbo",
+  "displayName": "Ideogram V2 Turbo",
+  "provider": "ideogram",
+  "modality": "image",
+  "description": "Generates an image with text rendering, faster and cheaper V2 variant (Ideogram V2 Turbo).",
+  "tags": [
+    "text-rendering",
+    "photorealistic",
+    "fast",
+    "ideogram",
+    "image",
+    "text-to-image"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["ideogram/v2-turbo"]
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:1",
+          "1:2",
+          "3:2",
+          "2:3",
+          "4:5",
+          "5:4"
+        ],
+        "default": "1:1"
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 8,
+        "default": 1
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "default": 0
+      },
+      "color_palette": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["name"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "weight": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["members"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "magic_prompt_option": {
+        "type": "string",
+        "enum": ["AUTO", "ON", "OFF"],
+        "default": "AUTO"
+      },
+      "negative_prompt": {
+        "type": "string"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "Auto",
+          "512 x 1536",
+          "576 x 1408",
+          "576 x 1472",
+          "576 x 1536",
+          "640 x 1024",
+          "640 x 1344",
+          "640 x 1408",
+          "640 x 1472",
+          "640 x 1536",
+          "704 x 1152",
+          "704 x 1216",
+          "704 x 1280",
+          "704 x 1344",
+          "704 x 1408",
+          "704 x 1472",
+          "720 x 1280",
+          "736 x 1312",
+          "768 x 1024",
+          "768 x 1088",
+          "768 x 1152",
+          "768 x 1216",
+          "768 x 1232",
+          "768 x 1280",
+          "768 x 1344",
+          "832 x 960",
+          "832 x 1024",
+          "832 x 1088",
+          "832 x 1152",
+          "832 x 1216",
+          "832 x 1248",
+          "864 x 1152",
+          "896 x 960",
+          "896 x 1024",
+          "896 x 1088",
+          "896 x 1120",
+          "896 x 1152",
+          "960 x 832",
+          "960 x 896",
+          "960 x 1024",
+          "960 x 1088",
+          "1024 x 640",
+          "1024 x 768",
+          "1024 x 832",
+          "1024 x 896",
+          "1024 x 960",
+          "1024 x 1024",
+          "1088 x 768",
+          "1088 x 832",
+          "1088 x 896",
+          "1088 x 960",
+          "1120 x 896",
+          "1152 x 704",
+          "1152 x 768",
+          "1152 x 832",
+          "1152 x 864",
+          "1152 x 896",
+          "1216 x 704",
+          "1216 x 768",
+          "1216 x 832",
+          "1232 x 768",
+          "1248 x 832",
+          "1280 x 704",
+          "1280 x 720",
+          "1280 x 768",
+          "1280 x 800",
+          "1312 x 736",
+          "1344 x 640",
+          "1344 x 704",
+          "1344 x 768",
+          "1408 x 576",
+          "1408 x 640",
+          "1408 x 704",
+          "1472 x 576",
+          "1472 x 640",
+          "1472 x 704",
+          "1536 x 512",
+          "1536 x 576",
+          "1536 x 640"
+        ],
+        "default": "Auto"
+      },
+      "style_type": {
+        "type": "string",
+        "enum": [
+          "NONE",
+          "AUTO",
+          "GENERAL",
+          "REALISTIC",
+          "DESIGN",
+          "RENDER_3D",
+          "ANIME"
+        ],
+        "default": "NONE"
+      },
+      "turbo": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

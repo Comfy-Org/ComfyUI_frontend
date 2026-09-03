@@ -165,6 +165,12 @@
       }
     },
     {
+      "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
+      "rules": {
+        "comfy/no-comfy-page-setup-call": "error"
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
       "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {

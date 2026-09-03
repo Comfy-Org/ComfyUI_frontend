@@ -1,56 +1,12 @@
-import snapshot from './workshop-catalog.generated.json'
+import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopCatalogField } from './workshop-fields'
+import { deriveWorkshopFields } from './workshop-fields'
 
-type FieldOption = string | number
-
-export type WorkshopField =
-  | {
-      readonly kind: 'text'
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly required: boolean
-      readonly multiline: boolean
-      readonly valueType: 'string' | 'json'
-      readonly defaultValue?: string
-    }
-  | {
-      readonly kind: 'select'
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly required: boolean
-      readonly options: readonly FieldOption[]
-      readonly defaultValue?: FieldOption
-    }
-  | {
-      readonly kind: 'number'
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly required: boolean
-      readonly integer: boolean
-      readonly min?: number
-      readonly max?: number
-      readonly step: number
-      readonly defaultValue?: number
-    }
-  | {
-      readonly kind: 'toggle'
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly required: boolean
-      readonly defaultValue: boolean
-    }
-  | {
-      readonly kind: 'media'
-      readonly name: string
-      readonly role: string
-      readonly label: string
-      readonly required: boolean
-      readonly multiple: boolean
-      readonly accept: 'image' | 'video' | 'audio' | 'file'
-    }
+/**
+ * The form field union lives with the code that derives it. Re-exported under
+ * the page-facing name so a component imports one module, not two.
+ */
+export type WorkshopField = WorkshopCatalogField
 
 export interface WorkshopDetailModel {
   readonly id: string
@@ -71,13 +27,23 @@ export type WorkshopFormValue =
   | undefined
 export type WorkshopFormValues = Readonly<Record<string, WorkshopFormValue>>
 
-interface CatalogSnapshot {
-  readonly models: readonly WorkshopDetailModel[]
+/**
+ * The page's view of a model. `fields` is derived here rather than stored,
+ * so the catalog holds only what the Router client gives us and the form
+ * policy stays in code.
+ */
+export function toDetailModel(entry: WorkshopModelEntry): WorkshopDetailModel {
+  return {
+    id: entry.id,
+    slug: entry.slug,
+    displayName: entry.displayName,
+    provider: entry.provider,
+    modality: entry.modality,
+    description: entry.description,
+    tags: entry.tags,
+    fields: deriveWorkshopFields(entry.parameters, entry.roles)
+  }
 }
-
-const models = (snapshot as CatalogSnapshot).models
-
-export const workshopDetailModels: readonly WorkshopDetailModel[] = models
 
 export function defaultWorkshopValues(
   fields: readonly WorkshopField[]
@@ -92,9 +58,10 @@ export function defaultWorkshopValues(
 
 export function relatedWorkshopModels(
   model: WorkshopDetailModel,
+  pool: readonly WorkshopDetailModel[],
   limit = 4
 ): WorkshopDetailModel[] {
-  return models
+  return pool
     .filter((candidate) => candidate.slug !== model.slug)
     .sort((left, right) => {
       const leftScore =
