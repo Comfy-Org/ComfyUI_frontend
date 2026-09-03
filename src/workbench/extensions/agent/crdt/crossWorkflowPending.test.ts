@@ -305,7 +305,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     )
     expect(settlements).toHaveLength(1)
     expect(settlements[0][1]).toMatchObject({
-      state: 'acknowledged',
+      state: 'undeliverable',
       ops: [expect.objectContaining({ op_id: operationAId })]
     })
 
