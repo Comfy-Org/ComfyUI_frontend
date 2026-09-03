@@ -52,7 +52,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const fixture = vi.hoisted(() => ({ node: null as unknown }))
+const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: { getNodeById: () => fixture.node } } }
@@ -89,10 +89,13 @@ function makePaintNode(widgets: PaintWidgetSpec[] = []) {
   return { node, callbacks }
 }
 
+function paintNode(): LGraphNode {
+  if (!fixture.node) throw new Error('Expected a paint node')
+  return fixture.node
+}
+
 function widgetOf(name: string): IBaseWidget {
-  const widget = (fixture.node as LGraphNode).widgets?.find(
-    (w) => w.name === name
-  )
+  const widget = paintNode().widgets?.find((w) => w.name === name)
   if (!widget) throw new Error(`Expected a '${name}' widget on the paint node`)
   return widget
 }
@@ -439,7 +442,7 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
-      const result = await widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
       expect(result).toBe('painter/existing.png [temp]')
     })
 
@@ -462,7 +465,7 @@ describe('usePainter', () => {
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      const result = await widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
       expect(fetchApiMock).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
@@ -495,7 +498,7 @@ describe('usePainter', () => {
       await nextTick()
 
       await expect(
-        widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+        widgetOf('mask').serializeValue!(paintNode(), 0)
       ).rejects.toThrow(/missing 'name'/)
     })
 
@@ -520,7 +523,7 @@ describe('usePainter', () => {
       await nextTick()
 
       await expect(
-        widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+        widgetOf('mask').serializeValue!(paintNode(), 0)
       ).rejects.toThrow(/painter\.uploadError/)
     })
 
@@ -529,7 +532,7 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
-      const result = await widgetOf('mask').serializeValue!({} as LGraphNode, 0)
+      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
       expect(result).toBe('painter/cached.png [temp]')
     })
 
