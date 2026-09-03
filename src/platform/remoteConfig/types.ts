@@ -109,6 +109,8 @@ export type RemoteConfig = {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   partner_node_governance_enabled?: boolean
+  /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
+  partner_run_gate_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean

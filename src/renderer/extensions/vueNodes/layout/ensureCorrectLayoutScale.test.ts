@@ -234,7 +234,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     group.pos = [150, 150]
     group.size = [300, 200]
     attachGroupLayout(graph, group)
-    graph.groups!.push(group)
+    graph.groups.push(group)
 
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
     ensureCorrectLayoutScale(undefined, graph)
@@ -271,7 +271,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     group._bounding.set([150, 150, 300, 200])
     const groupPos = group.pos
     const groupSize = group.size
-    graph.groups!.push(group)
+    graph.groups.push(group)
 
     ensureCorrectLayoutScale(undefined, graph)
 

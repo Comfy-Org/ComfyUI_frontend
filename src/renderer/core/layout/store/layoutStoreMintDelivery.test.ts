@@ -35,6 +35,10 @@ function createNodeOp(graphId: string, id: string) {
   return {
     type: 'createNode' as const,
     graphId,
+    // Root-scoped, like the real attachNodeLayout producer: ownerGraphId
+    // equals graphId. layoutMintPort's human-edit gate fails closed on a
+    // defined graphId with no ownerGraphId (see reportUnrepresentableInteriorChange).
+    ownerGraphId: graphId,
     nodeId: toNodeId(id),
     layout: {
       id: toNodeId(id),
@@ -53,6 +57,7 @@ function deleteNodeOp(graphId: string, id: string) {
   return {
     type: 'deleteNode' as const,
     graphId,
+    ownerGraphId: graphId,
     nodeId: toNodeId(id),
     timestamp: Date.now(),
     source: LayoutSource.Canvas
@@ -114,9 +119,6 @@ describe('mint ports against the real layout store delivery', () => {
       isDocBound: () => true,
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
-      withLayoutActor: (actor, fn) => {
-        layoutStore.withActor(actor, fn)
-      },
       localActorPrefix: 'user-',
       getGraph: () => graph
     })
@@ -211,14 +213,15 @@ describe('mint ports against the real layout store delivery', () => {
     expect(minted).toEqual([])
   })
 
-  it('the remote scope suppresses a real layout apply end to end', async () => {
+  it('remote provenance suppresses a real layout apply end to end', async () => {
     graphNodes.set('5', {
       id: toNodeId('5'),
       serialize: () => ({ id: 5, type: 'TestNode' })
     })
 
-    wiring.runRemoteScope(() => {
-      layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    layoutStore.applyOperation({
+      ...createNodeOp(graphId, '5'),
+      source: LayoutSource.AgentRemote
     })
     await realDelivery()
 

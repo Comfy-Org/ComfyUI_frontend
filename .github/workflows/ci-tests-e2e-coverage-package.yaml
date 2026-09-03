@@ -1,0 +1,61 @@
+name: 'CI: E2E Coverage Package'
+
+on:
+  workflow_call:
+    inputs:
+      source_sha:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout sources for coverage packaging
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_sha }}
+          sparse-checkout: |
+            src
+            packages
+            scripts/cicd/package-e2e-coverage.sh
+
+      - name: Download all shard coverage data
+        uses: actions/download-artifact@v8
+        with:
+          pattern: e2e-coverage-shard-*
+          path: temp/coverage-shards
+
+      - name: Install lcov
+        run: sudo apt-get install -y -qq lcov
+
+      - name: Package shard coverage
+        id: coverage
+        run: |
+          scripts/cicd/package-e2e-coverage.sh \
+            temp/coverage-shards \
+            coverage/playwright \
+            coverage/html
+
+      - name: Upload merged coverage data
+        if: steps.coverage.outputs.has-coverage == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage
+          path: coverage/playwright/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload HTML report artifact
+        if: steps.coverage.outputs.has-coverage == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage-html
+          path: coverage/html/
+          retention-days: 30

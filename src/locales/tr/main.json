@@ -34,10 +34,6 @@
     "copy": "Kopyala",
     "copyMarkdown": "Markdown olarak kopyala",
     "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
-    "crdtConnected": "bağlı",
-    "crdtDisconnected": "bağlantı kesildi",
-    "crdtNoDocument": "belge yok",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} güncelleme · {frame}",
     "credits": "kredi",
     "delete": "Sil",
     "dismiss": "Kapat",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "Sekmeler değiştirildi",
     "untitledChat": "Başlıksız",
     "uploading": "Yükleniyor"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Çalıştırma başına maliyet",
-    "title": "API Düğüm(ler)i",
-    "totalCost": "Toplam Maliyet"
   },
   "apiNodesSignInDialog": {
     "message": "Bu iş akışı, çalıştırmak için hesabınıza giriş yapmanızı gerektiren API Düğümleri içerir.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmalar",
     "sound": "ses",
@@ -5038,8 +5030,10 @@
       "failedCount": "{count} davet gönderilemedi. Tekrar deneyin. | {count} davet gönderilemedi. Tekrar deneyin.",
       "invalidEmailCount": "{count} geçersiz e-posta adresi | {count} geçersiz e-posta adresi",
       "invitedMessage": "{emails} adresine davet gönderildi | {emails} adreslerine davetler gönderildi",
+      "pendingInviteCount": "Bu kişilerden {count} tanesinin zaten bekleyen bir daveti var. Atlanacaklar.",
+      "pendingInviteSingle": "Bu kişinin zaten bekleyen bir daveti var",
       "placeholder": "Kişinin e-posta adresini girin",
-      "seatLimitReached": "En fazla {count} takım arkadaşı davet edebilirsiniz. | En fazla {count} takım arkadaşı davet edebilirsiniz.",
+      "seatLimitExceeded": "Bu çalışma alanı en fazla {max} üyeyle sınırlıdır. Devam etmek için {overage} üyeyi kaldırın.",
       "title": "Bu çalışma alanına birini davet et"
     },
     "inviteUpsellDialog": {

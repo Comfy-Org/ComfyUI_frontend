@@ -154,9 +154,9 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
-## HubSpot contact form
+## HubSpot forms
 
-The contact page uses HubSpot's hosted form embed for the interest form:
+Pages that collect leads use HubSpot's hosted form embed:
 
 ```html
 <script
@@ -171,13 +171,19 @@ The contact page uses HubSpot's hosted form embed for the interest form:
 ></div>
 ```
 
-The localized `/zh-CN/contact` page uses the same portal and script with form
-ID `6885750c-02ef-4aa2-ba0d-213be9cccf93`.
+Every form lives under portal `244637579` in region `na2` and is addressed by
+form ID:
+
+| Page                                    | Form ID                                |
+| --------------------------------------- | -------------------------------------- |
+| `/contact`                              | `94e05eab-1373-47f7-ab5e-d84f9e6aa262` |
+| `/zh-CN/contact`                        | `6885750c-02ef-4aa2-ba0d-213be9cccf93` |
+| `/minimax/license/professional-request` | `40ef858c-374a-4958-8180-bfa54f0a67fb` |
 
 This keeps submission handling, validation, anti-spam updates, and field
 configuration in HubSpot. The local implementation in
-`src/components/contact/HubspotFormEmbed.vue` only loads the hosted script and
-renders the documented embed container.
+`src/components/common/HubspotFormEmbed.vue` takes the form ID as a prop, loads
+the hosted script once, and renders the documented embed container.
 
 ## Scripts
 

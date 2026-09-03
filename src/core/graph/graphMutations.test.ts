@@ -247,7 +247,7 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
-  it('reconciles a seeded node in place with authoritative widgets and layout', () => {
+  it('reconciles a seeded node while preserving renderer-owned layout', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
@@ -273,17 +273,8 @@ describe('graphMutations', () => {
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
     ).toBeUndefined()
-    expect(deleteLayouts).toHaveBeenCalledWith(
-      scope,
-      [toNodeId(1)],
-      expect.objectContaining({ opId: 'bootstrap' })
-    )
-    expect(createLayout).toHaveBeenCalledWith(
-      scope,
-      toNodeId(1),
-      expect.any(Object),
-      expect.objectContaining({ opId: 'bootstrap' })
-    )
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).not.toHaveBeenCalled()
   })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {

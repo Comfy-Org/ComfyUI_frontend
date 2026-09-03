@@ -163,8 +163,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
       const { enabled } = pack
 
-      if (enabled === true) enabledIds.add(id)
-      else if (enabled === false) disabledIds.add(id)
+      if (enabled) enabledIds.add(id)
+      else if (!enabled) disabledIds.add(id)
 
       // If pack in both (has a disabled and enabled version), remove from disabled
       const inBothSets = enabledIds.has(id) && disabledIds.has(id)
