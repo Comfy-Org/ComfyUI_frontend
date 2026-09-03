@@ -37,6 +37,27 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+const accountAuthState = vi.hoisted(() => ({
+  identity: 'account-a' as string | null,
+  getUserAuthHeader: vi.fn()
+}))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    currentUserIdentity: () => accountAuthState.identity,
+    getUserAuthHeader: accountAuthState.getUserAuthHeader
+  })
+}))
+
+vi.mock('@/config/comfyApi', () => ({
+  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+}))
+
+const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/auth/unified/remintRetry', () => ({
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest: () => Promise.resolve(false)
+}))
+
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -65,6 +86,18 @@ async function waitForConsentDialog() {
   return dialogStore.dialogStack[0]
 }
 
+const settingResponse = (value: boolean) =>
+  new Response(JSON.stringify({ value }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  })
+
+const savedResponse = () =>
+  new Response(JSON.stringify({ value: true }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  })
+
 describe('useAgentConsent', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -78,17 +111,24 @@ describe('useAgentConsent', () => {
       settingState.accepted = value
     })
     authState.loggedIn = true
+    accountAuthState.identity = 'account-a'
+    accountAuthState.getUserAuthHeader.mockReset()
+    accountAuthState.getUserAuthHeader.mockResolvedValue({
+      Authorization: 'Bearer account-a-token'
+    })
+    fetchWithUnifiedRemint.mockReset()
+    fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     distribution.isCloud = true
     showSignInDialog.mockReset()
     reportError.mockReset()
     addToast.mockReset()
   })
 
-  it('waits for settings to load before deciding whether to ask', async () => {
-    let finishLoad = (): void => {}
-    settingState.load.mockImplementationOnce(
+  it('waits for the account setting to load before deciding whether to ask', async () => {
+    let finishLoad = (_response: Response): void => {}
+    fetchWithUnifiedRemint.mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<Response>((resolve) => {
           finishLoad = resolve
         })
     )
@@ -99,17 +139,21 @@ describe('useAgentConsent', () => {
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
 
-    finishLoad()
+    finishLoad(settingResponse(false))
     const dialog = await waitForConsentDialog()
     ;(dialog.contentProps.onReject as () => void)()
     await Promise.resolve(request)
   })
 
-  it('reports a settings load failure without opening the card or panel', async () => {
-    settingState.load.mockRejectedValueOnce(new Error('offline'))
+  it('reports an account-setting load failure without opening the card or panel', async () => {
+    fetchWithUnifiedRemint.mockRejectedValueOnce(new Error('offline'))
     const onOpen = vi.fn()
 
-    await useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent(onOpen)
+    await vi.waitFor(() => {
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    })
+    await request
 
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
@@ -135,16 +179,15 @@ describe('useAgentConsent', () => {
   })
 
   it('keeps the panel closed until acceptance is durably saved', async () => {
-    let finishSave = (): void => {}
-    settingState.set.mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          finishSave = () => {
-            settingState.accepted = true
-            resolve()
-          }
-        })
-    )
+    let finishSave = (_response: Response): void => {}
+    fetchWithUnifiedRemint
+      .mockResolvedValueOnce(settingResponse(false))
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            finishSave = resolve
+          })
+      )
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent(onOpen)
     const dialog = await waitForConsentDialog()
@@ -152,15 +195,22 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
 
     await vi.waitFor(() => {
-      expect(settingState.set).toHaveBeenCalledWith(
-        'Comfy.AgentPanel.ConsentAccepted',
-        true
+      expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
+        'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer account-a-token'
+          }),
+          body: 'true'
+        }),
+        false
       )
     })
     expect(dialog.contentProps.accepting).toBe(true)
     expect(onOpen).not.toHaveBeenCalled()
 
-    finishSave()
+    finishSave(savedResponse())
     await Promise.resolve(request)
 
     expect(onOpen).toHaveBeenCalledOnce()
@@ -168,7 +218,9 @@ describe('useAgentConsent', () => {
   })
 
   it('keeps the card retryable and the panel closed when saving fails', async () => {
-    settingState.set.mockRejectedValueOnce(new Error('offline'))
+    fetchWithUnifiedRemint
+      .mockResolvedValueOnce(settingResponse(false))
+      .mockRejectedValueOnce(new Error('offline'))
     const onOpen = vi.fn()
     void useAgentConsent().withConsent(onOpen)
     const dialog = await waitForConsentDialog()
@@ -185,25 +237,64 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
-  it.for([
-    { signedIn: true, opens: 1 },
-    { signedIn: false, opens: 0 }
-  ])(
-    'continues accepted Local activation only when sign-in resolves $signedIn',
-    async ({ signedIn, opens }) => {
-      settingState.accepted = true
-      authState.loggedIn = false
-      distribution.isCloud = false
-      showSignInDialog.mockResolvedValueOnce(signedIn)
-      const onOpen = vi.fn()
+  it('authenticates signed-out Local users before saving to their account', async () => {
+    authState.loggedIn = false
+    accountAuthState.identity = null
+    distribution.isCloud = false
+    showSignInDialog.mockImplementationOnce(async () => {
+      authState.loggedIn = true
+      accountAuthState.identity = 'account-a'
+      return true
+    })
+    fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
+    const onOpen = vi.fn()
 
-      await Promise.resolve(useAgentConsent().withConsent(onOpen))
+    const request = useAgentConsent().withConsent(onOpen)
+    const dialog = await waitForConsentDialog()
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
 
-      expect(showSignInDialog).toHaveBeenCalledOnce()
-      expect(onOpen).toHaveBeenCalledTimes(opens)
-      expect(useDialogStore().dialogStack).toHaveLength(0)
-    }
-  )
+    expect(showSignInDialog).toHaveBeenCalledOnce()
+    expect(settingState.set).not.toHaveBeenCalled()
+    expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
+      'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+      expect.objectContaining({ method: 'POST', body: 'true' }),
+      false
+    )
+    expect(onOpen).toHaveBeenCalledOnce()
+  })
+
+  it('writes nothing when a signed-out Local user cancels sign-in', async () => {
+    authState.loggedIn = false
+    accountAuthState.identity = null
+    distribution.isCloud = false
+    showSignInDialog.mockResolvedValueOnce(false)
+    const onOpen = vi.fn()
+
+    const request = useAgentConsent().withConsent(onOpen)
+    const dialog = await waitForConsentDialog()
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+
+    expect(settingState.set).not.toHaveBeenCalled()
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  it('opens without a card when the account setting is already accepted', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(settingResponse(true))
+    const onOpen = vi.fn()
+
+    const request = useAgentConsent().withConsent(onOpen)
+    await vi.waitFor(() => {
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    })
+    await request
+
+    expect(onOpen).toHaveBeenCalledOnce()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+  })
 
   it('asks again after Skip without recording a decline', async () => {
     const firstRequest = useAgentConsent().withConsent(vi.fn())
