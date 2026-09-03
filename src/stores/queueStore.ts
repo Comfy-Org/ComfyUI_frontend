@@ -540,6 +540,7 @@ export const useQueueStore = defineStore('queue', () => {
     dirty = false
     isLoading.value = true
     try {
+      const snapshotRequestedAt = performance.now()
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value)
@@ -566,14 +567,9 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
-        // Recover from a dropped terminal WS message: if the active job no
-        // longer appears in the fresh Running/Pending snapshot, clear it here
-        // rather than waiting for a WS reconnect. Independent of whether the
-        // job has shown up in `historyResult` yet — `getQueue` and
-        // `getHistory` are fetched concurrently and can disagree in the
-        // narrow window right after a job finishes, so gating this on
-        // history would reintroduce the same race.
-        executionStore.clearActiveJobIfStale(activeJobIds)
+        // Not gated on `historyResult`: getQueue and getHistory run
+        // concurrently and can disagree right after a job finishes.
+        executionStore.clearActiveJobIfStale(activeJobIds, snapshotRequestedAt)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
