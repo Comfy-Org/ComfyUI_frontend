@@ -34,10 +34,6 @@
     "copy": "複製",
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
-    "crdtConnected": "已連線",
-    "crdtDisconnected": "已中斷連線",
-    "crdtNoDocument": "沒有文件",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
     "credits": "點數",
     "delete": "刪除",
     "dismiss": "關閉",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "已切換分頁",
     "untitledChat": "未命名",
     "uploading": "上傳中"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次執行成本",
-    "title": "API 節點",
-    "totalCost": "總成本"
   },
   "apiNodesSignInDialog": {
     "message": "此工作流程包含 API 節點，您必須登入帳戶才能執行。",

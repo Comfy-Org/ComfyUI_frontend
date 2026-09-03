@@ -34,10 +34,6 @@
     "copy": "コピー",
     "copyMarkdown": "Markdownとしてコピー",
     "copyUnavailable": "このバージョンでは、現在の会話のみコピーできます",
-    "crdtConnected": "接続済み",
-    "crdtDisconnected": "切断済み",
-    "crdtNoDocument": "ドキュメントなし",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 件の更新 · {frame}",
     "credits": "クレジット",
     "delete": "削除",
     "dismiss": "閉じる",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "タブを切り替えました",
     "untitledChat": "無題",
     "uploading": "アップロード中"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "実行あたりのコスト",
-    "title": "APIノード",
-    "totalCost": "合計コスト"
   },
   "apiNodesSignInDialog": {
     "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",

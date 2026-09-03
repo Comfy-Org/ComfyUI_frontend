@@ -1,5 +1,12 @@
-import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentRunMode as zGeneratedAgentRunMode,
+  zWorkflowListResponse
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
+
+import { isNodeLocatorId } from '@/types/nodeIdentification'
+
+export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
@@ -13,6 +20,31 @@ export const zAgentTurnAccepted = z
   })
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
+
+export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
+  ({ mode, credit_limit }, ctx) => {
+    if (
+      mode === 'auto_limited' &&
+      (credit_limit === null ||
+        !Number.isInteger(credit_limit) ||
+        credit_limit <= 0)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['credit_limit'],
+        message: 'auto_limited requires a positive credit limit'
+      })
+    }
+    if (mode !== 'auto_limited' && credit_limit !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['credit_limit'],
+        message: 'credit limit is only valid for auto_limited'
+      })
+    }
+  }
+)
+export type AgentRunMode = z.infer<typeof zAgentRunMode>['mode']
 
 export const zAgentMessage = z
   .object({
@@ -121,6 +153,11 @@ const zAgentMessageDoneData = z
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
+    node_locator_id: z
+      .string()
+      .max(256)
+      .refine((value): boolean => isNodeLocatorId(value))
+      .optional(),
     name: z.string().optional(),
     thread_id: z.string().optional(),
     message_id: z.string().optional()
