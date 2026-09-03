@@ -2,7 +2,7 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { GraphSnapshot,WidgetCatalog,WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -51,12 +51,6 @@ function fromBase64(value: string): Uint8Array {
   return new Uint8Array(Buffer.from(value, 'base64'))
 }
 
-/**
- * The doc host's side of the CRDT channel, in-process: the seed workflow is
- * minted with the same pinned applier the real host runs, each `graph_ops`
- * entry is applied to it, and the resulting Yjs delta is what the follower
- * receives as a `doc_update` frame.
- */
 class HostDoc {
   private readonly doc: Y.Doc
   private seq = 1
@@ -69,8 +63,8 @@ class HostDoc {
     this.doc = mint(seed, catalog)
   }
 
-  nodeIds(): Set<string> {
-    return new Set(Object.keys(readGraph(this.doc).nodes))
+  graph(): GraphSnapshot {
+    return readGraph(this.doc)
   }
 
   subscribed(): DocFrame {
@@ -132,26 +126,14 @@ class HostDoc {
 interface GraphNodeSnapshot {
   id: string
   title: string
-  /** Connected state of each rendered input slot, in slot order. */
   inputs: boolean[]
-  /** Connected state of each rendered output slot, in slot order. */
   outputs: boolean[]
 }
 
-/**
- * Drives one recorded user prompt -> agent response exchange through the
- * real agent panel: the composer posts the prompt, the mocked backend acks
- * it, and the recorded response is replayed over the routed `/ws` socket as
- * chat frames plus doc-host `doc_update` frames the CRDT follower applies to
- * the canvas.
- */
+// Runs one recorded prompt/response through the real panel over a routed /ws socket.
 class AgentConversationHarness {
   readonly postedMessages: string[] = []
-  /**
-   * Every frame the CLIENT sent on /ws, in order (BE-11470 A4): human-op
-   * minting is observable only on this side of the socket, so regression
-   * specs assert against these rather than app internals.
-   */
+  // Human-op minting is observable only on the client side of the socket.
   readonly clientFrames: { type?: unknown; data?: unknown }[] = []
   readonly panel: Locator
   readonly ack: AgentTurnAccepted
@@ -180,10 +162,7 @@ class AgentConversationHarness {
 
   async boot(agentFlag: boolean): Promise<void> {
     await this.mockAgentApi()
-    // The app may reopen `/ws` (the connect awaits an auth token), and the
-    // follower only re-drives a pending subscribe on a `status` frame, which
-    // the real server sends on every connect. So every routed socket becomes
-    // the live one and gets that frame.
+    // The follower re-drives a pending subscribe only on a status frame, which every real connect sends.
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
@@ -198,8 +177,7 @@ class AgentConversationHarness {
       )
     })
     await bootAgentApp(this.page, agentFlag, {
-      // Follower edits land in the ECS stores, which only the Vue node
-      // renderer projects onto the canvas.
+      // Only the Vue node renderer projects follower edits onto the canvas.
       settings: { 'Comfy.VueNodes.Enabled': true }
     })
 
@@ -255,16 +233,13 @@ class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
-  /**
-   * The agent's workflow document as rendered on the canvas: every node the
-   * host doc owns, with its slot connectivity. The tab the agent opens is
-   * expected to be blank (AgentPanelRoot mints it from `blankGraph`); the
-   * doc-id filter is defensive, so a stray template node cannot pin the
-   * template here. Colliding ids are the real hazard: a template link into a
-   * doc node survives the follower's reconcile and shows up as connectivity.
-   */
+  // Doc-id filter: a stray template node must not pin the template here.
+  hostGraph(): GraphSnapshot {
+    return this.host.graph()
+  }
+
   async graphSnapshot(): Promise<GraphNodeSnapshot[]> {
-    const docNodeIds = this.host.nodeIds()
+    const docNodeIds = new Set(Object.keys(this.host.graph().nodes))
     const snapshot = await this.page
       .locator('[data-node-id]')
       .evaluateAll((nodes) =>
@@ -339,7 +314,6 @@ class AgentConversationHarness {
     this.socket.send(JSON.stringify(frame))
   }
 
-  /** The ops of every outbound `doc_ops` frame, flattened in send order. */
   outboundOps(): { op?: unknown }[] {
     return this.clientFrames
       .filter((frame) => frame.type === 'doc_ops')
@@ -355,9 +329,7 @@ class AgentConversationHarness {
     const { type, data } = frame as { type?: unknown; data?: unknown }
     this.clientFrames.push({ type, data })
     if (type === 'doc_ops' && typeof data === 'object' && data !== null) {
-      // The real host acknowledges every submitted batch; the client's op
-      // sender keeps one batch in flight and only transmits the next after
-      // the ack, so without this reply every mint after the first stalls.
+      // The client keeps one op batch in flight until the host acks it.
       const { workflow_id, ops } = data as {
         workflow_id?: unknown
         ops?: unknown
@@ -428,7 +400,6 @@ function defaultReplayTiming(): ReplayTiming {
 }
 
 interface ConversationFixtures {
-  /** Case id of the conversation under `fixtures/data/agent/conversations`. */
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming

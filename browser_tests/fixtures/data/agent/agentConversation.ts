@@ -11,11 +11,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/**
- * A realtime agent frame as recorded, minus the turn identity
- * (`message_id` / `thread_id`): the replay stamps those from the ack it
- * minted, then validates the result against `zAgentWsEvent` before sending.
- */
 export const zRecordedWsEvent = z.object({
   type: z.string(),
   data: z.record(z.string(), z.unknown()),
@@ -23,8 +18,7 @@ export const zRecordedWsEvent = z.object({
 })
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
-// Payload shapes are the pinned applier's contract (it rejects a malformed
-// op at replay time); the fixture only pins the vocabulary.
+// The applier validates op payloads at replay time; only the vocabulary is pinned here.
 const zGraphOperation = z.custom<GraphOperation>(
   (value) =>
     isRecord(value) &&
@@ -64,11 +58,6 @@ const zResponseEntry = z.discriminatedUnion('kind', [
   })
 ])
 
-/**
- * One user prompt and the ordered agent response it produced: chat frames
- * (`event`) interleaved with the semantic graph operations (`graph_ops`) the
- * doc host folds into the workflow document.
- */
 export const zAgentConversation = z
   .object({
     schema_version: z.literal('agent-conversation.v1'),

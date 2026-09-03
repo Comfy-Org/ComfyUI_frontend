@@ -80,13 +80,7 @@ function operationsFromResult(toolCall: z.infer<typeof zToolCall>) {
   })
 }
 
-/**
- * Projects a cloud backend capture into the replay format. Websocket frames
- * retain their recorded order; accepted semantic ops are inserted immediately
- * before the matching terminal tool-call frame, where the live doc update was
- * observed. No operation can be authored by this exporter: every emitted op
- * must exist in the parent audit result and in its durable accepted-op rows.
- */
+// Ops are inserted before their terminal tool-call frame and must exist in the accepted-op rows; nothing is authored here.
 export function exportAgentConversation(input: unknown) {
   const capture = zBackendCapture.parse(input)
   const toolCalls = new Map(
