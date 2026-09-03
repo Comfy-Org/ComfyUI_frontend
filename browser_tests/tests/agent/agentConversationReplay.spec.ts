@@ -38,8 +38,19 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
           )
           if (succeeded) await button.click()
         }
-        for (const [label, count] of agentConversation.toolRowLabels()) {
-          await expect(toolRows.filter({ hasText: label })).toHaveCount(count)
+        for (const {
+          label,
+          times,
+          rows
+        } of agentConversation.toolRowCounts()) {
+          const named = toolRows.filter({
+            has: page.getByText(label, { exact: true })
+          })
+          await expect(
+            named.filter(
+              times > 1 ? { hasText: `×${times}` } : { hasNotText: '×' }
+            )
+          ).toHaveCount(rows)
         }
 
         await expect(
@@ -54,7 +65,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
           'connected'
         )
         await expect(panel.getByTestId('agent-crdt-status')).toContainText(
-          `${agentConversation.expectedUpdateCount()} updates`
+          new RegExp(`\\b${agentConversation.expectedUpdateCount()} updates`)
         )
 
         for (const id of agentConversation.addedNodeIds()) {
