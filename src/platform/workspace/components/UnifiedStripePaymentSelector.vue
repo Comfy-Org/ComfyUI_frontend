@@ -21,7 +21,33 @@
     <div
       class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
     >
-      <div ref="paymentElementTarget" />
+      <!-- Provider-unreachable state (1b): when the Stripe SDK cannot load at
+           mount (ad blocker, network), this stands in for the card form so the
+           customer learns before typing anything. The target div stays in the
+           DOM (v-show) so Try again can remount the element in place. -->
+      <div
+        v-if="providerUnreachable"
+        role="alert"
+        class="flex flex-col items-start gap-3 rounded-lg border border-interface-stroke bg-secondary-background p-4"
+      >
+        <p class="m-0 font-semibold text-base-foreground">
+          {{ $t('subscription.preview.providerUnreachableTitle') }}
+        </p>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.providerUnreachableBody') }}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="lg"
+          class="rounded-lg"
+          :loading="isRetryingLoad"
+          @click="retryProviderLoad"
+        >
+          {{ $t('subscription.preview.providerUnreachableRetry') }}
+        </Button>
+      </div>
+      <div v-show="!providerUnreachable" ref="paymentElementTarget" />
       <div
         v-if="selectedMethodType === 'alipay'"
         class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
@@ -39,7 +65,12 @@
       :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
-      :disabled="!stripeElements || !canSubmit || verificationPending"
+      :disabled="
+        !stripeElements ||
+        providerUnreachable ||
+        !canSubmit ||
+        verificationPending
+      "
       :loading="isLoading || isSubmitting"
     >
       {{ $t('subscription.preview.payAndSubscribe') }}
@@ -88,13 +119,17 @@ const { t } = useI18n()
 const paymentElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
+const providerUnreachable = ref(false)
+const isRetryingLoad = ref(false)
 const isSubmitting = ref(false)
 const selectedMethodType = ref('')
 let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
 let isUnmounted = false
 
-onMounted(async () => {
+onMounted(initializeStripe)
+
+async function initializeStripe() {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   if (!publishableKey) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
@@ -111,15 +146,22 @@ onMounted(async () => {
   if (amountCents <= 0) return
 
   try {
+    // loadStripe rejects when the script tag errors (ad blocker, network
+    // outage) — the most reliable mount-time signal that the provider is
+    // unreachable. The SDK resets its cached promise on failure and
+    // re-injects the script on the next call, so a later retry is a real
+    // re-attempt, not a replay of the cached rejection.
     stripe = await loadStripe(publishableKey)
   } catch {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
+    markProviderUnreachable()
     return
   }
-  if (!stripe || !paymentElementTarget.value || isUnmounted) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
+  if (isUnmounted) return
+  if (!stripe || !paymentElementTarget.value) {
+    markProviderUnreachable()
     return
   }
+  providerUnreachable.value = false
 
   stripeElements.value = stripe.elements({
     mode: 'subscription',
@@ -190,7 +232,29 @@ onMounted(async () => {
   paymentElement.on('change', (event) => {
     selectedMethodType.value = event.value?.type ?? ''
   })
-})
+  // The element's iframe can fail to load even when the SDK script made it
+  // through (partial blocking); that is still a mount-time provider outage.
+  paymentElement.on('loaderror', () => {
+    if (!isUnmounted) markProviderUnreachable()
+  })
+}
+
+function markProviderUnreachable() {
+  paymentElement?.destroy()
+  paymentElement = undefined
+  stripeElements.value = undefined
+  providerUnreachable.value = true
+}
+
+async function retryProviderLoad() {
+  if (isRetryingLoad.value) return
+  isRetryingLoad.value = true
+  try {
+    await initializeStripe()
+  } finally {
+    isRetryingLoad.value = false
+  }
+}
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
   if (!stripeElements.value || amount <= 0) return
