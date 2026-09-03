@@ -457,8 +457,14 @@ export function useAgentCrdtFollower(
       actor: detail?.actor ?? 'agent-reset',
       opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       adapter.clearForReset(detail.workflowId, context)
+      // A lineage break empties the stores but leaves every live adapter
+      // standing, and those adapters are what a save serialises. Without a
+      // reconcile here the pre-reset nodes survive -- and can be written back
+      // -- until some later frame happens to arrive.
+      reconcileLiveGraph(detail.workflowId)
+    }
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -489,6 +495,10 @@ export function useAgentCrdtFollower(
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
+      // Same reasoning as `onDocReset`: the clear is store-only, so the stale
+      // live adapters have to be swept before the replacement doc's frames
+      // start landing.
+      reconcileLiveGraph(workflowId)
       adapter.bind(workflowId, bridge.follower)
     }
   }
@@ -584,6 +594,12 @@ export function useAgentCrdtFollower(
       })
     }
   }
+  // Readiness only. The other ordering -- graph ready first, target activated
+  // second -- cannot be caught here: `getGraph` does not change when activity
+  // flips, and even if this watcher also took `isTargetActive` as a source it
+  // was created before the binding watcher below, so it would run first and
+  // still see `boundWorkflowId === null`. Activation is therefore reconciled at
+  // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
       reconcileLiveGraph(boundWorkflowId)
@@ -600,7 +616,11 @@ export function useAgentCrdtFollower(
   }
   watch(
     [workflowId, isTargetActive],
-    ([next, active]) => {
+    ([next, active], previous) => {
+      // Only the inactive->active edge, and never the `immediate` first run
+      // (`previous` is undefined there), so a plain mount or retarget keeps its
+      // existing "reconcile on frame or on graph readiness" behaviour.
+      const justActivated = active && previous?.[1] === false
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
@@ -627,6 +647,7 @@ export function useAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
+          if (justActivated) reconcileLiveGraph(persisted)
           return
         }
         clearPersistedDocId()
@@ -646,6 +667,7 @@ export function useAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
+      if (justActivated) reconcileLiveGraph(next)
     },
     { immediate: true }
   )

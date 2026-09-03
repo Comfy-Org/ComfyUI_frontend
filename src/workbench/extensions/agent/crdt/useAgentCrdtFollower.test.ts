@@ -697,6 +697,61 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reconciles when the target is activated after the graph became ready', async () => {
+      // The other readiness ordering: the graph arrives while inactive, so the
+      // `getGraph` watcher correctly skips it. Activation does not change the
+      // graph identity, so nothing re-triggers that watcher -- the reconcile
+      // has to happen where the active binding is established.
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount, isTargetActive } = mountFollower(
+        'wf-1',
+        false,
+        () => graph.value
+      )
+
+      graph.value = fakeGraph
+      await nextTick()
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('reconciles after a doc_reset clear, without waiting for another frame', () => {
+      // `clearForReset` empties the stores only. Every live adapter survives it
+      // and would be serialised back into a save until some later frame landed.
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('reconciles after a follower_replaced clear', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
     it('records a dev event only when nodes were materialized', async () => {
       const { recordDevEvent } = await import('./devPanelLog')
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
