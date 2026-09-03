@@ -35,16 +35,6 @@ interface WidgetValueChange {
   context?: RemoteMutationContext
 }
 
-/**
- * Serialized widget values of a PrimitiveNode whose widget is only rebuilt
- * once its output link resolves, which happens after the node's own
- * `configure` finishes and the regular restoration state has been cleared.
- */
-export interface PrimitiveWidgetRestorationState {
-  type: string
-  values: readonly WidgetValue[]
-}
-
 function setNodeScoped<T>(
   graphMap: Map<UUID, Map<NodeId, T>>,
   graphId: UUID,
@@ -84,6 +74,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     UUID,
     Map<NodeId, WidgetRestorationState>
   >()
+
   const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
   const valueMutationContexts = new WeakMap<
     WidgetState,
@@ -120,10 +111,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     valueChangeListeners.add(listener)
     return () => valueChangeListeners.delete(listener)
   }
-  const graphPrimitiveWidgetRestorations = new Map<
-    UUID,
-    Map<NodeId, PrimitiveWidgetRestorationState>
-  >()
 
   function setNodeWidgetRestoration(
     graphId: UUID,
@@ -153,33 +140,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
     clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
-  }
-
-  function setPrimitiveWidgetRestoration(
-    graphId: UUID,
-    nodeId: NodeId,
-    restoration: PrimitiveWidgetRestorationState
-  ): void {
-    setNodeScoped(
-      graphPrimitiveWidgetRestorations,
-      graphId,
-      nodeId,
-      restoration
-    )
-  }
-
-  function getPrimitiveWidgetRestoration(
-    graphId: UUID,
-    nodeId: NodeId
-  ): PrimitiveWidgetRestorationState | undefined {
-    return graphPrimitiveWidgetRestorations.get(graphId)?.get(nodeId)
-  }
-
-  function clearPrimitiveWidgetRestoration(
-    graphId: UUID,
-    nodeId: NodeId
-  ): void {
-    clearNodeScoped(graphPrimitiveWidgetRestorations, graphId, nodeId)
   }
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
@@ -514,7 +474,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     _context?: RemoteMutationContext
   ): void {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
-    graphPrimitiveWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
     if (widgetStates) {
@@ -539,7 +498,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphWidgetRenderStates.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
-    graphPrimitiveWidgetRestorations.delete(graphId)
   }
 
   return {
@@ -547,9 +505,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
-    setPrimitiveWidgetRestoration,
-    getPrimitiveWidgetRestoration,
-    clearPrimitiveWidgetRestoration,
     getWidget,
     getWidgetRenderState,
     onValueChange,

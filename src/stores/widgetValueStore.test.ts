@@ -530,57 +530,6 @@ describe('useWidgetValueStore', () => {
     })
   })
 
-  describe('primitive widget restoration', () => {
-    const nodeId = toNodeId('node-1')
-
-    it('stores, returns and clears pending primitive values per graph', () => {
-      const store = useWidgetValueStore()
-      store.setPrimitiveWidgetRestoration(graphA, nodeId, {
-        type: 'INT',
-        values: [7, 'fixed']
-      })
-
-      expect(store.getPrimitiveWidgetRestoration(graphA, nodeId)).toEqual({
-        type: 'INT',
-        values: [7, 'fixed']
-      })
-      expect(
-        store.getPrimitiveWidgetRestoration(graphB, nodeId)
-      ).toBeUndefined()
-      expect(
-        store.getPrimitiveWidgetRestoration(graphA, toNodeId('node-2'))
-      ).toBeUndefined()
-
-      store.clearPrimitiveWidgetRestoration(graphA, nodeId)
-
-      expect(
-        store.getPrimitiveWidgetRestoration(graphA, nodeId)
-      ).toBeUndefined()
-    })
-
-    it('drops pending primitive values with the node and with the graph', () => {
-      const store = useWidgetValueStore()
-      store.setPrimitiveWidgetRestoration(graphA, nodeId, {
-        type: 'INT',
-        values: [7]
-      })
-      store.setPrimitiveWidgetRestoration(graphB, nodeId, {
-        type: 'INT',
-        values: [8]
-      })
-
-      store.clearNode(graphA, nodeId)
-      store.clearGraph(graphB)
-
-      expect(
-        store.getPrimitiveWidgetRestoration(graphA, nodeId)
-      ).toBeUndefined()
-      expect(
-        store.getPrimitiveWidgetRestoration(graphB, nodeId)
-      ).toBeUndefined()
-    })
-  })
-
   describe('un-keyable widget ids', () => {
     // A custom node can register a widget with an empty/malformed name (spacer,
     // header, preview, button). Such an id cannot be keyed; the store must

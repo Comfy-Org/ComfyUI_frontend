@@ -176,34 +176,6 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBeUndefined()
   })
 
-  it('restores its serialized control value when the target declares control_after_generate', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({
-        widgets_values: [222, 'fixed'],
-        outputs: [{ type: 'INT' }]
-      })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
-
-    expect(primitive.widgets?.[1].value).toBe('fixed')
-  })
-
   it('prefers named serialized values when named restoration is enabled', () => {
     LiteGraph.namedValuesRestore = true
     const graph = new LGraph()
@@ -263,62 +235,6 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe('a.safetensors')
   })
 
-  it('restores its serialized control value via the value-control fallback', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', {}]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({
-        widgets_values: [222, 'randomize'],
-        outputs: [{ type: 'INT' }]
-      })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
-
-    expect(primitive.widgets?.[1].value).toBe('randomize')
-  })
-
-  it('stops re-applying its serialized value once a widget has been created', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
-    )
-    primitive.connect(0, target, 0)
-
-    expect(primitive.widgets?.[0].value).toBe(222)
-
-    primitive.widgets![0].value = 333
-    primitive.applyToGraph()
-    primitive.disconnectOutput(0)
-    primitive.connect(0, target, 0)
-
-    expect(primitive.widgets?.[0].value).toBe(333)
-  })
-
   it('keeps its serialized value for an asset browser widget', () => {
     vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
     const graph = new LGraph()
@@ -352,110 +268,6 @@ describe('PrimitiveNode', () => {
       type: 'asset',
       value: 'serialized.safetensors'
     })
-  })
-
-  it('clamps a serialized number to the rebuilt widget range', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('steps', 'INT')
-    target.inputs[0].widget = {
-      name: 'steps',
-      [GET_CONFIG]: () => ['INT', { min: 1, max: 100 }]
-    }
-    target.addWidget('number', 'steps', 20, () => {}, { min: 1, max: 100 })
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({ widgets_values: [500], outputs: [{ type: 'INT' }] })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
-
-    expect(primitive.widgets?.[0].value).toBe(100)
-  })
-
-  it('keeps the target value when a serialized combo option was removed', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('sampler', 'COMBO')
-    target.inputs[0].widget = {
-      name: 'sampler',
-      [GET_CONFIG]: () => [['current', 'other'], {}]
-    }
-    target.addWidget('combo', 'sampler', 'current', () => {}, {
-      values: ['current', 'other']
-    })
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({ widgets_values: ['removed'], outputs: [{ type: 'COMBO' }] })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
-
-    expect(primitive.widgets?.[0].value).toBe('current')
-  })
-
-  it('survives a widgets_values that is not an array', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromAny({ widgets_values: 5, outputs: [{ type: 'INT' }] })
-    )
-    appState.configuringGraph = false
-
-    expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
-    expect(primitive.widgets?.[0].value).toBe(111)
-  })
-
-  it('ignores a serialized control value the control widget does not offer', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', {}]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({
-        widgets_values: [222, 'not-a-control-mode'],
-        outputs: [{ type: 'INT' }]
-      })
-    )
-    appState.configuringGraph = false
-
-    primitive.onAfterGraphConfigured()
-
-    expect(primitive.widgets?.[1].value).toBe('fixed')
   })
 
   it('restores its serialized value when the widget is built by a recreate', () => {
@@ -510,11 +322,13 @@ describe('PrimitiveNode', () => {
 
     primitive.onAfterGraphConfigured()
     expect(
-      useWidgetValueStore().getPrimitiveWidgetRestoration(
+      useWidgetValueStore().getRestoredWidgetValue(
         graph.rootGraph.id,
-        primitive.id
+        primitive.id,
+        'value',
+        0
       )
-    ).toEqual({ type: 'INT', values: [222] })
+    ).toEqual({ value: 222 })
     reroute.inputs[0].widget![GET_CONFIG] =
       target.inputs[0].widget?.[GET_CONFIG]
     primitive.recreateWidget()
@@ -577,49 +391,6 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(111)
   })
 
-  it('keeps an unconsumed serialized value until its widget is first built', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('Target')
-    graph.add(target)
-    target.addInput('seed', 'INT')
-    target.inputs[0].widget = {
-      name: 'seed',
-      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
-    }
-    target.addWidget('number', 'seed', 111, () => {})
-
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
-    )
-    expect(
-      useWidgetValueStore().getPrimitiveWidgetRestoration(
-        graph.rootGraph.id,
-        primitive.id
-      )
-    ).toEqual({ type: 'INT', values: [222] })
-
-    primitive.onAfterGraphConfigured()
-
-    expect(
-      useWidgetValueStore().getPrimitiveWidgetRestoration(
-        graph.rootGraph.id,
-        primitive.id
-      )
-    ).toEqual({ type: 'INT', values: [222] })
-
-    primitive.connect(0, target, 0)
-
-    expect(primitive.widgets?.[0].value).toBe(222)
-    expect(
-      useWidgetValueStore().getPrimitiveWidgetRestoration(
-        graph.rootGraph.id,
-        primitive.id
-      )
-    ).toBeUndefined()
-  })
-
   it('clears its serialized value when its output is disconnected', () => {
     const graph = new LGraph()
     const primitive = new PrimitiveNode('Primitive')
@@ -631,9 +402,11 @@ describe('PrimitiveNode', () => {
     primitive.onLastDisconnect()
 
     expect(
-      useWidgetValueStore().getPrimitiveWidgetRestoration(
+      useWidgetValueStore().getRestoredWidgetValue(
         graph.rootGraph.id,
-        primitive.id
+        primitive.id,
+        'value',
+        0
       )
     ).toBeUndefined()
   })

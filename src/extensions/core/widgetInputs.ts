@@ -40,6 +40,7 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
+  private configuredWidgetType?: string
   static override category: string
   constructor(title: string) {
     super(title)
@@ -125,38 +126,14 @@ export class PrimitiveNode extends LGraphNode {
     return values
   }
 
-  /**
-   * The widget of a PrimitiveNode is only built once its output link resolves,
-   * which happens after `configure` has finished and the regular widget
-   * restoration state has been cleared. Park the serialized values in the
-   * widget value store until the widget is built. The build may be deferred
-   * past graph configuration (a reroute resolves its widget config on a later
-   * frame), so the entry lives until it is consumed by the first build, the
-   * output is disconnected, or the node is removed.
-   */
   override onConfigure(serialisedNode: ISerialisedNode) {
     super.onConfigure?.(serialisedNode)
     const type = serialisedNode.outputs?.[0]?.type
-    if (typeof type !== 'string') {
-      this._clearConfiguredWidgetValues()
-      return
-    }
-    const namedValues = serialisedNode.widgets_values_named
-    const values =
-      LiteGraph.namedValuesRestore && namedValues
-        ? ['value', 'control_after_generate', 'control_filter_list'].reduce<
-            WidgetValue[]
-          >((restored, name, index) => {
-            if (Object.hasOwn(namedValues, name))
-              restored[index] = namedValues[name]
-            return restored
-          }, [])
-        : Array.from(serialisedNode.widgets_values ?? [])
-    useWidgetValueStore().setPrimitiveWidgetRestoration(
-      this._restorationGraphId(),
-      this.id,
-      { type, values }
-    )
+    this.configuredWidgetType = typeof type === 'string' ? type : undefined
+  }
+
+  protected override deferWidgetRestorationAfterConfigure(): boolean {
+    return Boolean(this.graph && this.configuredWidgetType)
   }
 
   override onAfterGraphConfigured() {
@@ -177,10 +154,11 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   private _clearConfiguredWidgetValues() {
-    useWidgetValueStore().clearPrimitiveWidgetRestoration(
+    useWidgetValueStore().clearNodeWidgetRestoration(
       this._restorationGraphId(),
       this.id
     )
+    this.configuredWidgetType = undefined
   }
 
   override onConnectionsChange(
@@ -297,114 +275,73 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
-    const restoration = recreating
-      ? undefined
-      : useWidgetValueStore().getPrimitiveWidgetRestoration(
-          this._restorationGraphId(),
-          this.id
-        )
-    // Consumed on this build regardless of type match: the values belong to
-    // the link that was serialized, not to whatever connects later.
-    if (restoration) this._clearConfiguredWidgetValues()
-    const configuredWidgetValues =
-      restoration?.type === type ? restoration.values : undefined
-    const hasConfiguredWidgetValue =
-      configuredWidgetValues !== undefined && 0 in configuredWidgetValues
-    const configuredWidgetValue = configuredWidgetValues?.[0]
-
-    if (
-      type === 'COMBO' &&
-      assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
-    ) {
-      widget = this._createAssetWidget(node, widgetName, inputData)
-      const theirWidget = node.widgets?.find((w) => w.name === widgetName)
-      if (theirWidget) widget.value = theirWidget.value
-      if (hasConfiguredWidgetValue)
-        this._restoreConfiguredWidgetValue(widget, configuredWidgetValue)
-      this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
-      return
+    const configuredType = recreating ? undefined : this.configuredWidgetType
+    if (configuredType && configuredType !== type) {
+      this._clearConfiguredWidgetValues()
     }
+    const configuredWidgetValue =
+      configuredType === type
+        ? useWidgetValueStore().getRestoredWidgetValue(
+            this._restorationGraphId(),
+            this.id,
+            'value',
+            0
+          )
+        : undefined
 
-    if (isValidWidgetType(type)) {
-      widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
-    } else {
-      // @ts-expect-error InputSpec is not typed correctly
-      widget = this.addWidget(type, 'value', null, () => {}, {})
-    }
-
-    if (node?.widgets && widget) {
-      const theirWidget = node.widgets.find((w) => w.name === widgetName)
-      if (theirWidget) {
-        widget.value = theirWidget.value
-      }
-    }
-    if (hasConfiguredWidgetValue)
-      this._restoreConfiguredWidgetValue(widget, configuredWidgetValue)
-
-    if (
-      !inputData?.[1]?.control_after_generate &&
-      (widget.type === 'number' || widget.type === 'combo')
-    ) {
-      addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
-      if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
-    }
-
-    configuredWidgetValues?.slice(1).forEach((value, index) => {
-      const controlWidget = this.widgets?.[index + 1]
-      if (!controlWidget || typeof value !== 'string' || value === '') return
-
-      const allowed = controlWidget.options?.values
-      if (Array.isArray(allowed) && !allowed.includes(value)) return
-
-      controlWidget.value = value
-    })
-
-    // Restore any saved control values
-    const controlValues = this.controlValues
-    if (
-      this.widgets &&
-      this.lastType === this.widgets[0]?.type &&
-      controlValues?.length === this.widgets.length - 1
-    ) {
-      for (let i = 0; i < controlValues.length; i++) {
-        this.widgets[i + 1].value = controlValues[i]
-      }
-    }
-
-    this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
-  }
-
-  private _restoreConfiguredWidgetValue(
-    widget: IBaseWidget,
-    configuredValue: WidgetValue
-  ) {
-    if (configuredValue == null) {
-      widget.value = configuredValue
-      return
-    }
-
-    const allowedValues = widget.options?.values
-    if (Array.isArray(allowedValues)) {
-      if (allowedValues.includes(configuredValue))
-        widget.value = configuredValue
-      return
-    }
-
-    if (widget.type === 'number') {
+    try {
       if (
-        typeof configuredValue !== 'number' ||
-        !Number.isFinite(configuredValue)
-      )
+        type === 'COMBO' &&
+        assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
+      ) {
+        widget = this._createAssetWidget(node, widgetName, inputData)
+        const theirWidget = node.widgets?.find((w) => w.name === widgetName)
+        if (theirWidget) widget.value = theirWidget.value
+        if (configuredWidgetValue) widget.value = configuredWidgetValue.value
+        this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
         return
-      widget.value = Math.min(
-        Math.max(configuredValue, widget.options.min ?? -Infinity),
-        widget.options.max ?? Infinity
-      )
-      return
-    }
+      }
 
-    if (widget.value == null || typeof widget.value === typeof configuredValue)
-      widget.value = configuredValue
+      if (isValidWidgetType(type)) {
+        widget = (ComfyWidgets[type](this, 'value', inputData, app) || {})
+          .widget
+      } else {
+        // @ts-expect-error InputSpec is not typed correctly
+        widget = this.addWidget(type, 'value', null, () => {}, {})
+      }
+
+      if (node?.widgets && widget) {
+        const theirWidget = node.widgets.find((w) => w.name === widgetName)
+        if (theirWidget) {
+          widget.value = theirWidget.value
+        }
+      }
+      if (configuredWidgetValue) widget.value = configuredWidgetValue.value
+
+      if (
+        !inputData?.[1]?.control_after_generate &&
+        (widget.type === 'number' || widget.type === 'combo')
+      ) {
+        addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
+        if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
+      }
+
+      // Restore any saved control values
+      const controlValues = this.controlValues
+      if (
+        this.widgets &&
+        this.lastType === this.widgets[0]?.type &&
+        controlValues?.length === this.widgets.length - 1
+      ) {
+        for (let i = 0; i < controlValues.length; i++) {
+          this.widgets[i + 1].value = controlValues[i]
+        }
+      }
+
+      this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+    } finally {
+      if (configuredType) this._clearConfiguredWidgetValues()
+    }
   }
 
   private _createAssetWidget(

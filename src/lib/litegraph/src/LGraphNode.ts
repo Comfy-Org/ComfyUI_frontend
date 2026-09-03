@@ -1202,8 +1202,14 @@ export class LGraphNode
         )
       }
     } finally {
-      useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
+      if (!this.deferWidgetRestorationAfterConfigure()) {
+        useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
+      }
     }
+  }
+
+  protected deferWidgetRestorationAfterConfigure(): boolean {
+    return false
   }
 
   /**
