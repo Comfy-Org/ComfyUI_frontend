@@ -16,6 +16,9 @@ concurrency:
   group: i18n-update-core-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
 
+env:
+  COMFYUI_RELEASE_PIN: 40b9898582d15a753227712e8c863e466e290e0b
+
 jobs:
   update-locales:
     # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
@@ -43,6 +46,9 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: true
+          # Release branches must collect against the backend revision that
+          # pins their frontend series, not the moving default branch.
+          comfyui_ref: ${{ github.event_name == 'pull_request' && github.base_ref != 'main' && env.COMFYUI_RELEASE_PIN || '' }}
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
