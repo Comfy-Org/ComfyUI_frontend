@@ -43,18 +43,29 @@ function readVitestReport(reportPath) {
     }
   }
   const failing = []
+  const failedFiles = []
   for (const file of report.testResults ?? []) {
+    let fileHadFailedAssertion = false
     for (const assertion of file.assertionResults ?? []) {
       if (assertion.status !== 'failed') continue
+      fileHadFailedAssertion = true
       failing.push({
         name: assertion.fullName || assertion.title || '(unnamed test)',
         file: file.name ?? null,
-        message:
-          (assertion.failureMessages ?? [])
-            .join('\n')
-            .split('\n')
-            .slice(0, 6)
-            .join('\n') || null
+        message: firstLines(assertion.failureMessages ?? [])
+      })
+    }
+    // A file that failed to collect (import error, top-level throw) never runs a
+    // test, so vitest leaves `numFailedTests` at 0 and only marks the file itself
+    // as failed. That is the shape an upstream that removed a module or export
+    // produces, so it has to count as skew rather than as a runner problem.
+    if (file.status === 'failed' && !fileHadFailedAssertion) {
+      const name = file.name ?? '(unnamed file)'
+      failedFiles.push(name)
+      failing.push({
+        name: `${name} (failed to collect)`,
+        file: file.name ?? null,
+        message: firstLines([file.message ?? ''])
       })
     }
   }
@@ -66,8 +77,13 @@ function readVitestReport(reportPath) {
     pending: report.numPendingTests ?? null,
     suites_total: report.numTotalTestSuites ?? null,
     suites_failed: report.numFailedTestSuites ?? null,
+    files_failed_to_collect: failedFiles,
     failing_tests: failing
   }
+}
+
+function firstLines(messages) {
+  return messages.join('\n').split('\n').slice(0, 6).join('\n') || null
 }
 
 /**
@@ -84,7 +100,9 @@ function readVitestReport(reportPath) {
  */
 function verdictFor(tests, testsOutcome) {
   if (!tests.parsed) return 'inconclusive-no-report'
-  if (tests.failed > 0) return 'skew-signal'
+  if (tests.failed > 0 || tests.files_failed_to_collect.length > 0) {
+    return 'skew-signal'
+  }
   if (testsOutcome !== 'success') return 'inconclusive-runner-failed'
   if (!Number.isInteger(tests.total) || tests.total <= 0) {
     return 'inconclusive-incomplete-suite'
@@ -116,7 +134,7 @@ if (out) writeFileSync(out, json)
 process.stdout.write(json)
 
 const counts = tests.parsed
-  ? `${tests.passed}/${tests.total} passed, ${tests.failed} failed, ${tests.pending} skipped`
+  ? `${tests.passed}/${tests.total} passed, ${tests.failed} failed, ${tests.pending} skipped, ${tests.files_failed_to_collect.length} files failed to collect`
   : `no counts available (${tests.error})`
 
 const summary = [
@@ -155,6 +173,7 @@ if (process.env.GITHUB_OUTPUT) {
       `total=${tests.total ?? ''}`,
       `passed=${tests.passed ?? ''}`,
       `failed=${tests.failed ?? ''}`,
+      `files_failed_to_collect=${tests.files_failed_to_collect?.length ?? ''}`,
       ''
     ].join('\n')
   )

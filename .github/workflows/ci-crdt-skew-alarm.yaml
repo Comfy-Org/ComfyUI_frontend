@@ -156,6 +156,9 @@ jobs:
         env:
           VERDICT: ${{ steps.verdict.outputs.verdict }}
           FAILED: ${{ steps.verdict.outputs.failed }}
+          FILES_FAILED_TO_COLLECT: ${{ steps.verdict.outputs.files_failed_to_collect }}
+          PINNED_VERSION: ${{ steps.pin.outputs.version }}
+          CMP_SHA: ${{ steps.upstream.outputs.sha }}
         run: |
-          echo "::error::$VERDICT ($FAILED failing) - $CMP_PACKAGE pinned at ${{ steps.pin.outputs.version }} vs main ${{ steps.upstream.outputs.sha }}"
+          echo "::error::$VERDICT ($FAILED failing, $FILES_FAILED_TO_COLLECT files failed to collect) - $CMP_PACKAGE pinned at $PINNED_VERSION vs main $CMP_SHA"
           exit 1
