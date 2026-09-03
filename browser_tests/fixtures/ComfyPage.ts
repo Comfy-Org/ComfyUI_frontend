@@ -30,7 +30,8 @@ import {
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
   collectConsoleErrors,
-  recordStartupConsoleErrors
+  recordStartupConsoleErrors,
+  recordStartupConsoleWarnings
 } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -688,6 +689,7 @@ export const comfyPageFixture = base.extend<{
       if (startupErrorCollector) {
         startupErrorCollector.stop()
         recordStartupConsoleErrors(page, startupErrorCollector.errors)
+        recordStartupConsoleWarnings(page, startupErrorCollector.warnings)
       }
 
       if (isCustomNodes) {
