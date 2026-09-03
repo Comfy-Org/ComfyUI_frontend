@@ -59,6 +59,16 @@ describe('agentRunModeStore', () => {
     expect(store.creditLimit).toBe(300)
   })
 
+  it('preserves legacy keys when migration cannot produce a preference', () => {
+    localStorage.setItem('Comfy.Agent.RunMode', 'unsupported')
+    localStorage.setItem('Comfy.Agent.RunCreditLimit', '75')
+
+    useAgentRunModeStore()
+
+    expect(localStorage.getItem('Comfy.Agent.RunMode')).toBe('unsupported')
+    expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBe('75')
+  })
+
   it('loads the server preference as the source of truth', async () => {
     fetchApi.mockResolvedValueOnce(
       jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })

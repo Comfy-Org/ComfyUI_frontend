@@ -28,6 +28,7 @@ function migrateLegacyPreference(): void {
   const legacyCreditLimit = localStorage.getItem(
     LEGACY_CREDIT_LIMIT_STORAGE_KEY
   )
+  let canRemoveLegacy = storedPreference !== null
 
   if (storedPreference === null && legacyMode !== null) {
     const mode = {
@@ -52,10 +53,11 @@ function migrateLegacyPreference(): void {
         PREFERENCE_STORAGE_KEY,
         JSON.stringify(migrated.data)
       )
+      canRemoveLegacy = true
     }
   }
 
-  if (legacyMode !== null || legacyCreditLimit !== null) {
+  if (canRemoveLegacy && (legacyMode !== null || legacyCreditLimit !== null)) {
     localStorage.removeItem(LEGACY_MODE_STORAGE_KEY)
     localStorage.removeItem(LEGACY_CREDIT_LIMIT_STORAGE_KEY)
   }
