@@ -9,8 +9,8 @@ import type {
   RecordedFrame,
   RecordedTurn,
   SeedFixture
-} from './agentConversationRecord'
-import { assembleCapture, zRowsDump } from './agentConversationRecord'
+} from './agentConversationAssemble'
+import { assembleCapture, zRowsDump } from './agentConversationAssemble'
 
 const THREAD = 'thread-1'
 const MESSAGE = 'message-1'
