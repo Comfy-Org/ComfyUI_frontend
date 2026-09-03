@@ -397,8 +397,26 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     const expectOnTop = async () => {
       await expect(disclosure).toHaveAttribute('data-state', /-open$/)
       await expect
-        .poll(() => disclosure.evaluate((el) => Number(el.style.zIndex)))
-        .toBeGreaterThan(1702)
+        .poll(() =>
+          disclosure.evaluate((el) => {
+            const portal = el.parentElement?.parentElement
+            if (!portal) return false
+            const pointerEvents = portal.style.pointerEvents
+            portal.style.pointerEvents = 'auto'
+            try {
+              const rect = el.getBoundingClientRect()
+              if (rect.width === 0 || rect.height === 0) return false
+              const top = document.elementFromPoint(
+                rect.x + rect.width / 2,
+                rect.y + rect.height / 2
+              )
+              return top === el || (top !== null && el.contains(top))
+            } finally {
+              portal.style.pointerEvents = pointerEvents
+            }
+          })
+        )
+        .toBe(true)
     }
 
     // Hover reveals the hidden tags (and the bubble is not occluded).
