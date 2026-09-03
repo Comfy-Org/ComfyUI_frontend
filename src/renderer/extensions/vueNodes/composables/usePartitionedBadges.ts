@@ -10,6 +10,8 @@ import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'
+
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
   if (index === -1) return [text, undefined]
@@ -32,6 +34,8 @@ export function usePartitionedBadges(nodeData: NodeState) {
       !!nodeDef?.isCoreNode &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
+    const isComfyCloudNode =
+      nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
 
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
@@ -57,7 +61,9 @@ export function usePartitionedBadges(nodeData: NodeState) {
     }
 
     return {
-      hasComfyBadge: showComfyLogo && pricing.length === 0,
+      hasComfyBadge:
+        (showComfyLogo && pricing.length === 0) || isComfyCloudNode,
+      hasComfyCloudBadge: isComfyCloudNode,
       core,
       extension,
       pricing
