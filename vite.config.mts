@@ -159,6 +159,36 @@ if (!GIT_COMMIT) {
   }
 }
 
+/**
+ * Escape hatch for a poisoned CDN/browser cache.
+ *
+ * A content hash only changes when the chunk's own bytes change, so a routine
+ * redeploy leaves stable vendor chunks — `rolldown-runtime`, `vendor-*` — at
+ * byte-identical URLs. When one of those has been pinned as a 404 by an
+ * intermediary or a browser (IR-105), redeploying cannot dislodge it: the
+ * client never re-requests a URL it believes it already has.
+ *
+ * Setting ASSET_CACHE_BUST inserts its value into every emitted asset name, so
+ * every URL is new and nothing can be served from a poisoned entry.
+ *
+ * Only ever increment this. Clearing it reverts filenames to exactly the names
+ * that were poisoned in the first place.
+ */
+function assetCacheBustNames() {
+  const salt = process.env.ASSET_CACHE_BUST
+  if (!salt) return {}
+  if (!/^[a-zA-Z0-9]+$/.test(salt)) {
+    throw new Error(
+      `ASSET_CACHE_BUST must be alphanumeric (got "${salt}") — it becomes part of every asset filename.`
+    )
+  }
+  return {
+    entryFileNames: `assets/[name]-cb${salt}-[hash].js`,
+    chunkFileNames: `assets/[name]-cb${salt}-[hash].js`,
+    assetFileNames: `assets/[name]-cb${salt}-[hash][extname]`
+  }
+}
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
@@ -222,7 +252,10 @@ function handleGcsRedirect(
       for (const header of [
         'content-length',
         'content-range',
-        'accept-ranges'
+        'accept-ranges',
+        'cache-control',
+        'etag',
+        'last-modified'
       ]) {
         const value = gcsResponse.headers.get(header)
         if (value) {
@@ -373,6 +406,19 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    {
+      name: 'emit-build-manifest',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'build-manifest.json',
+          source: JSON.stringify({
+            commit: GIT_COMMIT,
+            distribution: DISTRIBUTION
+          })
+        })
+      }
+    },
     // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
@@ -630,6 +676,7 @@ export default defineConfig({
       },
       output: {
         keepNames: true,
+        ...assetCacheBustNames(),
         codeSplitting: {
           groups: [
             // Framework core - highest priority, very stable
@@ -800,7 +847,8 @@ export default defineConfig({
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',

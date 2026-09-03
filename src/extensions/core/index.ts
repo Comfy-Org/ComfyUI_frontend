@@ -1,5 +1,4 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
-import { registerAgentPanelExtension } from './agentPanel'
 
 import './clipspace'
 import './contextMenuFilter'
@@ -41,8 +40,7 @@ import './widgetInputs'
 // dead-code-eliminates this block and its posthog-js import from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
-  // Called, not dynamically imported: the gate must be part of the core
-  // graph so a flag-off cloud session fetches zero agent chunks.
+  const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')

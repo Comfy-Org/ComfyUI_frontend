@@ -55,6 +55,7 @@
             :widget="widget.simplified"
             :node-id
             :node-type
+            :invalid="widget.hasError"
             :aria-invalid="widget.hasError || undefined"
             :class="
               cn(
@@ -96,7 +97,7 @@ const isConvertedWidget = (widget: WidgetGridItem) =>
   isConvertedWidgetType(widget.simplified.type)
 
 const shouldRenderRow = (widget: WidgetGridItem) =>
-  widget.visible && (!isConvertedWidget(widget) || !!widget.slotMetadata)
+  isConvertedWidget(widget) ? !!widget.slotMetadata : widget.visible
 
 const {
   processedWidgets,
