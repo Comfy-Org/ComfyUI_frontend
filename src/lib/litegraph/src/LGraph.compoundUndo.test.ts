@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -160,10 +160,6 @@ describe('compound undo', () => {
   beforeEach(() => {
     LiteGraph.registerNodeType(NODE_TYPE, CompoundNode)
     vi.spyOn(LiteGraph, 'isValidConnection').mockReturnValue(true)
-  })
-
-  afterEach(() => {
-    LiteGraph.unregisterNodeType(NODE_TYPE)
   })
 
   describe('removing a node that links, reroutes, widgets and geometry all depend on', () => {

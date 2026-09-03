@@ -216,8 +216,6 @@ describe('subgraph copy/paste then delete in both orders', () => {
   })
 
   afterEach(() => {
-    LiteGraph.unregisterNodeType(INTERIOR_TYPE)
-    LiteGraph.unregisterNodeType(PLAIN_TYPE)
     // The constructor binds a `document` keyup listener, which retains the
     // whole fixture graph until it is removed.
     for (const canvas of canvases.splice(0)) {

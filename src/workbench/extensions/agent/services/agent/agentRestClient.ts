@@ -6,6 +6,7 @@ import {
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
+  zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
@@ -14,6 +15,7 @@ import {
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry,
@@ -45,12 +47,19 @@ export interface OpenTabsSnapshot {
   current_tab?: string
 }
 
+/** An omitted `version` makes this content authoritative for the backend CAS. */
+export interface DraftSnapshot {
+  content: Record<string, unknown>
+  version?: number
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
   tabs?: OpenTabsSnapshot
+  draft?: DraftSnapshot
 }
 
 interface IngestErrorBody {
@@ -116,6 +125,7 @@ export function createAgentRestClient() {
     }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
+    if (req.draft !== undefined) body.draft = req.draft
     return request(
       `/agent/threads/${threadId}/messages`,
       jsonInit('POST', body),
@@ -140,18 +150,37 @@ export function createAgentRestClient() {
     return page.threads
   }
 
+  async function getRunMode(): Promise<AgentRunModePreference> {
+    return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
+  }
+
+  async function putRunMode(
+    preference: AgentRunModePreference
+  ): Promise<AgentRunModePreference> {
+    return request(
+      '/agent/run-mode',
+      jsonInit('PUT', preference),
+      zAgentRunMode
+    )
+  }
+
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore = false
+    let cursor: string | undefined
     for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const result = await request(
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${page * CLOUD_WORKFLOW_PAGE_SIZE}`,
+        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
         { method: 'GET' },
         zCloudWorkflowIndex
       )
       entries.push(...result.data)
       hasMore = result.pagination.has_more
       if (!hasMore) break
+      const nextCursor = result.pagination.next_cursor
+      if (!nextCursor || nextCursor === cursor) break
+      cursor = nextCursor
     }
     if (hasMore)
       console.warn(
@@ -188,6 +217,8 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getRunMode,
+    putRunMode,
     listCloudWorkflows,
     cancelMessage,
     uploadImage

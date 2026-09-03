@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { NodeId } from '@/types/nodeId'
 
@@ -323,9 +322,7 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     return this.page.evaluate(
       ([nodeId, imageSource]) =>
         new Promise<void>((resolve, reject) => {
-          const node = window.app!.graph.getNodeById(nodeId) as
-            | (LGraphNode & { imgs?: HTMLImageElement[] })
-            | null
+          const node = window.app!.graph.getNodeById(nodeId)
           if (!node) throw new Error(`Node ${nodeId} not found`)
 
           const image = new Image()
