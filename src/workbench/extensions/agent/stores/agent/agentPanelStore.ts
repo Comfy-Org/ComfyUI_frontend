@@ -2,21 +2,16 @@ import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
-
-import { useAgentConsentStore } from './agentConsentStore'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
-  const consentStore = useAgentConsentStore()
-  const { isLoggedIn } = useCurrentUser()
   const enabled = ref(false)
+  const consentAccepted = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
@@ -28,11 +23,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   let openedAt: number | null = null
 
   const isVisible = computed(
-    () =>
-      enabled.value &&
-      isOpen.value &&
-      consentStore.accepted &&
-      (isCloud || isLoggedIn.value)
+    () => enabled.value && isOpen.value && consentAccepted.value
   )
 
   watch(isVisible, (visible) => {
@@ -82,6 +73,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   return {
     enabled,
+    consentAccepted,
     isOpen,
     isVisible,
     gateSettled,

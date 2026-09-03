@@ -2,22 +2,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-const access = vi.hoisted(() => ({ accepted: true, loggedIn: true }))
-vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
-  useAgentConsentStore: () => ({
-    get accepted() {
-      return access.accepted
-    }
-  })
-}))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    get isLoggedIn() {
-      return { value: access.loggedIn }
-    }
-  })
-}))
-
 const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
@@ -30,12 +14,16 @@ import { useAgentPanelStore } from './agentPanelStore'
 
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
+function useConsentedAgentPanelStore() {
+  const store = useAgentPanelStore()
+  store.consentAccepted = true
+  return store
+}
+
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
-    access.accepted = true
-    access.loggedIn = true
     vi.useFakeTimers()
   })
 
@@ -45,7 +33,7 @@ describe('agentPanelStore engagement telemetry', () => {
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
-    const store = useAgentPanelStore()
+    const store = useConsentedAgentPanelStore()
 
     expect(store.isOpen).toBe(true)
     await nextTick()
@@ -66,7 +54,7 @@ describe('agentPanelStore engagement telemetry', () => {
   })
 
   it('emits exactly one opened event for a user click while the panel is enabled', async () => {
-    const store = useAgentPanelStore()
+    const store = useConsentedAgentPanelStore()
     store.enabled = true
     await nextTick()
 
@@ -89,7 +77,6 @@ describe('agentPanelStore engagement telemetry', () => {
 
   it('suppresses a restored open intent that has no consent', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
-    access.accepted = false
     const store = useAgentPanelStore()
     store.enabled = true
     await nextTick()
@@ -159,8 +146,6 @@ describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
-    access.accepted = true
-    access.loggedIn = true
   })
 
   afterEach(() => {

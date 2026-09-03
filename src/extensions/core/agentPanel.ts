@@ -76,6 +76,14 @@ export function registerAgentPanelExtension(): void {
       const { isLoggedIn } = useCurrentUser()
       registerWorkflowTabActivityTracker(enabled)
 
+      watch(
+        () => consentStore.accepted,
+        (value) => {
+          agentPanelStore.consentAccepted = value
+        },
+        { immediate: true, flush: 'sync' }
+      )
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         void consentStore.load().catch((error: unknown) => {

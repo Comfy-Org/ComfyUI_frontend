@@ -8,13 +8,17 @@ const mocks = vi.hoisted(() => ({
   notifyBeforeGraphLoad: vi.fn(),
   agentStore: {
     enabled: false,
+    consentAccepted: false,
     isOpen: true,
     get isVisible() {
       return this.enabled && this.isOpen
     },
     close: vi.fn()
   },
-  consentStore: { load: vi.fn(() => Promise.resolve(false)) },
+  consentStore: {
+    accepted: true,
+    load: vi.fn(() => Promise.resolve(false))
+  },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
@@ -125,6 +129,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.close.mockClear()
     mocks.consentStore.load.mockClear()
     mocks.agentStore.enabled = false
+    mocks.agentStore.consentAccepted = false
     mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
@@ -167,6 +172,12 @@ describe('AgentPanel extension flag gate', () => {
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
     await loadEntryAndSetup()
     expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
+  })
+
+  it('projects account consent into the panel visibility gate', async () => {
+    await loadEntryAndSetup()
+
+    expect(mocks.agentStore.consentAccepted).toBe(true)
   })
 
   it('enables the panel when the flag turns true', async () => {
