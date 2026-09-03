@@ -1,3 +1,5 @@
+import { zGetSettingByIdResponse } from '@comfyorg/ingest-types/zod'
+
 import type { AuthHeader } from '@/types/authTypes'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -37,17 +39,13 @@ export async function getAccountSetting(
     )
   }
 
-  const payload: unknown = await response.json()
-  if (
-    typeof payload !== 'object' ||
-    payload === null ||
-    !('value' in payload)
-  ) {
+  const payload = zGetSettingByIdResponse.safeParse(await response.json())
+  if (!payload.success) {
     throw new AccountSettingsApiError(
       `Account setting ${id} returned an invalid response`
     )
   }
-  return payload.value
+  return payload.data.value
 }
 
 export async function setAccountSetting(
