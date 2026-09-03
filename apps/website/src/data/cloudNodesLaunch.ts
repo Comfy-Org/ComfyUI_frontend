@@ -15,28 +15,28 @@ const HERO_STILL = '/hero/input.webp'
 const GET_STARTED = externalLinks.cloud
 
 export const cloudNodesPage: ModelLaunchPage = {
-  metaTitleKey: 'cloudNodes.meta.title',
-  metaDescriptionKey: 'cloudNodes.meta.description',
-  breadcrumbLabelKey: 'cloudNodes.breadcrumb.model',
-  breadcrumbUpdatedKey: 'cloudNodes.breadcrumb.updated',
+  metaTitleKey: 'cloudNodesLaunch.meta.title',
+  metaDescriptionKey: 'cloudNodesLaunch.meta.description',
+  breadcrumbLabelKey: 'cloudNodesLaunch.breadcrumb.model',
+  breadcrumbUpdatedKey: 'cloudNodesLaunch.breadcrumb.updated',
   hero: {
     layout: 'overlay',
     placeholderImageSrc: HERO_STILL,
     badgeKeys: [
-      'cloudNodes.hero.tagNoSubscription',
-      'cloudNodes.hero.tagOpenModels',
-      'cloudNodes.hero.tagPayPerRun'
+      'cloudNodesLaunch.hero.tagNoSubscription',
+      'cloudNodesLaunch.hero.tagOpenModels',
+      'cloudNodesLaunch.hero.tagPayPerRun'
     ],
-    titleKey: 'cloudNodes.hero.title',
-    titleRestKey: 'cloudNodes.hero.titleRest',
-    descriptionKey: 'cloudNodes.hero.description',
+    titleKey: 'cloudNodesLaunch.hero.title',
+    titleRestKey: 'cloudNodesLaunch.hero.titleRest',
+    descriptionKey: 'cloudNodesLaunch.hero.description',
     primaryCta: {
-      labelKey: 'cloudNodes.hero.primaryCta',
+      labelKey: 'cloudNodesLaunch.hero.primaryCta',
       href: GET_STARTED,
       target: '_blank'
     },
     secondaryCta: {
-      labelKey: 'cloudNodes.hero.secondaryCta',
+      labelKey: 'cloudNodesLaunch.hero.secondaryCta',
       href: externalLinks.cloud,
       target: '_blank'
     }
@@ -44,18 +44,18 @@ export const cloudNodesPage: ModelLaunchPage = {
   pricing: {
     defaultBillingCycle: 'monthly',
     banner: {
-      titleKey: 'cloudNodes.pricing.banner.title',
-      subtitleKey: 'cloudNodes.pricing.banner.subtitle',
+      titleKey: 'cloudNodesLaunch.pricing.banner.title',
+      subtitleKey: 'cloudNodesLaunch.pricing.banner.subtitle',
       cta: {
-        labelKey: 'cloudNodes.pricing.banner.cta',
+        labelKey: 'cloudNodesLaunch.pricing.banner.cta',
         href: GET_STARTED,
         target: '_blank'
       }
     }
   },
   steps: {
-    headingKey: 'cloudNodes.steps.heading',
-    stepLabelKey: 'cloudNodes.steps.step',
+    headingKey: 'cloudNodesLaunch.steps.heading',
+    stepLabelKey: 'cloudNodesLaunch.steps.step',
     items: [
       {
         id: 'update-comfyui',
@@ -83,13 +83,13 @@ export const cloudNodesPage: ModelLaunchPage = {
       }
     ],
     primaryCta: {
-      labelKey: 'cloudNodes.steps.primaryCta',
+      labelKey: 'cloudNodesLaunch.steps.primaryCta',
       href: GET_STARTED,
       target: '_blank'
     }
   },
   faq: {
-    headingKey: 'cloudNodes.faq.heading',
+    headingKey: 'cloudNodesLaunch.faq.heading',
     items: [
       {
         id: 'subscription',
@@ -151,16 +151,16 @@ export const cloudNodesPage: ModelLaunchPage = {
     ]
   },
   runOptions: {
-    headingKey: 'cloudNodes.runOptions.heading',
-    subtitleKey: 'cloudNodes.runOptions.subtitle',
-    ctaKey: 'cloudNodes.runOptions.cta'
+    headingKey: 'cloudNodesLaunch.runOptions.heading',
+    subtitleKey: 'cloudNodesLaunch.runOptions.subtitle',
+    ctaKey: 'cloudNodesLaunch.runOptions.cta'
   },
   reviews: {
-    headingKey: 'cloudNodes.reviews.heading',
+    headingKey: 'cloudNodesLaunch.reviews.heading',
     highlight: {
-      titleKey: 'cloudNodes.reviews.highlightTitle',
-      descriptionKey: 'cloudNodes.reviews.highlightDescription',
-      ctaKey: 'cloudNodes.reviews.highlightCta'
+      titleKey: 'cloudNodesLaunch.reviews.highlightTitle',
+      descriptionKey: 'cloudNodesLaunch.reviews.highlightDescription',
+      ctaKey: 'cloudNodesLaunch.reviews.highlightCta'
     }
   }
 }

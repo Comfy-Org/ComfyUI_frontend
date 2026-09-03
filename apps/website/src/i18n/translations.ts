@@ -8349,96 +8349,106 @@ Enterprise`
     'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   },
 
-  // Comfy Cloud nodes launch page (/cloud/nodes)
-  'cloudNodes.meta.title': {
+  // Comfy Cloud nodes launch page (/cloud-nodes)
+  'cloudNodesLaunch.meta.title': {
     en: 'Comfy Cloud Nodes: Run Open Models on Our GPUs, From Your ComfyUI',
-    'zh-CN': 'Comfy Cloud 节点：在我们的 GPU 上运行开源模型，就在你的 ComfyUI 里'
+    'zh-CN':
+      'Comfy Cloud 节点：在我们的 GPU 上运行开源模型，就在你的 ComfyUI 里'
   },
-  'cloudNodes.meta.description': {
+  'cloudNodesLaunch.meta.description': {
     en: 'Drop a Comfy Cloud node into a local graph and run open models on Comfy Cloud GPUs. No subscription, no downloads, billed per second in credits.',
     'zh-CN':
       '把 Comfy Cloud 节点放进本地工作流，即可在 Comfy Cloud 的 GPU 上运行开源模型。无需订阅，无需下载，按秒计费。'
   },
-  'cloudNodes.breadcrumb.model': {
+  'cloudNodesLaunch.breadcrumb.model': {
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'
   },
-  'cloudNodes.breadcrumb.updated': { en: 'New', 'zh-CN': '全新' },
-  'cloudNodes.hero.tagNoSubscription': {
+  'cloudNodesLaunch.breadcrumb.updated': { en: 'New', 'zh-CN': '全新' },
+  'cloudNodesLaunch.hero.tagNoSubscription': {
     en: 'No Subscription',
     'zh-CN': '无需订阅'
   },
-  'cloudNodes.hero.tagOpenModels': { en: 'Open Models', 'zh-CN': '开源模型' },
-  'cloudNodes.hero.tagPayPerRun': { en: 'Pay Per Run', 'zh-CN': '按次付费' },
-  'cloudNodes.hero.title': {
+  'cloudNodesLaunch.hero.tagOpenModels': {
+    en: 'Open Models',
+    'zh-CN': '开源模型'
+  },
+  'cloudNodesLaunch.hero.tagPayPerRun': {
+    en: 'Pay Per Run',
+    'zh-CN': '按次付费'
+  },
+  'cloudNodesLaunch.hero.title': {
     en: 'Your graph stays local.',
     'zh-CN': '工作流留在本地。'
   },
-  'cloudNodes.hero.titleRest': {
+  'cloudNodesLaunch.hero.titleRest': {
     en: '\nThe GPU does not.',
     'zh-CN': '\nGPU 不必如此。'
   },
-  'cloudNodes.hero.description': {
+  'cloudNodesLaunch.hero.description': {
     en: 'Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Nothing to download, no VRAM floor, and no plan to buy. You are billed per GPU-second in credits, the same way every other partner node works.',
     'zh-CN':
       'Comfy Cloud 节点让你在自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。无需下载，没有显存门槛，也不用购买套餐。按 GPU 秒数以积分计费，与其他合作伙伴节点完全一致。'
   },
-  'cloudNodes.hero.primaryCta': {
+  'cloudNodesLaunch.hero.primaryCta': {
     en: 'Get Started',
     'zh-CN': '开始使用'
   },
-  'cloudNodes.hero.secondaryCta': {
+  'cloudNodesLaunch.hero.secondaryCta': {
     en: 'See Pricing',
     'zh-CN': '查看价格'
   },
-  'cloudNodes.pricing.banner.title': {
+  'cloudNodesLaunch.pricing.banner.title': {
     en: '50% off GPU time for launch',
     'zh-CN': '上线特惠：GPU 时长五折'
   },
-  'cloudNodes.pricing.banner.subtitle': {
+  'cloudNodesLaunch.pricing.banner.subtitle': {
     en: 'Every Comfy Cloud node runs at half the usual GPU rate during the launch window.',
     'zh-CN': '上线期间，所有 Comfy Cloud 节点均以常规 GPU 费率的一半运行。'
   },
-  'cloudNodes.pricing.banner.cta': {
+  'cloudNodesLaunch.pricing.banner.cta': {
     en: 'Claim the offer',
     'zh-CN': '领取优惠'
   },
-  'cloudNodes.steps.heading': {
+  'cloudNodesLaunch.steps.heading': {
     en: 'Three steps, no install',
     'zh-CN': '三步搞定，无需安装'
   },
-  'cloudNodes.steps.step': { en: 'Step', 'zh-CN': '步骤' },
-  'cloudNodes.steps.primaryCta': {
+  'cloudNodesLaunch.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'cloudNodesLaunch.steps.primaryCta': {
     en: 'Get Started',
     'zh-CN': '开始使用'
   },
-  'cloudNodes.faq.heading': {
+  'cloudNodesLaunch.faq.heading': {
     en: 'Frequently asked questions',
     'zh-CN': '常见问题'
   },
-  'cloudNodes.runOptions.heading': {
+  'cloudNodesLaunch.runOptions.heading': {
     en: 'Run it your way',
     'zh-CN': '按你的方式运行'
   },
-  'cloudNodes.runOptions.subtitle': {
+  'cloudNodesLaunch.runOptions.subtitle': {
     en: 'Keep the models you already run on your own machine. Reach for a Comfy Cloud node only for the ones you cannot.',
     'zh-CN':
       '你已经能在本机运行的模型，继续在本机跑。只有跑不动的，才交给 Comfy Cloud 节点。'
   },
-  'cloudNodes.runOptions.cta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
-  'cloudNodes.reviews.heading': {
+  'cloudNodesLaunch.runOptions.cta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'cloudNodesLaunch.reviews.heading': {
     en: 'Built for people who already have a workflow',
     'zh-CN': '为已有工作流的创作者而生'
   },
-  'cloudNodes.reviews.highlightTitle': {
+  'cloudNodesLaunch.reviews.highlightTitle': {
     en: 'Drive Comfy from your editor',
     'zh-CN': '在编辑器中驱动 Comfy'
   },
-  'cloudNodes.reviews.highlightDescription': {
+  'cloudNodesLaunch.reviews.highlightDescription': {
     en: 'The same Cloud GPUs are reachable over MCP, so an agent can run these workflows for you.',
     'zh-CN': '同样的云端 GPU 也可通过 MCP 访问，让智能体替你运行这些工作流。'
   },
-  'cloudNodes.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'cloudNodesLaunch.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
   'footer.cloudNodes': {
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'
