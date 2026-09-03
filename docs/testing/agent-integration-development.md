@@ -104,6 +104,69 @@ traffic continues to reach ComfyUI.
 | Records graph edits | no: this configuration writes no per-op audit rows | yes                                                                                                |
 | Cancels a turn      | no: the inline engine has no cancellation handle   | yes, with `--engine temporal`                                                                      |
 
+### Pipeline
+
+Dashed boxes are recorded data, dotted boxes are stubs that only carry that
+data, the blue box is a real library run in-process, and everything else is
+real code.
+
+```mermaid
+flowchart TB
+  subgraph record["Record: the cloud repo's local stack, everything real"]
+    prompt["Prompt<br/>user turns on a seeded saved workflow"]
+    agent["Cloud agent<br/>real model call, real tool set"]
+    dochost["Doc host<br/>applies the ops to the CRDT doc"]
+    redis["Redis channel<br/>frames: active tab, thinking, tool calls, text"]
+    pg["Postgres<br/>tool-call rows and accepted op rows"]
+    recorder["Recorder<br/>drives the turns; frames stamped at_ms, rows read back"]
+    assembler["Assembler<br/>refuses: foreign turn, seed hash, catalog, audit rows"]
+    exporter["Exporter<br/>ops inserted before their tool frame"]
+    prompt --> agent
+    agent --> dochost
+    agent --> redis
+    dochost --> pg
+    pg --> recorder
+    redis --> recorder
+    recorder --> assembler --> exporter
+  end
+  fixture["Fixture JSON<br/>seed, catalog, turns: prompt, frames, ops, offsets"]
+  exporter --> fixture
+  subgraph replay["Replay: Playwright, data in, real UI out"]
+    ws["WS route<br/>replays the recorded frames back to back, or at recorded gaps"]
+    inproc["In-process doc host<br/>mint, applyOps, readGraph"]
+    http["HTTP stubs<br/>static acks and empty lists"]
+    panel["Agent panel<br/>composer, tool rows"]
+    follower["CRDT follower<br/>projects doc updates into the stores"]
+    canvas["Canvas<br/>nodes, slots, widgets"]
+    asserts["Assertions<br/>derived from the fixture and readGraph"]
+    http --> panel
+    ws --> panel
+    inproc -- doc_update --> follower --> canvas
+    panel --> asserts
+    canvas --> asserts
+  end
+  fixture --> ws
+  fixture --> inproc
+  subgraph smoke["Smoke: no fixture, everything real"]
+    launcher["Harness launcher<br/>starts Vite and the agent, checks ComfyUI is up"]
+    turn["One real turn<br/>nonce in, reply out"]
+    launcher --> turn
+  end
+  classDef data fill:#fff6e0,stroke:#c8860a,stroke-dasharray:6 4
+  classDef stub fill:#f5eaf9,stroke:#7b1fa2,stroke-dasharray:2 4
+  classDef lib fill:#eaf1fb,stroke:#1565c0
+  class prompt,fixture,asserts data
+  class ws,http stub
+  class inproc lib
+```
+
+HTTP and the socket are stubs because a replay must be deterministic and
+model-free, so the agent's side is data; the in-process doc host runs the same
+library the real host runs. The smoke is the only path that proves the real
+HTTP, socket, agent and doc host together. Every frame carries its offset from
+the turn's first frame; replay sends back to back by default and
+`AGENT_REPLAY_TIMING=recorded` waits out the recorded gaps.
+
 ## Glossary
 
 - **Air:** the Go file watcher that rebuilds and restarts the local agent.
