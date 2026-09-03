@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -15,6 +16,7 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -65,6 +67,7 @@ describe('DockedAgentPanel', () => {
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
   })
@@ -94,6 +97,18 @@ describe('DockedAgentPanel', () => {
     await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
     expect(runMode.creditLimit).toBe(25)
     expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+  })
+
+  it('reports non-404 run mode load failures', async () => {
+    fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+    openPanel()
+    renderPanel()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_run_mode_load_failure'
+      })
+    )
   })
 
   it('fills the panel shell and draws the canvas seam border', () => {
