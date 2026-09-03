@@ -1,12 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
-import type * as VueUseCoreModule from '@vueuse/core'
+import { useFreeTierQuota } from './useFreeTierQuota'
 
-type VueUseCore = typeof VueUseCoreModule
-
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal<VueUseCore>()),
+vi.mock('@vueuse/core', () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))
@@ -18,36 +14,25 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-const mockFlags = vi.hoisted(() => ({ freeTierJobAllowanceEnabled: true }))
 vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
+  useFeatureFlags: () => ({
+    flags: { freeTierJobAllowanceEnabled: true }
+  })
 }))
 
-vi.mock('@/composables/node/usePriceBadge', () => ({
-  useCreditsBadgesInGraph: () => ref([])
-}))
+vi.mock('@/scripts/app', () => ({ app: {} }))
+vi.mock('@/systems/badgeSystem', () => ({ graphCreditsBadges: () => [] }))
 
-const mockRemoteConfig = vi.hoisted(() => ({
-  value: { free_tier_balance: { allowance: 5, remaining: 5 } }
-}))
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  get remoteConfig() {
-    return ref(mockRemoteConfig.value)
+  remoteConfig: {
+    value: { free_tier_balance: { allowance: 5, remaining: 5 } }
   }
 }))
 
-const { useFreeTierQuota } = await import('./useFreeTierQuota')
-
 describe('useFreeTierQuota', () => {
-  beforeEach(() => {
-    mockIsCloud.value = true
-    mockFlags.freeTierJobAllowanceEnabled = true
-    mockRemoteConfig.value = {
-      free_tier_balance: { allowance: 5, remaining: 5 }
-    }
-  })
-
   it('enables the quota on Cloud when the flag and an allowance are present', () => {
+    mockIsCloud.value = true
+
     const quota = useFreeTierQuota()
 
     expect(quota.quotaEnabled.value).toBe(true)
