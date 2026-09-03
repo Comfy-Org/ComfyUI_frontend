@@ -33,8 +33,8 @@ export function markDeletedAssetsAsMissingMedia(
     ...findNodesReferencingValues(rootGraph, deletedValues),
     ...collectAllNodes(rootGraph).filter(
       (node) =>
-        node.isSubgraphNode?.() &&
-        node.widgets?.some(
+        node.isSubgraphNode() &&
+        node.widgets.some(
           (widget) =>
             typeof widget.value === 'string' && deletedValues.has(widget.value)
         )

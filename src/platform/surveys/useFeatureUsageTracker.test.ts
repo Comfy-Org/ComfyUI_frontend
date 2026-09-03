@@ -28,23 +28,23 @@ describe('useFeatureUsageTracker', () => {
     const { usage, trackUsage } = useFeatureUsageTracker('test-feature-3')
 
     trackUsage()
-    expect(usage.value?.firstUsed).toBe(firstTs)
+    expect(usage.value.firstUsed).toBe(firstTs)
 
     vi.advanceTimersByTime(5_000)
     trackUsage()
-    expect(usage.value?.firstUsed).toBe(firstTs)
+    expect(usage.value.firstUsed).toBe(firstTs)
   })
 
   it('updates lastUsed on each use', () => {
     const { usage, trackUsage } = useFeatureUsageTracker('test-feature-4')
 
     trackUsage()
-    const firstLastUsed = usage.value?.lastUsed ?? 0
+    const firstLastUsed = usage.value.lastUsed
 
     vi.advanceTimersByTime(10)
     trackUsage()
 
-    expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
+    expect(usage.value.lastUsed).toBeGreaterThan(firstLastUsed)
   })
 
   it('reset clears feature data', () => {

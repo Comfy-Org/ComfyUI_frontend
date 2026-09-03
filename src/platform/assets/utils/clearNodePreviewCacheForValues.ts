@@ -55,7 +55,7 @@ export function findNodesReferencingValues(
   const matches: LGraphNode[] = []
   for (const node of collectAllNodes(rootGraph)) {
     if (!node.widgets?.length) continue
-    if (node.isSubgraphNode?.()) continue
+    if (node.isSubgraphNode()) continue
     const referencesDeleted = node.widgets.some(
       (w) => typeof w.value === 'string' && deletedValues.has(w.value)
     )

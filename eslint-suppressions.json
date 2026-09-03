@@ -201,7 +201,7 @@
   },
   "src/platform/settings/settingStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/tasks/services/taskService.ts": {

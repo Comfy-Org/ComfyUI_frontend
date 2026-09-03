@@ -67,9 +67,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function loadIndex(): DraftIndexV2 {
     const workspaceId = currentWorkspaceId()
 
-    if (indexCacheByWorkspace.value[workspaceId]) {
-      return indexCacheByWorkspace.value[workspaceId]
-    }
+    const cached = getCachedIndex(workspaceId)
+    if (cached) return cached
 
     const stored = readIndex(workspaceId)
     if (stored) {
@@ -88,6 +87,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const emptyIndex = createEmptyIndex()
     indexCacheByWorkspace.value[workspaceId] = emptyIndex
     return emptyIndex
+  }
+
+  function getCachedIndex(workspaceId: string): DraftIndexV2 | null {
+    return indexCacheByWorkspace.value[workspaceId]
   }
 
   /**
@@ -171,7 +174,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       if (!oldestKey) break
 
       const oldestEntry = currentIndex.entries[oldestKey]
-      if (!oldestEntry) {
+      if (!getIndexEntry(currentIndex, oldestKey)) {
         currentIndex = stripOrderKey(currentIndex, oldestKey)
         continue
       }
@@ -204,6 +207,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     reportQuotaExhausted(currentIndex, evictedCount, payloadByteSize(data))
     markStorageUnavailable()
     return false
+  }
+
+  function getIndexEntry(
+    index: DraftIndexV2,
+    key: string
+  ): DraftIndexV2['entries'][string] | undefined {
+    return index.entries[key]
   }
 
   /**
@@ -340,7 +350,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (!key) return null
 
     const entry = index.entries[key]
-    return entry?.path ?? null
+    return entry.path
   }
 
   /**

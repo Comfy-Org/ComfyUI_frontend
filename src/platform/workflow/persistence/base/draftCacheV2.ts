@@ -183,7 +183,7 @@ export function removeOrphanedEntries(
   const order: string[] = []
 
   for (const key of index.order) {
-    if (existingPayloadKeys.has(key) && index.entries[key]) {
+    if (existingPayloadKeys.has(key)) {
       entries[key] = index.entries[key]
       order.push(key)
     }

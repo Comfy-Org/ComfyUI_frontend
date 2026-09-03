@@ -55,7 +55,6 @@ export function useMissingModelInteractions() {
     if (!value) return
 
     const graph = app.rootGraph
-    if (!graph) return
 
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)

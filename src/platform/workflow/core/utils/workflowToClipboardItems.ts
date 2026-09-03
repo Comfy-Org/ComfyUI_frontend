@@ -18,7 +18,7 @@ export function workflowToClipboardItems(
     nodes: graph.nodes ?? [],
     groups: (graph.groups ?? []).map((group) => ({
       ...group,
-      id: group.id ?? -1
+      id: group.id
     })),
     reroutes: getReroutes(graph),
     links: getLinks(graph),
@@ -35,7 +35,7 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
       parentId
     ])
   )
-  return (graph.links ?? []).map(
+  return graph.links.map(
     ([
       id,
       origin_id,
@@ -61,7 +61,7 @@ function getReroutes(graph: WorkflowGraph): SerialisableReroute[] {
 
   return (reroutes ?? []).map((reroute) => ({
     ...reroute,
-    linkIds: reroute.linkIds ?? []
+    linkIds: reroute.linkIds
   }))
 }
 

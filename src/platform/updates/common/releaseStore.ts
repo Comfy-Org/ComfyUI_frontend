@@ -26,7 +26,7 @@ export const useReleaseStore = defineStore('release', () => {
   const onboardingTourStore = useOnboardingTourStore()
 
   const currentVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+    () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
   )
 
   // Release data from settings
@@ -69,7 +69,6 @@ export const useReleaseStore = defineStore('release', () => {
   // New version available?
   const isNewVersionAvailable = computed(
     () =>
-      !!recentRelease.value &&
       compareVersions(
         recentRelease.value.version,
         currentVersion.value || '0.0.0'
@@ -78,7 +77,6 @@ export const useReleaseStore = defineStore('release', () => {
 
   const isLatestVersion = computed(
     () =>
-      !!recentRelease.value &&
       compareVersions(
         recentRelease.value.version,
         currentVersion.value || '0.0.0'
@@ -86,7 +84,7 @@ export const useReleaseStore = defineStore('release', () => {
   )
 
   const hasMediumOrHighAttention = computed(() => {
-    const attention = recentRelease.value?.attention
+    const attention = recentRelease.value.attention
     return attention === 'medium' || attention === 'high'
   })
 
@@ -113,7 +111,7 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip if user already skipped or changelog seen
     if (
-      releaseVersion.value === recentRelease.value?.version &&
+      releaseVersion.value === recentRelease.value.version &&
       ['skipped', 'changelog seen'].includes(releaseStatus.value)
     ) {
       return false
@@ -183,10 +181,6 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    if (!recentRelease.value) {
-      return false
-    }
-
     // Skip version check if current version isn't semver (e.g. git hash)
     const skipVersionCheck = !valid(currentVersion.value)
     if (!skipVersionCheck && !isLatestVersion.value) {
@@ -206,7 +200,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Action handlers for user interactions
   async function handleSkipRelease(version: string): Promise<void> {
     if (
-      version !== recentRelease.value?.version ||
+      version !== recentRelease.value.version ||
       releaseStatus.value === 'changelog seen'
     ) {
       return
@@ -220,7 +214,7 @@ export const useReleaseStore = defineStore('release', () => {
   }
 
   async function handleShowChangelog(version: string): Promise<void> {
-    if (version !== recentRelease.value?.version) {
+    if (version !== recentRelease.value.version) {
       return
     }
 
@@ -232,7 +226,7 @@ export const useReleaseStore = defineStore('release', () => {
   }
 
   async function handleWhatsNewSeen(version: string): Promise<void> {
-    if (version !== recentRelease.value?.version) {
+    if (version !== recentRelease.value.version) {
       return
     }
 
@@ -255,9 +249,7 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip fetching if API nodes are disabled via argv
     if (
-      systemStatsStore.systemStats?.system?.argv?.includes(
-        '--disable-api-nodes'
-      )
+      systemStatsStore.systemStats?.system.argv.includes('--disable-api-nodes')
     ) {
       return
     }
@@ -279,7 +271,7 @@ export const useReleaseStore = defineStore('release', () => {
         },
         {
           deployEnvironment:
-            systemStatsStore.systemStats?.system?.deploy_environment
+            systemStatsStore.systemStats?.system.deploy_environment
         }
       )
 

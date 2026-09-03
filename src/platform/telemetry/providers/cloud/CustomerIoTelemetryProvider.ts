@@ -57,7 +57,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       write_key: writeKey,
       site_id: siteId,
       user_id: userIdOverride
-    } = window.__CONFIG__?.customer_io ?? {}
+    } = window.__CONFIG__.customer_io ?? {}
     this.sessionIdentity = userIdOverride
       ? { userId: userIdOverride, locale: i18n.global.locale.value }
       : null
@@ -233,7 +233,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private sendPageView(): void {
-    void this.analytics?.page()?.catch((error) => {
+    void this.analytics?.page().catch((error) => {
       console.error('Failed to track Customer.io page view:', error)
     })
   }

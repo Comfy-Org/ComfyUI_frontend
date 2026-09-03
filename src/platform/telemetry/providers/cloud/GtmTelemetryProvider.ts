@@ -50,7 +50,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   private initialize(): void {
     if (typeof window === 'undefined') return
 
-    const gtmId = window.__CONFIG__?.gtm_container_id
+    const gtmId = window.__CONFIG__.gtm_container_id
     if (gtmId) {
       this.initializeGtm(gtmId)
     } else {
@@ -59,7 +59,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       }
     }
 
-    const measurementId = window.__CONFIG__?.ga_measurement_id
+    const measurementId = window.__CONFIG__.ga_measurement_id
     if (measurementId) {
       this.bootstrapGtag(measurementId)
     }

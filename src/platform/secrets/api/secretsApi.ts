@@ -48,7 +48,7 @@ export async function listSecrets(): Promise<SecretMetadata[]> {
 export async function listSecretProviders(): Promise<SecretProviderInfo[]> {
   const response = await api.fetchApi('/secrets/providers')
   const data = await handleResponse<SecretProvidersResponse>(response)
-  return data.data ?? []
+  return data.data
 }
 
 export async function createSecret(

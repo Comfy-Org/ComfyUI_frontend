@@ -139,7 +139,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
-    this.configureDisabledEvents(window.__CONFIG__ ?? null)
+    this.configureDisabledEvents(window.__CONFIG__)
     watch(
       remoteConfig,
       (config) => {
@@ -149,17 +149,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
 
     const apiKey =
-      window.__CONFIG__?.posthog_project_token ??
+      window.__CONFIG__.posthog_project_token ??
       import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
-            const serverConfig = remoteConfig.value?.posthog_config ?? {}
+            const serverConfig = remoteConfig.value.posthog_config ?? {}
             this.posthog.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+                window.__CONFIG__.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: 'history_change',
