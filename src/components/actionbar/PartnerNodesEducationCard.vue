@@ -110,6 +110,7 @@
                 >
                   <button
                     type="button"
+                    :aria-label="t('partnerNodesEducation.tooltip')"
                     class="flex items-center text-white/60 hover:text-white"
                   >
                     <i class="icon-[lucide--info] size-3" />
