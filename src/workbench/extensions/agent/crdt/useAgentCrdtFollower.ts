@@ -161,6 +161,7 @@ type AgentCrdtSubscriptionStatus =
   | 'retrying'
   | 'retry_exhausted'
   | 'too_large'
+  | 'fatal_doc'
   | 'permanent_failure'
 
 export interface AgentCrdtStatus {
@@ -184,6 +185,7 @@ type AgentCrdtSubscriptionState =
   | { status: 'idle' | 'connected'; refusalCode: null }
   | { status: 'retrying' | 'retry_exhausted'; refusalCode: string | null }
   | { status: 'too_large'; refusalCode: 'too_large' }
+  | { status: 'fatal_doc'; refusalCode: 'fatal_doc' }
   | {
       status: 'permanent_failure'
       refusalCode: 'unsupported' | 'invalid_frame'
@@ -204,7 +206,11 @@ function refusedSubscriptionState(code: unknown): AgentCrdtSubscriptionState {
 }
 
 function isTerminalSubscription(state: AgentCrdtSubscriptionState): boolean {
-  return state.status === 'too_large' || state.status === 'permanent_failure'
+  return (
+    state.status === 'too_large' ||
+    state.status === 'fatal_doc' ||
+    state.status === 'permanent_failure'
+  )
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -560,6 +566,22 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  const onDocError: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown; code?: unknown }
+    if (
+      detail.workflowId !== subscribedWorkflowId.value ||
+      detail.code !== 'fatal_doc'
+    )
+      return
+    connected.value = false
+    lastFrameType.value = event.type
+    clearSubscribeRetry()
+    clearStaleProbe()
+    subscription.value = { status: 'fatal_doc', refusalCode: 'fatal_doc' }
+    sender.abortIfUnbound()
+    recordDevEvent('doc_error', event.detail)
+  }
   // s5-metrics-1: the bridge withholds a frame and forces a resubscribe when
   // it detects a seq jump (FEB-2) — that frame never becomes a `doc_update`
   // event, so `gap` can only be counted from the bridge's own `doc_gap`
@@ -621,6 +643,7 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('follower_replaced', onFollowerReplaced)
   bridge.addEventListener('schema_error', onSchemaError)
+  bridge.addEventListener('doc_error', onDocError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   api.addEventListener('reconnected', onReconnected)
@@ -707,6 +730,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
+      bridge.removeEventListener('doc_error', onDocError)
       bridge.removeEventListener('doc_gap', onGap)
       bridge.removeEventListener('doc_stale', onStale)
       sender.detach()
