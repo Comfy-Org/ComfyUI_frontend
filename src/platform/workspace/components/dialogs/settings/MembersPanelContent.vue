@@ -57,7 +57,12 @@
       </div>
     </div>
     <div
-      class="border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      :class="
+        cn(
+          'border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6',
+          !(hasMemberSeats && membersLoaded) && 'mb-4'
+        )
+      "
     >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
