@@ -8410,6 +8410,7 @@ Enterprise`
   'workshop.task.image': { en: 'Image', 'zh-CN': '图像' },
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
   'workshop.useCase.label': {
     en: 'Browse by use case',
     'zh-CN': '按用途浏览'

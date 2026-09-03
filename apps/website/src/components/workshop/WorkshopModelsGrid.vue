@@ -226,8 +226,12 @@ const menuItemClass =
     </div>
 
     <div v-if="visible.length">
+      <h2 id="workshop-models-heading" class="sr-only">
+        {{ t('workshop.models.heading', locale) }}
+      </h2>
       <ul
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        aria-labelledby="workshop-models-heading"
         data-testid="workshop-models-grid"
       >
         <li v-for="model in visible" :key="model.slug">
