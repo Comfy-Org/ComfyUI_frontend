@@ -1006,8 +1006,14 @@ export class LGraphNode
 
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
-    this._state = createNodeShellState(title, type, this.title_mode)
-    this._inputs = createInputSlotView(this, this._state.inputs)
+    this._state = createNodeShellState(
+      this,
+      createInputSlotView,
+      title,
+      type,
+      this.title_mode
+    )
+    this._inputs = this._state.inputs
     this._outputs = this._state.outputs
     for (const property of [
       'inputs',

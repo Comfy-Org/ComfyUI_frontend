@@ -21,10 +21,32 @@ import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeState } from '@/types/nodeState'
 
 /**
+ * Wraps a node's `inputs` array with a rehydration view — e.g.
+ * {@link createInputSlotView} — that upgrades plain input-slot writes into
+ * class instances. Injected by the caller (rather than imported directly)
+ * to keep this module out of the litegraph value-import graph: `LGraphNode`
+ * sits in a cycle with the slot/subgraph modules that back that view, and a
+ * static import here resolves at a point in that cycle where `LGraphNode`
+ * isn't defined yet.
+ */
+export type InputSlotViewFactory = (
+  node: LGraphNode,
+  inputs: INodeInputSlot[]
+) => INodeInputSlot[]
+
+/**
  * Builds the shell state a node carries from construction until it adopts the
  * {@link useNodeDataStore} proxy in {@link registerNodeState}.
+ *
+ * `inputs` is wrapped by `createInputSlotView` here — the one place that
+ * builds a node's slot arrays — so every `NodeState` producer, not just
+ * {@link LGraphNode}'s constructor, gets plain input-slot writes rehydrated
+ * into `NodeInputSlot` instances. Callers pass their own view factory (see
+ * {@link InputSlotViewFactory}) to avoid a static import cycle.
  */
 export function createNodeShellState(
+  node: LGraphNode,
+  createInputSlotView: InputSlotViewFactory,
   title: string,
   type: string | undefined,
   titleMode: TitleMode | undefined
@@ -33,7 +55,7 @@ export function createNodeShellState(
     flags: {},
     graphId: zeroUuid,
     id: UNASSIGNED_NODE_ID,
-    inputs: shallowReactive<INodeInputSlot[]>([]),
+    inputs: createInputSlotView(node, shallowReactive<INodeInputSlot[]>([])),
     mode: LGraphEventMode.ALWAYS,
     outputs: shallowReactive<INodeOutputSlot[]>([]),
     properties: {},
