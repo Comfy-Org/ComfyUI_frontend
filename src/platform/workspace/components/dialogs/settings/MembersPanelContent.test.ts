@@ -160,6 +160,28 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: mockPermissions,
+    uiConfig: mockUiConfig
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { ref } = await import('vue')
+  return {
+    useTeamWorkspaceStore: () => ({ isWorkspaceSubscribed: ref(false) })
+  }
+})
+
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => ({
+    showLeaveWorkspaceDialog: vi.fn(),
+    showDeleteWorkspaceDialog: vi.fn(),
+    showEditWorkspaceDialog: vi.fn()
+  })
+}))
+
 vi.mock('@/components/button/MoreButton.vue', () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
     h('div', slots.default?.({ close: () => {} }))
@@ -170,6 +192,9 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        moreOptions: 'More options'
+      },
       workspacePanel: {
         members: {
           noMembers: 'No members',
@@ -207,11 +232,7 @@ function renderComponent() {
       stubs: {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
-        UserAvatar: true,
-        WorkspaceMenuButton: {
-          name: 'WorkspaceMenuButton',
-          template: '<button aria-label="workspace-menu-stub" />'
-        }
+        UserAvatar: true
       },
       directives: { tooltip: () => {} }
     }
@@ -330,18 +351,18 @@ describe('MembersPanelContent', () => {
   })
 
   describe('Team plan member list', () => {
-    it('keeps the workspace menu in the controls row beside Invite', () => {
+    it('keeps the More options menu in the controls row', () => {
       renderComponent()
 
-      expect(screen.getByLabelText('workspace-menu-stub')).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'More options' })).toBeTruthy()
     })
 
-    it('hides the workspace menu without canAccessWorkspaceMenu', () => {
+    it('hides the More options menu without canAccessWorkspaceMenu', () => {
       mockPermissions.value.canAccessWorkspaceMenu = false
 
       renderComponent()
 
-      expect(screen.queryByLabelText('workspace-menu-stub')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'More options' })).toBeNull()
     })
 
     it('keeps rendering members while seat capacity is unresolved', () => {
@@ -391,8 +412,9 @@ describe('MembersPanelContent', () => {
         createMember({ name: 'Other', email: 'other@test.com' })
       ]
       renderComponent()
+      const row = screen.getByTestId('member-row-member-1')
       expect(
-        screen.queryAllByRole('button', { name: 'g.moreOptions' })
+        within(row).queryAllByRole('button', { name: 'More options' })
       ).toHaveLength(1)
     })
 
@@ -401,8 +423,9 @@ describe('MembersPanelContent', () => {
         createMember({ name: 'Owner User', email: 'owner@example.com' })
       ]
       renderComponent()
+      const row = screen.getByTestId('member-row-member-1')
       expect(
-        screen.queryAllByRole('button', { name: 'g.moreOptions' })
+        within(row).queryAllByRole('button', { name: 'More options' })
       ).toHaveLength(0)
     })
 
@@ -422,10 +445,10 @@ describe('MembersPanelContent', () => {
       const creatorRow = screen.getByTestId('member-row-creator-1')
       const otherRow = screen.getByTestId('member-row-2')
       expect(
-        within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
+        within(creatorRow).queryByRole('button', { name: 'More options' })
       ).not.toBeInTheDocument()
       expect(
-        within(otherRow).getByRole('button', { name: 'g.moreOptions' })
+        within(otherRow).getByRole('button', { name: 'More options' })
       ).toBeInTheDocument()
     })
   })
@@ -483,6 +506,12 @@ describe('MembersPanelContent', () => {
       mockUiConfig.value.showPendingTab = false
     })
 
+    it("keeps the More options menu — a member's leave affordance", () => {
+      renderComponent()
+
+      expect(screen.getByRole('button', { name: 'More options' })).toBeTruthy()
+    })
+
     it('hides the pending tab button', () => {
       mockPendingInvites.value = [createInvite()]
       renderComponent()
@@ -505,8 +534,9 @@ describe('MembersPanelContent', () => {
         createMember({ name: 'Other', email: 'other@test.com' })
       ]
       renderComponent()
+      const row = screen.getByTestId('member-row-member-1')
       expect(
-        screen.queryAllByRole('button', { name: 'g.moreOptions' })
+        within(row).queryAllByRole('button', { name: 'More options' })
       ).toHaveLength(0)
     })
 
