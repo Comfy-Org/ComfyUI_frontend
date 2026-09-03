@@ -267,7 +267,7 @@ describe('document activation persistence (ADR-0024 seam)', () => {
     expect(target?.scope).toEqual(scopeB)
     expect(target?.documentId).not.toBe(coordinator.activeDocumentId())
 
-    const hostB = mint({ nodes: [workflowJson.nodes[1]!], links: [] }, catalog)
+    const hostB = mint({ nodes: [workflowJson.nodes[1]], links: [] }, catalog)
     const sessionB = createDetachedTargetSession('wf-b')
     commitHostState(sessionB, 'wf-b', hostB, mutationsB)
 
@@ -339,7 +339,7 @@ describe('document activation persistence (ADR-0024 seam)', () => {
     expect(session.snapshot().lineage).not.toBe(oldLineage)
 
     const remintedHost = mint(
-      { nodes: [workflowJson.nodes[0]!], links: [] },
+      { nodes: [workflowJson.nodes[0]], links: [] },
       catalog
     )
     commitHostState(session, 'wf', remintedHost, mutations, 11)

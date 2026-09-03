@@ -61,7 +61,10 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
-import { createInputSlotView } from './node/slotDescriptorView'
+import {
+  createInputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
 import {
   extensionConfigureView,
@@ -178,6 +181,30 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
     named[widget.name] = serialisedValue
   }
   return { widgets_values: positional, widgets_values_named: named }
+}
+
+export function createWidgetRestorationState(
+  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  fallbackNames?: readonly string[]
+) {
+  const positional = Array.from(info.widgets_values ?? [])
+  const named =
+    info.widgets_values_named ??
+    (info.widgets_values && fallbackNames
+      ? Object.fromEntries(
+          positional.flatMap((value, index) =>
+            fallbackNames[index] ? [[fallbackNames[index], value]] : []
+          )
+        )
+      : undefined)
+
+  return {
+    positional,
+    named: named ? { ...named } : undefined,
+    restoreNamed: Boolean(
+      named && (LiteGraph.namedValuesRestore || fallbackNames)
+    )
+  }
 }
 
 interface ConnectByTypeOptions {
@@ -863,8 +890,8 @@ export class LGraphNode
   getExtraMenuOptions?(
     this: LGraphNode,
     canvas: LGraphCanvas,
-    options: (IContextMenuValue<unknown> | null)[]
-  ): (IContextMenuValue<unknown> | null)[]
+    options: (IContextMenuValue | null)[]
+  ): (IContextMenuValue | null)[]
   getMenuOptions?(this: LGraphNode, canvas: LGraphCanvas): IContextMenuValue[]
   onAdded?(this: LGraphNode, graph: LGraph): void
   onDrawCollapsed?(
@@ -1006,8 +1033,14 @@ export class LGraphNode
 
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
-    this._state = createNodeShellState(title, type, this.title_mode)
-    this._inputs = createInputSlotView(this, this._state.inputs)
+    this._state = createNodeShellState(
+      this,
+      createInputSlotView,
+      title,
+      type,
+      this.title_mode
+    )
+    this._inputs = this._state.inputs
     this._outputs = this._state.outputs
     for (const property of [
       'inputs',
@@ -1118,25 +1151,18 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
-    const positionalValues = Array.from(info.widgets_values ?? [])
-    const getNamedValues = () => {
-      if (info.widgets_values_named) return info.widgets_values_named
-
-      const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
-      if (!info.widgets_values || !map) return
-
-      return Object.fromEntries(
-        positionalValues.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
-      )
-    }
-    const namedValues = getNamedValues()
+    const restoration = createWidgetRestorationState(
+      info,
+      this.constructor.nodeData?.fallbackWidgetsValuesNames
+    )
+    const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
-      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
-        positional: positionalValues,
-        named: namedValues ? { ...namedValues } : undefined,
-        restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
-      })
+      useWidgetValueStore().setNodeWidgetRestoration(
+        graphId,
+        this.id,
+        restoration
+      )
 
       if (this.widgets) {
         for (const w of this.widgets) {
@@ -1152,18 +1178,6 @@ export class LGraphNode
             w.value = JSON.parse(
               JSON.stringify(this.properties[w.options.property])
             )
-        }
-
-        if (namedValues) {
-          const legacyShadow = computeLegacyWidgetShadow(
-            this.widgets,
-            info.widgets_values
-          )
-          reportNamedValuesShadowDiff(
-            this,
-            diffNamedValuesShadow(namedValues, legacyShadow),
-            Boolean(info.widgets_values_named)
-          )
         }
 
         let positionalIndex = 0
@@ -1190,6 +1204,17 @@ export class LGraphNode
       }
 
       this.onConfigure?.(extensionConfigureView(this, info))
+      if (this.widgets && namedValues) {
+        const legacyShadow = computeLegacyWidgetShadow(
+          this.widgets,
+          info.widgets_values
+        )
+        reportNamedValuesShadowDiff(
+          this,
+          diffNamedValuesShadow(namedValues, legacyShadow),
+          Boolean(info.widgets_values_named)
+        )
+      }
     } finally {
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
@@ -3281,8 +3306,8 @@ export class LGraphNode
     if (!graph) throw new NullGraphError()
 
     // Assertion: It's either there or it isn't.
-    const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
-    const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
+    const inputIndex = this.inputs.indexOf(slot)
+    const outputIndex = this.outputs.indexOf(slot)
     if (inputIndex === -1 && outputIndex === -1) {
       console.error('Invalid slot')
       return
@@ -3642,7 +3667,10 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    return calculateInputSlotPosFromSlot(this._getSlotPositionContext(), input)
+    return calculateInputSlotPosFromSlot(
+      this._getSlotPositionContext(),
+      resolveInputSlotView(this.inputs, input)
+    )
   }
 
   /**

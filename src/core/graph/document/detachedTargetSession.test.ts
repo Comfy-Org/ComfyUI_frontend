@@ -104,10 +104,10 @@ describe('createDetachedTargetSession', () => {
     session.commitNext(port)
 
     expect(seen).toHaveLength(1)
-    expect(seen[0]!.frame.actor).toBe('agent:planner')
-    expect(seen[0]!.frame.opIds).toEqual(['op-1', 'op-2'])
-    expect(seen[0]!.frame.seq).toBe(1)
-    expect(seen[0]!.stagedNodes).toEqual({ '1': { type: 'Source' } })
+    expect(seen[0].frame.actor).toBe('agent:planner')
+    expect(seen[0].frame.opIds).toEqual(['op-1', 'op-2'])
+    expect(seen[0].frame.seq).toBe(1)
+    expect(seen[0].stagedNodes).toEqual({ '1': { type: 'Source' } })
   })
 
   it('preserves node incarnation bytes through the staged commit path', () => {
