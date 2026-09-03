@@ -14,7 +14,7 @@ export function registerSubscribeToRunPrompt() {
     mountedPrompts.value += 1
   })
   onUnmounted(() => {
-    mountedPrompts.value -= 1
+    mountedPrompts.value = Math.max(0, mountedPrompts.value - 1)
   })
 }
 

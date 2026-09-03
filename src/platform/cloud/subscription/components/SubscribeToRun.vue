@@ -29,6 +29,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const { t } = useI18n()
 
+// Mounting suppresses TopbarSubscribeButton; see useSubscribeCtaPresence
 registerSubscribeToRunPrompt()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
