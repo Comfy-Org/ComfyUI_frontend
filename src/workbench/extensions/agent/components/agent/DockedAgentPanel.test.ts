@@ -29,8 +29,8 @@ function jsonResponse(status: number, body: unknown): Response {
     headers: { 'Content-Type': 'application/json' }
   })
 }
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => true })
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
 }))
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ isLoggedIn: { value: true } })
