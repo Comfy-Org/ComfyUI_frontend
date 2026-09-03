@@ -7,11 +7,19 @@ export const zeroUuid = '00000000-0000-0000-0000-000000000000'
 /** Pre-allocated storage for uuid random values. */
 const randomStorage = new Uint32Array(31)
 
-class UuidGenerationError extends Error {}
+/** Thrown by {@link createUuidv4} when no Web Crypto implementation is available. */
+export class UuidGenerationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UuidGenerationError'
+  }
+}
 
 /**
  * Creates a UUIDv4 string.
  * @returns A new UUIDv4 string
+ * @throws {UuidGenerationError} When neither {@link crypto.randomUUID} nor
+ * {@link crypto.getRandomValues} is available.
  * @remarks
  * Original implementation from https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
  *

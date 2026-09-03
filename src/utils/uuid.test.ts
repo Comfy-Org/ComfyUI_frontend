@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createUuidv4 } from './uuid'
+import { UuidGenerationError, createUuidv4 } from './uuid'
 
 const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
@@ -31,12 +31,14 @@ describe('createUuidv4', () => {
     expect(uuid).toMatch(UUID_V4_PATTERN)
   })
 
-  it('throws when Web Crypto is unavailable', () => {
+  it('throws a named UuidGenerationError when Web Crypto is unavailable', () => {
     vi.stubGlobal('crypto', undefined)
 
+    expect(() => createUuidv4()).toThrow(UuidGenerationError)
     expect(() => createUuidv4()).toThrow(
       'Web Crypto is required to generate a UUID'
     )
+    expect(new UuidGenerationError('x').name).toBe('UuidGenerationError')
   })
 
   it('mints unique UUIDv4 values across a sanity sample', () => {
