@@ -110,6 +110,10 @@ const translations = {
     en: 'Upscaling',
     'zh-CN': '放大'
   },
+  'tags.motionControl': {
+    en: 'Motion Control',
+    'zh-CN': '运动控制'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -7096,6 +7100,10 @@ Enterprise`
     en: 'SEE MINIMAX H3',
     'zh-CN': '了解 MiniMax H3'
   },
+  'minimaxLicense.comparison.heading': {
+    en: 'Compare license tiers',
+    'zh-CN': '许可级别对比'
+  },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
     en: 'One model, every use case. Licensed for yours.',
@@ -7775,10 +7783,18 @@ Enterprise`
     en: 'Comfy API',
     'zh-CN': 'Comfy API'
   },
+  'platform.products.serverless.badgeLabel': {
+    en: 'API',
+    'zh-CN': 'API'
+  },
   'platform.products.serverless.description': {
     en: 'Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project’s needs.',
     'zh-CN':
       '将你的 ComfyUI 工作流部署为生产级 API，随团队或项目的需求轻松扩展。'
+  },
+  'platform.products.models.learnMore': {
+    en: 'Learn more',
+    'zh-CN': '了解更多'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram of a request lighting up RTX 6000 PRO, H100, and B200 GPU workers, with COMFYUI scrolling across the grid.',
@@ -7790,11 +7806,11 @@ Enterprise`
     'zh-CN': '工作节点'
   },
   'platform.products.builder.title': {
-    en: 'Builder',
+    en: 'Builds',
     'zh-CN': 'Builder'
   },
   'platform.products.builder.description': {
-    en: 'Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.',
+    en: 'Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to Comfy API.',
     'zh-CN':
       '将自定义节点、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Comfy API。'
   },
@@ -8009,6 +8025,19 @@ Enterprise`
   'pricing.resourceCosts.heading': {
     en: 'Resource costs',
     'zh-CN': '资源成本'
+  },
+  'pricing.minimaxLicense.heading': {
+    en: 'License pricing',
+    'zh-CN': '许可定价'
+  },
+  'pricing.minimaxLicense.description': {
+    en: 'Professional from $5,000 a month. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
+    'zh-CN':
+      '专业版每月 5,000 美元起。企业版为年度协议，按用量定价。视频、音频与音乐涵盖于同一份许可。'
+  },
+  'pricing.minimaxLicense.cta': {
+    en: 'See license tiers',
+    'zh-CN': '查看许可级别'
   },
   'platform.pricing.heading': {
     en: 'Pricing',
@@ -8267,7 +8296,7 @@ Enterprise`
       '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
   },
   'platform.builderEnterprise.heading': {
-    en: 'Builder vs. Managed Builds',
+    en: 'Builds vs. Managed Builds',
     'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {

@@ -245,7 +245,7 @@ test.describe(
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
-            const graph = window.app!.graph!
+            const graph = window.app!.graph
             if (typeof graph.serialize !== 'function') return undefined
             const parsed = graph.serialize() as {
               nodes: Array<{ bgcolor?: string; color?: string }>
@@ -259,7 +259,7 @@ test.describe(
         .poll(async () => {
           const nodes = await comfyPage.page.evaluate(() => {
             return (
-              window.app!.graph!.serialize() as {
+              window.app!.graph.serialize() as {
                 nodes: Array<{ bgcolor?: string; color?: string }>
               }
             ).nodes

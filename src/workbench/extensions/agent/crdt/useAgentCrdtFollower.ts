@@ -118,12 +118,53 @@ function clearPersistedDocId(): void {
  */
 export const STALE_AFTER_MS = 30_000
 
+/**
+ * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
+ * listeners observe, replacing the single overloaded `updatesApplied`
+ * observable. Each counter increments exactly once, at the boundary where
+ * that outcome is decided — never inferred after the fact. `received` counts
+ * only frames the bridge re-dispatched as `doc_update`, so
+ * `received === applied + skipped` always holds; `errored`, `gap` and
+ * `dropped` are disjoint from it because the bridge returns before
+ * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
+ * stale/duplicate discard). Frames the bridge drops for a workflowId other
+ * than its `sentWorkflowId` emit no event and are not counted anywhere.
+ * `applied` is tracked independently of `bridge.follower.updatesApplied`
+ * (which counts Yjs merges, including frames this composable skips) so a
+ * divergence between the two is visible instead of hidden behind one number.
+ * No payload bodies or actor identifiers are recorded here — see
+ * `recordDevEvent` call sites for the (dev-only) frame detail surface.
+ */
+export interface AgentCrdtOutcomeCounters {
+  /** Every `doc_update` event the composable's listener was invoked with. */
+  received: number
+  /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
+  applied: number
+  /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
+  skipped: number
+  /** The merged doc failed the KA-11 read gate (`schema_error`). */
+  errored: number
+  /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
+  gap: number
+  /** An explicit lineage break (`doc_reset`). */
+  reset: number
+  /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
+  dropped: number
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  /**
+   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
+   * `doc_reset` / `follower_replaced`). Not interchangeable with
+   * `outcomes.applied`, which is monotonic and counts only frames that passed
+   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
+   */
   updatesApplied: number
   lastFrameType: string | null
+  outcomes: AgentCrdtOutcomeCounters
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -153,6 +194,15 @@ export function useAgentCrdtFollower(
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  const outcomes = ref<AgentCrdtOutcomeCounters>({
+    received: 0,
+    applied: 0,
+    skipped: 0,
+    errored: 0,
+    gap: 0,
+    reset: 0,
+    dropped: 0
+  })
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -191,7 +241,7 @@ export function useAgentCrdtFollower(
           applied: detail.applied,
           skipped: detail.skipped,
           ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
+            ? { failure: detail.failed }
             : {})
         })
       }
@@ -327,16 +377,28 @@ export function useAgentCrdtFollower(
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
+    outcomes.value = {
+      ...outcomes.value,
+      received: outcomes.value.received + 1
+    }
     if (
       !isTargetActive.value ||
       update.workflowId !== subscribedWorkflowId.value
-    )
+    ) {
+      outcomes.value = {
+        ...outcomes.value,
+        skipped: outcomes.value.skipped + 1
+      }
       return
+    }
     if (staleProbeTimer !== null) armStaleProbe()
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    adapter.applyFrame(update)
+    const applied = adapter.applyFrame(update)
+    outcomes.value = applied
+      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -369,6 +431,10 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
+    // The bridge already replaced its doc for this lineage break, whether or
+    // not this target is active, so count it before the filter like the other
+    // bridge-decided outcomes (gap, dropped, errored).
+    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
       detail?.workflowId !== subscribedWorkflowId.value
@@ -427,8 +493,30 @@ export function useAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
+    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+  }
+  // s5-metrics-1: the bridge withholds a frame and forces a resubscribe when
+  // it detects a seq jump (FEB-2) — that frame never becomes a `doc_update`
+  // event, so `gap` can only be counted from the bridge's own `doc_gap`
+  // signal, not inferred inside `onUpdate`.
+  const onGap: EventListener = (event) => {
+    outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
+    recordDevEvent(
+      'doc_gap',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+  }
+  // s5-metrics-1: a stale/duplicate frame is discarded inside the bridge
+  // before it becomes a `doc_update` event, so `dropped` is likewise counted
+  // from the bridge's own `doc_stale` signal.
+  const onStale: EventListener = (event) => {
+    outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
+    recordDevEvent(
+      'doc_stale',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
@@ -461,6 +549,8 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('follower_replaced', onFollowerReplaced)
   bridge.addEventListener('schema_error', onSchemaError)
+  bridge.addEventListener('doc_gap', onGap)
+  bridge.addEventListener('doc_stale', onStale)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -544,6 +634,8 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
+      bridge.removeEventListener('doc_gap', onGap)
+      bridge.removeEventListener('doc_stale', onStale)
       sender.detach()
       adapter.destroy()
       bridge.destroy()
@@ -557,7 +649,8 @@ export function useAgentCrdtFollower(
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    outcomes: outcomes.value
   }))
 
   return {

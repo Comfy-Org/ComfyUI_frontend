@@ -37,33 +37,36 @@ const {
   mockSetWorkspaceBillingRail,
   mockLegacyStatus,
   mockBillingStatus
-} = vi.hoisted(() => ({
-  mockIsPersonal: { value: true },
-  mockBillingRail: { value: undefined as BillingRail | undefined },
-  mockPlans: { value: [] as Plan[] },
-  mockFetchPlans: vi.fn(async () => undefined),
-  mockLegacyFetchStatus: vi.fn(async () => undefined),
-  mockLegacyFetchBalance: vi.fn(async () => undefined),
-  mockLegacySubscribe: vi.fn(async () => undefined),
-  mockPurchaseCredits: vi.fn(),
-  mockUpdateActiveWorkspace: vi.fn(),
-  mockSetWorkspaceBillingRail: vi.fn(),
-  mockLegacyStatus: {
-    value: {
-      is_active: true,
-      has_funds: true,
-      renewal_date: '2025-01-01T00:00:00Z'
-    } as BillingStatusResponse
-  },
-  mockBillingStatus: {
+} = vi.hoisted(() => {
+  const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
     value: {
       is_active: true,
       has_funds: true,
       subscription_tier: 'PRO',
       subscription_duration: 'MONTHLY'
-    } as Partial<BillingStatusResponse>
+    }
   }
-}))
+  return {
+    mockIsPersonal: { value: true },
+    mockBillingRail: { value: undefined as BillingRail | undefined },
+    mockPlans: { value: [] as Plan[] },
+    mockFetchPlans: vi.fn(async () => undefined),
+    mockLegacyFetchStatus: vi.fn(async () => undefined),
+    mockLegacyFetchBalance: vi.fn(async () => undefined),
+    mockLegacySubscribe: vi.fn(async () => undefined),
+    mockPurchaseCredits: vi.fn(),
+    mockUpdateActiveWorkspace: vi.fn(),
+    mockSetWorkspaceBillingRail: vi.fn(),
+    mockLegacyStatus: {
+      value: {
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-01-01T00:00:00Z'
+      } as BillingStatusResponse
+    },
+    mockBillingStatus
+  }
+})
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const original = await importOriginal()

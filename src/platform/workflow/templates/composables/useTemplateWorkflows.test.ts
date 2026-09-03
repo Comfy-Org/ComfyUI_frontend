@@ -25,11 +25,13 @@ vi.mock('@/scripts/api', () => ({
 
 // loadGraphData resolves to the workflow it activated; the education card
 // binds to that, so the mock returns a per-test workflow object.
-const { mockLoadedWorkflow } = vi.hoisted(() => ({
-  mockLoadedWorkflow: {
-    value: { key: 'loaded-template' } as { key: string } | undefined
-  }
-}))
+const { mockLoadedWorkflow } = vi.hoisted(
+  (): { mockLoadedWorkflow: { value: { key: string } | undefined } } => ({
+    mockLoadedWorkflow: {
+      value: { key: 'loaded-template' }
+    }
+  })
+)
 
 vi.mock('@/scripts/app', () => ({
   app: {

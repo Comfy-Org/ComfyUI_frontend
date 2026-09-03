@@ -144,6 +144,31 @@ describe('postMessage wire body', () => {
     >
     expect(Object.keys(parsed)).toEqual(['content'])
   })
+
+  it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: "what's on my canvas",
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: "what's on my canvas",
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+    })
+  })
+
+  it('forwards draft.version when the client has previously seen one', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'edit it',
+      draft: { content: { nodes: [], links: [] }, version: 4 }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
+      draft: { version: 4 }
+    })
+  })
 })
 
 describe('uploadImage multipart', () => {
