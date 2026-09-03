@@ -760,10 +760,8 @@ export function useSubscriptionCheckout(
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
       if (!teamCreditStopId) {
-        toast.add({
-          severity: 'error',
-          summary: t('subscription.teamPlan.name'),
-          detail: t('subscription.teamPlan.unavailable')
+        toast.error(t('subscription.teamPlan.name'), {
+          description: t('subscription.teamPlan.unavailable')
         })
         resetToPricing()
         return
