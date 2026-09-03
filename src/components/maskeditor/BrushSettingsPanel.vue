@@ -22,7 +22,7 @@
           :class="
             cn(
               store.brushSettings.type === BrushShape.Arc
-                ? 'active bg-(--p-button-text-primary-color)'
+                ? 'active bg-(--theme-primary)'
                 : 'bg-transparent'
             )
           "
@@ -34,7 +34,7 @@
           :class="
             cn(
               store.brushSettings.type === BrushShape.Rect
-                ? 'active bg-(--p-button-text-primary-color)'
+                ? 'active bg-(--theme-primary)'
                 : 'bg-transparent'
             )
           "

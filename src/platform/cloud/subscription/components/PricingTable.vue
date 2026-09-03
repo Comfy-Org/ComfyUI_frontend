@@ -89,7 +89,7 @@
             {{ t('subscription.soloUseOnly') }}
             <span class="mx-1 text-muted-foreground">–</span>
             <button
-              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              class="cursor-pointer border-none bg-transparent p-0 text-sm font-medium text-base-foreground underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('chooseTeamWorkspace')"
             >
               {{ t('subscription.needTeamWorkspace') }}
@@ -418,7 +418,7 @@ const getButtonSeverity = (
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   tier.pricing[currentBillingCycle.value]

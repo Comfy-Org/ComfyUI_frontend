@@ -121,6 +121,8 @@
 
   --color-muted: var(--theme-text-muted);
   --color-highlight: var(--theme-primary);
+  --color-link: #60a5fa;
+  --color-node-accent: #3b82f6;
 
   /* Special Colors (temporary) */
   --color-dark-elevation-1-5: rgba(from white r g b / 0.015);
