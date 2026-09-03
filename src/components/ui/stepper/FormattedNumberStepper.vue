@@ -10,7 +10,7 @@
   >
     <button
       type="button"
-      class="focus-visible:ring-secondary-foreground flex h-full w-8 cursor-pointer items-center justify-center rounded-l-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-30"
+      class="focus-visible:ring-secondary-foreground flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-l-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-30"
       :disabled="disabled || modelValue <= min"
       :aria-label="$t('g.decrement')"
       @click="handleStep(-1)"
@@ -46,7 +46,7 @@
     </div>
     <button
       type="button"
-      class="focus-visible:ring-secondary-foreground flex h-full w-8 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-30"
+      class="focus-visible:ring-secondary-foreground flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-30"
       :disabled="disabled || modelValue >= max"
       :aria-label="$t('g.increment')"
       @click="handleStep(1)"
