@@ -60,6 +60,44 @@ describe('Tooltip', () => {
     )
   })
 
+  it('does not repeat an aria-label as its accessible description', async () => {
+    const user = userEvent.setup()
+    render({
+      components: { Tooltip },
+      template: `
+        <Tooltip config="Helpful text" aria-label="Helpful text">
+          <button>Trigger</button>
+        </Tooltip>
+      `
+    })
+
+    await user.tab()
+
+    const trigger = screen.getByRole('button')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
+    expect(trigger).toHaveAccessibleName('Helpful text')
+    expect(trigger).not.toHaveAccessibleDescription()
+  })
+
+  it('keeps distinct tooltip text as its accessible description', async () => {
+    const user = userEvent.setup()
+    render({
+      components: { Tooltip },
+      template: `
+        <Tooltip config="More context" aria-label="Action">
+          <button>Trigger</button>
+        </Tooltip>
+      `
+    })
+
+    await user.tab()
+
+    const trigger = screen.getByRole('button')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('More context')
+    expect(trigger).toHaveAccessibleName('Action')
+    expect(trigger).toHaveAccessibleDescription('More context')
+  })
+
   it('dismisses a focus-opened tooltip when a touch interaction starts', async () => {
     const user = userEvent.setup()
     renderTooltip()
