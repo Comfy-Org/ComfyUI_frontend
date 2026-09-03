@@ -107,6 +107,13 @@ export function listRecordedConversations(): string[] {
     .sort()
 }
 
+// Specs pinned to one recording skip on a branch that carries the code but not the data.
+export function hasAgentConversation(caseId: string): boolean {
+  return existsSync(
+    fileURLToPath(new URL(`./conversations/${caseId}.json`, import.meta.url))
+  )
+}
+
 export function loadAgentConversation(caseId: string): AgentConversation {
   const file = fileURLToPath(
     new URL(`./conversations/${caseId}.json`, import.meta.url)
