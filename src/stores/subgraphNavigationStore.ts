@@ -9,11 +9,11 @@ import {
 } from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -149,12 +149,6 @@ export const useSubgraphNavigationStore = defineStore(
         if (getActiveGraphId() !== graphId) return
         if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
-        // fitView changes scale/offset, so re-sync slot positions for
-        // collapsed nodes whose DOM-relative measurement is now stale.
-        requestAnimationFrame(() => {
-          if (getActiveGraphId() !== graphId) return
-          requestSlotLayoutSyncForAllNodes()
-        })
       })
     }
 
@@ -211,13 +205,69 @@ export const useSubgraphNavigationStore = defineStore(
     // navigateToHash calls during router.replace().
     let blockNavDepth = 0
     let initialLoad = true
+    let hashUpdateTail: Promise<void> = Promise.resolve()
+    type GraphNavigationIntent = {
+      id: number
+      hash: string
+      source: 'graph' | 'route'
+    }
+    type NavigationIntent =
+      | GraphNavigationIntent
+      | { id: number; source: 'workflow' }
+    const routeWriteStateKey = 'comfySubgraphNavigationWrite'
+    const pendingRouteWrites = new Map<number, string>()
+    // D14: the reset-suppression flag dies with shared-graph loading at
+    // ECS per-document scoping; the intent ids guard the router and survive.
+    let deferredNavigationIntent: GraphNavigationIntent | undefined
+    let latestNavigationIntent: NavigationIntent | undefined
+    let navigationIntentId = 0
+    let routeWriteId = 0
+    let blockedRouteHash: string | undefined
+    let pendingWorkflowResetGraph: typeof app.rootGraph | undefined
 
-    async function withNavBlocked<T>(op: () => Promise<T>): Promise<T> {
+    function createNavigationIntent(
+      hash: string,
+      source: GraphNavigationIntent['source']
+    ): GraphNavigationIntent {
+      const intent = { id: ++navigationIntentId, hash, source }
+      latestNavigationIntent = intent
+      return intent
+    }
+
+    function beginWorkflowNavigation(): number {
+      const intent = { id: ++navigationIntentId, source: 'workflow' as const }
+      latestNavigationIntent = intent
+      return intent.id
+    }
+
+    /**
+     * Releases a workflow-load intent whose load FAILED: while it stays the
+     * newest intent it suppresses the surviving graph's hash forever, so
+     * clear it and republish the live graph.
+     */
+    function endWorkflowNavigation(navigationId: number): void {
+      if (
+        latestNavigationIntent?.source !== 'workflow' ||
+        latestNavigationIntent.id !== navigationId
+      ) {
+        return
+      }
+      latestNavigationIntent = undefined
+      void updateHash('graph')
+    }
+
+    async function withNavBlocked<T>(
+      op: () => Promise<T>,
+      blockedHash: string
+    ): Promise<T> {
+      const previousBlockedRouteHash = blockedRouteHash
+      blockedRouteHash = blockedHash
       blockNavDepth++
       try {
         return await op()
       } finally {
         blockNavDepth--
+        blockedRouteHash = previousBlockedRouteHash
       }
     }
 
@@ -228,27 +278,19 @@ export const useSubgraphNavigationStore = defineStore(
       if (canvas.graph?.id !== root.id) canvas.setGraph(root)
     }
 
-    async function redirectToRoot(reason: string) {
+    async function redirectToRoot(reason: string, navigationId: number) {
+      if (navigationId !== navigationIntentId) return
       const root = app.rootGraph
+      const rootHash = '#' + root.id
       console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
       try {
-        await withNavBlocked(() => router.replace('#' + root.id))
-      } catch (err) {
-        if (
-          !isNavigationFailure(err, NavigationFailureType.duplicated) &&
-          !isNavigationFailure(err, NavigationFailureType.cancelled)
-        ) {
-          console.warn(
-            '[subgraphNavigation] router.replace rejected during recovery',
-            err
-          )
-        }
+        await withNavBlocked(() => writeRouteHash(rootHash, true), rootHash)
       } finally {
-        ensureCanvasOnRoot()
+        if (navigationId === navigationIntentId) ensureCanvasOnRoot()
       }
     }
 
-    async function navigateToHash(newHash: string) {
+    async function navigateToHash(newHash: string, navigationId: number) {
       const root = app.rootGraph
       const locatorId = newHash?.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
@@ -261,7 +303,9 @@ export const useSubgraphNavigationStore = defineStore(
           : undefined
       if (targetGraph) {
         if (canvas.graph?.id === targetGraph.id) return
-        return canvas.setGraph(targetGraph)
+        return withNavBlocked(async () => {
+          canvas.setGraph(targetGraph)
+        }, newHash)
       }
 
       //Search all open workflows
@@ -276,74 +320,209 @@ export const useSubgraphNavigationStore = defineStore(
           // intentionally re-read app.rootGraph below instead of using the
           // `root` captured at function entry.
           try {
-            await withNavBlocked(() =>
-              useWorkflowService().openWorkflow(workflow)
+            await withNavBlocked(
+              () =>
+                useWorkflowService().openWorkflow(workflow, {
+                  navigationIntentId: navigationId
+                }),
+              newHash
             )
           } catch (err) {
+            if (navigationId !== navigationIntentId) return
             console.warn(
               '[subgraphNavigation] openWorkflow rejected during recovery',
               err
             )
-            return redirectToRoot('workflow load failed')
+            reportError(err, { errorType: 'workflow_navigation_failure' })
+            return redirectToRoot('workflow load failed', navigationId)
           }
+          if (navigationId !== navigationIntentId) return
           const loadedGraph =
             app.rootGraph.id === locatorId
               ? app.rootGraph
               : app.rootGraph.subgraphs.get(locatorId)
           if (!loadedGraph) {
-            return redirectToRoot('subgraph not found after workflow load')
+            return redirectToRoot(
+              'subgraph not found after workflow load',
+              navigationId
+            )
           }
           if (canvas.graph?.id === loadedGraph.id) return
-          return canvas.setGraph(loadedGraph)
+          return withNavBlocked(async () => {
+            canvas.setGraph(loadedGraph)
+          }, newHash)
         }
       }
 
-      await redirectToRoot(`subgraph not found: ${locatorId}`)
+      await redirectToRoot(`subgraph not found: ${locatorId}`, navigationId)
     }
 
     async function safeRouterCall(op: () => Promise<unknown>, label: string) {
       try {
         await op()
       } catch (err) {
-        if (!isNavigationFailure(err, NavigationFailureType.duplicated)) {
+        if (
+          !isNavigationFailure(err, NavigationFailureType.duplicated) &&
+          !isNavigationFailure(err, NavigationFailureType.cancelled)
+        ) {
           console.warn(`[subgraphNavigation] ${label} rejected`, err)
         }
       }
     }
 
-    async function updateHash() {
-      if (blockNavDepth > 0) return
-      if (initialLoad) {
-        initialLoad = false
-        if (!routeHash.value) return
-        await navigateToHash(routeHash.value)
-        const graph = canvasStore.getCanvas().graph
-        if (isSubgraph(graph)) workflowStore.activeSubgraph = graph
-        return
+    async function writeRouteHash(hash: string, replace: boolean) {
+      const writeId = ++routeWriteId
+      pendingRouteWrites.set(writeId, hash)
+      const target = {
+        hash,
+        state: { [routeWriteStateKey]: writeId }
       }
-
-      const newId = canvasStore.getCanvas().graph?.id ?? ''
-      if (!routeHash.value) {
+      try {
         await safeRouterCall(
-          () => router.replace('#' + app.rootGraph.id),
-          'router.replace'
+          () => (replace ? router.replace(target) : router.push(target)),
+          replace ? 'router.replace' : 'router.push'
         )
+      } finally {
+        pendingRouteWrites.delete(writeId)
+      }
+    }
+
+    async function syncGraphHash(intent: GraphNavigationIntent) {
+      if (intent.id !== navigationIntentId) return
+      if (!routeHash.value) {
+        const rootHash = '#' + app.rootGraph.id
+        await writeRouteHash(rootHash, true)
+        if (intent.id !== navigationIntentId) return
       }
       const currentId = routeHash.value?.slice(1)
-      if (!newId || newId === currentId) return
+      if (intent.hash.slice(1) === currentId) return
 
-      await safeRouterCall(() => router.push('#' + newId), 'router.push')
+      await writeRouteHash(intent.hash, false)
     }
-    watch(() => canvasStore.currentGraph, updateHash)
-    watch(routeHash, () => {
+
+    function queueGraphHash(intent: GraphNavigationIntent): Promise<void> {
+      const result = hashUpdateTail.then(() => syncGraphHash(intent))
+      hashUpdateTail = result.catch(() => undefined)
+      return result
+    }
+
+    async function applyNavigationIntent(intent: GraphNavigationIntent) {
+      await navigateToHash(intent.hash, intent.id)
       if (blockNavDepth > 0) return
-      void navigateToHash(String(routeHash.value))
-    })
+
+      const deferredIntent = deferredNavigationIntent
+      if (deferredIntent?.id === navigationIntentId) {
+        deferredNavigationIntent = undefined
+        return applyNavigationIntent(deferredIntent)
+      }
+
+      if (intent.source === 'graph' && intent.id === navigationIntentId) {
+        await queueGraphHash(intent)
+      }
+    }
+
+    async function updateHash(
+      source: 'graph' | 'workflow-load' = 'graph',
+      workflowNavigationId?: number,
+      currentGraph?: LGraph | null
+    ): Promise<void> {
+      const graph = currentGraph ?? canvasStore.getCanvas().graph
+      if (source === 'workflow-load') {
+        pendingWorkflowResetGraph = undefined
+        if (
+          blockNavDepth > 0 &&
+          workflowNavigationId === navigationIntentId &&
+          latestNavigationIntent?.source === 'workflow' &&
+          graph?.id
+        ) {
+          deferredNavigationIntent = {
+            id: workflowNavigationId,
+            hash: '#' + graph.id,
+            source: 'graph'
+          }
+          return Promise.resolve()
+        }
+        if (blockNavDepth > 0) return Promise.resolve()
+        if (workflowNavigationId !== undefined) {
+          if (workflowNavigationId !== navigationIntentId) {
+            const latestIntent = latestNavigationIntent
+            return latestIntent && latestIntent.source !== 'workflow'
+              ? applyNavigationIntent(latestIntent)
+              : Promise.resolve()
+          }
+        }
+      }
+      if (graph === pendingWorkflowResetGraph) {
+        pendingWorkflowResetGraph = undefined
+        return Promise.resolve()
+      }
+
+      const newId = graph?.id ?? ''
+      if (initialLoad) {
+        initialLoad = false
+        if (!routeHash.value) return Promise.resolve()
+        return applyNavigationIntent(
+          createNavigationIntent(String(routeHash.value), 'route')
+        ).then(() => {
+          const activeGraph = canvasStore.getCanvas().graph
+          if (isSubgraph(activeGraph)) {
+            workflowStore.activeSubgraph = activeGraph
+          }
+        })
+      }
+
+      if (!newId) return Promise.resolve()
+      const newHash = '#' + newId
+      if (newHash === routeHash.value) return Promise.resolve()
+      if (blockNavDepth > 0 && newHash === blockedRouteHash) {
+        return Promise.resolve()
+      }
+
+      const intent = createNavigationIntent(newHash, 'graph')
+      if (blockNavDepth > 0) {
+        deferredNavigationIntent = intent
+        return Promise.resolve()
+      }
+
+      return queueGraphHash(intent)
+    }
+    watch(
+      () => canvasStore.currentGraph,
+      (graph) => void updateHash('graph', undefined, graph),
+      { flush: 'sync' }
+    )
+    watch(
+      routeHash,
+      (newHash) => {
+        initialLoad = false
+        const hash = String(newHash)
+        const stateWriteId = router.options.history.state[routeWriteStateKey]
+        if (
+          typeof stateWriteId === 'number' &&
+          pendingRouteWrites.get(stateWriteId) === hash
+        ) {
+          pendingRouteWrites.delete(stateWriteId)
+          return
+        }
+        const intent = createNavigationIntent(hash, 'route')
+        if (blockNavDepth > 0) {
+          deferredNavigationIntent = intent
+          return
+        }
+        void applyNavigationIntent(intent)
+      },
+      { flush: 'sync' }
+    )
 
     /** Save the current viewport for the active graph/workflow. Called by
      *  workflowService.beforeLoadNewGraph() before the canvas is overwritten. */
-    function saveCurrentViewport(): void {
+    function saveCurrentViewport(suppressWorkflowReset = true): void {
       saveViewport(getActiveGraphId())
+      const graph = canvasStore.getCanvas().graph
+      pendingWorkflowResetGraph =
+        suppressWorkflowReset && graph !== app.rootGraph
+          ? app.rootGraph
+          : undefined
       isWorkflowSwitching = true
       setTimeout(() => {
         isWorkflowSwitching = false
@@ -358,6 +537,8 @@ export const useSubgraphNavigationStore = defineStore(
       saveViewport,
       restoreViewport,
       saveCurrentViewport,
+      beginWorkflowNavigation,
+      endWorkflowNavigation,
       updateHash,
       /** @internal Exposed for test assertions only. */
       viewportCache

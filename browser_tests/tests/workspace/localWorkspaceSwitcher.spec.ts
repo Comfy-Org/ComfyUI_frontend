@@ -96,6 +96,26 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     ).toBe('original')
   })
 
+  test('Run button queues while the workspace has no active subscription', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.toast.closeToasts()
+
+    const promptRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/api/prompt')
+    )
+    await comfyPage.runButton.click()
+
+    expect((await promptRequest).postDataJSON()).toEqual(
+      expect.objectContaining({ prompt: expect.anything() })
+    )
+  })
+
   test('queues with the target workspace after a delayed switch', async ({
     comfyPage,
     workspaceSwitchTokenGate

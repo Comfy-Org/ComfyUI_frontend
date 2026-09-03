@@ -13,20 +13,14 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 const IMPORT_ORDER_TIMEOUT_MS = 5_000
 
-async function expectImportPrecedesPublicInclusiveInputAssetScan(
+async function expectImportPrecedesInputAssetScan(
   mocks: SharedWorkflowImportMocks
 ): Promise<void> {
   await expect(async () => {
     const events = mocks.getRequestEvents()
     const importIndex = events.indexOf('import')
-    const afterImportIndex = events.indexOf(
-      'input-assets-including-public-after-import'
-    )
+    const afterImportIndex = events.indexOf('input-assets-after-import')
 
-    expect(
-      events,
-      'public-inclusive input assets must not be scanned before import'
-    ).not.toContain('input-assets-including-public-before-import')
     expect(importIndex, `events: ${events.join(',')}`).toBeGreaterThanOrEqual(0)
     expect(afterImportIndex, `events: ${events.join(',')}`).toBeGreaterThan(
       importIndex
@@ -50,11 +44,11 @@ async function getCachedMissingMediaWarningNames(
   })
 }
 
-async function expectNoMissingMediaAfterPublicInclusiveAssetScan(
+async function expectNoMissingMediaAfterInputAssetScan(
   comfyPage: ComfyPage,
   mocks: SharedWorkflowImportMocks
 ): Promise<void> {
-  await mocks.waitForPublicInclusiveInputAssetResponseAfterImport()
+  await mocks.waitForInputAssetResponseAfterImport()
   await comfyPage.nextFrame()
 
   await expect(
@@ -129,10 +123,8 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
           value: sharedWorkflowImportScenario.inputFileName
         }
       ])
-    await expectImportPrecedesPublicInclusiveInputAssetScan(
-      sharedWorkflowImportMocks
-    )
-    await expectNoMissingMediaAfterPublicInclusiveAssetScan(
+    await expectImportPrecedesInputAssetScan(sharedWorkflowImportMocks)
+    await expectNoMissingMediaAfterInputAssetScan(
       comfyPage,
       sharedWorkflowImportMocks
     )

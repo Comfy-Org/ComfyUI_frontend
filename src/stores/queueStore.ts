@@ -33,13 +33,14 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
-interface ResultItemInit extends ResultItem {
-  nodeId: SerializedNodeId
+export interface ResultItemInit extends ResultItem {
   mediaType: string
-  format?: string
-  frame_rate?: number
+  nodeId: SerializedNodeId
+  assetId?: string
   display_name?: string
   content?: string
+  format?: string
+  frame_rate?: number
 }
 
 export class ResultItemImpl {
@@ -47,18 +48,20 @@ export class ResultItemImpl {
   subfolder: string
   type: string
 
-  nodeId: SerializedNodeId
   // 'audio' | 'images' | ...
   mediaType: string
+  nodeId: SerializedNodeId
+
+  assetId?: string
+
+  // text specific field
+  content?: string
 
   display_name?: string
 
   // VHS output specific fields
   format?: string
   frame_rate?: number
-
-  // text specific field
-  content?: string
 
   constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
@@ -73,6 +76,7 @@ export class ResultItemImpl {
     this.format = obj.format
     this.frame_rate = obj.frame_rate
     this.content = obj.content
+    this.assetId = obj.assetId
   }
 
   get urlParams(): URLSearchParams {

@@ -8,10 +8,123 @@
     "share": "分享",
     "shareTooltip": "分享工作流"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次运行的成本",
-    "title": "API节点",
-    "totalCost": "总成本"
+  "agent": {
+    "addFromAssets": "从资源面板添加",
+    "addNodesFromGraph": "从画布添加节点",
+    "addPromptToSend": "添加要发送的提示词",
+    "addToPrompt": "添加到提示词",
+    "alpha": "ALPHA",
+    "askComfyAgent": "询问 Comfy Agent",
+    "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
+    "attach": "附加文件",
+    "attachFiles": "附加图像或文件",
+    "attachmentTooLarge": "{name} 大于 {limit}",
+    "attachmentUploadFailed": "无法上传 {name}",
+    "backToPreviousChat": "返回上一个聊天",
+    "caption": "AI 智能体可能会出错",
+    "captionExpanded": "AI 智能体可能会出错。请仔细检查回复。",
+    "changeWorkflowForChat": "更改此聊天的工作流",
+    "chatOptions": "聊天选项",
+    "chooseWorkflow": "选择工作流",
+    "chooseWorkflowForChat": "为此聊天选择工作流",
+    "close": "关闭",
+    "coachBody": "让它构建或编辑工作流。",
+    "coachTitle": "认识智能体",
+    "copied": "已复制！",
+    "copy": "复制",
+    "copyMarkdown": "复制为 Markdown",
+    "copyUnavailable": "此版本只能复制当前对话",
+    "crdtConnected": "已连接",
+    "crdtDisconnected": "已断开连接",
+    "crdtNoDocument": "无文档",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
+    "credits": "积分",
+    "delete": "删除",
+    "dismiss": "关闭",
+    "dontWorkInWorkflow": "不在工作流中操作",
+    "downloadAssets": "下载资源",
+    "dragAndDropAssets": "将资源拖放到此处",
+    "focusNode": "在画布上显示",
+    "focusNodeLabel": "在画布上显示 {node}",
+    "friend": "您好",
+    "gotIt": "知道了",
+    "greeting": "你好，{name}，",
+    "greetingQuestion": "你想创作什么？",
+    "helpful": "有帮助",
+    "history": "聊天记录",
+    "historyCurrent": "当前",
+    "historyEarlier": "更早",
+    "historyEmpty": "暂无对话",
+    "historyToday": "今天",
+    "historyYesterday": "昨天",
+    "latest": "最新",
+    "loadFailed": "智能体面板加载失败。",
+    "malformedEvent": "智能体发送了此面板无法读取的事件",
+    "maximize": "最大化面板",
+    "mention": "提及节点",
+    "minimize": "最小化面板",
+    "modelAuto": "自动",
+    "newChat": "新建对话",
+    "newChatTitle": "未命名",
+    "noNodesToMention": "此工作流中没有节点",
+    "nodeSelection": {
+      "bannerSubtitle": "选择一个或多个节点作为参考添加",
+      "bannerTitle": "从画布添加节点",
+      "exit": "退出模式",
+      "selectNode": "选择节点"
+    },
+    "notHelpful": "没有帮助",
+    "openWorkflowTab": "打开 {name}",
+    "placeholder": "描述你的想法，使用 {'@'} 引用，\n从画布添加节点或拖入资源",
+    "ranToolCalls": "已运行 {count} 次工具调用 | 已运行 {count} 次工具调用",
+    "ranToolCallsTimed": "已运行 {count} 次工具调用，耗时 {seconds} 秒 | 已运行 {count} 次工具调用，耗时 {seconds} 秒",
+    "remove": "移除",
+    "removeNodeLabel": "移除 {node} 引用",
+    "runModeAsk": "工作流运行前询问",
+    "runModeAskDescription": "每次运行工作流前，Comfy 都会请求批准",
+    "runModeAuto": "无需批准自动运行",
+    "runModeAutoDescription": "Comfy 将不经许可自动运行工作流",
+    "runModeLimit": "有限制地自动运行",
+    "runModeLimitDescription": "仅当工作流运行超出您的积分限额时，Comfy 才会确认",
+    "runModeTriggerAsk": "询问",
+    "runModeTriggerAskTooltip": "请求许可",
+    "runModeTriggerAuto": "自动",
+    "runModeTriggerAutoLimit": "自动（受限）",
+    "runModeTriggerAutoLimitTooltip": "达到额度上限时询问",
+    "runModeTriggerAutoTooltip": "无需许可即可运行工作流",
+    "runNotice": "智能体可以修改图形。你需要点击运行以执行工作流。",
+    "runNoticeExpanded": "智能体可以修改你的工作流。你需要点击运行以执行。",
+    "runPermissions": "运行权限",
+    "runPermissionsDescription": "选择代理何时需要您的同意",
+    "saveChanges": "保存更改",
+    "searchWorkflows": "搜索工作流",
+    "selectWorkflowToGenerate": "选择要生成内容的工作流",
+    "send": "发送",
+    "sendBusy": "已有消息正在发送",
+    "sendFailed": "消息发送失败",
+    "showChatHistory": "显示聊天记录",
+    "showLess": "显示更少",
+    "showMore": "显示更多",
+    "skip": "跳过",
+    "stop": "停止",
+    "suggestedPrompts": [
+      "生成一只戴着曲棍球面具的黄色鸭子",
+      "列出我保存的工作流",
+      "查找最适合皮肤超分辨率的工作流",
+      "解释选中的节点",
+      "使用 3 个模型构建图像转视频工作流"
+    ],
+    "switchWorkflow": "切换工作流",
+    "thinking": "思考中...",
+    "thought": "思考",
+    "thoughtTimed": "思考了 {seconds} 秒",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "已忘记偏好设置",
+    "toolOpenedNewTab": "已打开新标签页",
+    "toolSavedPreference": "已保存偏好设置",
+    "toolSwitchedTabs": "已切换标签页",
+    "untitledChat": "未命名",
+    "uploading": "正在上传"
   },
   "apiNodesSignInDialog": {
     "message": "此工作流包含API节点，需要您登录账户才能运行。",
@@ -346,8 +459,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "无法完成付款验证。请重试。",
+    "authenticationManagerRequired": "付款验证需要工作区账单管理员处理。",
+    "authenticationUnavailable": "安全支付验证不可用。请刷新后重试。",
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
+    "expiredCardDetail": "此卡已过期。请使用其他支付方式。",
+    "incorrectCvcDetail": "银行卡安全码不正确。请检查后重试。",
+    "insufficientFundsDetail": "此支付方式余额不足。请尝试其他支付方式或联系您的银行。",
+    "paymentDeclinedDetail": "您的银行拒绝了此付款。请尝试其他支付方式或联系您的银行。",
+    "processingErrorDetail": "无法处理您的付款。请重试或使用其他支付方式。",
+    "reconciliationDetail": "已收到您的付款，但无法完成工作区更新。请联系支持团队，并提供此操作 ID：",
+    "reconciliationTitle": "已收到付款 — 等待确认",
+    "retryVerification": "重试验证",
     "subscriptionActionRequired": "请验证您的付款以完成工作区设置",
     "subscriptionFailed": "订阅更新失败",
     "subscriptionFailedDetail": "我们无法更新您的订阅。请重试。",
@@ -808,7 +932,7 @@
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
-      "chargedImmediatelyNote": "您的已保存银行卡将立即扣款。",
+      "chargedImmediatelyNote": "将立即从您保存的支付方式扣款。",
       "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
       "confirmTitle": "确认",
       "contactUs": "联系我们",
@@ -819,13 +943,16 @@
       "insufficientMessage": "您的积分不足，无法运行此工作流。",
       "insufficientTitle": "积分不足",
       "insufficientWorkflowMessage": "您的积分不足以运行该工作流。",
+      "manageBillingError": "无法打开账单门户。请重试。",
       "maxAllowed": "最多{credits}积分。",
       "maxAmount": "（最高 $1,000 美元）",
       "maximumAmount": "最多${amount}",
       "minRequired": "最少{credits}积分",
       "minimumPurchase": "最低${amount}（{credits}积分）",
       "needMore": "需要更多？",
+      "noPaymentMethodError": "此工作区未保存付款方式。请通过“设置 → 套餐与积分 → 管理账单”添加付款方式，然后重试充值。",
       "payAmount": "支付 {amount}",
+      "paymentDetailsRequiredNote": "系统将要求您添加付款方式以完成此次购买。",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",
@@ -963,26 +1090,10 @@
     "UPSCALE_MODEL": "放大模型",
     "VAE": "VAE",
     "VIDEO": "视频",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "体素",
     "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入",
     "WEBCAM": "摄像头"
-  },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "关闭"
-      },
-      "message": "提供的对话框 ID 无效。",
-      "title": "无效对话框"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "了解更多",
-        "Reinstall": "重新安装"
-      },
-      "message": "抱歉，由于某些已安装的软件包不兼容，我们无法启动 ComfyUI。\n\n点击“重新安装”以恢复 ComfyUI 并重新正常运行。\n\n请注意：如果您添加了自定义节点，需要在此过程完成后重新安装它们。",
-      "title": "重新安装 ComfyUI（全新开始）？"
-    }
   },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
@@ -1076,6 +1187,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent 遇到服务器错误。",
+        "title": "Comfy Agent 错误"
+      },
+      "apply_failed": {
+        "desc": "无法将智能体编辑应用到工作流文档。",
+        "title": "智能体编辑失败"
+      },
+      "guard_trip": {
+        "desc": "传入的智能体更新与预期的工作流文档结构不匹配，已被阻止。",
+        "title": "智能体更新被阻止"
+      },
       "missing_node_type": {
         "desc": "缺少或不可用的节点类型。工作流可能已损坏或需要自定义节点。",
         "title": "缺少节点类型"
@@ -1083,6 +1206,14 @@
       "no_prompt": {
         "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。",
         "title": "工作流数据为空"
+      },
+      "op_rejected": {
+        "desc": "工作流文档拒绝了智能体编辑。在下次更新前，画布和共享文档可能会暂时不同步。",
+        "title": "智能体编辑被拒绝"
+      },
+      "prefix_abort": {
+        "desc": "一批智能体编辑中途停止。剩余编辑将自动重试。",
+        "title": "智能体编辑已部分应用"
       },
       "prompt_no_outputs": {
         "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。",
@@ -1500,6 +1631,8 @@
     "addNewKeybinding": "添加新快捷键",
     "addNode": "添加节点...",
     "addNodeFilterCondition": "添加节点筛选条件",
+    "agentModified": "智能体已更新此工作流",
+    "agentWorking": "智能体正在处理此工作流",
     "all": "全部",
     "allKeybindingsReset": "所有快捷键已重置为默认值",
     "amount": "数量",
@@ -1711,12 +1844,14 @@
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
     "missing": "缺失",
+    "missingNodeTypesInGroup": "缺少：{types}",
     "modifyKeybinding": "修改快捷键",
     "more": "更多",
     "moreOptions": "更多选项",
     "moreWorkflows": "更多工作流",
     "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
+    "mute": "静音",
     "nMoreKeybindings": "还有 + {count} 个",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "名称",
@@ -1872,6 +2007,7 @@
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
     "unknownFile": "未知文件",
+    "unmute": "取消静音",
     "untitled": "无标题",
     "update": "更新",
     "updateAvailable": "有更新可用",
@@ -2191,6 +2327,7 @@
     "loadFailed": "图层加载失败",
     "moveDown": "下移图层",
     "moveUp": "上移图层",
+    "needsTwoImages": "图层编辑器至少需要两张输出图像",
     "opacity": "不透明度",
     "position": "位置",
     "redo": "重做",
@@ -2410,8 +2547,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "核心节点来源于 {version} 版本。",
-    "outdatedVersion": "这个工作流由新版 ComfyUI（{version}）创建，部分节点可能无法正常运行。",
-    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
+    "newerVersionRequired": "部分节点需要更新版本的 ComfyUI（当前版本：{version}）。请更新以使用所有节点。",
+    "newerVersionRequiredGeneric": "部分节点需要更新版本的 ComfyUI。请更新以使用所有节点。",
     "unknownVersion": "未知"
   },
   "logsTerminal": {
@@ -2744,6 +2881,7 @@
     "refresh": "刷新节点",
     "resetView": "重置视图",
     "run": "运行",
+    "runOptions": "运行选项",
     "runWorkflow": "运行工作流（Shift排在前面）",
     "runWorkflowFront": "运行工作流（排在前面）",
     "runWorkflowMissingResources": "工作流包含缺失的资源。",
@@ -3058,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "Sigmas",
     "sound": "声音",
@@ -3221,15 +3360,15 @@
     "done": "完成",
     "firstRun": {
       "nudge": {
-        "dismiss": "暂不需要",
+        "dismiss": "暂不",
         "explore": "探索模板",
         "noTour": {
-          "body": "浏览模板，选择一个开始构建。",
-          "title": "还有更多模板等你探索"
+          "body": "浏览模板并选择要构建的内容。",
+          "title": "还有数百个类似的"
         },
         "ran": {
-          "body": "您刚刚完成了第一次。探索还能构建什么。",
-          "title": "这只是数百次中的第一次"
+          "body": "你刚刚创建了第一个。探索你还能构建什么。",
+          "title": "这只是数百种之一"
         }
       },
       "prompt": {
@@ -3412,10 +3551,12 @@
     "errorLog": "错误日志",
     "errorNodeSummary": "{nodes} 个节点 — {count} 个错误 | {nodes} 个节点 — {count} 个错误",
     "errorNodesSummary": "{nodes} 个节点 — {count} 个错误 | {nodes} 个节点 — {count} 个错误",
-    "errors": "错误",
+    "errors": "问题",
     "errorsDetected": "检测到错误",
+    "errorsFilter": "{count} 个错误 | {count} 个错误",
+    "errorsFilterActive": "检测到 {count} 个错误 | 检测到 {count} 个错误",
     "errorsSummary": "{count} 个错误 | {count} 个错误",
-    "executionErrorOccurred": "执行过程中发生错误。请查看“错误”标签获取详情。",
+    "executionErrorOccurred": "执行期间发生错误。请查看“问题”选项卡以了解详情。",
     "expand": "展开",
     "fallbackGroupTitle": "分组",
     "fallbackNodeTitle": "节点",
@@ -3425,6 +3566,7 @@
     "favoritesNoneHint": "在参数标签页，点击任意输入项的 {moreIcon} 可将其添加到这里",
     "favoritesNoneTooltip": "星标组件后可快速访问，无需选择节点",
     "findOnGithubTooltip": "在 GitHub 问题中搜索相关问题",
+    "finishSetupBeforeRun": "请先完成设置再运行工作流",
     "getHelpTooltip": "报告此错误，我们将协助您解决",
     "globalSettings": {
       "canvas": "画布",
@@ -3452,6 +3594,7 @@
     "inputs": "输入",
     "inputsNone": "无输入",
     "inputsNoneTooltip": "节点没有输入",
+    "issuesDetected": "检测到问题 | 检测到问题",
     "locateNode": "在画布上定位节点",
     "locateNodeFor": "定位 {item}",
     "missingMedia": {
@@ -3496,10 +3639,11 @@
       "viewInManager": "在管理器中查看"
     },
     "mute": "禁用",
-    "noErrors": "无错误",
+    "noErrors": "无问题",
     "noSelection": "选择一个节点查看其属性信息。",
     "nodeState": "节点状态",
     "nodes": "节点",
+    "nodesAffected": "影响 {count} 个节点 | 影响 {count} 个节点",
     "nodesNoneDesc": "暂无节点",
     "noneSearchDesc": "没有符合搜索条件的项目",
     "normal": "正常",
@@ -3510,10 +3654,19 @@
     "resetAllParameters": "重置所有参数",
     "resetToDefault": "重置为默认值",
     "resolveBeforeRun": "请在运行工作流前解决",
+    "resolveErrorsBeforeRun": "请先解决错误再运行工作流",
     "seeError": "查看错误",
-    "selectedNodeErrors": "{node} — {count} 个错误 | {node} — {count} 个错误",
-    "selectedNodesErrors": "{nodes} 个节点已选 — {count} 个错误 | {nodes} 个节点已选 — {count} 个错误",
+    "selectedNodeErrors": "{node} — {count} 个问题 | {node} — {count} 个问题",
+    "selectedNodesErrors": "已选择 {nodes} 个节点 — {count} 个问题 | 已选择 {nodes} 个节点 — {count} 个问题",
     "settings": "设置",
+    "setupFilter": "需要设置 {count} 项",
+    "setupNodeSummary": "{nodes} 个节点 — {count} 项 | {nodes} 个节点 — {count} 项",
+    "setupNodesSummary": "{nodes} 个节点 — {count} 项 | {nodes} 个节点 — {count} 项",
+    "setupRequired": "需要设置",
+    "setupSummary": "{count} 项 | {count} 项",
+    "severityCountsStatus": "{errors} 个阻塞性错误，需要设置 {setup} 项",
+    "severityErrorLabel": "阻塞性错误",
+    "severitySetupLabel": "需要设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showAdvancedShort": "显示高级选项",
     "showInput": "显示输入",
@@ -4249,9 +4402,15 @@
     "prepaidDescription": "预付款额度",
     "preview": {
       "addCreditCard": "添加信用卡",
+      "addNewPaymentMethod": "添加新的支付方式",
       "afterThat": "之后",
+      "alipay": "支付宝",
+      "alipayRenewalNote": "支付宝授权也将用于自动续订和未来购买。",
+      "applyPromoCode": "应用",
+      "applyQuoteBeforeContinuing": "请先应用优惠码以刷新报价，然后再继续。",
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收取 {amount}。随时可取消。",
+      "changePaymentMethod": "更改",
       "commitment": "承诺",
       "completeVerification": "完成验证",
       "confirm": "确认",
@@ -4266,6 +4425,11 @@
       "creditsRefillTo": "积分补充至",
       "creditsYoullGetToday": "您今天将获得的点数",
       "currentMonthly": "月度套餐",
+      "discount": {
+        "plan": "套餐折扣",
+        "promotion": "优惠码"
+      },
+      "discountComposition": "折扣",
       "eachMonthCreditsRefill": "每月积分补充至",
       "eachYearCreditsRefill": "每年点数补充为",
       "ends": "{date} 结束",
@@ -4273,11 +4437,17 @@
       "hideFeatures": "隐藏功能",
       "newMonthlySubscription": "新月度订阅",
       "nextPaymentDue": "下次付款截止日期 {date}。可随时取消。",
+      "payAndSubscribe": "付款并订阅",
+      "paymentMethod": "支付方式",
       "paymentPopupBlocked": "无法打开支付页面 — 请允许弹窗后重试。",
       "perMember": "/ 每成员",
       "privacyPolicy": "隐私政策",
+      "promoCodePlaceholder": "优惠码",
       "proratedCharge": "{plan} 按比例收费",
       "proratedRefund": "{plan} 按比例退款",
+      "quoteRefreshFailed": "您的报价已过期且无法刷新。请重新选择套餐。",
+      "quoteStale": "您的报价已变更。请查看更新后的金额并重试。",
+      "quoteUnavailable": "不可用",
       "reactivation": {
         "amountChanged": "自您确认后，费用金额已发生变化 — 请检查并重试",
         "checkboxLabel": "我已知晓今天将收取 {amount}",
@@ -4293,16 +4463,20 @@
         "upgradeBody": "您的 {plan} 原定于 {date} 结束。现在升级将重新激活订阅 — 今天将收取 {amount}，并将在 {nextDate} 自动续订，而不是结束。"
       },
       "refillReplacesNote": "替换您的月度补充。现有余额保留。",
+      "renewsAt": "将于 {date} 以 {amount} 续订。可随时取消。",
+      "savedPaymentMethod": "支付方式",
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
       "startingToday": "今日开始",
       "startsOn": "开始于 {date}",
       "stayOnUntil": "您将在 {plan} 保持至 {date}。",
+      "stripeMethodChoice": "您的付款信息由 Stripe 安全处理。",
+      "stripeUnavailable": "支付选项不可用。请刷新后重试。",
       "subscribeToPlan": "订阅 {plan}",
       "switchToPlan": "切换到 {plan}",
       "switchesToday": "今日切换次数",
       "terms": "条款",
-      "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
+      "termsAgreement": "继续即表示您同意 Comfy Org 的 {terms} 和 {privacy}，并授权 Comfy Org 在每个计费周期从您的支付方式扣款，直至您取消订阅。",
       "totalDueToday": "今日应付总额",
       "yearlySubscription": "年度订阅",
       "youllBeCharged": "您将被收取"
@@ -4332,6 +4506,8 @@
     "resubscribeFailed": "重新激活订阅失败",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "salesManagedRunBlockedDetail": "此工作区的套餐已不再有效。请联系您的 Comfy 客户经理以恢复访问权限。",
+    "salesManagedRunBlockedTitle": "套餐未激活",
     "saveYearly": "立省 20%",
     "saveYearlyUpTo": "最高可节省 20%",
     "soloUseOnly": "仅限个人使用",
@@ -4350,6 +4526,8 @@
       "inviteSubtext": "您也可以稍后在设置中邀请成员",
       "inviteTitle": "邀请您的团队",
       "planUpdated": "您的方案已成功更新。",
+      "promoApplied": "已应用 {code}。",
+      "promoRenews": "将于 {date} 以 {amount} 续订",
       "receiptEmailed": "收据已发送至您的邮箱。",
       "sendInvites": "发送邀请"
     },
@@ -4386,6 +4564,9 @@
         "feature1": "导入您自己的模型",
         "name": "Creator"
       },
+      "enterprise": {
+        "name": "企业版"
+      },
       "founder": {
         "name": "Founder's Edition"
       },
@@ -4405,6 +4586,7 @@
     "title": "订阅",
     "titleUnsubscribed": "订阅 Comfy Cloud",
     "totalCredits": "总积分",
+    "unknownTierName": "当前套餐",
     "upgrade": "升级",
     "upgradePlan": "升级订阅",
     "upgradeTo": "升级到 {plan}",
@@ -4522,6 +4704,7 @@
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",
+    "a1111EmbeddingsUnavailable": "无法从服务器加载嵌入。工作流已导入，但嵌入名称保留为纯文本。",
     "cannotCreateSubgraph": "无法创建子工作流",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
@@ -4572,8 +4755,8 @@
     "invalidTemplateData": "加载节点模板失败：数据无效",
     "legacyMaskEditorDeprecated": "旧版遮罩编辑器已弃用，即将删除。",
     "migrateToLitegraphReroute": "将来的版本中将删除重定向节点。点击以迁移到litegraph-native重定向。",
-    "missingMediaVerificationFailed": "验证缺失媒体失败。某些输入可能不会在错误标签页中显示。",
-    "missingModelVerificationFailed": "验证缺失模型失败。部分模型可能不会在错误标签页中显示。",
+    "missingMediaVerificationFailed": "无法验证缺失的媒体。部分输入可能不会显示在“问题”选项卡中。",
+    "missingModelVerificationFailed": "无法验证缺失的模型。部分模型可能不会显示在“问题”选项卡中。",
     "modelLoadedSuccessfully": "3D模型加载成功",
     "no3dScene": "没有3D场景可以应用纹理",
     "no3dSceneToExport": "没有3D场景可以导出",
@@ -4797,7 +4980,8 @@
         "bodyNoDate": "您的团队已用完所有积分。请添加更多积分以继续生成。",
         "dismiss": "忽略",
         "memberBody": "您的团队已用完所有积分。工作区管理员需要添加更多积分以继续生成。",
-        "title": "积分已用完"
+        "title": "积分已用完",
+        "upgradeBody": "升级您的套餐以添加点数并继续生成。"
       },
       "paused": {
         "body": "此工作区的订阅已暂停。请更新付款方式以恢复。",
@@ -4850,8 +5034,10 @@
       "failedCount": "无法发送 {count} 个邀请，请重试。",
       "invalidEmailCount": "{count} 个无效邮箱地址",
       "invitedMessage": "已向 {emails} 发送邀请",
+      "pendingInviteCount": "这些人中有 {count} 人已有待处理的邀请，将被跳过。",
+      "pendingInviteSingle": "此人已有待处理的邀请",
       "placeholder": "输入对方邮箱",
-      "seatLimitReached": "最多可邀请 {count} 位队友。",
+      "seatLimitExceeded": "此工作区的成员上限为 {max} 人。请移除 {overage} 人以继续。",
       "title": "邀请他人加入此工作区"
     },
     "inviteUpsellDialog": {

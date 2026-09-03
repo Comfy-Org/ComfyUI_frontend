@@ -91,6 +91,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     state.value.phase === 'idle' ? null : state.value.tour
   )
   const waitingForTarget = computed(() => state.value.phase === 'waiting')
+  const stepSettled = computed(() => state.value.phase === 'showing')
 
   const stepIdx = computed(() => shownIdx(state.value))
 
@@ -347,7 +348,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   async function begin(entryPath: EntryPath): Promise<boolean> {
     const definition = tourDefinition(entryPath)
-    if (!definition) return false
+    if (!definition || !tourHolds(entryPath)) return false
     const run = nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
     // A new run has no ending yet; the one before it must not speak for it.
@@ -407,6 +408,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    stepSettled,
     startTour,
     replayTour,
     next,

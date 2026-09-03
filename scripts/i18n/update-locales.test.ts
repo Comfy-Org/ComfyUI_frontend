@@ -3,7 +3,8 @@
  * (happy-dom defines window/navigator), and nothing here needs a DOM.
  * @vitest-environment node
  */
-import { describe, expect, it, vi } from 'vitest'
+import type { OpenAI } from 'openai'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
 import type { LocaleObject } from './locale-tree'
@@ -19,13 +20,15 @@ import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
   createOpenAiTranslator,
+  createRequestCounter,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
 import {
   assembleLeafTranslations,
   buildTranslationItems,
-  formatPruneSummary
+  formatPruneSummary,
+  formatUsageSummary
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -498,6 +501,28 @@ describe('formatPruneSummary', () => {
   })
 })
 
+describe('formatUsageSummary', () => {
+  it('sums usage across completions and tolerates missing fields', () => {
+    expect(
+      formatUsageSummary(
+        [
+          {
+            prompt_tokens: 10,
+            completion_tokens: 4,
+            total_tokens: 14,
+            completion_tokens_details: { reasoning_tokens: 2 }
+          },
+          undefined,
+          { total_tokens: 100 }
+        ],
+        7
+      )
+    ).toBe(
+      'OpenAI usage: 7 HTTP requests for 3 completions; 10 input, 4 output (2 reasoning), 114 total tokens.'
+    )
+  })
+})
+
 describe('createOpenAiTranslator', () => {
   const items: TranslationItem[] = [
     {
@@ -505,42 +530,190 @@ describe('createOpenAiTranslator', () => {
       context: 'main.json: greeting',
       source: 'Hello {name}',
       preserve: ['{name}']
+    },
+    {
+      id: '2',
+      context: 'main.json: farewell',
+      source: 'Goodbye {name}',
+      preserve: ['{name}']
     }
   ]
 
-  const completion = (content: string, finishReason = 'stop') =>
+  const completion = (
+    content: string,
+    finishReason = 'stop',
+    usage?: OpenAI.CompletionUsage
+  ) =>
     new Response(
       JSON.stringify({
-        choices: [{ finish_reason: finishReason, message: { content } }]
+        choices: [{ finish_reason: finishReason, message: { content } }],
+        usage
       }),
       { status: 200, headers: { 'content-type': 'application/json' } }
     )
 
-  function translatorFor(responses: Response[]) {
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  function translatorFor(
+    respond: Response[] | ((body: string, call: number) => Response),
+    overrides: Partial<
+      Pick<
+        Parameters<typeof createOpenAiTranslator>[0],
+        'maxTruncationSplitDepth' | 'onCompletion'
+      >
+    > = {}
+  ) {
     let calls = 0
-    const fetchFn: typeof fetch = async () => {
+    const requestBodies: string[] = []
+    const fetchFn: typeof fetch = async (_input, init) => {
+      if (typeof init?.body !== 'string') {
+        throw new Error('expected a JSON request body')
+      }
+      requestBodies.push(init.body)
       calls++
-      return responses[calls - 1]
+      const response = Array.isArray(respond)
+        ? respond[calls - 1]
+        : respond(init.body, calls)
+      if (!response) {
+        throw new Error(`no scripted response for request ${calls}`)
+      }
+      return response
     }
     const translate = createOpenAiTranslator({
       apiKey: 'key',
       model: 'test-model',
       reasoningEffort: 'low',
       glossary: '',
-      fetchFn
+      maxTruncationSplitDepth: 3,
+      fetchFn,
+      ...overrides
     })
-    return { translate, callCount: () => calls }
+    return { translate, callCount: () => calls, requestBodies }
   }
 
-  it('retries truncated responses instead of failing on the partial JSON', async () => {
+  it('splits a truncated batch and scopes each half to its own items', async () => {
+    const { translate, callCount, requestBodies } = translatorFor(
+      (body, call) => {
+        if (call === 1) return completion('{"1": "Bonj', 'length')
+        return body.includes('main.json: greeting')
+          ? completion('{"1": "Bonjour {name}", "2": "stray"}')
+          : completion('{"2": "Au revoir {name}"}')
+      }
+    )
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
+    })
+    expect(callCount()).toBe(3)
+    const halves = requestBodies.slice(1)
+    expect(
+      halves.some(
+        (body) =>
+          body.includes('main.json: greeting') &&
+          !body.includes('main.json: farewell')
+      )
+    ).toBe(true)
+    expect(
+      halves.some(
+        (body) =>
+          body.includes('main.json: farewell') &&
+          !body.includes('main.json: greeting')
+      )
+    ).toBe(true)
+  })
+
+  it('defers a single string whose translation keeps truncating', async () => {
     const { translate, callCount } = translatorFor([
       completion('{"1": "Bonj', 'length'),
-      completion('{"1": "Bonjour {name}"}')
+      completion('{"1": "Bonj', 'length')
+    ])
+    await expect(translate(locale, items.slice(0, 1))).resolves.toEqual({})
+    expect(callCount()).toBe(2)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('main.json: greeting')
+    )
+  })
+
+  it('defers a batch that keeps truncating at the split depth', async () => {
+    const wide = ['a', 'b', 'c', 'd'].map((name, index) => ({
+      id: String(index),
+      context: `main.json: ${name}`,
+      source: name,
+      preserve: []
+    }))
+    const { translate, callCount } = translatorFor(
+      Array.from({ length: 8 }, () => completion('{"0": "Bonj', 'length')),
+      { maxTruncationSplitDepth: 1 }
+    )
+    await expect(translate(locale, wide)).resolves.toEqual({})
+    expect(callCount()).toBe(3)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('maxTruncationSplitDepth 1')
+    )
+  })
+
+  it('counts every request made through the counting fetch', async () => {
+    const counter = createRequestCounter(async () => completion('{}'))
+    await counter.fetch('https://example.test')
+    await counter.fetch('https://example.test')
+    expect(counter.requestCount()).toBe(2)
+  })
+
+  it('drops non-string values instead of failing the whole batch', async () => {
+    const { translate, callCount } = translatorFor([
+      completion('{"1": "Bonjour {name}", "2": 42}')
     ])
     await expect(translate(locale, items)).resolves.toEqual({
       '1': 'Bonjour {name}'
     })
+    expect(callCount()).toBe(1)
+  })
+
+  it('defers the batch after one retry on a malformed response', async () => {
+    const { translate, callCount } = translatorFor([
+      completion('not json'),
+      completion('not json')
+    ])
+    await expect(translate(locale, items)).resolves.toEqual({})
     expect(callCount()).toBe(2)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('not valid JSON')
+    )
+  })
+
+  it('reports usage for every completed API request', async () => {
+    const totalTokens: number[] = []
+    const onCompletion = vi.fn((response: OpenAI.ChatCompletion) => {
+      if (response.usage) totalTokens.push(response.usage.total_tokens)
+    })
+    const { translate } = translatorFor(
+      (body, call) => {
+        if (call === 1)
+          return completion('{"1": "Bonj', 'length', {
+            completion_tokens: 4,
+            prompt_tokens: 10,
+            total_tokens: 14
+          })
+        return body.includes('main.json: greeting')
+          ? completion('{"1": "Bonjour {name}"}', 'stop', {
+              completion_tokens: 5,
+              prompt_tokens: 7,
+              total_tokens: 12
+            })
+          : completion('{"2": "Au revoir {name}"}', 'stop', {
+              completion_tokens: 6,
+              prompt_tokens: 8,
+              total_tokens: 14
+            })
+      },
+      { onCompletion }
+    )
+    await translate(locale, items)
+    expect(onCompletion).toHaveBeenCalledTimes(3)
+    expect(totalTokens[0]).toBe(14)
+    expect(totalTokens.slice(1).sort((a, b) => a - b)).toEqual([12, 14])
   })
 
   it('fails immediately on non-retryable statuses', async () => {

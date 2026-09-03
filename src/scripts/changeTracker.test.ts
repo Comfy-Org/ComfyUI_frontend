@@ -277,7 +277,7 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          expect.stringContaining('captureCanvasState')
+          'ChangeTracker.captureCanvasState() called on inactive tracker'
         )
       })
     })
@@ -352,6 +352,30 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         mockCanvasState(changed)
 
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
+      it('detects a change after a listener mutates the prior checkpoint', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [0]
+        const canvasState = structuredClone(initial)
+        canvasState.nodes[0].widgets_values = [1]
+        const tracker = createTracker(initial)
+        mockCanvasState(canvasState)
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [2]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(canvasState)
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
@@ -1186,7 +1210,7 @@ describe('ChangeTracker', () => {
       expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        expect.stringContaining('deactivate')
+        'ChangeTracker.deactivate() called on inactive tracker'
       )
     })
   })

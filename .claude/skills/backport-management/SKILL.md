@@ -188,7 +188,6 @@ For 50+ candidate PRs, classify by changed paths first to skip the unproductive 
 | Path prefix                                    | Bucket                 | Reason                                           |
 | ---------------------------------------------- | ---------------------- | ------------------------------------------------ |
 | `apps/website/`                                | SKIP                   | Marketing/platform site, not core ComfyUI bundle |
-| `apps/desktop-ui/`                             | SKIP for `core/*`      | Desktop app, separate release cadence            |
 | `browser_tests/` only (no `src/`)              | SKIP                   | Test-only                                        |
 | `.github/workflows/` only                      | SKIP                   | CI/release infra                                 |
 | `packages/design-system/` only                 | SKIP                   | Design tokens, not core                          |

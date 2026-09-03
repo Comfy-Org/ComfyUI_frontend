@@ -54,6 +54,7 @@ interface CustomDialogComponentProps {
   unstyled?: boolean
   headless?: boolean
   renderer?: DialogRenderer
+  useAutomaticLabeling?: boolean
   size?: DialogContentSize
   /**
    * Class applied to the Reka-UI `DialogContent` element. Ignored on the

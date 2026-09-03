@@ -95,10 +95,10 @@ const i18n = createI18n({
         }
       },
       loadWorkflowWarning: {
-        outdatedVersion:
-          'Some nodes require a newer version of ComfyUI (current: {version}).',
-        outdatedVersionGeneric:
-          'Some nodes require a newer version of ComfyUI.',
+        newerVersionRequired:
+          'Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.',
+        newerVersionRequiredGeneric:
+          'Some nodes require a newer version of ComfyUI. Please update to use all nodes.',
         coreNodesFromVersion: 'Requires ComfyUI {version}:',
         unknownVersion: 'unknown'
       }
@@ -311,7 +311,9 @@ describe('MissingNodeCard', () => {
       }
       renderCard()
       expect(
-        screen.getByText('Some nodes require a newer version of ComfyUI.')
+        screen.getByText(
+          'Some nodes require a newer version of ComfyUI. Please update to use all nodes.'
+        )
       ).toBeInTheDocument()
     })
 

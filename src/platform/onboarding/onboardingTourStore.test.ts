@@ -1,7 +1,7 @@
 import type { DetachedWindowAPI } from 'happy-dom'
 import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
@@ -147,6 +147,8 @@ describe('onboardingTourStore', () => {
     modeRef.value = mode
     outputsRef.value = hasOutputs
   }
+
+  beforeEach(() => enterApp('app', false))
 
   it('auto-opens when entering a populated app it has not seen', async () => {
     mountStore()

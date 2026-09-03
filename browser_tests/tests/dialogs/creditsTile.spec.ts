@@ -10,6 +10,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
@@ -178,6 +179,14 @@ async function mockCloudBoot(
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute(
+        createWorkspaceBillingCapabilities(workspace('personal', 'owner'))
+      )
+    )
+  })
 }
 
 async function mockBalance(

@@ -36,10 +36,10 @@ describe('CloudTermsNotice', () => {
 
     expect(
       screen.getByRole('link', { name: enMessages.auth.login.termsLink })
-    ).toHaveAttribute('href', 'https://www.comfy.org/terms-of-service')
+    ).toHaveAttribute('href', 'https://comfy.org/terms-of-service/')
     expect(
       screen.getByRole('link', { name: enMessages.auth.login.privacyLink })
-    ).toHaveAttribute('href', 'https://www.comfy.org/privacy-policy')
+    ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
   })
 
   it('opens every outbound link safely in a new tab', () => {

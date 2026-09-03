@@ -23,6 +23,7 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -112,18 +113,24 @@ flushErrorReports()
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
-setAssertReporter((message) => {
-  if (isDesktop) {
-    captureMessage(message, { level: 'warning' })
-  }
-  if (isNightly) {
-    useToastStore(pinia).add({
-      severity: 'warn',
-      summary: 'Assertion failed',
-      detail: message
-    })
-  }
-})
+setAssertReporter(
+  (message) => {
+    if (isDesktop) {
+      captureMessage(message, { level: 'warning' })
+    }
+    if (isCloud) {
+      reportAssertFailure(message)
+    }
+    if (isNightly) {
+      useToastStore(pinia).add({
+        severity: 'warn',
+        summary: 'Assertion failed',
+        detail: message
+      })
+    }
+  },
+  { forwardsToRum: isCloud }
+)
 
 app.directive('tooltip', Tooltip)
 app

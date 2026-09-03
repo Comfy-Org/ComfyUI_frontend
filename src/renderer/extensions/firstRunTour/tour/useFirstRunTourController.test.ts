@@ -619,7 +619,7 @@ describe('useFirstRunTourController', () => {
 
       expect(
         mocks.runState.value,
-        'a run cut short for credits keeps its running status, so losing the job is the only signal left'
+        'a stagnated run keeps its running status, so losing the job is the only signal left'
       ).toBe('failed')
     })
 

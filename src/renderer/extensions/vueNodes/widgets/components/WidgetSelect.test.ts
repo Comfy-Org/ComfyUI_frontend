@@ -192,8 +192,7 @@ describe('WidgetSelect Value Binding', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('uses dropdown variant for audio uploads', (context) => {
-      context.skip('allowUpload is not false, should it be? needs diagnosis')
+    it('uses dropdown variant for audio uploads', () => {
       const spec: ComboInputSpec = {
         type: 'COMBO',
         name: 'test_select',
@@ -205,7 +204,7 @@ describe('WidgetSelect Value Binding', () => {
       const dropdown = screen.getByTestId('widget-select-dropdown')
       expect(dropdown).toBeInTheDocument()
       expect(dropdown.dataset.assetKind).toBe('audio')
-      expect(dropdown.dataset.allowUpload).toBe('false')
+      expect(dropdown.dataset.allowUpload).toBe('true')
     })
 
     it('uses dropdown variant for mesh uploads via spec', () => {

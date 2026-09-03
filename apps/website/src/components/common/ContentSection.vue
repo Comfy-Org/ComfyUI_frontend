@@ -203,7 +203,9 @@ function scrollToSection(id: string) {
               <img
                 :src="t(key(section.id, `block.${i}.src`), locale)"
                 :alt="t(key(section.id, `block.${i}.alt`), locale)"
-                class="w-full rounded-2xl object-cover"
+                loading="lazy"
+                decoding="async"
+                class="aspect-video w-full rounded-2xl object-cover"
               />
               <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
                 {{ t(key(section.id, `block.${i}.caption`), locale) }}

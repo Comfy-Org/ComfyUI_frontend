@@ -157,7 +157,6 @@
       "tier": "R3",
       "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR 0003/0008) src/lib/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types rollup (rollupTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
       "paths": [
-        "packages/comfyui-desktop-bridge-types/**",
         "packages/*/src/schemas/**",
         "src/core/schemas/**",
         "src/schemas/**",

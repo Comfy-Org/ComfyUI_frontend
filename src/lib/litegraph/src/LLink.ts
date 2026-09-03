@@ -46,21 +46,27 @@ export type SerialisedLLinkArray = [
 
 const linkByTopology = new WeakMap<LinkTopology, LLink>()
 
+let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
+
 export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
 
 function defineEnumerableTopologyFacade(link: LLink): void {
-  const descriptors = Object.getOwnPropertyDescriptors(LLink.prototype)
-  Object.defineProperties(link, {
-    id: { ...descriptors.id, enumerable: true },
-    type: { ...descriptors.type, enumerable: true },
-    origin_id: { ...descriptors.origin_id, enumerable: true },
-    origin_slot: { ...descriptors.origin_slot, enumerable: true },
-    target_id: { ...descriptors.target_id, enumerable: true },
-    target_slot: { ...descriptors.target_slot, enumerable: true },
-    parentId: { ...descriptors.parentId, enumerable: true }
-  })
+  topologyFacadeDescriptors ??= [
+    'id',
+    'type',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'parentId'
+  ].reduce<PropertyDescriptorMap>((descriptors, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
+    if (descriptor) descriptors[key] = { ...descriptor, enumerable: true }
+    return descriptors
+  }, {})
+  Object.defineProperties(link, topologyFacadeDescriptors)
 }
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
@@ -117,22 +123,6 @@ type BasicReadonlyNetwork = Pick<
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
 
-/** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
-function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
-  if (link._graphScope) {
-    const result = useLinkStore().updateEndpoint(
-      link._graphScope,
-      link._state,
-      patch
-    )
-    if (!result.ok) {
-      console.error('Failed to update link endpoints', result.error)
-    }
-  } else {
-    Object.assign(link._state, patch)
-  }
-}
-
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
@@ -175,7 +165,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_id(value: NodeId) {
-    applyEndpointPatch(this, { originNodeId: value })
+    this.updateEndpoints({ originNodeId: value })
   }
 
   /** Output slot index */
@@ -184,7 +174,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_slot(value: number) {
-    applyEndpointPatch(this, { originSlot: value })
+    this.updateEndpoints({ originSlot: value })
   }
 
   /** Input node ID */
@@ -193,7 +183,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_id(value: NodeId) {
-    applyEndpointPatch(this, { targetNodeId: value })
+    this.updateEndpoints({ targetNodeId: value })
   }
 
   /** Input slot index */
@@ -202,7 +192,22 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_slot(value: number) {
-    applyEndpointPatch(this, { targetSlot: value })
+    this.updateEndpoints({ targetSlot: value })
+  }
+
+  updateEndpoints(patch: EndpointPatch): void {
+    if (!this._graphScope) {
+      Object.assign(this._state, patch)
+      return
+    }
+
+    const result = useLinkStore().updateEndpoint(
+      this._graphScope,
+      this._state,
+      patch
+    )
+    if (!result.ok)
+      console.error('Failed to update link endpoints', result.error)
   }
 
   get parentId() {
@@ -468,18 +473,22 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
       this.id = toLinkId(o[0])
-      this.origin_id = toNodeId(o[1])
-      this.origin_slot = o[2]
-      this.target_id = toNodeId(o[3])
-      this.target_slot = o[4]
+      this.updateEndpoints({
+        originNodeId: toNodeId(o[1]),
+        originSlot: o[2],
+        targetNodeId: toNodeId(o[3]),
+        targetSlot: o[4]
+      })
       this.type = o[5]
     } else {
       this.id = o.id
       this.type = o.type
-      this.origin_id = o.origin_id
-      this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
-      this.target_slot = o.target_slot
+      this.updateEndpoints({
+        originNodeId: o.origin_id,
+        originSlot: o.origin_slot,
+        targetNodeId: o.target_id,
+        targetSlot: o.target_slot
+      })
       this.parentId = o.parentId
     }
   }

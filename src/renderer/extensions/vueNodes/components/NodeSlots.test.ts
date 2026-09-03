@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick } from 'vue'
@@ -11,9 +11,10 @@ import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -74,6 +75,7 @@ const InputSlotStub = defineComponent({
       :data-name="slotData && slotData.name ? slotData.name : ''"
       :data-type="slotData && slotData.type ? slotData.type : ''"
       :data-node-id="nodeId"
+      :data-slot-key="nodeId + '-in-' + index"
       :data-has-error="hasError ? 'true' : 'false'"
       :data-readonly="readonly ? 'true' : 'false'"
       :data-connected="connected ? 'true' : 'false'"
@@ -91,6 +93,7 @@ const OutputSlotStub = defineComponent({
       :data-name="slotData && slotData.name ? slotData.name : ''"
       :data-type="slotData && slotData.type ? slotData.type : ''"
       :data-node-id="nodeId"
+      :data-slot-key="nodeId + '-out-' + index"
       :data-readonly="readonly ? 'true' : 'false'"
       :data-connected="connected ? 'true' : 'false'"
     />
@@ -138,14 +141,15 @@ function createTrackingStub(
 function renderSlots(
   nodeData: NodeState,
   stubs: SlotComponentStubs = defaultSlotStubs,
-  pinia = createTestingPinia({ stubActions: false })
+  pinia = createTestingPinia({ stubActions: false }),
+  syncLayout = true
 ) {
   return render(NodeSlots, {
     global: {
       plugins: [i18n, pinia],
       stubs
     },
-    props: { nodeData }
+    props: { nodeData, syncLayout }
   })
 }
 
@@ -224,6 +228,66 @@ function expectSlotError(
 }
 
 describe('NodeSlots.vue', () => {
+  beforeEach(() => layoutStore.resetForTests())
+
+  it('stores slot offsets when the rendered element mounts', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const nodeData = makeNodeData({
+      inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+    })
+
+    renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        nodeData.id,
+        0,
+        'input',
+        'expanded'
+      )
+    ).toEqual({ x: 0, y: 50 - LiteGraph.NODE_TITLE_HEIGHT })
+  })
+
+  it('does not store slot offsets when layout synchronization is disabled', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const nodeData = makeNodeData({
+      inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+    })
+
+    renderSlots(nodeData, defaultSlotStubs, pinia, false)
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        nodeData.id,
+        0,
+        'input',
+        'expanded'
+      )
+    ).toBeNull()
+  })
+
   it('renders slots from nodeDataStore without resolving the live node', async () => {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)

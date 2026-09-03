@@ -14,9 +14,14 @@ type ModelDirectory =
   | 'latent_upscale_models'
   | 'upscale_models'
   | 'style_models'
+  | 'geometry_estimation'
+  | 'background_removal'
+  | 'detection'
+  | 'frame_interpolation'
+  | 'optical_flow'
   | 'partner_nodes'
 
-interface Model {
+export interface Model {
   readonly slug: string
   readonly canonicalSlug?: string
   readonly name: string

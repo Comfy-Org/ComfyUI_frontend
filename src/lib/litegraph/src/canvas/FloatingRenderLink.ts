@@ -152,8 +152,10 @@ export class FloatingRenderLink implements RenderLink {
     node.disconnectInput(node.inputs.indexOf(input))
 
     const floatingLink = this.link
-    floatingLink.target_id = node.id
-    floatingLink.target_slot = node.inputs.indexOf(input)
+    floatingLink.updateEndpoints({
+      targetNodeId: node.id,
+      targetSlot: node.inputs.indexOf(input)
+    })
   }
 
   connectToOutput(
@@ -162,8 +164,10 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = node.id
-    floatingLink.origin_slot = node.outputs.indexOf(output)
+    floatingLink.updateEndpoints({
+      originNodeId: node.id,
+      originSlot: node.outputs.indexOf(output)
+    })
   }
 
   connectToSubgraphInput(
@@ -171,8 +175,10 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = SUBGRAPH_INPUT_ID
-    floatingLink.origin_slot = input.parent.slots.indexOf(input)
+    floatingLink.updateEndpoints({
+      originNodeId: SUBGRAPH_INPUT_ID,
+      originSlot: input.parent.slots.indexOf(input)
+    })
   }
 
   connectToSubgraphOutput(
@@ -180,8 +186,10 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.target_id = SUBGRAPH_OUTPUT_ID
-    floatingLink.target_slot = output.parent.slots.indexOf(output)
+    floatingLink.updateEndpoints({
+      targetNodeId: SUBGRAPH_OUTPUT_ID,
+      targetSlot: output.parent.slots.indexOf(output)
+    })
   }
 
   connectToRerouteInput(
@@ -191,8 +199,10 @@ export class FloatingRenderLink implements RenderLink {
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
-    floatingLink.target_id = inputNode.id
-    floatingLink.target_slot = inputNode.inputs.indexOf(input)
+    floatingLink.updateEndpoints({
+      targetNodeId: inputNode.id,
+      targetSlot: inputNode.inputs.indexOf(input)
+    })
 
     events.dispatch('input-moved', this)
   }
@@ -205,8 +215,10 @@ export class FloatingRenderLink implements RenderLink {
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
-    floatingLink.origin_id = outputNode.id
-    floatingLink.origin_slot = outputNode.outputs.indexOf(output)
+    floatingLink.updateEndpoints({
+      originNodeId: outputNode.id,
+      originSlot: outputNode.outputs.indexOf(output)
+    })
 
     events.dispatch('output-moved', this)
   }

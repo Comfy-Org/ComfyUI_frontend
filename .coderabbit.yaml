@@ -114,6 +114,17 @@ reviews:
         Treat `docs/adr/README.md` as required review context. For widget
         serialization changes, also read
         `docs/WIDGET_SERIALIZATION.md`.
+    - path: 'src/workbench/extensions/agent/**'
+      instructions: |
+        Treat `.agents/checks/follower-boundary.md` and
+        `docs/adr/0016-in-app-agent-crdt-follower-and-distribution.md` as
+        required review context. Flag: the follower writing the shared doc,
+        client-sent raw Yjs `update_b64`, layout/presence fields in the shared
+        semantic doc, an optimistic overlay merged back as a Yjs update,
+        `op_id` regeneration on retry, a second applier reimplemented instead
+        of importing `@comfyorg/comfy-multi-player`, `DISTRIBUTION`/`isCloud`/
+        `isDesktop` checks scattered outside the agent connection boundary, and
+        auth reduced to `isCloud` instead of `authStore.getAuthHeader()`.
     - path: '**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,

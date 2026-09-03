@@ -21,7 +21,7 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -313,12 +313,13 @@ export function promoteValueWidgetViaSubgraphInput(
   return { ok: true }
 }
 
-function seedNestedPromotedInputState(
+export function seedNestedPromotedInputState(
   subgraphNode: SubgraphNode,
   inputName: string,
   sourceSlot: { widgetId?: WidgetId; label?: string }
 ): void {
   if (!sourceSlot.widgetId) return
+  if (subgraphNode.id === UNASSIGNED_NODE_ID) return
 
   const hostInput = subgraphNode.inputs.find(
     (input) => input._subgraphSlot?.name === inputName
@@ -332,8 +333,7 @@ function seedNestedPromotedInputState(
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
-  hostInput.widgetId = id
-  store.registerWidget(
+  const registered = store.registerWidget(
     id,
     {
       type: sourceState.type,
@@ -345,6 +345,14 @@ function seedNestedPromotedInputState(
     },
     store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
   )
+  if (!registered) {
+    delete hostInput.widget
+    delete hostInput.widgetId
+    hostInput._widget = undefined
+    return
+  }
+
+  hostInput.widgetId = id
 }
 
 function promotePreviewViaExposure(

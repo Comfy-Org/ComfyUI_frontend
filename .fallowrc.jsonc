@@ -29,31 +29,7 @@
     // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and
     // stylelint customSyntax (.stylelintrc.json) respectively.
     "eslint-plugin-playwright",
-    "postcss-html",
-    // Vite path aliases to local locale bundles in apps/desktop-ui; virtual
-    // packages, not installable npm deps.
-    "@frontend-locales/ar",
-    "@frontend-locales/en",
-    "@frontend-locales/es",
-    "@frontend-locales/fr",
-    "@frontend-locales/ja",
-    "@frontend-locales/ko",
-    "@frontend-locales/pt-BR",
-    "@frontend-locales/ru",
-    "@frontend-locales/tr",
-    "@frontend-locales/zh",
-    "@frontend-locales/zh-TW",
-    // Declared in the root manifest and provided to the apps/desktop-ui sub-app
-    // via pnpm hoisting. Real (benign) phantom deps; tracked for follow-up
-    // cleanup into apps/desktop-ui/package.json.
-    "@pinia/testing",
-    "@testing-library/jest-dom",
-    "@testing-library/user-event",
-    "@testing-library/vue",
-    "@xterm/addon-fit",
-    "@xterm/addon-serialize",
-    "@xterm/xterm",
-    "es-toolkit"
+    "postcss-html"
   ],
 
   "ignoreUnresolvedImports": [

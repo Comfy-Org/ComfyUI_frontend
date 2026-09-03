@@ -10,6 +10,8 @@ import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLe
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
@@ -33,10 +35,19 @@ test.beforeEach(async ({ comfyPage }) => {
 // round-trip; it stays as the guard for pack JS that queues one behind our
 // back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  expect(
-    await drainBackendToIdle(comfyPage.page, 10_000),
-    'smoke test left test-owned backend work running'
-  ).toBe(0)
+  await runWithCollectedCleanup(async () => {
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'core smoke submitted a prompt'
+    ).toBe(0)
+  }, [
+    async () => {
+      expect(
+        await drainBackendToIdle(comfyPage.page, 10_000),
+        'smoke test left test-owned backend work running'
+      ).toBe(0)
+    }
+  ])
 })
 
 test.describe('smoke: core workflow @custom-nodes', () => {
@@ -78,7 +89,9 @@ test.describe('smoke: core workflow @custom-nodes', () => {
       await comfyPage.nextFrame()
       consoleErrors.stop()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBeGreaterThan(0)
       // Core smoke loads a graph but queues no prompt; a prompt-execution
       // error here is a prior tier's async stray (isForeignExecutionNoise).
       expect(

@@ -133,6 +133,18 @@ export function addToComboValues(widget: IComboWidget, value: string) {
   }
 }
 
+/**
+ * True while the canvas is a picking surface rather than an editable one - the
+ * agent's node selection mode sets `selectOnly`.
+ *
+ * Guard every editing operation with this. It is checked at each call site
+ * rather than inside litegraph itself, to keep that vendored library untouched.
+ * A new way to edit the canvas therefore has to opt in: add the guard, or the
+ * operation will run during picking.
+ */
+export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
+  canvas?.selectOnly === true
+
 export const isLGraphNode = (item: unknown): item is LGraphNode => {
   return item instanceof LGraphNode
 }
@@ -193,17 +205,48 @@ export function migrateWidgetsValues<TWidgetValue>(
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
   )
-
-  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) =>
-    input.control_after_generate
-      ? [!!input.forceInput, false]
-      : [!!input.forceInput]
+  const skippedWidgetNames = new Set(
+    map(
+      filter(widgets, (widget) => widget.serialize === false),
+      (widget) => widget.name
+    )
   )
 
-  if (widgetIndexHasForceInput.length !== widgetsValues?.length)
-    return widgetsValues
+  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) => {
+    if (skippedWidgetNames.has(input.name)) return []
+    return input.control_after_generate
+      ? [!!input.forceInput, false]
+      : [!!input.forceInput]
+  })
 
-  return widgetsValues.filter((_, index) => !widgetIndexHasForceInput[index])
+  const serializableWidgetCount = filter(
+    widgets,
+    (widget) => widget.serialize !== false
+  ).length
+  if (
+    !widgetIndexHasForceInput.includes(true) &&
+    widgetsValues.length === serializableWidgetCount
+  ) {
+    return widgetsValues
+  }
+
+  const compactedWidgetValues = filter(
+    widgetsValues,
+    (_, index) => widgets[index]?.serialize !== false
+  )
+  const alignedWidgetValues =
+    compactedWidgetValues.length === widgetIndexHasForceInput.length
+      ? compactedWidgetValues
+      : widgetsValues.length === widgetIndexHasForceInput.length
+        ? widgetsValues
+        : undefined
+
+  if (!alignedWidgetValues) return widgetsValues
+
+  return filter(
+    alignedWidgetValues,
+    (_, index) => !widgetIndexHasForceInput[index]
+  )
 }
 
 /**
@@ -339,14 +382,29 @@ export function mapLiveWidgetsById(
 ): Map<WidgetId, IBaseWidget> {
   const byId = new Map<WidgetId, IBaseWidget>()
   const widgets = node.widgets ?? []
-  if (!ensureUniqueWidgetNames(widgets)) return byId
+  const distinctWidgets = [...new Set(widgets)]
+  const namesAreUnique = ensureUniqueWidgetNames(distinctWidgets)
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
-  for (const widget of widgets) {
+  const usedNames = new Set<string>()
+  const reservedNames = new Set(distinctWidgets.map(({ name }) => name))
+  for (const widget of distinctWidgets) {
+    let name = widget.name
+    if (!namesAreUnique && usedNames.has(name)) {
+      let suffix = 1
+      while (
+        usedNames.has(`${name}#${suffix}`) ||
+        reservedNames.has(`${name}#${suffix}`)
+      ) {
+        suffix++
+      }
+      name = `${name}#${suffix}`
+    }
+    usedNames.add(name)
     const id =
       widget.widgetId ??
       (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
-        ? widgetId(graphId, nodeId, widget.name)
+        ? widgetId(graphId, nodeId, name)
         : undefined)
     if (id) byId.set(id, widget)
   }

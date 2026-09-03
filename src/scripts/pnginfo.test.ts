@@ -318,6 +318,28 @@ describe('importA1111', () => {
     )
   })
 
+  it('awaits the pre-clear hook before mutating the graph', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    mockAvailableCoreNodes(graph)
+    let release: (() => void) | undefined
+    const beforeGraphClear = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        })
+    )
+
+    const imported = importA1111(graph, parameters, beforeGraphClear)
+    await vi.waitFor(() => expect(beforeGraphClear).toHaveBeenCalledOnce())
+    expect(clear).not.toHaveBeenCalled()
+
+    release?.()
+    await expect(imported).resolves.toBe('imported')
+    expect(clear).toHaveBeenCalledOnce()
+  })
+
   it.each([
     ['with a negative prompt', parameters, 'negative'],
     ['without a negative prompt', parametersWithoutNegativePrompt, '']

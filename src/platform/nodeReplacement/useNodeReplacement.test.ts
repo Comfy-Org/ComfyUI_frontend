@@ -36,7 +36,13 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
 
 vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
-  transferReplacementOwnership: vi.fn(() => true)
+  transferReplacementOwnership: vi.fn(
+    (node: LGraphNode, replacement: LGraphNode) => {
+      replacement.pos = [...node.pos]
+      replacement.size = [...node.size]
+      return true
+    }
+  )
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -895,6 +901,21 @@ describe('useNodeReplacement', () => {
         [{ name: 'control_net_name', link: null }],
         []
       )
+      const replacementGeometryBeforeTransfer: Array<{
+        pos: LGraphNode['pos']
+        size: LGraphNode['size']
+      }> = []
+      vi.mocked(transferReplacementOwnership).mockImplementationOnce(
+        (node, replacement) => {
+          replacementGeometryBeforeTransfer.push({
+            pos: [...replacement.pos],
+            size: [...replacement.size]
+          })
+          replacement.pos = [...node.pos]
+          replacement.size = [...node.size]
+          return true
+        }
+      )
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
       const { replaceNodesInPlace } = useNodeReplacement()
@@ -911,6 +932,9 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(newNode.id).toBe(42)
+      expect(replacementGeometryBeforeTransfer).toEqual([
+        { pos: [0, 0], size: [100, 50] }
+      ])
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(newNode.order).toBe(6)

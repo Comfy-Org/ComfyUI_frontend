@@ -315,7 +315,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    await comfyPage.setup()
     await tab.open()
     await expect(tab.getAssetCardByName('alpha')).toBeVisible()
 
@@ -330,7 +329,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     expect(deleteRequests[0]).toEqual({ delete: ['alpha'] })
     await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
     await expect(comfyPage.toast.toastSuccesses).toContainText(
-      'Asset deleted successfully'
+      'Deletion successful'
     )
   })
 })

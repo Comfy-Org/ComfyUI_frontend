@@ -119,14 +119,14 @@ export const drops: readonly Drop[] = [
       en: 'Comfy API',
       'zh-CN': 'Comfy API'
     }),
-    title: { en: 'Comfy API', 'zh-CN': 'Comfy API' },
+    title: { en: 'Developer Platform', 'zh-CN': '开发者平台' },
     description: {
       en: 'Turn any workflow into a production endpoint. Automate generation and scale to thousands of outputs.',
       'zh-CN': '将任意工作流变成生产端点。自动化生成并扩展到数千个输出。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/api', 'zh-CN': '/zh-CN/api' }
+      href: { en: '/platform', 'zh-CN': '/zh-CN/platform' }
     }
   },
   {
@@ -202,7 +202,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/cloud/enterprise', 'zh-CN': '/zh-CN/cloud/enterprise' }
+      href: { en: '/enterprise', 'zh-CN': '/zh-CN/enterprise' }
     }
   },
   {

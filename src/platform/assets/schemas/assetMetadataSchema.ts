@@ -7,7 +7,7 @@ import type { ResultItemImpl } from '@/stores/queueStore'
  */
 export interface OutputAssetMetadata extends Record<string, unknown> {
   jobId: string
-  nodeId: string | number
+  nodeId?: string | number
   subfolder: string
   executionTimeInSeconds?: number
   format?: string
@@ -22,10 +22,10 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
 function isOutputAssetMetadata(
   metadata: Record<string, unknown> | undefined
 ): metadata is OutputAssetMetadata {
-  if (!metadata) return false
   return (
+    !!metadata &&
     typeof metadata.jobId === 'string' &&
-    (typeof metadata.nodeId === 'string' || typeof metadata.nodeId === 'number')
+    typeof metadata.subfolder === 'string'
   )
 }
 

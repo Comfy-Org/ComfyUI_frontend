@@ -116,6 +116,13 @@ const SUCCEEDED_RECOVERY_OPERATION = {
   completed_at: '2026-07-20T00:00:01Z'
 } satisfies BillingOpStatusResponse
 
+const PENDING_RECOVERY_OPERATION = {
+  id: RECOVERY_OPERATION_ID,
+  status: 'pending',
+  action_url: 'https://pay.stripe.example/authorize/op-e2e-recover',
+  started_at: '2026-07-20T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
 // The recovery loader runs at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
 // or queue status each abort that chain.
@@ -181,6 +188,27 @@ function trackBillingOpRequests(page: Page) {
 
 const confirmPaymentHeading = (page: Page) =>
   page.getByRole('heading', { name: 'Confirm your payment' })
+
+// GraphView posts a tab-count heartbeat on this channel once the graph emits
+// `ready` — the boot milestone `waitForCloudApp` cannot see, since
+// `window.app` is assigned before the URL-action loaders run.
+async function trackGraphReadyHeartbeat(page: Page) {
+  await page.addInitScript(() => {
+    new BroadcastChannel('comfyui-tab-count').onmessage = () => {
+      ;(
+        window as unknown as { __graphReadyHeartbeat?: boolean }
+      ).__graphReadyHeartbeat = true
+    }
+  })
+}
+
+function graphReadyHeartbeatSeen(page: Page) {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __graphReadyHeartbeat?: boolean })
+        .__graphReadyHeartbeat === true
+  )
+}
 
 test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
   test('reopens checkout for the attempted plan when reconciliation fails', async ({
@@ -249,6 +277,32 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
       .poll(() => operationPollRequests.length)
       .toBeGreaterThan(0)
     await expect.poll(() => readPendingCheckout(page)).toBeNull()
+    await expect(confirmPaymentHeading(page)).toBeHidden()
+    await expect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeHidden()
+  })
+
+  test('finishes booting while the recovered operation stays pending', async ({
+    page
+  }) => {
+    const operationPollRequests: Request[] = []
+    await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
+    await trackGraphReadyHeartbeat(page)
+    await setupCloudApp(page)
+    await page.route(`**/api/billing/ops/${RECOVERY_OPERATION_ID}`, (route) => {
+      operationPollRequests.push(route.request())
+      return route.fulfill(jsonRoute(PENDING_RECOVERY_OPERATION))
+    })
+
+    await page.goto(APP_URL)
+
+    await waitForCloudApp(page)
+    await cloudAppExpect
+      .poll(() => operationPollRequests.length)
+      .toBeGreaterThan(0)
+    await cloudAppExpect.poll(() => graphReadyHeartbeatSeen(page)).toBe(true)
+    expect(await readPendingCheckout(page)).not.toBeNull()
     await expect(confirmPaymentHeading(page)).toBeHidden()
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })

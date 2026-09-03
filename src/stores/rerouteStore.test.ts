@@ -96,7 +96,7 @@ describe('useRerouteStore', () => {
     expect(store.deleteReroute(graphA, registered)).toBe(false)
   })
 
-  it('re-registers a chain after deleting its owner bucket', () => {
+  it('reuses a deleted reroute id for a replacement chain', () => {
     const store = useRerouteStore()
     const registered = store.registerReroute(graphA, chain(1))
     assert(registered)

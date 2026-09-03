@@ -99,6 +99,8 @@ jobs:
       - name: Commit updated screenshots
         id: commit
         if: steps.update-screenshots.outcome == 'success'
+        env:
+          TARGET_BRANCH: ${{ steps.pr-info.outputs.branch }}
         run: |
           git config --global --add safe.directory "$(pwd)"
           git config --global user.name 'github-actions'
@@ -116,7 +118,7 @@ jobs:
           echo "has-changes=true" >> $GITHUB_OUTPUT
           git add apps/website/e2e/
           git commit -m "[automated] Update website screenshot expectations"
-          git push origin ${{ steps.pr-info.outputs.branch }}
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
 
       - name: Upload test report
         uses: actions/upload-artifact@v6

@@ -6,6 +6,13 @@ import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
+import { isNoindexPathname } from '../config/indexing'
+import {
+  hreflangAlternates,
+  ogLocale,
+  ogLocaleAlternate
+} from '../lib/hreflang'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
@@ -50,6 +57,12 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale,
 )
 const canonicalURL = new URL(url)
+const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const alternates = shouldNoindex
+  ? []
+  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+const openGraphLocale = ogLocale(locale)
+const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -69,7 +82,7 @@ const bannerVersion = createBannerVersion(bannerData, locale)
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const structuredData = noindex
+const structuredData = shouldNoindex
   ? undefined
   : buildPageGraph(
       { siteUrl, locale },
@@ -98,7 +111,7 @@ const structuredData = noindex
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
@@ -108,6 +121,24 @@ const structuredData = noindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {
+      !shouldNoindex && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={markdownTwinPath(canonicalURL.pathname)}
+        />
+      )
+    }
+    {
+      alternates.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={alternate.hreflang}
+          href={alternate.href}
+        />
+      ))
+    }
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
@@ -119,7 +150,12 @@ const structuredData = noindex
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
-    <meta property="og:locale" content={locale} />
+    <meta property="og:locale" content={openGraphLocale} />
+    {
+      openGraphLocaleAlternate && (
+        <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
+      )
+    }
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
@@ -175,7 +211,7 @@ const structuredData = noindex
       >
         try {
           const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-          if (dismissed[bannerVersion]) {
+          if (dismissed && dismissed[bannerVersion] === true) {
             document.documentElement.setAttribute(dismissAttr, '')
           }
         } catch (e) {}

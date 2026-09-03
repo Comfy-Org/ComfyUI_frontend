@@ -2,13 +2,6 @@ import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
 } from '@comfyorg/comfyui-desktop-bridge-types'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
   AddCreditsClickMetadata,
   AuthMetadata,
@@ -21,6 +14,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -173,18 +167,6 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
-  }
-
   trackSurvey(
     stage: 'opened' | 'submitted',
     responses?: SurveyResponses
@@ -309,6 +291,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.capture(TelemetryEvents.LINK_DEDUP_DROP, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

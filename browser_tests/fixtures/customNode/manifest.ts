@@ -1,9 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 
-// Lazy: import.meta.url is not a file: URL under vitest happy-dom.
 function dataPath(basename: string): string {
-  return fileURLToPath(new URL(`../data/${basename}`, import.meta.url))
+  return resolve('browser_tests/fixtures/data', basename)
 }
 
 const VALID_TIERS = ['load', 'run', 'connectivity'] as const
@@ -33,6 +32,7 @@ interface SharedNodeExpectations {
   // registers "Power Primitive (rgthree)", not RgthreePowerPrimitive).
   expectedNodes: string[]
   expectedRunnableCount?: number
+  expectedRunnableNodeTypesSha256?: string
   timeoutMs: number
 }
 
@@ -182,13 +182,7 @@ export function staleAutogrowApplicabilityIssues(
 }
 
 function workflowFileExists(workflow: string): boolean {
-  try {
-    return existsSync(
-      fileURLToPath(new URL(`../../${workflow}`, import.meta.url))
-    )
-  } catch {
-    return false
-  }
+  return existsSync(resolve('browser_tests', workflow))
 }
 
 function sharedIssues(entry: SharedNodeExpectations): string[] {
@@ -224,26 +218,75 @@ function sharedIssues(entry: SharedNodeExpectations): string[] {
   )
     missing.push('expectedRunnableCount (positive integer for run tier)')
   else if (
+    entry.tiers.includes('run') &&
+    !/^[0-9a-f]{64}$/.test(entry.expectedRunnableNodeTypesSha256 ?? '')
+  )
+    missing.push('expectedRunnableNodeTypesSha256 (sha256 for run tier)')
+  else if (
     !entry.tiers.includes('run') &&
     entry.expectedRunnableCount !== undefined
   )
     missing.push('expectedRunnableCount (only valid for run tier)')
+  else if (
+    !entry.tiers.includes('run') &&
+    entry.expectedRunnableNodeTypesSha256 !== undefined
+  )
+    missing.push('expectedRunnableNodeTypesSha256 (only valid for run tier)')
   if (!Number.isFinite(entry.timeoutMs) || entry.timeoutMs <= 0)
     missing.push('timeoutMs')
   return missing
 }
 
-function isNonEmptyString(value: unknown): boolean {
+function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
 
-function isLabelList(value: unknown): boolean {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function stringList(value: unknown, allowEmpty = false): string[] | undefined {
+  if (
+    !Array.isArray(value) ||
+    (!allowEmpty && value.length === 0) ||
+    !value.every(isNonEmptyString) ||
+    new Set(value).size !== value.length
+  )
+    return undefined
+  return [...value]
+}
+
+function tierList(value: unknown): CustomNodeTier[] | undefined {
+  const values = stringList(value)
+  if (values === undefined || !values.every(isCustomNodeTier)) return undefined
+  return values
+}
+
+function isCustomNodeTier(value: string): value is CustomNodeTier {
+  return VALID_TIERS.some((tier) => tier === value)
+}
+
+function labelRecord(value: unknown): Record<string, string[]> | undefined {
+  if (!isRecord(value)) return undefined
+  const record: Record<string, string[]> = {}
+  for (const [node, labels] of Object.entries(value)) {
+    if (!isLabelList(labels)) return undefined
+    record[node] = [...labels]
+  }
+  return record
+}
+
+function isLabelList(value: unknown): value is string[] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
     value.every(isNonEmptyString) &&
     new Set(value).size === value.length
   )
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
 function invalidRecordOf(
@@ -385,28 +428,33 @@ function loadLocalExpectations(): Record<string, LocalExpectation> {
   const path = dataPath('cloud/localExpectations.json')
   if (!existsSync(path)) return {}
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+  if (!isRecord(parsed))
     throw new Error(`${path} must be a JSON object keyed by pack name`)
-  const entries = parsed as Record<string, LocalExpectation>
+  const entries: Record<string, LocalExpectation> = {}
   const manifestPacks = new Set(
     readCloudManifest().packs.map(({ pack }) => pack)
   )
-  for (const [pack, entry] of Object.entries(entries)) {
+  for (const [pack, entry] of Object.entries(parsed)) {
     if (!manifestPacks.has(pack))
       throw new Error(`${path}: ${pack} is not in the cloud manifest`)
+    if (!isRecord(entry))
+      throw new Error(`${path}: ${pack} has an invalid local expectation`)
+    const expectedExtensions =
+      entry.expectedExtensions === undefined
+        ? undefined
+        : stringList(entry.expectedExtensions, true)
     if (
-      typeof entry !== 'object' ||
-      entry === null ||
-      !Number.isInteger(entry.expectedNodeCount) ||
-      entry.expectedNodeCount <= 0 ||
+      !isPositiveInteger(entry.expectedNodeCount) ||
       !isNonEmptyString(entry.reason) ||
       (entry.expectedExtensions !== undefined &&
-        (!Array.isArray(entry.expectedExtensions) ||
-          entry.expectedExtensions.length !==
-            new Set(entry.expectedExtensions).size ||
-          !entry.expectedExtensions.every(isNonEmptyString)))
+        expectedExtensions === undefined)
     )
       throw new Error(`${path}: ${pack} has an invalid local expectation`)
+    entries[pack] = {
+      expectedNodeCount: entry.expectedNodeCount,
+      reason: entry.reason,
+      ...(expectedExtensions === undefined ? {} : { expectedExtensions })
+    }
   }
   return entries
 }
@@ -512,27 +560,28 @@ export function assertCloudManifestShape(
   parsed: unknown,
   sourcePath: string
 ): CloudManifest {
-  const manifest = parsed as CloudManifest
+  if (!isRecord(parsed))
+    throw new Error(
+      `${sourcePath} is malformed (expected { source, coreDisabledNodes, packs, unjoinedYamlPacks } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
+    )
+  const source = cloudManifestSource(parsed.source)
+  const coreDisabledNodes = labelRecord(parsed.coreDisabledNodes)
+  const unjoinedYamlPacks = stringList(parsed.unjoinedYamlPacks, true)
   if (
-    typeof manifest !== 'object' ||
-    manifest === null ||
-    !isCloudManifestSource(manifest.source) ||
-    invalidRecordOf(manifest.coreDisabledNodes, isLabelList) ||
-    !Array.isArray(manifest.packs) ||
-    manifest.packs.length === 0 ||
+    source === undefined ||
+    coreDisabledNodes === undefined ||
+    !Array.isArray(parsed.packs) ||
+    parsed.packs.length === 0 ||
     // Required, and an empty array is the deliberate "every yaml pack joined"
     // declaration - the live assert reads this list, so a missing or malformed
     // one would silently assert nothing.
-    !Array.isArray(manifest.unjoinedYamlPacks) ||
-    !manifest.unjoinedYamlPacks.every(isNonEmptyString) ||
-    new Set(manifest.unjoinedYamlPacks).size !==
-      manifest.unjoinedYamlPacks.length
+    unjoinedYamlPacks === undefined
   )
     throw new Error(
       `${sourcePath} is malformed (expected { source, coreDisabledNodes, packs, unjoinedYamlPacks } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
     )
-  manifest.packs.forEach(assertCloudEntry)
-  return manifest
+  const packs = parsed.packs.map(canonicalCloudEntry)
+  return { source, coreDisabledNodes, packs, unjoinedYamlPacks }
 }
 
 function isIsoDate(value: unknown): value is string {
@@ -544,21 +593,86 @@ function isIsoDate(value: unknown): value is string {
   )
 }
 
-function isCloudManifestSource(value: unknown): value is CloudManifestSource {
-  if (typeof value !== 'object' || value === null || Array.isArray(value))
-    return false
-  const source = value as Record<string, unknown>
+function cloudManifestSource(value: unknown): CloudManifestSource | undefined {
+  if (!isRecord(value)) return undefined
   if (
-    typeof source.repository !== 'string' ||
-    !/^https:\/\/github\.com\/[^/]+\/[^/]+$/.test(source.repository) ||
-    typeof source.ref !== 'string' ||
-    !/^[0-9a-f]{40}$/.test(source.ref) ||
-    typeof source.path !== 'string' ||
-    source.path.length === 0 ||
-    !isIsoDate(source.importedAt)
+    typeof value.repository !== 'string' ||
+    !/^https:\/\/github\.com\/[^/]+\/[^/]+$/.test(value.repository) ||
+    typeof value.ref !== 'string' ||
+    !/^[0-9a-f]{40}$/.test(value.ref) ||
+    typeof value.path !== 'string' ||
+    value.path.length === 0 ||
+    !isIsoDate(value.importedAt)
   )
-    return false
-  return true
+    return undefined
+  return {
+    repository: value.repository,
+    ref: value.ref,
+    path: value.path,
+    importedAt: value.importedAt
+  }
+}
+
+function canonicalCloudEntry(
+  value: unknown,
+  index: number
+): CloudManifestEntry {
+  if (!isRecord(value))
+    throw new Error(
+      `custom-node cloud manifest entry ${index} is not an object`
+    )
+  const tiers = tierList(value.tiers)
+  const expectedNodes = stringList(value.expectedNodes)
+  const expectedExtensions = stringList(value.expectedExtensions, true)
+  const disabledNodes = labelRecord(value.disabledNodes)
+  const cannotRunAlone =
+    value.cannotRunAlone === undefined
+      ? undefined
+      : stringList(value.cannotRunAlone, true)
+  if (
+    typeof value.pack !== 'string' ||
+    typeof value.deployRef !== 'string' ||
+    typeof value.workflow !== 'string' ||
+    tiers === undefined ||
+    expectedNodes === undefined ||
+    expectedExtensions === undefined ||
+    disabledNodes === undefined ||
+    typeof value.expectedNodeCount !== 'number' ||
+    typeof value.timeoutMs !== 'number' ||
+    (value.expectedRunnableCount !== undefined &&
+      typeof value.expectedRunnableCount !== 'number') ||
+    (value.expectedRunnableNodeTypesSha256 !== undefined &&
+      typeof value.expectedRunnableNodeTypesSha256 !== 'string') ||
+    (value.webDirectory !== undefined &&
+      typeof value.webDirectory !== 'string') ||
+    (value.cannotRunAlone !== undefined && cannotRunAlone === undefined)
+  )
+    throw new Error(`custom-node cloud manifest entry ${index} is malformed`)
+  const entry: CloudManifestEntry = {
+    pack: value.pack,
+    deployRef: value.deployRef,
+    tiers,
+    workflow: value.workflow,
+    expectedNodes,
+    expectedExtensions,
+    expectedNodeCount: value.expectedNodeCount,
+    timeoutMs: value.timeoutMs,
+    disabledNodes,
+    ...(value.expectedRunnableCount === undefined
+      ? {}
+      : { expectedRunnableCount: value.expectedRunnableCount }),
+    ...(value.expectedRunnableNodeTypesSha256 === undefined
+      ? {}
+      : {
+          expectedRunnableNodeTypesSha256: value.expectedRunnableNodeTypesSha256
+        }),
+    ...(value.webDirectory === undefined
+      ? {}
+      : { webDirectory: value.webDirectory }),
+    ...(cannotRunAlone === undefined ? {} : { cannotRunAlone })
+  }
+  assertCloudEntry(entry, index)
+  return entry
 }
 
 function readCloudManifest(): CloudManifest {
@@ -586,16 +700,81 @@ function readCoreManifest(): CoreManifestEntry[] {
     throw new Error(
       `custom-node manifest ${path} must be a JSON array of entries, got ${parsed === null ? 'null' : typeof parsed}`
     )
-  const entries: CoreManifestEntry[] = parsed
-  entries.forEach(assertCoreEntry)
-  return entries
+  return parsed.map(canonicalCoreEntry)
+}
+
+function canonicalCoreEntry(value: unknown, index: number): CoreManifestEntry {
+  if (!isRecord(value))
+    throw new Error(`custom-node manifest entry ${index} is not an object`)
+  const tiers = tierList(value.tiers)
+  const expectedNodes = stringList(value.expectedNodes)
+  const expectedExtensions = stringList(value.expectedExtensions, true)
+  const requiresModels = stringList(value.requiresModels, true)
+  const cannotRunAlone =
+    value.cannotRunAlone === undefined
+      ? undefined
+      : stringList(value.cannotRunAlone, true)
+  if (
+    typeof value.pack !== 'string' ||
+    typeof value.repo !== 'string' ||
+    typeof value.pin !== 'string' ||
+    typeof value.workflow !== 'string' ||
+    tiers === undefined ||
+    expectedNodes === undefined ||
+    expectedExtensions === undefined ||
+    typeof value.expectedNodeCount !== 'number' ||
+    typeof value.timeoutMs !== 'number' ||
+    typeof value.requiresGpu !== 'boolean' ||
+    requiresModels === undefined ||
+    (value.expectedRunnableCount !== undefined &&
+      typeof value.expectedRunnableCount !== 'number') ||
+    (value.expectedRunnableNodeTypesSha256 !== undefined &&
+      typeof value.expectedRunnableNodeTypesSha256 !== 'string') ||
+    (value.cannotRunAlone !== undefined && cannotRunAlone === undefined)
+  )
+    throw new Error(`custom-node manifest entry ${index} is malformed`)
+  const entry: CoreManifestEntry = {
+    pack: value.pack,
+    repo: value.repo,
+    pin: value.pin,
+    tiers,
+    workflow: value.workflow,
+    expectedNodes,
+    expectedExtensions,
+    expectedNodeCount: value.expectedNodeCount,
+    timeoutMs: value.timeoutMs,
+    requiresGpu: value.requiresGpu,
+    requiresModels,
+    ...(value.expectedRunnableCount === undefined
+      ? {}
+      : { expectedRunnableCount: value.expectedRunnableCount }),
+    ...(value.expectedRunnableNodeTypesSha256 === undefined
+      ? {}
+      : {
+          expectedRunnableNodeTypesSha256: value.expectedRunnableNodeTypesSha256
+        }),
+    ...(cannotRunAlone === undefined ? {} : { cannotRunAlone })
+  }
+  assertCoreEntry(entry, index)
+  return entry
 }
 
 export function loadAllManifestPackNames(): string[] {
-  return [
-    ...readCoreManifest().map((entry) => entry.pack),
-    ...readCloudManifest().packs.map((entry) => entry.pack)
-  ]
+  return loadAllManifestTargets().map(({ pack }) => pack)
+}
+
+export function loadAllManifestIdentities(): string[] {
+  return loadAllManifestTargets().map(({ identity }) => identity)
+}
+
+export function loadAllManifestTargets(): Array<{
+  identity: string
+  pack: string
+}> {
+  return [...readCoreManifest(), ...readCloudManifest().packs].map((entry) => ({
+    identity: packIdentity(entry),
+    pack: entry.pack
+  }))
 }
 
 export function loadUnjoinedYamlPacks(): string[] {
@@ -639,24 +818,20 @@ export function loadPackQuarantine(): Record<string, QuarantinedPack> {
   const path = dataPath('cloud/packQuarantine.json')
   if (!existsSync(path)) return {}
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+  if (!isRecord(parsed))
     throw new Error(`${path} must be a JSON object keyed by pack name`)
-  const entries = parsed as Record<string, QuarantinedPack>
+  const entries: Record<string, QuarantinedPack> = {}
   const manifestPacks = new Set(
     readCloudManifest().packs.map(({ pack }) => pack)
   )
-  const classes = new Set([
-    'unfetchable-ref',
-    'unsatisfiable-requirement',
-    'requires-gpu-runner'
-  ])
-  for (const [pack, entry] of Object.entries(entries)) {
+  for (const [pack, entry] of Object.entries(parsed)) {
     if (!manifestPacks.has(pack))
       throw new Error(`${path}: ${pack} is not in the cloud manifest`)
     if (
-      typeof entry !== 'object' ||
-      entry === null ||
-      !classes.has(entry.class) ||
+      !isRecord(entry) ||
+      (entry.class !== 'unfetchable-ref' &&
+        entry.class !== 'unsatisfiable-requirement' &&
+        entry.class !== 'requires-gpu-runner') ||
       !isNonEmptyString(entry.reason) ||
       !isNonEmptyString(entry.evidence) ||
       (entry.class === 'unsatisfiable-requirement' &&
@@ -665,6 +840,26 @@ export function loadPackQuarantine(): Record<string, QuarantinedPack> {
       !isIsoDate(entry.since)
     )
       throw new Error(`${path}: ${pack} has an invalid quarantine entry`)
+    if (entry.class === 'unsatisfiable-requirement') {
+      if (!isNonEmptyString(entry.failurePattern))
+        throw new Error(`${path}: ${pack} has an invalid quarantine entry`)
+      entries[pack] = {
+        class: entry.class,
+        reason: entry.reason,
+        evidence: entry.evidence,
+        failurePattern: entry.failurePattern,
+        upstreamFix: entry.upstreamFix,
+        since: entry.since
+      }
+    } else {
+      entries[pack] = {
+        class: entry.class,
+        reason: entry.reason,
+        evidence: entry.evidence,
+        upstreamFix: entry.upstreamFix,
+        since: entry.since
+      }
+    }
   }
   return entries
 }

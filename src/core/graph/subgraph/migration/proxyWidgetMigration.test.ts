@@ -758,11 +758,7 @@ describe('flushProxyWidgetMigration', () => {
           }
         }
       )
-      try {
-        reloadedGraph.configure(serialized)
-      } finally {
-        LiteGraph.unregisterNodeType(subgraph.id)
-      }
+      reloadedGraph.configure(serialized)
 
       const reloadedHost = reloadedGraph.getNodeById(host.id)
       expect(reloadedHost?.properties.proxyWidgets).toBeUndefined()

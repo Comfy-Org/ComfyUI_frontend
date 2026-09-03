@@ -3,30 +3,34 @@
     "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
     "pin": "609f3afaa74b2f88ef9ce8d939626065e3247469"
   },
-  "schema": 1,
+  "schema": 3,
+  "corpus": {
+    "count": 13,
+    "nodeTypesSha256": "11e6717674bee675cc54619025bd37d6c7a60161a1486765d1845614f48397fc"
+  },
   "nodes": {
     "CheckpointLoader|pysssss": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ConstrainImage|pysssss": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ConstrainImageforVideo|pysssss": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "LoadText|pysssss": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "LoraLoader|pysssss": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -42,7 +46,7 @@
     },
     "Repeater|pysssss": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ReroutePrimitive|pysssss": {
@@ -51,7 +55,7 @@
       "disconnect": ["+output:*:*", "-output:*:INT"]
     },
     "SaveText|pysssss": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -61,13 +65,13 @@
       "disconnect": []
     },
     "StringFunction|pysssss": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SystemNotification|pysssss": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     }
   }

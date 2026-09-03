@@ -3,18 +3,6 @@
     class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
-      v-if="checkoutStep === 'preview'"
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      :disabled="isPolling"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"

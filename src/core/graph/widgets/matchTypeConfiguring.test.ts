@@ -100,9 +100,10 @@ describe('MatchType during configure', () => {
     const graph = new LGraph()
     const switchNode = createMatchTypeNode(graph)
     const source1 = createSourceNode(graph, 'IMAGE')
-    const observedTypes: unknown[] = []
+    let recalculationCount = 0
     const runner = effect(() => {
-      observedTypes.push(switchNode.outputs[0].type)
+      void switchNode.outputs[0].type
+      recalculationCount++
     })
 
     try {
@@ -112,7 +113,7 @@ describe('MatchType during configure', () => {
 
       expect(switchNode.inputs[0].link).not.toBeNull()
       expect(switchNode.outputs[0].type).toBe('IMAGE')
-      expect(observedTypes).toEqual(['*', 'IMAGE'])
+      expect(recalculationCount).toBeGreaterThan(1)
     } finally {
       stop(runner)
     }

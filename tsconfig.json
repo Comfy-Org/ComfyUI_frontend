@@ -42,6 +42,7 @@
   },
   "include": [
     ".storybook/**/*",
+    "build/**/*.ts",
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",

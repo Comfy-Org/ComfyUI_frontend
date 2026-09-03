@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISlotType,
@@ -7,6 +7,7 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   BaseWidget,
   LGraphNode,
@@ -194,7 +195,6 @@ describe('SubgraphWidgetPromotion', () => {
         }
       }
       LiteGraph.registerNodeType(sourceType, SourceNode)
-      onTestFinished(() => LiteGraph.unregisterNodeType(sourceType))
       registerTestSubgraphNodeTypes(rootGraph)
 
       const source = LiteGraph.createNode(sourceType)
@@ -411,8 +411,12 @@ describe('SubgraphWidgetPromotion', () => {
         inputs: [{ name: 'value', type: 'number' }]
       })
 
-      const { node: first } = createNodeWithWidget('First', 'number', 42)
-      const { node: second } = createNodeWithWidget('Second', 'number', 42)
+      const { node: first } = createNodeWithWidget('First', 'number', 13)
+      const { node: second, widget: secondWidget } = createNodeWithWidget(
+        'Second',
+        'number',
+        27
+      )
       subgraph.add(first)
       subgraph.add(second)
       subgraph.inputNode.slots[0].connect(first.inputs[0], first)
@@ -421,12 +425,28 @@ describe('SubgraphWidgetPromotion', () => {
       const subgraphNode = createTestSubgraphNode(subgraph)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+      // linkIds resolve in connection order, so `first` seeds the store.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
+      const repromotions: IBaseWidget[] = []
+      subgraph.events.addEventListener('widget-promoted', (e) => {
+        repromotions.push(e.detail.widget)
+      })
+
+      // Disconnect the interior widget that currently backs the promotion.
+      // The input must re-resolve to the remaining interior widget — observable
+      // as a repromotion event carrying that widget — not merely survive as a
+      // stale binding to the removed source.
       first.disconnectInput(0, true)
 
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraphNode.widgets).toHaveLength(1)
+      expect(repromotions).toStrictEqual([secondWidget])
+      // Re-resolution deliberately keeps the store-backed value (see
+      // widgetValueStore.registerWidget): rebinding must not clobber the
+      // promoted value the user may have edited.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
       second.disconnectInput(0, true)
 

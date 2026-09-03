@@ -70,6 +70,8 @@ const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
@@ -81,6 +83,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isTeamPlan: mockIsTeamPlan,
     fetchBalance: mockFetchBalance
   }))
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: mockCanTopUp,
+    canSubscribeSelfServe: mockCanSubscribeSelfServe
+  })
 }))
 
 vi.mock('@/components/common/UserAvatar.vue', () => ({
@@ -122,6 +131,8 @@ describe('CurrentUserPopoverLegacy', () => {
       currency: 'usd'
     }
     mockIsLoading.value = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
   })
 
   function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
@@ -285,7 +296,7 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('opens credits settings from the legacy account menu', async () => {
+  it('opens Plan & Credits from the legacy account menu', async () => {
     const { user, onClose } = renderComponent()
 
     const menuItem = screen.getByTestId('manage-plan-menu-item')
@@ -293,7 +304,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(menuItem)
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('workspace')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -479,6 +490,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
+      mockCanTopUp.value = false
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'
