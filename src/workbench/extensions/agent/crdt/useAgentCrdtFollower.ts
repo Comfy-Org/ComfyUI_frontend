@@ -12,7 +12,7 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import type { DocUpdate } from './docFrameClient'
+import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
@@ -81,7 +81,8 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  frameTransport: DocFrameTransport = apiTransport
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -97,7 +98,7 @@ export function useAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport())
+  const client = new DocFrameClient(createLoggedTransport(frameTransport))
   const bridge = new LayoutFollowerBridge(client)
   const projection = new AgentCrdtProjection(
     graphMutations,

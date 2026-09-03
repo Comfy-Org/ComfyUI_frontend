@@ -92,6 +92,7 @@ import type { AgentPaywallAction } from './services/agent/agentPaywallPresentati
 import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import { createStandaloneAgentDocTransport } from './crdt/standaloneAgentDocTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -144,6 +145,10 @@ const events =
   import.meta.env.VITE_AGENT_STANDALONE === 'true'
     ? createStandaloneAgentEventSource()
     : createAgentEventSource(api)
+const standaloneDocTransport =
+  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    ? createStandaloneAgentDocTransport()
+    : undefined
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
@@ -492,12 +497,16 @@ const {
 } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
-  () => resolvedUserInfo.value?.id ?? null,
+  () =>
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+      ? 'local-user'
+      : (resolvedUserInfo.value?.id ?? null),
   isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  standaloneDocTransport
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,

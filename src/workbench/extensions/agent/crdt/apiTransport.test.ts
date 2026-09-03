@@ -67,4 +67,21 @@ describe('createLoggedTransport.send', () => {
       frame: { type: 'doc_ops' }
     })
   })
+
+  it('logs and delegates through an injected transport', () => {
+    setCrdtDebugEnabled(true)
+    const injected = {
+      send: vi.fn(() => false),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    }
+
+    expect(createLoggedTransport(injected).send(frame)).toBe(false)
+
+    expect(injected.send).toHaveBeenCalledWith(frame)
+    expect(devEvents.value.at(-1)?.detail).toEqual({
+      delivered: false,
+      frame: { type: 'doc_ops' }
+    })
+  })
 })

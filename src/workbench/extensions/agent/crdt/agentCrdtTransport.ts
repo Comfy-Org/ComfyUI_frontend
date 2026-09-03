@@ -33,10 +33,12 @@ function traceableFrame(frame: string): unknown {
   }
 }
 
-export function createLoggedTransport(): DocFrameTransport {
+export function createLoggedTransport(
+  frameTransport: DocFrameTransport = apiTransport
+): DocFrameTransport {
   return {
     send(frame) {
-      const delivered = apiTransport.send(frame)
+      const delivered = frameTransport.send(frame)
       wireLog.trace('ws_out', 'outbound frame', {
         delivered,
         frame: traceableFrame(frame)
@@ -44,10 +46,10 @@ export function createLoggedTransport(): DocFrameTransport {
       return delivered
     },
     addEventListener(type, listener) {
-      apiTransport.addEventListener(type, listener)
+      frameTransport.addEventListener(type, listener)
     },
     removeEventListener(type, listener) {
-      apiTransport.removeEventListener(type, listener)
+      frameTransport.removeEventListener(type, listener)
     }
   }
 }
