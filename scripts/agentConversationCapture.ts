@@ -28,8 +28,15 @@ const zToolCall = z.object({
   applied_op_ids: z.array(z.string().min(1))
 })
 
+const zBackendTurn = z.object({
+  message_id: z.string().min(1),
+  request: zAgentConversationRequest,
+  frames: z.array(zRecordedWsEvent).min(1),
+  tool_calls: z.array(zToolCall)
+})
+
 const zBackendCapture = z.object({
-  schema_version: z.literal('agent-backend-capture.v1'),
+  schema_version: z.literal('agent-backend-capture.v2'),
   source: z.object({
     repo: z.string(),
     suite: z.string(),
@@ -39,13 +46,10 @@ const zBackendCapture = z.object({
   capture: z.object({
     backend: z.literal('Comfy-Org/cloud'),
     thread_id: z.string().min(1),
-    message_id: z.string().min(1),
     exported_at: z.string().datetime()
   }),
   workflow: zAgentConversationWorkflow,
-  request: zAgentConversationRequest,
-  frames: z.array(zRecordedWsEvent).min(1),
-  tool_calls: z.array(zToolCall)
+  turns: z.array(zBackendTurn).min(1)
 })
 export type AgentBackendCapture = z.input<typeof zBackendCapture>
 
@@ -80,35 +84,34 @@ function operationsFromResult(toolCall: z.infer<typeof zToolCall>) {
   })
 }
 
-/**
- * Projects a cloud backend capture into the replay format. Websocket frames
- * retain their recorded order; accepted semantic ops are inserted immediately
- * before the matching terminal tool-call frame, where the live doc update was
- * observed. No operation can be authored by this exporter: every emitted op
- * must exist in the parent audit result and in its durable accepted-op rows.
- */
-export function exportAgentConversation(input: unknown) {
-  const capture = zBackendCapture.parse(input)
+// Ops are inserted before their terminal tool-call frame and must exist in the accepted-op rows; nothing is authored here.
+function exportTurn(turn: z.infer<typeof zBackendTurn>, threadId: string) {
   const toolCalls = new Map(
-    capture.tool_calls.map((toolCall) => [toolCall.tool_call_id, toolCall])
+    turn.tool_calls.map((toolCall) => [toolCall.tool_call_id, toolCall])
   )
   const emittedToolCalls = new Set<string>()
   const response: Array<
-    | { kind: 'event'; event: z.infer<typeof zRecordedWsEvent> }
-    | { kind: 'graph_ops'; ops: Array<Record<string, unknown>> }
+    | { kind: 'event'; event: z.infer<typeof zRecordedWsEvent>; at_ms?: number }
+    | { kind: 'graph_ops'; ops: Array<Record<string, unknown>>; at_ms?: number }
   > = []
+  const firstAt = turn.frames[0].at_ms
+  const relativeAt = (frame: { at_ms?: number }) =>
+    firstAt === undefined || frame.at_ms === undefined
+      ? undefined
+      : frame.at_ms - firstAt
 
-  for (const frame of capture.frames) {
+  for (const frame of turn.frames) {
     if (
-      frame.data.thread_id !== capture.capture.thread_id ||
-      frame.data.message_id !== capture.capture.message_id
+      frame.data.thread_id !== threadId ||
+      frame.data.message_id !== turn.message_id
     ) {
       throw new Error(
-        `recorded ${frame.type} frame does not belong to capture ${capture.capture.thread_id}/${capture.capture.message_id}`
+        `recorded ${frame.type} frame does not belong to turn ${threadId}/${turn.message_id}`
       )
     }
+    const at_ms = relativeAt(frame)
     const event = {
-      ...frame,
+      type: frame.type,
       data: { ...frame.data }
     }
     delete event.data.thread_id
@@ -117,6 +120,11 @@ export function exportAgentConversation(input: unknown) {
     if (event.type === 'agent_tool_call') {
       const toolCallId = event.data.tool_call_id
       const status = event.data.status
+      if (status !== 'running' && status !== 'success' && status !== 'error') {
+        throw new Error(
+          `recorded agent_tool_call frame carries status ${JSON.stringify(status)}; only running, success or error are known`
+        )
+      }
       if (
         typeof toolCallId === 'string' &&
         status !== 'running' &&
@@ -124,15 +132,15 @@ export function exportAgentConversation(input: unknown) {
       ) {
         const operations = operationsFromResult(toolCalls.get(toolCallId)!)
         if (operations.length > 0) {
-          response.push({ kind: 'graph_ops', ops: operations })
+          response.push({ kind: 'graph_ops', ops: operations, at_ms })
         }
         emittedToolCalls.add(toolCallId)
       }
     }
-    response.push({ kind: 'event', event })
+    response.push({ kind: 'event', event, at_ms })
   }
 
-  const omitted = capture.tool_calls.filter(
+  const omitted = turn.tool_calls.filter(
     (toolCall) =>
       toolCall.applied_op_ids.length > 0 &&
       !emittedToolCalls.has(toolCall.tool_call_id)
@@ -142,17 +150,22 @@ export function exportAgentConversation(input: unknown) {
       `recorded response has no terminal websocket frame for tool call(s): ${omitted.map((call) => call.tool_call_id).join(', ')}`
     )
   }
+  return { message_id: turn.message_id, request: turn.request, response }
+}
 
+export function exportAgentConversation(input: unknown) {
+  const capture = zBackendCapture.parse(input)
   return zAgentConversation.parse({
-    schema_version: 'agent-conversation.v1',
+    schema_version: 'agent-conversation.v2',
     source: {
       ...capture.source,
       response_side: 'recorded',
       capture: capture.capture
     },
     workflow: capture.workflow,
-    request: capture.request,
-    response
+    turns: capture.turns.map((turn) =>
+      exportTurn(turn, capture.capture.thread_id)
+    )
   })
 }
 
