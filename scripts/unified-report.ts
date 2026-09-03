@@ -19,9 +19,11 @@ const hasSizeData = existsSync('temp/size')
 
 if (sizeStatus === 'ready' && hasSizeData) {
   try {
-    const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
-      encoding: 'utf-8'
-    }).trimEnd()
+    const sizeReport = execFileSync(
+      'node',
+      ['scripts/size-report.js', '--compact'],
+      { encoding: 'utf-8' }
+    ).trimEnd()
     lines.push(sizeReport)
   } catch {
     lines.push('## 📦 Bundle Size')
@@ -46,7 +48,7 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   try {
     const perfReport = execFileSync(
       'pnpm',
-      ['exec', 'tsx', 'scripts/perf-report.ts'],
+      ['exec', 'tsx', 'scripts/perf-report.ts', '--compact'],
       { encoding: 'utf-8' }
     ).trimEnd()
     lines.push(perfReport)

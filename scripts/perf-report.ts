@@ -43,6 +43,7 @@ interface PerfReport {
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
+const compact = process.argv.includes('--compact')
 
 type MetricKey =
   | 'styleRecalcs'
@@ -168,7 +169,7 @@ function computeCV(stats: MetricStats): number {
 function formatValue(value: number, unit: string): string {
   if (unit === 'ms') return `${value.toFixed(0)}ms`
   if (unit === 'bytes') return formatBytes(value)
-  return `${value.toFixed(0)}`
+  return value.toFixed(0)
 }
 
 function formatDelta(pct: number | null): string {
@@ -257,7 +258,8 @@ function renderHeadlineSummary(
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
-  historical: PerfReport[]
+  historical: PerfReport[],
+  compact: boolean
 ): string[] {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
@@ -327,6 +329,8 @@ function renderFullReport(
     lines.push('✅ No regressions detected.', '')
   }
 
+  if (compact) return lines
+
   lines.push(
     `<details><summary>All metrics</summary>`,
     '',
@@ -389,12 +393,16 @@ function renderFullReport(
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
-  historicalCount: number
+  historicalCount: number,
+  compact: boolean
 ): string[] {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   lines.push(
-    `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
+    `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`
+  )
+  if (compact) return lines
+  lines.push(
     '',
     '<details><summary>All metrics (cold start)</summary>',
     '',
@@ -440,11 +448,13 @@ function renderColdStartReport(
 }
 
 function renderNoBaselineReport(
-  prGroups: Map<string, PerfMeasurement[]>
+  prGroups: Map<string, PerfMeasurement[]>,
+  compact: boolean
 ): string[] {
   const lines: string[] = []
+  lines.push('> ℹ️ No baseline found — significance unavailable.')
+  if (compact) return lines
   lines.push(
-    '> ℹ️ No baseline found — significance unavailable.',
     '',
     '<details><summary>Absolute values</summary>',
     '',
@@ -484,24 +494,32 @@ function main() {
   lines.push(...renderHeadlineSummary(prGroups))
 
   if (baseline && historical.length >= 2) {
-    lines.push(...renderFullReport(prGroups, baseline, historical))
+    lines.push(...renderFullReport(prGroups, baseline, historical, compact))
   } else if (baseline) {
-    lines.push(...renderColdStartReport(prGroups, baseline, historical.length))
+    lines.push(
+      ...renderColdStartReport(prGroups, baseline, historical.length, compact)
+    )
   } else {
-    lines.push(...renderNoBaselineReport(prGroups))
+    lines.push(...renderNoBaselineReport(prGroups, compact))
   }
 
-  const rawData = {
-    ...current,
-    measurements: current.measurements.map(
-      ({ allFrameDurationsMs: _, ...rest }) => rest
-    )
+  if (compact) {
+    lines.push('', '_Full measurements: `perf-metrics` CI artifact._')
   }
-  lines.push('\n<details><summary>Raw data</summary>\n')
-  lines.push('```json')
-  lines.push(JSON.stringify(rawData, null, 2))
-  lines.push('```')
-  lines.push('\n</details>')
+
+  if (!compact) {
+    const rawData = {
+      ...current,
+      measurements: current.measurements.map(
+        ({ allFrameDurationsMs: _, ...rest }) => rest
+      )
+    }
+    lines.push('\n<details><summary>Raw data</summary>\n')
+    lines.push('```json')
+    lines.push(JSON.stringify(rawData, null, 2))
+    lines.push('```')
+    lines.push('\n</details>')
+  }
 
   process.stdout.write(lines.join('\n') + '\n')
 }

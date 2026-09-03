@@ -66,8 +66,9 @@ import { getCategoryMetadata } from './bundle-categories.js'
 
 const currDir = path.resolve('temp/size')
 const prevDir = path.resolve('temp/size-prev')
+const compact = process.argv.includes('--compact')
 
-run()
+void run()
 
 /**
  * Main entry for generating the size report
@@ -80,7 +81,7 @@ async function run() {
   }
 
   const report = await buildBundleReport()
-  const output = renderReport(report)
+  const output = renderReport(report, compact)
   process.stdout.write(output)
 }
 
@@ -172,13 +173,14 @@ async function buildBundleReport() {
 /**
  * Render the complete report in markdown
  * @param {BundleReport} report
+ * @param {boolean} compact
  * @returns {string}
  */
-function renderReport(report) {
+function renderReport(report, compact) {
   const parts = [renderCompactHeader(report)]
 
   if (report.categories.length > 0) {
-    parts.push('\n' + renderCategoryDetails(report))
+    parts.push('\n' + renderCategoryDetails(report, compact))
   }
 
   return (
@@ -319,9 +321,10 @@ function renderCategoryGlance(report) {
 /**
  * Render per-category detail tables wrapped in collapsible sections
  * @param {BundleReport} report
+ * @param {boolean} compact
  * @returns {string}
  */
-function renderCategoryDetails(report) {
+function renderCategoryDetails(report, compact) {
   const lines = ['<details>', '<summary>Details</summary>', '']
 
   lines.push(renderSummary(report))
@@ -333,12 +336,13 @@ function renderCategoryDetails(report) {
     lines.push('')
   }
 
-  for (const category of report.categories) {
-    lines.push(renderCategoryBlock(category, report.hasBaseline))
-    lines.push('')
-  }
-
-  if (report.categories.length > 0) {
+  if (compact) {
+    lines.push('_Full bundle details: `size-data` CI artifact._', '')
+  } else {
+    for (const category of report.categories) {
+      lines.push(renderCategoryBlock(category, report.hasBaseline))
+      lines.push('')
+    }
     lines.pop()
   }
 
