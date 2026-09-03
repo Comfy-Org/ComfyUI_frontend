@@ -1189,6 +1189,59 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('treats an unlisted intent status as advanced rather than failed', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'requires_confirmation' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockHandleNextAction).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'processing',
+        errorMessage: null
+      })
+    })
+
+    it('reports a resume that canceled the intent as failed', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'canceled' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'failed_retryable',
+        errorMessage: 'billingOperation.authenticationFailedDetail'
+      })
+    })
+
     it('resumes a live challenge explicitly and polls on after verification succeeds', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
@@ -2461,6 +2514,59 @@ describe('billingOperationStore', () => {
 
       expect(store.operations.size).toBe(0)
       expect(store.getOperation('op-1')).toBeUndefined()
+    })
+  })
+
+  describe('dismissOperation', () => {
+    it('hides a failed topup from the selectors without stopping it', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.topupActionOperation).toMatchObject({ opId: 'op-1' })
+
+      store.dismissOperation('op-1')
+
+      expect(store.topupActionOperation).toBeUndefined()
+      expect(store.isAddingCredits).toBe(false)
+      expect(store.operations.size).toBe(1)
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'pending',
+        dismissed: true
+      })
+    })
+
+    it('still resolves normally if the dismissed operation later succeeds', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-1',
+          status: 'pending',
+          authentication_state: 'failed_retryable',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      store.dismissOperation('op-1')
+      expect(store.topupActionOperation).toBeUndefined()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect((await terminal).status).toBe('succeeded')
     })
   })
 

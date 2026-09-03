@@ -23,7 +23,7 @@ const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockRetryPaymentAuthentication = vi.fn()
-const mockClearOperation = vi.fn((opId: string) => {
+const mockDismissOperation = vi.fn((opId: string) => {
   if (mockBillingOperationState.topupActionOperation?.value?.opId === opId) {
     mockBillingOperationState.topupActionOperation.value = undefined
   }
@@ -101,7 +101,7 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
       },
       startOperation: mockStartOperation,
       retryPaymentAuthentication: mockRetryPaymentAuthentication,
-      clearOperation: mockClearOperation
+      dismissOperation: mockDismissOperation
     })
   }
 })
@@ -536,7 +536,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
     await nextTick()
 
-    expect(mockClearOperation).toHaveBeenCalledWith('op-1')
+    expect(mockDismissOperation).toHaveBeenCalledWith('op-1')
     expect(
       screen.queryByText('Your bank rejected the verification.')
     ).not.toBeInTheDocument()

@@ -40,15 +40,16 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
-// Statuses that mean the resumed challenge handed the payment on to Stripe.
-// Anything else leaves the intent where it started, awaiting a fresh attempt.
-// requires_confirmation is intentionally absent: these intents are never
-// created with Stripe's manual confirmation_method, so a resumed challenge
-// cannot land there.
-const RESUMED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
-  'processing',
-  'succeeded',
-  'requires_capture'
+// Statuses that mean the resumed challenge left the intent exactly where it
+// started, so the attempt needs a fresh start rather than a poll. A denylist
+// fails toward the server rather than toward the customer: an unlisted or
+// future Stripe status reports optimistically as processing, which the next
+// poll's own authentication_state corrects if that guess was wrong — unlike
+// an allowlist, where the same gap would report a live payment as failed.
+const UNADVANCED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
+  'requires_payment_method',
+  'requires_action',
+  'canceled'
 ])
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
@@ -103,6 +104,11 @@ interface BillingOperation {
   paymentIntentSource?: PaymentIntentSource
   autoHandleRequiresAction: boolean
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
+  // Set when the customer walked away from this operation in the UI (e.g.
+  // "Start over" after a failed challenge). The operation itself is not
+  // over — only the server decides that — so it keeps polling and can still
+  // resolve normally; this only hides it from the selectors a dialog reads.
+  dismissed: boolean
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
@@ -144,6 +150,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.status === 'pending' &&
         op.authenticationState !== 'failed_retryable' &&
+        !op.dismissed &&
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -167,6 +174,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
+        !op.dismissed &&
         ((op.status === 'pending' &&
           (op.actionUrl !== null ||
             op.authenticationState === 'requires_action' ||
@@ -243,7 +251,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkoutType: metadata?.checkoutType,
       paymentIntentSource: metadata?.paymentIntentSource,
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
-      downgradeToPersonal: metadata?.downgradeToPersonal
+      downgradeToPersonal: metadata?.downgradeToPersonal,
+      dismissed: false
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
@@ -533,7 +542,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
       // With no action left to resume the call succeeds and changes nothing, so
       // an intent still sitting on its pre-challenge status has not paid.
-      if (paymentIntent && !RESUMED_INTENT_STATUSES.has(paymentIntent.status)) {
+      if (
+        paymentIntent &&
+        UNADVANCED_INTENT_STATUSES.has(paymentIntent.status)
+      ) {
         setAuthenticationFailed(
           opId,
           t('billingOperation.authenticationFailedDetail')
@@ -1117,6 +1129,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     terminalPromises.delete(opId)
   }
 
+  // Unlike clearOperation, this keeps the operation live: polling continues
+  // and a late success or failure still resolves normally. It only removes
+  // the operation from the selectors a dialog reads, since whether the
+  // customer wants to see it is a view concern — whether it is over is not.
+  function dismissOperation(opId: string) {
+    updateOperation(opId, { dismissed: true })
+  }
+
   return {
     operations,
     hasPendingOperations,
@@ -1128,6 +1148,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     startOperation,
     retryPaymentAuthentication,
     pollPendingOperations,
-    clearOperation
+    clearOperation,
+    dismissOperation
   }
 })
