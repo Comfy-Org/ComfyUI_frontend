@@ -88,11 +88,11 @@ import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,

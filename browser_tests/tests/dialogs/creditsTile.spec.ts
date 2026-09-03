@@ -433,10 +433,15 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
   let operationPollRequests: Request[]
+  let releaseOperationPoll: () => void
+  let operationPollGate: Promise<void>
   let topupDialog: TopUpCreditsDialog
 
   test.beforeEach(async ({ page }) => {
     operationPollRequests = []
+    operationPollGate = new Promise((resolve) => {
+      releaseOperationPoll = resolve
+    })
     await page.addInitScript(() => {
       window.open = (url, target, features) => {
         document.documentElement.dataset.openedUrl = String(url)
@@ -468,17 +473,21 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
         } satisfies CreateTopupResponse)
       )
     )
-    await page.route('**/api/billing/ops/topup-3ds-operation', (route) => {
-      operationPollRequests.push(route.request())
-      return route.fulfill(
-        jsonRoute({
-          id: 'topup-3ds-operation',
-          status: 'pending',
-          started_at: '2026-07-31T00:00:00Z',
-          action_url: 'https://verify.example/topup-3ds'
-        } satisfies BillingOpStatusResponse)
-      )
-    })
+    await page.route(
+      '**/api/billing/ops/topup-3ds-operation',
+      async (route) => {
+        operationPollRequests.push(route.request())
+        await operationPollGate
+        return route.fulfill(
+          jsonRoute({
+            id: 'topup-3ds-operation',
+            status: 'pending',
+            started_at: '2026-07-31T00:00:00Z',
+            action_url: 'https://verify.example/topup-3ds'
+          } satisfies BillingOpStatusResponse)
+        )
+      }
+    )
 
     const content = await openPlanAndCredits(page)
     topupDialog = new TopUpCreditsDialog(page)
@@ -505,6 +514,7 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
       topupDialog.root.getByRole('button', { name: 'Back' })
     ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    releaseOperationPoll()
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'
     })

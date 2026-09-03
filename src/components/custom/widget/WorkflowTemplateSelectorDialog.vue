@@ -421,11 +421,11 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardBottom from '@/components/card/CardBottom.vue'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'

@@ -2,11 +2,12 @@ import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Tag from 'primevue/tag'
 import Tooltip from 'primevue/tooltip'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import Tag from '@/components/ui/badge/Badge.vue'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'

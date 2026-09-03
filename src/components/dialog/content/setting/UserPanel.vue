@@ -53,11 +53,7 @@
           </div>
         </div>
 
-        <ProgressSpinner
-          v-if="loading"
-          class="mt-4 size-8"
-          style="--pc-spinner-color: #000"
-        />
+        <ProgressSpinner v-if="loading" class="mt-4 size-8" />
         <div v-else class="mt-4 flex flex-col gap-2">
           <Button class="w-32" variant="secondary" @click="handleSignOut">
             <i class="pi pi-sign-out" />
@@ -99,10 +95,9 @@
 </template>
 
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
-
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
 

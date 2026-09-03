@@ -1,5 +1,5 @@
 <template>
-  <Message severity="info" icon="pi pi-palette" pt:text="w-full">
+  <Message severity="info" icon="pi pi-palette">
     <div class="flex items-center justify-between">
       <div>
         {{ $t('settingsCategories.ColorPalette') }}
@@ -44,10 +44,10 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Message from 'primevue/message'
 import Select from 'primevue/select'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

@@ -90,11 +90,12 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Tag from '@/components/ui/badge/Badge.vue'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import Switch from '@/components/ui/switch/Switch.vue'

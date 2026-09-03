@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
-import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
+
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import type {

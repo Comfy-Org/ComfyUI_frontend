@@ -4,12 +4,12 @@ import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import Message from '@/components/ui/message/Message.vue'
 
 import ApiKeyForm from './ApiKeyForm.vue'
 

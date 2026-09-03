@@ -5,6 +5,7 @@
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Chip
+        variant="chip"
         class="mt-2 h-6 bg-red-700 text-sm font-light"
         removable
         @remove="handleRemoveDownload"
@@ -18,14 +19,23 @@
       "
       class="mt-2 flex flex-row items-center gap-2"
     >
-      <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
-           https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499
-      -->
-      <ProgressBar
+      <div
+        role="progressbar"
+        :aria-valuenow="downloadProgressPercent"
+        aria-valuemin="0"
+        aria-valuemax="100"
         class="flex-1"
-        :value="Number(((download.progress ?? 0) * 100).toFixed(1))"
-        :show-value="(download.progress ?? 0) > 0.1"
-      />
+      >
+        <div class="h-5 overflow-hidden rounded-full bg-secondary-background">
+          <div
+            class="h-full bg-primary-background transition-[width]"
+            :style="{ width: `${downloadProgressPercent}%` }"
+          />
+        </div>
+        <span v-if="(download.progress ?? 0) > 0.1" class="text-xs">
+          {{ downloadProgressPercent }}%
+        </span>
+      </div>
 
       <Button
         v-if="download.status === 'in_progress'"
@@ -67,11 +77,11 @@
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
-import ProgressBar from 'primevue/progressbar'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Chip from '@/components/ui/badge/Badge.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
@@ -82,6 +92,10 @@ const electronDownloadStore = useElectronDownloadStore()
 const props = defineProps<{
   download: ElectronDownload
 }>()
+
+const downloadProgressPercent = computed(() =>
+  Number(((props.download.progress ?? 0) * 100).toFixed(1))
+)
 
 const getDownloadLabel = (savePath: string) => {
   let parts = savePath.split('/')
