@@ -15,6 +15,7 @@ import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
+import { setGraphLoadLifecycleErrorReporter } from '@/base/graphLoadLifecycle'
 import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
@@ -25,7 +26,10 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
-import { flushErrorReports } from '@/platform/telemetry/reportError'
+import {
+  flushErrorReports,
+  reportError
+} from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -113,6 +117,12 @@ sentryInit({
 })
 
 flushErrorReports()
+setGraphLoadLifecycleErrorReporter((error, event) => {
+  reportError(error, {
+    errorType: 'graph_load_lifecycle_listener_failed',
+    context: { eventType: event.type }
+  })
+})
 
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,

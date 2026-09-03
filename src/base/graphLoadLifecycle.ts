@@ -9,15 +9,34 @@ export type GraphLoadLifecycleEvent =
   | { type: 'settled'; token: GraphLoadToken }
 
 const listeners = new Set<(event: GraphLoadLifecycleEvent) => void>()
+let errorReporter:
+  | ((error: unknown, event: GraphLoadLifecycleEvent) => void)
+  | null = null
+
+export function setGraphLoadLifecycleErrorReporter(
+  reporter: typeof errorReporter
+): void {
+  errorReporter = reporter
+}
+
+function notifyGraphLoadLifecycle(event: GraphLoadLifecycleEvent): void {
+  for (const listener of listeners) {
+    try {
+      listener(event)
+    } catch (error) {
+      errorReporter?.(error, event)
+    }
+  }
+}
 
 export function beginGraphLoad(): GraphLoadToken {
   const token = Symbol('graph-load') as GraphLoadToken
-  for (const listener of listeners) listener({ type: 'started', token })
+  notifyGraphLoadLifecycle({ type: 'started', token })
   return token
 }
 
 export function settleGraphLoad(token: GraphLoadToken): void {
-  for (const listener of listeners) listener({ type: 'settled', token })
+  notifyGraphLoadLifecycle({ type: 'settled', token })
 }
 
 /**
