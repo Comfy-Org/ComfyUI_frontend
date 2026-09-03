@@ -493,10 +493,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       const outcome = await load3d.loadModel(modelUrl)
       if (outcome === 'cancelled') return
-      if (outcome === 'loaded') {
-        currentModelUrl = modelUrl
-        restoreStandaloneConfig(modelUrl)
-      }
+      if (outcome === 'loaded') currentModelUrl = modelUrl
+      restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
 
       isPreview.value = true
@@ -534,10 +532,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       saveStandaloneConfig()
       const outcome = await load3d.loadModel(modelUrl)
       if (outcome === 'cancelled') return
-      if (outcome === 'loaded') {
-        currentModelUrl = modelUrl
-        restoreStandaloneConfig(modelUrl)
-      }
+      if (outcome === 'loaded') currentModelUrl = modelUrl
+      restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
       if (outcome === 'loaded') persistStandaloneThumbnail(modelUrl)
     } catch (error) {

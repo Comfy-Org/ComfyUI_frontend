@@ -667,6 +667,9 @@ describe('useLoad3dViewer', () => {
         'normal',
         'wireframe'
       ])
+      // initializeViewer captures from the source, which is the instance that
+      // ran the loader; the new one has an empty adapterRef.
+      expect(viewer.sourceFormat.value).toBe('glb')
 
       vi.mocked(mockLoad3d.isSplatModel!).mockReturnValueOnce(true)
       vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockReturnValueOnce({
@@ -691,6 +694,20 @@ describe('useLoad3dViewer', () => {
       expect([...viewer.materialModes.value]).toEqual([])
     })
 
+    it('commits the widget value when the dropped model loads', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce('3d/dropped.glb')
+      const modelWidget = { name: 'model_file', value: 'old.glb', options: {} }
+      mockNode.widgets = [modelWidget as unknown as IBaseWidget]
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      await viewer.handleModelDrop(new File([''], 'dropped.glb'))
+
+      expect(modelWidget.value).toBe('3d/dropped.glb')
+    })
+
     it('does not commit the widget value when the dropped model load is cancelled', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce('3d/dropped.glb')
       const modelWidget = { name: 'model_file', value: 'old.glb', options: {} }
@@ -699,16 +716,13 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockClear()
       vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('cancelled')
 
       await viewer.handleModelDrop(new File([''], 'dropped.glb'))
 
       expect(modelWidget.value).toBe('old.glb')
       expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).not.toHaveBeenCalledWith(
-        'toastMessages.failedToLoadModel'
-      )
+      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
     })
 
     it('refreshes the capability refs but keeps the widget value when the dropped model fails to load', async () => {
@@ -719,7 +733,6 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockClear()
       vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
 
       await viewer.handleModelDrop(new File([''], 'dropped.glb'))
@@ -845,25 +858,46 @@ describe('useLoad3dViewer', () => {
       expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
     })
 
-    it.for(['cancelled', 'failed'] as const)(
-      'skips thumbnail persistence when the standalone model load is %s',
-      async (outcome) => {
-        isAssetPreviewSupported.mockReturnValue(true)
-        vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce(outcome)
-        const viewer = useLoad3dViewer()
-        const containerRef = document.createElement('div')
+    it('abandons the standalone viewer when a newer load supersedes it', async () => {
+      isAssetPreviewSupported.mockReturnValue(true)
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('cancelled')
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
 
-        await viewer.initializeStandaloneViewer(
-          containerRef,
-          '/api/view?filename=mesh.glb&type=output'
-        )
-        await nextTick()
+      await viewer.initializeStandaloneViewer(
+        containerRef,
+        '/api/view?filename=mesh.glb&type=output'
+      )
+      await nextTick()
 
-        expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
-        expect(persistThumbnail).not.toHaveBeenCalled()
-        expect(mockToastStore.addAlert).not.toHaveBeenCalled()
-      }
-    )
+      // Only the cancelled return prevents these; the thumbnail assertions
+      // below are already covered by the separate `loaded` guard.
+      expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
+      expect(viewer.isPreview.value).toBe(false)
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+      expect(persistThumbnail).not.toHaveBeenCalled()
+      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
+    })
+
+    it('still restores the viewer config when the standalone model fails to load', async () => {
+      isAssetPreviewSupported.mockReturnValue(true)
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(
+        containerRef,
+        '/api/view?filename=mesh.glb&type=output'
+      )
+      await nextTick()
+
+      // backgroundColor starts as '' and restoreStandaloneConfig is its only
+      // initialiser, so skipping it would bind '' into the colour input.
+      expect(viewer.backgroundColor.value).not.toBe('')
+      expect(mockLoad3d.getCurrentModelCapabilities).toHaveBeenCalled()
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+      expect(persistThumbnail).not.toHaveBeenCalled()
+    })
 
     it('skips thumbnail persistence when the asset API is unavailable', async () => {
       const viewer = useLoad3dViewer()

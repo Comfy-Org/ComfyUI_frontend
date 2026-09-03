@@ -278,11 +278,11 @@ export interface SceneOverlay {
  *   `{ silent: true }` throws instead of returning this.
  * - `'failed'` — the load threw (network, parse, or an unknown file type).
  *
- * `Load3d.loadModel` awaits any prior `loadingPromise` before starting, so
- * within one viewer instance `'cancelled'` currently only arises from
- * disposal. If a newer load is ever allowed to supersede an in-flight older
- * one, revisit every caller that records per-load state — an older caller
- * would still need to stop writing it once the newer load owns the viewer.
+ * `Load3d.loadModel` awaits any prior `loadingPromise` before starting, but
+ * that only serialises callers pairwise: three overlapping loads all observe
+ * the same in-flight promise, so the middle one is superseded and returns
+ * `'cancelled'`. Disposal is therefore not the only source of it — any
+ * caller recording per-load state must check the outcome before writing.
  */
 export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
 

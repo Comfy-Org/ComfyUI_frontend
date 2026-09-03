@@ -162,6 +162,28 @@ describe('generateModelThumbnail', () => {
     })
   })
 
+  it('redacts a root-relative agent asset URL from a loader error', async () => {
+    const instance = mockInstance({
+      loadModel: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'fetch for "/api/view?filename=mesh-0.glb&token=xyz" responded with 403'
+          )
+        )
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await expect(
+      generateModelThumbnail('/mesh-0.glb', 'mesh-0.glb')
+    ).resolves.toEqual({ status: 'failed' })
+
+    const { message } = reportError.mock.calls[0][0] as Error
+    expect(message).not.toContain('token=xyz')
+    expect(message).not.toContain('filename=mesh-0.glb')
+    expect(message).toContain('/api/view')
+  })
+
   it('runs generations one at a time', async () => {
     let releaseFirst!: () => void
     const first = mockInstance({
