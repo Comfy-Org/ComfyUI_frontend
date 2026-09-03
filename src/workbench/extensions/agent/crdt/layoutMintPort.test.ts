@@ -314,15 +314,21 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('drops a snapshot-less mint observably, never silently', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     graphNodes.clear()
     deliver(createNodeChange('1'))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'crdt_node_snapshot_missing',
+      tags: {
+        failure_kind: 'invariant',
+        feature_area: 'crdt',
+        operation: 'sync',
+        outcome: 'failed'
+      },
+      context: { nodeId: '1' },
+      level: 'error'
+    })
   })
 
   it('treats a bare clearGraph as teardown (a tab switch mints no clear storm)', () => {

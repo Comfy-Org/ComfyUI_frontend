@@ -146,12 +146,17 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
-          // A dropped human mint is a local-graph-vs-doc divergence; it must
-          // be observable, never silent (the surfacing-honesty principle).
-          console.error(
-            '[agent-crdt] add_node mint dropped: no snapshot for node',
-            operation.nodeId
-          )
+          reportError(new Error('CRDT node snapshot is unavailable for mint'), {
+            errorType: 'crdt_node_snapshot_missing',
+            tags: {
+              failure_kind: 'invariant',
+              feature_area: 'crdt',
+              operation: 'sync',
+              outcome: 'failed'
+            },
+            context: { nodeId: operation.nodeId },
+            level: 'error'
+          })
           return
         }
         deps.enqueue([

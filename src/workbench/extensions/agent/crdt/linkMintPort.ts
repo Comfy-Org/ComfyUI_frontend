@@ -9,6 +9,8 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -96,11 +98,21 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function surfaceUnrepresentable(what: string, id: string | number): void {
-    // A doc that no longer matches the local graph must be observable,
-    // never silent (the surfacing-honesty principle).
-    console.error(
-      `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`,
-      id
+    reportError(
+      new Error(
+        `CRDT ${what} has no wire operation; the bound document diverges from the local graph`
+      ),
+      {
+        errorType: 'crdt_link_change_unrepresentable',
+        tags: {
+          failure_kind: 'invariant',
+          feature_area: 'crdt',
+          operation: 'sync',
+          outcome: 'failed'
+        },
+        context: { change: what, linkId: id },
+        level: 'error'
+      }
     )
   }
 

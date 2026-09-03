@@ -4,6 +4,8 @@
  * writes mint the interior form (path = resolved node-id chain,
  * inner_widget = the name); an unresolvable owner surfaces, never drops.
  */
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -74,12 +76,17 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     const subgraphNodePath =
       root === null ? null : deps.resolveInteriorPath(set.graphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      // The doc no longer matches the local graph; observable, never silent
-      // (the surfacing-honesty principle).
-      console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        `${set.graphId}:${String(set.nodeId)}:${set.name}`
-      )
+      reportError(new Error('CRDT widget owner cannot be resolved for mint'), {
+        errorType: 'crdt_widget_owner_unresolvable',
+        tags: {
+          failure_kind: 'invariant',
+          feature_area: 'crdt',
+          operation: 'sync',
+          outcome: 'failed'
+        },
+        context: { hasRootGraph: root !== null },
+        level: 'error'
+      })
       return
     }
 
