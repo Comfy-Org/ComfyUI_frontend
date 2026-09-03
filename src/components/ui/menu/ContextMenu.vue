@@ -52,8 +52,16 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  if (visible.value) hide()
-  else show(event)
+  const wrapper = content.value?.$el
+  const element =
+    wrapper instanceof HTMLElement
+      ? wrapper.querySelector<HTMLElement>('[data-state="open"]')
+      : null
+  if (element && element.getClientRects().length > 0) {
+    hide()
+    return
+  }
+  show(event)
 }
 
 function updateOpen(value: boolean) {
