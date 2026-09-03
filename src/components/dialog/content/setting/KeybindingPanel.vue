@@ -65,6 +65,7 @@
                   >
                     {{ $t('g.command') }}
                     <i
+                      v-if="commandSortDirection"
                       :class="
                         commandSortDirection === 'ascending'
                           ? 'icon-[lucide--arrow-up]'
@@ -85,6 +86,7 @@
                 :key="commandData.id"
               >
                 <TableRow
+                  tabindex="0"
                   :data-state="
                     selectedCommandData?.id === commandData.id
                       ? 'selected'
@@ -93,6 +95,7 @@
                   @click="handleRowClick($event, commandData)"
                   @dblclick="handleRowDblClick(commandData)"
                   @contextmenu="handleRowContextMenu(commandData)"
+                  @keydown="handleRowKeydown($event, commandData)"
                 >
                   <TableCell class="p-1">
                     <div
@@ -230,12 +233,14 @@
             </TableBody>
           </Table>
           <Pagination
-            v-if="filteredCommands.length > commandsPerPage"
+            v-if="filteredCommands.length > commandsPerPageOptions[0]"
             :page="currentPage"
             :total="filteredCommands.length"
             :items-per-page="commandsPerPage"
+            :items-per-page-options="commandsPerPageOptions"
             class="mt-3 flex justify-center"
             @update:page="currentPage = $event"
+            @update:items-per-page="setCommandsPerPage"
           />
         </div>
       </ContextMenuTrigger>
@@ -450,29 +455,37 @@ const commandsData = computed<ICommandData[]>(() => {
   }))
 })
 
-const commandSortDirection = ref<TableSortDirection>('ascending')
+const commandSortDirection = ref<TableSortDirection | null>(null)
 const currentPage = ref(1)
-const commandsPerPage = 50
+const commandsPerPage = ref(50)
+const commandsPerPageOptions = [25, 50, 100]
 const filteredCommands = computed(() => {
   const filtered = filterByQuery(
     commandsData.value,
     searchQuery.value,
     (command) => `${command.id} ${command.label}`
   )
-  return sortByText(
-    filtered,
-    commandSortDirection.value,
-    (command) => command.label
-  )
+  return commandSortDirection.value
+    ? sortByText(
+        filtered,
+        commandSortDirection.value,
+        (command) => command.label
+      )
+    : filtered
 })
 const visibleCommands = computed(() => {
-  const start = (currentPage.value - 1) * commandsPerPage
-  return filteredCommands.value.slice(start, start + commandsPerPage)
+  const start = (currentPage.value - 1) * commandsPerPage.value
+  return filteredCommands.value.slice(start, start + commandsPerPage.value)
 })
 
 function toggleCommandSort() {
   commandSortDirection.value =
     commandSortDirection.value === 'ascending' ? 'descending' : 'ascending'
+}
+
+function setCommandsPerPage(value: number) {
+  commandsPerPage.value = value
+  currentPage.value = 1
 }
 
 const expandedCommandIds = ref<Set<string>>(new Set())
@@ -518,12 +531,24 @@ function handleRowClick(event: MouseEvent, commandData: ICommandData) {
   const target = event.target
   if (!(target instanceof HTMLElement)) return
   if (target.closest('.actions')) return
+  activateRow(commandData)
+}
+
+function activateRow(commandData: ICommandData) {
   selectedCommandData.value = commandData
   if (
     commandData.keybindings.length >= 2 ||
     expandedCommandIds.value.has(commandData.id)
   ) {
     toggleExpanded(commandData.id)
+  }
+}
+
+function handleRowKeydown(event: KeyboardEvent, commandData: ICommandData) {
+  if (event.target !== event.currentTarget) return
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    activateRow(commandData)
   }
 }
 
