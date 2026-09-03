@@ -51,6 +51,11 @@ const createTaskOutput = (
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 // Mock API
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -1129,6 +1134,9 @@ describe('useQueueStore', () => {
 
       expect(store.historyTasks).toHaveLength(1)
       expect(store.historyTasks[0].jobId).toBe('hist-1')
+      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'queue_task_fetch_failure'
+      })
     })
 
     it('still updates queue when only the history fetch fails', async () => {
@@ -1142,6 +1150,9 @@ describe('useQueueStore', () => {
 
       expect(store.runningTasks).toHaveLength(1)
       expect(store.runningTasks[0].jobId).toBe('run-1')
+      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'queue_history_fetch_failure'
+      })
     })
 
     it('preserves prior state and skips reconcile when both fetches fail', async () => {

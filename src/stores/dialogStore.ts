@@ -8,6 +8,7 @@ import type { Component, HTMLAttributes, Ref } from 'vue'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
+import { reportError } from '@/platform/telemetry/reportError'
 
 type DialogPosition =
   | 'center'
@@ -287,7 +288,9 @@ export const useDialogStore = defineStore('dialog', () => {
   function showExtensionDialog(options: ShowDialogOptions & { key: string }) {
     const { key } = options
     if (!key) {
-      console.error('Extension dialog key is required')
+      const message = 'Extension dialog key is required'
+      console.error(message)
+      reportError(message, { errorType: 'extension_dialog_key_missing' })
       return
     }
 

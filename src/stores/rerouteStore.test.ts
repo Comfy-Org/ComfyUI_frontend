@@ -13,6 +13,11 @@ import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from './linkStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from './rerouteStore'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
   owningGraphId: toOwningGraphId('graph-a')
@@ -63,6 +68,9 @@ describe('useRerouteStore', () => {
     const usurper = chain(1, 7)
     expect(store.registerReroute(graphA, usurper)).toBeUndefined()
     expect(error).toHaveBeenCalledOnce()
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(String), {
+      errorType: 'reroute_store_ownership_conflict'
+    })
 
     expect(store.deleteReroute(graphA, usurper)).toBe(false)
     expect(store.getReroute(graphA, toRerouteId(1))).toBe(owner)

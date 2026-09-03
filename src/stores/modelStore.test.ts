@@ -22,6 +22,11 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
   }
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 // Mock the api
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -139,6 +144,21 @@ describe('useModelStore', () => {
     expect(model.trigger_phrase).toBe('Trigger phrase of sdxl.safetensors')
     expect(model.usage_hint).toBe('Usage hint of sdxl.safetensors')
     expect(model.tags).toHaveLength(3)
+  })
+
+  it('reports a metadata load failure', async () => {
+    enableMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failure = new Error('metadata unavailable')
+    vi.mocked(api.viewMetadata).mockRejectedValue(failure)
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    await folderStore!.models['0/sdxl.safetensors'].load()
+
+    expect(mockReportError).toHaveBeenCalledWith(failure, {
+      errorType: 'model_metadata_load_failure'
+    })
   })
 
   it('should handle no metadata', async () => {

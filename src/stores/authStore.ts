@@ -40,6 +40,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { reportError } from '@/platform/telemetry/reportError'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -231,6 +232,7 @@ export const useAuthStore = defineStore('auth', () => {
         reportType: 'authenticationError'
       })
       console.error(error)
+      reportError(error, { errorType: 'auth_id_token_fetch_failure' })
     }
   }
 

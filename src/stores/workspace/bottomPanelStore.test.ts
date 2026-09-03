@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
@@ -24,13 +24,16 @@ vi.mock('@/composables/bottomPanelTabs/useShortcutsTab', () => ({
 }))
 
 vi.mock('@/composables/bottomPanelTabs/useTerminalTabs', () => ({
-  useLogsTerminalTab: () => ({
-    id: 'logs',
-    title: 'Logs',
-    component: {},
-    type: 'vue',
-    targetPanel: 'terminal'
-  }),
+  useLogsTerminalTab: () => {
+    if (mockData.terminalTabsFailure) throw mockData.terminalTabsFailure
+    return {
+      id: 'logs',
+      title: 'Logs',
+      component: {},
+      type: 'vue',
+      targetPanel: 'terminal'
+    }
+  },
   useCommandTerminalTab: () => ({
     id: 'command',
     title: 'Command',
@@ -46,7 +49,15 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({
+  isDesktop: false,
+  terminalTabsFailure: null as Error | null
+}))
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
@@ -55,6 +66,23 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 describe('useBottomPanelStore', () => {
+  beforeEach(() => {
+    mockData.terminalTabsFailure = null
+  })
+
+  it('reports a terminal tab load failure', async () => {
+    const failure = new Error('tabs unavailable')
+    mockData.terminalTabsFailure = failure
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const store = useBottomPanelStore()
+
+    await store.registerCoreBottomPanelTabs()
+
+    expect(mockReportError).toHaveBeenCalledWith(failure, {
+      errorType: 'terminal_tabs_load_failure'
+    })
+  })
+
   it('should initialize with empty panels', () => {
     const store = useBottomPanelStore()
 

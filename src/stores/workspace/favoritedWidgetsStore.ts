@@ -12,6 +12,7 @@ import { parseNodeId } from '@/types/nodeId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * Unique identifier for a favorited widget.
@@ -162,6 +163,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
       }
     } catch (error) {
       console.error('Failed to load favorited widgets from workflow:', error)
+      reportError(error, { errorType: 'favorited_widgets_load_failure' })
       favoritedIds.value = []
     }
   }
@@ -189,6 +191,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
       canvasStore.canvas?.setDirty(true, true)
     } catch (error) {
       console.error('Failed to save favorited widgets to workflow:', error)
+      reportError(error, { errorType: 'favorited_widgets_save_failure' })
     }
   }
 

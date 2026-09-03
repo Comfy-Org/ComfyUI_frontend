@@ -8,6 +8,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(
@@ -154,6 +155,7 @@ export class ComfyModelDef {
       this.updateSearchable()
     } catch (error) {
       console.error('Error loading model metadata', this.file_name, this, error)
+      reportError(error, { errorType: 'model_metadata_load_failure' })
     }
   }
 }
@@ -517,6 +519,7 @@ export const useModelStore = defineStore('models', () => {
       await reloadModels()
     } catch (error) {
       console.error('Failed to reload the model library after a scan', error)
+      reportError(error, { errorType: 'model_store_scan_reload_failure' })
     }
   }, SCAN_RELOAD_DEBOUNCE_MS)
 
@@ -544,6 +547,9 @@ export const useModelStore = defineStore('models', () => {
           'Failed to reload the model library after a capability change',
           error
         )
+        reportError(error, {
+          errorType: 'model_store_capability_reload_failure'
+        })
       })
   )
 

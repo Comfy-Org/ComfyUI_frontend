@@ -11,6 +11,11 @@ import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 import { useLinkStore } from './linkStore'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
   owningGraphId: toOwningGraphId('graph-a')
@@ -178,6 +183,9 @@ describe('useLinkStore', () => {
       registeredIncumbent
     )
     expect(store.getInputSlotLink(graphA, toNodeId(8), 1)?.id).toBe(toLinkId(2))
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(String), {
+      errorType: 'link_store_ownership_conflict'
+    })
   })
 
   it('never answers target queries from floating links', () => {

@@ -20,6 +20,11 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 describe('useSystemStatsStore', () => {
   let store: ReturnType<typeof useSystemStatsStore>
 
@@ -77,6 +82,9 @@ describe('useSystemStatsStore', () => {
       expect(store.systemStats).toBeNull() // Initial value stays null on error
       expect(store.isLoading).toBe(false)
       expect(store.error).toEqual(error) // useAsyncState stores the actual error object
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'system_stats_fetch_failure'
+      })
     })
 
     it('should handle non-Error objects', async () => {
