@@ -78,6 +78,23 @@
       "file": "src/lib/litegraph/src/widgets/widgetMap.ts",
       "exports": ["isAssetWidget"]
     },
+    // Public Nodes 2.0 API and its corpus-only test seams. External custom
+    // nodes are the consumers, so the application import graph cannot see them.
+    {
+      "file": "src/platform/nodeApi/comfyApi.ts",
+      "exports": [
+        "applyDefExtensions",
+        "useComfyApi",
+        "resetComfyApi",
+        "installComfyApi"
+      ]
+    },
+    // Public API value objects intentionally differ from litegraph's tuple
+    // Point and Size types despite sharing their domain names.
+    {
+      "file": "src/platform/nodeApi/nodeHandle.ts",
+      "exports": ["Point", "Size"]
+    },
     // Generated OpenAPI client types (mirrors knip ignore).
     {
       "file": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",

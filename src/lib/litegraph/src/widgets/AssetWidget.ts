@@ -1,7 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IAssetWidget } from '@/lib/litegraph/src/types/widgets'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
-import { BaseWidget, extensionValue } from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions } from './BaseWidget'
 
 export class AssetWidget

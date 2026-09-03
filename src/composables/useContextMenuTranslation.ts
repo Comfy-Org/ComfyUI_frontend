@@ -7,6 +7,7 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { app } from '@/scripts/app'
 
 export function translateContextMenuItems(
@@ -68,7 +69,18 @@ export const useContextMenuTranslation = () => {
 
     // Add items from new extension API
     const newApiItems = app.collectCanvasMenuItems(this)
-    for (const item of newApiItems) {
+    const beforePaste = newApiItems.filter(
+      (item) => extensionValue(item)?.beforePaste
+    )
+    const pasteIndex = res.findIndex((item) => item?.content === 'Paste')
+    if (pasteIndex === -1) {
+      res.push(...beforePaste)
+    } else {
+      res.splice(pasteIndex, 0, ...beforePaste)
+    }
+    for (const item of newApiItems.filter(
+      (item) => !extensionValue(item)?.beforePaste
+    )) {
       res.push(item)
     }
 

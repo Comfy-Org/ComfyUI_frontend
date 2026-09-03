@@ -2,6 +2,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { dispatchWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
@@ -36,13 +37,30 @@ export function bindMultilineTextareaWidget(
 ): void {
   const controller = new AbortController()
   const { signal } = controller
+  const commit = (value: string) => {
+    widget.value = value
+    widget.callback?.(value)
+  }
 
   element.addEventListener(
     'input',
-    () => {
-      widget.value = element.value
-      widget.callback?.(widget.value)
+    (event) => {
+      commit(element.value)
+      dispatchWidgetTextInteraction(widget, element, 'input', event)
     },
+    { signal }
+  )
+
+  element.addEventListener(
+    'select',
+    (event) =>
+      dispatchWidgetTextInteraction(widget, element, 'selection', event),
+    { signal }
+  )
+
+  element.addEventListener(
+    'keydown',
+    (event) => dispatchWidgetTextInteraction(widget, element, 'keydown', event),
     { signal }
   )
 
@@ -51,6 +69,11 @@ export function bindMultilineTextareaWidget(
   element.addEventListener(
     'wheel',
     (event: WheelEvent) => {
+      dispatchWidgetTextInteraction(widget, element, 'wheel', event)
+      if (event.defaultPrevented) {
+        event.stopPropagation()
+        return
+      }
       const gesturesEnabled = useSettingStore().get(
         'LiteGraph.Pointer.TrackpadGestures'
       )
