@@ -839,6 +839,25 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FE-1969: a same-document activation edge still resets and re-subscribes', async () => {
+    const { unmount, isTargetActive, status } = mountFollower('wf-a')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+    expect(bridge().subscribe).toHaveBeenCalledTimes(1)
+
+    isTargetActive.value = false
+    await nextTick()
+    expect(status()).toMatchObject({ connected: false, workflowId: null })
+    expect(bridge().unsubscribe).toHaveBeenCalledTimes(1)
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(status()).toMatchObject({ connected: false, workflowId: 'wf-a' })
+    expect(bridge().subscribe).toHaveBeenCalledTimes(2)
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-a')
+    unmount()
+  })
+
   it('sends minted human operations through the doc client', () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<

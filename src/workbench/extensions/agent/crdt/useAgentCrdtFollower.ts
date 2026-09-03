@@ -617,11 +617,20 @@ export function useAgentCrdtFollower(
       [next, active],
       previous: [string | null | undefined, boolean | undefined] | undefined
     ) => {
+      // An acknowledgement of the doc we already follow (FE-1969: a persisted
+      // rebind lands first, then the reactive layer names the same id) is not
+      // a retarget. `bridge.subscribe(same)` is a `reconcile()` no-op because
+      // `sentWorkflowId === desired`, so running the reset below would zero
+      // `connected` and cancel the stale probe and any pending retry with no
+      // frame on its way to restore them. Safe to skip the rest: the inactive
+      // branch nulls `subscribedWorkflowId`, so an activation edge can never
+      // match here, and `initialBind` is already false on every path that
+      // leaves `subscribedWorkflowId` set.
+      if (active && next !== null && next === subscribedWorkflowId.value) return
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
-      if (active && next !== null && next === subscribedWorkflowId.value) return
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
