@@ -269,6 +269,12 @@ describe('useAgentCrdtFollower', () => {
 
     writeRawRecord({ docId: 'wf-1', nonce: 'foreign-nonce' })
     expect(peekPersistedDocId()).toBeNull()
+    expect(persistedRecord()).toBeNull()
+
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { type: 'reload' } as PerformanceNavigationTiming
+    ])
+    expect(peekPersistedDocId()).toBeNull()
     unmount()
   })
 
