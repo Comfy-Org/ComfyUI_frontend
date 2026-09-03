@@ -10,6 +10,44 @@ const paymentsEvidenceDir =
 const testUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
 const storagePrefix = 'comfyui-frontend-account-layer-poc:'
 
+async function waitForStableUrl(page: Page, stableMs = 1_500) {
+  let previous = page.url()
+  let stableSince = Date.now()
+  await expect
+    .poll(() => {
+      const current = page.url()
+      if (current !== previous) {
+        previous = current
+        stableSince = Date.now()
+      }
+      return Date.now() - stableSince
+    })
+    .toBeGreaterThanOrEqual(stableMs)
+  await page.waitForLoadState('domcontentloaded')
+}
+
+async function closePostLoginOverlays(page: Page) {
+  const announcement = page.locator('.whats-new-popup-container')
+  await announcement
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .catch(() => {})
+  if (await announcement.isVisible()) {
+    await announcement.getByRole('button', { name: /close/i }).click()
+  }
+}
+
+async function requireAuthenticated(page: Page) {
+  const phase = await page.evaluate(async () => {
+    const seam = Reflect.get(window, '__accountLayerPoc') as {
+      whenAuthenticated(timeoutMs?: number): Promise<void>
+      getSessionPhase(): string
+    }
+    await seam.whenAuthenticated(30_000)
+    return seam.getSessionPhase()
+  })
+  expect(phase).toBe('authenticated')
+}
+
 interface AccountLayerDebug {
   billingRequests: number
   sessionExchanges: number
@@ -60,6 +98,9 @@ async function signIn(page: Page) {
     else
       await page.getByRole('group').last().getByRole('button').first().click()
   }
+  await waitForStableUrl(page)
+  await closePostLoginOverlays(page)
+  await waitForStableUrl(page)
 }
 
 async function snapshot(page: Page) {
@@ -264,6 +305,7 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
     }
   })
   await signIn(page)
+  await requireAuthenticated(page)
   await page
     .getByRole('button', { name: /^Settings/ })
     .first()
