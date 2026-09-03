@@ -619,9 +619,12 @@ CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
 
 1. **Capture the conversation.** Reproduce the bug's turn against the
-   local agent harness (`scripts/dev-agent-integration.ts`); the
-   standalone agent records every turn in its local SQLite store
-   (`agent_messages` / `agent_tool_calls`). Export the turn's rows and
+   cloud agent run locally in its non-standalone mode, with Postgres,
+   Redis and the doc host beside it: that is the only mode that writes
+   the per-op audit rows (`agent_tool_calls` parent and child rows) the
+   exporter reads. The same agent in standalone mode
+   (SQLite, no doc host) never writes them, so it can only
+   yield text-only or tool-error turns. Export the turn's rows and
    convert them to a conversation JSON under
    `browser_tests/fixtures/data/agent/conversations/` with
    `scripts/agentConversationCapture.ts`, marking
