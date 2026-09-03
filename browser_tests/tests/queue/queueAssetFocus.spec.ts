@@ -34,7 +34,7 @@ test.describe('Queue asset focus', { tag: ['@cloud', '@ui'] }, () => {
           new URL(request).searchParams.get('after')
         )
       )
-      .toEqual([null, null, 'queue-focus-page-1', 'queue-focus-page-2'])
+      .toEqual([null, 'queue-focus-page-1', 'queue-focus-page-2'])
     await expect(assetsTab.generatedTab).toBeVisible()
     await expect(targetAsset).toBeVisible()
     await expect(targetAsset).toHaveAttribute('data-selected', 'true')
