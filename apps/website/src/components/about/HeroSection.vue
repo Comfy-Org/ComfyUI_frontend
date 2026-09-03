@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import { localizeHref } from '../../config/routes'
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -64,7 +65,7 @@ useHeroAnimation({
         </p>
         <div ref="ctaRef" class="mt-8">
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
+            :href="localizeHref('/careers', locale)"
             variant="outline"
           >
             {{ t('about.hero.cta', locale) }}

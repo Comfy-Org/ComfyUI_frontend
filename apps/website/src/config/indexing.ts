@@ -1,13 +1,19 @@
+import { LOCALE_CODES, localePrefix } from './locales'
 import { models } from './models'
 
-const LOCALES = ['en', 'zh-CN'] as const
-const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
 
-const LOCALE_PREFIXES = LOCALES.map((locale) =>
-  locale === DEFAULT_LOCALE ? '' : `/${locale}`
-)
+/**
+ * Every locale's prefix, the default's empty one included.
+ *
+ * This list used to be declared here and named only `en` and `zh-CN`, so it
+ * never learned about Japanese. Nothing broke while `/ja/` was a single page,
+ * but the noindex set below is built from it: the moment P3 generates
+ * `/ja/privacy-policy` and the rest, they would have been indexable. Deriving
+ * it from `LOCALES` is what makes that impossible to forget again.
+ */
+const LOCALE_PREFIXES = LOCALE_CODES.map(localePrefix)
 
 const NOINDEX_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.flatMap((prefix) =>

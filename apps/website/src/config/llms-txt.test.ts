@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -10,6 +10,7 @@ import {
   normalizePath,
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
+import { LOCALE_PREFIXES, LOCALIZED_CODES, localePrefix } from './locales'
 import { getRoutes } from './routes'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -72,6 +73,11 @@ function pageMatchers(root: string): {
 } {
   const staticPages = new Set<string>()
   const dynamic: RegExp[] = []
+  // A locale can be registered in LOCALES before its pages are generated, which
+  // is the normal state between adding a language and building its shells. That
+  // is not this test's complaint to make: return no routes so the assertions
+  // below report the real problem instead of an ENOENT stack.
+  if (!existsSync(root)) return { static: staticPages, dynamic }
   const entries = readdirSync(root, { recursive: true, withFileTypes: true })
   for (const entry of entries) {
     if (!entry.isFile() || !/\.(astro|ts)$/.test(entry.name)) continue
@@ -81,7 +87,14 @@ function pageMatchers(root: string): {
       .split(sep)
       .join('/')
       .replace(/\.(astro|ts)$/, '')
-    if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
+    // Skip every locale directory, not just Chinese. Naming only /zh-CN/ here
+    // meant /ja counted as an English page, which is why the ja launch broke
+    // this file's coverage test.
+    if (
+      root === pagesDir &&
+      LOCALE_PREFIXES.some((prefix) => relative.startsWith(`${prefix}/`))
+    )
+      continue
     const route = relative.replace(/\/index$/, '') || '/'
     if (route.includes('[')) {
       const pattern = route
@@ -104,7 +117,13 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
-  const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
+  /** One matcher per localized locale, keyed by its URL prefix. */
+  const byLocalePrefix = new Map(
+    LOCALIZED_CODES.map((code) => [
+      localePrefix(code),
+      pageMatchers(join(pagesDir, code))
+    ])
+  )
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
     const lines = llmsTxt.split('\n')
@@ -137,11 +156,16 @@ describe('llms.txt', () => {
       if (path.includes('/workflows')) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }
-      if (path.startsWith('/zh-CN')) {
-        const base = normalizePath(path.slice('/zh-CN'.length))
+      const prefix = LOCALE_PREFIXES.find(
+        (candidate) => path === candidate || path.startsWith(`${candidate}/`)
+      )
+      if (prefix !== undefined) {
+        const matchers = byLocalePrefix.get(prefix)
+        if (matchers === undefined) return true
+        const base = normalizePath(path.slice(prefix.length))
         return (
-          !zhCN.static.has(base) &&
-          !zhCN.dynamic.some((matcher) => matcher.test(base))
+          !matchers.static.has(base) &&
+          !matchers.dynamic.some((matcher) => matcher.test(base))
         )
       }
       return (

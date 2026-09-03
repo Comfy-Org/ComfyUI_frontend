@@ -1,20 +1,19 @@
 <script setup lang="ts">
+import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
+import { localizeHref } from '../../config/routes'
 import type { GridPack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import NodeList from './NodeList.vue'
 import PackBanner from './PackBanner.vue'
 
-const { locale = 'en', pack } = defineProps<{
+const { locale = DEFAULT_LOCALE, pack } = defineProps<{
   locale?: Locale
   pack: GridPack
 }>()
 
-const detailHref =
-  locale === 'zh-CN'
-    ? `/zh-CN/cloud/supported-nodes/${pack.id}/`
-    : `/cloud/supported-nodes/${pack.id}/`
+// See StoryCard.vue: localizeHref knows which locales serve this route.
+const detailHref = `${localizeHref(`/cloud/supported-nodes/${pack.id}`, locale)}/`
 
 function nodeCountLabel(nodeCount: number): string {
   const key =

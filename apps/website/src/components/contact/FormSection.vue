@@ -1,22 +1,33 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
+import type { TranslationKey } from '../../i18n/translations'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
 import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{
+const { locale = DEFAULT_LOCALE } = defineProps<{
   locale?: Locale
 }>()
 
 const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
 
-const contactFormIds: Partial<Record<Locale, string>> = {
+/**
+ * Exhaustive on purpose. This was `Partial<Record<Locale, string>>`, which meant
+ * a new locale silently served the English form with nobody deciding that. As a
+ * full `Record` it will not compile until the new locale is given an id, so the
+ * fallback is always somebody's choice rather than an oversight.
+ *
+ * `ja` points at the English form deliberately: no Japanese HubSpot form exists
+ * yet. Swap it for the real id when marketing creates one.
+ */
+const contactFormIds: Record<Locale, string> = {
   en: englishFormId,
-  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93',
+  ja: englishFormId
 }
 
 function tk(suffix: string): TranslationKey {

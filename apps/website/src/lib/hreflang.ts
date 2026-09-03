@@ -1,27 +1,19 @@
+import {
+  DEFAULT_LOCALE,
+  LOCALE_CODES,
+  LOCALE_PREFIXES,
+  LOCALES,
+  localeHasRoute,
+  localePrefix,
+  isLocale,
+  type Locale
+} from '../config/locales'
 import { isLocaleInvariantPath } from '../config/routes'
-import { JA_PREFIX, LOCALE_PREFIXES, ZH_PREFIX } from '../utils/hreflangRoutes'
 
 export interface Alternate {
-  hreflang: 'en' | 'zh-CN' | 'ja' | 'x-default'
+  hreflang: Locale | 'x-default'
   href: string
 }
-
-/**
- * English routes that have a Japanese page.
- *
- * Chinese gets a blanket rule because it has a twin for nearly every route.
- * Japanese has one page, so the same blanket rule would advertise around 58
- * Japanese URLs that do not exist, which is the failure this module exists to
- * prevent. Listing the routes is the honest version until P3 generates the
- * Japanese shells, at which point this is generated with them.
- *
- * The list cannot rot silently: `hreflang.test.ts` reads the page tree back and
- * fails when a Japanese page exists that is not listed here, and the build crawl
- * in `scripts/check-hreflang.ts` fails when a listed route was not built.
- *
- * Paths are trimmed of their trailing slash, matching `englishPath`.
- */
-const JA_ROUTES: ReadonlySet<string> = new Set(['/'])
 
 function trimSlash(pathname: string): string {
   const trimmed = pathname.replace(/\/+$/, '')
@@ -60,15 +52,18 @@ export function hreflangAlternates(
   const en = englishPath(pathname)
   if (en === '/404' || isLocaleInvariantPath(en)) return []
   const enHref = new URL(withSlash(en), origin).href
-  const twin = (prefix: string) =>
-    new URL(withSlash(`${prefix}${en === '/' ? '' : en}`), origin).href
-  const alternates: Alternate[] = [
-    { hreflang: 'en', href: enHref },
-    { hreflang: 'zh-CN', href: twin(ZH_PREFIX) }
-  ]
-  if (JA_ROUTES.has(en)) {
-    alternates.push({ hreflang: 'ja', href: twin(JA_PREFIX) })
-  }
+  const twin = (locale: Locale) =>
+    new URL(withSlash(`${localePrefix(locale)}${en === '/' ? '' : en}`), origin)
+      .href
+  // One entry per locale that actually serves this route. `localeHasRoute` is
+  // the same predicate `localizeHref` uses, so a cluster and a nav link can no
+  // longer disagree about whether a localized page exists.
+  const alternates: Alternate[] = LOCALE_CODES.filter((locale) =>
+    localeHasRoute(locale, en)
+  ).map((locale) => ({
+    hreflang: LOCALES[locale].hreflang as Locale,
+    href: locale === DEFAULT_LOCALE ? enHref : twin(locale)
+  }))
   alternates.push({ hreflang: 'x-default', href: enHref })
   return alternates
 }
@@ -87,20 +82,17 @@ export function sitemapAlternates(
     : undefined
 }
 
-/** OG wants underscored locale identifiers, not the BCP 47 tags used elsewhere. */
 /**
  * Open Graph wants `language_TERRITORY`, not the BCP 47 tag we route on.
- * A locale missing here would silently declare itself English, so new locales
- * belong in this map at the same time they get a route.
+ *
+ * Read off `LOCALES` rather than kept as a second map here. The old map could
+ * fall out of step with the locale list, and a locale missing from it silently
+ * declared itself English.
  */
-const OG_LOCALES: Record<string, string> = {
-  en: 'en_US',
-  'zh-CN': 'zh_CN',
-  ja: 'ja_JP'
-}
-
 export function ogLocale(locale: string): string {
-  return OG_LOCALES[locale] ?? OG_LOCALES.en
+  return isLocale(locale)
+    ? LOCALES[locale].ogLocale
+    : LOCALES[DEFAULT_LOCALE].ogLocale
 }
 
 /**

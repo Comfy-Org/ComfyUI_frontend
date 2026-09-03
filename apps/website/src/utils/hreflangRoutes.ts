@@ -8,21 +8,22 @@
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
-/** The value the marketing site publishes for Simplified Chinese. */
-export const ZH_HREFLANG = 'zh-CN'
-export const ZH_PREFIX = '/zh-CN'
-
 /**
- * Japanese. Its URL prefix is the short form while Chinese keeps `/zh-CN`; the
- * asymmetry is legacy rather than designed, and preserved deliberately because
- * the Chinese URLs rank and a migration would risk that for no SEO gain. See
- * `context/decision-zh-hreflang-value.md`.
+ * Prefixes and hreflang values come from `config/locales.ts` rather than being
+ * restated here. Sharing them is deliberate and is what #15488 asked for: there
+ * must be exactly one definition of what the Chinese twin of a URL is, or the
+ * pages and the sitemap can disagree about it. What this module keeps to itself
+ * is which ROUTES cluster, which is the part that has to stay independent of
+ * the emitter.
  */
-export const JA_HREFLANG = 'ja'
-export const JA_PREFIX = '/ja'
+import { LOCALE_PREFIXES, LOCALES } from '../config/locales'
 
-/** Every locale prefix this site serves, longest first so `/zh-CN` wins. */
-export const LOCALE_PREFIXES = [ZH_PREFIX, JA_PREFIX] as const
+/** The value the marketing site publishes for Simplified Chinese. */
+export const ZH_HREFLANG = LOCALES['zh-CN'].hreflang
+export const ZH_PREFIX = LOCALES['zh-CN'].prefix
+
+export const JA_HREFLANG = LOCALES.ja.hreflang
+export const JA_PREFIX = LOCALES.ja.prefix
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.

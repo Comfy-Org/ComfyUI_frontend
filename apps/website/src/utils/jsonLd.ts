@@ -1,5 +1,5 @@
+import { DEFAULT_LOCALE, isLocale, type Locale } from '../config/locales'
 import { externalLinks } from '../config/routes'
-import type { Locale } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -57,10 +57,11 @@ export function pageContext(
 ): PageContext & { url: string } {
   return {
     siteUrl: siteUrlFrom(site),
-    locale:
-      currentLocale === 'zh-CN' || currentLocale === 'ja'
-        ? currentLocale
-        : 'en',
+    // Any locale this site serves, not a hardcoded pair. This is what BaseLayout
+    // calls to decide a page's locale, so an unrecognised value here made the
+    // page declare itself English in JSON-LD, in `<html lang>` and in the
+    // canonical. A new locale used to be unrecognised by default.
+    locale: isLocale(currentLocale) ? currentLocale : DEFAULT_LOCALE,
     url: absoluteUrl(site, pathname)
   }
 }
