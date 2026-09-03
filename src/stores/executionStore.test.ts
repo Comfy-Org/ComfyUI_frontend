@@ -23,7 +23,8 @@ const {
   mockTrackExecutionError,
   mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
-  mockTrackSharedWorkflowRun
+  mockTrackSharedWorkflowRun,
+  mockReportError
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
@@ -36,7 +37,8 @@ const {
     mockTrackExecutionError: vi.fn(),
     mockTrackExecutionOutcome: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
-    mockTrackSharedWorkflowRun: vi.fn()
+    mockTrackSharedWorkflowRun: vi.fn(),
+    mockReportError: vi.fn()
   }
 })
 
@@ -101,6 +103,10 @@ vi.mock('@/platform/telemetry', () => ({
     trackExecutionSuccess: mockTrackExecutionSuccess,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 // Remove any previous global types
@@ -754,6 +760,52 @@ describe('useExecutionStore - workflowStatus', () => {
       })
     } finally {
       now.mockRestore()
+    }
+  })
+
+  it('reports a missing terminal event after executing clears', () => {
+    vi.useFakeTimers()
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      apiEventHandlers.get('executing')!(
+        new CustomEvent('executing', { detail: null })
+      )
+
+      vi.advanceTimersByTime(10_000)
+
+      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'queue_execution_terminal_event_missing',
+        tags: {
+          failure_kind: 'missing_event',
+          feature_area: 'queue',
+          operation: 'execute',
+          outcome: 'missing',
+          assert_mode: 'soft'
+        },
+        context: { jobId: 'job-1' },
+        level: 'warning'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels the missing terminal report when success arrives', () => {
+    vi.useFakeTimers()
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      apiEventHandlers.get('executing')!(
+        new CustomEvent('executing', { detail: null })
+      )
+      fireExecutionSuccess('job-1')
+
+      vi.advanceTimersByTime(10_000)
+
+      expect(mockReportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
     }
   })
 

@@ -14,6 +14,7 @@ import type {
   TaskOutput
 } from '@/schemas/apiSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
@@ -567,7 +568,16 @@ export const useQueueStore = defineStore('queue', () => {
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
       } else {
-        console.error('Failed to fetch queue:', queueResult.reason)
+        reportError(queueResult.reason, {
+          errorType: 'queue_snapshot_fetch_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'queue',
+            operation: 'load',
+            outcome: 'failed'
+          },
+          level: 'error'
+        })
       }
 
       if (historyResult.status === 'fulfilled') {
@@ -610,7 +620,16 @@ export const useQueueStore = defineStore('queue', () => {
         }
         hasFetchedHistorySnapshot.value = true
       } else {
-        console.error('Failed to fetch history:', historyResult.reason)
+        reportError(historyResult.reason, {
+          errorType: 'queue_history_fetch_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'queue',
+            operation: 'load',
+            outcome: 'failed'
+          },
+          level: 'error'
+        })
       }
     } finally {
       isLoading.value = false

@@ -6,6 +6,12 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 // Fixture factory for JobListItem
 function createJob(
   id: string,
@@ -1122,26 +1128,48 @@ describe('useQueueStore', () => {
     })
 
     it('still updates history when only the queue fetch fails', async () => {
-      mockGetQueue.mockRejectedValue(new Error('queue down'))
+      const error = new Error('queue down')
+      mockGetQueue.mockRejectedValue(error)
       mockGetHistory.mockResolvedValue([createHistoryJob(0, 'hist-1')])
 
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)
       expect(store.historyTasks[0].jobId).toBe('hist-1')
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'queue_snapshot_fetch_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'queue',
+          operation: 'load',
+          outcome: 'failed'
+        },
+        level: 'error'
+      })
     })
 
     it('still updates queue when only the history fetch fails', async () => {
+      const error = new Error('history down')
       mockGetQueue.mockResolvedValue({
         Running: [createRunningJob(0, 'run-1')],
         Pending: []
       })
-      mockGetHistory.mockRejectedValue(new Error('history down'))
+      mockGetHistory.mockRejectedValue(error)
 
       await store.update()
 
       expect(store.runningTasks).toHaveLength(1)
       expect(store.runningTasks[0].jobId).toBe('run-1')
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'queue_history_fetch_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'queue',
+          operation: 'load',
+          outcome: 'failed'
+        },
+        level: 'error'
+      })
     })
 
     it('preserves prior state and skips reconcile when both fetches fail', async () => {
