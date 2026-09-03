@@ -76,11 +76,14 @@ export interface StartOperationMetadata {
   attemptStartedAt?: number
 }
 
+type BillingFailureClass = 'declined' | 'processing'
+
 interface BillingOperation {
   opId: string
   type: OperationType
   status: OperationStatus
   errorMessage: string | null
+  failureClass: BillingFailureClass | null
   startedAt: number
   operationStartedAt: number
   businessAttemptStartedAt?: number
@@ -124,6 +127,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
+  // Operations a dialog is currently rendering outcomes for. An attended
+  // operation surfaces success/failure in that dialog, so the store's outcome
+  // toasts stay quiet; timeouts still toast — this tab gave up watching, the
+  // dialog is showing a verifying state that no longer advances.
+  const attendedOperations = new Set<string>()
   const paymentIntentClientSecrets = new Map<string, string>()
   const inFlightPolls = new Map<string, Promise<void>>()
 
@@ -233,6 +241,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       type,
       status: 'pending',
       errorMessage: null,
+      failureClass: null,
       startedAt: now,
       operationStartedAt: metadata?.attemptStartedAt ?? now,
       businessAttemptStartedAt: metadata?.attemptStartedAt,
@@ -736,17 +745,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
     }
 
-    const toastStore = useToastStore()
-    const messageKey =
-      operation.type === 'subscription'
-        ? 'billingOperation.subscriptionSuccess'
-        : 'billingOperation.topupSuccess'
-
-    toastStore.add({
-      severity: 'success',
-      summary: t(messageKey),
-      life: 5000
-    })
+    if (!attendedOperations.has(opId)) {
+      const messageKey =
+        operation.type === 'subscription'
+          ? 'billingOperation.subscriptionSuccess'
+          : 'billingOperation.topupSuccess'
+      useToastStore().add({
+        severity: 'success',
+        summary: t(messageKey),
+        life: 5000
+      })
+    }
 
     resolveTerminal(opId)
   }
@@ -760,6 +769,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const detail = billingFailureDetail(operation.type, errorMessage)
 
     updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
+    updateOperation(opId, { failureClass: classifyFailure(errorMessage) })
     cleanup(opId)
 
     const telemetry = useTelemetry()
@@ -827,7 +837,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel' && !superseded) {
+    if (
+      operation.type !== 'cancel' &&
+      !superseded &&
+      !attendedOperations.has(opId)
+    ) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,
@@ -1005,10 +1019,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return t('billingOperation.cancelFailed')
   }
 
+  // The processing class is Stripe telling us the rails hiccuped — the card
+  // itself was never judged. Everything else, including codes we don't
+  // recognize, is treated as the bank's verdict.
+  const PROCESSING_FAILURE_CODES = new Set([
+    'processing_error',
+    'issuer_not_available',
+    'try_again_later'
+  ])
+
+  function classifyFailure(errorMessage: string | null): BillingFailureClass {
+    return errorMessage && PROCESSING_FAILURE_CODES.has(errorMessage)
+      ? 'processing'
+      : 'declined'
+  }
+
   function billingFailureDetail(
     type: OperationType,
     errorMessage: string | null
   ) {
+    if (errorMessage && PROCESSING_FAILURE_CODES.has(errorMessage)) {
+      return t('billingOperation.processingErrorDetail')
+    }
     switch (errorMessage) {
       case 'insufficient_funds':
         return t('billingOperation.insufficientFundsDetail')
@@ -1021,10 +1053,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
         return t('billingOperation.authenticationFailedDetail')
-      case 'processing_error':
-      case 'issuer_not_available':
-      case 'try_again_later':
-        return t('billingOperation.processingErrorDetail')
       case 'card_declined':
       case 'generic_decline':
       case 'approve_with_id':
@@ -1108,6 +1136,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
+  function markOperationAttended(opId: string) {
+    attendedOperations.add(opId)
+  }
+
+  function markOperationUnattended(opId: string) {
+    attendedOperations.delete(opId)
+  }
+
   function clearOperation(opId: string) {
     cleanup(opId)
     // Settle before dropping: anything awaiting this operation's terminal
@@ -1119,6 +1155,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     operations.value = newMap
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
+    attendedOperations.delete(opId)
   }
 
   /**
@@ -1184,6 +1221,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     retryPaymentAuthentication,
     pollPendingOperations,
     clearOperation,
-    cancelOperation
+    cancelOperation,
+    markOperationAttended,
+    markOperationUnattended
   }
 })

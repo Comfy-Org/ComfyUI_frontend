@@ -1685,6 +1685,120 @@ describe('billingOperationStore', () => {
     })
   })
 
+  describe('attended operations', () => {
+    it('suppresses the failure toast while the operation is attended', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'card_declined',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.markOperationAttended('op-1')
+      void store.startOperation('op-1', 'subscription', {
+        suppressProcessingToast: true
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      const operation = store.getOperation('op-1')
+      expect(operation?.status).toBe('failed')
+      expect(operation?.failureClass).toBe('declined')
+      expect(operation?.errorMessage).toBe(
+        'billingOperation.paymentDeclinedDetail'
+      )
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('classifies a rails hiccup as a processing failure', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'processing_error',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      const operation = store.getOperation('op-1')
+      expect(operation?.failureClass).toBe('processing')
+      expect(operation?.errorMessage).toBe(
+        'billingOperation.processingErrorDetail'
+      )
+    })
+
+    it('restores the failure toast once the operation is unattended', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'card_declined',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.markOperationAttended('op-1')
+      store.markOperationUnattended('op-1')
+      void store.startOperation('op-1', 'subscription', {
+        suppressProcessingToast: true
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('suppresses the success toast while the operation is attended', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.markOperationAttended('op-1')
+      void store.startOperation('op-1', 'subscription', {
+        suppressProcessingToast: true
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.status).toBe('succeeded')
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('still toasts a timeout for an attended operation', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.markOperationAttended('op-1')
+      void store.startOperation('op-1', 'subscription', {
+        suppressProcessingToast: true
+      })
+      mockActiveWorkspaceId.value = 'workspace-2'
+
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
+
+      expect(store.getOperation('op-1')?.status).toBe('timeout')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+  })
+
   describe('polling timeout', () => {
     it('times out a subscription while its workspace is inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({

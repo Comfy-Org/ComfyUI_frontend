@@ -15,13 +15,15 @@
         (isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
           isVerifyingStep ||
-          isDeclinedStep) &&
+          isDeclinedStep ||
+          isProcessingErrorStep) &&
           'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
           isVerifyingStep ||
-          isDeclinedStep) &&
+          isDeclinedStep ||
+          isProcessingErrorStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
@@ -29,7 +31,8 @@
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
           isVerifyingStep ||
-          isDeclinedStep) &&
+          isDeclinedStep ||
+          isProcessingErrorStep) &&
           'max-xl:w-[min(430px,92vw)]',
         isEmbeddedPaymentStep && 'max-xl:h-[min(740px,85vh)]'
       )
@@ -70,7 +73,8 @@
         !isEmbeddedSuccessStep &&
         !isEmbeddedConfirmStep &&
         !isVerifyingStep &&
-        !isDeclinedStep
+        !isDeclinedStep &&
+        !isProcessingErrorStep
       "
       class="flex flex-col items-center gap-3"
     >
@@ -245,6 +249,11 @@
       @back="handleDeclinedBack"
     />
 
+    <SubscriptionProcessingErrorWorkspace
+      v-if="checkoutStep === 'processing_error'"
+      @try-again="handleDeclinedBack"
+    />
+
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
       v-if="checkoutStep === 'success' && (selectedTierKey || isTeamCheckout)"
@@ -272,6 +281,7 @@ import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPrev
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import SubscriptionDeclinedWorkspace from './SubscriptionDeclinedWorkspace.vue'
+import SubscriptionProcessingErrorWorkspace from './SubscriptionProcessingErrorWorkspace.vue'
 import SubscriptionVerifyingWorkspace from './SubscriptionVerifyingWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
@@ -398,6 +408,9 @@ function selectSavedPaymentMethod(id: string | null) {
 
 const isVerifyingStep = computed(() => checkoutStep.value === 'verifying')
 const isDeclinedStep = computed(() => checkoutStep.value === 'declined')
+const isProcessingErrorStep = computed(
+  () => checkoutStep.value === 'processing_error'
+)
 
 // The decline CTA returns to confirm and opens method collection, which is
 // dialog state rather than checkout state.

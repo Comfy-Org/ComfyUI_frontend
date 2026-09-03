@@ -39,7 +39,13 @@ import {
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
-type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success' | 'declined'
+type CheckoutStep =
+  | 'pricing'
+  | 'preview'
+  | 'verifying'
+  | 'success'
+  | 'declined'
+  | 'processing_error'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -929,6 +935,34 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
+  // While a host that renders the outcome steps holds an operation, its
+  // outcome renders there — the store's success/failure toasts stay quiet.
+  // Closing the dialog releases the operation back to toast delivery. Hosts
+  // without those steps never claim the operation at all.
+  if (rendersRecoverySteps) {
+    watch(
+      activeCheckoutOperationId,
+      (newId, oldId) => {
+        if (oldId) billingOperationStore.markOperationUnattended(oldId)
+        if (newId) billingOperationStore.markOperationAttended(newId)
+      },
+      { immediate: true }
+    )
+    onScopeDispose(() => {
+      const opId = activeCheckoutOperationId.value
+      if (opId) billingOperationStore.markOperationUnattended(opId)
+    })
+  }
+
+  function showFailureOutcome(operation: {
+    errorMessage: string | null
+    failureClass: 'declined' | 'processing' | null
+  }) {
+    checkoutDeclineReason.value = operation.errorMessage
+    checkoutStep.value =
+      operation.failureClass === 'processing' ? 'processing_error' : 'declined'
+  }
+
   // Declined is not terminal: back returns to the confirm step with the quote
   // and selection intact so the same charge can be retried. A decline reached
   // on re-entry has no preserved quote to land on — plan selection is the only
@@ -1368,11 +1402,15 @@ export function useSubscriptionCheckout(
     const operation = await terminalOperation
     clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
     if (
-      operation.status === 'succeeded' &&
-      activeCheckoutOperationId.value === opId &&
-      operation.workspaceId === workspaceStore.activeWorkspaceId
+      activeCheckoutOperationId.value !== opId ||
+      operation.workspaceId !== workspaceStore.activeWorkspaceId
     ) {
+      return
+    }
+    if (operation.status === 'succeeded') {
       checkoutStep.value = 'success'
+    } else if (operation.status === 'failed' && rendersRecoverySteps) {
+      showFailureOutcome(operation)
     }
   }
 
@@ -1443,14 +1481,20 @@ export function useSubscriptionCheckout(
         if (selectedTierKey.value || isTeamCheckout.value) {
           checkoutStep.value = 'success'
         } else {
+          // Attended operations don't toast; closing without a success step
+          // would swallow the outcome, so this path carries its own.
+          toast.add({
+            severity: 'success',
+            summary: t('billingOperation.subscriptionSuccess'),
+            life: 5000
+          })
           emit('close', true)
         }
         return
       }
       if (status === 'failed') {
-        checkoutDeclineReason.value =
-          activeCheckoutOperation.value?.errorMessage ?? null
-        checkoutStep.value = 'declined'
+        const operation = activeCheckoutOperation.value
+        if (operation) showFailureOutcome(operation)
         return
       }
       if (status === undefined) {
