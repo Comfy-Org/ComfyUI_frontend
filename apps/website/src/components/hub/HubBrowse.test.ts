@@ -58,7 +58,7 @@ describe('HubBrowse', () => {
   it('browses by use case and keeps models and workflows under one count', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
-    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('646')
+    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('667')
 
     // 3D is one of the four use cases behind the overflow menu.
     await user.click(screen.getByTestId('hub-use-case-more'))
@@ -70,9 +70,9 @@ describe('HubBrowse', () => {
     // Meshy AI and Meshy 7 are one family, so they share a card.
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(4)
-    expect(screen.getByTestId('model-card-versions').textContent).toContain(
-      '2 versions'
-    )
+    expect(
+      screen.getAllByTestId('model-card-versions')[0].textContent
+    ).toContain('2 versions')
   })
 
   it('counts the applied filters in the popover and clears them', async () => {

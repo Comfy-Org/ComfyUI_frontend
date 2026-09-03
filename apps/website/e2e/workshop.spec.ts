@@ -26,7 +26,7 @@ test.describe('Workshop V2', () => {
     await expect(hub.getByTestId('hub-heading')).toContainText(
       'Browse the Workshop'
     )
-    await expect(hub.getByTestId('hub-use-case-all')).toContainText('646')
+    await expect(hub.getByTestId('hub-use-case-all')).toContainText('667')
     await expect(hub.getByTestId('hub-card').first()).toBeVisible()
     await hub.getByTestId('hub-tab-comfyApps').click()
     await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(
@@ -68,7 +68,7 @@ test.describe('Workshop V2', () => {
 })
 
 test.describe('Workshop catalog', () => {
-  test('lists partner models by use case and filters by search', async ({
+  test('lists partner models by what they make and filters by search', async ({
     page
   }) => {
     await page.goto('/workshop/')
@@ -77,8 +77,8 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
-    await page.getByTestId('use-case-generate-videos').click()
-    await expect(cards).toHaveCount(11)
+    await page.getByTestId('use-case-video').click()
+    await expect(cards).toHaveCount(17)
     await expect(cards.first().getByTestId('model-card-task')).toHaveText(
       'Text to Video'
     )
@@ -136,13 +136,13 @@ test.describe('Workshop catalog', () => {
     await page.getByTestId('workshop-filter').click()
     await page.getByTestId('workshop-facet-capability').click()
     await page.getByTestId('filter-capability-Upscale').click()
-    await expect(cards).toHaveCount(3)
+    await expect(cards).toHaveCount(6)
     await expect(
       page.getByTestId('workshop-facet-capability-count')
     ).toHaveText('1')
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(cards).toHaveCount(48)
+    await expect(cards).toHaveCount(57)
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
@@ -158,7 +158,7 @@ test.describe('Workshop catalog', () => {
       page
         .getByTestId('workshop-models-grid')
         .getByTestId('workshop-model-card')
-    ).toHaveCount(3)
+    ).toHaveCount(6)
   })
 
   test('homepage model releases open their Workshop model', async ({

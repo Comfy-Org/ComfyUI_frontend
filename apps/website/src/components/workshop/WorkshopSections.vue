@@ -11,6 +11,7 @@ import {
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { groupByFamily } from '../../config/model-family'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const ROW_LIMIT = 8
@@ -33,9 +34,8 @@ const emit = defineEmits<{ open: [UseCase] }>()
 
 const sections = computed(() =>
   USE_CASES.map((useCase) => {
-    const matches = sortWorkshopModels(
-      filterWorkshopModels(models, { useCase }),
-      sort
+    const matches = groupByFamily(
+      sortWorkshopModels(filterWorkshopModels(models, { useCase }), sort)
     )
     return {
       useCase,
@@ -48,9 +48,11 @@ const sections = computed(() =>
 // A model the taxonomy cannot place would otherwise be reachable only by
 // search, so it gets its own row rather than disappearing from the listing.
 const unplaced = computed(() =>
-  sortWorkshopModels(
-    models.filter((model) => useCaseFor(model) === undefined),
-    sort
+  groupByFamily(
+    sortWorkshopModels(
+      models.filter((model) => useCaseFor(model) === undefined),
+      sort
+    )
   )
 )
 </script>
@@ -88,11 +90,16 @@ const unplaced = computed(() =>
         class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
       >
         <li
-          v-for="model in section.shown"
-          :key="model.slug"
+          v-for="family in section.shown"
+          :key="family.key"
           class="w-72 shrink-0 snap-start"
         >
-          <WorkshopModelCard :model :locale :show-status="showStatuses" />
+          <WorkshopModelCard
+            :model="family.latest"
+            :version-count="family.versions.length"
+            :locale
+            :show-status="showStatuses"
+          />
         </li>
       </ul>
     </section>
@@ -114,8 +121,13 @@ const unplaced = computed(() =>
       <ul
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5"
       >
-        <li v-for="model in unplaced" :key="model.slug">
-          <WorkshopModelCard :model :locale :show-status="showStatuses" />
+        <li v-for="family in unplaced" :key="family.key">
+          <WorkshopModelCard
+            :model="family.latest"
+            :version-count="family.versions.length"
+            :locale
+            :show-status="showStatuses"
+          />
         </li>
       </ul>
     </section>

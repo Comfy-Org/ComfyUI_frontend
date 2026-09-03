@@ -8398,8 +8398,8 @@ Enterprise`
     'zh-CN': '运行顶尖模型'
   },
   'workshop.hero.subtitle': {
-    en: 'The best partner models, ready to run. No install, no setup: set your inputs, hit Run.',
-    'zh-CN': '顶尖合作伙伴模型，即开即用。无需安装配置：设置输入、点击运行。'
+    en: 'Partner models, ready to run. No install, no setup.',
+    'zh-CN': '合作伙伴模型，即开即用。无需安装配置。'
   },
   'workshop.task.label': {
     en: '{input} to {output}',
@@ -8607,6 +8607,10 @@ Enterprise`
   'workshop.model.browseAll': {
     en: 'Browse all models',
     'zh-CN': '浏览全部模型'
+  },
+  'workshop.media.label': {
+    en: 'Browse by output',
+    'zh-CN': '按输出浏览'
   },
   'workshop.useCase.more': {
     en: 'More categories',

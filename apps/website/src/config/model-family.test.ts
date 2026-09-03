@@ -59,6 +59,29 @@ describe('groupByFamily', () => {
     ])
   })
 
+  it('reads the other spellings of a release as the same family', () => {
+    const families = groupByFamily([
+      model('Wan 2.6', 'wan2-6'),
+      model('Wan2.5', 'wan2-5'),
+      model('Vidu Q3', 'vidu-q3', { provider: 'Vidu' }),
+      model('Vidu', 'vidu', { provider: 'Vidu' }),
+      model('Meshy AI', 'meshy-ai', { provider: 'Meshy' }),
+      model('Meshy 7', 'meshy-7', { provider: 'Meshy' }),
+      model('GPT-Image-1.5', 'gpt-image-1-5', { provider: 'OpenAI' }),
+      model('GPT Image 2', 'gpt-image-2', { provider: 'OpenAI' })
+    ])
+
+    expect(
+      families.map((family) => [family.name, family.versions.length])
+    ).toEqual([
+      ['Wan', 2],
+      ['Vidu', 2],
+      ['Meshy', 2],
+      ['GPT-Image', 2]
+    ])
+    expect(families[3].latest.name).toBe('GPT Image 2')
+  })
+
   it('orders families by the first model it was given', () => {
     const families = groupByFamily([
       model('Veo 2', 'veo-2'),

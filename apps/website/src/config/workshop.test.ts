@@ -269,11 +269,12 @@ describe('workshopModels', () => {
     }
   })
 
-  it('only contains canonical partner-node models', () => {
-    expect(workshopModels.length).toBeGreaterThan(0)
-    expect(workshopModels.map((m) => m.slug)).toEqual(
-      models.filter(isRouterModel).map((m) => m.slug)
-    )
+  it('holds every partner node plus the releases the templates name', () => {
+    const routerSlugs = models.filter(isRouterModel).map((m) => m.slug)
+    const slugs = workshopModels.map((m) => m.slug)
+    expect(slugs).toEqual(expect.arrayContaining(routerSlugs))
+    expect(slugs.length).toBeGreaterThan(routerSlugs.length)
+    expect(new Set(slugs).size).toBe(slugs.length)
     expect(workshopModels.filter((m) => m.thumbnailUrl).length).toBeGreaterThan(
       40
     )

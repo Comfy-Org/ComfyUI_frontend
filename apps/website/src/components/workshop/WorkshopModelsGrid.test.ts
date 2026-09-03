@@ -59,17 +59,15 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('combines the use-case tabs with the capability menu', async () => {
+  it('combines the medium rail with the capability menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     expect(screen.queryByTestId('use-case-audio')).toBeNull()
 
-    await user.click(screen.getByTestId('use-case-generate-videos'))
+    await user.click(screen.getByTestId('use-case-video'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     expect(
-      screen
-        .getByTestId('use-case-generate-videos')
-        .getAttribute('aria-pressed')
+      screen.getByTestId('use-case-video').getAttribute('aria-pressed')
     ).toBe('true')
 
     await user.click(screen.getByTestId('workshop-filter'))

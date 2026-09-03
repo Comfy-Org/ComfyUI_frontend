@@ -10,22 +10,41 @@ export interface ModelFamily {
   readonly versions: readonly WorkshopModel[]
 }
 
-const VERSION_SUFFIX = /\s+v?(\d+(?:\.\d+)*)$/i
+// "Wan 2.6", "Wan2.5", "LTX-2.5", "Vidu Q3", "Kling O1": the registry spells a
+// release every way there is, and each spelling has to fall off the name for
+// the family to come out.
+const VERSION_SUFFIX =
+  /(?:[\s\-.]+v?[A-Za-z]?(\d+(?:\.\d+)*)|(\d+(?:\.\d+)*))$/i
+const QUALIFIER_SUFFIX =
+  /[\s-]+(pro|lite|flash|turbo|mini|max|ultra|plus|ai|3d)$/i
 
-// Releases the registry names without a number of their own.
-const FAMILY_NAMES: Readonly<Record<string, string>> = {
-  'kling-ai': 'Kling',
-  'kling-o3': 'Kling',
-  'meshy-ai': 'Meshy'
+function stripRelease(name: string): string {
+  let stripped = name.trim()
+  for (let pass = 0; pass < 3; pass += 1) {
+    const shorter = stripped
+      .replace(QUALIFIER_SUFFIX, '')
+      .replace(VERSION_SUFFIX, '')
+      .trim()
+    if (shorter === stripped || shorter === '') break
+    stripped = shorter
+  }
+  return stripped
 }
 
 function familyNameOf(model: WorkshopModel): string {
-  const stripped = model.name.replace(VERSION_SUFFIX, '').trim()
-  return FAMILY_NAMES[model.slug] ?? (stripped || model.name)
+  return stripRelease(model.name) || model.name
+}
+
+// Two spellings of one family ("GPT Image 2", "GPT-Image-1.5") share a key.
+function familyKeyOf(model: WorkshopModel): string {
+  return `${model.provider ?? ''}:${familyNameOf(model)
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '')}`
 }
 
 function versionOf(model: WorkshopModel): string | undefined {
-  return VERSION_SUFFIX.exec(model.name)?.[1]
+  const match = VERSION_SUFFIX.exec(model.name)
+  return match?.[1] ?? match?.[2]
 }
 
 // A release with no number is the family's first, so it sorts last.
@@ -49,7 +68,7 @@ export function groupByFamily(models: readonly WorkshopModel[]): ModelFamily[] {
   const groups = new Map<string, { name: string; members: WorkshopModel[] }>()
   for (const model of models) {
     const name = familyNameOf(model)
-    const key = `${model.provider ?? ''}:${name}`
+    const key = familyKeyOf(model)
     const group = groups.get(key) ?? { name, members: [] }
     group.members.push(model)
     groups.set(key, group)
@@ -78,6 +97,6 @@ export function familyOf(
 ): ModelFamily | undefined {
   const model = models.find((candidate) => candidate.slug === slug)
   if (!model) return undefined
-  const key = `${model.provider ?? ''}:${familyNameOf(model)}`
+  const key = familyKeyOf(model)
   return groupByFamily(models).find((family) => family.key === key)
 }

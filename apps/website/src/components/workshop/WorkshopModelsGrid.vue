@@ -19,12 +19,20 @@ import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import { groupByFamily } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
+import type {
+  ModalityFilter,
+  SortOrder,
+  UseCase,
+  WorkshopModel
+} from '../../config/workshop'
 import {
+  MODALITIES,
   SORT_ORDERS,
   USE_CASES,
+  countByModality,
   parseCatalogSearch,
   countByFacet,
   countByUseCase,
@@ -45,6 +53,7 @@ const { models, locale = 'en' } = defineProps<{
 
 const query = ref('')
 const useCase = ref<UseCase | 'all'>('all')
+const modality = ref<ModalityFilter>('all')
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
@@ -69,6 +78,15 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   audio: 'workshop.useCase.audio',
   text: 'workshop.useCase.text'
 }
+const mediaLabelKey: Record<ModalityFilter, TranslationKey> = {
+  all: 'workshop.useCase.all',
+  image: 'workshop.filter.image',
+  video: 'workshop.filter.video',
+  audio: 'workshop.filter.audio',
+  '3d': 'workshop.filter.3d',
+  text: 'workshop.filter.text',
+  other: 'workshop.filter.other'
+}
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -80,6 +98,39 @@ const counts = computed(() => countByUseCase(models))
 const useCases = computed(() =>
   (['all', ...USE_CASES] as const).filter((value) => counts.value[value] > 0)
 )
+const mediaCounts = computed(() => countByModality(models))
+const media = computed(() =>
+  (['all', ...MODALITIES] as const).filter(
+    (value) => mediaCounts.value[value] > 0
+  )
+)
+
+// The models list browses by what a model makes; V1.1's rows stay on the use
+// cases they were built around.
+const railLabel = computed<TranslationKey>(() =>
+  version.value === 'v1.1' ? 'workshop.useCase.label' : 'workshop.media.label'
+)
+
+const rail = computed(() =>
+  version.value === 'v1.1'
+    ? useCases.value.map((value) => ({
+        value,
+        label: useCaseLabelKey[value],
+        count: counts.value[value],
+        current: useCase.value === value
+      }))
+    : media.value.map((value) => ({
+        value,
+        label: mediaLabelKey[value],
+        count: mediaCounts.value[value],
+        current: modality.value === value
+      }))
+)
+
+function selectRail(value: (typeof rail.value)[number]['value']) {
+  if (version.value === 'v1.1') useCase.value = value as UseCase | 'all'
+  else modality.value = value as ModalityFilter
+}
 const capabilityOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'capabilities').map((option) => ({
     ...option,
@@ -94,20 +145,24 @@ const providerOptions = computed<FacetMenuOption[]>(() =>
 )
 
 const visible = computed(() =>
-  sortWorkshopModels(
-    filterWorkshopModels(models, {
-      query: query.value,
-      useCase: useCase.value,
-      providers: providers.value,
-      capabilities: capabilities.value
-    }),
-    sort.value
+  groupByFamily(
+    sortWorkshopModels(
+      filterWorkshopModels(models, {
+        query: query.value,
+        useCase: useCase.value,
+        modality: modality.value,
+        providers: providers.value,
+        capabilities: capabilities.value
+      }),
+      sort.value
+    )
   )
 )
 const isFiltered = computed(
   () =>
     query.value !== '' ||
     useCase.value !== 'all' ||
+    modality.value !== 'all' ||
     capabilities.value.length + providers.value.length > 0
 )
 
@@ -143,6 +198,7 @@ function toggleProvider(value: string) {
 function clearFilters() {
   query.value = ''
   useCase.value = 'all'
+  modality.value = 'all'
   capabilities.value = []
   providers.value = []
 }
@@ -181,25 +237,25 @@ const menuItemClass =
       <h2
         class="mb-3 hidden text-xs font-bold tracking-wider text-primary-warm-gray uppercase lg:block"
       >
-        {{ t('workshop.useCase.label', locale) }}
+        {{ t(railLabel, locale) }}
       </h2>
       <nav
         class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8 lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0"
-        :aria-label="t('workshop.useCase.label', locale)"
+        :aria-label="t(railLabel, locale)"
         data-testid="workshop-use-cases"
       >
         <button
-          v-for="value in useCases"
-          :key="value"
+          v-for="entry in rail"
+          :key="entry.value"
           type="button"
-          :aria-pressed="useCase === value"
-          :data-testid="`use-case-${value}`"
-          :class="tabClass(useCase === value)"
-          @click="useCase = value"
+          :aria-pressed="entry.current"
+          :data-testid="`use-case-${entry.value}`"
+          :class="tabClass(entry.current)"
+          @click="selectRail(entry.value)"
         >
-          {{ t(useCaseLabelKey[value], locale) }}
+          {{ t(entry.label, locale) }}
           <span class="text-xs text-primary-warm-gray tabular-nums">
-            {{ counts[value] }}
+            {{ entry.count }}
           </span>
         </button>
       </nav>
@@ -361,8 +417,13 @@ const menuItemClass =
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >
-            <li v-for="model in visible" :key="model.slug">
-              <WorkshopModelCard :model :locale :show-status="showStatuses" />
+            <li v-for="family in visible" :key="family.key">
+              <WorkshopModelCard
+                :model="family.latest"
+                :version-count="family.versions.length"
+                :locale
+                :show-status="showStatuses"
+              />
             </li>
           </ul>
         </div>

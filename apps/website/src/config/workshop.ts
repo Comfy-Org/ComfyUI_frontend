@@ -2,9 +2,10 @@ import type { Model } from './models'
 import { models } from './models'
 import displayOverrides from './workshop-model-display.json'
 import generatedModels from './workshop-models.generated.json'
+import generatedVersions from './workshop-model-versions.generated.json'
 import { usdToCredits } from './credits'
 
-const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
+export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
 
 const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
@@ -399,9 +400,56 @@ export function isRouterModel(model: Model): boolean {
   )
 }
 
-export const workshopModels: readonly WorkshopModel[] = models
+const routerModels: readonly WorkshopModel[] = models
   .filter(isRouterModel)
   .map(toWorkshopModel)
+
+// The releases the templates name that the node-level catalogue never had.
+// Each runs on its node's schema, defaults, examples and price.
+interface GeneratedVersion {
+  readonly name: string
+  readonly slug: string
+  readonly baseSlug: string
+  readonly provider?: string
+  readonly modality?: Modality
+  readonly workflowCount: number
+  readonly thumbnailUrl?: string
+}
+
+const versions = generatedVersions as GeneratedVersion[]
+const baseSlugFor = new Map(
+  versions.map((version) => [version.slug, version.baseSlug])
+)
+
+function toVersionModel(version: GeneratedVersion): WorkshopModel {
+  const base = routerModels.find((model) => model.slug === version.baseSlug)
+  const data = generated[version.baseSlug]
+  const provider = version.provider ?? base?.provider
+  return {
+    slug: version.slug,
+    name: version.name,
+    workflowCount: version.workflowCount,
+    href: modelDetailHref(version.slug),
+    routerId: routerIdFor(version.slug, provider),
+    ...(provider ? { provider } : {}),
+    ...(version.modality ? { modality: version.modality } : {}),
+    ...(data ? { task: taskFor(data.fields, version.modality) } : {}),
+    capabilities: capabilitiesFor(data?.examples ?? []),
+    runs: mockRuns(version.slug, version.workflowCount),
+    ...(base?.creditsPerRun !== undefined
+      ? { creditsPerRun: base.creditsPerRun }
+      : {}),
+    ...(base?.priceUsdFrom !== undefined
+      ? { priceUsdFrom: base.priceUsdFrom }
+      : {}),
+    ...(version.thumbnailUrl ? { thumbnailUrl: version.thumbnailUrl } : {})
+  }
+}
+
+export const workshopModels: readonly WorkshopModel[] = [
+  ...routerModels,
+  ...versions.map(toVersionModel)
+]
 
 export function getWorkshopModel(slug: string): WorkshopModel | undefined {
   return workshopModels.find((model) => model.slug === slug)
@@ -412,7 +460,7 @@ export function getWorkshopModelDetail(
 ): WorkshopModelDetail | undefined {
   const model = getWorkshopModel(slug)
   if (!model) return undefined
-  const data = generated[slug]
+  const data = generated[baseSlugFor.get(slug) ?? slug]
   return {
     ...model,
     ...(data?.node ? { nodeDisplayName: data.node.displayName } : {}),
@@ -431,6 +479,7 @@ export function modalityOf(
 export interface WorkshopFilter {
   readonly query?: string
   readonly useCase?: UseCase | 'all'
+  readonly modality?: ModalityFilter
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
 }
@@ -474,6 +523,7 @@ export function filterWorkshopModels(
   {
     query = '',
     useCase = 'all',
+    modality = 'all',
     providers = [],
     capabilities = []
   }: WorkshopFilter
@@ -482,6 +532,7 @@ export function filterWorkshopModels(
   return list.filter(
     (model) =>
       (useCase === 'all' || useCaseFor(model) === useCase) &&
+      (modality === 'all' || modalityOf(model) === modality) &&
       matchesFacet(providers, model.provider) &&
       (capabilities.length === 0 ||
         capabilities.some((value) => model.capabilities.includes(value))) &&
@@ -546,6 +597,21 @@ export function countByFacet(
   return [...counts]
     .map(([value, count]) => ({ value, count }))
     .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+}
+
+// The models list browses by what a model makes; the workflows hub browses by
+// use case, where the volume makes "edit" and "animate" worth splitting out.
+export function countByModality(
+  list: readonly WorkshopModel[]
+): Record<ModalityFilter, number> {
+  const counts = Object.fromEntries(
+    MODALITY_FILTERS.map((value) => [value, 0])
+  ) as Record<ModalityFilter, number>
+  for (const model of list) {
+    counts.all += 1
+    counts[modalityOf(model)] += 1
+  }
+  return counts
 }
 
 export function countByUseCase(
