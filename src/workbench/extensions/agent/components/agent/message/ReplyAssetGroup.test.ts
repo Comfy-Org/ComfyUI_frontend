@@ -296,7 +296,7 @@ describe('ReplyAssetGroup', () => {
       await vi.waitFor(() =>
         expect(generateModelThumbnail).toHaveBeenCalledOnce()
       )
-      expect(vi.getTimerCount()).toBe(1)
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
 
       findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
       await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
@@ -378,6 +378,7 @@ describe('ReplyAssetGroup', () => {
       await vi.waitFor(() =>
         expect(generateModelThumbnail).toHaveBeenCalledOnce()
       )
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
 
       // The failed render schedules a retry in THUMBNAIL_RETRY_DELAY_MS.
       // Hide the asset before that retry fires.
