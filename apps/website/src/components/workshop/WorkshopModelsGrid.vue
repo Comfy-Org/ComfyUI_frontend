@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ArrowUpDown, Check, ChevronDown, Search, X } from '@lucide/vue'
+import {
+  ArrowUpDown,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Search,
+  X
+} from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -163,6 +170,7 @@ const menuItemClass =
 <template>
   <section>
     <nav
+      v-if="!browsing"
       class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8"
       :aria-label="t('workshop.useCase.label', locale)"
       data-testid="workshop-use-cases"
@@ -273,6 +281,17 @@ const menuItemClass =
     />
 
     <template v-else>
+      <button
+        v-if="inSection"
+        type="button"
+        class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mb-6 inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
+        data-testid="section-back"
+        @click="clearFilters"
+      >
+        <ChevronLeft class="size-4" aria-hidden="true" />
+        {{ t('workshop.sections.back', locale) }}
+      </button>
+
       <div
         v-if="inSection"
         class="mb-6 flex flex-wrap items-center gap-2"

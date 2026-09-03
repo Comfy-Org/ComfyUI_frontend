@@ -73,6 +73,8 @@ const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
+const capabilityPillClass =
+  'inline-flex h-6 min-w-0 items-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal text-content'
 </script>
 
 <template>
@@ -179,9 +181,10 @@ const pillClass =
         <span
           v-for="capability in model.capabilities.slice(0, 1)"
           :key="capability"
-          :class="pillClass"
+          :class="capabilityPillClass"
+          :title="capability"
         >
-          {{ capability }}
+          <span class="min-w-0 truncate">{{ capability }}</span>
         </span>
       </div>
     </div>

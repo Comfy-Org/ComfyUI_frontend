@@ -3,7 +3,11 @@ import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { UseCase, WorkshopModel } from '../../config/workshop'
-import { USE_CASES, filterWorkshopModels } from '../../config/workshop'
+import {
+  USE_CASES,
+  filterWorkshopModels,
+  useCaseFor
+} from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -34,6 +38,12 @@ const sections = computed(() =>
     }
   }).filter((section) => section.total > 0)
 )
+
+// A model the taxonomy cannot place would otherwise be reachable only by
+// search, so it gets its own row rather than disappearing from the listing.
+const unplaced = computed(() =>
+  models.filter((model) => useCaseFor(model) === undefined)
+)
 </script>
 
 <template>
@@ -47,16 +57,16 @@ const sections = computed(() =>
       <div class="mb-5 flex items-center justify-between gap-4">
         <h2
           :id="`section-${section.useCase}`"
-          class="text-primary-warm-white flex items-baseline gap-2 text-xl font-medium"
+          class="flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
         >
           {{ t(labelKey[section.useCase], locale) }}
-          <span class="text-primary-warm-gray text-sm tabular-nums">
+          <span class="text-sm text-primary-warm-gray tabular-nums">
             {{ section.total }}
           </span>
         </h2>
         <button
           type="button"
-          class="text-primary-warm-gray hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-3"
+          class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
           :data-testid="`section-${section.useCase}-see-all`"
           @click="emit('open', section.useCase)"
         >
@@ -66,13 +76,34 @@ const sections = computed(() =>
       </div>
 
       <ul
-        class="scrollbar-thin -mx-1 flex snap-x gap-5 overflow-x-auto px-1 pb-2"
+        class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
       >
         <li
           v-for="model in section.shown"
           :key="model.slug"
           class="w-72 shrink-0 snap-start"
         >
+          <WorkshopModelCard :model :locale :show-status="showStatuses" />
+        </li>
+      </ul>
+    </section>
+
+    <section
+      v-if="unplaced.length"
+      aria-labelledby="section-other"
+      data-testid="section-other"
+    >
+      <h2
+        id="section-other"
+        class="mb-5 flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
+      >
+        {{ t('workshop.filter.other', locale) }}
+        <span class="text-sm text-primary-warm-gray tabular-nums">
+          {{ unplaced.length }}
+        </span>
+      </h2>
+      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <li v-for="model in unplaced" :key="model.slug">
           <WorkshopModelCard :model :locale :show-status="showStatuses" />
         </li>
       </ul>
