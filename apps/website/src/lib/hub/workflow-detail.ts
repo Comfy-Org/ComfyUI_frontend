@@ -282,14 +282,17 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     { name: 'seed', type: 'int' },
     { name: 'latency_ms', type: 'int' }
   ]
+  // Node graphs that share ground with this one: a tag or a model in common.
   const related = templates
     .filter(
-      (t) =>
-        t.name !== template.name &&
-        t.tags.some((tag) => template.tags.includes(tag))
+      (other) =>
+        other.name !== template.name &&
+        !other.isApp &&
+        (other.tags.some((tag) => template.tags.includes(tag)) ||
+          other.models.some((model) => template.models.includes(model)))
     )
     .sort((a, b) => b.usage - a.usage)
-    .slice(0, 3)
+    .slice(0, 8)
   return {
     template,
     mediaType,

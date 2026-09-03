@@ -27,7 +27,8 @@ describe('getHubWorkflowPage', () => {
     expect(page.inputs).toContainEqual({ name: 'image', type: 'file' })
     expect(page.outputs[0]).toEqual({ name: 'video', type: 'mp4' })
     expect(page.stats.cloneCredits).toBeGreaterThanOrEqual(2500)
-    expect(page.related).toHaveLength(3)
+    expect(page.related).toHaveLength(8)
+    expect(page.related.every((other) => !other.isApp)).toBe(true)
     expect(page.related.map((t) => t.name)).not.toContain(
       'video_minimax_h3_i2v'
     )

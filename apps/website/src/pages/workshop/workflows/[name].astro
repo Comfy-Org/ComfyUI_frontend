@@ -22,7 +22,8 @@ const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
 if (!page) return Astro.redirect('/workshop/')
 
-const { template, mediaType, details, model, stats, inputs, outputs } = page
+const { template, mediaType, details, model, stats, inputs, outputs, related } =
+  page
 const routes = getRoutes()
 const author = template.username || 'ComfyUI'
 const isPartner = template.tags.includes('API')
@@ -39,17 +40,6 @@ const pillClass =
   'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
 const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
 const clone = { credits: stats.cloneCredits, href: downloadUrl, author: `@${author}` }
-// Only node graphs, and only the ones that share ground with this workflow.
-const related = listHubWorkflows()
-  .filter(
-    (other) =>
-      other.name !== template.name &&
-      !other.isApp &&
-      (other.tags.some((tag) => template.tags.includes(tag)) ||
-        other.models.some((model) => template.models.includes(model)))
-  )
-  .sort((a, b) => b.usage - a.usage)
-  .slice(0, 8)
 const comments = [
   { author: '@midframe', stars: 5, text: t('workshop.workflow.comment1') },
   { author: '@rui.v', stars: 4, text: t('workshop.workflow.comment2') }
