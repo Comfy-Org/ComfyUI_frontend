@@ -9,8 +9,8 @@
       v-model:confirm-password="values.confirmPassword"
       :password-error="errors.password"
       :confirm-password-error="errors.confirmPassword"
-      @update:password="validatePassword"
-      @update:confirm-password="validateConfirmPassword"
+      @update:password="validatePasswords"
+      @update:confirm-password="validatePasswords"
     />
 
     <!-- Submit Button -->
@@ -43,22 +43,18 @@ const { onSuccess } = defineProps<{
   onSuccess: () => void
 }>()
 
-function validateField(field: keyof UpdatePasswordData) {
+function validatePasswords() {
   const result = updatePasswordSchema.safeParse(values)
-  const message = result.success
+  const fieldErrors = result.success
     ? undefined
-    : getZodFieldErrors(result.error)[field]
+    : getZodFieldErrors(result.error)
 
-  if (message) errors[field] = message
-  else delete errors[field]
-}
+  if (fieldErrors?.password) errors.password = fieldErrors.password
+  else delete errors.password
 
-function validatePassword() {
-  validateField('password')
-}
-
-function validateConfirmPassword() {
-  validateField('confirmPassword')
+  if (fieldErrors?.confirmPassword) {
+    errors.confirmPassword = fieldErrors.confirmPassword
+  } else delete errors.confirmPassword
 }
 
 async function onSubmit() {

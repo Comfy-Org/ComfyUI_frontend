@@ -110,6 +110,20 @@ describe('SignInForm', () => {
   })
 
   describe('Form Submission', () => {
+    it('disables submit for invalid input and re-enables it after correction', async () => {
+      const { user } = renderComponent()
+      const submit = screen.getByRole('button', { name: loginButtonText })
+
+      expect(submit).toBeEnabled()
+
+      await user.type(getEmailInput(), 'invalid-email')
+      expect(submit).toBeDisabled()
+
+      await user.clear(getEmailInput())
+      await user.type(getEmailInput(), 'test@example.com')
+      expect(submit).toBeEnabled()
+    })
+
     it('emits submit event when form is submitted with valid data', async () => {
       const onSubmit = vi.fn()
       const { user } = renderComponent({ onSubmit })

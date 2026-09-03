@@ -254,6 +254,23 @@ describe('SignUpForm', () => {
   })
 
   describe('validation', () => {
+    it('disables submit for invalid input and re-enables it after correction', async () => {
+      const { user } = renderComponent()
+      const submit = screen.getByRole('button', { name: signUpButton })
+      const email = screen.getByPlaceholderText(
+        enMessages.auth.signup.emailPlaceholder
+      )
+
+      expect(submit).toBeEnabled()
+
+      await user.type(email, 'not-an-email')
+      expect(submit).toBeDisabled()
+
+      await user.clear(email)
+      await user.type(email, 'new@example.com')
+      expect(submit).toBeEnabled()
+    })
+
     it('blocks invalid submission and associates errors with their fields', async () => {
       const onSubmit = vi.fn()
       const { user } = renderComponent({ onSubmit })
@@ -294,6 +311,27 @@ describe('SignUpForm', () => {
           enMessages.auth.login.confirmPasswordPlaceholder
         )
       ).toHaveAccessibleDescription(enMessages.validation.password.match)
+    })
+
+    it('clears a mismatch error when the password is corrected', async () => {
+      const { user } = renderComponent()
+      const password = screen.getByLabelText(
+        enMessages.auth.signup.passwordLabel
+      )
+      const confirmPassword = screen.getByLabelText(
+        enMessages.auth.login.confirmPasswordLabel
+      )
+
+      await user.type(password, 'Password1!')
+      await user.type(confirmPassword, 'Different1!')
+      expect(confirmPassword).toHaveAccessibleDescription(
+        enMessages.validation.password.match
+      )
+
+      await user.clear(password)
+      await user.type(password, 'Different1!')
+
+      expect(confirmPassword).not.toHaveAccessibleDescription()
     })
   })
 
