@@ -225,7 +225,4 @@ export function createAgentRestClient() {
   }
 }
 
-export type AgentRestClient = Omit<
-  ReturnType<typeof createAgentRestClient>,
-  'getRunMode' | 'putRunMode'
->
+export type AgentRestClient = ReturnType<typeof createAgentRestClient>
