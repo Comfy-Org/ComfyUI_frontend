@@ -12,11 +12,12 @@ const mockStore = vi.hoisted(() => ({
 const mockIsCloud = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanReactivate = ref(false)
-const mockCanSubscribeSelfServe = ref(true)
-const mockSnapshotAuthoritative = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
+const mockCanAccessSubscriptionFeatures = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
+const mockBillingStatus = vi.hoisted(() => ({ value: 'inactive' }))
+const mockSubscriptionStatus = vi.hoisted(() => ({ value: 'ended' }))
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -56,17 +57,18 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
-    canReactivate: computed(() => mockCanReactivate.value),
-    canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+    canReactivate: computed(() => mockCanReactivate.value)
   })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    billingStatus: ref(mockBillingStatus.value),
+    canAccessSubscriptionFeatures: ref(mockCanAccessSubscriptionFeatures.value),
     isActiveSubscription: ref(mockIsActiveSubscription.value),
     isTeamPlan: ref(mockIsTeamPlan.value),
-    subscription: ref({ isCancelled: mockIsCancelled.value })
+    subscription: ref({ isCancelled: mockIsCancelled.value }),
+    subscriptionStatus: ref(mockSubscriptionStatus.value)
   })
 }))
 
@@ -124,14 +126,15 @@ function resetStore() {
   mockStore.originalOwnerId = null
   mockStore.ensureMembersLoaded.mockReset()
   mockIsActiveSubscription.value = false
+  mockCanAccessSubscriptionFeatures.value = false
   mockIsCancelled.value = false
   mockIsTeamPlan.value = false
+  mockBillingStatus.value = 'inactive'
+  mockSubscriptionStatus.value = 'ended'
   mockBillingControlEnabled.value = false
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
   mockCanReactivate.value = false
-  mockCanSubscribeSelfServe.value = true
-  mockSnapshotAuthoritative.value = true
 }
 
 describe('useWorkspaceUI', () => {
@@ -519,61 +522,70 @@ describe('useWorkspaceUI', () => {
     })
   })
 
-  describe('canOpenPricingSurface', () => {
-    beforeEach(() => {
-      mockStore.activeWorkspace = personalWorkspace
-    })
-
-    it('closes the catalog when the server resolves a sales-managed plan', async () => {
-      mockShouldUseWorkspaceBilling.value = true
-      mockCanSubscribeSelfServe.value = false
+  describe('inactive Team subscription', () => {
+    it('shows the inactive state to its owner after the subscription ends', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockIsTeamPlan.value = true
 
       const ui = await loadComposable()
-      expect(ui.canOpenPricingSurface.value).toBe(false)
+      expect(ui.showInactiveTeamSubscription.value).toBe(true)
     })
 
-    it('opens the catalog when the server allows self-serve subscribing', async () => {
-      mockShouldUseWorkspaceBilling.value = true
-      mockCanSubscribeSelfServe.value = true
-
-      const ui = await loadComposable()
-      expect(ui.canOpenPricingSurface.value).toBe(true)
-    })
-
-    it('falls back to membership on the legacy rail, where no capability row exists', async () => {
-      mockShouldUseWorkspaceBilling.value = false
-      mockCanSubscribeSelfServe.value = false
-
-      const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscription).toBe(true)
-      expect(ui.canOpenPricingSurface.value).toBe(true)
-    })
-
-    it('falls back to membership off Cloud, where the endpoint is never called', async () => {
-      mockIsCloud.value = false
-      mockShouldUseWorkspaceBilling.value = true
-      mockCanSubscribeSelfServe.value = false
-
-      const ui = await loadComposable()
-      expect(ui.canOpenPricingSurface.value).toBe(true)
-    })
-
-    it('falls back to membership when the snapshot is not authoritative', async () => {
-      mockSnapshotAuthoritative.value = false
-      mockCanSubscribeSelfServe.value = false
-
-      const ui = await loadComposable()
-      expect(ui.canOpenPricingSurface.value).toBe(true)
-    })
-
-    it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
+    it('hides the inactive state from Team members', async () => {
       mockStore.activeWorkspace = teamMemberWorkspace
-      mockSnapshotAuthoritative.value = false
-      mockCanSubscribeSelfServe.value = false
+      mockIsTeamPlan.value = true
 
       const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscription).toBe(false)
-      expect(ui.canOpenPricingSurface.value).toBe(false)
+      expect(ui.showInactiveTeamSubscription.value).toBe(false)
+    })
+
+    it('does not treat an active Team subscription as inactive', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockIsTeamPlan.value = true
+      mockCanAccessSubscriptionFeatures.value = true
+      mockSubscriptionStatus.value = 'active'
+
+      const ui = await loadComposable()
+      expect(ui.showInactiveTeamSubscription.value).toBe(false)
+    })
+  })
+
+  describe('isSubscriptionEnded', () => {
+    beforeEach(() => {
+      mockSubscriptionStatus.value = 'canceled'
+    })
+
+    it('ends a cancelled plan once its paid period stops granting access', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockIsCancelled.value = true
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(true)
+    })
+
+    it('keeps a cancelled plan live while it still grants access', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockIsCancelled.value = true
+      mockCanAccessSubscriptionFeatures.value = true
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(false)
+    })
+
+    it('ends an uncancelled personal plan once billing goes inactive', async () => {
+      mockStore.activeWorkspace = personalWorkspace
+      mockBillingStatus.value = 'inactive'
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(true)
+    })
+
+    it('leaves an uncancelled Team plan live when personal billing is the only inactive signal', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockBillingStatus.value = 'inactive'
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(false)
     })
   })
 })

@@ -433,11 +433,13 @@ const { isWorkspaceSubscribed, isInPersonalWorkspace } =
 const {
   permissions,
   isSubscriptionCancelled,
+  isSubscriptionEnded,
+  showInactiveTeamSubscription,
   workspaceRole,
-  canReactivatePlan,
-  canOpenPricingSurface
+  canReactivatePlan
 } = useWorkspaceUI()
-const { canChangeSeats, canSubscribeSelfServe } = useBillingCapabilities()
+const { canChangeSeats, canOpenPricingSurface, canSubscribeSelfServe } =
+  useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -459,8 +461,6 @@ const {
   isTeamPlan,
   subscription,
   plans,
-  billingStatus,
-  subscriptionStatus,
   isLoading,
   error,
   showSubscriptionDialog,
@@ -473,15 +473,6 @@ const { showPricingTable } = useSubscriptionDialog()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
-
-const isSubscriptionEnded = computed(() => {
-  if (subscriptionStatus.value === 'ended') return true
-  if (canAccessSubscriptionFeatures.value) return false
-  return (
-    isSubscriptionCancelled.value ||
-    (isInPersonalWorkspace.value && billingStatus.value === 'inactive')
-  )
-})
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
@@ -516,14 +507,6 @@ const showTeamSubscribePrompt = computed(
     showSubscribePrompt.value &&
     !isInPersonalWorkspace.value &&
     (isCloud || (isSubscriptionEnded.value && isTeamPlan.value))
-)
-
-const showInactiveTeamSubscription = computed(
-  () =>
-    permissions.value.canManageSubscription &&
-    !isInPersonalWorkspace.value &&
-    isSubscriptionEnded.value &&
-    isTeamPlan.value
 )
 
 const isPersonalFree = computed(

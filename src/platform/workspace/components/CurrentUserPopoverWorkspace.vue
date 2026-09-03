@@ -281,9 +281,9 @@ const {
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
-const { permissions, canReactivatePlan, canOpenPricingSurface } =
-  useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { canOpenPricingSurface, canTopUp, canSubscribeSelfServe } =
+  useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
