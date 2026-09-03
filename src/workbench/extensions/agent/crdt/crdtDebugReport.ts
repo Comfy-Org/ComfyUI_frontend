@@ -50,7 +50,7 @@ const SECRET_KEY_PATTERN =
 
 const REDACTED = '[redacted by the debug report]'
 
-const SHARING_WARNING =
+export const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
 
 /**
@@ -238,7 +238,11 @@ function json(value: unknown): string {
   }
 }
 
-function redactEventPayloads(value: unknown): unknown {
+export function redactEventPayloads(
+  value: readonly DevEvent[]
+): readonly DevEvent[]
+export function redactEventPayloads(value: unknown): unknown
+export function redactEventPayloads(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactEventPayloads)
   if (!isRecord(value)) return value
   return Object.fromEntries(
