@@ -68,13 +68,13 @@ describe('customerio', () => {
   it('identifies by email then tracks the waitlist signup under the caller event', async () => {
     const { joinWaitlist } = await importModule('test-key')
 
-    await joinWaitlist('someone@example.com', 'agent_beta_waitlist_joined')
+    await joinWaitlist('someone@example.com', 'agent_alpha_waitlist_joined')
 
     expect(hoisted.mockIdentify).toHaveBeenCalledWith('someone@example.com', {
       email: 'someone@example.com'
     })
     expect(hoisted.mockTrack).toHaveBeenCalledWith(
-      'agent_beta_waitlist_joined',
+      'agent_alpha_waitlist_joined',
       { page: window.location.pathname }
     )
   })

@@ -3497,7 +3497,7 @@ Enterprise`
       '同一个智能体，既能在你的本地机器上和你协作，也能在 Comfy Cloud 中运行。它会带你走完所有配置、搭好工作流，并依据你的硬件挑选模型，还会为你的工作流和依赖推荐环境与部署方案。'
   },
 
-  // Agent – beta waitlist form
+  // Agent – alpha waitlist form
   'agent.form.emailLabel': { en: 'Email address', 'zh-CN': '邮箱地址' },
   'agent.form.placeholder': {
     en: 'Type your email',

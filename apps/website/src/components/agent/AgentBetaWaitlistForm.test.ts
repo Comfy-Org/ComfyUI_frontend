@@ -116,7 +116,7 @@ describe('AgentBetaWaitlistForm', () => {
     expect(pendingButton.hasAttribute('disabled')).toBe(true)
     expect(hoisted.submit).toHaveBeenCalledWith(
       'someone@example.com',
-      'agent_beta_waitlist_joined'
+      'agent_alpha_waitlist_joined'
     )
 
     resolveSubmit()

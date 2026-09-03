@@ -12,7 +12,7 @@ const meta: Meta<typeof HeroWaitlist01> = {
     subtitle:
       'An agent that lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas with you, reviews assets, runs generations, and iterates until the result is production ready.',
     footnote: "We'll prepare your account and email you when it's ready.",
-    signupEvent: 'agent_beta_waitlist_joined'
+    signupEvent: 'agent_alpha_waitlist_joined'
   }
 }
 

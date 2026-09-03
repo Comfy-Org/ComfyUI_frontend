@@ -9,7 +9,11 @@ import {
   preloadDownloadLinkAnalytics
 } from '../../scripts/customerio'
 
-const { signupEvent = 'agent_beta_waitlist_joined', locale = 'en' } =
+// Email-capture / application-start metric, not the waitlist source of
+// record: completed Typeform UqL3PpAM submissions are authoritative for the
+// waitlist count (bbc #300). Distinct from `platform:beta_agent_joined`,
+// which fires only on completed admission (bbc #301) — do not alias.
+const { signupEvent = 'agent_alpha_waitlist_joined', locale = 'en' } =
   defineProps<{
     /** Customer.io event tracked on a successful signup. */
     signupEvent?: string

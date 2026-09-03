@@ -27,7 +27,7 @@ type HeroWaitlistProps = ComponentProps<typeof HeroWaitlist01>
 
 const requiredProps = {
   title: 'The first agent for craft',
-  signupEvent: 'agent_beta_waitlist_joined'
+  signupEvent: 'agent_alpha_waitlist_joined'
 } satisfies HeroWaitlistProps
 
 function renderHero(props: Partial<HeroWaitlistProps> = {}) {
