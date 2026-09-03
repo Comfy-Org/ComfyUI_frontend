@@ -12,13 +12,13 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockMembers, mockPendingInvites, mockMaxSeats, mockOccupiedSeats } =
-  vi.hoisted(() => ({
-    mockMembers: [] as unknown[],
-    mockPendingInvites: [] as unknown[],
-    mockMaxSeats: { value: 73 as number | null },
-    mockOccupiedSeats: { value: 1 as number | null }
-  }))
+const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
+  () => ({
+    mockInviteSubmit: vi.fn(),
+    mockMaxSeats: { value: 73 },
+    mockOccupiedSeats: { value: 1 }
+  })
+)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -27,20 +27,34 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    pendingInvites: mockPendingInvites
-  })
-}))
-
 vi.mock('./InviteMembersForm.vue', () => ({
   default: {
     name: 'InviteMembersForm',
-    props: ['maxSeats', 'source', 'submitLabel', 'placeholder'],
+    props: [
+      'maxSeats',
+      'occupiedSeats',
+      'source',
+      'submitLabel',
+      'placeholder'
+    ],
     emits: ['submitted'],
+    setup(
+      _: unknown,
+      {
+        emit,
+        expose
+      }: {
+        emit: (event: string, emails: string[]) => void
+        expose: (exposed: Record<string, unknown>) => void
+      }
+    ) {
+      mockInviteSubmit.mockImplementation(async () => {
+        emit('submitted', ['a@b.com'])
+      })
+      expose({ canSubmit: true, loading: false, submit: mockInviteSubmit })
+    },
     template:
-      '<div data-testid="invite-form">seats:{{ maxSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
+      '<div data-testid="invite-form">max:{{ maxSeats }} occupied:{{ occupiedSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
   }
 }))
 
@@ -79,6 +93,11 @@ const TEAM_STOP = {
   discountedUsd: 630
 }
 
+const ButtonStub = {
+  emits: ['click'],
+  template: '<button @click="$emit(\'click\')"><slot /></button>'
+}
+
 function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
@@ -91,9 +110,7 @@ function renderCard(props: Record<string, unknown> = {}) {
     global: {
       mocks: { $t: (key: string) => key },
       stubs: {
-        Button: {
-          template: '<button @click="$emit(\'click\')"><slot /></button>'
-        }
+        Button: ButtonStub
       }
     }
   })
@@ -110,8 +127,7 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
-    mockMembers.length = 0
-    mockPendingInvites.length = 0
+    mockInviteSubmit.mockReset()
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 1
   })
@@ -120,6 +136,13 @@ describe('SubscriptionSuccessWorkspace', () => {
     renderCard()
     expect(screen.getByText('subscription.success.allSet')).toBeTruthy()
     expect(screen.getByText('$16')).toBeTruthy()
+  })
+
+  it('renders a zero price when subscription pricing is unavailable', () => {
+    renderCard({ tierKey: null, previewData: null })
+
+    expect(screen.getByText('$0')).toBeTruthy()
+    expect(screen.getByText('subscription.usdPerMonth')).toBeTruthy()
   })
 
   it('renders the team plan summary from the selected stop', () => {
@@ -138,9 +161,7 @@ describe('SubscriptionSuccessWorkspace', () => {
       global: {
         mocks: { $t: (key: string) => key },
         stubs: {
-          Button: {
-            template: '<button @click="$emit(\'click\')"><slot /></button>'
-          }
+          Button: ButtonStub
         }
       }
     })
@@ -194,15 +215,33 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(emitted().close).toBeTruthy()
   })
 
-  it('renders the invite block capped at the workspace member limit', () => {
+  it('passes workspace capacity to the invite form', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:72')
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      'max:73 occupied:1'
+    )
   })
 
   it('places the Send invites action in the footer for a team upgrade', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.success.sendInvites')).toBeTruthy()
+  })
+
+  it('submits the invite form from the footer action', async () => {
+    renderTeamCard()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.success.sendInvites'
+      })
+    )
+
+    expect(mockInviteSubmit).toHaveBeenCalledOnce()
+    expect(screen.queryByTestId('invite-form')).toBeNull()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.invitedMessage')
+    ).toBeTruthy()
   })
 
   it('shows no Send invites action for a personal upgrade', () => {
@@ -215,21 +254,23 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockMaxSeats.value = 1
     renderCard()
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
-    expect(screen.queryByText(/^seats:/)).toBeNull()
+    expect(screen.queryByTestId('invite-form')).toBeNull()
   })
 
   it('renders the invite block for a multi-seat personal upgrade', () => {
     mockMaxSeats.value = 5
     renderCard()
-    expect(screen.getByText('seats:4', { exact: false })).toBeTruthy()
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      'max:5 occupied:1'
+    )
   })
 
-  it('subtracts existing members and pending invites from invitable seats', () => {
-    mockMembers.push({}, {})
-    mockPendingInvites.push({})
+  it('passes occupied workspace seats to the invite form', () => {
     mockOccupiedSeats.value = 10
     renderTeamCard()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:63')
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      'max:73 occupied:10'
+    )
   })
 
   it('swaps the form for the success message once invites are submitted', async () => {

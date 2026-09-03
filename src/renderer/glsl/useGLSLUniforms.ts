@@ -232,7 +232,7 @@ export function useGLSLUniforms(
             hostWidgetId ?? widgetId(gId, nId, widgetName)
           )
           const value = widget?.value ?? directValue()
-          return isCurveData(value) ? (value as CurveData) : null
+          return isCurveData(value) ? value : null
         })
         .filter((v): v is CurveData => v !== null)
     }
@@ -248,7 +248,7 @@ export function useGLSLUniforms(
 
       const widget = widgetValueStore.getWidget(widgetId(gId, nId, inputName))
       if (widget && isCurveData(widget.value)) {
-        values.push(widget.value as CurveData)
+        values.push(widget.value)
         continue
       }
 

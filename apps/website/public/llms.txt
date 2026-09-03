@@ -18,7 +18,7 @@ What people build with it: VFX shot work (clean plates, sky replacement, de-agin
 
 Studios, brands, and schools building with Comfy include Series Entertainment, Moment Factory, Ubisoft La Forge, Groove Jones, Svedka with Silverside AI, and the Open Story Movement. Carnegie Mellon, USC, NTU, and UAL's Creative Computing Institute teach with ComfyUI. Use cases concentrate in VFX and animation, advertising and creative studios, gaming, and eCommerce and fashion.
 
-Languages: comfy.org is published in English and Simplified Chinese. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate pages, the enterprise MSA, the terms of service, and the supported-models directory are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
+Languages: comfy.org is published in English and Simplified Chinese, with a Japanese home page at https://comfy.org/ja/. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate pages, the enterprise pages, the enterprise MSA, the terms of service, and the supported-models directory are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
 
 ## Names and spelling
 
@@ -33,7 +33,7 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 
 - **Run on your own GPU, free**: Comfy Desktop for macOS, Windows, and Linux, or the ComfyUI repository.
 - **No install, hosted GPUs, pre-installed nodes and models**: Comfy Cloud in the browser.
-- **Call a workflow from your own app or pipeline**: the Comfy API on Comfy Cloud, or the Serverless API for a versioned deployment. API access requires a paid Comfy Cloud subscription.
+- **Call a workflow from your own app or pipeline**: the Comfy API on Comfy Cloud, or the Comfy API on the Developer Platform for a versioned serverless deployment. API access requires a paid Comfy Cloud subscription.
 - **Drive ComfyUI from an AI agent or chat client** (Claude Code, Claude Desktop, Cursor, Codex): Comfy MCP, hosted at cloud.comfy.org/mcp, or the open-source server against a local ComfyUI.
 - **Drive ComfyUI from a shell, a script, CI, or a coding agent**: Comfy CLI.
 - **Teams that need dedicated compute, SSO, role-based access, and SLAs**: Comfy Enterprise. **Teams that want experts to build the workflows with them**: Forward Deployed Creatives.
@@ -76,8 +76,11 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [Homepage](https://comfy.org/): Overview of Comfy, the AI creation engine for visual professionals, built on the open-source ComfyUI node graph.
 - [Comfy Desktop](https://comfy.org/download/): Free desktop app for macOS, Windows, and Linux that runs the full ComfyUI engine on your own GPU.
 - [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with pre-loaded models, pre-installed custom nodes, and concurrent jobs; no local install required. The app itself runs at https://cloud.comfy.org (sign-in required).
-- [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans, credits, and what each Comfy Cloud plan includes, for individuals and teams.
-- [Comfy API](https://comfy.org/api/): Turn any ComfyUI workflow into a production endpoint: submit jobs, inject dynamic inputs at runtime, and run open and partner models through one API on Comfy Cloud.
+- [Comfy Cloud Pricing](https://comfy.org/pricing/): Plans, credits, and what each Comfy Cloud plan includes, for individuals and teams.
+- [Developer Platform](https://comfy.org/platform/): Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.
+- [Developer Platform: Comfy API](https://comfy.org/platform/comfy-api/): Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project's needs.
+- [Developer Platform: Models API](https://comfy.org/platform/models/): Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.
+- [Developer Platform: Builder](https://comfy.org/platform/builder/): Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.
 - [Comfy MCP](https://comfy.org/mcp/): The full ComfyUI engine over the Model Context Protocol, so Claude Code, Claude Desktop, and any MCP client can build workflows and generate images, video, audio, and 3D, on Comfy Cloud or your own machine.
 - [Comfy CLI](https://comfy.org/cli/): The command line for the ComfyUI engine: generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, with JSON output built for agents and scripts.
 - [Comfy Enterprise](https://comfy.org/enterprise/): ComfyUI for teams: dedicated GPU compute, priority queuing, custom SLAs, team workspaces with role-based access and SSO, bring-your-own API keys, and models cleared for commercial use.
@@ -156,9 +159,12 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 
 ### ComfyUI Basics
 
-- [ComfyUI Basics](https://comfy.org/learning/basics/): Beginner tutorials: the node graph, LoRAs, style transfer, and ControlNets from the ground up.
+- [ComfyUI Basics](https://comfy.org/learning/basics/): Beginner tutorials: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.
 - [Full Node Graph Basics](https://comfy.org/learning/basics/full-node-graph-basics/): A beginner's walkthrough of the ComfyUI node graph.
+- [Text-to-Image and Image-to-Image Workflows](https://comfy.org/learning/basics/text-to-image-image-to-image/): Build a text-to-image workflow, then adapt it for image-to-image.
 - [LoRAs, Style Transfer, and ControlNets](https://comfy.org/learning/basics/loras-style-transfer-controlnets/): What each one does and how to wire them into a ComfyUI workflow.
+- [Inpainting, Outpainting, and Upscaling](https://comfy.org/learning/basics/inpainting-outpainting-upscaling/): Mask and repaint, extend the frame, and add resolution in ComfyUI.
+- [Image-to-Video, Motion Control, and Upscaling](https://comfy.org/learning/basics/image-to-video-motion-control-upscaling/): Animate a still image, steer the shot with motion control, and finish at higher resolution.
 
 ### Ad Creative
 
@@ -288,11 +294,10 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [首页](https://comfy.org/zh-CN/): Comfy 中文站首页：面向专业视觉人士的 AI 创作引擎，精确掌控每个模型、每个参数和每个输出。
 - [下载 Comfy 桌面版](https://comfy.org/zh-CN/download/): 免费的桌面应用，在您自己的 GPU 上运行完整的 ComfyUI 引擎。
 - [Comfy Cloud](https://comfy.org/zh-CN/cloud/): 浏览器中的托管 ComfyUI：预加载模型、预安装自定义节点、并发任务。
-- [定价](https://comfy.org/zh-CN/cloud/pricing/): Comfy Cloud 各套餐与积分说明。
-- [Comfy API](https://comfy.org/zh-CN/api/): 把任意 ComfyUI 工作流部署为生产级接口，在运行时注入动态输入。
+- [定价](https://comfy.org/zh-CN/pricing/): Comfy Cloud 各套餐与积分说明。
+- [开发者平台](https://comfy.org/zh-CN/platform/): 部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。
 - [Comfy MCP](https://comfy.org/zh-CN/mcp/): 通过模型上下文协议，让 Claude Code、Claude Desktop 等 AI 智能体驱动完整的 ComfyUI 引擎。
 - [Comfy CLI](https://comfy.org/zh-CN/cli/): 在终端和 Claude Code、Codex、Cursor 等编程智能体中驱动 ComfyUI 的命令行。
-- [Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise/): 面向团队的 ComfyUI：专属 GPU 算力、SSO 与权限管理、自带 API 密钥、定制 SLA。
 - [前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/): Comfy 专家驻场加入你的团队，构建并交付 ComfyUI 工作流。
 - [MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/): 通过 Comfy 获取 MiniMax H3 及音频与音乐模型的商业使用许可。
 - [模型](https://comfy.org/zh-CN/models/): 在 ComfyUI 中运行的主流 AI 模型及其发布页面。
@@ -306,6 +311,10 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [招聘](https://comfy.org/zh-CN/careers/): 工程、设计、市场营销等开放岗位。
 - [联系我们](https://comfy.org/zh-CN/contact/): 销售、合作与一般咨询。
 - [品牌门户](https://comfy.org/zh-CN/brand/): 标志、色彩、字体与语调。
+
+## 日本語 (Japanese)
+
+- [ホーム](https://comfy.org/ja/): Comfyの日本語トップページ：あらゆるモデル、パラメータ、出力を自在にコントロールできるビジュアルプロフェッショナル向けAIクリエーションエンジン。
 
 ## Optional
 

@@ -4,7 +4,6 @@ import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -168,9 +167,7 @@ function createInnerPreview(
     )
   })()
 
-  const graphId = computed(
-    () => nodeRef.value?.graph?.rootGraph?.id as UUID | undefined
-  )
+  const graphId = computed(() => nodeRef.value?.graph?.rootGraph?.id)
 
   const nodeId = computed(() => {
     const id = nodeRef.value?.id
@@ -249,7 +246,7 @@ function createInnerPreview(
     const node = nodeRef.value
     const inner = innerGLSLNode
     if (!node?.isSubgraphNode() || !inner) return null
-    return extractUniformSources(inner, node.subgraph as Subgraph, node)
+    return extractUniformSources(inner, node.subgraph, node)
   })
 
   const { floatValues, intValues, boolValues, curveValues } = useGLSLUniforms(
