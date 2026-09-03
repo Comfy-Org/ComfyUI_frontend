@@ -1,7 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -44,6 +43,15 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     isAssetAPIEnabled: mockIsAssetAPIEnabled,
     shouldUseAssetBrowser: mockShouldUseAssetBrowser
+  }
+}))
+
+vi.mock('primevue/inputtext', () => ({
+  default: {
+    props: ['disabled', 'modelValue', 'readonly'],
+    emits: ['update:modelValue'],
+    template:
+      '<input :disabled :readonly :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
   }
 }))
 
@@ -123,7 +131,7 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
       values: ['option_a', 'option_b', 'option_c']
     },
     ...overrides
-  } as IBaseWidget
+  }
 }
 
 function renderWidgetItem(
@@ -149,7 +157,7 @@ function renderWidgetItem(
   return render(WidgetItem, {
     props: { widget, node },
     global: {
-      plugins: [i18n, PrimeVue],
+      plugins: [i18n],
       stubs: {
         EditableText: { template: '<span />' },
         WidgetActions: { template: '<span />' }

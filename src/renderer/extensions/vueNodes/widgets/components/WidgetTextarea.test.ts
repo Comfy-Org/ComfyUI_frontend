@@ -25,7 +25,7 @@ function createTextareaWidget(
   options: SimplifiedWidget<string>['options'] = {},
   callback?: (value: string) => void
 ) {
-  return createMockWidget<string>({
+  return createMockWidget({
     value,
     name: 'test_textarea',
     options,

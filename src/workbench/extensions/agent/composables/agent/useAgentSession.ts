@@ -6,6 +6,7 @@ import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -50,6 +51,7 @@ export interface AgentSessionDeps {
     prepare?(): Promise<void>
     tabs?(): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
+    draft?(): DraftSnapshot | undefined
   }
 }
 
@@ -192,6 +194,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const wfContext = workflow?.current()
     const tabs = workflow?.tabs?.()
     async function postTurn(threadId: string) {
+      const draft = workflow?.draft?.()
+      const shouldSendDraft =
+        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
       const input = {
         content: text,
         tabs,
@@ -199,7 +204,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
             : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref)
+        attachments: attachments?.map((attachment) => attachment.ref),
+        ...(shouldSendDraft ? { draft } : {})
       }
       return rest.postMessage(
         threadId,

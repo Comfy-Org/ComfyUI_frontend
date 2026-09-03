@@ -1,7 +1,7 @@
 import { test as base } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-export function createWebSocketRouteHandler(
+function createWebSocketRouteHandler(
   connectWebSocketToServer: boolean,
   onRouted: (ws: WebSocketRoute) => void
 ) {

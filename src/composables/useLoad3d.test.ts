@@ -316,12 +316,11 @@ describe('useLoad3d', () => {
     })
 
     it('should restore camera config from node properties', async () => {
-      ;(
-        mockNode.properties!['Camera Config'] as Record<string, unknown>
-      ).state = {
-        position: { x: 1, y: 2, z: 3 },
-        target: { x: 0, y: 0, z: 0 }
-      }
+      ;(mockNode.properties['Camera Config'] as Record<string, unknown>).state =
+        {
+          position: { x: 1, y: 2, z: 3 },
+          target: { x: 0, y: 0, z: 0 }
+        }
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -793,7 +792,7 @@ describe('useLoad3d', () => {
     })
 
     it('should use resource folder for upload', async () => {
-      mockNode.properties!['Resource Folder'] = 'subfolder'
+      mockNode.properties['Resource Folder'] = 'subfolder'
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
 
       const composable = useLoad3d(mockNode)
@@ -1230,10 +1229,10 @@ describe('useLoad3d', () => {
     })
 
     it('should handle missing configurations', async () => {
-      delete mockNode.properties!['Scene Config']
-      delete mockNode.properties!['Model Config']
-      delete mockNode.properties!['Camera Config']
-      delete mockNode.properties!['Light Config']
+      delete mockNode.properties['Scene Config']
+      delete mockNode.properties['Model Config']
+      delete mockNode.properties['Camera Config']
+      delete mockNode.properties['Light Config']
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1246,7 +1245,7 @@ describe('useLoad3d', () => {
 
     it('should handle background image with existing config', async () => {
       ;(
-        mockNode.properties!['Scene Config'] as {
+        mockNode.properties['Scene Config'] as {
           backgroundImage: string
         }
       ).backgroundImage = 'existing.jpg'
@@ -1274,7 +1273,7 @@ describe('useLoad3d', () => {
     })
 
     it('should restore gizmo config from node properties', async () => {
-      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+      ;(mockNode.properties['Model Config'] as Record<string, unknown>).gizmo =
         {
           enabled: true,
           mode: 'rotate',
@@ -1298,7 +1297,7 @@ describe('useLoad3d', () => {
     })
 
     it('should add default gizmo config when missing from saved config', async () => {
-      mockNode.properties!['Model Config'] = {
+      mockNode.properties['Model Config'] = {
         upDirection: 'original',
         materialMode: 'original',
         showSkeleton: false
@@ -1314,7 +1313,7 @@ describe('useLoad3d', () => {
     })
 
     it('should add default scale when gizmo config lacks scale', async () => {
-      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+      ;(mockNode.properties['Model Config'] as Record<string, unknown>).gizmo =
         {
           enabled: false,
           mode: 'translate',
@@ -1588,7 +1587,7 @@ describe('useLoad3d', () => {
       originalFetch = globalThis.fetch
       globalThis.fetch = vi.fn().mockResolvedValue({
         blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
-      } as unknown as Response)
+      })
     })
 
     afterEach(() => {

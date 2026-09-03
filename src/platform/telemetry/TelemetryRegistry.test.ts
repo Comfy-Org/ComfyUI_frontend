@@ -4,6 +4,20 @@ import { TelemetryRegistry } from './TelemetryRegistry'
 import type { BillingTelemetryEvent, TelemetryProvider } from './types'
 
 describe('TelemetryRegistry', () => {
+  it('dispatches feature flag evaluations to supporting providers', () => {
+    const trackFeatureFlagEvaluation = vi.fn()
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({ trackFeatureFlagEvaluation })
+    registry.registerProvider({})
+
+    registry.trackFeatureFlagEvaluation('signup_turnstile', 'shadow')
+
+    expect(trackFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      'signup_turnstile',
+      'shadow'
+    )
+  })
+
   it('dispatches trackSearchQuery to every registered provider', () => {
     const a: TelemetryProvider = { trackSearchQuery: vi.fn() }
     const b: TelemetryProvider = { trackSearchQuery: vi.fn() }

@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,6 +14,15 @@ import type {
 import WidgetWithControl from './WidgetWithControl.vue'
 import ValueControlPopover from './ValueControlPopover.vue'
 import { createMockWidget } from './widgetTestUtils'
+
+vi.mock('primevue/radiobutton', () => ({
+  default: {
+    props: ['inputId', 'modelValue', 'value'],
+    emits: ['update:modelValue'],
+    template:
+      '<input :id="inputId" type="radio" :value :checked="modelValue === value" @change="$emit(\'update:modelValue\', value)" />'
+  }
+}))
 
 const PopoverStub = defineComponent({
   name: 'Popover',
@@ -120,7 +128,7 @@ const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
 const mountWithPortal = (widget: SimplifiedControlWidget, modelValue = 0) =>
   render(WidgetWithControl, {
     global: {
-      plugins: [createTestingPinia(), i18n, PrimeVue],
+      plugins: [createTestingPinia(), i18n],
       stubs: { Popover: PortaledPopoverStub }
     },
     props: { widget, modelValue, component: RenderedComponent }
