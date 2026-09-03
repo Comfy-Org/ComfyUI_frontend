@@ -273,6 +273,19 @@ async function mockAgentBoot(
       })
     )
   )
+  await page.route('**/api/workflows?limit=100', (r) =>
+    r.fulfill(
+      jsonRoute({
+        data: [{ id: WORKFLOW_ID, name: 'default.json' }],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 1,
+          has_more: false
+        }
+      })
+    )
+  )
 
   await page.route('**/api/agent/threads/*/messages', (route: Route) => {
     const request = route.request()
