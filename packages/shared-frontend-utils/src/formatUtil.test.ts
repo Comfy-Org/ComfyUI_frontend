@@ -555,6 +555,14 @@ describe('formatUtil', () => {
       expect(getRandomValues).toHaveBeenCalledOnce()
     })
 
+    it('clears the version and variant high bits', () => {
+      vi.stubGlobal('crypto', {
+        getRandomValues: (bytes: Uint8Array) => bytes.fill(0xff)
+      })
+
+      expect(generateUUID()).toBe('ffffffff-ffff-4fff-bfff-ffffffffffff')
+    })
+
     it('throws when Web Crypto is unavailable', () => {
       vi.stubGlobal('crypto', undefined)
 
