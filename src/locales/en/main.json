@@ -3110,7 +3110,7 @@
       "payAndSubscribe": "Pay and subscribe",
       "stripeUnavailable": "Payment options are unavailable. Please refresh and try again.",
       "providerUnreachableTitle": "We can't take payments right now",
-      "providerUnreachableBody": "We can't reach our payment provider. An ad blocker or connection issue may be in the way. Nothing has been charged.",
+      "providerUnreachableBody": "There was a technical problem on the payment side and we can't reach our payment provider. An ad blocker or connection issue may be in the way. Nothing has been charged.",
       "providerUnreachableRetry": "Try again",
       "quoteUnavailable": "Unavailable",
       "switchesToday": "Switches today",
