@@ -17,6 +17,7 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import {
@@ -412,6 +413,12 @@ export class ComfyApi extends EventTarget {
   private socketGeneration = 0
 
   /**
+   * Handle for the polling fallback, retained so repeated connection failures
+   * reuse one loop instead of stacking a permanent timer per attempt.
+   */
+  private pollQueueInterval: ReturnType<typeof setInterval> | null = null
+
+  /**
    * Cache Firebase auth store composable function.
    */
   private authStoreComposable?: typeof useAuthStore
@@ -692,7 +699,8 @@ export class ComfyApi extends EventTarget {
    * Poll status  for colab and other things that don't support websockets.
    */
   private _pollQueue() {
-    setInterval(async () => {
+    if (this.pollQueueInterval !== null) return
+    this.pollQueueInterval = setInterval(async () => {
       try {
         const resp = await this.fetchApi('/prompt')
         const status = (await resp.json()) as StatusWsMessageStatus
@@ -701,6 +709,16 @@ export class ComfyApi extends EventTarget {
         this.dispatchCustomEvent('status', null)
       }
     }, 1000)
+  }
+
+  /**
+   * Stops the polling fallback, so a socket that recovers does not leave a
+   * second stream of `status` events running alongside it.
+   */
+  private _stopPollQueue() {
+    if (this.pollQueueInterval === null) return
+    clearInterval(this.pollQueueInterval)
+    this.pollQueueInterval = null
   }
 
   /**
@@ -757,6 +775,7 @@ export class ComfyApi extends EventTarget {
     try {
       socket = new WebSocket(wsUrl)
     } catch (error) {
+      reportError(error, { errorType: 'websocket_construction_failure' })
       console.error('Failed to open WebSocket connection:', error)
       if (!isReconnect) {
         this._pollQueue()
@@ -768,6 +787,7 @@ export class ComfyApi extends EventTarget {
 
     socket.addEventListener('open', () => {
       opened = true
+      this._stopPollQueue()
 
       // Send feature flags as the first message
       socket.send(
