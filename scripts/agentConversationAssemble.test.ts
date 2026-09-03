@@ -858,6 +858,25 @@ describe('zRowsDump', () => {
     ).toThrow()
   })
 
+  it.for([null, '', '   '])(
+    'refuses an accepted child with operation id %j',
+    (op_id) => {
+      expect(() =>
+        zRowsDump.parse(
+          dump({ ok: true }, { children: [{ op_id, status: 'ok' }] })
+        )
+      ).toThrow('must be non-empty when status is ok')
+    }
+  )
+
+  it('allows a rejected child without an operation id', () => {
+    expect(
+      zRowsDump.parse(
+        dump({ ok: false }, { children: [{ op_id: null, status: 'error' }] })
+      ).parents[0].children
+    ).toEqual([{ op_id: null, status: 'error' }])
+  })
+
   it('refuses a dump that did not come from postgres', () => {
     expect(() =>
       zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
