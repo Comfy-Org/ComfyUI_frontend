@@ -74,8 +74,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=0',
-        { signal: expect.any(AbortSignal) }
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
       )
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('job1')
@@ -126,8 +125,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch, 200, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=5',
-        { signal: expect.any(AbortSignal) }
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=5'
       )
       // Priority base is total - offset = 10 - 5 = 5
       expect(result[0].priority).toBe(5) // (total - offset) - 0
@@ -216,19 +214,6 @@ describe('fetchJobs', () => {
       warnSpy.mockRestore()
     })
 
-    it('does not report an aborted request', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const mockFetch = vi
-        .fn()
-        .mockRejectedValue(new DOMException('Aborted', 'AbortError'))
-
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
-      expect(errorSpy).not.toHaveBeenCalled()
-      errorSpy.mockRestore()
-    })
-
     it('does not report a request cancelled by page teardown', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockImplementation(() => {
@@ -243,7 +228,7 @@ describe('fetchJobs', () => {
       errorSpy.mockRestore()
     })
 
-    it('leaves requests alone when the page is only frozen', async () => {
+    it('still reports a failure when the page is only frozen', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockImplementation(() => {
         dispatchPageTransition('pagehide', { persisted: true })
@@ -252,7 +237,6 @@ describe('fetchJobs', () => {
 
       const result = await fetchHistory(mockFetch)
 
-      expect(mockFetch.mock.calls[0][1].signal.aborted).toBe(false)
       expect(result).toEqual([])
       expect(errorSpy).toHaveBeenCalledWith(
         '[Jobs API] Error fetching jobs:',
@@ -333,8 +317,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistoryPage(mockFetch, 2, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=2&offset=5',
-        { signal: expect.any(AbortSignal) }
+        '/jobs?status=completed,failed,cancelled&limit=2&offset=5'
       )
       expect(result.jobs).toHaveLength(2)
       expect(result.offset).toBe(5)
@@ -363,8 +346,7 @@ describe('fetchJobs', () => {
       const result = await fetchQueue(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=in_progress,pending&limit=200&offset=0',
-        { signal: expect.any(AbortSignal) }
+        '/jobs?status=in_progress,pending&limit=200&offset=0'
       )
       expect(result.Running).toHaveLength(1)
       expect(result.Pending).toHaveLength(2)
@@ -422,9 +404,7 @@ describe('fetchJobs', () => {
 
       const result = await fetchJobDetail(mockFetch, 'job1')
 
-      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
-        signal: expect.any(AbortSignal)
-      })
+      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1')
       expect(result?.id).toBe('job1')
       expect(result?.outputs).toBeDefined()
     })

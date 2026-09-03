@@ -51,9 +51,7 @@ describe('fetchJobDetail', () => {
 
     await fetchJobDetail(mockFetchApi, 'test-job-id')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-job-id', {
-      signal: expect.any(AbortSignal)
-    })
+    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-job-id')
   })
 
   it('should return job detail with workflow and outputs', async () => {

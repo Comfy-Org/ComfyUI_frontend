@@ -9,8 +9,7 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
-import { pageTeardownSignal } from '@/utils/pageTeardownUtil'
-import { isAbortError } from '@/utils/typeGuardUtil'
+import { isPageUnloading } from '@/utils/pageTeardownUtil'
 
 import type {
   JobDetail,
@@ -19,8 +18,6 @@ import type {
   RawJobListItem
 } from './jobTypes'
 import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
-
-type JobsApiFetcher = (url: string, options?: RequestInit) => Promise<Response>
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -43,7 +40,7 @@ export interface FetchHistoryPageResult {
  * @internal
  */
 async function fetchJobsRaw(
-  fetchApi: JobsApiFetcher,
+  fetchApi: (url: string) => Promise<Response>,
   statuses: JobStatus[],
   maxItems: number = 200,
   offset: number = 0
@@ -57,9 +54,8 @@ async function fetchJobsRaw(
     limit: maxItems,
     hasMore: false
   }
-  const signal = pageTeardownSignal()
   try {
-    const res = await fetchApi(url, { signal })
+    const res = await fetchApi(url)
     if (!res.ok) {
       const message = `[Jobs API] Failed to fetch jobs: ${res.status}`
       // A poll that outran the session is a lifecycle state, not a fault: the
@@ -77,9 +73,9 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
-    // `signal.aborted` rather than the error shape: a request cancelled while
-    // the page unloads can surface as a bare `TypeError: Failed to fetch`.
-    if (signal.aborted || isAbortError(error)) return noJobs
+    // A request the browser cancels as the page is discarded surfaces as a
+    // bare `TypeError`, so the page lifecycle is what identifies it.
+    if (isPageUnloading()) return noJobs
     console.error('[Jobs API] Error fetching jobs:', error)
     return noJobs
   }
@@ -107,7 +103,7 @@ function assignPriority(
  * Assigns synthetic priority starting from total (lower than queue jobs).
  */
 export async function fetchHistory(
-  fetchApi: JobsApiFetcher,
+  fetchApi: (url: string) => Promise<Response>,
   maxItems: number = 200,
   offset: number = 0
 ): Promise<JobListItem[]> {
@@ -119,7 +115,7 @@ export async function fetchHistory(
  * Fetches one page of history with server-provided pagination metadata.
  */
 export async function fetchHistoryPage(
-  fetchApi: JobsApiFetcher,
+  fetchApi: (url: string) => Promise<Response>,
   maxItems: number = 200,
   offset: number = 0
 ): Promise<FetchHistoryPageResult> {
@@ -145,7 +141,7 @@ export async function fetchHistoryPage(
  * Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
-  fetchApi: JobsApiFetcher
+  fetchApi: (url: string) => Promise<Response>
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
   const { jobs } = await fetchJobsRaw(
     fetchApi,
@@ -172,12 +168,11 @@ export async function fetchQueue(
  * Fetches full job details from /jobs/{job_id}
  */
 export async function fetchJobDetail(
-  fetchApi: JobsApiFetcher,
+  fetchApi: (url: string) => Promise<Response>,
   jobId: JobId
 ): Promise<JobDetail | undefined> {
-  const signal = pageTeardownSignal()
   try {
-    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`, { signal })
+    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
 
     if (!res.ok) {
       console.warn(`Job not found for job ${jobId}`)
@@ -186,7 +181,7 @@ export async function fetchJobDetail(
 
     return zJobDetail.parse(await res.json())
   } catch (error) {
-    if (signal.aborted || isAbortError(error)) return undefined
+    if (isPageUnloading()) return undefined
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
