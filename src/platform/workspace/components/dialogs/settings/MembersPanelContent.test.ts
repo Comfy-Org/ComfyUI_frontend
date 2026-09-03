@@ -102,6 +102,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     hasMemberSeats: computed(
       () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
     ),
+    isCancelled: computed(() => false),
     isPlanLoading: mockIsPlanLoading,
     isOnTeamPlan: mockIsOnTeamPlan,
     hasLapsedTeamPlan: mockHasLapsedTeamPlan,

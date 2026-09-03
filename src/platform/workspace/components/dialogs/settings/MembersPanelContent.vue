@@ -59,8 +59,8 @@
     <div
       :class="
         cn(
-          'border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6',
-          !(hasMemberSeats && membersLoaded) && 'mb-4'
+          'flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6',
+          !(hasMemberSeats && membersLoaded) && !showsUpsellBanner && 'mb-4'
         )
       "
     >
@@ -188,11 +188,7 @@
     </div>
     <!-- Upsell Banner -->
     <MemberUpsellBanner
-      v-if="
-        !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
-        permissions.canManageSubscription
-      "
+      v-if="showsUpsellBanner"
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
@@ -273,6 +269,14 @@ const {
 } = useMembersPanel()
 
 const { t } = useI18n()
+
+const showsUpsellBanner = computed(
+  () =>
+    !isPlanLoading.value &&
+    ((isInPersonalWorkspace.value && maxSeats.value === 1) ||
+      isCancelled.value) &&
+    permissions.value.canManageSubscription
+)
 
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
