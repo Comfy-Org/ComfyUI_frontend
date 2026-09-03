@@ -747,6 +747,29 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('resolves the terminal promise even if cleanup throws', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const error = new Error('toast cleanup failed')
+      mockToastRemove.mockImplementationOnce(() => {
+        throw error
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'billing_success_handling_failed',
+        context: { billing_op_id: 'op-1' }
+      })
+    })
+
     it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
