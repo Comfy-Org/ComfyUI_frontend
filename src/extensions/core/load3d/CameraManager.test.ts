@@ -293,6 +293,20 @@ describe('CameraManager', () => {
       )
     })
 
+    it('does not fabricate a custom up when the state disables it without a stored up', () => {
+      manager.setCameraState({ ...rolledState(), useCustomUp: false })
+
+      expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
+      expect(manager.getCameraState().customUp).toBeUndefined()
+      expect(events.emitEvent).not.toHaveBeenCalledWith(
+        'cameraUpStateChange',
+        expect.anything()
+      )
+
+      manager.setUseCustomUp(true)
+      expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
+    })
+
     it('derives the camera up from an incoming quaternion and flags custom up', () => {
       manager.setCameraState(rolledState())
 

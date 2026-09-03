@@ -12,12 +12,10 @@
 
   <button
     v-if="hasCustomUp"
-    v-tooltip.bottom="
-      tip(useCustomUp ? t('load3d.useNaturalUp') : t('load3d.useCustomUp'))
-    "
+    v-tooltip.bottom="tip(upActionLabel)"
     :class="actionClass(false)"
     type="button"
-    :aria-label="compact ? upLabel : undefined"
+    :aria-label="compact ? upActionLabel : undefined"
     @click="toggleUp"
   >
     <i
@@ -100,6 +98,9 @@ const fov = computed(() => config.value?.fov ?? 0)
 const hasCustomUp = computed(() => config.value?.hasCustomUp === true)
 const useCustomUp = computed(
   () => config.value?.hasCustomUp === true && config.value.useCustomUp
+)
+const upActionLabel = computed(() =>
+  useCustomUp.value ? t('load3d.useNaturalUp') : t('load3d.useCustomUp')
 )
 const upLabel = computed(() =>
   useCustomUp.value

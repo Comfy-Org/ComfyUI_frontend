@@ -19,9 +19,9 @@ function makeConfig(
   return { cameraType: 'perspective', fov: 75, ...overrides }
 }
 
-function renderGroup(config = makeConfig()) {
+function renderGroup(config = makeConfig(), compact = false) {
   const result = render(CameraMenuGroup, {
-    props: { config },
+    props: { config, compact },
     global: { plugins: [i18n], directives: { tooltip: () => {} } }
   })
   return { ...result, user: userEvent.setup(), config }
@@ -68,5 +68,23 @@ describe('CameraMenuGroup', () => {
 
     await user.click(screen.getByRole('button', { name: 'Natural up' }))
     expect(config.useCustomUp).toBe(true)
+  })
+
+  it('announces the up toggle as an action in compact mode', async () => {
+    const config: CameraConfig = {
+      ...makeConfig(),
+      hasCustomUp: true,
+      useCustomUp: true
+    }
+    const { user } = renderGroup(config, true)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Reset camera up to Y' })
+    )
+
+    expect(config.useCustomUp).toBe(false)
+    expect(
+      screen.getByRole('button', { name: 'Restore camera up from input' })
+    ).toBeInTheDocument()
   })
 })

@@ -8,6 +8,23 @@ import {
   type EventManagerInterface
 } from './interfaces'
 
+function resolveIncomingCustomUp(state: CameraState): THREE.Vector3 | null {
+  if (!state.quaternion || state.useCustomUp === undefined) return null
+  const storedUp = state.customUp
+    ? new THREE.Vector3(state.customUp.x, state.customUp.y, state.customUp.z)
+    : null
+  if (storedUp && storedUp.lengthSq() > 0) return storedUp
+  if (!state.useCustomUp) return null
+  const q = new THREE.Quaternion(
+    state.quaternion.x,
+    state.quaternion.y,
+    state.quaternion.z,
+    state.quaternion.w
+  )
+  if (q.lengthSq() === 0) q.identity()
+  return new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+}
+
 export class CameraManager implements CameraManagerInterface {
   perspectiveCamera: THREE.PerspectiveCamera
   orthographicCamera: THREE.OrthographicCamera
@@ -207,29 +224,12 @@ export class CameraManager implements CameraManagerInterface {
       this.activeCamera.updateProjectionMatrix()
     }
 
-    if (state.quaternion && state.useCustomUp !== undefined) {
-      const q = new THREE.Quaternion(
-        state.quaternion.x,
-        state.quaternion.y,
-        state.quaternion.z,
-        state.quaternion.w
-      )
-      if (q.lengthSq() === 0) q.identity()
-      const storedUp = state.customUp
-        ? new THREE.Vector3(
-            state.customUp.x,
-            state.customUp.y,
-            state.customUp.z
-          )
-        : null
-      const appliedUp =
-        storedUp && storedUp.lengthSq() > 0
-          ? storedUp
-          : new THREE.Vector3(0, 1, 0).applyQuaternion(q)
-      this.customUp = appliedUp.clone()
-      this.usingCustomUp = state.useCustomUp
+    const incomingUp = resolveIncomingCustomUp(state)
+    if (incomingUp) {
+      this.customUp = incomingUp
+      this.usingCustomUp = state.useCustomUp === true
       this.activeCamera.up.copy(
-        this.usingCustomUp ? appliedUp : new THREE.Vector3(0, 1, 0)
+        this.usingCustomUp ? incomingUp : new THREE.Vector3(0, 1, 0)
       )
       this.eventManager.emitEvent('cameraUpStateChange', {
         hasCustomUp: true,
