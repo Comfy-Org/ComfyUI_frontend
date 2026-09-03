@@ -22,7 +22,9 @@ export function getOrderedInputSpecs(
   }
 
   // Process required inputs in specified order
-  const requiredOrder = nodeDefImpl.input_order.required
+  const requiredOrder = Object.hasOwn(nodeDefImpl.input_order, 'required')
+    ? nodeDefImpl.input_order.required
+    : []
   for (const name of requiredOrder) {
     const inputSpec = inputs[name]
     if (inputSpec && !inputSpec.isOptional) {
@@ -31,7 +33,9 @@ export function getOrderedInputSpecs(
   }
 
   // Process optional inputs in specified order
-  const optionalOrder = nodeDefImpl.input_order.optional
+  const optionalOrder = Object.hasOwn(nodeDefImpl.input_order, 'optional')
+    ? nodeDefImpl.input_order.optional
+    : []
   for (const name of optionalOrder) {
     const inputSpec = inputs[name]
     if (inputSpec?.isOptional) {

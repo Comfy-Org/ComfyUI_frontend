@@ -13,6 +13,7 @@ import {
   toBoundingBoxes
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import type {
+  BoundingBoxInput,
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
@@ -691,12 +692,12 @@ export function useBoundingBoxes(
     return litegraphNode.value?.widgets?.find((w) => w.name === 'last_incoming')
   }
 
-  function lastIncomingValue(): BoundingBox[] {
+  function lastIncomingValue(): BoundingBoxInput[] {
     const value = lastIncomingWidget()?.value
-    return Array.isArray(value) ? (value as BoundingBox[]) : []
+    return Array.isArray(value) && value.every(isBoundingBox) ? value : []
   }
 
-  function setLastIncoming(boxes: BoundingBox[]) {
+  function setLastIncoming(boxes: BoundingBoxInput[]) {
     const widget = lastIncomingWidget()
     if (!widget) return
     const next = cloneDeep(boxes)

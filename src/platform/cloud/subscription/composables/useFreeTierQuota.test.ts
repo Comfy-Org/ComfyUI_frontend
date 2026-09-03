@@ -13,8 +13,12 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
-vi.mock('@/composables/node/usePriceBadge', () => ({
-  useCreditsBadgesInGraph: () => ref([])
+vi.mock('@/scripts/app', () => ({
+  app: { isGraphReady: false }
+}))
+
+vi.mock('@/systems/badgeSystem', () => ({
+  graphCreditsBadges: () => []
 }))
 
 const mockRemoteConfig = vi.hoisted(() => ({

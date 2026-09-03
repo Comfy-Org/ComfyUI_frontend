@@ -7,10 +7,12 @@ import type {
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 
-type WorkflowGraph = ISerialisedGraph | SerialisableGraph
+type LegacyWorkflowGraph = Omit<ISerialisedGraph, 'links'> & {
+  links?: ISerialisedGraph['links']
+}
 
 export function workflowToClipboardItems(
-  workflow: WorkflowGraph
+  workflow: LegacyWorkflowGraph | SerialisableGraph
 ): ClipboardItems {
   const graph = structuredClone(workflow)
 
@@ -26,7 +28,9 @@ export function workflowToClipboardItems(
   }
 }
 
-function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
+function getLinks(
+  graph: LegacyWorkflowGraph | SerialisableGraph
+): SerialisableLLink[] {
   if (graph.version !== 0.4) return graph.links ?? []
 
   const parentIds = new Map<number, number | undefined>(
@@ -35,7 +39,7 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
       parentId
     ])
   )
-  return graph.links.map(
+  return (graph.links ?? []).map(
     ([
       id,
       origin_id,
@@ -55,7 +59,9 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
   )
 }
 
-function getReroutes(graph: WorkflowGraph): SerialisableReroute[] {
+function getReroutes(
+  graph: LegacyWorkflowGraph | SerialisableGraph
+): SerialisableReroute[] {
   const reroutes =
     graph.version === 0.4 ? graph.extra?.reroutes : graph.reroutes
 

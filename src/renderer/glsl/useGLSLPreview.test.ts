@@ -108,7 +108,8 @@ vi.mock('@/utils/objectUrlUtil', () => ({
 }))
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  const graph = { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } }
+  const rootGraph = { id: 'test-graph-id', _nodes: [] }
+  const graph = { id: 'test-graph-id', rootGraph }
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'GLSLShader',

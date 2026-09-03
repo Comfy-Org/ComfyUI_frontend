@@ -95,7 +95,6 @@ export function useCanvasInteractions() {
   }
 
   const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
-    // Check if canvas exists using established pattern
     const canvas = getCanvas()
     if (canvas.read_only && event.buttons === 1) {
       event.preventDefault()

@@ -273,8 +273,7 @@ describe('subgraph copy/paste then delete in both orders', () => {
     expect(f.original.isDetached).toBe(true)
     expect(f.rootGraph.nodes).toContain(f.copy)
     expect(f.rootGraph.nodes).not.toContain(f.original)
-    // `delete`d from the index, so the lookup is undefined rather than null.
-    expect(f.rootGraph.getNodeById(f.original.id)).toBeUndefined()
+    expect(f.rootGraph.getNodeById(f.original.id)).toBeNull()
 
     // The copy's promoted widget value is untouched by its sibling's removal.
     expect(promotedSeed(f.copy)).toBe(COPY_SEED)
@@ -316,7 +315,7 @@ describe('subgraph copy/paste then delete in both orders', () => {
     expect(f.copy.isDetached).toBe(true)
     expect(f.rootGraph.nodes).toContain(f.original)
     expect(f.rootGraph.nodes).not.toContain(f.copy)
-    expect(f.rootGraph.getNodeById(f.copy.id)).toBeUndefined()
+    expect(f.rootGraph.getNodeById(f.copy.id)).toBeNull()
 
     expect(promotedSeed(f.original)).toBe(ORIGINAL_SEED)
 
