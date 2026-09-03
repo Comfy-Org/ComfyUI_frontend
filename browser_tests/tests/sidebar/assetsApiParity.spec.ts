@@ -62,6 +62,8 @@ contractTest.describe(
   'Assets sidebar Asset API contract',
   { tag: '@oss' },
   () => {
+    contractTest.use({ initialFeatureFlags: { assets: true } })
+
     contractTest(
       'uses the shared query contract when enabled on OSS',
       async ({ assetApiRequests, comfyPage }) => {
@@ -81,6 +83,8 @@ contractTest.describe(
   'Assets sidebar Asset API contract on Cloud',
   { tag: '@cloud' },
   () => {
+    contractTest.use({ initialFeatureFlags: { assets: true } })
+
     contractTest(
       'uses the shared query contract',
       async ({ assetApiRequests, comfyPage }) => {
