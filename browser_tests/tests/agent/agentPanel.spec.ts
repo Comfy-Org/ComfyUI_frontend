@@ -220,6 +220,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await panel.getByRole('button', { name: 'Send' }).click()
 
     await expect.poll(() => postedMessages.length, { timeout: 10_000 }).toBe(1)
+    await expect(panel.getByRole('button', { name: 'Stop' })).toBeVisible()
     pushEvent(ws, SOCKET_READY_EVENT)
     await expect
       .poll(() => webSocketMessages.some(isWorkflowSubscribe), {
