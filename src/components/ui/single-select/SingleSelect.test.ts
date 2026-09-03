@@ -1,5 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -13,7 +14,8 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
-        singleSelectDropdown: 'Single-select dropdown'
+        singleSelectDropdown: 'Single-select dropdown',
+        search: 'Search'
       }
     }
   }
@@ -94,6 +96,22 @@ afterEach(() => {
 })
 
 describe('SingleSelect', () => {
+  it('filters searchable options', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent(undefined, { searchable: true })
+
+    await openSelect(screen.getByRole('combobox'))
+    const searchInput = screen.getByRole('textbox', { name: 'Search' })
+    await user.type(searchInput, 'C')
+
+    expect(screen.getByRole('option', { name: 'Option C' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('option', { name: 'Option A' })
+    ).not.toBeInTheDocument()
+
+    unmount()
+  })
+
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
     ZIndex.set('modal', openModal, 3702)
