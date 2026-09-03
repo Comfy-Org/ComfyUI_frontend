@@ -76,9 +76,11 @@ function onKeydown(event: KeyboardEvent) {
   >
     <svg viewBox="0 0 32 32" class="size-full rotate-[-225deg]">
       <circle
+        data-testid="knob-track"
         cx="16"
         cy="16"
         r="12"
+        pathLength="100"
         fill="none"
         stroke="currentColor"
         stroke-width="3"
@@ -86,9 +88,11 @@ function onKeydown(event: KeyboardEvent) {
         class="text-node-stroke"
       />
       <circle
+        data-testid="knob-value"
         cx="16"
         cy="16"
         r="12"
+        pathLength="100"
         fill="none"
         stroke="currentColor"
         stroke-width="3"
