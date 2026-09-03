@@ -170,13 +170,6 @@ const filteredTemplates = computed(() => {
       >
         {{ t('workshop.hub.title', locale) }}
       </h1>
-      <p class="text-content-secondary text-base lg:text-lg">
-        {{
-          t('workshop.hub.subtitle', locale)
-            .replace('{models}', String(workshopModels.length))
-            .replace('{workflows}', String(templates.length))
-        }}
-      </p>
     </div>
 
     <nav
@@ -207,28 +200,6 @@ const filteredTemplates = computed(() => {
         </span>
       </button>
     </nav>
-    <div v-if="!embedded" class="bg-page sticky top-0 z-40 pt-2 pb-6 lg:pb-8">
-      <label class="relative block">
-        <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
-        <Search
-          class="text-content-muted pointer-events-none absolute top-1/2 left-5 size-4 -translate-y-1/2"
-          aria-hidden="true"
-        />
-        <input
-          v-model="store.searchQuery.value"
-          type="search"
-          data-testid="hub-search"
-          :placeholder="t('workshop.hub.search', locale)"
-          class="bg-hub-surface text-content placeholder:text-content-muted focus-visible:ring-brand h-12 w-full rounded-full border border-white/10 pr-14 pl-12 text-sm outline-none focus-visible:ring-2"
-        />
-        <kbd
-          class="text-content-muted pointer-events-none absolute top-1/2 right-4 grid size-7 -translate-y-1/2 place-items-center rounded-full border border-white/15 font-sans text-2xs"
-          aria-hidden="true"
-        >
-          /
-        </kbd>
-      </label>
-    </div>
     <WorkflowGrid
       :templates="filteredTemplates"
       :facet-templates="templates"
@@ -237,6 +208,23 @@ const filteredTemplates = computed(() => {
       :labels="gridLabels"
       :href-for="hrefFor"
     >
+      <template #search>
+        <label class="relative block">
+          <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
+          <Search
+            class="text-content-muted pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2"
+            aria-hidden="true"
+          />
+          <input
+            v-model="store.searchQuery.value"
+            type="search"
+            data-testid="hub-search"
+            :placeholder="t('workshop.hub.search', locale)"
+            class="text-content placeholder:text-content-muted focus-visible:ring-brand h-8 w-full rounded-lg border border-white/15 bg-white/8 pr-3 pl-9 text-xs outline-none focus-visible:ring-2"
+          />
+        </label>
+      </template>
+
       <template #lead>
         <section
           v-if="store.activeTab.value === 'all' && filteredModels.length"

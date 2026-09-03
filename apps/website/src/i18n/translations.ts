@@ -8867,10 +8867,6 @@ Enterprise`
     'zh-CN': '打开此页面时会自动应用上面的控制项。'
   },
   'workshop.hub.title': { en: 'Browse the Workshop', 'zh-CN': '浏览工作坊' },
-  'workshop.hub.subtitle': {
-    en: '{models} models and {workflows} workflows, by what you want to make',
-    'zh-CN': '{models} 个模型与 {workflows} 个工作流，按你想做的事分类'
-  },
   'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',

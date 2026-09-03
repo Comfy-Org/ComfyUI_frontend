@@ -104,10 +104,10 @@ const controlClass =
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-2">
+  <div class="flex flex-wrap items-center gap-2">
     <TabsRoot
       :model-value="store.activeTab.value"
-      class="flex scrollbar-hide min-w-0 overflow-x-auto"
+      class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto"
       @update:model-value="store.setTab($event as HubTab)"
     >
       <TabsList
@@ -134,6 +134,8 @@ const controlClass =
         </TabsTrigger>
       </TabsList>
     </TabsRoot>
+
+    <div class="min-w-48 flex-1"><slot name="search" /></div>
 
     <div class="flex shrink-0 items-center gap-2">
       <PopoverRoot v-model:open="filterOpen">
