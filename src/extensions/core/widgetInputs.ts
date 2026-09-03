@@ -300,8 +300,7 @@ export class PrimitiveNode extends LGraphNode {
         widget = (ComfyWidgets[type](this, 'value', inputData, app) || {})
           .widget
       } else {
-        // @ts-expect-error InputSpec is not typed correctly
-        widget = this.addWidget(type, 'value', null, () => {}, {})
+        widget = this.addWidget('custom', 'value', null, () => {}, {})
       }
 
       if (node?.widgets && widget) {
