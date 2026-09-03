@@ -70,10 +70,26 @@ function readVitestReport(reportPath) {
   }
 }
 
+/**
+ * `no-skew-signal` is only allowed once the suite provably ran to completion and every
+ * test passed. A zero `numFailedTests` is not sufficient on its own: vitest also reports
+ * zero failures for a suite that was cancelled, that collected no tests at all, or that
+ * skipped tests, and each of those would otherwise publish a cheerful all-clear about an
+ * upstream revision nothing actually exercised.
+ *
+ * If the follower suite ever gains an intentional `test.skip` / `test.todo`, this gate
+ * starts returning `inconclusive-incomplete-suite` on every run. That is deliberate:
+ * account for the expected `pending` count here rather than dropping the
+ * `passed === total` requirement.
+ */
 function verdictFor(tests, testsOutcome) {
   if (!tests.parsed) return 'inconclusive-no-report'
   if (tests.failed > 0) return 'skew-signal'
-  if (testsOutcome === 'failure') return 'inconclusive-runner-failed'
+  if (testsOutcome !== 'success') return 'inconclusive-runner-failed'
+  if (!Number.isInteger(tests.total) || tests.total <= 0) {
+    return 'inconclusive-incomplete-suite'
+  }
+  if (tests.passed !== tests.total) return 'inconclusive-incomplete-suite'
   return 'no-skew-signal'
 }
 

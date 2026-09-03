@@ -123,8 +123,13 @@ jobs:
         continue-on-error: true
         run: pnpm test:unit --reporter=json --outputFile="$RUNNER_TEMP/vitest.json" "$CRDT_TEST_DIR"
 
+      # `!cancelled()` rather than the implicit `success()`: when upstream resolution,
+      # install, or the override verification fails there is no vitest report, and the
+      # inconclusive verdict for that is exactly what the alarm should record. Under the
+      # implicit check this step is skipped and the run produces no artifact at all.
       - name: Publish pass/fail counts
         id: verdict
+        if: ${{ !cancelled() }}
         env:
           CMP_SHA: ${{ steps.upstream.outputs.sha }}
           CMP_SPEC: ${{ steps.upstream.outputs.spec }}
@@ -147,7 +152,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Ring the alarm
-        if: steps.verdict.outputs.verdict != 'no-skew-signal'
+        if: ${{ !cancelled() && steps.verdict.outputs.verdict != 'no-skew-signal' }}
         env:
           VERDICT: ${{ steps.verdict.outputs.verdict }}
           FAILED: ${{ steps.verdict.outputs.failed }}
