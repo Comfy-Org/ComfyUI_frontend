@@ -241,6 +241,27 @@ describe('PrimitiveNode', () => {
     })
   })
 
+  it('adapts an unknown input type to a custom widget', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('model', 'MODEL')
+    target.inputs[0].widget = {
+      name: 'model',
+      [GET_CONFIG]: () => ['MODEL', {}]
+    }
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0]).toMatchObject({
+      name: 'value',
+      type: 'custom',
+      value: null
+    })
+  })
+
   it('restores its serialized value after a reroute resolves its widget config', () => {
     const graph = new LGraph()
     const reroute = new LGraphNode('Reroute')
