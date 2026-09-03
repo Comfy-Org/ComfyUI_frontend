@@ -40,6 +40,8 @@ const modelDef = computed<ComfyModelDef>(() => props.node.data!)
 
 const modelPreviewUrl = computed(() => getModelPreviewUrl(modelDef.value))
 
+const loadAbort = new AbortController()
+
 const previewRef = ref<InstanceType<typeof ModelPreview> | null>(null)
 const modelPreviewStyle = ref<CSSProperties>({
   position: 'absolute',
@@ -71,7 +73,7 @@ const handleModelHover = async () => {
     modelPreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 
-  await modelDef.value.load()
+  await modelDef.value.load({ signal: loadAbort.signal, priority: true })
 }
 
 const container = ref<HTMLElement | undefined>()
@@ -105,12 +107,15 @@ onMounted(async () => {
     container.value?.closest('.p-tree-node-content') ?? undefined
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
-  await modelDef.value.load()
+  await modelDef.value.load({ signal: loadAbort.signal })
 })
 
 onUnmounted(() => {
   modelContentElement.value?.removeEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
+  // Drop a still-queued/in-flight load so an unmounted leaf frees its slot
+  // instead of draining a now-invisible folder ahead of the visible one.
+  loadAbort.abort()
 })
 </script>
 

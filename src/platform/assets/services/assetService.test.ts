@@ -5,6 +5,7 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  AssetPaginationCapError,
   MISSING_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
@@ -945,8 +946,7 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(secondParams.get('after')).toBe('cursor-next')
   })
 
-  it('caps a runaway cursor walk at the batch backstop', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('throws at the batch cap when the cursor never stops advancing', async () => {
     let page = 0
     fetchApiMock.mockImplementation(() =>
       Promise.resolve(
@@ -957,14 +957,11 @@ describe(assetService.getAllAssetsByTag, () => {
       )
     )
 
-    const assets = await assetService.getAllAssetsByTag('input', true, {
-      limit: 1
-    })
+    await expect(
+      assetService.getAllAssetsByTag('input', true, { limit: 1 })
+    ).rejects.toBeInstanceOf(AssetPaginationCapError)
 
     expect(fetchApiMock).toHaveBeenCalledTimes(1000)
-    expect(assets).toHaveLength(1000)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('backstop'))
-    warn.mockRestore()
   })
 
   it('stops walking when next_cursor is absent even if has_more is true', async () => {

@@ -370,6 +370,30 @@ describe('ModelLibrarySidebarTab', () => {
 
       expect(leafLabels()).toEqual([])
     })
+
+    it('clears the filtered tree immediately when the raw query is emptied', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+
+      await user.type(screen.getByTestId('search-input'), 'zzz')
+      await nextTick()
+      expect(leafLabels()).toEqual([])
+
+      const rawInput = screen.getByTestId('search-input-raw')
+      await user.type(rawInput, 'x')
+      await user.clear(rawInput)
+      await nextTick()
+
+      expect(leafLabels()).toEqual(['model'])
+    })
   })
 
   describe('search scale limits', () => {
