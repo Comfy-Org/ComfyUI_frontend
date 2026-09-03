@@ -96,6 +96,8 @@ export interface SimplifiedWidget<
   controlWidget?: SafeControlWidget
 
   linkedUpstream?: LinkedUpstreamInfo
+
+  sourceWidget?: IBaseWidget
 }
 
 export interface SimplifiedControlWidget<
