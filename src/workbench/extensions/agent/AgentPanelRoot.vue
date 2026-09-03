@@ -454,6 +454,7 @@ const {
 } = useAgentSession({
   rest,
   events,
+  identity: () => resolvedUserInfo.value?.id ?? null,
   workflow: {
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
