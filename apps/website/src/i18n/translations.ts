@@ -1,8 +1,8 @@
 import type { Locale } from '../config/locales'
 import machineZhCN from './content/zh-CN.json'
 import machineJa from './content/ja.json'
-import { resolveValue } from './pipeline/resolve';
-import type { Resolved } from './pipeline/resolve';
+import { resolveValue } from './pipeline/resolve'
+import type { Resolved } from './pipeline/resolve'
 
 const translations = {
   // Tags (global, reusable across sections)

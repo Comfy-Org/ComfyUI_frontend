@@ -30,7 +30,8 @@ import {
   pendingSource,
   pruneOrphanKeys,
   pruneStaleKeys,
-  staleKeys
+  staleKeys,
+  translatableEntries
 } from '../../src/i18n/pipeline/source'
 import type {
   Manifest,
@@ -80,8 +81,13 @@ function main(): void {
     )
   }
 
-  const english = buildEnglishSource(entries)
-  const nextManifest = buildManifest(entries)
+  // Contracts are dropped here, once, so every artifact below agrees about what
+  // the pipeline is allowed to touch.
+  const entriesToTranslate = translatableEntries(entries)
+  const excluded = entries.length - entriesToTranslate.length
+
+  const english = buildEnglishSource(entriesToTranslate)
+  const nextManifest = buildManifest(entriesToTranslate)
   const previousManifest = readJson<Manifest>(MANIFEST_FILE)
   const stale = staleKeys(previousManifest, nextManifest)
 
@@ -96,7 +102,7 @@ function main(): void {
     const machine = pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale)
     writeJson(machineFile, machine)
 
-    const pending = pendingSource(entries, locale, machine)
+    const pending = pendingSource(entriesToTranslate, locale, machine)
     writeJson(path.join(PENDING_DIR, `${locale}.json`), pending)
 
     const dropped = Object.keys(before).length - Object.keys(machine).length
@@ -114,6 +120,7 @@ function main(): void {
   process.stdout.write(
     `[i18n] ${entries.length} keys from ${ADAPTERS.length} source(s); ` +
       `${Object.keys(english).length} translatable` +
+      (excluded > 0 ? `; ${excluded} excluded as legal copy` : '') +
       (stale.length > 0 ? `; ${stale.length} changed since last run` : '') +
       '\n'
   )

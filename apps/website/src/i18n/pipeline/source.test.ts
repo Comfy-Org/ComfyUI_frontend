@@ -5,6 +5,7 @@ import {
   buildEnglishSource,
   buildManifest,
   pendingSource,
+  translatableEntries,
   hashValue,
   pruneOrphanKeys,
   pruneStaleKeys,
@@ -88,6 +89,42 @@ describe('approvedLayer', () => {
 
   it('omits keys the locale has no approved value for', () => {
     expect(approvedLayer(entries, 'ja')).toEqual({})
+  })
+})
+
+describe('translatableEntries', () => {
+  /**
+   * Contracts are never machine-translated. An AI-written Terms of Service or
+   * MSA is a liability rather than a feature, and these pages are already served
+   * English-only or noindexed, so excluding them changes nothing a reader sees.
+   * Chinese is unaffected either way: it is already human-translated.
+   */
+  it.for([
+    'tos.heading',
+    'enterprise-msa.section.one',
+    'privacy.intro',
+    'desktop_privacy.intro',
+    'affiliate-terms.clause',
+    'minimaxLicense.terms'
+  ])('excludes legal copy: %s', (key) => {
+    const kept = translatableEntries([{ key, english: 'x', approved: {} }])
+    expect(kept).toEqual([])
+  })
+
+  /**
+   * The exclusion matches whole key segments. `enterprise` is the marketing
+   * page and must survive; only `enterprise-msa` is the contract. A substring
+   * match would silently drop 71 keys of ordinary marketing copy.
+   */
+  it('keeps marketing copy whose prefix merely starts the same way', () => {
+    const kept = translatableEntries([
+      { key: 'enterprise.hero.title', english: 'x', approved: {} },
+      { key: 'privacyBanner.accept', english: 'x', approved: {} }
+    ])
+    expect(kept.map((entry) => entry.key)).toEqual([
+      'enterprise.hero.title',
+      'privacyBanner.accept'
+    ])
   })
 })
 

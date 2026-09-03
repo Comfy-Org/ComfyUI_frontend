@@ -25,6 +25,36 @@ export function hashValue(value: unknown): string {
 }
 
 /**
+ * Key namespaces that are never machine-translated.
+ *
+ * These are contracts. An AI-written Terms of Service or MSA is a liability
+ * rather than a feature, so they stay English in any language a person has not
+ * translated by hand. Chinese is unaffected: it is already human-translated, and
+ * approved values win regardless.
+ *
+ * Five of the six are already served English-only or noindexed, so this mostly
+ * makes existing behaviour explicit rather than changing what a reader sees.
+ *
+ * Matched on the whole first key segment, never as a substring: `enterprise` is
+ * the marketing page and must survive, only `enterprise-msa` is the contract.
+ */
+const NEVER_TRANSLATED_NAMESPACES: ReadonlySet<string> = new Set([
+  'tos',
+  'enterprise-msa',
+  'privacy',
+  'desktop_privacy',
+  'affiliate-terms',
+  'minimaxLicense'
+])
+
+/** The entries the pipeline is allowed to translate. */
+export function translatableEntries(entries: SourceEntry[]): SourceEntry[] {
+  return entries.filter(
+    (entry) => !NEVER_TRANSLATED_NAMESPACES.has(entry.key.split('.')[0])
+  )
+}
+
+/**
  * The English content-of-record: what the model is asked to translate.
  *
  * Keys with a blank English value are excluded. That is not a data error:
