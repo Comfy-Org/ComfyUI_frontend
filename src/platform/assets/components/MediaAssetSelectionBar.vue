@@ -4,57 +4,69 @@
       data-testid="assets-selection-bar"
       class="absolute bottom-6 left-1/2 z-40 flex w-full max-w-78 -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
     >
-      <Button
-        v-tooltip.top="{
+      <Tooltip
+        :config="{
           value: $t('mediaAsset.selection.deselectAll'),
           showDelay: 300
         }"
-        variant="inverted"
-        size="icon-lg"
-        type="button"
-        data-testid="assets-deselect-selected"
-        :aria-label="$t('mediaAsset.selection.deselectAll')"
-        class="rounded-lg hover:bg-base-background/10"
-        @click="emit('deselect')"
+        side="top"
       >
-        <i class="icon-[lucide--x] size-4" />
-      </Button>
+        <Button
+          variant="inverted"
+          size="icon-lg"
+          type="button"
+          data-testid="assets-deselect-selected"
+          :aria-label="$t('mediaAsset.selection.deselectAll')"
+          class="rounded-lg hover:bg-base-background/10"
+          @click="emit('deselect')"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </Button>
+      </Tooltip>
       <span class="pr-6 text-sm font-bold whitespace-nowrap tabular-nums">
         {{ $t('mediaAsset.selection.selectedCount', { count }) }}
       </span>
       <div class="ml-auto flex shrink-0 items-center gap-1">
-        <Button
-          v-tooltip.top="{
+        <Tooltip
+          :config="{
             value: $t('mediaAsset.selection.downloadSelected'),
             showDelay: 300
           }"
-          variant="inverted"
-          size="icon-lg"
-          type="button"
-          data-testid="assets-download-selected"
-          :aria-label="$t('mediaAsset.selection.downloadSelected')"
-          class="rounded-lg hover:bg-base-background/10"
-          @click="emit('download')"
+          side="top"
         >
-          <i class="icon-[lucide--download] size-4" />
-        </Button>
-        <template v-if="showDelete">
-          <span class="h-6 w-px bg-base-background/20" aria-hidden="true" />
           <Button
-            v-tooltip.top="{
-              value: $t('mediaAsset.selection.deleteSelected'),
-              showDelay: 300
-            }"
             variant="inverted"
             size="icon-lg"
             type="button"
-            data-testid="assets-delete-selected"
-            :aria-label="$t('mediaAsset.selection.deleteSelected')"
+            data-testid="assets-download-selected"
+            :aria-label="$t('mediaAsset.selection.downloadSelected')"
             class="rounded-lg hover:bg-base-background/10"
-            @click="emit('delete')"
+            @click="emit('download')"
           >
-            <i class="icon-[lucide--trash-2] size-4" />
+            <i class="icon-[lucide--download] size-4" />
           </Button>
+        </Tooltip>
+        <template v-if="showDelete">
+          <span class="h-6 w-px bg-base-background/20" aria-hidden="true" />
+          <Tooltip
+            :config="{
+              value: $t('mediaAsset.selection.deleteSelected'),
+              showDelay: 300
+            }"
+            side="top"
+          >
+            <Button
+              variant="inverted"
+              size="icon-lg"
+              type="button"
+              data-testid="assets-delete-selected"
+              :aria-label="$t('mediaAsset.selection.deleteSelected')"
+              class="rounded-lg hover:bg-base-background/10"
+              @click="emit('delete')"
+            >
+              <i class="icon-[lucide--trash-2] size-4" />
+            </Button>
+          </Tooltip>
         </template>
       </div>
     </div>
@@ -62,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import Button from '@/components/ui/button/Button.vue'
 
 const { count, showDelete = true } = defineProps<{

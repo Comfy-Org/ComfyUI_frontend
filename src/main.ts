@@ -9,7 +9,6 @@ import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
@@ -127,7 +126,6 @@ setAssertReporter(
   { forwardsToRum: isCloud }
 )
 
-app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {

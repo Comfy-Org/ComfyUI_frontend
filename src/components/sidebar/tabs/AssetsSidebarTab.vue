@@ -10,38 +10,46 @@
         class="flex w-full items-center justify-between gap-2"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2">
-          <Button
-            v-tooltip.bottom="{
+          <Tooltip
+            :config="{
               value: $t('sideToolbar.backToAssets'),
               showDelay: 300
             }"
-            variant="textonly"
-            size="icon"
-            type="button"
-            class="shrink-0"
-            :aria-label="$t('sideToolbar.backToAssets')"
-            @click="exitFolderView"
+            side="bottom"
           >
-            <i class="icon-[lucide--arrow-left] size-4" />
-          </Button>
+            <Button
+              variant="textonly"
+              size="icon"
+              type="button"
+              class="shrink-0"
+              :aria-label="$t('sideToolbar.backToAssets')"
+              @click="exitFolderView"
+            >
+              <i class="icon-[lucide--arrow-left] size-4" />
+            </Button>
+          </Tooltip>
           <span class="shrink-0 font-bold">
             {{ $t('assetBrowser.jobId') }}:
           </span>
           <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
-          <Button
-            v-tooltip.bottom="{
+          <Tooltip
+            :config="{
               value: $t('g.copyJobId'),
               showDelay: 300
             }"
-            variant="textonly"
-            size="icon"
-            type="button"
-            class="shrink-0"
-            :aria-label="$t('g.copyJobId')"
-            @click="copyJobId"
+            side="bottom"
           >
-            <i class="icon-[lucide--copy] size-4" />
-          </Button>
+            <Button
+              variant="textonly"
+              size="icon"
+              type="button"
+              class="shrink-0"
+              :aria-label="$t('g.copyJobId')"
+              @click="copyJobId"
+            >
+              <i class="icon-[lucide--copy] size-4" />
+            </Button>
+          </Tooltip>
         </div>
         <div class="shrink-0">
           <span>{{ formattedExecutionTime }}</span>
@@ -178,6 +186,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import {
   unrefElement,
   useAsyncState,

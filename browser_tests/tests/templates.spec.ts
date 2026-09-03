@@ -392,31 +392,29 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(card).toBeVisible()
 
     const overflow = card.getByRole('button', { name: 'Upscale, Inpaint' })
-    // Body-portalled, so unscopable to the card; the single-card mock keeps it unique.
-    const disclosure = comfyPage.page.getByTestId('disclosure-tooltip')
+    const disclosure = comfyPage.page.getByRole('tooltip')
 
-    // toBeVisible() misses occlusion; assert the bubble is the top element at
-    // its centre so it can't regress behind the z-1702 dialog. Await the open
-    // state first so the hit-test doesn't race the enter animation.
     const expectOnTop = async () => {
       await expect(disclosure).toHaveAttribute('data-state', /-open$/)
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const el = document.querySelector(
-                '[data-testid="disclosure-tooltip"]'
-              )
-              if (!el) return false
-              const r = el.getBoundingClientRect()
-              if (r.width === 0 || r.height === 0) return false
+        .poll(() =>
+          disclosure.evaluate((el) => {
+            const portal = el.parentElement?.parentElement
+            if (!portal) return false
+            const pointerEvents = portal.style.pointerEvents
+            portal.style.pointerEvents = 'auto'
+            try {
+              const rect = el.getBoundingClientRect()
+              if (rect.width === 0 || rect.height === 0) return false
               const top = document.elementFromPoint(
-                r.x + r.width / 2,
-                r.y + r.height / 2
+                rect.x + rect.width / 2,
+                rect.y + rect.height / 2
               )
-              return !!top && el.contains(top)
-            }),
-          { timeout: 2000 }
+              return top === el || (top !== null && el.contains(top))
+            } finally {
+              portal.style.pointerEvents = pointerEvents
+            }
+          })
         )
         .toBe(true)
     }

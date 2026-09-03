@@ -11,6 +11,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
 import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
@@ -98,18 +99,19 @@ const options: {
 
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
-    <PopoverTrigger
-      v-tooltip.top="buildAgentTooltipConfig(triggerTooltip)"
-      :class="
-        cn(
-          'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
-          open && 'bg-agent-surface-hover text-agent-fg'
-        )
-      "
-    >
-      <span>{{ triggerLabel }}</span>
-      <span class="icon-[lucide--chevron-down] size-3" />
-    </PopoverTrigger>
+    <Tooltip :config="buildAgentTooltipConfig(triggerTooltip)" side="top">
+      <PopoverTrigger
+        :class="
+          cn(
+            'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
+            open && 'bg-agent-surface-hover text-agent-fg'
+          )
+        "
+      >
+        <span>{{ triggerLabel }}</span>
+        <span class="icon-[lucide--chevron-down] size-3" />
+      </PopoverTrigger>
+    </Tooltip>
     <PopoverPortal>
       <PopoverContent
         side="top"

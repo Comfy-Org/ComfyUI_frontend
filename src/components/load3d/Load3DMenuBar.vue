@@ -7,17 +7,21 @@
     >
       <Popover v-model:open="categoryMenuOpen">
         <PopoverTrigger as-child>
-          <button
-            v-tooltip.bottom="compact ? tip(activeLabel) : undefined"
-            :class="chipClass"
-            type="button"
-            :aria-label="compact ? activeLabel : undefined"
-            data-testid="load3d-category-menu"
+          <Tooltip
+            :config="compact ? tip(activeLabel) : undefined"
+            side="bottom"
           >
-            <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
-            <template v-else>{{ activeLabel }}</template>
-            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-          </button>
+            <button
+              :class="chipClass"
+              type="button"
+              :aria-label="compact ? activeLabel : undefined"
+              data-testid="load3d-category-menu"
+            >
+              <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
+              <template v-else>{{ activeLabel }}</template>
+              <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+            </button>
+          </Tooltip>
         </PopoverTrigger>
         <PopoverContent
           side="bottom"
@@ -118,36 +122,45 @@
           v-if="enableViewer && node"
           :node="node as LGraphNode"
         />
-        <button
+        <Tooltip
           v-if="canFitToViewer"
-          v-tooltip.top="tip(t('load3d.fitToViewer'))"
-          :class="iconBtnClass"
-          type="button"
-          :aria-label="t('load3d.fitToViewer')"
-          @click="emit('fitToViewer')"
+          :config="tip(t('load3d.fitToViewer'))"
+          side="top"
         >
-          <i class="icon-[lucide--scan] size-4" />
-        </button>
-        <button
+          <button
+            :class="iconBtnClass"
+            type="button"
+            :aria-label="t('load3d.fitToViewer')"
+            @click="emit('fitToViewer')"
+          >
+            <i class="icon-[lucide--scan] size-4" />
+          </button>
+        </Tooltip>
+        <Tooltip
           v-if="canCenterCameraOnModel"
-          v-tooltip.top="tip(t('load3d.centerCameraOnModel'))"
-          :class="iconBtnClass"
-          type="button"
-          :aria-label="t('load3d.centerCameraOnModel')"
-          @click="emit('centerCamera')"
+          :config="tip(t('load3d.centerCameraOnModel'))"
+          side="top"
         >
-          <i class="icon-[lucide--crosshair] size-4" />
-        </button>
+          <button
+            :class="iconBtnClass"
+            type="button"
+            :aria-label="t('load3d.centerCameraOnModel')"
+            @click="emit('centerCamera')"
+          >
+            <i class="icon-[lucide--crosshair] size-4" />
+          </button>
+        </Tooltip>
         <Popover v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
-            <button
-              v-tooltip.top="tip(t('load3d.export'))"
-              :class="iconBtnClass"
-              type="button"
-              :aria-label="t('load3d.export')"
-            >
-              <i class="icon-[lucide--download] size-4" />
-            </button>
+            <Tooltip :config="tip(t('load3d.export'))" side="top">
+              <button
+                :class="iconBtnClass"
+                type="button"
+                :aria-label="t('load3d.export')"
+              >
+                <i class="icon-[lucide--download] size-4" />
+              </button>
+            </Tooltip>
           </PopoverTrigger>
           <PopoverContent
             side="top"
@@ -172,6 +185,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useElementSize } from '@vueuse/core'
 import { PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'

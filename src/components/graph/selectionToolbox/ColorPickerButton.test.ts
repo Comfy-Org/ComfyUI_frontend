@@ -1,8 +1,6 @@
 import type { Mock } from 'vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -109,10 +107,7 @@ describe('ColorPickerButton', () => {
 
     render(ColorPickerButton, {
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: {
-          tooltip: Tooltip
-        }
+        plugins: [i18n]
       }
     })
 

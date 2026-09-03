@@ -3,26 +3,30 @@
     class="queue-button-group h-8 rounded-lg bg-secondary-background"
   >
     <BatchCountEdit />
-    <Button
-      v-tooltip.bottom="{
+    <Tooltip
+      :config="{
         value: queueButtonTooltip,
         showDelay: 600
       }"
-      :variant="queueButtonVariant"
-      size="unset"
-      :class="
-        cn(
-          'h-full gap-1.5 rounded-lg px-4',
-          paymentRecoveryLock ? 'font-medium' : 'font-light'
-        )
-      "
-      data-testid="queue-button"
-      :data-variant="queueButtonVariant"
-      @click="queuePrompt"
+      side="bottom"
     >
-      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
-      {{ queueButtonLabel }}
-    </Button>
+      <Button
+        :variant="queueButtonVariant"
+        size="unset"
+        :class="
+          cn(
+            'h-full gap-1.5 rounded-lg px-4',
+            paymentRecoveryLock ? 'font-medium' : 'font-light'
+          )
+        "
+        data-testid="queue-button"
+        :data-variant="queueButtonVariant"
+        @click="queuePrompt"
+      >
+        <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
+        {{ queueButtonLabel }}
+      </Button>
+    </Tooltip>
 
     <DropdownMenuRoot>
       <DropdownMenuTrigger as-child>
@@ -48,19 +52,23 @@
             as-child
             @select.prevent="item.command"
           >
-            <Button
-              v-tooltip="{
+            <Tooltip
+              :config="{
                 value: item.tooltip,
                 showDelay: 600
               }"
-              :variant="
-                item.key === selectedQueueMode ? 'primary' : 'secondary'
-              "
-              size="sm"
-              :class="queueMenuItemButtonClass"
+              side="right"
             >
-              {{ item.label }}
-            </Button>
+              <Button
+                :variant="
+                  item.key === selectedQueueMode ? 'primary' : 'secondary'
+                "
+                size="sm"
+                :class="queueMenuItemButtonClass"
+              >
+                {{ item.label }}
+              </Button>
+            </Tooltip>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
@@ -69,6 +77,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import {
   DropdownMenuContent,
   DropdownMenuItem,

@@ -233,4 +233,14 @@ describe('PartnerNodesEducationCard', () => {
     expect(openBtn).toHaveAccessibleName(copy.unmuteOpen)
     expect(partnerBtn).toHaveAccessibleName(copy.mutePartner)
   })
+
+  it('gives the partner information button an accessible name', async () => {
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: copy.tooltip })
+    ).toBeInTheDocument()
+  })
 })

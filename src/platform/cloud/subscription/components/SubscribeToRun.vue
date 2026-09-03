@@ -1,21 +1,27 @@
 <template>
-  <Button
-    v-tooltip.bottom="{
+  <Tooltip
+    :config="{
       value: buttonTooltip,
       showDelay: 600
     }"
-    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
-    variant="subscribe"
-    size="unset"
-    data-testid="subscribe-to-run-button"
-    @click="handleSubscribeToRun"
+    side="bottom"
   >
-    <i class="pi pi-lock" />
-    {{ buttonLabel }}
-  </Button>
+    <Button
+      class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+      variant="subscribe"
+      size="unset"
+      data-testid="subscribe-to-run-button"
+      @click="handleSubscribeToRun"
+    >
+      <i class="pi pi-lock" />
+      {{ buttonLabel }}
+    </Button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

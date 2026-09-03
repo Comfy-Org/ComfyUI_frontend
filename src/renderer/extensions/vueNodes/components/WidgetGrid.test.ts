@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { defineComponent, markRaw } from 'vue'
 import { describe, expect, it } from 'vitest'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@/types/nodeId'
@@ -23,12 +25,23 @@ const InputSlotStub = defineComponent({
     '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" />'
 })
 
+const TooltipInputSlotStub = defineComponent({
+  components: { Tooltip },
+  template: `
+    <Tooltip config="Input slot details" side="left">
+      <button>Input slot</button>
+    </Tooltip>
+  `
+})
+
 const AppInputStub = defineComponent({
   props: {
     name: { type: String, required: true }
   },
-  template:
-    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
+  template: `
+    <div data-testid="app-input" :data-widget-name="name"><slot /></div>
+    <span data-testid="app-input-sibling" />
+  `
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -64,7 +77,6 @@ describe('WidgetGrid', () => {
         ]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: {
           AppInput: AppInputStub,
           InputSlot: InputSlotStub
@@ -84,6 +96,64 @@ describe('WidgetGrid', () => {
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 
+  it('shows widget tooltips when AppInput has fragment roots', async () => {
+    const user = userEvent.setup()
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [
+          {
+            ...widget('seed', 'number', 0),
+            tooltipConfig: { value: 'Widget value', showDelay: 0 }
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          AppInput: AppInputStub,
+          InputSlot: InputSlotStub
+        }
+      }
+    })
+
+    await user.hover(screen.getByTestId('widget-control'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+  })
+
+  it('closes the widget tooltip when its input slot tooltip opens', async () => {
+    const user = userEvent.setup()
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [
+          {
+            ...widget('seed', 'number', 0),
+            tooltipConfig: { value: 'Widget value', showDelay: 0 }
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          AppInput: AppInputStub,
+          InputSlot: TooltipInputSlotStub
+        }
+      }
+    })
+
+    await user.hover(screen.getByTestId('widget-control'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+
+    await user.hover(screen.getByRole('button', { name: 'Input slot' }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Input slot details'
+    )
+    expect(screen.getAllByRole('tooltip')).toHaveLength(1)
+  })
+
   it('passes execution errors to the widget control API', () => {
     render(WidgetGrid, {
       props: {
@@ -92,7 +162,6 @@ describe('WidgetGrid', () => {
         processedWidgets: [{ ...widget('seed', 'string', 0), hasError: true }]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
       }
     })

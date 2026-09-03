@@ -100,15 +100,22 @@
                 <span class="text-xs font-semibold text-white">
                   {{ t('partnerNodesEducation.partnerTab') }}
                 </span>
-                <AccessibleTooltip
-                  :label="t('partnerNodesEducation.tooltip')"
+                <Tooltip
+                  :config="t('partnerNodesEducation.tooltip')"
                   side="top"
                   :side-offset="8"
-                  trigger-class="flex items-center text-white/60 hover:text-white"
                   content-class="max-w-56"
+                  open-on-click
+                  suppress-description
                 >
-                  <i class="icon-[lucide--info] size-3" />
-                </AccessibleTooltip>
+                  <button
+                    type="button"
+                    :aria-label="t('partnerNodesEducation.tooltip')"
+                    class="flex items-center text-white/60 hover:text-white"
+                  >
+                    <i class="icon-[lucide--info] size-3" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -207,7 +214,7 @@ import { useI18n } from 'vue-i18n'
 
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useDialogService } from '@/services/dialogService'

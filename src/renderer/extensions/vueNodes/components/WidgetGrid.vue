@@ -42,40 +42,47 @@
             dot-only
           />
         </div>
-        <AppInput
+        <Tooltip
           v-if="!isConvertedWidget(widget)"
-          :widget-id="widget.widgetId"
-          :name="widget.simplified.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          :config="widget.tooltipConfig ?? EMPTY_TOOLTIP"
+          side="left"
         >
-          <component
-            :is="widget.vueComponent"
-            v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="widget.simplified.value"
-            :widget="widget.simplified"
-            :node-id
-            :node-type
-            :invalid="widget.hasError"
-            :aria-invalid="widget.hasError || undefined"
-            :class="
-              cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
-              )
-            "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
-        </AppInput>
+          <div class="contents">
+            <AppInput
+              :widget-id="widget.widgetId"
+              :name="widget.simplified.name"
+              :enable="canSelectInputs && !widget.simplified.options?.disabled"
+            >
+              <component
+                :is="widget.vueComponent"
+                :model-value="widget.simplified.value"
+                :widget="widget.simplified"
+                :node-id
+                :node-type
+                :invalid="widget.hasError"
+                :aria-invalid="widget.hasError || undefined"
+                :class="
+                  cn(
+                    'col-span-2',
+                    widget.hasError && 'font-bold text-node-stroke-error'
+                  )
+                "
+                @update:model-value="widget.updateHandler"
+                @contextmenu="widget.handleContextMenu"
+              />
+            </AppInput>
+          </div>
+        </Tooltip>
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { computed, useTemplateRef, watch } from 'vue'
 
+import type { TooltipConfig } from '@/components/ui/tooltip'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -87,7 +94,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipOptions = {}
+const EMPTY_TOOLTIP: TooltipConfig = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

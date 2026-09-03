@@ -107,15 +107,19 @@
                           expandedCommandIds.has(commandData.id) && 'rotate-90'
                         "
                       />
-                      <i
+                      <Tooltip
                         v-if="
                           commandData.keybindings.some(
                             (b: KeybindingImpl) => b.combo.isBrowserReserved
                           )
                         "
-                        v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-                        class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-                      />
+                        :config="$t('g.browserReservedKeybindingTooltip')"
+                        side="right"
+                      >
+                        <i
+                          class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
+                        />
+                      </Tooltip>
                       {{ commandData.label }}
                     </div>
                   </TableCell>
@@ -134,50 +138,57 @@
                     <div
                       class="actions flex flex-row justify-end whitespace-nowrap"
                     >
-                      <Button
+                      <Tooltip
                         v-if="commandData.keybindings.length === 1"
-                        v-tooltip="$t('g.edit')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.edit')"
-                        @click="
-                          editKeybinding(
-                            commandData,
-                            commandData.keybindings[0]
-                          )
-                        "
+                        :config="$t('g.edit')"
+                        side="right"
                       >
-                        <i class="icon-[lucide--pencil]" />
-                      </Button>
-                      <Button
-                        v-tooltip="$t('g.addNewKeybinding')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.addNewKeybinding')"
-                        @click="addKeybinding(commandData)"
-                      >
-                        <i class="icon-[lucide--plus]" />
-                      </Button>
-                      <Button
-                        v-tooltip="$t('g.reset')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.reset')"
-                        :disabled="!commandData.isModified"
-                        @click="resetKeybinding(commandData)"
-                      >
-                        <i class="icon-[lucide--rotate-ccw]" />
-                      </Button>
-                      <Button
-                        v-tooltip="$t('g.delete')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.delete')"
-                        :disabled="commandData.keybindings.length === 0"
-                        @click="handleRemoveKeybindingFromMenu(commandData)"
-                      >
-                        <i class="icon-[lucide--trash-2]" />
-                      </Button>
+                        <Button
+                          variant="textonly"
+                          size="icon"
+                          :aria-label="$t('g.edit')"
+                          @click="
+                            editKeybinding(
+                              commandData,
+                              commandData.keybindings[0]
+                            )
+                          "
+                        >
+                          <i class="icon-[lucide--pencil]" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip :config="$t('g.addNewKeybinding')" side="right">
+                        <Button
+                          variant="textonly"
+                          size="icon"
+                          :aria-label="$t('g.addNewKeybinding')"
+                          @click="addKeybinding(commandData)"
+                        >
+                          <i class="icon-[lucide--plus]" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip :config="$t('g.reset')" side="right">
+                        <Button
+                          variant="textonly"
+                          size="icon"
+                          :aria-label="$t('g.reset')"
+                          :disabled="!commandData.isModified"
+                          @click="resetKeybinding(commandData)"
+                        >
+                          <i class="icon-[lucide--rotate-ccw]" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip :config="$t('g.delete')" side="right">
+                        <Button
+                          variant="textonly"
+                          size="icon"
+                          :aria-label="$t('g.delete')"
+                          :disabled="commandData.keybindings.length === 0"
+                          @click="handleRemoveKeybindingFromMenu(commandData)"
+                        >
+                          <i class="icon-[lucide--trash-2]" />
+                        </Button>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -203,24 +214,29 @@
                           />
                         </div>
                         <div class="flex flex-row">
-                          <Button
-                            v-tooltip="$t('g.edit')"
-                            variant="textonly"
-                            size="icon"
-                            :aria-label="$t('g.edit')"
-                            @click="editKeybinding(commandData, binding)"
+                          <Tooltip :config="$t('g.edit')" side="right">
+                            <Button
+                              variant="textonly"
+                              size="icon"
+                              :aria-label="$t('g.edit')"
+                              @click="editKeybinding(commandData, binding)"
+                            >
+                              <i class="icon-[lucide--pencil]" />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip
+                            :config="$t('g.removeKeybinding')"
+                            side="right"
                           >
-                            <i class="icon-[lucide--pencil]" />
-                          </Button>
-                          <Button
-                            v-tooltip="$t('g.removeKeybinding')"
-                            variant="textonly"
-                            size="icon"
-                            :aria-label="$t('g.removeKeybinding')"
-                            @click="removeSingleKeybinding(commandData, idx)"
-                          >
-                            <i class="icon-[lucide--trash-2]" />
-                          </Button>
+                            <Button
+                              variant="textonly"
+                              size="icon"
+                              :aria-label="$t('g.removeKeybinding')"
+                              @click="removeSingleKeybinding(commandData, idx)"
+                            >
+                              <i class="icon-[lucide--trash-2]" />
+                            </Button>
+                          </Tooltip>
                         </div>
                       </div>
                     </div>
@@ -284,19 +300,22 @@
       </ContextMenuPortal>
     </ContextMenuRoot>
 
-    <Button
-      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
-      class="mt-4 w-full"
-      variant="destructive-textonly"
-      @click="resetAllKeybindings"
-    >
-      <i class="icon-[lucide--rotate-ccw]" />
-      {{ $t('g.resetAll') }}
-    </Button>
+    <Tooltip :config="$t('g.resetAllKeybindingsTooltip')" side="right">
+      <Button
+        class="mt-4 w-full"
+        variant="destructive-textonly"
+        @click="resetAllKeybindings"
+      >
+        <i class="icon-[lucide--rotate-ccw]" />
+        {{ $t('g.resetAll') }}
+      </Button>
+    </Tooltip>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useToast } from '@/components/ui/toast'
 import {

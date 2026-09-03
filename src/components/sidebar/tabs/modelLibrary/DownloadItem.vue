@@ -37,46 +37,60 @@
         </span>
       </div>
 
-      <Button
+      <Tooltip
         v-if="download.status === 'in_progress'"
-        v-tooltip.top="t('electronFileDownload.pause')"
-        class="size-[22px] rounded-full"
-        variant="secondary"
-        size="icon-sm"
-        :aria-label="t('electronFileDownload.pause')"
-        @click="triggerPauseDownload"
+        :config="t('electronFileDownload.pause')"
+        side="top"
       >
-        <i class="icon-[lucide--pause] size-3" />
-      </Button>
+        <Button
+          class="size-[22px] rounded-full"
+          variant="secondary"
+          size="icon-sm"
+          :aria-label="t('electronFileDownload.pause')"
+          @click="triggerPauseDownload"
+        >
+          <i class="icon-[lucide--pause] size-3" />
+        </Button>
+      </Tooltip>
 
-      <Button
+      <Tooltip
         v-if="download.status === 'paused'"
-        v-tooltip.top="t('electronFileDownload.resume')"
-        class="size-[22px] rounded-full"
-        variant="secondary"
-        size="icon-sm"
-        :aria-label="t('electronFileDownload.resume')"
-        @click="triggerResumeDownload"
+        :config="t('electronFileDownload.resume')"
+        side="top"
       >
-        <i class="icon-[lucide--play] size-3" />
-      </Button>
+        <Button
+          class="size-[22px] rounded-full"
+          variant="secondary"
+          size="icon-sm"
+          :aria-label="t('electronFileDownload.resume')"
+          @click="triggerResumeDownload"
+        >
+          <i class="icon-[lucide--play] size-3" />
+        </Button>
+      </Tooltip>
 
-      <Button
+      <Tooltip
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
-        v-tooltip.top="t('electronFileDownload.cancel')"
-        class="size-[22px] rounded-full"
-        variant="destructive"
-        size="icon-sm"
-        :aria-label="t('electronFileDownload.cancel')"
-        @click="triggerCancelDownload"
+        :config="t('electronFileDownload.cancel')"
+        side="top"
       >
-        <i class="icon-[lucide--x-circle] size-3" />
-      </Button>
+        <Button
+          class="size-[22px] rounded-full"
+          variant="destructive"
+          size="icon-sm"
+          :aria-label="t('electronFileDownload.cancel')"
+          @click="triggerCancelDownload"
+        >
+          <i class="icon-[lucide--x-circle] size-3" />
+        </Button>
+      </Tooltip>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

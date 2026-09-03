@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createTestingPinia } from '@pinia/testing'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -120,8 +119,7 @@ describe('PackVersionSelectorPopover', () => {
       },
       global: {
         plugins: [createTestingPinia({ stubActions: false }), i18n],
-        components: { VerifiedIcon },
-        directives: { tooltip: Tooltip }
+        components: { VerifiedIcon }
       }
     })
     return { ...result, user }

@@ -4,8 +4,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -96,10 +94,7 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
-        directives: {
-          tooltip: Tooltip
-        },
+        plugins: [createTestingPinia({ stubActions: false }), i18n],
         stubs: {
           Popover: PopoverStub,
           PackVersionSelectorPopover: PackVersionSelectorPopoverStub
