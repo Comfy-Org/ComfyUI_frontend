@@ -5,7 +5,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import { forgetAgentSessionMemory } from './agentSessionMemory'
+import {
+  forgetAgentSessionMemory,
+  hasAgentSessionMemoryFor
+} from './agentSessionMemory'
 
 export function registerAgentIdentityStateTracker(): () => void {
   const scope = effectScope(true)
@@ -15,8 +18,10 @@ export function registerAgentIdentityStateTracker(): () => void {
 
     watch(
       () => resolvedUserInfo.value?.id ?? null,
-      (_userId, previousUserId) => {
-        if (previousUserId === null) return
+      (userId, previousUserId) => {
+        if (previousUserId === null && hasAgentSessionMemoryFor(userId)) {
+          return
+        }
 
         const conversation = useAgentConversationStore()
         conversation.abortActiveTurn()

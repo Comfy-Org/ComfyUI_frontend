@@ -19,6 +19,7 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import { rememberAgentSessionMemory } from '../../services/agent/agentSessionMemory'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
 import type { SelectedNode } from './useCanvasSelection'
@@ -575,7 +576,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('clears the workflow binding when an authenticated identity changes', async () => {
-    const identity = ref<string | null>(null)
+    const identity = ref<string | null>('user-a')
     const session = useAgentSession({
       rest: fakeRest(),
       events: fakeEvents().source,
@@ -584,8 +585,6 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
     await session.sendMessage('bind me')
 
-    identity.value = 'user-a'
-    await nextTick()
     expect(session.boundWorkflowId.value).toBe('wf-1')
 
     identity.value = 'user-b'
@@ -1450,6 +1449,44 @@ describe('thread resume (B17)', () => {
     expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
     expect(session.threadId.value).toBe('th-9')
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('waits for identity resolution before restoring its persisted thread', async () => {
+    const identity = ref<string | null>(null)
+    rememberAgentSessionMemory('th-9', 'user-a')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+
+    session.start()
+    expect(getMessages).not.toHaveBeenCalled()
+
+    identity.value = 'user-a'
+    await nextTick()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-9'))
+    expect(session.threadId.value).toBe('th-9')
+  })
+
+  it("does not restore another user's persisted thread", async () => {
+    const identity = ref<string | null>(null)
+    rememberAgentSessionMemory('th-9', 'user-a')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+
+    session.start()
+    identity.value = 'user-b'
+    await nextTick()
+
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {

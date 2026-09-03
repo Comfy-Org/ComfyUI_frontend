@@ -7,7 +7,10 @@ import type { TurnId } from '../../schemas/agentApiSchema'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import { AGENT_THREAD_STORAGE_KEY } from './agentSessionMemory'
+import {
+  AGENT_THREAD_STORAGE_KEY,
+  rememberAgentSessionMemory
+} from './agentSessionMemory'
 import { registerAgentIdentityStateTracker } from './agentIdentityStateTracker'
 
 const auth = vi.hoisted(() => ({
@@ -28,7 +31,7 @@ function setUser(id: string | null): void {
   auth.user.value = id === null ? null : { id }
 }
 
-function seedUserState(): void {
+function seedUserState(userId: string = 'user-a'): void {
   const conversation = useAgentConversationStore()
   conversation.setThreadId('thread-a')
   conversation.recordUser('turn-a' as TurnId, 'hello', [
@@ -48,7 +51,7 @@ function seedUserState(): void {
   ]
 
   useAgentWorkflowTabBindingStore().bind('workflow-a', 'workflows/a.json')
-  localStorage.setItem(AGENT_THREAD_STORAGE_KEY, 'thread-a')
+  rememberAgentSessionMemory('thread-a', userId)
 }
 
 describe('registerAgentIdentityStateTracker', () => {
@@ -74,6 +77,17 @@ describe('registerAgentIdentityStateTracker', () => {
 
     expect(useAgentConversationStore().threadId).toBe('thread-a')
     expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBe('thread-a')
+  })
+
+  it('purges another user state when the initial identity resolves', async () => {
+    seedUserState('user-a')
+
+    setUser('user-b')
+    await nextTick()
+
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(useAgentConversationStore().messages).toEqual([])
+    expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
   })
 
   it('purges user-scoped state when the identity changes', async () => {
