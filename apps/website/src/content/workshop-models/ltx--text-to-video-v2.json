@@ -1,0 +1,129 @@
+{
+  "id": "ltx/text-to-video-v2",
+  "slug": "ltx--text-to-video-v2",
+  "displayName": "LTX-2.5 Text-to-Video",
+  "provider": "ltx",
+  "modality": "video",
+  "description": "Generates an asynchronous LTX-2.5 video from text with optional generated audio.",
+  "tags": ["ltx", "lightricks", "ltx-2.5", "video", "text-to-video", "audio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["ltx/text-to-video-v2"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [2]
+          },
+          {
+            "type": "number",
+            "enum": [3]
+          },
+          {
+            "type": "number",
+            "enum": [4]
+          },
+          {
+            "type": "number",
+            "enum": [5]
+          },
+          {
+            "type": "number",
+            "enum": [6]
+          },
+          {
+            "type": "number",
+            "enum": [8]
+          },
+          {
+            "type": "number",
+            "enum": [10]
+          },
+          {
+            "type": "number",
+            "enum": [12]
+          },
+          {
+            "type": "number",
+            "enum": [14]
+          },
+          {
+            "type": "number",
+            "enum": [16]
+          },
+          {
+            "type": "number",
+            "enum": [18]
+          },
+          {
+            "type": "number",
+            "enum": [20]
+          }
+        ],
+        "default": 8
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "fps": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [24]
+          },
+          {
+            "type": "number",
+            "enum": [25]
+          },
+          {
+            "type": "number",
+            "enum": [48]
+          },
+          {
+            "type": "number",
+            "enum": [50]
+          }
+        ],
+        "default": 25
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "1280x720",
+          "720x1280",
+          "1920x1080",
+          "1080x1920",
+          "2560x1440",
+          "1440x2560",
+          "3840x2160",
+          "2160x3840"
+        ],
+        "default": "1920x1080"
+      },
+      "variant": {
+        "type": "string",
+        "enum": ["LTX-2.5 (Fast)", "LTX-2.5 (Pro)"],
+        "default": "LTX-2.5 (Fast)"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

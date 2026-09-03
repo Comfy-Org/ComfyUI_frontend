@@ -42,9 +42,12 @@ describe('buildWorkshopCatalog', () => {
   })
 
   it('rejects malformed records instead of silently omitting a route', () => {
-    expect(() =>
-      buildWorkshopCatalog([validModel, { ...validModel, id: undefined }])
-    ).toThrow('Invalid partner models at indexes: 1')
+    expect(
+      () => buildWorkshopCatalog([validModel, { ...validModel, id: undefined }])
+      // The schema names both the offending index and the field. Which field
+      // broke is the whole value of the message when a source change breaks
+      // one model out of 268.
+    ).toThrow(/Invalid partner model at index 1: id/)
   })
 
   it('rejects duplicate ids', () => {

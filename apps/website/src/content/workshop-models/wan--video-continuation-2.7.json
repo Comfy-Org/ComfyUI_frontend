@@ -1,0 +1,116 @@
+{
+  "id": "wan/video-continuation-2.7",
+  "slug": "wan--video-continuation-2.7",
+  "displayName": "Wan 2.7 Video Continuation",
+  "provider": "wan",
+  "modality": "video",
+  "description": "Continues an existing video clip toward an optional end frame (Wan 2.7).",
+  "tags": ["wan", "wan2.7", "video", "video-continuation"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wan/video-continuation-2.7"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Prompt; empty omits from wire.",
+        "default": ""
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 15,
+        "description": "Total output duration in seconds. Model fills the remaining time after the input clip.",
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative prompt; empty omits from wire.",
+        "default": ""
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "description": "Prompt-extend toggle.",
+        "default": true
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720P", "1080P"],
+        "description": "Output video resolution tier (720P or 1080P)."
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Watermark toggle.",
+        "default": false
+      }
+    },
+    "required": ["model", "resolution"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

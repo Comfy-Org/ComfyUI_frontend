@@ -1,0 +1,61 @@
+{
+  "id": "kling/text-to-video-with-audio",
+  "slug": "kling--text-to-video-with-audio",
+  "displayName": "Kling 2.6 Pro Text-to-Video with Audio",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Generates a cinematic video clip with synced audio from text (Kling 2.6 Pro).",
+  "tags": ["kling", "video", "text-to-video", "audio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/text-to-video-with-audio"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2500,
+        "description": "Positive text prompt."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "1:1"],
+        "description": "Video aspect ratio.",
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "description": "Video duration in seconds (5 or 10).",
+        "default": 5
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "description": "Whether to generate sound. Maps to wire `sound: on|off` (node.py:2665).",
+        "default": true
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["pro"],
+        "description": "Generation mode (only pro supported for audio variants).",
+        "default": "pro"
+      },
+      "model_name": {
+        "type": "string",
+        "enum": ["kling-v2-6"],
+        "description": "Audio-variant model (only kling-v2-6 supported).",
+        "default": "kling-v2-6"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}
