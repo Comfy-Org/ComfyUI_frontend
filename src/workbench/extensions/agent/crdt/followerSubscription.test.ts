@@ -320,6 +320,33 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 })
 
 describe('doc_reset — a lineage break drops the doc and resubscribes from zero', () => {
+  it('rejects a delayed update from the replaced lineage before mutating the fresh doc', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', {
+      ...docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42),
+      lineage_seq: 1
+    })
+
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 43,
+      lineage_seq: 43
+    })
+    const freshDoc = bridge.follower
+
+    transport.deliver('doc_update', {
+      ...docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42),
+      lineage_seq: 1
+    })
+
+    expect(bridge.follower).toBe(freshDoc)
+    expect(freshDoc.updatesApplied).toBe(0)
+    expect(projected).toHaveLength(1)
+  })
+
   it('replaces the follower doc and resubscribes with an empty state vector', () => {
     const { transport, bridge, projected } = wire()
     const resets: unknown[] = []
