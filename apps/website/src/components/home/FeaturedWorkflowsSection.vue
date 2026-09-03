@@ -20,7 +20,7 @@ interface Slide {
 }
 
 const HUB = 'https://comfy-hub-assets.comfy.org/uploads'
-const WORKFLOWS = 'https://www.comfy.org/workflows'
+const WORKFLOWS = 'https://comfy.org/workflows'
 
 /** Mirror of the workflows page's FEATURED · STAFF PICK carousel. */
 const slides: Slide[] = [

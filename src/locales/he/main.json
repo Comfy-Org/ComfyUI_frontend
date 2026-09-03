@@ -8,10 +8,119 @@
     "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "עלות להרצה",
-    "title": "צומת/צמתי API",
-    "totalCost": "עלות כוללת"
+  "agent": {
+    "addFromAssets": "הוסף מלוח הנכסים",
+    "addNodesFromGraph": "הוסף צמתים מהגרף",
+    "addPromptToSend": "הוסף פרומפט לשליחה",
+    "addToPrompt": "הוסף לפרומפט",
+    "alpha": "אלפא",
+    "askComfyAgent": "שאל את Comfy Agent",
+    "assetNotAttachable": "ניתן לצרף תמונות, וידאו, שמע, מודלי 3D וקובצי טקסט",
+    "attach": "צרף קובץ",
+    "attachFiles": "צרף תמונות או קבצים",
+    "attachmentTooLarge": "{name} גדול מ-{limit}",
+    "attachmentUploadFailed": "לא ניתן היה להעלות את {name}",
+    "backToPreviousChat": "חזרה לצ'אט הקודם",
+    "caption": "סוכן ה-AI עלול לטעות",
+    "captionExpanded": "סוכן ה-AI עלול לטעות. יש לבדוק שוב את התשובה.",
+    "changeWorkflowForChat": "שנה את תהליך העבודה עבור צ'אט זה",
+    "chatOptions": "אפשרויות צ'אט",
+    "chooseWorkflow": "בחר תהליך עבודה",
+    "chooseWorkflowForChat": "בחר תהליך עבודה עבור צ'אט זה",
+    "close": "סגור",
+    "coachBody": "בקשו ממנו לבנות או לערוך גרפים.",
+    "coachTitle": "הכירו את הסוכן",
+    "copied": "הועתק!",
+    "copy": "העתק",
+    "copyMarkdown": "העתק כ-Markdown",
+    "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
+    "credits": "זיכויים",
+    "delete": "מחק",
+    "dismiss": "סגור",
+    "dontWorkInWorkflow": "אל תעבוד בתהליך עבודה",
+    "downloadAssets": "הורדת נכסים",
+    "dragAndDropAssets": "גרור ושחרר נכסים כאן",
+    "focusNode": "הצג בקנבס",
+    "focusNodeLabel": "הצג את {node} בקנבס",
+    "friend": "שם",
+    "gotIt": "הבנתי",
+    "greeting": "שלום {name},",
+    "greetingQuestion": "מה ברצונך ליצור?",
+    "helpful": "מועיל",
+    "history": "היסטוריית צ'אטים",
+    "historyCurrent": "נוכחי",
+    "historyEarlier": "מוקדם יותר",
+    "historyEmpty": "אין שיחות עדיין",
+    "historyToday": "היום",
+    "historyYesterday": "אתמול",
+    "latest": "העדכני ביותר",
+    "loadFailed": "טעינת חלונית הסוכן נכשלה.",
+    "malformedEvent": "הסוכן שלח אירוע שלוח זה לא הצליח לקרוא",
+    "maximize": "הגדל את הלוח",
+    "mention": "אזכר צומת",
+    "minimize": "מזער את הלוח",
+    "modelAuto": "אוטומטי",
+    "newChat": "צ'אט חדש",
+    "newChatTitle": "ללא כותרת",
+    "noNodesToMention": "אין צמתים בתהליך עבודה זה",
+    "nodeSelection": {
+      "bannerSubtitle": "בחר צומת אחד או יותר להוספה כהפניה",
+      "bannerTitle": "הוסף צמתים מהגרף",
+      "exit": "צא מהמצב",
+      "selectNode": "בחר צומת"
+    },
+    "notHelpful": "לא מועיל",
+    "openWorkflowTab": "פתיחת {name}",
+    "placeholder": "תאר רעיונות, {'@'} להפניה,\nהוסף צמתים מהגרף או גרור נכסים פנימה",
+    "ranToolCalls": "בוצעה {count} קריאת כלי | בוצעו {count} קריאות כלי",
+    "ranToolCallsTimed": "בוצעה {count} קריאת כלי במשך {seconds} שניות | בוצעו {count} קריאות כלי במשך {seconds} שניות",
+    "remove": "הסר",
+    "removeNodeLabel": "הסר את ההפניה ל־{node}",
+    "runModeAsk": "שאל לפני הפעלת תהליך עבודה",
+    "runModeAskDescription": "Comfy יבקש אישור לפני כל הפעלה של תהליך עבודה",
+    "runModeAuto": "הפעלה אוטומטית ללא אישור",
+    "runModeAutoDescription": "Comfy יפעיל תהליכי עבודה ללא בקשת הרשאה",
+    "runModeLimit": "הפעלה אוטומטית עם מגבלות",
+    "runModeLimitDescription": "Comfy יבקש אישור רק כאשר הפעלת תהליך עבודה חורגת ממגבלת הזיכויים שלך",
+    "runModeTriggerAsk": "שאל",
+    "runModeTriggerAskTooltip": "בקש הרשאה",
+    "runModeTriggerAuto": "אוטומטי",
+    "runModeTriggerAutoLimit": "אוטומטי (מוגבל)",
+    "runModeTriggerAutoLimitTooltip": "שאל כאשר מגיעים למגבלת הקרדיט",
+    "runModeTriggerAutoTooltip": "הפעל תהליך עבודה ללא הרשאה",
+    "runNotice": "הסוכן יכול לשנות את הגרף. יש ללחוץ על הפעלה כדי לבצע את תהליך העבודה.",
+    "runNoticeExpanded": "הסוכן יכול לשנות את תהליך העבודה שלך. יש ללחוץ על הפעלה כדי לבצע.",
+    "runPermissions": "הרשאות הפעלה",
+    "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
+    "saveChanges": "שמור שינויים",
+    "searchWorkflows": "חפש תהליכי עבודה",
+    "selectWorkflowToGenerate": "בחר תהליך עבודה ליצירה בו",
+    "send": "שלח",
+    "sendBusy": "הודעה כבר נשלחת",
+    "sendFailed": "שליחת ההודעה נכשלה",
+    "showChatHistory": "הצג היסטוריית צ'אטים",
+    "showLess": "הצג פחות",
+    "showMore": "הצג עוד",
+    "skip": "דלג",
+    "stop": "עצור",
+    "suggestedPrompts": [
+      "צור ברווז צהוב עם מסכת הוקי",
+      "הצג את תהליכי העבודה השמורים שלי",
+      "מצא את תהליך העבודה הטוב ביותר להגדלת רזולוציה של עור",
+      "הסבר את הצומת שנבחר",
+      "בנה תהליך עבודה להמרת תמונה לווידאו עם 3 מודלים"
+    ],
+    "switchWorkflow": "החלף תהליך עבודה",
+    "thinking": "חושב...",
+    "thought": "מחשבה",
+    "thoughtTimed": "חשב במשך {seconds} שניות",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "נשכחה העדפה",
+    "toolOpenedNewTab": "נפתחה לשונית חדשה",
+    "toolSavedPreference": "נשמרה העדפה",
+    "toolSwitchedTabs": "הוחלפו לשוניות",
+    "untitledChat": "ללא כותרת",
+    "uploading": "מעלה"
   },
   "apiNodesSignInDialog": {
     "message": "תהליך עבודה זה מכיל צמתי API, שדורשים שתהיה מחובר לחשבונך כדי להריץ אותם.",
@@ -977,6 +1086,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -1073,6 +1183,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent נתקל בשגיאת שרת.",
+        "title": "שגיאת Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "לא ניתן היה להחיל עריכת סוכן על מסמך תהליך העבודה.",
+        "title": "עריכת הסוכן נכשלה"
+      },
+      "guard_trip": {
+        "desc": "עדכון סוכן נכנס לא תאם את המבנה הצפוי של מסמך תהליך העבודה ונחסם.",
+        "title": "עדכון הסוכן נחסם"
+      },
       "missing_node_type": {
         "desc": "סוג צומת חסר או אינו זמין. ייתכן שתהליך העבודה פגום או דורש צומת מותאם.",
         "title": "סוג צומת חסר"
@@ -1080,6 +1202,14 @@
       "no_prompt": {
         "desc": "נתוני תהליך העבודה שנשלחו לשרת ריקים. ייתכן שזו שגיאת מערכת בלתי צפויה.",
         "title": "נתוני תהליך העבודה ריקים"
+      },
+      "op_rejected": {
+        "desc": "מסמך תהליך העבודה דחה עריכת סוכן. הקנבס והמסמך המשותף עשויים להיות שונים לזמן קצר עד לעדכון הבא.",
+        "title": "עריכת הסוכן נדחתה"
+      },
+      "prefix_abort": {
+        "desc": "אצווה של עריכות סוכן נעצרה באמצע. העריכות הנותרות יבוצעו שוב באופן אוטומטי.",
+        "title": "עריכות הסוכן הוחלו חלקית"
       },
       "prompt_no_outputs": {
         "desc": "תהליך העבודה אינו מכיל צמתי פלט (לדוגמה שמירת תמונה, תצוגה מקדימה של תמונה) ליצירת תוצאה.",
@@ -1497,6 +1627,8 @@
     "addNewKeybinding": "הוספת מקש קיצור חדש",
     "addNode": "הוספת צומת...",
     "addNodeFilterCondition": "הוספת תנאי סינון לצמתים",
+    "agentModified": "הסוכן עדכן תהליך עבודה זה",
+    "agentWorking": "הסוכן עובד על תהליך עבודה זה",
     "all": "הכול",
     "allKeybindingsReset": "כל מקשי הקיצור אופסו לברירת המחדל",
     "amount": "סכום",
@@ -1715,6 +1847,7 @@
     "moreWorkflows": "תהליכי עבודה נוספים",
     "mostRelevant": "הרלוונטי ביותר",
     "multiSelectDropdown": "רשימה נפתחת לבחירה מרובה",
+    "mute": "השתקה",
     "nMoreKeybindings": "+ {count} נוספים",
     "nMoreKeybindingsCompact": "+‏ {count}",
     "name": "שם",
@@ -1870,6 +2003,7 @@
     "triggerPhrase": "ביטוי הפעלה",
     "unknownError": "שגיאה לא ידועה",
     "unknownFile": "קובץ לא ידוע",
+    "unmute": "ביטול השתקה",
     "untitled": "ללא כותרת",
     "update": "עדכון",
     "updateAvailable": "עדכון זמין",
@@ -2409,8 +2543,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "צמתי ליבה מגרסה {version}:",
-    "outdatedVersion": "תהליך עבודה זה נוצר בגרסה חדשה יותר של ComfyUI ({version}). ייתכן שחלק מהצמתים לא יעבדו כראוי.",
-    "outdatedVersionGeneric": "תהליך עבודה זה נוצר בגרסה חדשה יותר של ComfyUI. ייתכן שחלק מהצמתים לא יעבדו כראוי.",
+    "newerVersionRequired": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI (נוכחית: {version}). יש לעדכן כדי להשתמש בכל הצמתים.",
+    "newerVersionRequiredGeneric": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI. יש לעדכן כדי להשתמש בכל הצמתים.",
     "unknownVersion": "לא ידוע"
   },
   "logsTerminal": {
@@ -3058,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "צליל",
@@ -3221,26 +3356,15 @@
     "done": "סיום",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "מתמונה לווידאו · 5 שניות",
-          "title": "הנפישו אותה"
+        "dismiss": "לא עכשיו",
+        "explore": "גלה תבניות",
+        "noTour": {
+          "body": "עיין בתבניות ובחר משהו לבנות.",
+          "title": "יש עוד מאות כאלה"
         },
-        "body": "כל אחד מתחיל מהתמונה שיצרתם זה עתה.",
-        "explore": "עיון בכל התבניות",
-        "fallback": {
-          "body": "עיינו בתבניות ובחרו מה לבנות.",
-          "title": "ועוד מאות כאלה"
-        },
-        "loadFailed": "לא ניתן היה לטעון את התבנית הזו. נסו שוב.",
-        "restyle": {
-          "detail": "מודל שותף · כל תוכנית בתשלום",
-          "title": "שנו סגנון עם Nano Banana"
-        },
-        "title": "הפלט הראשון שלכם. הנה מה הלאה.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "אותה תמונה, יותר פרטים",
-          "title": "הגדילו את הרזולוציה שלה"
+        "ran": {
+          "body": "זה עתה יצרת את הראשון שלך. גלה מה עוד אפשר לבנות.",
+          "title": "זו הייתה אחת ממאות"
         }
       },
       "prompt": {
@@ -4906,8 +5030,10 @@
       "failedCount": "לא ניתן היה לשלוח {count} הזמנה. נסה שוב. | לא ניתן היה לשלוח {count} הזמנות. נסה שוב.",
       "invalidEmailCount": "{count} כתובת דוא\"ל לא תקינה | {count} כתובות דוא\"ל לא תקינות",
       "invitedMessage": "הזמנה נשלחה אל {emails} | הזמנות נשלחו אל {emails}",
+      "pendingInviteCount": "ל־{count} מאנשים אלה כבר יש הזמנה ממתינה. הם ידולגו.",
+      "pendingInviteSingle": "לאדם זה כבר יש הזמנה ממתינה",
       "placeholder": "הזן את כתובת הדוא\"ל של האדם",
-      "seatLimitReached": "ניתן להזמין עד {count} חבר צוות. | ניתן להזמין עד {count} חברי צוות.",
+      "seatLimitExceeded": "סביבת עבודה זו מוגבלת ל־{max} חברים. הסר {overage} כדי להמשיך.",
       "title": "הזמנת אדם לסביבת עבודה זו"
     },
     "inviteUpsellDialog": {
