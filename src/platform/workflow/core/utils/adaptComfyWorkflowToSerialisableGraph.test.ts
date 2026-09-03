@@ -156,7 +156,7 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
     expect(
       adaptComfyWorkflowToSerialisableGraph(workflowWithNamedLength).nodes?.[0]
         ?.widgets_values
-    ).toEqual([1, 'model.safetensors'])
+    ).toEqual(['model.safetensors'])
     expect(workflow.nodes[0].inputs?.[0].type).toEqual(['MODEL', 'LATENT'])
   })
 

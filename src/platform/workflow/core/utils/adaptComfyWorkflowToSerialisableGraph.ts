@@ -216,7 +216,9 @@ function adaptWidgetValues(
     return String(index) === key && index >= 0 && index < length
   })
   if (!hasIndexedEntry && keys.some((key) => key !== 'length')) {
-    return Object.values(values)
+    return Object.entries(values)
+      .filter(([key]) => key !== 'length')
+      .map(([, value]) => value)
   }
   return Array.from({ length }, (_, index) => values[index])
 }
