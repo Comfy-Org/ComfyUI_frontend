@@ -260,7 +260,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       .slice(messagesBeforeReconnect)
       .map(workflowSubscribeStateVector)
       .find((stateVector) => stateVector !== undefined)
-    expect(reconnectSubscribe).toBeTruthy()
+    expect(reconnectSubscribe).toBe(updates.initialStateVector)
 
     const reconnectedWs = await getWebSocket()
     pushEvent(reconnectedWs, agentDocSubscribed())

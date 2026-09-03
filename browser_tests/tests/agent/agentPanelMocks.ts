@@ -72,6 +72,7 @@ export function agentWorkflowUpdates() {
         op_ids: ['agent-e2e-add-node']
       }
     },
+    initialStateVector: encodeBase64(initialStateVector),
     reconnectDelta: {
       type: 'doc_update' as const,
       data: {
