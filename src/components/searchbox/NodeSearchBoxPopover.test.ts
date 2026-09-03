@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
+import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -41,6 +42,8 @@ function createFilter(
 }
 
 describe('NodeSearchBoxPopover', () => {
+  let openModal: HTMLElement | undefined
+
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -123,8 +126,12 @@ describe('NodeSearchBoxPopover', () => {
           NodePreviewCard: true,
           Dialog: { template: '<div><slot /></div>' },
           DialogPortal: { template: '<div><slot /></div>' },
-          DialogOverlay: true,
-          DialogContent: { template: '<div><slot /></div>' }
+          DialogOverlay: {
+            template: '<div data-testid="search-overlay" />'
+          },
+          DialogContent: {
+            template: '<div data-testid="search-content"><slot /></div>'
+          }
         }
       }
     })
@@ -150,6 +157,13 @@ describe('NodeSearchBoxPopover', () => {
 
   beforeEach(() => {
     addNodeOnGraph.mockReturnValue(null)
+  })
+
+  afterEach(() => {
+    if (openModal) {
+      ZIndex.clear(openModal)
+      openModal = undefined
+    }
   })
 
   describe('addFilter duplicate prevention', () => {
@@ -226,6 +240,25 @@ describe('NodeSearchBoxPopover', () => {
     await nextTick()
 
     expect(screen.getByLabelText('filter count')).toHaveTextContent('0')
+  })
+
+  it('opens above an existing lifted dialog', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 3702)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const { pinia } = renderComponent({
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    })
+
+    useSearchBoxStore(pinia).visible = true
+    await nextTick()
+
+    expect(
+      Number(screen.getByTestId('search-overlay').style.zIndex)
+    ).toBeGreaterThan(dialogZIndex)
+    expect(
+      Number(screen.getByTestId('search-content').style.zIndex)
+    ).toBeGreaterThan(dialogZIndex)
   })
 
   describe('addNode ghost flag (FollowCursor setting)', () => {
