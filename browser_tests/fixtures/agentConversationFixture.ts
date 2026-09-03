@@ -91,6 +91,21 @@ class HostDoc {
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
+  // The real host folds client batches into the same doc, so the expected graph must see them.
+  applyClient(ops: unknown[]): string[] {
+    const result = applyOps(
+      this.doc,
+      ops as Parameters<typeof applyOps>[1],
+      this.catalog
+    )
+    this.seq += 1
+    return result.outcomes.flatMap((outcome, index) =>
+      outcome.outcome === 'applied'
+        ? [String((ops[index] as { op_id?: unknown }).op_id ?? index)]
+        : []
+    )
+  }
+
   apply(operations: GraphOperation[]): DocFrame {
     const before = Y.encodeStateVector(this.doc)
     const ops = mintWireOps(operations, {
@@ -250,9 +265,11 @@ class AgentConversationHarness {
       .toBe(THREAD_ID)
   }
 
-  async replayResponse(): Promise<void> {
+  async replayResponse(
+    afterEntry?: (index: number) => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
-    for (const entry of this.conversation.response) {
+    for (const [index, entry] of this.conversation.response.entries()) {
       if (this.replayTiming === 'recorded' && entry.at_ms !== undefined) {
         const wait = entry.at_ms - (Date.now() - startedAt)
         if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
@@ -263,6 +280,7 @@ class AgentConversationHarness {
       }
       await this.waitForSubscribe()
       this.send(this.host.apply(entry.ops))
+      await afterEntry?.(index)
     }
     this.replayElapsedMs = Date.now() - startedAt
   }
@@ -513,9 +531,7 @@ class AgentConversationHarness {
         ops?: unknown
       }
       if (workflow_id === this.conversation.workflow.id && Array.isArray(ops)) {
-        const applied = ops
-          .map((op) => (op as { op_id?: unknown }).op_id)
-          .filter((id): id is string => typeof id === 'string')
+        const applied = this.host.applyClient(ops)
         this.send({
           type: 'doc_ops_result',
           data: {
