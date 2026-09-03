@@ -36,7 +36,9 @@ DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
 PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
 ```
 
-Add `--headed -g <case id>` to watch one.
+Add `--headed -g <case id>` to watch one. Set `TEST_COMFYUI_DIR` to the ComfyUI
+install behind 8188 (or put it in `.env`) so the suite backs up and restores its
+user data.
 
 **2. Run the real agent locally.** Not needed for replay, where the agent's side
 is data. Do it to drive the real model with hot reload while changing agent or
