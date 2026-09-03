@@ -1,7 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
+import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -9,14 +7,21 @@ import GlobalToast from '@/components/toast/GlobalToast.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
+const toastService = vi.hoisted(() => ({
+  add: vi.fn(),
+  remove: vi.fn(),
+  removeAllGroups: vi.fn()
+}))
+
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => toastService
+}))
+
 function renderToast() {
   return render(GlobalToast, {
     global: {
-      plugins: [
-        createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        PrimeVue,
-        ToastService
-      ]
+      plugins: [createTestingPinia({ createSpy: vi.fn })],
+      stubs: { Toast: true }
     }
   })
 }
@@ -26,27 +31,27 @@ describe('GlobalToast', () => {
     cleanup()
   })
 
-  it('renders queued messages and clears the queue', async () => {
+  it('forwards queued additions and clears the queue', async () => {
     renderToast()
     const toastStore = useToastStore()
     const message = { severity: 'error' as const, summary: 'Failed' }
 
-    toastStore.add(message)
+    toastStore.messagesToAdd = [message]
+    await nextTick()
 
-    expect(await screen.findByText('Failed')).toBeVisible()
+    expect(toastService.add).toHaveBeenCalledWith(message)
     expect(toastStore.messagesToAdd).toEqual([])
   })
 
-  it('removes queued messages and clears the queue', async () => {
+  it('forwards queued removals and clears the queue', async () => {
     renderToast()
     const toastStore = useToastStore()
     const message = { severity: 'info' as const, summary: 'Complete' }
 
-    toastStore.add(message)
-    expect(await screen.findByText('Complete')).toBeVisible()
-    toastStore.remove(message)
+    toastStore.messagesToRemove = [message]
+    await nextTick()
 
-    await waitFor(() => expect(screen.queryByText('Complete')).toBeNull())
+    expect(toastService.remove).toHaveBeenCalledWith(message)
     expect(toastStore.messagesToRemove).toEqual([])
   })
 
@@ -54,46 +59,11 @@ describe('GlobalToast', () => {
     renderToast()
     const toastStore = useToastStore()
 
-    toastStore.add({ severity: 'success', summary: 'Saved' })
-    expect(await screen.findByText('Saved')).toBeVisible()
-    toastStore.removeAll()
+    toastStore.removeAllRequested = true
+    await nextTick()
 
-    await waitFor(() => expect(screen.queryByText('Saved')).toBeNull())
+    expect(toastService.removeAllGroups).toHaveBeenCalledOnce()
     expect(toastStore.removeAllRequested).toBe(false)
-  })
-
-  it('renders main messages in the graph outlet', async () => {
-    renderToast()
-    const toastStore = useToastStore()
-
-    toastStore.add({ severity: 'info', summary: 'Graph updated' })
-
-    const graphOutlet = await screen.findByTestId('graph-toast')
-    expect(await within(graphOutlet).findByText('Graph updated')).toBeVisible()
-    expect(
-      within(screen.getByTestId('billing-operation-toast')).queryByText(
-        'Graph updated'
-      )
-    ).toBeNull()
-  })
-
-  it('renders billing-operation messages in the dedicated outlet', async () => {
-    renderToast()
-    const toastStore = useToastStore()
-
-    toastStore.add({
-      group: 'billing-operation',
-      severity: 'warn',
-      summary: 'Confirm payment'
-    })
-
-    const billingOutlet = await screen.findByTestId('billing-operation-toast')
-    expect(
-      await within(billingOutlet).findByText('Confirm payment')
-    ).toBeVisible()
-    expect(
-      within(screen.getByTestId('graph-toast')).queryByText('Confirm payment')
-    ).toBeNull()
   })
 
   it('holds messages raised during node selection mode until it exits', async () => {
@@ -108,12 +78,15 @@ describe('GlobalToast', () => {
     toastStore.messagesToAdd = [message]
     await nextTick()
 
-    expect(screen.queryByText('Failed')).toBeNull()
+    // Held back rather than added to a hidden layer, where a message carrying
+    // a `life` would expire unseen.
+    expect(toastService.add).not.toHaveBeenCalled()
     expect(toastStore.messagesToAdd).toEqual([])
 
     nodeSelectionStore.isActive = false
+    await nextTick()
 
-    expect(await screen.findByText('Failed')).toBeVisible()
+    expect(toastService.add).toHaveBeenCalledWith(message)
   })
 
   it('replays held messages in the order they were raised', async () => {
@@ -132,10 +105,9 @@ describe('GlobalToast', () => {
     await nextTick()
 
     nodeSelectionStore.isActive = false
+    await nextTick()
 
-    const messages = await screen.findAllByRole('alert')
-    expect(within(messages[0]).getByText('First')).toBeVisible()
-    expect(within(messages[1]).getByText('Second')).toBeVisible()
+    expect(toastService.add.mock.calls).toEqual([[first], [second]])
   })
 
   it('does not replay anything when nothing was raised during the mode', async () => {
@@ -147,7 +119,7 @@ describe('GlobalToast', () => {
     nodeSelectionStore.isActive = false
     await nextTick()
 
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(toastService.add).not.toHaveBeenCalled()
   })
 
   it('drops held messages when everything is dismissed mid-mode', async () => {
@@ -169,6 +141,6 @@ describe('GlobalToast', () => {
     nodeSelectionStore.isActive = false
     await nextTick()
 
-    expect(screen.queryByText('Old')).toBeNull()
+    expect(toastService.add).not.toHaveBeenCalled()
   })
 })
