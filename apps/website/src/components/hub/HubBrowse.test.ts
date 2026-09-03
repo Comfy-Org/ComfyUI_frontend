@@ -63,8 +63,8 @@ describe('HubBrowse', () => {
     // 3D is one of the four use cases behind the overflow menu.
     await user.click(screen.getByTestId('hub-use-case-more'))
     await user.click(await screen.findByTestId('hub-use-case-3d'))
-    const lead = screen.getByTestId('hub-models-lead')
-    expect(lead.textContent).toContain('Tripo')
+    const lead = screen.getAllByTestId('hub-models-lead')
+    expect(lead[0].textContent).toContain('Tripo')
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
 
     // Meshy AI and Meshy 7 are one family, so they share a card.

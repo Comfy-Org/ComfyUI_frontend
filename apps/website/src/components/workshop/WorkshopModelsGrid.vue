@@ -210,10 +210,17 @@ function clearFilters() {
 const tabClass = (current: boolean) =>
   cn(
     'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
-    'lg:w-full lg:justify-between lg:rounded-xl lg:border-b-0 lg:px-3 lg:py-2.5',
+    railBeside.value &&
+      'lg:w-full lg:justify-between lg:rounded-xl lg:border-b-0 lg:px-3 lg:py-2.5',
     current
-      ? 'border-primary-comfy-yellow text-primary-warm-white lg:bg-transparency-white-t8'
-      : 'lg:hover:bg-transparency-white-t4 border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+      ? cn(
+          'border-primary-comfy-yellow text-primary-warm-white',
+          railBeside.value && 'lg:bg-transparency-white-t8'
+        )
+      : cn(
+          'border-transparent text-primary-warm-gray hover:text-primary-warm-white',
+          railBeside.value && 'lg:hover:bg-transparency-white-t4'
+        )
   )
 
 const chipClass = (active: boolean) =>
@@ -230,15 +237,23 @@ const menuItemClass =
 
 <template>
   <section
+    :key="version"
     :class="
-      cn('gap-10', !browsing && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]')
+      cn(
+        'gap-10',
+        railBeside && !browsing && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]'
+      )
     "
   >
     <aside
       v-if="!browsing"
-      class="lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto"
+      :class="
+        railBeside &&
+        'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto'
+      "
     >
       <h2
+        v-if="railBeside"
         class="mb-3 hidden text-xs font-bold tracking-wider text-primary-warm-gray uppercase lg:block"
       >
         {{ t(railLabel, locale) }}

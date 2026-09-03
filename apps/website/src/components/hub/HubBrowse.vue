@@ -177,15 +177,8 @@ const filteredModels = computed(() => {
     : [...matches].sort((a, b) => a.name.localeCompare(b.name))
 })
 
-// The lead is one row and never a ragged second one, so each card only shows
-// where its column exists.
-const LEAD_VISIBILITY = [
-  '',
-  'hidden sm:block',
-  'hidden lg:block',
-  'hidden xl:block',
-  'hidden 2xl:block'
-]
+// Models open the All tab, in the same grid as the workflows behind them.
+const LEAD_MODELS = 5
 
 // One card per family: the newest release leads, the rest sit behind it.
 const modelFamilies = computed(() => groupByFamily(filteredModels.value))
@@ -317,38 +310,15 @@ const filteredTemplates = computed(() => {
         </label>
       </template>
 
-      <template #lead>
-        <section
-          v-if="store.activeTab.value === 'all' && modelFamilies.length"
-          class="mb-10"
+      <template v-if="store.activeTab.value === 'all'" #lead>
+        <WorkshopModelCard
+          v-for="family in modelFamilies.slice(0, LEAD_MODELS)"
+          :key="family.key"
+          :model="family.latest"
+          :version-count="family.versions.length"
+          :locale
           data-testid="hub-models-lead"
-        >
-          <h2
-            class="text-content-secondary mb-4 flex items-baseline gap-2 text-xs font-bold tracking-wider uppercase"
-          >
-            {{ t('workshop.hub.kind.models', locale) }}
-          </h2>
-          <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-          >
-            <li
-              v-for="(family, index) in modelFamilies.slice(0, 5)"
-              :key="family.key"
-              :class="LEAD_VISIBILITY[index]"
-            >
-              <WorkshopModelCard
-                :model="family.latest"
-                :version-count="family.versions.length"
-                :locale
-              />
-            </li>
-          </ul>
-          <h2
-            class="text-content-secondary mt-10 mb-4 flex items-baseline gap-2 text-xs font-bold tracking-wider uppercase"
-          >
-            {{ t('workshop.hub.workflows', locale) }}
-          </h2>
-        </section>
+        />
       </template>
 
       <template #models>
