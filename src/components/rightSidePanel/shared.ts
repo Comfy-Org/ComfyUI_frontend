@@ -92,7 +92,7 @@ export function searchWidgetsAndNodes(
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
     nodeId: item.node.id,
-    searchableTitle: item.node.getTitle().toLowerCase()
+    searchableTitle: (item.node.getTitle() ?? item.node.type).toLowerCase()
   }))
 
   const fuseOptions: IFuseOptions<NodeSearchItem> = {

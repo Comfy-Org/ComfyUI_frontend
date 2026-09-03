@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowRef, toRaw, toValue } from 'vue'
+import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
@@ -498,7 +498,7 @@ export const useQueueStore = defineStore('queue', () => {
   // and a single re-fetch fires after the current one completes.
   // This prevents both request spam and UI starvation (where a rapid stream
   // of calls causes every response to be discarded by a stale-request guard).
-  const updateState = reactive({ inFlight: false, dirty: false })
+  const updateState = { inFlight: false, dirty: false }
   const hasDirtyUpdate = () => updateState.dirty
 
   const tasks = computed<TaskItemImpl[]>(

@@ -1338,7 +1338,7 @@ export class LGraphNode
   /**
    * get the title string
    */
-  getTitle(): string {
+  getTitle(): string | undefined {
     return this.title || this.constructor.title
   }
 
@@ -2368,7 +2368,7 @@ export class LGraphNode
       this._collapsed_width = Math.min(
         this.size[0],
         ctx
-          ? cachedMeasureText(ctx, this.getTitle()) +
+          ? cachedMeasureText(ctx, this.getTitle() ?? '') +
               LiteGraph.NODE_TITLE_HEIGHT * 2
           : 0
       )
@@ -3980,7 +3980,8 @@ export class LGraphNode
     }
 
     ctx.font = this.titleFontStyle
-    const title = this.getTitle() + (this.pinned ? '📌' : '')
+    const title =
+      (this.getTitle() ?? `❌ ${this.type}`) + (this.pinned ? '📌' : '')
     if (title) {
       if (selected) {
         ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR

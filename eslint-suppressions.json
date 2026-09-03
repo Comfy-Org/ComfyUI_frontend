@@ -369,11 +369,6 @@
       "count": 1
     }
   },
-  "src/services/colorPaletteService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/services/gateway/registrySearchGateway.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
