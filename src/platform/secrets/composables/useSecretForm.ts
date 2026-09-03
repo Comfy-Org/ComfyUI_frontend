@@ -151,8 +151,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
         credentialOptions.value.find(
           (option) => option.credential_type === selectedCredentialType.value
         ) ?? credentialOptions.value[0]
-      )?.credential_type ??
-      null,
+      ).credential_type,
     set: (value) => {
       selectedCredentialType.value = value
     }

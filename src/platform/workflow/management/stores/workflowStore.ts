@@ -359,7 +359,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const length = openWorkflows.value.length
       const nextIndex = (index + shift + length) % length
       const nextWorkflow = openWorkflows.value[nextIndex]
-      return nextWorkflow ?? null
+      return nextWorkflow
     }
     return null
   }
@@ -384,7 +384,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       if (openWorkflowPathSet.value.has(path)) {
         validPaths.unshift(path)
         const workflow = workflowLookup.value[path]
-        if (workflow) {
+        {
           // Lazy cleanup: keep only valid paths
           tabActivationHistory.value = validPaths
           return workflow
@@ -565,9 +565,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const subgraph = comfyApp.canvas?.subgraph
+    const subgraph = comfyApp.canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
-    if (!comfyApp.canvas) return
 
     isSubgraphActive.value = isSubgraph(subgraph)
   }
@@ -583,7 +582,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     currentGraph: LGraph | Subgraph,
     subgraphNodeIds: string[]
   ): Subgraph[] | undefined => {
-    const [currentPart, ...remainingParts] = subgraphNodeIds
+    const currentPart = subgraphNodeIds.at(0)
+    const remainingParts = subgraphNodeIds.slice(1)
     if (currentPart === undefined) return []
 
     const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
@@ -689,7 +689,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
 
       for (const node of graph._nodes) {
-        if (node.isSubgraphNode() && node.subgraph) {
+        if (node.isSubgraphNode()) {
           const result = findSubgraphPath(node.subgraph, targetUuid, [
             ...path,
             node.id

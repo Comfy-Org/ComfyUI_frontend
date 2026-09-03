@@ -433,9 +433,7 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     const [asset] = results
-    if (!asset) {
-      throw new Error('Expected a root output asset')
-    }
+
     expect(asset.id).toBe(`job-root-${getOutputKey(output)}`)
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')

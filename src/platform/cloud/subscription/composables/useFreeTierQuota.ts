@@ -27,8 +27,8 @@ export const useFreeTierQuota = createSharedComposable(function () {
     () => isCloud && flags.freeTierJobAllowanceEnabled && maxAvailable.value > 0
   )
   const hasInvalidNodes = computed(() => {
-    const rootGraph = app.graph?.rootGraph
-    return rootGraph ? graphCreditsBadges(rootGraph).length > 0 : false
+    const rootGraph = app.graph.rootGraph
+    return graphCreditsBadges(rootGraph).length > 0
   })
   const freeTierExecutionPermitted = computed(
     () => !hasInvalidNodes.value && quotaEnabled.value && available.value > 0

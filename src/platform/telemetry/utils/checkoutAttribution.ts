@@ -130,7 +130,7 @@ async function getGaIdentityField(
 }
 
 async function getGaIdentity(): Promise<GaIdentity | undefined> {
-  const measurementId = asNonEmptyString(window.__CONFIG__?.ga_measurement_id)
+  const measurementId = asNonEmptyString(window.__CONFIG__.ga_measurement_id)
   if (!measurementId) {
     return undefined
   }

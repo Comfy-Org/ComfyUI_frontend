@@ -105,7 +105,7 @@ function parsePublishedAt(value: string | null | undefined): Date | null {
 
 function normalizeShareUrl(shareId: string): string {
   const queryString = `share=${encodeURIComponent(shareId)}`
-  if (typeof window === 'undefined' || !window.location?.origin) {
+  if (typeof window === 'undefined' || !window.location.origin) {
     return `/?${queryString}`
   }
 
@@ -205,7 +205,7 @@ export function useWorkflowShareService() {
     if (!record || !record.shareId || !record.publishedAt) return UNPUBLISHED
 
     let prefill: PublishPrefill | null = record.prefill
-    if (!prefill && record.listed) {
+    if (shouldFetchPrefill(record.listed, prefill)) {
       try {
         prefill = await fetchHubWorkflowPrefill(record.shareId)
       } catch {
@@ -290,4 +290,8 @@ export function useWorkflowShareService() {
     getSharedWorkflow,
     importPublishedAssets
   }
+}
+
+function shouldFetchPrefill(listed: boolean, prefill: PublishPrefill | null) {
+  return listed && !prefill
 }

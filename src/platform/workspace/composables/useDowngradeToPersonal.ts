@@ -118,9 +118,7 @@ export function useDowngradeToPersonal() {
     // isInitialized (status + balance + plans): a balance/plans failure must
     // not permanently force reactivation onto an otherwise-valid, active
     // subscription. Mirrors the same fix in the transition preview component.
-    return (
-      subscription.value === null || (subscription.value?.isCancelled ?? false)
-    )
+    return subscription.value === null || subscription.value.isCancelled
   }
 
   /** Read-only preview so a caller can decide whether to collect reactivation
@@ -214,14 +212,9 @@ export function useDowngradeToPersonal() {
         )
       }
       ensureCanDowngrade()
-      targetTier = preview.new_plan?.tier
-        ? (toTierKey(preview.new_plan.tier) ?? undefined)
-        : undefined
-      targetCycle = preview.new_plan
-        ? preview.new_plan.duration === 'ANNUAL'
-          ? 'yearly'
-          : 'monthly'
-        : undefined
+      targetTier = toTierKey(preview.new_plan.tier) ?? undefined
+      targetCycle =
+        preview.new_plan.duration === 'ANNUAL' ? 'yearly' : 'monthly'
 
       // Catch cancellations visible to billing status before touching
       // membership. Refresh first because the cached value can predate a

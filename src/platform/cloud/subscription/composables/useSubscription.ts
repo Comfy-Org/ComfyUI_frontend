@@ -48,7 +48,7 @@ function useSubscriptionInternal() {
   const isInitialized = ref(false)
 
   const canAccessSubscriptionFeatures = computed(() => {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) return true
+    if (!isCloud || !window.__CONFIG__.subscription_required) return true
 
     return subscriptionStatus.value?.is_active ?? false
   })
@@ -153,10 +153,9 @@ function useSubscriptionInternal() {
       return
     }
 
-    const nextDelay =
-      PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[
-        pendingCheckoutRecoveryAttempt
-      ]
+    const nextDelay = getPendingCheckoutRetryDelay(
+      pendingCheckoutRecoveryAttempt
+    )
 
     if (nextDelay === undefined) {
       return
@@ -282,7 +281,7 @@ function useSubscriptionInternal() {
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
    */
   const isSubscriptionEnabled = (): boolean =>
-    Boolean(isCloud && window.__CONFIG__?.subscription_required)
+    Boolean(isCloud && window.__CONFIG__.subscription_required)
 
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
@@ -533,6 +532,10 @@ function useSubscriptionInternal() {
     handleLearnMore,
     handleInvoiceHistory
   }
+}
+
+function getPendingCheckoutRetryDelay(attempt: number): number | undefined {
+  return PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[attempt]
 }
 
 export const useSubscription = createSharedComposable(useSubscriptionInternal)

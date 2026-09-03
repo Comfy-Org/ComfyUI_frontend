@@ -250,18 +250,16 @@ export function useSettingUI(
     )
   }
 
-  const panels = computed<SettingPanelItem[]>(() =>
-    [
-      aboutPanel,
-      creditsPanel,
-      userPanel,
-      ...visibleWorkspacePanels.value,
-      keybindingPanel,
-      extensionPanel,
-      ...(isDesktop ? [serverConfigPanel] : []),
-      ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
-    ].filter((panel) => panel !== null && panel.component)
-  )
+  const panels = computed<SettingPanelItem[]>(() => [
+    aboutPanel,
+    creditsPanel,
+    userPanel,
+    ...visibleWorkspacePanels.value,
+    keybindingPanel,
+    extensionPanel,
+    ...(isDesktop ? [serverConfigPanel] : []),
+    ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
+  ])
 
   /**
    * The default category to show when the dialog is opened.
@@ -281,7 +279,7 @@ export function useSettingUI(
 
     if (scrollToSettingId) {
       const setting = settingStore.settingsById[scrollToSettingId]
-      if (setting) {
+      {
         const { category } = getSettingInfo(setting)
         const found = settingCategories.value.find((c) => c.label === category)
         if (found) return found
@@ -351,9 +349,7 @@ export function useSettingUI(
           icon:
             child.key === 'workspace'
               ? CATEGORY_ICONS.PlanCredits
-              : (CATEGORY_ICONS[child.key] ??
-                CATEGORY_ICONS[child.label] ??
-                'icon-[lucide--plug]'),
+              : (CATEGORY_ICONS[child.key] ?? CATEGORY_ICONS[child.label]),
           ...(child.key === 'workspace-allowlist' &&
           governanceStore.status === 'ineligible' &&
           governanceStore.providers.length > 0

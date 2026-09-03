@@ -142,7 +142,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       return
     }
 
-    if (defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding)) {
+    if (!defaultKeybinding.equals(userUnsetKeybinding)) {
       unsetKeybinding(defaultKeybinding)
     }
 
@@ -175,10 +175,10 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
     const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
-    if (currentKeybinding?.equals(keybinding)) {
+    if (currentKeybinding.equals(keybinding)) {
       return false
     }
-    if (currentKeybinding) {
+    {
       unsetKeybinding(currentKeybinding)
     }
     addUserKeybinding(keybinding)

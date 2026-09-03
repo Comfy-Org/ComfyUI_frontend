@@ -31,13 +31,13 @@ export function getExecutionContext(): ExecutionContext {
     (metrics, node) => {
       const nodeDef = nodeDefStore.nodeDefsByName[node.type]
       const isCustomNode =
-        nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-      const isApiNode = nodeDef?.api_node
-      const isSubgraph = node.isSubgraphNode?.()
+        nodeDef.nodeSource.type === NodeSourceType.CustomNodes
+      const isApiNode = nodeDef.api_node
+      const isSubgraph = node.isSubgraphNode()
 
       if (isApiNode) {
         metrics.has_api_nodes = true
-        const canonicalName = nodeDef?.name
+        const canonicalName = nodeDef.name
         if (canonicalName && !metrics.api_node_names.includes(canonicalName)) {
           metrics.api_node_names.push(canonicalName)
         }
@@ -46,7 +46,7 @@ export function getExecutionContext(): ExecutionContext {
       const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
-        const trackingName = nodeDef?.name ?? node.type
+        const trackingName = nodeDef.name
         if (!metrics.toolkit_node_names.includes(trackingName)) {
           metrics.toolkit_node_names.push(trackingName)
         }

@@ -161,8 +161,8 @@ export function usePricingTableUrlLoader() {
           error
         )
       }
-      if (!permissions.value.canManageSubscription) return
-      if (!teamCreditStops.value) {
+
+      {
         subscriptionDialog.showPricingTable({
           reason: 'deep_link',
           planMode: 'team'
@@ -199,7 +199,6 @@ export function usePricingTableUrlLoader() {
         : undefined
 
     if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
-    if (!permissions.value.canManageSubscription) return
 
     subscriptionDialog.showPricingTable({
       reason: 'deep_link',

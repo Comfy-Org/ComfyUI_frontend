@@ -20,15 +20,15 @@ export function useFeatureUsageTracker(featureId: string) {
 
   const usage = computed(() => usageData.value[featureId])
 
-  const useCount = computed(() => usage.value?.useCount ?? 0)
+  const useCount = computed(() => usage.value.useCount)
 
   function trackUsage() {
     const now = Date.now()
     const existing = usageData.value[featureId]
 
     usageData.value[featureId] = {
-      useCount: (existing?.useCount ?? 0) + 1,
-      firstUsed: existing?.firstUsed ?? now,
+      useCount: existing.useCount + 1,
+      firstUsed: existing.firstUsed,
       lastUsed: now
     }
   }

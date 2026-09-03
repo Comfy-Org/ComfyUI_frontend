@@ -131,12 +131,6 @@ export function useSettingSearch() {
           : info.subCategory
 
       if (activeCategory === null || activeCategory.label === info.category) {
-        if (!groupedSettings[groupKey]) {
-          groupedSettings[groupKey] = {
-            category: info.category,
-            settings: []
-          }
-        }
         groupedSettings[groupKey].settings.push(setting)
       }
     })
