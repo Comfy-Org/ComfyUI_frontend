@@ -2196,6 +2196,43 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('renameWorkflow', () => {
+    it('keeps run errors attached to a renamed workflow', async () => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const workflowStore = useWorkflowStore()
+      const service = useWorkflowService()
+      const executionErrorStore = useExecutionErrorStore()
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      const oldPath = 'workflows/original.json'
+      const newPath = 'workflows/renamed.json'
+      const promptError = {
+        type: 'execution',
+        message: 'prompt failed',
+        details: ''
+      }
+      const workflow = createModeTestWorkflow({ path: oldPath })
+      workflow.changeTracker.activeState.id = graphId
+
+      vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
+        async (renamedWorkflow, path) => {
+          renamedWorkflow.updatePath(path)
+        }
+      )
+      executionErrorStore.setActiveGraph(graphId, oldPath)
+      executionErrorStore.recordPromptError(promptError)
+
+      await service.renameWorkflow(workflow, newPath)
+
+      expect(executionErrorStore.captureRunErrorKey()).toBe(
+        executionErrorStore.runErrorKey(graphId, newPath)
+      )
+      executionErrorStore.setActiveGraph(graphId, newPath)
+      expect(executionErrorStore.lastPromptError).toEqual(promptError)
+      executionErrorStore.setActiveGraph(graphId, oldPath)
+      expect(executionErrorStore.lastPromptError).toBeNull()
+    })
+  })
+
   describe('saveWorkflowAs', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let service: ReturnType<typeof useWorkflowService>

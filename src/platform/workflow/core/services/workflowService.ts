@@ -546,7 +546,12 @@ export const useWorkflowService = () => {
   }
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+    const oldPath = workflow.path
+    const graphId = workflow.activeState?.id
     await workflowStore.renameWorkflow(workflow, newPath)
+    if (graphId) {
+      useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
   }
 
   /**
