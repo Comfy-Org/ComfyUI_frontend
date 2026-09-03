@@ -71,6 +71,7 @@
     "test:unit": "vitest run",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
+    "typecheck:build": "vue-tsc --project build/tsconfig.json",
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
     "typecheck:tools": "vue-tsc --project tools/tsconfig.json",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
