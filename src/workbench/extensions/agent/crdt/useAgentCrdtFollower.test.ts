@@ -647,6 +647,17 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('does not reconcile after a frame the adapter skipped', () => {
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(status().outcomes.skipped).toBe(1)
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
     it('skips the reconcile while no graph exists', () => {
       // Default getGraph (no override) always returns null — mirrors the
       // panel mounting before the root graph exists.

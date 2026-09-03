@@ -344,6 +344,12 @@ describe('reconcileAgentAdapters', () => {
       ).toBeDefined()
       expect(graph._nodes).toHaveLength(0)
       expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+      // The remote layout entry was written before add() ran and the throw
+      // happens before `LGraph.add()` attaches its own layout, so rollback
+      // must leave it in place for the retry.
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
+      ).toBeDefined()
     })
 
     it('retries a failed add on the next reconcile', () => {
@@ -435,6 +441,20 @@ describe('reconcileAgentAdapters', () => {
       await settle()
 
       expect(graph._nodes).toHaveLength(0)
+      expect(minted).toEqual([])
+    })
+
+    it('retries after onAdded() throws without echoing a local add', async () => {
+      seedAgentAddedNode(graph, 1, 'throws-on-added')
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      vi.spyOn(ThrowsOnAddedNode.prototype, 'onAdded').mockImplementation(
+        () => {}
+      )
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      await settle()
+
+      expect(graph._nodes).toHaveLength(1)
       expect(minted).toEqual([])
     })
 

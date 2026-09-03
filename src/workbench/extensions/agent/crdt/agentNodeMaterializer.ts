@@ -38,6 +38,10 @@ export type MaterializableGraph = Pick<
  * remote delete leaves a node bound to nothing. All three are derived from
  * store state here, without the op layer telling us which ids changed.
  *
+ * Only the scope of `graph` is reconciled. The follower passes the root graph,
+ * which matches the op layer: remote operations are applied against the root
+ * scope, so subgraph-owned nodes are neither adopted nor detached here.
+ *
  * @returns ids that received a new live node.
  */
 export function reconcileAgentAdapters(graph: MaterializableGraph): NodeId[] {
