@@ -446,12 +446,12 @@ export class AssetsSidebarTab extends SidebarTab {
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
   async dismissToasts() {
-    const closeButtons = this.page.locator('.p-toast-close-button')
+    const closeButtons = this.page.getByTestId('toast-close')
     for (const btn of await closeButtons.all()) {
       await btn.click().catch(() => {})
     }
     // Wait for all toast elements to fully animate out and detach from DOM
-    await expect(this.page.locator('.p-toast-message'))
+    await expect(this.page.getByTestId('toast'))
       .toHaveCount(0)
       .catch(() => {})
   }

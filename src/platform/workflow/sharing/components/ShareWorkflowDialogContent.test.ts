@@ -31,9 +31,16 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
+const mockToast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  loading: vi.fn(),
+  custom: vi.fn()
+}))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => mockToast
 }))
 
@@ -490,10 +497,9 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).toContain('Create link')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to load publish status'
-      })
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'Failed to load publish status'
+      )
     })
 
     it('shows error toast when publishWorkflow rejects', async () => {
@@ -511,10 +517,8 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Publish failed'
+      expect(mockToast.error).toHaveBeenCalledWith('Error', {
+        description: 'Publish failed'
       })
     })
 

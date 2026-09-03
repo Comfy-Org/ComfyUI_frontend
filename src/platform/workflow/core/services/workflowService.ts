@@ -4,7 +4,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import {
   normalizePendingWarnings,
   updatePendingWarnings
@@ -113,7 +113,7 @@ function queueWorkflowLoad<T>(
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
@@ -121,10 +121,8 @@ export const useWorkflowService = () => {
   const workflowDraftStore = useWorkflowDraftStoreV2()
 
   const showFailedToSaveDraftToast = () => {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('toastMessages.failedToSaveDraft')
+    toastStore.error(t('g.error'), {
+      description: t('toastMessages.failedToSaveDraft')
     })
   }
 
@@ -295,15 +293,14 @@ export const useWorkflowService = () => {
         await deleteWorkflow(existing, true)
       }
       await renameWorkflow(workflow, expectedPath)
-      toastStore.add({
-        severity: 'info',
-        summary: t(
+      toastStore.info(
+        t(
           isApp
             ? 'workflowService.savedAsApp'
             : 'workflowService.savedAsWorkflow'
         ),
-        life: 3000
-      })
+        { duration: 3000 }
+      )
     }
 
     await workflowStore.saveWorkflow(workflow)
@@ -562,11 +559,7 @@ export const useWorkflowService = () => {
     }
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
-      toastStore.add({
-        severity: 'info',
-        summary: t('sideToolbar.workflowTab.deleted'),
-        life: 1000
-      })
+      toastStore.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
     return true
   }

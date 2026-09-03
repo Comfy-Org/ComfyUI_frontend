@@ -5,13 +5,18 @@ import { createI18n } from 'vue-i18n'
 
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 
-const mockToastAdd = vi.fn()
+const mockToastAdd = vi.fn((..._args: unknown[]) => 42)
 const mockToastRemove = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd,
-    remove: mockToastRemove
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args),
+    dismiss: mockToastRemove
   })
 }))
 
@@ -72,12 +77,7 @@ describe('useReconnectingNotification', () => {
     onReconnecting()
     vi.advanceTimersByTime(2000)
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Reconnecting'
-      })
-    )
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Reconnecting')
   })
 
   it('suppresses toast when reconnected before delay expires', () => {
@@ -101,18 +101,11 @@ describe('useReconnectingNotification', () => {
 
     onReconnected()
 
-    expect(mockToastRemove).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Reconnecting'
-      })
-    )
+    expect(mockToastRemove).toHaveBeenCalledWith(42)
     expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'success',
-        summary: 'Reconnected',
-        life: 2000
-      })
+      'success',
+      'Reconnected',
+      expect.objectContaining({ duration: 2000 })
     )
   })
 
@@ -177,9 +170,7 @@ describe('useReconnectingNotification', () => {
 
       // Extended delay (5000ms) elapses from the point visibility was regained.
       vi.advanceTimersByTime(3100)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error', summary: 'Reconnecting' })
-      )
+      expect(mockToastAdd).toHaveBeenCalledWith('error', 'Reconnecting')
     })
 
     it('avoids the reconnecting toast when reconnection completes shortly after refocus', async () => {
@@ -208,9 +199,7 @@ describe('useReconnectingNotification', () => {
       onReconnecting()
       vi.advanceTimersByTime(2000) // base delay again, not the extended one
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error', summary: 'Reconnecting' })
-      )
+      expect(mockToastAdd).toHaveBeenCalledWith('error', 'Reconnecting')
     })
   })
 })

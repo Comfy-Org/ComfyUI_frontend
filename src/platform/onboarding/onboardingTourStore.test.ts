@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 
@@ -382,10 +382,10 @@ describe('onboardingTourStore', () => {
       skip_reason: 'target_timeout'
     })
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Something went wrong showing this tour'
+        kind: 'error',
+        description: 'Something went wrong showing this tour'
       })
     )
   })
@@ -415,7 +415,7 @@ describe('onboardingTourStore', () => {
     store.next()
     await vi.advanceTimersByTimeAsync(3000)
 
-    expect(useToastStore().messagesToAdd).toHaveLength(1)
+    expect(useToast().toasts).toHaveLength(1)
   })
 
   it('does not toast or double-report when the user skips during a deferred wait', async () => {
@@ -433,7 +433,7 @@ describe('onboardingTourStore', () => {
     )
     expect(skipped).toHaveLength(1)
     expect(skipped[0]?.[1]).toMatchObject({ skip_reason: 'user' })
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
   })
 
   it('ends an active tour without the seen-flag when its trigger stops holding', async () => {
@@ -468,7 +468,7 @@ describe('onboardingTourStore', () => {
     enterApp('graph', true)
     await vi.advanceTimersByTimeAsync(8000)
 
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
     const skipReasons = telemetry.track.mock.calls
       .filter(([stage]) => stage === 'skipped')
       .map(([, meta]) => meta.skip_reason)
@@ -695,7 +695,7 @@ describe('onboardingTourStore', () => {
 
     expect(store.activeTour).toBeNull()
     expect(
-      useToastStore().messagesToAdd,
+      useToast().toasts,
       'leaving app mode is an ordinary thing to do, so it must not read as an error'
     ).toEqual([])
     const skipped = telemetry.track.mock.calls.findLast(
@@ -818,7 +818,7 @@ describe('onboardingTourStore', () => {
         seenTours(),
         'a tour cut short by a failure must be offered again'
       ).not.toContain('appMode')
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
+      expect(useToast().toasts).toHaveLength(1)
     })
 
     it('reports no step_shown until onEnter settles', async () => {
@@ -885,7 +885,7 @@ describe('onboardingTourStore', () => {
         store.step,
         'a superseded attempt must not end the tour that replaced it'
       ).not.toBeNull()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       attempts.forEach((attempt) => attempt.settle())
       await nextTick()
     })
@@ -914,7 +914,7 @@ describe('onboardingTourStore', () => {
         store.step,
         'Back is a plain navigation, not a reason to end the tour'
       ).not.toBeNull()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       expect(
         telemetry.track.mock.calls.filter(([stage]) => stage === 'skipped')
       ).toHaveLength(0)

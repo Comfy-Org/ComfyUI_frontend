@@ -13,7 +13,7 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
@@ -419,7 +419,7 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
 }
 
 export function useNodeReplacement() {
-  const toastStore = useToastStore()
+  const toastStore = useToast()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
@@ -503,20 +503,19 @@ export function useNodeReplacement() {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
 
-        toastStore.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('nodeReplacement.replacedAllNodes', {
+        toastStore.success(t('g.success'), {
+          description: t('nodeReplacement.replacedAllNodes', {
             count: replacedTypes.length
           }),
-          life: 3000
+          duration: 3000
         })
       }
       if (replacementFailed) {
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error', 'Error'),
-          detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+        toastStore.error(t('g.error', 'Error'), {
+          description: t(
+            'nodeReplacement.replaceFailed',
+            'Failed to replace nodes'
+          )
         })
       }
     } catch (error) {
@@ -525,10 +524,11 @@ export function useNodeReplacement() {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error', 'Error'),
-        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+      toastStore.error(t('g.error', 'Error'), {
+        description: t(
+          'nodeReplacement.replaceFailed',
+          'Failed to replace nodes'
+        )
       })
       return replacedTypes
     } finally {

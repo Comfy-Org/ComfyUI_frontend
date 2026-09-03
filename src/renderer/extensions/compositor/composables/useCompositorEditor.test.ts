@@ -17,8 +17,15 @@ const { showDialog, toastAdd } = vi.hoisted(() => ({
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ showDialog })
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => toastAdd('success', ...args),
+    error: (...args: unknown[]) => toastAdd('error', ...args),
+    info: (...args: unknown[]) => toastAdd('info', ...args),
+    warning: (...args: unknown[]) => toastAdd('warning', ...args),
+    loading: (...args: unknown[]) => toastAdd('loading', ...args),
+    custom: (...args: unknown[]) => toastAdd('custom', ...args)
+  })
 }))
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual('vue-i18n')
@@ -39,10 +46,9 @@ describe('useCompositorEditor', () => {
     useCompositorEditor().openCompositorEditor(node)
 
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'compositor.runWorkflowFirst' })
     )
     expect(showDialog).not.toHaveBeenCalled()
   })
@@ -55,10 +61,9 @@ describe('useCompositorEditor', () => {
     useCompositorEditor().openCompositorEditor(node)
 
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'compositor.runWorkflowFirst' })
     )
     expect(showDialog).not.toHaveBeenCalled()
   })

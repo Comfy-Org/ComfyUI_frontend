@@ -107,9 +107,14 @@ vi.mock('@/stores/dialogStore', () => ({
   }))
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: vi.fn(() => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   }))
 }))
 
@@ -226,8 +231,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'error'
         )
       )
       expect(mockTrackCancellation).not.toHaveBeenCalledWith(
@@ -283,9 +288,10 @@ describe('CancelSubscriptionDialogContent', () => {
 
       await waitFor(() =>
         expect(mockToastAdd).toHaveBeenCalledWith(
+          'error',
+          expect.any(String),
           expect.objectContaining({
-            severity: 'error',
-            detail: 'Subscription cancellation timed out'
+            description: 'Subscription cancellation timed out'
           })
         )
       )
@@ -307,8 +313,8 @@ describe('CancelSubscriptionDialogContent', () => {
         })
       )
       expect(mockFetchStatus).toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
+      expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+        'success'
       )
     })
 
@@ -378,8 +384,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'success' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'success'
         )
       )
       expect(mockCloseDialog).toHaveBeenCalledWith({

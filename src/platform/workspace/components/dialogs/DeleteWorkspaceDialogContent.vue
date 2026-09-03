@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -76,10 +76,8 @@ async function onDelete() {
     window.location.reload()
   } catch (error) {
     console.error('[DeleteWorkspaceDialog] Failed to delete workspace:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToDeleteWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspacePanel.toast.failedToDeleteWorkspace'), {
+      description: error instanceof Error ? error.message : t('g.unknownError')
     })
   } finally {
     loading.value = false

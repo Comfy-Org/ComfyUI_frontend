@@ -196,7 +196,7 @@ vi.mock(
   '@/platform/workspace/components/toasts/InviteAcceptedToast.vue',
   () => stubModule
 )
-vi.mock('@/components/toast/GlobalToast.vue', () => stubModule)
+vi.mock('@/components/ui/toast/Toaster.vue', () => stubModule)
 vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
 vi.mock('@/components/MenuHamburger.vue', () => stubModule)
 vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)

@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { api } from '../../scripts/api'
@@ -123,7 +123,7 @@ app.registerExtension({
         capture()
       } else if (!node.imgs?.length) {
         const err = `No webcam image captured`
-        useToastStore().addAlert(err)
+        useToast().warning('Alert', { description: err })
         throw new Error(err)
       }
 
@@ -142,7 +142,7 @@ app.registerExtension({
       })
       if (resp.status !== 200) {
         const err = `Error uploading camera image: ${resp.status} - ${resp.statusText}`
-        useToastStore().addAlert(err)
+        useToast().warning('Alert', { description: err })
         throw new Error(err)
       }
       const data = await resp.json()

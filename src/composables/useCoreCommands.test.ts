@@ -164,8 +164,15 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn(() => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  }))
 }))
 
 const mockAssetBrowse = vi.hoisted(() =>
@@ -754,8 +761,8 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
       expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+        'error'
       )
     })
 
@@ -789,8 +796,8 @@ describe('useCoreCommands', () => {
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'warning'
         )
       }
     )
@@ -884,8 +891,8 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+        'error'
       )
     })
   })

@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -138,10 +138,8 @@ async function onConfirmCancel() {
     if (!shouldUseWorkspaceBilling.value) {
       telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
     }
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.cancelDialog.failed'),
-      detail: errorMessage ?? t('g.unknownError')
+    toast.error(t('subscription.cancelDialog.failed'), {
+      description: errorMessage ?? t('g.unknownError')
     })
     isLoading.value = false
     return
@@ -154,11 +152,7 @@ async function onConfirmCancel() {
     // Cancellation already succeeded; stale local subscription status should not report failure.
   }
   dialogStore.closeDialog({ key: 'cancel-subscription' })
-  toast.add({
-    severity: 'success',
-    summary: t('subscription.cancelSuccess'),
-    life: 5000
-  })
+  toast.success(t('subscription.cancelSuccess'), { duration: 5000 })
   isLoading.value = false
 }
 </script>

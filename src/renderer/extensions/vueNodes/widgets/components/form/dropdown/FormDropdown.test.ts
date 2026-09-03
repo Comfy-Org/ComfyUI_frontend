@@ -16,9 +16,9 @@ function createItem(id: string, name: string): FormDropdownItem {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    addAlert: vi.fn()
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    warning: vi.fn()
   })
 }))
 

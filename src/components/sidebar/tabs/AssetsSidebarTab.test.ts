@@ -89,8 +89,15 @@ vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
   resolveOutputAssetItems: vi.fn(async () => [folderAsset])
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    custom: vi.fn()
+  })
 }))
 
 const i18n = createI18n({

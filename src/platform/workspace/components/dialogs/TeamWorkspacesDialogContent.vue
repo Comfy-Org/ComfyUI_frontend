@@ -135,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -190,10 +190,8 @@ async function handleSwitch(workspaceId: string) {
     await switchWorkspace(workspaceId)
     dialogStore.closeDialog({ key: DIALOG_KEY })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspaceSwitcher.failedToSwitch'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspaceSwitcher.failedToSwitch'), {
+      description: error instanceof Error ? error.message : t('g.unknownError')
     })
   }
 }
@@ -206,20 +204,18 @@ async function onCreate() {
     try {
       await workspaceStore.createWorkspace(name)
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('workspacePanel.toast.failedToCreateWorkspace'), {
+        description:
+          error instanceof Error ? error.message : t('g.unknownError')
       })
       return
     }
     try {
       await onConfirm?.(name)
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('teamWorkspacesDialog.confirmCallbackFailed'), {
+        description:
+          error instanceof Error ? error.message : t('g.unknownError')
       })
     }
     dialogStore.closeDialog({ key: DIALOG_KEY })

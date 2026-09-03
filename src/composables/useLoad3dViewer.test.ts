@@ -7,7 +7,7 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -15,8 +15,8 @@ vi.mock('@/services/load3dService', () => ({
   useLoad3dService: vi.fn()
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn()
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn()
 }))
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
@@ -77,7 +77,7 @@ describe('useLoad3dViewer', () => {
   let mockLoad3d: Partial<Load3d>
   let mockSourceLoad3d: Partial<Load3d>
   let mockLoad3dService: ReturnType<typeof useLoad3dService>
-  let mockToastStore: ReturnType<typeof useToastStore>
+  let mockToastStore: ReturnType<typeof useToast>
   let mockNode: LGraphNode
 
   beforeEach(() => {
@@ -195,11 +195,9 @@ describe('useLoad3dViewer', () => {
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
     mockToastStore = {
-      addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
-    vi.mocked(useToastStore).mockReturnValue(mockToastStore)
+      warning: vi.fn()
+    } as Partial<ReturnType<typeof useToast>> as ReturnType<typeof useToast>
+    vi.mocked(useToast).mockReturnValue(mockToastStore)
   })
 
   describe('initialization', () => {
@@ -260,9 +258,9 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToInitializeLoad3dViewer'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToInitializeLoad3dViewer'
+      })
     })
   })
 
@@ -282,9 +280,9 @@ describe('useLoad3dViewer', () => {
       viewer.backgroundColor.value = '#ff0000'
       await nextTick()
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToUpdateBackgroundColor'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToUpdateBackgroundColor'
+      })
     })
   })
 
@@ -312,9 +310,9 @@ describe('useLoad3dViewer', () => {
 
       await viewer.exportModel('glb')
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel'
+      })
     })
 
     it('should not export when load3d is not initialized', async () => {
@@ -613,9 +611,9 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
       await viewer.handleBackgroundImageUpdate(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToUploadBackgroundImage'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToUploadBackgroundImage'
+      })
     })
 
     it('should work in standalone mode without a node', async () => {
@@ -682,9 +680,9 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'whatever.glb')
       await viewer.handleModelDrop(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.no3dScene'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.no3dScene'
+      })
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
 
@@ -699,9 +697,9 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'whatever.glb')
       await viewer.handleModelDrop(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.fileUploadFailed'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.fileUploadFailed'
+      })
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
   })

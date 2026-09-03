@@ -62,8 +62,15 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mocks.toastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: mocks.toastAdd,
+    error: mocks.toastAdd,
+    info: mocks.toastAdd,
+    warning: mocks.toastAdd,
+    loading: mocks.toastAdd,
+    custom: mocks.toastAdd
+  })
 }))
 
 const i18n = createI18n({

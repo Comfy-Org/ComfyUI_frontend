@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import OAuthLayoutView from '@/platform/cloud/onboarding/components/OAuthLayoutView.vue'
 
-vi.mock('@/components/toast/GlobalToast.vue', () => ({
+vi.mock('@/components/ui/toast/Toaster.vue', () => ({
   default: { template: '<div />' }
 }))
 

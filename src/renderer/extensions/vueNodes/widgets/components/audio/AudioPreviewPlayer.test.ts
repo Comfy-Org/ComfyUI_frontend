@@ -8,8 +8,15 @@ import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/component
 
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
 }))
 
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -75,10 +82,8 @@ describe('AudioPreviewPlayer', () => {
       renderPlayer('http://example.com/audio.mp3')
       await user.click(screen.getByRole('button', { name: 'g.downloadAudio' }))
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error'
-        })
+      expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+        'error'
       )
 
       vi.mocked(downloadFile).mockReset()

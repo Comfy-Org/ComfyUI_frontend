@@ -10,7 +10,7 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import {
   getResourceURL,
   splitFilePath
@@ -82,12 +82,14 @@ async function uploadFile(
       }
       return true
     } else {
-      useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+      useToast().warning('Alert', {
+        description: resp.status + ' - ' + resp.statusText
+      })
       return false
     }
   } catch (error) {
     // @ts-expect-error fixme ts strict error
-    useToastStore().addAlert(error)
+    useToast().warning('Alert', { description: error })
     return false
   }
 }
@@ -247,7 +249,9 @@ app.registerExtension({
           if (!files?.length) return files
 
           if (node.isUploading) {
-            useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+            useToast().warning('Alert', {
+              description: t('g.uploadAlreadyInProgress')
+            })
             return []
           }
 
@@ -344,7 +348,7 @@ app.registerExtension({
           const audioSrc = audioUIWidget.element.src
 
           if (!audioSrc) {
-            useToastStore().addAlert(t('g.noAudioRecorded'))
+            useToast().warning('Alert', { description: t('g.noAudioRecorded') })
             return ''
           }
 
@@ -424,7 +428,9 @@ app.registerExtension({
                 }
               } catch (err) {
                 console.error('Error accessing microphone:', err)
-                useToastStore().addAlert(t('g.micPermissionDenied'))
+                useToast().warning('Alert', {
+                  description: t('g.micPermissionDenied')
+                })
 
                 if (mediaRecorder) {
                   try {

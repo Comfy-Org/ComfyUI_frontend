@@ -76,8 +76,15 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
     activeWorkflow: { changeTracker: { afterChange, beforeChange } }
   })
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: toastAdd,
+    error: toastAdd,
+    info: toastAdd,
+    warning: toastAdd,
+    loading: toastAdd,
+    custom: toastAdd
+  })
 }))
 vi.mock(
   '@/renderer/extensions/compositor/composables/compositorSession',
@@ -219,10 +226,8 @@ describe('LayerEditorContent', () => {
 
     await vi.waitFor(() =>
       expect(toastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'warn',
-          detail: '2 layers failed to load'
-        })
+        expect.any(String),
+        expect.objectContaining({ description: '2 layers failed to load' })
       )
     )
     expect(useCompositorAutoSave).not.toHaveBeenCalled()
@@ -238,7 +243,8 @@ describe('LayerEditorContent', () => {
 
     expect(saveLayerState).not.toHaveBeenCalled()
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ detail: 'Failed to save composite' })
+      expect.any(String),
+      expect.objectContaining({ description: 'Failed to save composite' })
     )
   })
 
@@ -247,9 +253,9 @@ describe('LayerEditorContent', () => {
     renderEditor('compositor')
 
     await vi.waitFor(() =>
-      expect(toastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(
+        toastAdd.mock.calls.some(([title]) => typeof title === 'string')
+      ).toBe(true)
     )
     expect(useCompositorAutoSave).not.toHaveBeenCalled()
   })

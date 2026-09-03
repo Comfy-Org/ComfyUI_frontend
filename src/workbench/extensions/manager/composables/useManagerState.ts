@@ -3,7 +3,7 @@ import { computed, readonly, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -28,11 +28,9 @@ let incompatibleToastShown = false
 const showIncompatibleToast = (): void => {
   if (incompatibleToastShown) return
   incompatibleToastShown = true
-  useToastStore().add({
-    severity: 'warn',
-    summary: t('manager.incompatibleVersion.title'),
-    detail: t('manager.incompatibleVersion.message'),
-    life: 15000
+  useToast().warning(t('manager.incompatibleVersion.title'), {
+    description: t('manager.incompatibleVersion.message'),
+    duration: 15000
   })
 }
 
@@ -240,10 +238,8 @@ export function useManagerState() {
         } catch {
           // If legacy command doesn't exist
           if (options?.showToastOnLegacyError !== false) {
-            useToastStore().add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.legacyMenuNotAvailable')
+            useToast().error(t('g.error'), {
+              description: t('manager.legacyMenuNotAvailable')
             })
           }
           // Fallback to extensions panel if not showing toast
@@ -256,10 +252,8 @@ export function useManagerState() {
 
       case ManagerUIState.NEW_UI:
         if (options?.isLegacyOnly) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable')
+          useToast().error(t('g.error'), {
+            description: t('manager.legacyMenuNotAvailable')
           })
         } else {
           managerDialog.show(options?.initialTab, options?.initialPackId)

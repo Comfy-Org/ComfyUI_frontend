@@ -51,7 +51,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -90,7 +90,7 @@ import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
-const toast = useToastStore()
+const toast = useToast()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -632,7 +632,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
-  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+  else toast.info(t('agent.copyUnavailable'))
 }
 
 const coachStep: CoachStep = {
@@ -812,8 +812,7 @@ const attachment = useAttachment({
   },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
-  onError: (message) =>
-    toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onError: (message) => toast.warning(message, { duration: 5000 }),
   stage: (staged) => panelRef.value?.addAttachment(staged),
   update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
   remove: (id) => panelRef.value?.removeAttachment(id)
@@ -906,11 +905,7 @@ function onPanelDragLeave(): void {
 async function attachDroppedAsset(event: DragEvent): Promise<void> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
     return
   }
 
@@ -928,12 +923,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+  if (!file) toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
 }
 
 function onPanelDragOver(event: DragEvent): void {

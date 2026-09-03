@@ -39,8 +39,15 @@ vi.mock('@/services/litegraphService', () => ({
   }))
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn(() => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  }))
 }))
 
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
@@ -314,9 +321,10 @@ describe('useNodeDragToCanvas', () => {
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
       expect(mockToastAdd).toHaveBeenCalledWith(
+        'warning',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'warn',
-          detail: 'assetBrowser.failedToSetModelValue'
+          description: 'assetBrowser.failedToSetModelValue'
         })
       )
       expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -347,9 +355,10 @@ describe('useNodeDragToCanvas', () => {
       )
 
       expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: 'assetBrowser.failedToCreateNode'
+          description: 'assetBrowser.failedToCreateNode'
         })
       )
     })

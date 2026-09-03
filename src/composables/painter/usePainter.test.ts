@@ -35,9 +35,9 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => {
-  const store = { addAlert: vi.fn() }
-  return { useToastStore: () => store }
+vi.mock('@/components/ui/toast', () => {
+  const store = { warning: vi.fn() }
+  return { useToast: () => store }
 })
 
 vi.mock('@/stores/nodeOutputStore', () => {

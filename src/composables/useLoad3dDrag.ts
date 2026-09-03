@@ -3,7 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 interface UseLoad3dDragOptions {
   onModelDrop: (file: File) => void | Promise<void>
@@ -56,7 +56,9 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
     if (modelFile) {
       await options.onModelDrop(modelFile)
     } else {
-      useToastStore().addAlert(t('load3d.unsupportedFileType'))
+      useToast().warning('Alert', {
+        description: t('load3d.unsupportedFileType')
+      })
     }
   }
 

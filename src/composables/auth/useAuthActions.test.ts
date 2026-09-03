@@ -22,7 +22,12 @@ const mockAuthStore = vi.hoisted(() => ({
 }))
 
 const mockToastStore = vi.hoisted(() => ({
-  add: vi.fn()
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  loading: vi.fn(),
+  custom: vi.fn()
 }))
 
 const mockWorkflowStore = vi.hoisted(() => ({
@@ -90,8 +95,8 @@ vi.mock('@/composables/billing/usePendingTopup', () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => mockToastStore)
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn(() => mockToastStore)
 }))
 
 vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
@@ -374,10 +379,8 @@ describe('useAuthActions auth flow error telemetry', () => {
       error_code: 'auth/user-not-found',
       auth_action: 'email_sign_in'
     })
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.auth/user-not-found'
+    expect(mockToastStore.error).toHaveBeenCalledWith('g.error', {
+      description: 'auth.errors.auth/user-not-found'
     })
   })
 
@@ -441,9 +444,16 @@ describe('useAuthActions.reportError', () => {
 
       reportError(new FirebaseError(code, 'raw firebase'))
 
-      expect(mockToastStore.add).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: `auth.errors.${code}` })
+      const isPopupPermissionCode = popupPermissionCodes.some(
+        (popupCode) => popupCode === code
       )
+      const toastMethod = isPopupPermissionCode
+        ? mockToastStore.warning
+        : mockToastStore.error
+      const title = isPopupPermissionCode ? 'g.warning' : 'g.error'
+      expect(toastMethod).toHaveBeenCalledWith(title, {
+        description: `auth.errors.${code}`
+      })
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
@@ -475,10 +485,8 @@ describe('useAuthActions.reportError', () => {
       )
     )
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.signupBlocked'
+    expect(mockToastStore.error).toHaveBeenCalledWith('g.error', {
+      description: 'auth.errors.signupBlocked'
     })
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
@@ -490,10 +498,8 @@ describe('useAuthActions.reportError', () => {
       new FirebaseError('auth/internal-error', 'rejected: SIGNUP_BLOCKED')
     )
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.signupBlocked'
+    expect(mockToastStore.error).toHaveBeenCalledWith('g.error', {
+      description: 'auth.errors.signupBlocked'
     })
   })
 
@@ -502,10 +508,8 @@ describe('useAuthActions.reportError', () => {
 
     reportError(new FirebaseError('auth/some-new-code', 'raw firebase'))
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.generic'
+    expect(mockToastStore.error).toHaveBeenCalledWith('g.error', {
+      description: 'auth.errors.generic'
     })
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
@@ -517,7 +521,7 @@ describe('useAuthActions.reportError', () => {
     reportError(networkError)
 
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
-    expect(mockToastStore.add).not.toHaveBeenCalled()
+    expect(mockToastStore.error).not.toHaveBeenCalled()
   })
 
   it.for(popupPermissionCodes)(
@@ -527,10 +531,8 @@ describe('useAuthActions.reportError', () => {
 
       reportError(new FirebaseError(code, 'raw firebase'))
 
-      expect(mockToastStore.add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'g.warning',
-        detail: `auth.errors.${code}`
+      expect(mockToastStore.warning).toHaveBeenCalledWith('g.warning', {
+        description: `auth.errors.${code}`
       })
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
@@ -543,10 +545,8 @@ describe('useAuthActions.reportError', () => {
       new FirebaseError('auth/account-exists-with-different-credential', 'raw')
     )
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.auth/account-exists-with-different-credential'
+    expect(mockToastStore.error).toHaveBeenCalledWith('g.error', {
+      description: 'auth.errors.auth/account-exists-with-different-credential'
     })
     expect(accessError.value).toBe(false)
   })
@@ -559,10 +559,8 @@ describe('useAuthActions.reportError', () => {
       reportError(new FirebaseError(code, 'raw firebase'))
 
       expect(accessError.value).toBe(true)
-      expect(mockToastStore.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: `toastMessages.unauthorizedDomain:${window.location.hostname}:support@comfy.org`
+      expect(mockToastStore.error).toHaveBeenCalledWith('g.error', {
+        description: `toastMessages.unauthorizedDomain:${window.location.hostname}:support@comfy.org`
       })
     }
   )

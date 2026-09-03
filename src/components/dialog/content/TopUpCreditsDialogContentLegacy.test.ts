@@ -65,8 +65,15 @@ vi.mock('@/composables/useExternalLink', () => ({
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
 }))
 
 vi.mock('@/base/credits/comfyCredits', () => ({
@@ -185,12 +192,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       outcome: 'failure',
       failure_category: 'unknown'
     })
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Purchase Failed'
-      })
-    )
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Purchase Failed', {
+      description: 'Failed to purchase credits: declined for person@example.com'
+    })
     expect(mockShowSettings).not.toHaveBeenCalled()
   })
 

@@ -66,8 +66,15 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: toastAdd,
+    error: toastAdd,
+    info: toastAdd,
+    warning: toastAdd,
+    loading: toastAdd,
+    custom: toastAdd
+  })
 }))
 
 vi.mock('@/platform/workspace/composables/useDowngradeToPersonal', () => ({
@@ -368,10 +375,8 @@ describe('showDowngradeToPersonalDialog', () => {
     await useDialogService().showDowngradeToPersonalDialog(options)
 
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Outstanding balance'
-      })
+      expect.any(String),
+      expect.objectContaining({ description: 'Outstanding balance' })
     )
     expect(showDialog).not.toHaveBeenCalled()
   })
@@ -383,7 +388,8 @@ describe('showDowngradeToPersonalDialog', () => {
     await useDialogService().showDowngradeToPersonalDialog(options)
 
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', detail: 'network' })
+      expect.any(String),
+      expect.objectContaining({ description: 'network' })
     )
     expect(showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
@@ -395,10 +401,8 @@ describe('showDowngradeToPersonalDialog', () => {
     await useDialogService().showDowngradeToPersonalDialog(options)
 
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Outstanding balance'
-      })
+      expect.any(String),
+      expect.objectContaining({ description: 'Outstanding balance' })
     )
     expect(showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()

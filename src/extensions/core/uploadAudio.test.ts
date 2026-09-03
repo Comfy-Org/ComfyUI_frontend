@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyExtension } from '@/types/comfy'
 
-const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
+const { mockWarning, mockApiURL, mockFetchApi, mockRegisterExtension } =
   vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
+    mockWarning: vi.fn(),
     mockApiURL: vi.fn((url: string) => `api:${url}`),
     mockFetchApi: vi.fn(),
     mockRegisterExtension: vi.fn()
@@ -56,8 +56,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({ warning: mockWarning })
 }))
 
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
@@ -221,7 +221,9 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const result = await capturedDragDrop!([createFile()])
 
     expect(result).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: 'g.uploadAlreadyInProgress'
+    })
     expect(mockFetchApi).not.toHaveBeenCalled()
   })
 
@@ -235,7 +237,9 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith('500 - Server Error')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: '500 - Server Error'
+    })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -252,7 +256,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith(error)
+    expect(mockWarning).toHaveBeenCalledWith('Alert', { description: error })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 

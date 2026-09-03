@@ -3,11 +3,11 @@ import { ref } from 'vue'
 
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn()
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn()
 }))
 
 vi.mock('@/i18n', () => ({
@@ -36,16 +36,14 @@ function createMockDragEvent(
 }
 
 describe('useLoad3dDrag', () => {
-  let mockToastStore: ReturnType<typeof useToastStore>
+  let mockToastStore: ReturnType<typeof useToast>
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
     mockToastStore = {
-      addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
-    vi.mocked(useToastStore).mockReturnValue(mockToastStore)
+      warning: vi.fn()
+    } as Partial<ReturnType<typeof useToast>> as ReturnType<typeof useToast>
+    vi.mocked(useToast).mockReturnValue(mockToastStore)
 
     mockOnModelDrop = vi.fn()
   })
@@ -148,9 +146,9 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'load3d.unsupportedFileType'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'load3d.unsupportedFileType'
+      })
     })
 
     it('should not call onModelDrop when disabled', async () => {
@@ -228,7 +226,7 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
+      expect(mockToastStore.warning).not.toHaveBeenCalled()
     })
   })
 

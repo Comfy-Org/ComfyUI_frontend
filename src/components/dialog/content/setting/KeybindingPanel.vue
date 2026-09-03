@@ -303,7 +303,7 @@
 
 <script setup lang="ts">
 import type { MenuItem } from '@/components/ui/menu/types'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -672,11 +672,9 @@ function resetAllKeybindings() {
         keybindingStore.resetAllKeybindings()
         await keybindingService.persistUserKeybindings()
         dialogStore.closeDialog(dialog)
-        toast.add({
-          severity: 'info',
-          summary: t('g.info'),
-          detail: t('g.allKeybindingsReset'),
-          life: 3000
+        toast.info(t('g.info'), {
+          description: t('g.allKeybindingsReset'),
+          duration: 3000
         })
       }
     }

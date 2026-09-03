@@ -56,9 +56,14 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    add: mockToastAdd
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn(() => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   }))
 }))
 
@@ -827,8 +832,8 @@ describe('useNodeReplacement', () => {
         expect(result).toEqual([])
         expect(graph._nodes[0]).toBe(placeholder)
         expect(placeholder.onRemoved).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'error'
         )
       }
     )

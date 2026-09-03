@@ -265,7 +265,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(filterBar).toHaveScreenshot(
         'template-filter-bar-select-components.png',
         {
-          mask: [comfyPage.page.locator('.p-toast')]
+          mask: [comfyPage.page.getByTestId('toast')]
         }
       )
     }

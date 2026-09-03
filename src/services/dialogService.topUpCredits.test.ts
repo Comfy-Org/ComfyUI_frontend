@@ -61,8 +61,15 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: vi.fn() })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    custom: vi.fn()
+  })
 }))
 
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())

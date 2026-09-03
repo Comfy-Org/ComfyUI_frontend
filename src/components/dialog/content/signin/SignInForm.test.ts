@@ -2,7 +2,6 @@ import { Form } from '@primevue/forms'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -50,9 +49,14 @@ vi.mock('@/stores/authStore', () => ({
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: vi.fn(() => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   }))
 }))
 
@@ -73,7 +77,7 @@ describe('SignInForm', () => {
     const user = userEvent.setup()
     const result = render(SignInForm, {
       global: {
-        plugins: [PrimeVue, i18n, ToastService],
+        plugins: [PrimeVue, i18n],
         components: { Form, Button, Input, ProgressSpinner }
       },
       props
@@ -100,11 +104,11 @@ describe('SignInForm', () => {
 
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: enMessages.auth.login.emailPlaceholder,
-        life: 5000
-      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'warning',
+        enMessages.auth.login.emailPlaceholder,
+        { duration: 5000 }
+      )
 
       expect(focusSpy).toHaveBeenCalled()
 

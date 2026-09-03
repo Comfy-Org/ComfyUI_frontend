@@ -11,7 +11,7 @@ import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
@@ -51,7 +51,7 @@ function createAssetWidgetOptions({
   const assetBrowserDialog = useAssetBrowserDialog()
 
   async function openModal(widget: IBaseWidget) {
-    const toastStore = useToastStore()
+    const toastStore = useToast()
 
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
@@ -65,10 +65,8 @@ function createAssetWidgetOptions({
             'Invalid asset item:',
             fromZodError(validatedAsset.error).message
           )
-          toastStore.add({
-            severity: 'error',
-            summary: t('assetBrowser.invalidAsset'),
-            detail: t('assetBrowser.invalidAssetDetail')
+          toastStore.error(t('assetBrowser.invalidAsset'), {
+            description: t('assetBrowser.invalidAssetDetail')
           })
           return
         }
@@ -83,10 +81,8 @@ function createAssetWidgetOptions({
             'for asset:',
             validatedAsset.data.id
           )
-          toastStore.add({
-            severity: 'error',
-            summary: t('assetBrowser.invalidFilename'),
-            detail: t('assetBrowser.invalidFilenameDetail')
+          toastStore.error(t('assetBrowser.invalidFilename'), {
+            description: t('assetBrowser.invalidFilenameDetail')
           })
           return
         }

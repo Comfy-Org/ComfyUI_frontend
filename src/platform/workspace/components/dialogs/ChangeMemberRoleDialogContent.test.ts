@@ -27,9 +27,14 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
 }))
 
@@ -78,8 +83,8 @@ describe('ChangeMemberRoleDialogContent', () => {
         key: 'change-member-role'
       })
     )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+      'success'
     )
   })
 
@@ -113,8 +118,8 @@ describe('ChangeMemberRoleDialogContent', () => {
     )
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+        'error'
       )
     )
     expect(mockCloseDialog).not.toHaveBeenCalled()

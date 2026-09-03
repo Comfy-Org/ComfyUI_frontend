@@ -34,7 +34,7 @@ export function useWorkflowActionsService() {
    * @example
    * const result = await exportWorkflowAction(workflow, 'MyWorkflow.json')
    * if (result.success) {
-   *   toast.add({ severity: 'success', detail: 'Exported!' })
+   *   toast.success('Exported!')
    * }
    */
   const exportWorkflowAction = async (
@@ -90,7 +90,7 @@ export function useWorkflowActionsService() {
    * @example
    * const result = await openWorkflowAction(workflow, 'Job 123.json')
    * if (!result.success) {
-   *   toast.add({ severity: 'error', detail: result.error })
+   *   toast.error(result.error)
    * }
    */
   const openWorkflowAction = async (

@@ -28,8 +28,8 @@ vi.mock('@/renderer/extensions/vueNodes/composables/useNodeZIndex', () => ({
   useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: vi.fn() })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({ warning: vi.fn() })
 }))
 
 describe('resolveNode', () => {

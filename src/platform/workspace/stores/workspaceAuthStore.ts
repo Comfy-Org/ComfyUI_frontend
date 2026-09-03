@@ -13,7 +13,7 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -101,10 +101,8 @@ function permanentAuthErrorMessageKey(code: string | undefined): string {
 // Workspace auth has no Firebase fallback, so surface permanent failures.
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   console.error('Unified workspace auth revoked or invalid:', err)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t(permanentAuthErrorMessageKey(err.code))
+  useToast().error(t('g.error'), {
+    description: t(permanentAuthErrorMessageKey(err.code))
   })
 }
 

@@ -8,9 +8,14 @@ import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogC
 const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
 }))
 
@@ -157,9 +162,7 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     await user.type(getPhraseInput(), 'I understand')
     await user.click(getChangePlanButton())
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
     expect(mockCloseDialog).not.toHaveBeenCalled()
   })
 

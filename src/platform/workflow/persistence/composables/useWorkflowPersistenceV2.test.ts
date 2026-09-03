@@ -34,13 +34,23 @@ vi.mock('@/platform/settings/settingStore', async () => {
 const mockToastAdd = vi.fn()
 vi.mock('primevue', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
 }))
 

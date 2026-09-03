@@ -83,9 +83,12 @@ const {
     get: vi.fn()
   },
   mockToastStore: {
-    addAlert: vi.fn(),
-    add: vi.fn(),
-    remove: vi.fn()
+    warning: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(() => 1),
+    custom: vi.fn(),
+    dismiss: vi.fn()
   },
   mockExtensionService: {
     invokeExtensions: vi.fn(),
@@ -184,8 +187,8 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   }
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => mockToastStore)
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn(() => mockToastStore)
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -1835,15 +1838,14 @@ describe('ComfyApp', () => {
 
       await app.refreshComboInNodes()
 
-      expect(mockToastStore.add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
+      expect(mockToastStore.info).toHaveBeenCalledWith(
+        t('g.update'),
+        expect.objectContaining({
+          description: t('toastMessages.updateRequested')
+        })
       )
-      expect(mockToastStore.add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
-      expect(mockToastStore.remove).toHaveBeenCalledWith(
-        mockToastStore.add.mock.calls[0][0]
-      )
+      expect(mockToastStore.success).toHaveBeenCalled()
+      expect(mockToastStore.dismiss).toHaveBeenCalledWith(1)
     })
 
     it('shows failure toast, removes the pending toast, and rethrows reload failures', async () => {
@@ -1853,12 +1855,8 @@ describe('ComfyApp', () => {
 
       await expect(app.refreshComboInNodes()).rejects.toThrow(error)
 
-      expect(mockToastStore.add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
-      expect(mockToastStore.remove).toHaveBeenCalledWith(
-        mockToastStore.add.mock.calls[0][0]
-      )
+      expect(mockToastStore.error).toHaveBeenCalled()
+      expect(mockToastStore.dismiss).toHaveBeenCalledWith(1)
     })
   })
 
@@ -2347,10 +2345,10 @@ describe('ComfyApp', () => {
 
       await app.handleFile(createTestFile('broken.json', 'application/json'))
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledTimes(1)
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Unable to find workflow in broken.json'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledTimes(1)
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'Unable to find workflow in broken.json'
+      })
       consoleError.mockRestore()
     })
 
@@ -2358,13 +2356,13 @@ describe('ComfyApp', () => {
       {
         outcome: 'core-nodes-unavailable' as const,
         fileName: 'a1111.png',
-        toastMethod: 'addAlert' as const,
+        toastMethod: 'warning' as const,
         expectedToast: t('toastMessages.a1111CoreNodesUnavailable')
       },
       {
         outcome: 'not-a1111' as const,
         fileName: 'parameters.png',
-        toastMethod: 'addAlert' as const,
+        toastMethod: 'warning' as const,
         expectedToast: t('toastMessages.fileLoadError', {
           fileName: 'parameters.png'
         })
@@ -2372,12 +2370,8 @@ describe('ComfyApp', () => {
       {
         outcome: 'imported-without-embeddings' as const,
         fileName: 'a1111.png',
-        toastMethod: 'add' as const,
-        expectedToast: {
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('toastMessages.a1111EmbeddingsUnavailable')
-        }
+        toastMethod: 'warning' as const,
+        expectedToast: t('g.warning')
       }
     ])('maps $outcome to its message', async (testCase) => {
       const graph = new LGraph()
@@ -2394,12 +2388,18 @@ describe('ComfyApp', () => {
         expect.any(Function)
       )
       expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledOnce()
-      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledWith(
-        testCase.expectedToast
-      )
       if (testCase.outcome === 'imported-without-embeddings') {
+        expect(mockToastStore.warning).toHaveBeenCalledWith(
+          testCase.expectedToast,
+          {
+            description: t('toastMessages.a1111EmbeddingsUnavailable')
+          }
+        )
         expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
       } else {
+        expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+          description: testCase.expectedToast
+        })
         expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
       }
     })

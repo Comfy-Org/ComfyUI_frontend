@@ -26,9 +26,14 @@ const mockSharedWorkspaces = vi.hoisted(() => ({
   }>
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
 }))
 
@@ -193,10 +198,9 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(mockCloseDialog).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Network error'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Network error' })
       )
     })
   })
@@ -280,10 +284,9 @@ describe('TeamWorkspacesDialogContent', () => {
       await typeAndCreate(container, user, 'New Team')
 
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Limit reached'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Limit reached' })
       )
       expect(mockCloseDialog).not.toHaveBeenCalled()
     })
@@ -297,10 +300,9 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(mockCreateWorkspace).toHaveBeenCalledWith('New Team')
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Setup failed'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Setup failed' })
       )
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'

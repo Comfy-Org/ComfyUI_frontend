@@ -59,8 +59,15 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockToastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
@@ -478,9 +485,10 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
 
       expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: 'sideToolbar.modelLibraryLoadFailed'
+          description: 'sideToolbar.modelLibraryLoadFailed'
         })
       )
       error.mockRestore()
