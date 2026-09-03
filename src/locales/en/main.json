@@ -2777,7 +2777,12 @@
     "cancelPayment": "Cancel payment",
     "cancelUnavailable": "This payment is already processing and can't be canceled.",
     "cancelUnreachable": "Couldn't reach the server. Your payment has not been canceled — try again.",
-    "paymentCanceledNotice": "Payment canceled. Nothing was charged."
+    "paymentCanceledNotice": "Payment canceled. Nothing was charged.",
+    "reconciliationScreenTitle": "Payment received",
+    "reconciliationScreenDetail": "Your payment went through, but we couldn't finish updating your workspace. It usually catches up on its own — you won't be charged again.",
+    "reconciliationSupportLabel": "If it doesn't resolve, give support this ID",
+    "gotIt": "Got it",
+    "contactSupport": "Contact support"
   },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",

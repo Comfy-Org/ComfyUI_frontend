@@ -2673,6 +2673,13 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('declined')
     })
 
+    it('reaches the reconciliation step when the charge lands but the workspace lags', async () => {
+      const checkout = await reentryOn('reconciliation_needed')
+
+      expect(checkout.checkoutStep.value).toBe('reconciliation')
+      expect(checkout.reconciliationOperationId.value).toBe('op-reentry')
+    })
+
     it('backs out of an in-flow decline to the preserved preview', async () => {
       const checkout = await setupWithApprovedPreview()
 
@@ -2697,6 +2704,65 @@ describe('useSubscriptionCheckout', () => {
       await reentryOn('succeeded')
 
       expect(emit).toHaveBeenCalledWith('close', true)
+    })
+  })
+
+  describe('an in-flow charge that lands while the workspace lags', () => {
+    async function subscribeIntoReconciliation(rendersRecoverySteps: boolean) {
+      const checkout = await setup(
+        undefined,
+        'personal',
+        true,
+        rendersRecoverySteps
+      )
+      checkout.previewData.value = {
+        allowed: true,
+        transition_type: 'new_subscription',
+        requires_reactivation_confirmation: false
+      } as PreviewSubscribeResponse
+      checkout.quoteIsCurrent.value = true
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.checkoutStep.value = 'preview'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-recon-flow'
+      })
+      const operation: MockSubscriptionActionOperation = {
+        opId: 'op-recon-flow',
+        status: 'reconciliation_needed',
+        workspaceId: 'workspace-1'
+      }
+      mockStartOperation.mockResolvedValueOnce(operation)
+      mockGetOperation.mockImplementation((opId: string) =>
+        opId === operation.opId ? operation : undefined
+      )
+
+      await checkout.handleAddCreditCard()
+      return checkout
+    }
+
+    it('routes to the terminal reconciliation step with the operation id', async () => {
+      const checkout = await subscribeIntoReconciliation(true)
+
+      expect(checkout.checkoutStep.value).toBe('reconciliation')
+      expect(checkout.reconciliationOperationId.value).toBe('op-recon-flow')
+    })
+
+    it('closes without claiming a subscription on acknowledgement', async () => {
+      const checkout = await subscribeIntoReconciliation(true)
+
+      checkout.handleReconciliationClose()
+
+      expect(emit).toHaveBeenCalledWith('close', false)
+    })
+
+    it('keeps a host without recovery steps on its confirm step', async () => {
+      const checkout = await subscribeIntoReconciliation(false)
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      // The footer reconciliation block still carries the outcome there.
+      expect(checkout.reconciliationOperationId.value).toBe('op-recon-flow')
     })
   })
 

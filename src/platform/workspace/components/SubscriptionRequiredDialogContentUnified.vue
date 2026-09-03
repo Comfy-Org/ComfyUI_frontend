@@ -16,14 +16,16 @@
           isEmbeddedConfirmStep ||
           isVerifyingStep ||
           isDeclinedStep ||
-          isProcessingErrorStep) &&
+          isProcessingErrorStep ||
+          isReconciliationStep) &&
           'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
           isVerifyingStep ||
           isDeclinedStep ||
-          isProcessingErrorStep) &&
+          isProcessingErrorStep ||
+          isReconciliationStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
@@ -32,7 +34,8 @@
           isEmbeddedConfirmStep ||
           isVerifyingStep ||
           isDeclinedStep ||
-          isProcessingErrorStep) &&
+          isProcessingErrorStep ||
+          isReconciliationStep) &&
           'max-xl:w-[min(430px,92vw)]',
         isEmbeddedPaymentStep && 'max-xl:h-[min(740px,85vh)]'
       )
@@ -74,7 +77,8 @@
         !isEmbeddedConfirmStep &&
         !isVerifyingStep &&
         !isDeclinedStep &&
-        !isProcessingErrorStep
+        !isProcessingErrorStep &&
+        !isReconciliationStep
       "
       class="flex flex-col items-center gap-3"
     >
@@ -254,6 +258,13 @@
       @try-again="handleDeclinedBack"
     />
 
+    <SubscriptionReconciliationWorkspace
+      v-if="checkoutStep === 'reconciliation'"
+      :operation-id="reconciliationOperationId"
+      @close="handleReconciliationClose"
+      @contact-support="handleContactSupport"
+    />
+
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
       v-if="checkoutStep === 'success' && (selectedTierKey || isTeamCheckout)"
@@ -273,6 +284,8 @@ import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { buildSupportUrl } from '@/platform/support/config'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
@@ -282,6 +295,7 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import SubscriptionDeclinedWorkspace from './SubscriptionDeclinedWorkspace.vue'
 import SubscriptionProcessingErrorWorkspace from './SubscriptionProcessingErrorWorkspace.vue'
+import SubscriptionReconciliationWorkspace from './SubscriptionReconciliationWorkspace.vue'
 import SubscriptionVerifyingWorkspace from './SubscriptionVerifyingWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
@@ -347,6 +361,7 @@ const {
   handleSubscribeTeamClick,
   handleBackToPricing,
   handleSuccessClose,
+  handleReconciliationClose,
   handleAddCreditCard,
   handleConfirmTransition,
   handleTeamSubscribe,
@@ -411,6 +426,20 @@ const isDeclinedStep = computed(() => checkoutStep.value === 'declined')
 const isProcessingErrorStep = computed(
   () => checkoutStep.value === 'processing_error'
 )
+const isReconciliationStep = computed(
+  () => checkoutStep.value === 'reconciliation'
+)
+
+// Same destination as the Comfy.ContactSupport command: the Zendesk request
+// form, pre-filled so support can match the ticket to the account.
+function handleContactSupport() {
+  const { userEmail, resolvedUserInfo } = useCurrentUser()
+  const supportUrl = buildSupportUrl({
+    userEmail: userEmail.value,
+    userId: resolvedUserInfo.value?.id
+  })
+  window.open(supportUrl, '_blank', 'noopener,noreferrer')
+}
 
 // The decline CTA returns to confirm and opens method collection, which is
 // dialog state rather than checkout state.
