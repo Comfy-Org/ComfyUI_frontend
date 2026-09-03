@@ -31,7 +31,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
-import { wrapPagedList } from '@/utils/pagedList'
+import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
@@ -296,7 +296,10 @@ export const useAssetsStore = defineStore('assets', () => {
         assetsScope.run(() => {
           inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
           const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
-          outputAssets.value = wrapPagedList(flatAssets, unflattenOutputAssets)
+          outputAssets.value = new WrappedList(
+            flatAssets,
+            unflattenOutputAssets
+          )
         })
       } else {
         inputAssets.value = historyInputs
