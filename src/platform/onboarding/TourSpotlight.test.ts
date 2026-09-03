@@ -6,16 +6,15 @@ import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
 import type { SpotlightStep } from './onboardingTours'
 
-vi.mock('@primeuix/utils/zindex', () => ({
-  ZIndex: { set: vi.fn(), clear: vi.fn() }
+vi.mock('@/utils/zIndexManager', () => ({
+  zIndexManager: { set: vi.fn(), clear: vi.fn() }
 }))
-
-import { ZIndex } from '@primeuix/utils/zindex'
 
 const i18n = createI18n({
   legacy: false,
@@ -82,25 +81,25 @@ describe('TourSpotlight', () => {
   })
 
   it('claims the modal stack on mount and releases it on unmount', async () => {
-    vi.mocked(ZIndex.set).mockClear()
-    vi.mocked(ZIndex.clear).mockClear()
+    vi.mocked(zIndexManager.set).mockClear()
+    vi.mocked(zIndexManager.clear).mockClear()
 
     const { unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
-    expect(ZIndex.set).toHaveBeenCalled()
+    expect(zIndexManager.set).toHaveBeenCalled()
 
-    const clearedWhileMounted = vi.mocked(ZIndex.clear).mock.calls.length
+    const clearedWhileMounted = vi.mocked(zIndexManager.clear).mock.calls.length
     unmount()
     expect(
-      vi.mocked(ZIndex.clear).mock.calls.length,
+      vi.mocked(zIndexManager.clear).mock.calls.length,
       'an overlay that never releases its entry leaves the modal stack raised'
     ).toBe(clearedWhileMounted + 1)
   })
 
   it('re-claims the modal stack per step without leaking entries', async () => {
-    vi.mocked(ZIndex.set).mockClear()
-    vi.mocked(ZIndex.clear).mockClear()
+    vi.mocked(zIndexManager.set).mockClear()
+    vi.mocked(zIndexManager.clear).mockClear()
 
     const { rerender, unmount } = renderSpotlight()
     await nextTick()
@@ -112,14 +111,14 @@ describe('TourSpotlight', () => {
 
     unmount()
     // Sets must pair with clears or entries leak; the +1 is the unmount clear.
-    expect(vi.mocked(ZIndex.clear).mock.calls.length).toBe(
-      vi.mocked(ZIndex.set).mock.calls.length + 1
+    expect(vi.mocked(zIndexManager.clear).mock.calls.length).toBe(
+      vi.mocked(zIndexManager.set).mock.calls.length + 1
     )
-    expect(ZIndex.set).toHaveBeenCalled()
+    expect(zIndexManager.set).toHaveBeenCalled()
   })
 
   it('leaves focus, z-order and travel alone when a step renames itself', async () => {
-    vi.mocked(ZIndex.set).mockClear()
+    vi.mocked(zIndexManager.set).mockClear()
     const runState = ref('generating')
     const step: SpotlightStep = {
       kind: 'spotlight',
@@ -140,7 +139,7 @@ describe('TourSpotlight', () => {
 
     const skip = screen.getByRole('button', { name: 'Skip' })
     skip.focus()
-    const raises = vi.mocked(ZIndex.set).mock.calls.length
+    const raises = vi.mocked(zIndexManager.set).mock.calls.length
     const travel = screen.getByTestId('coach-card').className
 
     runState.value = 'succeeded'
@@ -156,7 +155,7 @@ describe('TourSpotlight', () => {
       'a step renaming itself mid-run must not pull focus off what the user selected'
     ).toHaveFocus()
     expect(
-      vi.mocked(ZIndex.set).mock.calls.length,
+      vi.mocked(zIndexManager.set).mock.calls.length,
       'a re-raise per rename leaks a z-index entry every time'
     ).toBe(raises)
     expect(

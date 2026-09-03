@@ -190,7 +190,7 @@ function show(event: MouseEvent) {
   }
 
   // Initialize last* values to current transform to prevent updateMenuPosition
-  // from overwriting PrimeVue's flip-adjusted position on the first RAF tick
+  // from overwriting the flip-adjusted position on the first RAF tick
   lastScale = scale
   lastOffsetX = offset[0]
   lastOffsetY = offset[1]

@@ -134,7 +134,7 @@ describe('FormDropdownMenu', () => {
     ).toBe('true')
   })
 
-  /** Regression: PrimeVue Popover teleports the menu to document.body, so
+  /** Regression: the popover teleports the menu to document.body, so
    *  trackpad pinch-zoom must be guarded on the menu itself — `LGraphNode`
    *  never sees these events. macOS pinch synthesizes `ctrlKey`; explicit
    *  `⌘ + wheel` (and Windows/Linux equivalents) come through as `metaKey`. */

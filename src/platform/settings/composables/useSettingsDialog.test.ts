@@ -53,7 +53,7 @@ describe('useSettingsDialog', () => {
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
   })
 
-  it('show() uses non-modal Reka so nested PrimeVue dialogs keep focus and pointer events', () => {
+  it('show() uses non-modal Reka so nested dialogs keep focus and pointer events', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.modal).toBe(false)

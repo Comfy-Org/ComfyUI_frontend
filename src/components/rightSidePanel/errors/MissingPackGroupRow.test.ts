@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -114,7 +113,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
+      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       stubs: {
         DotSpinner: {
           template: '<span role="status" aria-label="loading" />'

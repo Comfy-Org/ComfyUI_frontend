@@ -1,6 +1,6 @@
 <template>
   <div
-    :ref="primeVueOverlay.overlayScopeRef"
+    :ref="overlayChild.overlayScopeRef"
     class="flex flex-col gap-4 text-sm text-muted-foreground"
   >
     <div class="flex flex-col gap-2">
@@ -111,8 +111,8 @@ const { uploadContext } = defineProps<{
 const modelValue = defineModel<string | undefined>()
 
 const { modelTypes, isLoading } = useModelTypes()
-const primeVueOverlay = useOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
+const overlayChild = useOverlayChildStyle()
+const selectContentStyle = overlayChild.contentStyle
 
 const isMissingModelResolution = computed(
   () => uploadContext?.kind === 'missing-model-resolution'

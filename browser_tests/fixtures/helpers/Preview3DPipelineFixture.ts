@@ -223,10 +223,6 @@ export class Preview3DPipelineContext {
       () => window.app && window.app.extensionManager,
       { timeout: 30_000 }
     )
-    await this.comfyPage.page.locator('.p-blockui-mask').waitFor({
-      state: 'hidden',
-      timeout: 30_000
-    })
     await this.comfyPage.nextFrame()
   }
 

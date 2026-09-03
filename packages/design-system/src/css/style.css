@@ -1,4 +1,4 @@
-@layer theme, base, primevue, components, utilities;
+@layer theme, base, components, utilities;
 
 @import './fonts.css';
 @import './_palette.css';
@@ -6,11 +6,17 @@
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
 
-@plugin 'tailwindcss-primeui';
-
 @plugin "./iconifyDynamicPlugin.ts";
 
 @plugin "./lucideStrokePlugin.js";
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+}
 
 /* Safelist dynamic comfy icons for node library folders */
 @source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-cloud,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
@@ -113,9 +119,10 @@
   --color-coach-scrim: rgb(0 0 0 / 0.6);
   --color-coach-ring: #fff;
 
-  /* PrimeVue pulled colors */
-  --color-muted: var(--p-text-muted-color);
-  --color-highlight: var(--p-primary-color);
+  --color-muted: var(--theme-text-muted);
+  --color-highlight: var(--theme-primary);
+  --color-link: #60a5fa;
+  --color-node-accent: #3b82f6;
 
   /* Special Colors (temporary) */
   --color-dark-elevation-1-5: rgba(from white r g b / 0.015);
@@ -123,6 +130,8 @@
 }
 
 :root {
+  color-scheme: light;
+
   --fg-color: #000;
   --bg-color: #fff;
   --default-transition-duration: 0.1s;
@@ -147,6 +156,20 @@
   --content-fg: #000;
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
+
+  --theme-primary: #3b82f6;
+  --theme-primary-contrast: #fff;
+  --theme-text: #334155;
+  --theme-text-muted: #64748b;
+  --theme-content-background: #fff;
+  --theme-content-border: #e2e8f0;
+  --theme-form-border: #cbd5e1;
+  --theme-surface-100: #f1f5f9;
+  --theme-surface-300: #cbd5e1;
+  --theme-surface-700: #334155;
+  --theme-surface-800: #1e293b;
+  --theme-surface-900: #0f172a;
+  --theme-highlight-background: #eff6ff;
 
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
@@ -303,12 +326,32 @@
 }
 
 .dark-theme {
+  color-scheme: dark;
+
   --fg-color: #fff;
   --bg-color: #202020;
   --content-bg: #4e4e4e;
   --content-fg: #fff;
   --content-hover-bg: #222;
   --content-hover-fg: #fff;
+
+  --theme-primary: #60a5fa;
+  --theme-primary-contrast: #18181b;
+  --theme-text: #fff;
+  --theme-text-muted: #a1a1aa;
+  --theme-content-background: #18181b;
+  --theme-content-border: #3f3f46;
+  --theme-form-border: #52525b;
+  --theme-surface-100: #f4f4f5;
+  --theme-surface-300: #d4d4d8;
+  --theme-surface-700: #3f3f46;
+  --theme-surface-800: #27272a;
+  --theme-surface-900: #18181b;
+  --theme-highlight-background: color-mix(
+    in srgb,
+    var(--theme-primary),
+    transparent 84%
+  );
 
   --accent-primary: var(--color-white);
   --backdrop: var(--color-neutral-900);
@@ -588,6 +631,10 @@
   --color-brand-blue: var(--brand-blue);
 }
 
+:root:has(.dark-theme) {
+  color-scheme: dark;
+}
+
 @custom-variant dark-theme {
   .dark-theme & {
     @slot;
@@ -841,7 +888,7 @@ body {
 .comfy-markdown-content pre code {
   background-color: transparent; /* bg-transparent */
   padding: 0; /* p-0 */
-  color: var(--p-text-color);
+  color: var(--theme-text);
 }
 
 /* Tables */
@@ -872,7 +919,7 @@ body {
 }
 
 .comfy-markdown-content thead {
-  border-bottom: 1px solid var(--p-text-color);
+  border-bottom: 1px solid var(--theme-text);
 }
 
 /* Links */
@@ -892,7 +939,7 @@ body {
 
 /* Blockquotes */
 .comfy-markdown-content blockquote {
-  border-left: 3px solid var(--p-primary-color, var(--primary-bg));
+  border-left: 3px solid var(--theme-primary);
   padding-left: 0.75em;
   margin: 0.5em 0;
   opacity: 0.8;
@@ -901,7 +948,7 @@ body {
 /* Horizontal rule */
 .comfy-markdown-content hr {
   border: none;
-  border-top: 1px solid var(--p-border-color, var(--border-color));
+  border-top: 1px solid var(--border-color);
   margin: 1em 0;
 }
 
@@ -1357,11 +1404,6 @@ audio.comfy-audio.empty-audio-widget {
   height: 100%;
 }
 
-/* Set auto complete panel's width as it is not accessible within vue-root */
-.p-autocomplete-overlay {
-  max-width: 25vw;
-}
-
 /* [Desktop] Electron window specific styles */
 .app-drag {
   app-region: drag;
@@ -1434,7 +1476,7 @@ audio.comfy-audio.empty-audio-widget {
   border-radius: 50%;
   cursor: grab;
   margin-top: -8px;
-  background: var(--p-surface-700);
+  background: var(--theme-surface-700);
   border: 1px solid var(--border-color);
 }
 .maskEditor_sidePanelBrushRange::-moz-range-thumb {
@@ -1442,15 +1484,15 @@ audio.comfy-audio.empty-audio-widget {
   width: 20px;
   border-radius: 50%;
   cursor: grab;
-  background: var(--p-surface-800);
+  background: var(--theme-surface-800);
   border: 1px solid var(--border-color);
 }
 .maskEditor_sidePanelBrushRange::-webkit-slider-runnable-track {
-  background: var(--p-surface-700);
+  background: var(--theme-surface-700);
   height: 3px;
 }
 .maskEditor_sidePanelBrushRange::-moz-range-track {
-  background: var(--p-surface-700);
+  background: var(--theme-surface-700);
   height: 3px;
 }
 
@@ -1468,7 +1510,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_brushShape_dark:hover {
-  background: var(--p-surface-900);
+  background: var(--theme-surface-900);
 }
 
 .maskEditor_brushShape_light {
@@ -1522,7 +1564,7 @@ audio.comfy-audio.empty-audio-widget {
   transition: background-color 0.1s;
 }
 .maskEditor_sidePanelBigButton:hover {
-  background-color: var(--p-overlaybadge-outline-color);
+  background-color: var(--theme-content-background);
   border: none;
 }
 .maskEditor_toolPanelContainer {
@@ -1543,11 +1585,11 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_toolPanelContainerDark:hover {
-  background-color: var(--p-surface-800);
+  background-color: var(--theme-surface-800);
 }
 
 .maskEditor_toolPanelContainerLight:hover {
-  background-color: var(--p-surface-300);
+  background-color: var(--theme-surface-300);
 }
 
 .maskEditor_toolPanelIndicator {
@@ -1581,13 +1623,13 @@ audio.comfy-audio.empty-audio-widget {
   justify-content: center;
   align-items: center;
   transition: background-color 0.1s;
-  background: var(--p-surface-800);
-  border: 1px solid var(--p-form-field-border-color);
+  background: var(--theme-surface-800);
+  border: 1px solid var(--theme-form-border);
   border-radius: 10px;
 }
 
 .maskEditor_topPanelIconButton_dark:hover {
-  background-color: var(--p-surface-900);
+  background-color: var(--theme-surface-900);
 }
 
 .maskEditor_topPanelIconButton_dark svg {
@@ -1606,12 +1648,12 @@ audio.comfy-audio.empty-audio-widget {
   align-items: center;
   transition: background-color 0.1s;
   background: var(--comfy-menu-bg);
-  border: 1px solid var(--p-form-field-border-color);
+  border: 1px solid var(--theme-form-border);
   border-radius: 10px;
 }
 
 .maskEditor_topPanelIconButton_light:hover {
-  background-color: var(--p-surface-300);
+  background-color: var(--theme-surface-300);
 }
 
 .maskEditor_topPanelIconButton_light svg {
@@ -1623,8 +1665,8 @@ audio.comfy-audio.empty-audio-widget {
 
 .maskEditor_topPanelButton_dark {
   height: 30px;
-  background: var(--p-surface-800);
-  border: 1px solid var(--p-form-field-border-color);
+  background: var(--theme-surface-800);
+  border: 1px solid var(--theme-form-border);
   border-radius: 10px;
   color: var(--input-text);
   pointer-events: auto;
@@ -1633,13 +1675,13 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_topPanelButton_dark:hover {
-  background-color: var(--p-surface-900);
+  background-color: var(--theme-surface-900);
 }
 
 .maskEditor_topPanelButton_light {
   height: 30px;
   background: var(--comfy-menu-bg);
-  border: 1px solid var(--p-form-field-border-color);
+  border: 1px solid var(--theme-form-border);
   border-radius: 10px;
   color: var(--input-text);
   pointer-events: auto;
@@ -1648,7 +1690,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_topPanelButton_light:hover {
-  background-color: var(--p-surface-300);
+  background-color: var(--theme-surface-300);
 }
 
 .maskEditor_sidePanel_paintBucket_Container {
@@ -1690,15 +1732,15 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_accent_bg_dark {
-  background: var(--p-surface-800);
+  background: var(--theme-surface-800);
 }
 
 .maskEditor_accent_bg_very_dark {
-  background: var(--p-surface-900);
+  background: var(--theme-surface-900);
 }
 
 .maskEditor_accent_bg_light {
-  background: var(--p-surface-300);
+  background: var(--theme-surface-300);
 }
 
 .maskEditor_accent_bg_very_light {
@@ -1720,11 +1762,11 @@ audio.comfy-audio.empty-audio-widget {
   position: relative;
   vertical-align: middle;
   transition: background 0.25s;
-  background: var(--p-surface-300);
+  background: var(--theme-surface-300);
 }
 
 .dark-theme .maskEditor_sidePanelToggleSwitch {
-  background: var(--p-surface-700);
+  background: var(--theme-surface-700);
 }
 
 .maskEditor_sidePanelToggleSwitch::before,
@@ -1748,7 +1790,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 .maskEditor_sidePanelToggleCheckbox:checked
   + .maskEditor_sidePanelToggleSwitch {
-  background: var(--p-button-text-primary-color);
+  background: var(--theme-primary);
 }
 .maskEditor_sidePanelToggleCheckbox:checked
   + .maskEditor_sidePanelToggleSwitch::before {
@@ -1758,7 +1800,7 @@ audio.comfy-audio.empty-audio-widget {
 .dark-theme
   .maskEditor_sidePanelToggleCheckbox:checked
   + .maskEditor_sidePanelToggleSwitch::before {
-  background: var(--p-surface-900);
+  background: var(--theme-surface-900);
 }
 
 .maskEditor_sidePanelToggleCheckbox {
@@ -1767,7 +1809,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_sidePanelDropdown {
-  border: 1px solid var(--p-form-field-border-color);
+  border: 1px solid var(--theme-form-border);
   background: var(--comfy-menu-bg);
   height: 24px;
   padding-left: 5px;
@@ -1781,30 +1823,30 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_sidePanelDropdown:focus {
-  outline: 1px solid var(--p-surface-300);
+  outline: 1px solid var(--theme-surface-300);
 }
 
 .maskEditor_sidePanelDropdown option:hover {
   background: white;
 }
 .maskEditor_sidePanelDropdown option:active {
-  background: var(--p-surface-300);
+  background: var(--theme-surface-300);
 }
 
 .dark-theme .maskEditor_sidePanelDropdown {
-  background: var(--p-surface-900);
+  background: var(--theme-surface-900);
 }
 
 .dark-theme .maskEditor_sidePanelDropdown option {
-  background: var(--p-surface-900);
+  background: var(--theme-surface-900);
 }
 
 .dark-theme .maskEditor_sidePanelDropdown:focus {
-  outline: 1px solid var(--p-button-text-primary-color);
+  outline: 1px solid var(--theme-primary);
 }
 
 .dark-theme .maskEditor_sidePanelDropdown option:active {
-  background: var(--p-highlight-background);
+  background: var(--theme-highlight-background);
 }
 
 .maskEditor_layerRow {
@@ -1822,7 +1864,7 @@ audio.comfy-audio.empty-audio-widget {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  fill: var(--p-surface-100);
+  fill: var(--theme-surface-100);
 }
 
 .maskEditor_sidePanelImageLayerImage {
@@ -1898,18 +1940,4 @@ audio.comfy-audio.empty-audio-widget {
     300% 14px,
     300% 14px;
   background-attachment: local, local, scroll, scroll;
-}
-
-/*
-  PrimeVue overlays teleport to body. When a Reka modal dialog is open it sets
-  body { pointer-events: none } via DismissableLayer, which propagates to the
-  body-portaled overlays and makes them unclickable. PrimeVue's own Dialog
-  sets pointer-events inline, but Select / ColorPicker / Popover / Autocomplete
-  overlays do not, so they need to opt in here.
-*/
-.p-select-overlay,
-.p-colorpicker-panel,
-.p-popover,
-.p-autocomplete-overlay {
-  pointer-events: auto;
 }

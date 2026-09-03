@@ -1,5 +1,4 @@
 import { render } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -54,7 +53,7 @@ const BodyWithMenu = defineComponent({
 const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 function mountDialogHost() {
-  render(GlobalDialog, { global: { plugins: [PrimeVue, i18n] } })
+  render(GlobalDialog, { global: { plugins: [i18n] } })
   return useDialogStore()
 }
 

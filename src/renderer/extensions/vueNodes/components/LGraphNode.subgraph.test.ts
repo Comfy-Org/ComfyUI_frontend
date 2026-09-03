@@ -100,8 +100,7 @@ describe('Vue Node - Subgraph Functionality', () => {
       global: {
         plugins: [pinia],
         mocks: {
-          $t: vi.fn((key: string) => key),
-          $primevue: { config: {} }
+          $t: vi.fn((key: string) => key)
         }
       }
     })

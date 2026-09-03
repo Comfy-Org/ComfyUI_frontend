@@ -1,7 +1,8 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import Tooltip from './Tooltip.vue'
 import { resetTooltipInputModality } from './tooltipInputModality'
@@ -9,7 +10,7 @@ import { resetTooltipInputModality } from './tooltipInputModality'
 const openDialogs: HTMLElement[] = []
 
 afterEach(() => {
-  for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
+  for (const dialog of openDialogs.splice(0)) zIndexManager.clear(dialog)
   resetTooltipInputModality()
 })
 
@@ -221,7 +222,7 @@ describe('Tooltip', () => {
 
   it('lifts above the shared modal z-index', async () => {
     const dialog = document.createElement('div')
-    ZIndex.set('modal', dialog, 2400)
+    zIndexManager.set('modal', dialog, 2400)
     openDialogs.push(dialog)
     const user = userEvent.setup()
     renderTooltip()

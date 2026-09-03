@@ -221,7 +221,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
-    it('sizes the unified pricing dialog via the Reka contentClass, not the ignored PrimeVue style', () => {
+    it('sizes the unified pricing dialog via the Reka contentClass', () => {
       mockShouldUseWorkspaceBilling.value = true
       mockIsInPersonalWorkspace.value = true
       const { showPricingTable } = useSubscriptionDialog()

@@ -34,7 +34,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="ml-auto icon-[lucide--external-link] size-4 text-highlight"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -718,7 +718,7 @@ onBeforeUnmount(() => {
   height: 8px;
   background: #ff3b30;
   border-radius: 50%;
-  border: 1.5px solid var(--p-content-background);
+  border: 1.5px solid var(--theme-content-background);
   z-index: 1;
 }
 

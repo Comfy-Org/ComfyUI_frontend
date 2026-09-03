@@ -1,6 +1,6 @@
 <template>
   <div
-    :ref="primeVueOverlay.overlayScopeRef"
+    :ref="overlayChild.overlayScopeRef"
     class="keybinding-panel flex min-w-0 flex-col gap-2 overflow-x-hidden"
   >
     <Teleport defer to="#keybinding-panel-header">
@@ -366,8 +366,8 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
-const primeVueOverlay = useOverlayChildStyle()
-const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
+const overlayChild = useOverlayChildStyle()
+const keybindingOverlayContentStyle = overlayChild.contentStyle
 
 const presetNames = ref<string[]>([])
 

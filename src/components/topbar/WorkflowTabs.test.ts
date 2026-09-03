@@ -46,46 +46,6 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('primevue/scrollpanel', async () => {
-  const { defineComponent, h, ref } = await import('vue')
-  return {
-    default: defineComponent({
-      name: 'ScrollPanelStub',
-      inheritAttrs: false,
-      setup(_, { attrs, slots }) {
-        const contentKey = ref(0)
-        return () => {
-          const contentProps = attrs['pt:content']
-          const passThroughProps =
-            typeof contentProps === 'object' && contentProps !== null
-              ? contentProps
-              : {}
-
-          return h('div', [
-            h(
-              'button',
-              { onClick: () => contentKey.value++ },
-              'Replace scroll content'
-            ),
-            h(
-              'div',
-              {
-                ...passThroughProps,
-                key: contentKey.value,
-                class: 'p-scrollpanel-content',
-                'data-testid': 'scroll-content',
-                'data-internal-ref-preserved':
-                  'ref' in passThroughProps ? undefined : 'true'
-              },
-              slots.default?.()
-            )
-          ])
-        }
-      }
-    })
-  }
-})
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: (key: string) =>

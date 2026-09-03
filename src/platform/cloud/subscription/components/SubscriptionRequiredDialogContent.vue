@@ -109,7 +109,7 @@
             <CloudBadge
               reverse-order
               no-padding
-              background-color="var(--p-dialog-background)"
+              background-color="var(--theme-content-background)"
               use-subscription
             />
           </div>
@@ -241,9 +241,5 @@ const handleViewEnterprise = () => {
 <style scoped>
 .legacy-dialog :deep(.bg-comfy-menu-secondary) {
   background-color: transparent;
-}
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
 }
 </style>

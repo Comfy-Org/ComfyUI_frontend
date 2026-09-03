@@ -9,7 +9,7 @@
   >
     <div
       data-testid="agent-panel-resize-handle"
-      class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+      class="hover:bg-agent-accent data-[resizing=true]:bg-agent-accent absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200"
       :data-resizing="isResizing"
       @pointerdown="onResizeStart"
       @lostpointercapture="isResizing = false"
@@ -84,11 +84,3 @@ useEventListener(document, 'pointermove', (e: PointerEvent) => {
   agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
 })
 </script>
-
-<style scoped>
-.agent-resize-handle:hover,
-.agent-resize-handle[data-resizing='true'] {
-  transition: background-color 0.2s ease 300ms;
-  background-color: var(--p-primary-color);
-}
-</style>

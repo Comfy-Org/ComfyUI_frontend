@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full flex-col overflow-auto">
     <div
-      class="flex items-center border-b border-(--p-divider-color) px-3 py-2"
+      class="flex items-center border-b border-(--theme-content-border) px-3 py-2"
     >
       <Tooltip :config="$t('g.back')" side="bottom">
         <Button

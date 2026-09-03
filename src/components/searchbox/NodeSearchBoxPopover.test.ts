@@ -1,6 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -93,7 +92,7 @@ describe('NodeSearchBoxPopover', () => {
 
     const result = render(NodeSearchBoxPopover, {
       global: {
-        plugins: [i18n, PrimeVue, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           NodeSearchBox: NodeSearchBoxStub,
           NodeSearchContent: NodeSearchContentStub,

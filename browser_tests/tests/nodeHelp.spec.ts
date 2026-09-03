@@ -394,7 +394,7 @@ This is English documentation.
 
       // Should show fallback content (node description)
       await expect(helpPage).toBeVisible()
-      await expect(helpPage.locator('.p-progressspinner')).toBeHidden()
+      await expect(helpPage.getByRole('status')).toBeHidden()
 
       // Should show some content even on error
       await expect(helpPage).not.toHaveText('')

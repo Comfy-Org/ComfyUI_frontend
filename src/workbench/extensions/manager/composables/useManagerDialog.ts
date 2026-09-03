@@ -27,7 +27,7 @@ export function useManagerDialog() {
       },
       dialogComponentProps: {
         renderer: 'reka',
-        // Manager hosts PrimeVue overlays (SingleSelect, SearchAutocomplete)
+        // Manager hosts portaled overlays (SingleSelect, SearchAutocomplete)
         // teleported to body. Reka's modal mode traps focus and disables body
         // pointer-events, breaking those overlays. Mirrors Settings.
         modal: false,

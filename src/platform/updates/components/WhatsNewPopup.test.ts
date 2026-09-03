@@ -4,7 +4,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ReleaseNote } from '../common/releaseService'
@@ -68,7 +67,6 @@ describe('WhatsNewPopup', () => {
   const renderComponent = (props = {}) => {
     return render(WhatsNewPopup, {
       global: {
-        plugins: [PrimeVue],
         components: { Button },
         mocks: {
           $t: (key: string) => {

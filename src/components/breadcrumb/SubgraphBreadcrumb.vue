@@ -28,18 +28,14 @@
     </Button>
     <nav
       ref="breadcrumbRef"
-      :class="
-        cn('p-breadcrumb w-fit rounded-lg p-0', !isInSubgraph && 'hidden')
-      "
+      :class="cn('breadcrumb w-fit rounded-lg p-0', !isInSubgraph && 'hidden')"
       :aria-label="$t('g.graphNavigation')"
     >
       <ol
-        class="p-breadcrumb-list m-0 flex list-none items-center p-0 text-muted"
+        class="breadcrumb-list m-0 flex list-none items-center p-0 text-muted"
       >
         <template v-for="(item, index) in items" :key="item.key">
-          <li
-            class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
-          >
+          <li class="breadcrumb-item hover:text-foreground pointer-events-auto">
             <SubgraphBreadcrumbItem
               :item="item"
               :is-active="item.key === activeItemKey"
@@ -47,7 +43,7 @@
           </li>
           <li
             v-if="index < items.length - 1"
-            class="p-breadcrumb-separator"
+            class="breadcrumb-separator"
             aria-hidden="true"
           >
             <span class="scale-150">/</span>
@@ -146,8 +142,7 @@ const handleBackClick = () => {
 // Check for overflow on breadcrumb items and collapse/expand the breadcrumb to fit
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
 onMounted(() => {
-  const el =
-    breadcrumbRef.value?.querySelector<HTMLElement>('.p-breadcrumb-list')
+  const el = breadcrumbRef.value?.querySelector<HTMLElement>('.breadcrumb-list')
   if (!el) return
 
   overflowObserver = useOverflowObserver(el, {
@@ -158,16 +153,16 @@ onMounted(() => {
         // Items are currently hidden, check if we can show them
         if (!isOverflowing) {
           const items = [
-            ...el.querySelectorAll('.p-breadcrumb-item')
+            ...el.querySelectorAll('.breadcrumb-item')
           ] as HTMLElement[]
 
           if (items.length < 3) return
 
           const itemsWithIcon = items.filter((item) =>
-            item.querySelector('.p-breadcrumb-item-link-icon-visible')
+            item.querySelector('.breadcrumb-item-link-icon-visible')
           ).length
           const separators = el.querySelectorAll(
-            '.p-breadcrumb-separator'
+            '.breadcrumb-separator'
           ) as NodeListOf<HTMLElement>
           const separator = separators[separators.length - 1] as HTMLElement
           const separatorWidth = separator.offsetWidth
@@ -210,16 +205,16 @@ onUpdated(() => {
 }
 
 .subgraph-breadcrumb,
-:deep(.p-breadcrumb) {
+:deep(.breadcrumb) {
   overflow: hidden;
 }
 
-:deep(.p-breadcrumb) {
+:deep(.breadcrumb) {
   width: 100%;
   background-color: transparent;
 }
 
-:deep(.p-breadcrumb-item) {
+:deep(.breadcrumb-item) {
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -232,43 +227,43 @@ onUpdated(() => {
   flex-shrink: 10000;
 }
 
-:deep(.p-breadcrumb-separator) {
+:deep(.breadcrumb-separator) {
   border: 1px solid transparent;
   background-color: transparent;
   display: flex;
   padding: 0 var(--breadcrumb-item-margin);
 }
 
-:deep(.p-breadcrumb-item-link) {
+:deep(.breadcrumb-item-link) {
   padding: 0
     calc(var(--breadcrumb-item-margin) + var(--breadcrumb-item-padding));
 }
 
-:deep(.p-breadcrumb-item:hover) {
+:deep(.breadcrumb-item:hover) {
   border-radius: var(--radius-lg);
   border-color: var(--interface-stroke);
   background-color: var(--comfy-menu-bg);
 }
 
-:deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
+:deep(.breadcrumb-item:has(.breadcrumb-item-link-icon-visible)) {
   min-width: calc(var(--breadcrumb-item-min-width) + 1rem + 20px);
 }
 
-:deep(.p-breadcrumb-item:first-child) {
+:deep(.breadcrumb-item:first-child) {
   /* Then collapse the root workflow */
   flex-shrink: 5000;
 
-  .p-breadcrumb-item-link {
+  .breadcrumb-item-link {
     padding-left: var(--breadcrumb-item-padding);
   }
 }
 
-:deep(.p-breadcrumb-item:last-child) {
+:deep(.breadcrumb-item:last-child) {
   /* Then collapse the active item */
   flex-shrink: 1;
 }
 
-:deep(.p-breadcrumb-item-link-menu-visible) {
+:deep(.breadcrumb-item-link-menu-visible) {
   background-color: color-mix(
     in srgb,
     var(--fg-color) 10%,
@@ -279,15 +274,15 @@ onUpdated(() => {
 </style>
 
 <style>
-.subgraph-breadcrumb-collapse .p-breadcrumb-list {
-  .p-breadcrumb-item,
-  .p-breadcrumb-separator {
+.subgraph-breadcrumb-collapse .breadcrumb-list {
+  .breadcrumb-item,
+  .breadcrumb-separator {
     display: none;
   }
 
-  .p-breadcrumb-item:nth-last-child(3),
-  .p-breadcrumb-separator:nth-last-child(2),
-  .p-breadcrumb-item:nth-last-child(1) {
+  .breadcrumb-item:nth-last-child(3),
+  .breadcrumb-separator:nth-last-child(2),
+  .breadcrumb-item:nth-last-child(1) {
     display: flex;
   }
 }
