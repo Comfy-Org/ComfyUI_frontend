@@ -57,6 +57,13 @@ export function reduceBilling(
     }
   if (event.status === 'payment_received_hold')
     return { ...state, step: 'payment_received_hold', actionUrl: undefined }
+  if (event.status === 'expired')
+    return {
+      ...state,
+      step: 'preview',
+      reasonKey: 'checkout_expired',
+      actionUrl: undefined
+    }
   if (event.status === 'timeout')
     return {
       ...state,

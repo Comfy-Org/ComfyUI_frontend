@@ -21,6 +21,7 @@ export type BillingOperationKind =
   | 'cancel'
 export type ReasonKey =
   | 'generic'
+  | 'checkout_expired'
   | 'declined_generic'
   | 'declined_insufficient_funds'
   | 'declined_authentication_required'
@@ -29,6 +30,7 @@ export type BillingOperationStatus =
   | 'succeeded'
   | 'failed'
   | 'timeout'
+  | 'expired'
   | 'canceled'
   | 'payment_received_hold'
 
@@ -87,6 +89,7 @@ export interface BillingStatusResponse {
 }
 export interface BillingOperationResponse {
   status: BillingOperationStatus
+  started_at?: string
   action_url?: string
   reason_code?: string
   error_message?: string

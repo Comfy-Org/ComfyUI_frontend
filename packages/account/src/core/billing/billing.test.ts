@@ -6,7 +6,7 @@ import {
 } from './copy.js'
 import { createBillingApiClient } from './client.js'
 import { createBillingCommands } from './commands.js'
-import { createBillingPoller } from './poller.js'
+import { billingPollTiming, createBillingPoller } from './poller.js'
 import { resolveBillingReason } from './reasons.js'
 import { initialBillingState, reduceBilling } from './reducer.js'
 import { createSingleFlight } from './singleFlight.js'
@@ -484,5 +484,105 @@ describe('payments claims', () => {
     await vi.waitFor(() => expect(getOperation).toHaveBeenCalledTimes(2))
     expect(active).toBeNull()
     expect(states.at(-1)?.step).toBe('success')
+  })
+  it.for([301_000, 60 * 60 * 1_000, (5 * 60 + 59) * 60 * 1_000])(
+    'keeps an actionable checkout non-terminal after %i ms',
+    async (now) => {
+      const schedule = vi.fn(() => 'scheduled')
+      const states: BillingState[] = []
+      const poller = createBillingPoller({
+        client: {
+          getOperation: vi.fn(async () => ({
+            status: 'pending' as const,
+            started_at: new Date(0).toISOString(),
+            action_url: 'https://checkout.example/test'
+          }))
+        },
+        clock: { now: () => now, schedule, cancel: vi.fn() },
+        store: {
+          namespace: 'host',
+          getActiveId: async () => null,
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        },
+        onState: (state) => states.push(state)
+      })
+
+      await poller.start(
+        'checkout',
+        'subscribe',
+        'https://checkout.example/test'
+      )
+
+      expect(states.at(-1)?.step).toBe('verifying')
+      expect(states.at(-1)?.step).not.toBe('processing_error')
+      expect(schedule).toHaveBeenCalledWith(expect.any(Function), 30_000)
+    }
+  )
+  it('expires an actionable checkout without producing an error', async () => {
+    let active: string | null = null
+    const states: BillingState[] = []
+    const poller = createBillingPoller({
+      client: {
+        getOperation: vi.fn(async () => ({
+          status: 'pending' as const,
+          started_at: new Date(0).toISOString(),
+          action_url: 'https://checkout.example/test'
+        }))
+      },
+      clock: {
+        now: () => billingPollTiming.checkoutExpiryMs + 1_000,
+        schedule: vi.fn(),
+        cancel: vi.fn()
+      },
+      store: {
+        namespace: 'host',
+        getActiveId: async () => active,
+        setActiveId: async (id) => {
+          active = id
+        },
+        clearActiveId: async () => {
+          active = null
+        }
+      },
+      onState: (state) => states.push(state)
+    })
+
+    await poller.start('checkout', 'subscribe', 'https://checkout.example/test')
+
+    expect(states.at(-1)).toMatchObject({
+      step: 'preview',
+      reasonKey: 'checkout_expired'
+    })
+    expect(active).toBeNull()
+  })
+  it('keeps the server-side mutation timeout for pending operations without an action URL', async () => {
+    const states: BillingState[] = []
+    const callbacks: Array<() => void> = []
+    let now = 0
+    const poller = createBillingPoller({
+      client: {
+        getOperation: vi.fn(async () => ({ status: 'pending' as const }))
+      },
+      clock: {
+        now: () => now,
+        schedule: (callback) => {
+          callbacks.push(callback)
+          return callback
+        },
+        cancel: vi.fn()
+      },
+      store: {
+        namespace: 'host',
+        getActiveId: async () => null,
+        setActiveId: async () => undefined,
+        clearActiveId: async () => undefined
+      },
+      onState: (state) => states.push(state)
+    })
+    await poller.start('mutation', 'topup')
+    now = billingPollTiming.mutationTimeoutMs
+    callbacks[0]()
+    await vi.waitFor(() => expect(states.at(-1)?.step).toBe('processing_error'))
   })
 })
