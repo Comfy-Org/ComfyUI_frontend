@@ -243,7 +243,7 @@ test.describe('Model playground', () => {
     await useAccount(page, 'new')
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toContainText('Upgrade')
+    ).toHaveText('0')
     await expect(page.getByTestId('run-button')).toHaveAttribute(
       'data-gate',
       'noCredits'
@@ -279,7 +279,7 @@ test.describe('Model playground', () => {
     await expect(run).toHaveAttribute('data-gate', 'ready')
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toHaveText(/[0-9]/)
+    ).toHaveText(/[1-9]/)
     await page.reload()
     await expect(page.getByTestId('field-prompt')).toHaveValue('keep me around')
   })

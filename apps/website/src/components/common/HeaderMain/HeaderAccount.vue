@@ -82,13 +82,13 @@ const itemClass =
             'flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-colors',
             hasCredits
               ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow hover:bg-primary-comfy-yellow/20'
-              : 'bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 text-primary-comfy-ink'
+              : 'bg-primary-comfy-red/10 hover:bg-primary-comfy-red/20 text-primary-comfy-red'
           )
         "
         @click="buyingCredits = true"
       >
         <Coins class="size-4" aria-hidden="true" />
-        {{ hasCredits ? formattedCredits : t('nav.upgrade', locale) }}
+        {{ formattedCredits }}
       </button>
 
       <DropdownMenuTrigger

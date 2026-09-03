@@ -38,13 +38,13 @@ describe('HeaderAccount', () => {
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('offers an empty account the upgrade that opens the credits flow', async () => {
+  it('shows an empty balance as zero and opens the credits flow', async () => {
     const user = userEvent.setup()
     mountAccount('new')
     await nextTick()
 
     const chip = screen.getByTestId('header-credits')
-    expect(chip.textContent).toContain('Upgrade')
+    expect(chip.textContent?.trim()).toBe('0')
 
     await user.click(chip)
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()

@@ -8,7 +8,7 @@ export const SNIPPET_LANGUAGES: readonly SnippetLanguage[] = [
   'curl'
 ]
 
-export const ROUTER_API = 'https://api.comfy.org'
+const ROUTER_API = 'https://api.comfy.org'
 
 function serializableInput(
   values: FormValues
