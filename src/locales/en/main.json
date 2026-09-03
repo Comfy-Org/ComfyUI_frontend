@@ -5238,6 +5238,7 @@
     "friend": "there",
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
+    "destructiveMutationBlocked": "I stopped this change because it would remove existing workflow content. Ask me explicitly to delete or replace existing workflow nodes before I make a destructive change.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachTitle": "Meet the agent",
     "coachBody": "Ask it to build or edit graphs.",

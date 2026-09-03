@@ -204,6 +204,33 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
+  it('requires graph-specific destructive intent before authorizing node loss', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: source
+    })
+    session.start()
+
+    await session.sendMessage(
+      "Add a text node, set its prompt to 'hello', and run it."
+    )
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+
+    await session.sendMessage('Delete every node from this workflow.')
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+    emit(doneIn('th-other', 'msg-other'))
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+    emit(done('msg-1'))
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+
+    await session.sendMessage('Do not delete any nodes; just explain them.')
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+
+    await session.sendMessage('Replace the prompt text with hello.')
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+  })
+
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
       .fn<

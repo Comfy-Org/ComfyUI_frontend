@@ -313,6 +313,26 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(true)
   })
 
+  it('adds a destructive-mutation failure notice to the active response', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.recordUser(T1, "Add a text node with prompt 'hello', then run it.")
+
+    store.recordActiveNotice('Existing workflow content was preserved.')
+
+    const assistant = store.entries[1]
+    expect(assistant).toMatchObject({ role: 'assistant', streaming: true })
+    if (assistant.role === 'assistant') {
+      expect(assistant.parts).toEqual([
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Existing workflow content was preserved.'
+        }
+      ])
+    }
+  })
+
   it('reset wipes the whole conversation, distinct from abortActiveTurn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
