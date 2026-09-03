@@ -134,9 +134,18 @@ const REFUSAL_CODES = new Set([
   'rate_limited'
 ])
 
+const AUTH_REFUSAL_TOKENS = new Set([
+  'forbidden',
+  'unauthorized',
+  'unauthenticated',
+  'permission'
+])
+
 function allowlistRefusalCode(code: string | null): string {
-  if (code !== null && REFUSAL_CODES.has(code)) return code
-  if (code !== null && /auth|forbidden|unauthorized|permission/i.test(code))
+  if (code === null) return 'unknown'
+  if (REFUSAL_CODES.has(code)) return code
+  const tokens = code.toLowerCase().split(/[^a-z0-9]+/)
+  if (tokens.some((token) => AUTH_REFUSAL_TOKENS.has(token)))
     return 'auth_reject'
   return 'unknown'
 }
@@ -315,8 +324,14 @@ export function useAgentCrdtFollower(
   const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
+  // One report per exhaustion: every later refusal for the same target (each
+  // reconnect resubscribes) re-enters the exhausted branch until a confirmed
+  // subscribe or target change resets the attempt counter.
+  let subscribeFailureReported = false
 
   const reportSubscribeFailure = (detail: unknown): void => {
+    if (subscribeFailureReported) return
+    subscribeFailureReported = true
     const code = allowlistRefusalCode(readEventCode(detail))
     const isAuthRejection = code === 'auth_reject'
     // Never forward the server-supplied `message` to telemetry — it is
@@ -327,6 +342,32 @@ export function useAgentCrdtFollower(
       tags: { code, attempts: subscribeRetryAttempt },
       context: { workflow_id: subscribedWorkflowId.value }
     })
+  }
+
+  // One `crdt_doc_divergence` per reason per incident. The bridge re-runs the
+  // schema gate on every inbound frame while the doc stays unreadable, and an
+  // unbound projection target stays unbound until retargeted, so without a
+  // latch each `doc_update` (the highest-frequency frame) would report again.
+  // Cleared when a frame applies, on a confirmed subscribe, and on retarget.
+  const divergenceReported = new Set<string>()
+  const reportDocDivergence = (
+    reason: 'missing_projection_target' | 'schema_mismatch',
+    context: { workflow_id: string | undefined; seq?: number }
+  ): void => {
+    if (divergenceReported.has(reason)) return
+    divergenceReported.add(reason)
+    reportError(
+      new Error(
+        reason === 'schema_mismatch'
+          ? 'CRDT document schema is unreadable'
+          : 'CRDT update has no bound projection target'
+      ),
+      {
+        errorType: 'crdt_doc_divergence',
+        tags: { reason },
+        context
+      }
+    )
   }
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
@@ -377,6 +418,7 @@ export function useAgentCrdtFollower(
       subscribeRetryTimer = null
     }
     subscribeRetryAttempt = 0
+    subscribeFailureReported = false
   }
 
   const scheduleSubscribeRetry = (detail: unknown): void => {
@@ -410,6 +452,7 @@ export function useAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       clearSubscribeRetry()
+      divergenceReported.clear()
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
@@ -448,13 +491,12 @@ export function useAgentCrdtFollower(
     let applied: boolean
     try {
       applied = adapter.applyFrame(update)
-      if (!applied) {
-        reportError(new Error('CRDT update has no bound projection target'), {
-          errorType: 'crdt_doc_divergence',
-          tags: { reason: 'missing_projection_target' },
-          context: { workflow_id: update.workflowId, seq: update.seq }
+      if (applied) divergenceReported.clear()
+      else
+        reportDocDivergence('missing_projection_target', {
+          workflow_id: update.workflowId,
+          seq: update.seq
         })
-      }
     } catch (error) {
       reportError(error, {
         errorType: 'crdt_apply_error',
@@ -560,11 +602,7 @@ export function useAgentCrdtFollower(
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
-    reportError(new Error('CRDT document schema is unreadable'), {
-      errorType: 'crdt_doc_divergence',
-      tags: { reason: 'schema_mismatch' },
-      context: { workflow_id: detail?.workflowId }
-    })
+    reportDocDivergence('schema_mismatch', { workflow_id: detail?.workflowId })
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -602,8 +640,29 @@ export function useAgentCrdtFollower(
   // subscription, so an unscoped history attributes reconnects from one
   // workflow (or from before any subscription existed) to the next.
   let reconnects: number[] = []
+  // Storm latch: pruning to the window keeps the length parked on the
+  // threshold for a steady cadence (every 30 s gives [0,30,60], [30,60,90],
+  // ...), so a plain equality test would re-fire on every reconnect. Report
+  // once per storm and re-arm only after the window has emptied.
+  let stormReported = false
+  // `api.ts` reopens 300 ms after every close, so a flapping link closes with
+  // 1006 on every bounce: cap the report to one per storm window.
+  let lastAbnormalCloseReportAt: number | null = null
+  const resetSocketHistory = (): void => {
+    reconnects = []
+    stormReported = false
+    lastAbnormalCloseReportAt = null
+  }
   const onSocketClosed: EventListener = (event) => {
     if (!(event instanceof CustomEvent) || event.detail?.code !== 1006) return
+    if (!isTargetActive.value || subscribedWorkflowId.value === null) return
+    const now = Date.now()
+    if (
+      lastAbnormalCloseReportAt !== null &&
+      now - lastAbnormalCloseReportAt <= RECONNECT_STORM_WINDOW_MS
+    )
+      return
+    lastAbnormalCloseReportAt = now
     reportError(new Error('CRDT WebSocket closed abnormally'), {
       errorType: 'crdt_ws_1006',
       context: { workflow_id: subscribedWorkflowId.value }
@@ -612,14 +671,14 @@ export function useAgentCrdtFollower(
   const onReconnecting: EventListener = () => {
     if (!isTargetActive.value || subscribedWorkflowId.value === null) return
     const now = Date.now()
-    reconnects.push(now)
     reconnects = reconnects.filter(
       (at) => now - at <= RECONNECT_STORM_WINDOW_MS
     )
-    const oldest = reconnects[0]
-    if (oldest === undefined) return
+    if (reconnects.length === 0) stormReported = false
+    reconnects.push(now)
 
-    if (reconnects.length === RECONNECT_STORM_THRESHOLD) {
+    if (reconnects.length >= RECONNECT_STORM_THRESHOLD && !stormReported) {
+      stormReported = true
       reportError(new Error('CRDT WebSocket is reconnecting repeatedly'), {
         errorType: 'crdt_reconnect_storm',
         tags: {
@@ -682,9 +741,10 @@ export function useAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       // The active target is changing (or deactivating): reconnect history
-      // from the previous target must not count toward this one's storm
-      // threshold (r3911180528).
-      reconnects = []
+      // and divergence latches from the previous target must not carry over
+      // to this one (r3911180528).
+      resetSocketHistory()
+      divergenceReported.clear()
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
