@@ -892,7 +892,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
             outputs: [true]
           },
           { id: '9', title: 'SaveImage', inputs: [true], outputs: [] },
-          // Nodes render in ascending id order.
+          // graphSnapshot sorts nodes by numeric id.
           {
             id: '1068057559864246',
             title: 'CLIPTextEncode',
