@@ -3,6 +3,7 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { reportError } from '@/platform/telemetry/reportError'
+import { registerAgentIdentityStateTracker } from '@/workbench/extensions/agent/services/agent/agentIdentityStateTracker'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -74,6 +75,7 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const { resolvedUserInfo } = useCurrentUser()
+      registerAgentIdentityStateTracker()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
