@@ -31,8 +31,8 @@
       :field-class="fieldClass"
       :password-error="errors.password"
       :confirm-password-error="errors.confirmPassword"
-      @update:password="validatePassword"
-      @update:confirm-password="validateConfirmPassword"
+      @update:password="validatePasswords"
+      @update:confirm-password="validatePasswords"
     />
 
     <TurnstileWidget
@@ -140,12 +140,18 @@ function updateEmail(value: string | number | undefined) {
   validateField('email')
 }
 
-function validatePassword() {
-  validateField('password')
-}
+function validatePasswords() {
+  const result = signUpSchema.safeParse(values)
+  const fieldErrors = result.success
+    ? undefined
+    : getZodFieldErrors(result.error)
 
-function validateConfirmPassword() {
-  validateField('confirmPassword')
+  if (fieldErrors?.password) errors.password = fieldErrors.password
+  else delete errors.password
+
+  if (fieldErrors?.confirmPassword) {
+    errors.confirmPassword = fieldErrors.confirmPassword
+  } else delete errors.confirmPassword
 }
 
 const onSubmit = useThrottleFn(() => {

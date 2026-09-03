@@ -143,6 +143,10 @@ describe('CloudSignInForm submit gating', () => {
         screen.getByText(enMessages.validation.invalidEmail)
       ).toBeInTheDocument()
     })
+    expect(emailField()).toHaveAttribute(
+      'aria-describedby',
+      'cloud-sign-in-email-error'
+    )
   })
 
   it('does not emit submit for a malformed email, by button or by Enter', async () => {
