@@ -5,20 +5,31 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className, ...restProps } = defineProps<
-  ToastViewportProps & { class?: HTMLAttributes['class'] }
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+
+const {
+  class: className,
+  zIndexVersion,
+  ...restProps
+} = defineProps<
+  ToastViewportProps & {
+    class?: HTMLAttributes['class']
+    zIndexVersion?: number
+  }
 >()
 const forwardedProps = useForwardProps(restProps)
 </script>
 
 <template>
-  <ToastViewport
-    v-bind="forwardedProps"
-    :class="
-      cn(
-        'pointer-events-none fixed top-20 right-4 z-1100 flex max-h-screen w-full max-w-sm flex-col gap-2 p-4',
-        className
-      )
-    "
-  />
+  <ToastViewport v-bind="forwardedProps" as-child>
+    <ol
+      v-reka-z-index="zIndexVersion"
+      :class="
+        cn(
+          'pointer-events-none fixed top-20 right-4 flex max-h-screen w-full max-w-sm flex-col gap-2 p-4',
+          className
+        )
+      "
+    />
+  </ToastViewport>
 </template>
