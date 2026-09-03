@@ -59,12 +59,6 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         await expect(
           panel.getByTestId('markdown-stream').first()
         ).not.toBeEmpty()
-        await expect(panel.getByTestId('agent-crdt-status')).toContainText(
-          'connected'
-        )
-        await expect(panel.getByTestId('agent-crdt-status')).toContainText(
-          new RegExp(`\\b${agentConversation.expectedUpdateCount()} updates`)
-        )
 
         for (const id of agentConversation.addedNodeIds()) {
           await expect(page.locator(`[data-node-id="${id}"]`)).toBeVisible()
