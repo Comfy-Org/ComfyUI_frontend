@@ -105,9 +105,14 @@ async function assertWorkspacePackage(): Promise<void> {
     await readFile(resolve(PROJECT_ROOT, 'package.json'), 'utf8')
   ) as { dependencies?: Record<string, string> }
   const dependency = manifest.dependencies?.['@comfyorg/comfy-multi-player']
-  if (!dependency?.startsWith('workspace:')) {
+  if (dependency?.startsWith('link:')) {
     throw new Error(
-      '@comfyorg/comfy-multi-player must be an in-workspace dependency; do not use pnpm link'
+      '@comfyorg/comfy-multi-player must not be pnpm linked; use the in-workspace package'
+    )
+  }
+  if (!dependency?.startsWith('workspace:')) {
+    console.warn(
+      '[dev-agent-integration] @comfyorg/comfy-multi-player is the published package; edits to it will not hot-reload until it is an in-workspace dependency'
     )
   }
 }
