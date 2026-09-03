@@ -126,11 +126,6 @@
     "untitledChat": "無題",
     "uploading": "アップロード中"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "実行あたりのコスト",
-    "title": "APIノード",
-    "totalCost": "合計コスト"
-  },
   "apiNodesSignInDialog": {
     "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
     "title": "APIノードを使用するためにはサインインが必要です"
@@ -3201,6 +3196,7 @@
     "scail": "scail",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "シグマ",
     "sound": "サウンド",
@@ -5038,8 +5034,10 @@
       "failedCount": "{count} 件の招待を送信できませんでした。再試行してください。",
       "invalidEmailCount": "{count} 件の無効なメールアドレス",
       "invitedMessage": "{emails} に招待を送信しました",
+      "pendingInviteCount": "このうち{count}人にはすでに招待が保留中です。スキップされます。",
+      "pendingInviteSingle": "このユーザーにはすでに招待が保留中です",
       "placeholder": "招待する人のメールアドレスを入力",
-      "seatLimitReached": "最大 {count} 名のチームメンバーを招待できます。",
+      "seatLimitExceeded": "このワークスペースのメンバー数は{max}人までです。続行するには{overage}人を削除してください。",
       "title": "このワークスペースに人を招待"
     },
     "inviteUpsellDialog": {

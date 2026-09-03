@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
@@ -82,6 +88,142 @@ describe('attachLayoutMintPort', () => {
 
   it('mints add_node with the mint-time snapshot for a local createNode', () => {
     deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: '1',
+        class_type: 'TestNode',
+        pos: [128, 96],
+        node: { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }
+      }
+    ])
+  })
+
+  it('surfaces interior create and delete without minting root operations', () => {
+    const interior = {
+      graphId: 'root',
+      ownerGraphId: 'subgraph'
+    }
+
+    deliver({
+      operation: { ...createNodeChange('1').operation, ...interior }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, ...interior }
+    })
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        message: expect.stringContaining('Subgraph-interior node create')
+      }),
+      {
+        errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
+        context: {
+          graphId: 'root',
+          ownerGraphId: 'subgraph',
+          nodeId: '1'
+        }
+      }
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        message: expect.stringContaining('Subgraph-interior node delete')
+      }),
+      {
+        errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+        context: {
+          graphId: 'root',
+          ownerGraphId: 'subgraph',
+          nodeId: '1'
+        }
+      }
+    )
+  })
+
+  it('reports one interior-delete error per subgraph per tick', async () => {
+    for (let index = 0; index < 30; index++) {
+      deliver({
+        operation: {
+          ...deleteChange(String(index)).operation,
+          graphId: 'root',
+          ownerGraphId: 'subgraph-a'
+        }
+      })
+    }
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenLastCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+      context: {
+        graphId: 'root',
+        ownerGraphId: 'subgraph-a',
+        nodeId: '0'
+      }
+    })
+
+    deliver({
+      operation: {
+        ...deleteChange('30').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph-b'
+      }
+    })
+    expect(reportError).toHaveBeenCalledTimes(2)
+
+    await Promise.resolve()
+    deliver({
+      operation: {
+        ...deleteChange('31').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph-a'
+      }
+    })
+    expect(reportError).toHaveBeenCalledTimes(3)
+  })
+
+  it('fails closed on a graphId with no ownerGraphId instead of minting as root', () => {
+    deliver({
+      operation: { ...createNodeChange('1').operation, graphId: 'root' }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, graphId: 'root' }
+    })
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        message: expect.stringContaining('createNode has no ownerGraphId')
+      }),
+      {
+        errorType: 'agent_crdt_missing_owner_graph_id_create',
+        context: { graphId: 'root', nodeId: '1' }
+      }
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        message: expect.stringContaining('deleteNode has no ownerGraphId')
+      }),
+      {
+        errorType: 'agent_crdt_missing_owner_graph_id_delete',
+        context: { graphId: 'root', nodeId: '1' }
+      }
+    )
+  })
+
+  it('mints a root createNode when ownerGraphId equals graphId', () => {
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    })
 
     expect(minted).toEqual([
       {

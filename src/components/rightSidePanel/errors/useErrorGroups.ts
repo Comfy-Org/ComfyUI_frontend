@@ -48,13 +48,25 @@ import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'
 
-const AGENT_PROMPT_ERROR_TYPES = new Set([
+const AGENT_PROMPT_ERROR_TYPE_LIST = [
   'agent_api_failed',
   'op_rejected',
   'prefix_abort',
   'guard_trip',
   'apply_failed'
-])
+] as const
+
+type AgentPromptErrorType = (typeof AGENT_PROMPT_ERROR_TYPE_LIST)[number]
+
+const AGENT_PROMPT_ERROR_TYPES: ReadonlySet<string> = new Set(
+  AGENT_PROMPT_ERROR_TYPE_LIST
+)
+
+function isAgentPromptErrorType(
+  errorType: string
+): errorType is AgentPromptErrorType {
+  return AGENT_PROMPT_ERROR_TYPES.has(errorType)
+}
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
@@ -410,7 +422,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       errors: [
         {
           message: error.message,
-          ...(AGENT_PROMPT_ERROR_TYPES.has(error.type)
+          ...(isAgentPromptErrorType(error.type)
             ? { details: error.details }
             : {}),
           ...resolvedDisplay

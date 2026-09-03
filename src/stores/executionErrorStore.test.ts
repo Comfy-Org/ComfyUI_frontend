@@ -1,4 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -12,6 +13,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -974,6 +976,24 @@ describe('absorbed-error retirement on candidate resolution', () => {
     expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
   })
 
+  it('keeps absorbed errors when candidates reset during a graph load', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      modelStore.setMissingModels([])
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+  })
+
   it('retires a promoted media combo error stored under the host id', async () => {
     const { rootGraph } = createBoundaryLinkedSubgraph()
     mockGraphReady(rootGraph)
@@ -1073,6 +1093,147 @@ describe('absorbed-error retirement on candidate resolution', () => {
     mediaStore.removeMissingMediaByNodeId(execId)
     await nextTick()
 
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
+describe('setActiveGraph', () => {
+  const graphAId = '11111111-1111-4111-8111-111111111111'
+  const graphBId = '22222222-2222-4222-8222-222222222222'
+
+  const nodeErrors = {
+    '1': nodeError(
+      [validationError('value_bigger_than_max', 'steps', {}, 'Too big', '')],
+      'KSampler'
+    )
+  }
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('keeps each graph run errors separate and restores them on return', () => {
+    const store = useExecutionErrorStore()
+    const executionError = {
+      prompt_id: 'graph-a-run',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    }
+    const promptError = {
+      type: 'execution',
+      message: 'prompt failed',
+      details: ''
+    }
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+    store.recordExecutionError(executionError)
+    store.recordPromptError(promptError)
+
+    store.setActiveGraph(graphBId)
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.lastExecutionError).toBeNull()
+    expect(store.lastPromptError).toBeNull()
+    expect(store.totalErrorCount).toBe(0)
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+    expect(store.lastExecutionError).toEqual(executionError)
+    expect(store.lastPromptError).toEqual(promptError)
+    expect(store.totalErrorCount).toBe(3)
+  })
+
+  it('keeps workflows with the same graph id separate', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId, 'workflows/a.json')
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphAId, 'workflows/b.json')
+    expect(store.lastNodeErrors).toBeNull()
+
+    store.setActiveGraph(graphAId, 'workflows/a.json')
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+
+  it('hides run errors while detached from a graph', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(null)
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.hasAnyError).toBe(false)
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+
+  it('drops run errors on new runs without touching other graphs', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphBId)
+    store.clearRunErrors()
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+
+    store.clearRunErrors()
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('prunes a bucket when its last error is cleared', () => {
+    const store = useExecutionErrorStore()
+    const promptError = {
+      type: 'execution',
+      message: 'prompt failed',
+      details: ''
+    }
+
+    store.setActiveGraph(graphAId)
+    store.recordPromptError(promptError)
+    expect(store.lastPromptError).toEqual(promptError)
+
+    store.clearPromptError()
+    store.setActiveGraph(graphBId)
+    store.setActiveGraph(graphAId)
+
+    expect(store.lastPromptError).toBeNull()
+    expect(store.hasAnyError).toBe(false)
+  })
+
+  it('closes the error overlay when the active graph changes', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+    store.showErrorOverlay()
+
+    store.setActiveGraph(null)
+    expect(store.isErrorOverlayOpen).toBe(false)
+
+    store.setActiveGraph(graphAId)
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('ignores errors recorded while no graph is active', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(null)
+    store.recordNodeErrors(nodeErrors)
+
+    expect(store.lastNodeErrors).toBeNull()
+
+    store.setActiveGraph(graphAId)
     expect(store.lastNodeErrors).toBeNull()
   })
 })

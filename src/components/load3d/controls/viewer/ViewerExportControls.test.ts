@@ -39,9 +39,7 @@ describe('ViewerExportControls', () => {
 
   it('defaults the export format to obj', () => {
     renderComponent()
-    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe(
-      'obj'
-    )
+    expect(screen.getByRole<HTMLSelectElement>('combobox').value).toBe('obj')
   })
 
   it('emits exportModel with the currently selected format when the button is clicked', async () => {

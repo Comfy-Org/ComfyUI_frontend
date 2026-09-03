@@ -11,7 +11,8 @@ import {
 } from '@e2e/fixtures/utils/clipboardSpy'
 import {
   cleanupFakeModel,
-  loadWorkflowAndOpenErrorsTab
+  loadWorkflowAndOpenErrorsTab,
+  openErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
@@ -85,6 +86,10 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
 
   test.describe('Validation absorption', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
       const nodeErrors = {
         '1': {
@@ -106,7 +111,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await new ExecutionHelper(comfyPage).mockValidationFailure(nodeErrors)
     })
 
-    test('Should keep an absorbed missing-model validation failure amber', async ({
+    test('Should keep an absorbed missing-model validation failure amber across workflow switches', async ({
       comfyPage
     }) => {
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
@@ -144,6 +149,26 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
           .getByTestId(TestIds.propertiesPanel.errorsTab)
           .getByTestId(TestIds.propertiesPanel.tabIcon)
       ).toHaveAccessibleName('Setup required')
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeHidden()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_models')
+      await openErrorsTab(comfyPage)
+
+      await expect(
+        comfyPage.page.locator('section[data-testid^="error-group-"]')
+      ).toHaveCount(1)
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelsGroup)
+          .getByTestId(TestIds.propertiesPanel.blockedLastRunIndicator)
+      ).toBeVisible()
+      await expect(hero).toContainText('Setup required')
     })
   })
 

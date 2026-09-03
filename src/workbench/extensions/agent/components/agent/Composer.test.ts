@@ -12,12 +12,12 @@ import { i18n } from '@/i18n'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
-const tooltipBindings = new WeakMap<Element, DirectiveBinding['value']>()
+const tooltipBindings = new WeakMap<Element, unknown>()
 const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding) {
+  mounted(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   },
-  updated(element: Element, binding: DirectiveBinding) {
+  updated(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   }
 }
@@ -37,7 +37,7 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
-  it('shows the interactive empty-composer hint', () => {
+  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
@@ -501,7 +501,7 @@ describe('Composer', () => {
     first.unmount()
 
     mount()
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe(
       'keep me'
     )
   })

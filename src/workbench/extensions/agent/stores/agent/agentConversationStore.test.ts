@@ -8,8 +8,7 @@ import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
-const chat = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
   chat({
     type: 'agent_thinking',
@@ -23,7 +22,13 @@ const delta = (id: string, text: string): AgentChatEvent =>
 const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
-    data: { tool_name: name, status, args: [], message_id: id, thread_id: 'th' }
+    data: {
+      tool_call_id: `call-${name}`,
+      tool_name: name,
+      status,
+      message_id: id,
+      thread_id: 'th'
+    }
   })
 const done = (id: string): AgentChatEvent =>
   chat({
@@ -201,7 +206,7 @@ describe('useAgentConversationStore', () => {
   it('folds a tool_call into the active turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'ok'))
+    store.ingest(toolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
       name: 'add_node',
@@ -338,6 +343,43 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
 
     expect(partTexts(store)).toContain('the awaited reply')
+  })
+
+  it('hydrates transcript turns in sequence order', () => {
+    const store = useAgentConversationStore()
+
+    store.hydrate([
+      historyRow(4, 'assistant', 'turn-b', 'Second reply'),
+      historyRow(2, 'assistant', 'turn-a', 'First reply'),
+      historyRow(1, 'user', 'turn-a', 'First prompt'),
+      historyRow(3, 'user', 'turn-b', 'Second prompt')
+    ])
+
+    expect(store.entries.map((entry) => entry.id)).toEqual([
+      'turn-a',
+      'turn-a',
+      'turn-b',
+      'turn-b'
+    ])
+    expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
+  })
+
+  it('keeps hydrated turn identity stable when persisted row ids change', () => {
+    const store = useAgentConversationStore()
+    const firstRows = [
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v1'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v1')
+    ]
+
+    store.hydrate(firstRows)
+    const firstMessage = store.messages[0]
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v2'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v2')
+    ])
+
+    expect(store.messages[0].id).toBe(firstMessage.id)
+    expect(store.messages[0].id).toBe('turn-a')
   })
 
   it('keeps an earlier completed turn when a returning live turn repeats its prompt text', () => {
