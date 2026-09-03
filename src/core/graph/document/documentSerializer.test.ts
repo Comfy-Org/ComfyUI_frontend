@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { serializeDocumentScope } from '@/core/graph/document/documentSerializer'
 import type {
@@ -164,6 +164,7 @@ describe('serializeDocumentScope', () => {
   })
 
   it('throws on pathologically deep semantic state instead of hanging', () => {
+    vi.stubEnv('DEV', false)
     const scope = scopeFor('root-deep')
     let deep: unknown = 0
     for (let i = 0; i < 40; i++) deep = [deep]

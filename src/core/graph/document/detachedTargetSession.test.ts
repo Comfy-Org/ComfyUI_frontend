@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import type {
@@ -378,6 +378,7 @@ describe('createDetachedTargetSession', () => {
   })
 
   it('rejects frames addressed to another target loudly', () => {
+    vi.stubEnv('DEV', false)
     const session = createDetachedTargetSession(WORKFLOW_ID)
     const stranger = createFrameSource('wf-other')
 
