@@ -398,17 +398,37 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.getByText('op-reconcile-123')).toBeTruthy()
   })
 
-  it('does not render a back action on the payment confirmation', () => {
+  it('owns a back action whether or not the payment element is embedded', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator' },
+      global: {
+        ...globalOptions,
+        stubs: {
+          ...globalOptions.stubs,
+          Button: {
+            props: ['ariaLabel'],
+            template:
+              '<button :aria-label="ariaLabel" @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'g.back' }))
+
+    expect(emitted().back).toBeTruthy()
+  })
+
+  it('omits the total row entirely when no quote is available to price it', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { tierKey: 'creator', isLoading: true },
+      props: {
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
+        previewData: null
+      },
       global: globalOptions
     })
 
-    expect(
-      screen.queryByRole('button', {
-        name: 'subscription.preview.backToAllPlans'
-      })
-    ).toBeNull()
+    expect(screen.queryByText('subscription.preview.totalDueToday')).toBeNull()
   })
 
   it('prices a legacy preview from the server costs instead of rendering a blank total', () => {

@@ -106,7 +106,7 @@ describe('PostHogTelemetryProvider', () => {
     hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
-    } as typeof window.__CONFIG__
+    }
   })
 
   describe('initialization', () => {

@@ -5,7 +5,12 @@ import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
+import type { MaterializableGraph } from './agentNodeMaterializer'
+import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { recordDevEvent } from './devPanelLog'
+import { wireLog } from './crdtLog'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
+import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
@@ -118,12 +123,53 @@ function clearPersistedDocId(): void {
  */
 export const STALE_AFTER_MS = 30_000
 
+/**
+ * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
+ * listeners observe, replacing the single overloaded `updatesApplied`
+ * observable. Each counter increments exactly once, at the boundary where
+ * that outcome is decided — never inferred after the fact. `received` counts
+ * only frames the bridge re-dispatched as `doc_update`, so
+ * `received === applied + skipped` always holds; `errored`, `gap` and
+ * `dropped` are disjoint from it because the bridge returns before
+ * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
+ * stale/duplicate discard). Frames the bridge drops for a workflowId other
+ * than its `sentWorkflowId` emit no event and are not counted anywhere.
+ * `applied` is tracked independently of `bridge.follower.updatesApplied`
+ * (which counts Yjs merges, including frames this composable skips) so a
+ * divergence between the two is visible instead of hidden behind one number.
+ * No payload bodies or actor identifiers are recorded here — see
+ * `recordDevEvent` call sites for the (dev-only) frame detail surface.
+ */
+export interface AgentCrdtOutcomeCounters {
+  /** Every `doc_update` event the composable's listener was invoked with. */
+  received: number
+  /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
+  applied: number
+  /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
+  skipped: number
+  /** The merged doc failed the KA-11 read gate (`schema_error`). */
+  errored: number
+  /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
+  gap: number
+  /** An explicit lineage break (`doc_reset`). */
+  reset: number
+  /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
+  dropped: number
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  /**
+   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
+   * `doc_reset` / `follower_replaced`). Not interchangeable with
+   * `outcomes.applied`, which is monotonic and counts only frames that passed
+   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
+   */
   updatesApplied: number
   lastFrameType: string | null
+  outcomes: AgentCrdtOutcomeCounters
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -147,12 +193,27 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  /**
+   * Live graph that receives node adapters for store-only records. Reactive
+   * reads inside the getter are tracked, so a `null` → graph flip triggers a
+   * reconcile without waiting for the next remote frame.
+   */
+  getGraph: () => MaterializableGraph | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  const outcomes = ref<AgentCrdtOutcomeCounters>({
+    received: 0,
+    applied: 0,
+    skipped: 0,
+    errored: 0,
+    gap: 0,
+    reset: 0,
+    dropped: 0
+  })
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -166,7 +227,7 @@ export function useAgentCrdtFollower(
       } catch {
         // Leave the raw string.
       }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      wireLog.trace('ws_out', 'outbound frame', { delivered, frame: parsed })
       return delivered
     },
     addEventListener(type, listener) {
@@ -191,7 +252,7 @@ export function useAgentCrdtFollower(
           applied: detail.applied,
           skipped: detail.skipped,
           ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
+            ? { failure: detail.failed }
             : {})
         })
       }
@@ -318,21 +379,38 @@ export function useAgentCrdtFollower(
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
+      // FE #16637 residual: a refusal is the earliest signal the sender can
+      // get that its in-flight batch's doc is gone — don't make it wait out
+      // the 10 s result-silence window to notice on its own.
+      sender.abortIfUnbound()
     }
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
+    outcomes.value = {
+      ...outcomes.value,
+      received: outcomes.value.received + 1
+    }
     if (
       !isTargetActive.value ||
       update.workflowId !== subscribedWorkflowId.value
-    )
+    ) {
+      outcomes.value = {
+        ...outcomes.value,
+        skipped: outcomes.value.skipped + 1
+      }
       return
+    }
     if (staleProbeTimer !== null) armStaleProbe()
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    adapter.applyFrame(update)
+    const applied = adapter.applyFrame(update)
+    outcomes.value = applied
+      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+    if (applied) reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -365,6 +443,7 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
+    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
       detail?.workflowId !== subscribedWorkflowId.value
@@ -375,8 +454,14 @@ export function useAgentCrdtFollower(
       actor: detail?.actor ?? 'agent-reset',
       opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       adapter.clearForReset(detail.workflowId, context)
+      // A lineage break empties the stores but leaves every live adapter
+      // standing, and those adapters are what a save serialises. Without a
+      // reconcile here the pre-reset nodes survive -- and can be written back
+      // -- until some later frame happens to arrive.
+      reconcileLiveGraph(detail.workflowId)
+    }
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -407,6 +492,10 @@ export function useAgentCrdtFollower(
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
+      // Same reasoning as `onDocReset`: the clear is store-only, so the stale
+      // live adapters have to be swept before the replacement doc's frames
+      // start landing.
+      reconcileLiveGraph(workflowId)
       adapter.bind(workflowId, bridge.follower)
     }
   }
@@ -423,8 +512,23 @@ export function useAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
+    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+  }
+  const onGap: EventListener = (event) => {
+    outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
+    recordDevEvent(
+      'doc_gap',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+  }
+  const onStale: EventListener = (event) => {
+    outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
+    recordDevEvent(
+      'doc_stale',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
@@ -457,6 +561,8 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('follower_replaced', onFollowerReplaced)
   bridge.addEventListener('schema_error', onSchemaError)
+  bridge.addEventListener('doc_gap', onGap)
+  bridge.addEventListener('doc_stale', onStale)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -465,9 +571,46 @@ export function useAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // The op layer writes remote frames to the stores only; the live graph
+  // catches up here, after each applied frame and once a graph exists.
+  function reconcileLiveGraph(docId: string): void {
+    const graph = getGraph()
+    if (!graph) return
+    const nodeIds = reconcileAgentAdapters(graph)
+    if (nodeIds.length > 0) {
+      recordDevEvent('agent_node_adapters_materialized', {
+        workflowId: docId,
+        nodeIds
+      })
+    }
+  }
+  // Readiness only. The other ordering -- graph ready first, target activated
+  // second -- cannot be caught here: `getGraph` does not change when activity
+  // flips, and even if this watcher also took `isTargetActive` as a source it
+  // was created before the binding watcher below, so it would run first and
+  // still see `boundWorkflowId === null`. Activation is therefore reconciled at
+  // the bind site instead, once the binding actually exists.
+  watch(getGraph, (graph) => {
+    if (graph && boundWorkflowId !== null && isTargetActive.value) {
+      reconcileLiveGraph(boundWorkflowId)
+    }
+  })
+  // Drive the bridge's intent, then give the sender the same eager signal the
+  // refusal branch gets: `reconcile()` clears send reality synchronously when
+  // the desired doc changes, and a batch minted for the old doc would
+  // otherwise wait out the 10 s result-silence window before noticing.
+  const retarget = (next: string | null): void => {
+    if (next === null) bridge.unsubscribe()
+    else bridge.subscribe(next)
+    sender.abortIfUnbound()
+  }
   watch(
     [workflowId, isTargetActive],
-    ([next, active]) => {
+    ([next, active], previous) => {
+      // Only the inactive->active edge, and never the `immediate` first run
+      // (`previous` is undefined there), so a plain mount or retarget keeps its
+      // existing "reconcile on frame or on graph readiness" behaviour.
+      const justActivated = active && previous?.[1] === false
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
@@ -479,7 +622,7 @@ export function useAgentCrdtFollower(
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
-        bridge.unsubscribe()
+        retarget(null)
         return
       }
       if (next === null) {
@@ -493,7 +636,8 @@ export function useAgentCrdtFollower(
             boundWorkflowId = persisted
           }
           subscribedWorkflowId.value = persisted
-          bridge.subscribe(persisted)
+          retarget(persisted)
+          if (justActivated) reconcileLiveGraph(persisted)
           return
         }
         clearPersistedDocId()
@@ -502,7 +646,7 @@ export function useAgentCrdtFollower(
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
-        bridge.unsubscribe()
+        retarget(null)
         return
       }
       initialBind = false
@@ -512,7 +656,8 @@ export function useAgentCrdtFollower(
         boundWorkflowId = next
       }
       subscribedWorkflowId.value = next
-      bridge.subscribe(next)
+      retarget(next)
+      if (justActivated) reconcileLiveGraph(next)
     },
     { immediate: true }
   )
@@ -531,6 +676,8 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
+      bridge.removeEventListener('doc_gap', onGap)
+      bridge.removeEventListener('doc_stale', onStale)
       sender.detach()
       adapter.destroy()
       bridge.destroy()
@@ -544,11 +691,21 @@ export function useAgentCrdtFollower(
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    outcomes: outcomes.value
   }))
+
+  const debugSnapshot = (): CrdtDebugSnapshot =>
+    readCrdtSnapshot(bridge.follower.doc, {
+      status: status.value,
+      tabId,
+      lastSeq: bridge.lastSequence,
+      schemaError: bridge.lastSchemaError?.message ?? null
+    })
 
   return {
     status: readonly(status),
+    debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)
   }

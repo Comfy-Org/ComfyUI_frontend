@@ -24,7 +24,7 @@ function createMockDragEvent(
   const dataTransfer: Partial<DataTransfer> = {
     types,
     files: createMockFileList(files),
-    dropEffect: 'none' as DataTransfer['dropEffect']
+    dropEffect: 'none'
   }
 
   const event: Partial<DragEvent> = {

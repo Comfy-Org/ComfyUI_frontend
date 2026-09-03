@@ -29,22 +29,6 @@
     "
   >
     <Button
-      v-if="
-        checkoutStep === 'preview' &&
-        !isEmbeddedPaymentStep &&
-        !isEmbeddedConfirmStep
-      "
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      :disabled="isPolling"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-6 right-4 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -54,15 +38,9 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <!-- The embedded payment step titles itself ("Confirm your payment");
-         stacking "Choose a Plan" above it doubled the header and made this
-         step taller than the pricing table. -->
+    <!-- The confirm and success steps title themselves. -->
     <div
-      v-if="
-        !isEmbeddedPaymentStep &&
-        !isEmbeddedSuccessStep &&
-        !isEmbeddedConfirmStep
-      "
+      v-if="checkoutStep === 'pricing'"
       class="flex flex-col items-center gap-3"
     >
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
@@ -95,8 +73,8 @@
 
     <template v-if="checkoutStep === 'preview'">
       <SubscriptionTransitionPreviewWorkspace
-        v-if="previewVariant === 'team-change'"
-        :preview-data="previewData!"
+        v-if="previewVariant === 'team-change' && previewData"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
@@ -173,8 +151,8 @@
       />
 
       <SubscriptionTransitionPreviewWorkspace
-        v-else-if="previewVariant === 'personal-change'"
-        :preview-data="previewData!"
+        v-else-if="previewVariant === 'personal-change' && previewData"
+        :preview-data="previewData"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"

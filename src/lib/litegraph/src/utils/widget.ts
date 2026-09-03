@@ -14,7 +14,7 @@ import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
  * Use {@link IWidgetOptions.step2} if available, otherwise fallback to
  * {@link IWidgetOptions.step} which is scaled up by 10x in the legacy frontend logic.
  */
-export function getWidgetStep(options: IWidgetOptions<unknown>): number {
+export function getWidgetStep(options: IWidgetOptions): number {
   return options.step2 || (options.step || 10) * 0.1
 }
 
