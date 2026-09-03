@@ -236,23 +236,19 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('uses call-carried source to suppress an echoed local actor', () => {
-    const change = createNodeChange('1', LOCAL_ACTOR)
-    change.operation.source = 'agent-remote'
+  it.for([
+    ['create', createNodeChange('1', LOCAL_ACTOR)],
+    ['delete', deleteChange('1', LOCAL_ACTOR)]
+  ] as const)(
+    'uses call-carried source to suppress an echoed %s',
+    ([_operation, change]) => {
+      change.operation.source = 'agent-remote'
 
-    deliver(change)
+      deliver(change)
 
-    expect(minted).toEqual([])
-  })
-
-  it('uses call-carried source to suppress an echoed delete', () => {
-    const change = deleteChange('1', LOCAL_ACTOR)
-    change.operation.source = 'agent-remote'
-
-    deliver(change)
-
-    expect(minted).toEqual([])
-  })
+      expect(minted).toEqual([])
+    }
+  )
 
   it('never mints an actor-less change (no call-carried provenance)', () => {
     const change = createNodeChange('1')
