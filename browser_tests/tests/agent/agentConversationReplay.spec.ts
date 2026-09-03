@@ -74,9 +74,18 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
           const field = page
             .locator(`[data-node-id="${nodeId}"]`)
             .getByLabel(widget, { exact: true })
-          const control =
-            typeof value === 'string' ? field : field.locator('input')
-          await expect(control).toHaveValue(String(value))
+          if (typeof value === 'number') {
+            // Number widgets format their input (0.5 renders as 0.50), so compare the number.
+            await expect
+              .poll(async () =>
+                Number(await field.locator('input').first().inputValue())
+              )
+              .toBe(value)
+            continue
+          }
+          const tag = await field.evaluate((el) => el.tagName.toLowerCase())
+          if (tag === 'button') await expect(field).toContainText(value)
+          else await expect(field).toHaveValue(value)
         }
 
         await expect
