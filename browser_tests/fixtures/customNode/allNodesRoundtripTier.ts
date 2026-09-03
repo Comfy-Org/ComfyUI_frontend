@@ -446,14 +446,24 @@ export async function assertRoundtripTier({
               JSON.stringify(afterNormalized)
             )
           }
-          const widgetNamesById = () =>
+          const namesByIdWhere = (
+            keep: (widget: { serialize?: boolean }) => boolean
+          ) =>
             new Map(
               window.app!.graph.nodes.map((node) => [
                 String(node.id),
-                (node.widgets ?? []).map((widget) => widget.name)
+                (node.widgets ?? []).filter(keep).map((widget) => widget.name)
               ])
             )
+          // Live topology wants every widget; anything indexing positional
+          // widgets_values wants only the ones the serializer keeps, since it
+          // omits serialize === false and the full list misaligns after the
+          // first omission.
+          const widgetNamesById = () => namesByIdWhere(() => true)
+          const serializedWidgetNamesById = () =>
+            namesByIdWhere((widget) => widget.serialize !== false)
           let namesBefore = new Map<string, string[]>()
+          let serializedNamesBefore = new Map<string, string[]>()
           let firstPass: ReturnType<
             NonNullable<typeof window.app>['graph']['serialize']
           > | null = null
@@ -482,12 +492,14 @@ export async function assertRoundtripTier({
             },
             snapshotAndConfigure() {
               namesBefore = widgetNamesById()
+              serializedNamesBefore = serializedWidgetNamesById()
               firstPass = window.app!.graph.serialize()
               window.app!.graph.configure(firstPass)
             },
             compare(label: string, strict: boolean) {
               const secondPass = window.app!.graph.serialize()
               const namesAfter = widgetNamesById()
+              const serializedNamesAfter = serializedWidgetNamesById()
               const byId = (pass: NonNullable<typeof firstPass>) =>
                 new Map(
                   (pass.nodes ?? []).map((node) => [String(node.id), node])
@@ -613,16 +625,75 @@ export async function assertRoundtripTier({
                   if (relevantChanges.every((key) => allowedKeys.includes(key)))
                     continue
                 }
-                const comparedBeforeValues =
-                  !strict && Array.isArray(before.widgets_values)
+                // widgets_values is a union of a positional array and a
+                // name-keyed record, and packs may rewrite their own nodes to
+                // the record form in onSerialize. Both sides carry the same
+                // values, so when only the shape differs they are keyed by
+                // widget name before comparing; otherwise a legal reshape
+                // reports drift on every widget of the node.
+                const asNamedValues = (
+                  values: unknown,
+                  names: readonly string[]
+                ): unknown => {
+                  const named = Array.isArray(values)
+                    ? Object.fromEntries(
+                        values.flatMap((value, index) => {
+                          const name = names[index]
+                          return name === undefined ? [] : [[name, value]]
+                        })
+                      )
+                    : values
+                  // The non-strict positional path drops frontend-only
+                  // widgets, so the reshaped record drops them too - otherwise
+                  // a pack that both reshapes and canonicalizes a UI-only
+                  // value reports drift while every declared input stuck.
+                  if (
+                    strict ||
+                    typeof named !== 'object' ||
+                    named === null ||
+                    Array.isArray(named)
+                  )
+                    return named
+                  return Object.fromEntries(
+                    Object.entries(named).filter(([name]) =>
+                      declaredNames.has(name)
+                    )
+                  )
+                }
+                // Only an array/record pair, never array vs absent: an empty
+                // array and a missing value already mean the same thing to
+                // preserves(), and reshaping [] into {} would strip that.
+                const isNamedShape = (value: unknown) =>
+                  typeof value === 'object' &&
+                  value !== null &&
+                  !Array.isArray(value)
+                const shapesDiffer =
+                  (Array.isArray(before.widgets_values) &&
+                    isNamedShape(after.widgets_values)) ||
+                  (isNamedShape(before.widgets_values) &&
+                    Array.isArray(after.widgets_values))
+                const comparedBeforeValues = shapesDiffer
+                  ? asNamedValues(
+                      before.widgets_values,
+                      serializedNamesBefore.get(id) ?? []
+                    )
+                  : !strict && Array.isArray(before.widgets_values)
                     ? before.widgets_values.filter((_, index) =>
-                        declaredNames.has(beforeNames[index] ?? '')
+                        declaredNames.has(
+                          (serializedNamesBefore.get(id) ?? [])[index] ?? ''
+                        )
                       )
                     : before.widgets_values
-                const comparedAfterValues =
-                  !strict && Array.isArray(after.widgets_values)
+                const comparedAfterValues = shapesDiffer
+                  ? asNamedValues(
+                      after.widgets_values,
+                      serializedNamesAfter.get(id) ?? []
+                    )
+                  : !strict && Array.isArray(after.widgets_values)
                     ? after.widgets_values.filter((_, index) =>
-                        declaredNames.has(afterNames[index] ?? '')
+                        declaredNames.has(
+                          (serializedNamesAfter.get(id) ?? [])[index] ?? ''
+                        )
                       )
                     : after.widgets_values
                 if (!preserves(comparedBeforeValues, comparedAfterValues))
@@ -693,7 +764,7 @@ export async function assertRoundtripTier({
                 })
                 for (const { target, widget } of mutations) {
                   if (!node.widgets?.includes(widget)) continue
-                  widget.value = target as typeof widget.value
+                  widget.value = target
                   widget.callback?.(widget.value)
                 }
               }

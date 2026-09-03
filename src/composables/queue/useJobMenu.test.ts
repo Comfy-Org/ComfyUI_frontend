@@ -314,7 +314,7 @@ describe('useJobMenu', () => {
         state: 'failed',
         taskRef: {
           errorMessage: 'Something went wrong'
-        } as Partial<TaskItemImpl>
+        }
       })
     )
 
@@ -346,7 +346,7 @@ describe('useJobMenu', () => {
           errorMessage: 'CUDA out of memory',
           executionError,
           createTime: 12345
-        } as Partial<TaskItemImpl>
+        }
       })
     )
 
@@ -368,7 +368,7 @@ describe('useJobMenu', () => {
         state: 'failed',
         taskRef: {
           errorMessage: 'Job failed with error'
-        } as Partial<TaskItemImpl>
+        }
       })
     )
 
@@ -390,7 +390,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: undefined } as Partial<TaskItemImpl>
+        taskRef: { errorMessage: undefined }
       })
     )
 
@@ -576,7 +576,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'completed',
-        taskRef: {} as Partial<TaskItemImpl>
+        taskRef: {}
       })
     )
 
@@ -610,7 +610,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'completed',
-        taskRef: {} as Partial<TaskItemImpl>
+        taskRef: {}
       })
     )
 
@@ -787,7 +787,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: 'Some error' } as Partial<TaskItemImpl>
+        taskRef: { errorMessage: 'Some error' }
       })
     )
 

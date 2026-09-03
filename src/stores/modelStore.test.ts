@@ -510,7 +510,7 @@ describe('useModelStore', () => {
       )
       const eagerLoad = store.getLoadedModelFolder('checkpoints')
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       // The rebuilt folder must have been re-loaded, not left uninitialized
@@ -535,7 +535,7 @@ describe('useModelStore', () => {
 
       const scanCallback = getScanCallback()
       expect(scanCallback).toBeDefined()
-      await scanCallback!()
+      await scanCallback()
       await flushScanReload()
 
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
@@ -550,7 +550,7 @@ describe('useModelStore', () => {
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
 
-      const scanCallback = getScanCallback()!
+      const scanCallback = getScanCallback()
       await scanCallback()
       await scanCallback()
       await scanCallback()
@@ -564,7 +564,7 @@ describe('useModelStore', () => {
       enableMocks(true)
       store = useModelStore()
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       // The bucket cache is still dropped so the eventual first read is
@@ -582,7 +582,7 @@ describe('useModelStore', () => {
         new Error('transient network failure')
       )
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       expect(error).toHaveBeenCalledWith(

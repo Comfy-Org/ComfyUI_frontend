@@ -506,7 +506,7 @@ function getParentNodes(): SubgraphNode[] {
 }
 
 export function addWidgetPromotionOptions(
-  options: (IContextMenuValue<unknown> | null)[],
+  options: (IContextMenuValue | null)[],
   widget: IBaseWidget,
   node: LGraphNode
 ) {

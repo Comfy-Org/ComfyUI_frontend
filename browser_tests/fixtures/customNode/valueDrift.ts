@@ -293,6 +293,32 @@ export function declaredInputNamesForTypes(
   )
 }
 
+/** Returns names aligned with positional widgets_values serialization. */
+export function serializedWidgetNames(
+  widgets: readonly { name: string; serialize?: boolean }[]
+): string[] {
+  return widgets
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
+}
+
+/**
+ * Whether the pair swapped between the positional array and the name-keyed
+ * record, which carries the same values in a different container. An absent
+ * value is excluded: it already compares equal to an empty array.
+ */
+export function isWidgetValuesContainerSwap(
+  before: unknown,
+  after: unknown
+): boolean {
+  const isNamed = (value: unknown) =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+  return (
+    (Array.isArray(before) && isNamed(after)) ||
+    (isNamed(before) && Array.isArray(after))
+  )
+}
+
 export function namedWidgetValueDrifts(
   before: unknown,
   after: unknown,

@@ -6,6 +6,7 @@ import {
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
+  zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
@@ -14,6 +15,7 @@ import {
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry,
@@ -45,12 +47,19 @@ export interface OpenTabsSnapshot {
   current_tab?: string
 }
 
+/** An omitted `version` makes this content authoritative for the backend CAS. */
+export interface DraftSnapshot {
+  content: Record<string, unknown>
+  version?: number
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
   tabs?: OpenTabsSnapshot
+  draft?: DraftSnapshot
 }
 
 interface IngestErrorBody {
@@ -116,6 +125,7 @@ export function createAgentRestClient() {
     }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
+    if (req.draft !== undefined) body.draft = req.draft
     return request(
       `/agent/threads/${threadId}/messages`,
       jsonInit('POST', body),
@@ -138,6 +148,20 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  async function getRunMode(): Promise<AgentRunModePreference> {
+    return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
+  }
+
+  async function putRunMode(
+    preference: AgentRunModePreference
+  ): Promise<AgentRunModePreference> {
+    return request(
+      '/agent/run-mode',
+      jsonInit('PUT', preference),
+      zAgentRunMode
+    )
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
@@ -193,6 +217,8 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getRunMode,
+    putRunMode,
     listCloudWorkflows,
     cancelMessage,
     uploadImage
