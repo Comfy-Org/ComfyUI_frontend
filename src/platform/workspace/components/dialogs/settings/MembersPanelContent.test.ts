@@ -174,6 +174,7 @@ const i18n = createI18n({
         members: {
           noMembers: 'No members',
           noMembersMatch: 'No members match "{query}"',
+          totalMembersCount: '{count} of {maxSeats} total members.',
           noInvites: 'No pending invites',
           noInvitesMatch: 'No invites match "{query}"'
         }
@@ -623,16 +624,23 @@ describe('MembersPanelContent', () => {
   })
 
   describe('member count display', () => {
-    it('shows member count header for team workspace', () => {
+    beforeEach(() => {
       mockFilteredMembers.value = [
         createMember({ id: '1' }),
         createMember({ id: '2' })
       ]
       mockMembers.value = mockFilteredMembers.value
+    })
+
+    it('counts the members against the seats the plan bought', () => {
       renderComponent()
-      expect(
-        screen.getByText(/workspacePanel\.members\.totalMembersCount/)
-      ).toBeTruthy()
+      expect(screen.getByText(/2 of 20 total members\./)).toBeInTheDocument()
+    })
+
+    it('stays silent until the members request has completed', () => {
+      mockMembersLoaded.value = false
+      renderComponent()
+      expect(screen.queryByText(/total members\./)).not.toBeInTheDocument()
     })
   })
 
@@ -678,6 +686,37 @@ describe('MembersPanelContent', () => {
 
     it('stays silent while the members list is hidden', () => {
       mockUiConfig.value = { ...mockUiConfig.value, showMembersList: false }
+      renderComponent()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
+
+    function showMembers(members: WorkspaceMember[], showMembersList = true) {
+      mockUiConfig.value = { ...mockUiConfig.value, showMembersList }
+      mockFilteredMembers.value = members
+      mockMembers.value = members
+    }
+
+    it('shows the list, not the empty copy, with members visible', () => {
+      showMembers([createMember()])
+      renderComponent()
+      expect(screen.getByText('member1@example.com')).toBeInTheDocument()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
+
+    it('shows the empty copy with no members and a visible list', () => {
+      showMembers([])
+      renderComponent()
+      expect(screen.getByText('No members')).toBeInTheDocument()
+    })
+
+    it('shows no empty copy with members and a hidden list', () => {
+      showMembers([createMember()], false)
+      renderComponent()
+      expect(screen.queryByText('No members')).not.toBeInTheDocument()
+    })
+
+    it('shows no empty copy with no members and a hidden list', () => {
+      showMembers([], false)
       renderComponent()
       expect(screen.queryByText('No members')).not.toBeInTheDocument()
     })

@@ -76,7 +76,7 @@ describe('PendingInvitesList', () => {
   })
 
   it('renders no empty copy before the first request completes', () => {
-    renderComponent([], { loaded: false })
+    renderComponent([], { loaded: false, searchQuery: 'nobody' })
 
     expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
     expect(
