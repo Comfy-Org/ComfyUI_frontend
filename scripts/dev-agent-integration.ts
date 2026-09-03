@@ -16,11 +16,14 @@ interface Options {
   cloudRepo: string
   comfyUrl: string
   docHostPort: number
+  engine: string
   frontendPort: number
   healthPort: number
   help: boolean
   pgExec: string
   record: boolean
+  temporalPort: number
+  temporalUiPort: number
 }
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -31,6 +34,10 @@ const REDIS_PORT = 6379
 const CLOUD_QUICKSTART =
   'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
 // Fixed so a rerun seeds nothing and the printed recorder command never moves.
+const TEMPORAL_INSTALL =
+  'brew install temporal, or: https://docs.temporal.io/cli#install'
+// The cloud's own dev server pairs the gRPC port with a UI port 1000 above it.
+const TEMPORAL_UI_OFFSET = 1000
 const RECORD_USER_ID = 'rec-local-user'
 const RECORD_WORKSPACE_ID = 'w-1f2e3d4c-5b6a-4798-8899-aabbccddeeff'
 const USAGE = `Usage: pnpm tsx scripts/dev-agent-integration.ts [options]
@@ -45,6 +52,8 @@ Options:
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
   --doc-host-port PORT  Doc host port in record mode (default: 8095)
   --pg-exec CMD         Command taking one SQL string, ending in -c
+  --engine NAME         Record mode engine: inline or temporal (default: inline)
+  --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7233)
   --help                Show this help
 `
 
@@ -70,11 +79,14 @@ function parseOptions(args: string[]): Options {
     cloudRepo: resolve(PROJECT_ROOT, '../cloud'),
     comfyUrl: 'http://127.0.0.1:8188',
     docHostPort: 8095,
+    engine: 'inline',
     frontendPort: 6207,
     healthPort: 0,
     help: false,
     pgExec: '',
-    record: false
+    record: false,
+    temporalPort: 7233,
+    temporalUiPort: 0
   }
   for (let index = 0; index < args.length; index++) {
     const arg = args[index]
@@ -93,6 +105,14 @@ function parseOptions(args: string[]): Options {
         break
       case '--doc-host-port':
         options.docHostPort = port(optionValue(args, index, arg), arg)
+        index++
+        break
+      case '--engine':
+        options.engine = optionValue(args, index, arg)
+        index++
+        break
+      case '--temporal-port':
+        options.temporalPort = port(optionValue(args, index, arg), arg)
         index++
         break
       case '--pg-exec':
@@ -126,6 +146,18 @@ function parseOptions(args: string[]): Options {
   }
   if (options.record && !options.catalog) {
     throw new Error('--record requires --catalog <conversation fixture>')
+  }
+  if (options.engine !== 'inline' && options.engine !== 'temporal') {
+    throw new Error('--engine must be inline or temporal')
+  }
+  if (options.engine === 'temporal' && !options.record) {
+    throw new Error('--engine temporal applies to --record only')
+  }
+  options.temporalUiPort = options.temporalPort + TEMPORAL_UI_OFFSET
+  if (options.temporalUiPort > 65535) {
+    throw new Error(
+      `--temporal-port must leave room for the Temporal UI port (port + ${TEMPORAL_UI_OFFSET})`
+    )
   }
   options.healthPort = options.agentPort + 1
   if (options.healthPort > 65535) {
@@ -275,6 +307,31 @@ function assertListening(portNumber: number, label: string): Promise<void> {
   })
 }
 
+// Polls because the Temporal dev server binds a second or two after it starts.
+async function waitForPort(
+  portNumber: number,
+  label: string,
+  timeoutMs: number
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    try {
+      return await assertListening(portNumber, label)
+    } catch (error) {
+      if (Date.now() >= deadline) throw error
+      await wait(500)
+    }
+  }
+}
+
+async function assertTemporalCli(): Promise<void> {
+  try {
+    await execFileAsync('temporal', ['--version'])
+  } catch {
+    throw new Error(`temporal is not on PATH; ${TEMPORAL_INSTALL}`)
+  }
+}
+
 // psql is not required on PATH: reach Postgres through whichever container publishes it.
 async function pgExecCommand(override: string): Promise<string> {
   if (override) return override
@@ -324,6 +381,7 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     ...process.env,
     AGENT_COMFY_URL: options.comfyUrl,
     AGENT_CRDT_MODE: 'on',
+    AGENT_ENGINE: options.engine,
     AGENT_M2M_SECRET: secret,
     AGENT_PORT: String(options.agentPort),
     // Without this the non-standalone default is cloud, and comfy-cli edits 401 against cloud.comfy.org.
@@ -332,7 +390,14 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${PG_PORT}/postgres?sslmode=disable`,
     DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
     HEALTH_PORT: String(options.healthPort),
-    REDIS_URL: `redis://localhost:${REDIS_PORT}/1`
+    REDIS_URL: `redis://localhost:${REDIS_PORT}/1`,
+    // AGENT_TASK_QUEUE stays at its default so the agent's own worker serves it.
+    ...(options.engine === 'temporal'
+      ? {
+          TEMPORAL_ADDRESS: `127.0.0.1:${options.temporalPort}`,
+          TEMPORAL_NAMESPACE: 'default'
+        }
+      : {})
   }
 }
 
@@ -387,6 +452,7 @@ async function runRecord(options: Options): Promise<number> {
   await access(resolve(agentDir, 'dochost/start.sh'))
   await assertListening(PG_PORT, 'Postgres')
   await assertListening(REDIS_PORT, 'Redis')
+  if (options.engine === 'temporal') await assertTemporalCli()
   await assertReachable(`${options.comfyUrl.replace(/\/$/, '')}/system_stats`)
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_BASE_URL) {
     throw new Error('Set ANTHROPIC_API_KEY or ANTHROPIC_BASE_URL')
@@ -400,6 +466,27 @@ async function runRecord(options: Options): Promise<number> {
   await seedIdentity(await pgExecCommand(options.pgExec))
 
   const agentUrl = `http://127.0.0.1:${options.agentPort}`
+  const supervisor = supervise(dataDir)
+  if (options.engine === 'temporal') {
+    supervisor.watch(
+      spawnGroup(
+        'temporal',
+        [
+          'server',
+          'start-dev',
+          '--ip',
+          '127.0.0.1',
+          '--port',
+          String(options.temporalPort),
+          '--ui-port',
+          String(options.temporalUiPort)
+        ],
+        agentDir,
+        process.env
+      )
+    )
+    await waitForPort(options.temporalPort, 'Temporal', 60_000)
+  }
   const docHost = spawnGroup('bash', ['dochost/start.sh'], agentDir, {
     ...process.env,
     DOC_HOST_PORT: String(options.docHostPort)
@@ -410,7 +497,6 @@ async function runRecord(options: Options): Promise<number> {
     agentDir,
     recordEnv(options, catalogPath, secret)
   )
-  const supervisor = supervise(dataDir)
   supervisor.watch(docHost)
   supervisor.watch(agent)
 
