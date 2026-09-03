@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-17-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20c-frontend'
 const terminalSteps = [
   'success',
   'canceled',
@@ -67,6 +67,17 @@ async function requireAuthenticated(page: Page) {
       return seam.getSessionPhase()
     })
   ).toBe('authenticated')
+  const signedInEmail = await page.evaluate(() => {
+    const authKey = Object.keys(localStorage).find((key) =>
+      key.startsWith('firebase:authUser:')
+    )
+    if (!authKey) return null
+    const value: unknown = JSON.parse(localStorage.getItem(authKey) ?? 'null')
+    return value && typeof value === 'object' && 'email' in value
+      ? Reflect.get(value, 'email')
+      : null
+  })
+  expect(signedInEmail).toBe(process.env.FIXTURE_B_EMAIL)
 }
 
 async function pauseBetweenFields() {
@@ -186,7 +197,7 @@ test('completes hosted subscription and captures terminal operation', async () =
   for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-16-'))
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20c-'))
   await mkdir(join(profileDir, 'Default'))
   writeFileSync(
     join(profileDir, 'Default', 'Preferences'),
@@ -209,7 +220,12 @@ test('completes hosted subscription and captures terminal operation', async () =
   const page = context.pages()[0] ?? (await context.newPage())
   context.on('response', async (response) => {
     const url = new URL(response.url())
-    if (!url.pathname.startsWith('/api/billing/')) return
+    if (
+      !url.pathname.startsWith('/api/billing/') &&
+      !url.pathname.startsWith('/api/workspaces') &&
+      url.pathname !== '/api/auth/token'
+    )
+      return
     const path = url.pathname.replace(/\/ops\/[^/]+$/, '/ops/[redacted]')
     appendFileSync(
       `${evidenceDir}/requests.log`,
