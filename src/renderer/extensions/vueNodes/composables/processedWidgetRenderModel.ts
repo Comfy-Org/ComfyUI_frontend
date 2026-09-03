@@ -366,9 +366,14 @@ function processWidget(
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
   // Hidden/converted-widget types normally skip Vue rendering entirely, but a
   // promoted/converted input still needs its row to reach WidgetGrid so the
-  // socket dot renders — WidgetGrid itself hides the control for these types
-  // via isConvertedWidget(). Only bail outright when there's no slot to draw.
-  if (!shouldRenderAsVue({ type, options }) && !slotInfo) return null
+  // socket dot renders — WidgetGrid itself hides the control for these types.
+  // Canvas-only widgets must remain excluded regardless of slot ownership.
+  if (
+    options.canvasOnly ||
+    (!shouldRenderAsVue({ type, options }) && !slotInfo)
+  ) {
+    return null
+  }
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)

@@ -272,6 +272,34 @@ describe('widget visibility', () => {
     expect(processed[0]?.slotMetadata).toBeDefined()
   })
 
+  it('removes canvas-only widgets even when they own an input slot', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'upload')
+    const widget = createMockWidget({
+      name: 'upload',
+      type: 'button',
+      options: { canvasOnly: true },
+      widgetId: id
+    })
+    const { graph, node } = createGraphWithNode([widget], nodeId)
+    node.inputs = [
+      {
+        name: 'upload',
+        type: 'STRING',
+        widget: { name: 'upload' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    registerWidgetState(id, {
+      type: 'button',
+      options: { canvasOnly: true }
+    })
+
+    expect(
+      processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })
+    ).toHaveLength(0)
+  })
+
   it('hides hidden widgets', () => {
     expect(visibilityOf({ hidden: true })).toBe(false)
   })
