@@ -1154,6 +1154,20 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
   })
 
+  it('does not replay a buffered failure after execution succeeds', () => {
+    fireExecutionError('job-b')
+    apiEventHandlers.get('execution_success')!(
+      new CustomEvent('execution_success', {
+        detail: { prompt_id: 'job-b' }
+      })
+    )
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+  })
+
   it('clears execution-start errors only for the producing workflow', () => {
     errorStore.recordPromptError({
       type: 'visible-error',

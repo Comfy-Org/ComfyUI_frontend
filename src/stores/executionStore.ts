@@ -529,6 +529,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
+    pendingExecutionErrorsByJobId.delete(jobId)
     setWorkflowStatus(jobId, {
       status: 'completed',
       endTime: performance.now()
