@@ -153,4 +153,26 @@ describe('Menu', () => {
       [...content.classList].filter((name) => name.startsWith('max-h-'))
     ).toHaveLength(1)
   })
+
+  it('stays closed when its open trigger is clicked', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Target' })
+
+    await user.pointer({ keys: '[MouseRight]', target: trigger })
+    await screen.findByRole('menu')
+    await user.click(trigger)
+
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+  })
 })
