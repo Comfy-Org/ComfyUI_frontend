@@ -103,7 +103,7 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
 
     // (2) focus is on the editor, not the trigger it was restored to.
     await expect(editor).toBeFocused()
-    await expect(optionsTrigger).not.toBeFocused()
+    await expect(optionsTrigger).toHaveCount(0)
 
     // (3) the editor is actually usable, not merely present: typing lands in
     // it and Enter commits. Guards a "fix" that keeps the input mounted but
