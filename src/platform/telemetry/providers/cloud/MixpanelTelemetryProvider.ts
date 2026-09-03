@@ -3,6 +3,7 @@ import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { reportError } from '@/platform/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 
 import type {
@@ -121,7 +122,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
                     })
                   })
                   .catch((error) => {
-                    console.error('Failed to identify Mixpanel user:', error)
+                    reportError(error, {
+                      errorType: 'mixpanel_user_identification_failure'
+                    })
                   })
               }
             })

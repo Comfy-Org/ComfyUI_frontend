@@ -6,15 +6,22 @@ const hoisted = vi.hoisted(() => {
   const customerIoTrack = vi.fn(
     (_event: string, _properties?: Record<string, unknown>) => Promise.resolve()
   )
-  const customerIoRegistration = { rejection: null as Error | null }
+  const customerIoRegistration: { rejection: Error | null } = {
+    rejection: null
+  }
+  const userEmail: { value: string | null } = { value: null }
+  const resolvedUserInfo: { value: { id: string } | null } = { value: null }
 
   return {
     onUserResolved: vi.fn(),
     onUserLogout: vi.fn(),
-    userEmail: { value: null as string | null },
-    resolvedUserInfo: { value: null as { id: string } | null },
+    userEmail,
+    resolvedUserInfo,
+    reportError: vi.fn(),
     posthogInit: vi.fn(),
-    mixpanelInit: vi.fn(),
+    mixpanelInit: vi.fn(
+      (_token: string, _options: { loaded: () => void }) => {}
+    ),
     customerIoTrack,
     customerIoRegistration,
     customerIoLoad: vi.fn(() => ({
@@ -30,6 +37,10 @@ const hoisted = vi.hoisted(() => {
     }))
   }
 })
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: hoisted.reportError
+}))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -106,6 +117,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   afterEach(() => {
     markStoresReady()
     hoisted.customerIoRegistration.rejection = null
+    hoisted.reportError.mockClear()
     delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
 
@@ -136,10 +148,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
 
     new MixpanelTelemetryProvider()
     await vi.waitFor(() => expect(hoisted.mixpanelInit).toHaveBeenCalled())
-    const [, options] = hoisted.mixpanelInit.mock.calls[0] as [
-      string,
-      { loaded: () => void }
-    ]
+    const [, options] = hoisted.mixpanelInit.mock.calls[0]
     options.loaded()
     await flushMicrotasks()
     expect(hoisted.onUserResolved).not.toHaveBeenCalled()
@@ -163,7 +172,6 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   it('handles a Customer.io in-app registration failure raised while the gate is still closed', async () => {
     const registrationError = new Error('in-app registration failed')
     hoisted.customerIoRegistration.rejection = registrationError
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     configureCustomerIo()
 
     new CustomerIoTelemetryProvider()
@@ -171,10 +179,9 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
     await flushMicrotasks()
 
     expect(hoisted.onUserResolved).not.toHaveBeenCalled()
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to initialize Customer.io in-app plugin:',
-      registrationError
-    )
+    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      errorType: 'customerio_in_app_plugin_registration_failure'
+    })
   })
 
   it('keeps Customer.io startup events in order across the gate', async () => {

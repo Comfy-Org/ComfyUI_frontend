@@ -4,6 +4,7 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { AuthUserInfo } from '@/types/authTypes'
 
@@ -82,10 +83,9 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
             })
           )
           .catch((error) => {
-            console.error(
-              'Failed to initialize Customer.io in-app plugin:',
-              error
-            )
+            reportError(error, {
+              errorType: 'customerio_in_app_plugin_registration_failure'
+            })
           })
 
         await whenStoresReady()
