@@ -614,6 +614,24 @@ only. Never commit them.
 
 ## Replay coverage for agent bug fixes
 
+### Playbook: run the replays
+
+Prerequisites: a ComfyUI backend on 8188, `pnpm install`, and the recordings
+(they land with the recordings PR; without them the replay specs define no
+tests).
+
+```bash
+DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev --port 6310 --strictPort
+```
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:6310 DISTRIBUTION=cloud pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts browser_tests/tests/agent/agentConversationTiming.spec.ts browser_tests/tests/agent/agentConversationConcurrentEdits.spec.ts browser_tests/tests/agent/agentConversationCancelledTurn.spec.ts --project=cloud
+```
+
+Watch one case in a browser: add `--headed -g agent-rec-add-set-delete`.
+Replay at the recorded gaps instead of back to back: add
+`AGENT_REPLAY_TIMING=recorded`.
+
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
