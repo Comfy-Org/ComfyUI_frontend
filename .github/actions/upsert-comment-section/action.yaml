@@ -42,6 +42,11 @@ runs:
           const prNumber = Number(process.env.INPUT_PR_NUMBER)
           const sectionName = process.env.INPUT_SECTION_NAME
           const sectionContentFile = process.env.INPUT_SECTION_CONTENT_FILE
+          if (!sectionContentFile && !process.env.INPUT_SECTION_CONTENT) {
+            throw new Error(
+              'Either section-content or section-content-file is required'
+            )
+          }
           const sectionContent = sectionContentFile
             ? require('node:fs').readFileSync(sectionContentFile, 'utf8')
             : process.env.INPUT_SECTION_CONTENT
