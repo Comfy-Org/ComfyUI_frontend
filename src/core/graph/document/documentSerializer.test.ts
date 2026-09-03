@@ -92,12 +92,12 @@ describe('serializeDocumentScope', () => {
         _widget: cyclicWidget as never,
         hasErrors: true,
         boundingRect: [0, 0, 10, 10]
-      } as Partial<INodeInputSlot>),
+      }),
       output: outputSlot({
         links: [toLinkId(5)],
         _data: { transient: true },
         slot_index: 0
-      } as Partial<INodeOutputSlot>)
+      })
     })
 
     const decoded = decode(serializeDocumentScope(scope))
@@ -128,11 +128,11 @@ describe('serializeDocumentScope', () => {
       input: inputSlot({
         link: toLinkId(7),
         hasErrors: true
-      } as Partial<INodeInputSlot>),
+      }),
       output: outputSlot({
         links: [toLinkId(7)],
         _data: 'runtime'
-      } as Partial<INodeOutputSlot>)
+      })
     })
 
     expect(serializeDocumentScope(clean)).toEqual(serializeDocumentScope(dirty))
