@@ -3892,8 +3892,9 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({ description: 'Preview offline' })
       )
       expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.any(String),
         expect.objectContaining({
-          detail: 'subscription.preview.reactivation.unavailable'
+          description: 'subscription.preview.reactivation.unavailable'
         })
       )
     })
