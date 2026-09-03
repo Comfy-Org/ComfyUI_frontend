@@ -567,6 +567,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('ja')).toBe('ja')
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('hi')).toBe('hi')
       expect(resolveSupportedLocale('it')).toBe('it')
     })
 
@@ -576,6 +577,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('PT-BR')).toBe('pt-BR')
       expect(resolveSupportedLocale('zh-tw')).toBe('zh-TW')
       expect(resolveSupportedLocale('ZH-TW')).toBe('zh-TW')
+      expect(resolveSupportedLocale('HI')).toBe('hi')
       expect(resolveSupportedLocale('EN')).toBe('en')
     })
 
@@ -584,6 +586,8 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('de-DE')).toBe('en')
       // fr-CA → fr (shipped) → fr
       expect(resolveSupportedLocale('fr-CA')).toBe('fr')
+      // hi-IN → hi (shipped) → hi
+      expect(resolveSupportedLocale('hi-IN')).toBe('hi')
       // ko-KR → ko (shipped) → ko
       expect(resolveSupportedLocale('ko-KR')).toBe('ko')
       // zh-CN → zh (shipped) → zh (Simplified is the base)
