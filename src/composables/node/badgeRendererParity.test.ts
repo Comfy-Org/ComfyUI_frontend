@@ -60,7 +60,7 @@ function legacyBadgeText(node: LGraphNode): string {
   return badge?.text.replaceAll('[', '').replaceAll(']', '') ?? ''
 }
 
-function vueBadgeText(node: LGraphNode): string {
+function vueBadges(node: LGraphNode) {
   if (!node.graph) throw new Error('node is not attached to a graph')
   const nodeData: NodeState = {
     flags: node.flags,
@@ -69,19 +69,23 @@ function vueBadgeText(node: LGraphNode): string {
     inputs: node.inputs,
     mode: node.mode,
     outputs: node.outputs,
+    properties: node.properties,
     title: node.title,
     type: node.type
   }
   const scope = effectScope()
-  const facts = scope.run(() => {
-    const partitioned = usePartitionedBadges(nodeData).value
-    return [
-      ...partitioned.core.map((badge) => badge.text),
-      ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
-    ]
-  })
+  const partitioned = scope.run(() => usePartitionedBadges(nodeData).value)
   scope.stop()
-  return (facts ?? []).join(' ')
+  if (!partitioned) throw new Error('partitioned badges were not computed')
+  return partitioned
+}
+
+function vueBadgeText(node: LGraphNode): string {
+  const partitioned = vueBadges(node)
+  return [
+    ...partitioned.core.map((badge) => badge.text),
+    ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
+  ].join(' ')
 }
 
 describe('badge renderer parity (I2)', () => {
@@ -116,7 +120,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(
         NodeBadgeMode.ShowAll,
         'CustomNode',
@@ -138,7 +142,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(
         NodeBadgeMode.HideBuiltIn,
         'CustomNode',
@@ -163,10 +167,23 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
 
       expect(vueBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
+  })
+
+  describe('Comfy Cloud mark', () => {
+    const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
+    const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
+
+    it('Vue marks Comfy Cloud and leaves the other partner node unmarked', () => {
+      const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
+      expect(vueBadges(cloud).hasComfyCloudBadge).toBe(true)
+
+      const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
+      expect(vueBadges(partner).hasComfyCloudBadge).toBe(false)
     })
   })
 

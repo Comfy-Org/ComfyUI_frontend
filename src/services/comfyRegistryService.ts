@@ -341,9 +341,14 @@ export const useComfyRegistryService = () => {
    * ```
    */
   const inferPackFromNodeName = async (
-    nodeName: operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
+    nodeName:
+      | operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName']
+      | null
+      | undefined,
     signal?: AbortSignal
   ) => {
+    if (!nodeName || nodeName === 'undefined') return null
+
     const endpoint = `/comfy-nodes/${nodeName}/node`
     const errorContext = 'Failed to infer pack from comfy node name'
     const routeSpecificErrors = {

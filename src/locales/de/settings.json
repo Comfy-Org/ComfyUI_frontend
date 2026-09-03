@@ -1,0 +1,510 @@
+{
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "Automatisch nach Updates suchen"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "Anonyme Nutzungsmetriken senden"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "PyPI-Installationsmirror",
+    "tooltip": "Standard-pip-Installationsmirror"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python-Installationsmirror",
+    "tooltip": "Verwaltete Python-Installationen werden vom Projekt Astral python-build-standalone heruntergeladen. Diese Variable kann auf eine Mirror-URL gesetzt werden, um eine andere Quelle für Python-Installationen zu verwenden. Die angegebene URL ersetzt https://github.com/astral-sh/python-build-standalone/releases/download in z. B. https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Distributionen können aus einem lokalen Verzeichnis gelesen werden, indem das URL-Schema file:// verwendet wird."
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Torch-Installationsmirror",
+    "tooltip": "pip-Installationsmirror für pytorch"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "Fensterstil",
+    "options": {
+      "custom": "Benutzerdefiniert",
+      "default": "Standard"
+    },
+    "tooltip": "Benutzerdefiniert: Ersetzt die Systemtitelleiste durch das obere Menü von ComfyUI"
+  },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "Animationen deaktivieren",
+    "tooltip": "Deaktiviert die meisten CSS-Animationen und -Übergänge. Beschleunigt die Inferenz, wenn die Anzeige-GPU auch für die Generierung verwendet wird."
+  },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "Canvas-Hintergrundbild",
+    "tooltip": "Bild-URL für den Canvas-Hintergrund. Sie können ein Bild im Ausgabebereich mit der rechten Maustaste anklicken und „Als Hintergrund festlegen“ auswählen oder über die Upload-Schaltfläche ein eigenes Bild hochladen."
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Verhalten bei linkem Mausklick",
+    "options": {
+      "Panning": "Verschieben",
+      "Select": "Auswählen"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Mausradverhalten",
+    "options": {
+      "Panning": "Verschieben",
+      "Zoom in/out": "Vergrößern/Verkleinern"
+    }
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "Navigationsmodus",
+    "options": {
+      "Custom": "Benutzerdefiniert",
+      "Drag Navigation": "Zieh-Navigation",
+      "Standard (New)": "Standard (Neu)"
+    }
+  },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "Auswahlwerkzeugleiste anzeigen",
+    "tooltip": "Zeigt eine schwebende Werkzeugleiste an, wenn Nodes ausgewählt sind, und ermöglicht schnellen Zugriff auf häufige Aktionen."
+  },
+  "Comfy_ConfirmClear": {
+    "name": "Bestätigung beim Leeren des Workflows anfordern"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "Clipping von DOM-Elementen aktivieren (die Aktivierung kann die Leistung verringern)"
+  },
+  "Comfy_DevMode": {
+    "name": "Optionen für den Entwicklermodus aktivieren (API-Speichern usw.)"
+  },
+  "Comfy_DisableFloatRounding": {
+    "name": "Standardrundung von Float-Widgets deaktivieren.",
+    "tooltip": "(Neuladen der Seite erforderlich) Die Rundung kann nicht deaktiviert werden, wenn sie vom Node im Backend festgelegt wird."
+  },
+  "Comfy_DisableSliders": {
+    "name": "Slider für Node-Widgets deaktivieren"
+  },
+  "Comfy_EditAttention_Delta": {
+    "name": "Präzision mit Strg+Auf/Ab"
+  },
+  "Comfy_EnableTooltips": {
+    "name": "Tooltips aktivieren"
+  },
+  "Comfy_EnableWorkflowViewRestore": {
+    "name": "Canvas-Position und Zoomstufe in Workflows speichern und wiederherstellen"
+  },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Methode für Live-Vorschau",
+    "options": {
+      "auto": "Automatisch",
+      "default": "Standard",
+      "latent2rgb": "latent2rgb",
+      "none": "Keine",
+      "taesd": "taesd"
+    },
+    "tooltip": "Methode für die Live-Vorschau während der Bildgenerierung. „default“ verwendet die CLI-Einstellung des Servers."
+  },
+  "Comfy_FloatRoundingPrecision": {
+    "name": "Dezimalstellen für Rundung des Float-Widgets [0 = automatisch].",
+    "tooltip": "(Neuladen der Seite erforderlich)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Geschwindigkeit für automatisches Verschieben",
+    "tooltip": "Maximale Geschwindigkeit beim automatischen Verschieben durch Ziehen an den Canvas-Rand. Auf 0 setzen, um automatisches Verschieben zu deaktivieren."
+  },
+  "Comfy_Graph_CanvasInfo": {
+    "name": "Canvas-Informationen in der unteren linken Ecke anzeigen (fps usw.)"
+  },
+  "Comfy_Graph_CanvasMenu": {
+    "name": "Graph-Canvas-Menü anzeigen"
+  },
+  "Comfy_Graph_CtrlShiftZoom": {
+    "name": "Tastenkürzel für schnelles Zoomen aktivieren (Strg + Umschalt + Ziehen)"
+  },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "Doppelte Node-IDs in Subgraphs entfernen",
+    "tooltip": "Doppelte Node-IDs in Subgraphs beim Laden eines Workflows automatisch neu zuweisen."
+  },
+  "Comfy_Graph_LinkMarkers": {
+    "name": "Markierungen in der Verbindungsmitte",
+    "options": {
+      "Arrow": "Pfeil",
+      "Circle": "Kreis",
+      "None": "Keine"
+    }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Live-Auswahl",
+    "tooltip": "Wenn aktiviert, werden Nodes beim Ziehen des Auswahlrechtecks in Echtzeit ausgewählt bzw. abgewählt, ähnlich wie in anderen Design-Tools."
+  },
+  "Comfy_Graph_ZoomSpeed": {
+    "name": "Canvas-Zoomgeschwindigkeit"
+  },
+  "Comfy_GroupSelectedNodes_Padding": {
+    "name": "Randabstand beim Gruppieren ausgewählter Nodes"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "Gruppentitel zum Bearbeiten doppelklicken"
+  },
+  "Comfy_LinkRelease_Action": {
+    "name": "Aktion beim Loslassen einer Verbindung (kein Modifikator)",
+    "options": {
+      "context menu": "Kontextmenü",
+      "no action": "Keine Aktion",
+      "search box": "Suchfeld"
+    }
+  },
+  "Comfy_LinkRelease_ActionShift": {
+    "name": "Aktion beim Loslassen einer Verbindung (Umschalt)",
+    "options": {
+      "context menu": "Kontextmenü",
+      "no action": "Keine Aktion",
+      "search box": "Suchfeld"
+    }
+  },
+  "Comfy_LinkRenderMode": {
+    "name": "Verbindungsdarstellungsmodus",
+    "options": {
+      "Hidden": "Ausgeblendet",
+      "Linear": "Linear",
+      "Spline": "Spline",
+      "Straight": "Gerade"
+    },
+    "tooltip": "Steuert das Erscheinungsbild und die Sichtbarkeit von Verbindungen zwischen Nodes auf dem Canvas."
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "3D-Viewer aktivieren (Beta)",
+    "tooltip": "Aktiviert den 3D-Viewer (Beta) für ausgewählte Nodes. Mit dieser Funktion können Sie 3D-Modelle direkt im 3D-Viewer in voller Größe visualisieren und mit ihnen interagieren."
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Anfängliche Hintergrundfarbe",
+    "tooltip": "Steuert die Standardhintergrundfarbe der 3D-Szene. Diese Einstellung bestimmt das Erscheinungsbild des Hintergrunds, wenn ein neues 3D-Widget erstellt wird, kann jedoch nach der Erstellung für jedes Widget einzeln angepasst werden."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "Standard-Kameratyp",
+    "options": {
+      "orthographic": "orthografisch",
+      "perspective": "perspektivisch"
+    },
+    "tooltip": "Legt fest, ob die Kamera beim Erstellen eines neuen 3D-Widgets standardmäßig perspektivisch oder orthografisch ist. Diese Standardeinstellung kann nach der Erstellung weiterhin für jedes Widget einzeln umgeschaltet werden."
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Schrittweite für Lichtanpassung",
+    "tooltip": "Legt die Schrittweite beim Anpassen der Lichtintensität in 3D-Szenen fest. Ein kleinerer Schrittwert ermöglicht eine präzisere Steuerung der Lichtanpassungen, während ein größerer Wert deutlichere Änderungen pro Anpassung bewirkt."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Anfängliche Lichtintensität",
+    "tooltip": "Legt die Standardhelligkeit der Beleuchtung in der 3D-Szene fest. Dieser Wert bestimmt, wie intensiv Lichter Objekte beleuchten, wenn ein neues 3D-Widget erstellt wird, kann jedoch nach der Erstellung für jedes Widget einzeln angepasst werden."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Maximale Lichtintensität",
+    "tooltip": "Legt den maximal zulässigen Wert für die Lichtintensität in 3D-Szenen fest. Dies definiert die obere Helligkeitsgrenze, die beim Anpassen der Beleuchtung in jedem 3D-Widget eingestellt werden kann."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Minimale Lichtintensität",
+    "tooltip": "Legt den minimal zulässigen Wert für die Lichtintensität in 3D-Szenen fest. Dies definiert die untere Helligkeitsgrenze, die beim Anpassen der Beleuchtung in jedem 3D-Widget eingestellt werden kann."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "Punktwolken-Engine",
+    "options": {
+      "fastply": "fastply",
+      "threejs": "threejs"
+    },
+    "tooltip": "Wählen Sie die Engine zum Laden von Punktwolken-PLY-Dateien. „threejs“ verwendet den nativen Three.js PLYLoader (unterstützt Binär- und ASCII-Dateien, mesh-fähig). „fastply“ verwendet einen optimierten Parser für ASCII-PLY-Dateien. 3D-Gaussian-Splat-PLYs werden automatisch erkannt und unabhängig von dieser Einstellung immer über sparkjs gerendert."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Standardmäßige Gittersichtbarkeit",
+    "tooltip": "Legt fest, ob das Gitter beim Erstellen eines neuen 3D-Widgets standardmäßig sichtbar ist. Diese Standardeinstellung kann nach der Erstellung weiterhin für jedes Widget einzeln umgeschaltet werden."
+  },
+  "Comfy_Locale": {
+    "name": "Sprache"
+  },
+  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+    "name": "Multiplikator für Anpassungsgeschwindigkeit des Pinsels",
+    "tooltip": "Legt fest, wie schnell sich Pinselgröße und -härte beim Anpassen ändern. Höhere Werte bedeuten schnellere Änderungen."
+  },
+  "Comfy_MaskEditor_UseDominantAxis": {
+    "name": "Pinselanpassung auf dominante Achse beschränken",
+    "tooltip": "Wenn aktiviert, wirken sich Pinselanpassungen je nach der Richtung, in die Sie sich stärker bewegen, nur auf Größe ODER Härte aus."
+  },
+  "Comfy_ModelLibrary_AutoLoadAll": {
+    "name": "Alle Modellordner automatisch laden",
+    "tooltip": "Wenn aktiviert, werden alle Ordner geladen, sobald Sie die Modellbibliothek öffnen (dies kann während des Ladens zu Verzögerungen führen). Wenn deaktiviert, werden Modellordner der Stammebene erst geladen, nachdem Sie darauf klicken."
+  },
+  "Comfy_ModelLibrary_NameFormat": {
+    "name": "Anzuzeigender Name in der Baumansicht der Modellbibliothek",
+    "options": {
+      "filename": "filename",
+      "title": "title"
+    },
+    "tooltip": "Wählen Sie „filename“, um in der Modellliste eine vereinfachte Ansicht des rohen Dateinamens anzuzeigen (ohne Verzeichnis und Erweiterung „.safetensors“). Wählen Sie „title“, um den konfigurierbaren Metadatentitel des Modells anzuzeigen."
+  },
+  "Comfy_NodeBadge_NodeIdBadgeMode": {
+    "name": "Node-ID-Abzeichenmodus",
+    "options": {
+      "None": "Keine",
+      "Show all": "Alle anzeigen"
+    }
+  },
+  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+    "name": "Node-Lebenszyklus-Abzeichenmodus",
+    "options": {
+      "None": "Keine",
+      "Show all": "Alle anzeigen"
+    }
+  },
+  "Comfy_NodeBadge_NodeSourceBadgeMode": {
+    "name": "Node-Quell-Abzeichenmodus",
+    "options": {
+      "Hide built-in": "Integrierte ausblenden",
+      "None": "Keine",
+      "Show all": "Alle anzeigen"
+    }
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Preisabzeichen für API-Nodes anzeigen"
+  },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "Neues Design der Node-Bibliothek",
+    "tooltip": "Die überarbeitete Seitenleiste der Node-Bibliothek mit Tabs (Wesentlich, Alle, Benutzerdefiniert), verbesserter Suche und Vorschauen beim Überfahren aktivieren."
+  },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "Vorschläge zum Ersetzen von Nodes aktivieren",
+    "tooltip": "Wenn aktiviert, werden fehlende Nodes mit bekannten Ersatzmöglichkeiten im Dialog für fehlende Nodes als ersetzbar angezeigt, sodass Sie Ersatzmöglichkeiten prüfen und anwenden können."
+  },
+  "Comfy_NodeSearchBoxImpl": {
+    "name": "Implementierung des Node-Suchfelds",
+    "options": {
+      "default": "Standard",
+      "litegraph (legacy)": "litegraph (veraltet)",
+      "v1 (legacy)": "v1 (veraltet)"
+    }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Hinzugefügte Nodes folgen dem Cursor",
+    "tooltip": "Wenn aktiviert, folgen über das Suchfeld hinzugefügte Nodes dem Cursor, bis Sie zum Platzieren klicken. Gilt nur für die Standardimplementierung."
+  },
+  "Comfy_NodeSearchBoxImpl_NodePreview": {
+    "name": "Node-Vorschau",
+    "tooltip": "Gilt nur für die Standardimplementierung"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowCategory": {
+    "name": "Node-Kategorie in Suchergebnissen anzeigen",
+    "tooltip": "Gilt nur für v1 (veraltet)"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowIdName": {
+    "name": "Node-ID-Namen in Suchergebnissen anzeigen",
+    "tooltip": "Gilt nicht für litegraph (veraltet)"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+    "name": "Node-Häufigkeit in Suchergebnissen anzeigen",
+    "tooltip": "Gilt nur für v1 (veraltet)"
+  },
+  "Comfy_NodeSuggestions_number": {
+    "name": "Anzahl der Node-Vorschläge",
+    "tooltip": "Nur für litegraph-Suchfeld/Kontextmenü"
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "Breite × Höhe unter der Bildvorschau anzeigen"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Erweiterte Widgets auf allen Nodes immer anzeigen",
+    "tooltip": "Wenn aktiviert, sind erweiterte Widgets auf allen Nodes immer sichtbar, ohne dass sie einzeln erweitert werden müssen."
+  },
+  "Comfy_Node_AutoSnapLinkToSlot": {
+    "name": "Verbindung automatisch am Node-Slot einrasten",
+    "tooltip": "Beim Ziehen einer Verbindung über einen Node rastet die Verbindung automatisch an einem geeigneten Eingabe-Slot des Nodes ein."
+  },
+  "Comfy_Node_BypassAllLinksOnDelete": {
+    "name": "Alle Verbindungen beim Löschen von Nodes beibehalten",
+    "tooltip": "Versuchen Sie beim Löschen eines Nodes, alle Ein- und Ausgangsverbindungen wiederherzustellen, indem der gelöschte Node umgangen wird."
+  },
+  "Comfy_Node_DoubleClickTitleToEdit": {
+    "name": "Node-Titel per Doppelklick bearbeiten"
+  },
+  "Comfy_Node_MiddleClickRerouteNode": {
+    "name": "Mittelklick erstellt einen neuen Reroute-Node"
+  },
+  "Comfy_Node_Opacity": {
+    "name": "Node-Deckkraft"
+  },
+  "Comfy_Node_ShowDeprecated": {
+    "name": "Veraltete Nodes in der Suche anzeigen",
+    "tooltip": "Veraltete Nodes sind in der UI standardmäßig ausgeblendet, bleiben jedoch in bestehenden Workflows, die sie verwenden, funktionsfähig."
+  },
+  "Comfy_Node_ShowExperimental": {
+    "name": "Experimentelle Nodes in der Suche anzeigen",
+    "tooltip": "Experimentelle Nodes werden in der UI entsprechend gekennzeichnet und können in zukünftigen Versionen erheblich geändert oder entfernt werden. In Produktions-Workflows mit Vorsicht verwenden"
+  },
+  "Comfy_Node_SnapHighlightsNode": {
+    "name": "Node beim Einrasten hervorheben",
+    "tooltip": "Wenn Sie eine Verbindung über einen Node mit einem geeigneten Eingabe-Slot ziehen, den Node hervorheben"
+  },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "Versionsupdates anzeigen",
+    "tooltip": "Updates für neue Modelle und wichtige neue Funktionen anzeigen."
+  },
+  "Comfy_Pointer_ClickBufferTime": {
+    "name": "Verzögerung bei Zeigerklickabweichung",
+    "tooltip": "Nach dem Drücken einer Zeigertaste ist dies die maximale Zeit (in Millisekunden), für die Zeigerbewegungen ignoriert werden können.\n\nDies verhindert, dass Objekte unbeabsichtigt verschoben werden, wenn der Zeiger beim Klicken bewegt wird.\n\nDer Distanzschwellenwert (Zeigerklickabweichung) unterscheidet bereits zwischen Klicks und Ziehvorgängen; dieser Zeitschwellenwert ist nur relevant, wenn der Zeiger stillgehalten und dann losgelassen wird. Eine lange Verzögerung zwingt bei jedem pointerdown zum Warten, bevor das Ziehen beginnt, was sich beim Klicken und Ziehen eines nicht ausgewählten Node verzögert anfühlt. ~2 Frames bei 60 fps sind ausreichend."
+  },
+  "Comfy_Pointer_ClickDrift": {
+    "name": "Zeigerbewegung beim Klicken (maximale Entfernung)",
+    "tooltip": "Wenn sich der Zeiger beim Gedrückthalten einer Maustaste weiter als diese Entfernung bewegt, wird dies als Ziehen (statt als Klicken) betrachtet.\n\nHilft, unbeabsichtigtes Verschieben von Objekten zu verhindern, wenn der Zeiger beim Klicken bewegt wird."
+  },
+  "Comfy_Pointer_DoubleClickTime": {
+    "name": "Doppelklickintervall (maximal)",
+    "tooltip": "Die maximale Zeit in Millisekunden zwischen den beiden Klicks eines Doppelklicks. Eine Erhöhung dieses Werts kann helfen, wenn Doppelklicks manchmal nicht erkannt werden."
+  },
+  "Comfy_PreviewFormat": {
+    "name": "Vorschaubildformat",
+    "tooltip": "Beim Anzeigen einer Vorschau im Bild-Widget in ein kompaktes Bildformat konvertieren, z. B. webp, jpeg, webp;50 usw."
+  },
+  "Comfy_PromptFilename": {
+    "name": "Beim Speichern des Workflows nach Dateinamen fragen"
+  },
+  "Comfy_QueueButton_BatchCountLimit": {
+    "name": "Limit für Batch-Anzahl",
+    "tooltip": "Die maximale Anzahl an Aufgaben, die mit einem Klick auf die Schaltfläche zur Queue hinzugefügt werden"
+  },
+  "Comfy_Queue_MaxHistoryItems": {
+    "name": "Größe des Queue-Verlaufs",
+    "tooltip": "Die maximale Anzahl an Aufgaben, die im Queue-Verlauf angezeigt werden."
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "Angedocktes Auftragsverlaufs-/Queue-Panel",
+    "tooltip": "Ersetzt das schwebende Auftrags-Queue-Panel durch eine gleichwertige Auftrags-Queue im Seitenpanel für den Auftragsverlauf. Sie können dies deaktivieren, um zum Layout mit schwebendem Panel zurückzukehren."
+  },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "Tab „Probleme“ im Seitenpanel anzeigen",
+    "tooltip": "Wenn aktiviert, wird der Tab „Probleme“ im rechten Seitenpanel angezeigt, um blockierende Fehler und fehlende Ressourcen anzuzeigen, die eingerichtet werden müssen."
+  },
+  "Comfy_Sidebar_Location": {
+    "name": "Position der Seitenleiste",
+    "options": {
+      "left": "links",
+      "right": "rechts"
+    }
+  },
+  "Comfy_Sidebar_Size": {
+    "name": "Größe der Seitenleiste",
+    "options": {
+      "normal": "normal",
+      "small": "klein"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Stil der Seitenleiste",
+    "options": {
+      "connected": "verbunden",
+      "floating": "schwebend"
+    }
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "Einheitliche Breite der Seitenleiste"
+  },
+  "Comfy_SnapToGrid_GridSize": {
+    "name": "Rastergröße für Einrasten",
+    "tooltip": "Beim Ziehen und Ändern der Größe von Nodes werden diese bei gedrückter Umschalttaste am Raster ausgerichtet. Diese Einstellung legt die Größe dieses Rasters fest."
+  },
+  "Comfy_TextareaWidget_FontSize": {
+    "name": "Schriftgröße des Textbereich-Widgets"
+  },
+  "Comfy_TextareaWidget_Spellcheck": {
+    "name": "Rechtschreibprüfung im Textbereich-Widget"
+  },
+  "Comfy_TreeExplorer_ItemPadding": {
+    "name": "Innenabstand von Elementen im Baum-Explorer"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Layout der Tab-Leiste",
+    "options": {
+      "Default": "Standard",
+      "Legacy": "Legacy"
+    },
+    "tooltip": "Steuert die Elemente in der integrierten Tab-Leiste."
+  },
+  "Comfy_UseNewMenu": {
+    "name": "Neues Menü verwenden",
+    "options": {
+      "Disabled": "Deaktiviert",
+      "Top": "Oben"
+    },
+    "tooltip": "Aktiviert die überarbeitete obere Menüleiste."
+  },
+  "Comfy_Validation_Workflows": {
+    "name": "Workflows validieren"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Modernes Node-Design (Nodes 2.0)",
+    "tooltip": "Modern: DOM-basiertes Rendering mit verbesserter Interaktivität, nativen Browserfunktionen und aktualisiertem visuellen Design. Klassisch: Herkömmliches Canvas-Rendering."
+  },
+  "Comfy_WidgetControlMode": {
+    "name": "Widget-Steuerungsmodus",
+    "options": {
+      "after": "nachher",
+      "before": "vorher"
+    },
+    "tooltip": "Legt fest, wann Widget-Werte aktualisiert werden (randomisieren/erhöhen/verringern): bevor der Prompt in die Queue eingereiht wird oder danach."
+  },
+  "Comfy_Window_UnloadConfirmation": {
+    "name": "Bestätigung beim Schließen des Fensters anzeigen"
+  },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Automatisches Speichern",
+    "options": {
+      "after delay": "nach Verzögerung",
+      "off": "aus"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Verzögerung für automatisches Speichern (ms)",
+    "tooltip": "Gilt nur, wenn Automatisches Speichern auf „nach Verzögerung“ gesetzt ist."
+  },
+  "Comfy_Workflow_ConfirmDelete": {
+    "name": "Bestätigung beim Löschen von Workflows anzeigen"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Widget-Werte anhand des Namens wiederherstellen"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "Workflow-Status beibehalten und beim (Neu-)Laden der Seite wiederherstellen"
+  },
+  "Comfy_Workflow_ShowMissingModelsWarning": {
+    "name": "Warnung bei fehlenden Modellen anzeigen"
+  },
+  "Comfy_Workflow_SortNodeIdOnSave": {
+    "name": "Node-IDs beim Speichern des Workflows sortieren"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Bestätigung zum Überschreiben eines vorhandenen Subgraph-Blueprints anfordern"
+  },
+  "Comfy_Workflow_WorkflowTabsPosition": {
+    "name": "Position geöffneter Workflows",
+    "options": {
+      "Sidebar": "Seitenleiste",
+      "Topbar": "Obere Leiste"
+    }
+  },
+  "LiteGraph_Canvas_MaximumFps": {
+    "name": "Maximale FPS",
+    "tooltip": "Die maximale Anzahl an Bildern pro Sekunde, die das Canvas rendern darf. Begrenzt die GPU-Nutzung auf Kosten der Flüssigkeit. Bei 0 wird die Bildschirmaktualisierungsrate verwendet. Standard: 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "Node-Detaillierungsgrad beim Zoomen – Schriftgrößenschwelle",
+    "tooltip": "Legt fest, wann die Nodes zum LOD-Rendering mit niedriger Qualität wechseln. Verwendet die Schriftgröße in Pixeln, um den Umschaltzeitpunkt zu bestimmen. Auf 0 setzen, um dies zu deaktivieren. Werte von 1–24 legen die Mindestschriftgrößenschwelle für LOD fest – höhere Werte (24 px) = Nodes wechseln beim Herauszoomen früher zur vereinfachten Darstellung, niedrigere Werte (1 px) = volle Node-Qualität bleibt länger erhalten."
+  },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "Node-Combo-Widget-Menüs (Listen) beim Hineinzoomen skalieren"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Gruppeninhalte beim Klicken auswählen",
+    "tooltip": "Wenn aktiviert, werden durch Klicken auf eine Gruppe alle darin enthaltenen Nodes und Elemente ausgewählt."
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "Neue Nodes immer auf Minimalgröße verkleinern",
+    "tooltip": "Ändert Nodes beim Erstellen auf die kleinstmögliche Größe. Wenn deaktiviert, wird ein neu hinzugefügter Node leicht verbreitert, um Widget-Werte anzuzeigen."
+  },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "Tooltip-Verzögerung"
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "Spline-Versatz für Reroute",
+    "tooltip": "Der Versatz des Bezier-Kontrollpunkts vom Mittelpunkt der Reroute"
+  },
+  "pysssss_SnapToGrid": {
+    "name": "Immer am Raster ausrichten",
+    "tooltip": "Wenn aktiviert, werden Nodes beim Verschieben oder Ändern der Größe automatisch am Raster ausgerichtet."
+  }
+}

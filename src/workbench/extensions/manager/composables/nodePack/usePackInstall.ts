@@ -29,14 +29,14 @@ export function usePackInstall(
 
   const createPayload = (installItem: NodePack) => {
     if (!installItem.id) {
-      throw new Error(t('manager.packInstall.nodeIdRequired'))
+      console.error(t('manager.packInstall.nodeIdRequired'))
+      return
     }
 
     const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
     const versionToInstall = isUnclaimedPack
       ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
-      : (installItem.latest_version?.version ??
-        ('latest' as ManagerComponents['schemas']['SelectedVersion']))
+      : (installItem.latest_version?.version ?? 'latest')
 
     return {
       id: installItem.id,
@@ -48,8 +48,11 @@ export function usePackInstall(
     }
   }
 
-  const installPack = (item: NodePack) =>
-    managerStore.installPack.call(createPayload(item))
+  const installPack = (item: NodePack) => {
+    const payload = createPayload(item)
+    if (!payload) return Promise.resolve()
+    return managerStore.installPack.call(payload)
+  }
 
   const performInstallation = async (packs: NodePack[]) => {
     try {

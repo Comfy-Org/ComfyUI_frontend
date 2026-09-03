@@ -217,6 +217,8 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
+When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and follow the ADR structure and update the index per `docs/adr/README.md`.
+
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
 
 1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
@@ -246,6 +248,9 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
     5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
   - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
   - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+- NEVER call `captureException` or `datadogRum.addError` directly
+  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`

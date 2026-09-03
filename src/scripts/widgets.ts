@@ -181,7 +181,7 @@ export function addValueControlWidgets(
     widgets.push(comboFilter)
   }
 
-  function applyWidgetControl(isPartialExecution: boolean | undefined) {
+  function applyWidgetControl() {
     if (
       node.inputs?.some(
         (input, index) =>
@@ -194,8 +194,7 @@ export function addValueControlWidgets(
     const next = nextValueForLinkedTarget({
       target: targetWidget,
       linkedWidgets: targetWidget.linkedWidgets,
-      nodeId: node.id,
-      isPartialExecution
+      nodeId: node.id
     })
     if (next === undefined) return
 
@@ -203,19 +202,19 @@ export function addValueControlWidgets(
     targetWidget.callback?.(next)
   }
 
-  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
+  valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl(isPartialExecution)
+        applyWidgetControl()
       }
     }
     valueControl[HAS_EXECUTED] = true
   }
 
-  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
+  valueControl.afterQueued = () => {
     if (!controlValueRunBefore()) {
-      applyWidgetControl(isPartialExecution)
+      applyWidgetControl()
     }
   }
 

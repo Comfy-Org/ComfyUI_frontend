@@ -1,8 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { isReactive, isReadonly } from 'vue'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { isReactive, isReadonly, nextTick } from 'vue'
 
 import {
   ServerFeatureFlag,
+  startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
@@ -15,6 +24,12 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+
+const telemetry = vi.hoisted(() => ({
+  enabled: true,
+  trackFeatureFlagEvaluation: vi.fn()
+}))
+const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
 
 // Mock the API module
 vi.mock('@/scripts/api', () => ({
@@ -31,6 +46,13 @@ vi.mock('@/utils/sessionFeatureFlagOverride', () => ({
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false,
   isNightly: false
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () =>
+    telemetry.enabled
+      ? { trackFeatureFlagEvaluation: telemetry.trackFeatureFlagEvaluation }
+      : null
 }))
 
 describe('useFeatureFlags', () => {
@@ -144,6 +166,33 @@ describe('useFeatureFlags', () => {
       const maxUploadSize = featureFlag(ServerFeatureFlag.MAX_UPLOAD_SIZE)
 
       expect(maxUploadSize.value).toBe(104857600)
+    })
+  })
+
+  describe('embeddedCheckoutEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['false', false, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.embeddedCheckoutEnabled).toBe(expected)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
+        false
+      )
+    })
+
+    it('is false when feature lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.embeddedCheckoutEnabled).toBe(false)
     })
   })
 
@@ -592,6 +641,76 @@ describe('useFeatureFlags', () => {
       )
 
       expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
+    })
+  })
+
+  describe('feature flag telemetry', () => {
+    afterEach(() => {
+      telemetry.enabled = true
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+    })
+
+    it('synchronizes resolved values when their sources change', async () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = {
+        partner_node_governance_enabled: false,
+        unified_cloud_auth: false,
+        churnkey_app_id: ' app_test '
+      }
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const stop = startFeatureFlagTelemetry()
+      onTestFinished(stop)
+      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+        ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
+        false
+      )
+      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
+        false
+      )
+      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+        ServerFeatureFlag.CHURNKEY_APP_ID,
+        'app_test'
+      )
+      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+        'assets',
+        true
+      )
+
+      mockTrackFeatureFlagEvaluation.mockClear()
+      remoteConfig.value = { partner_node_governance_enabled: true }
+      await nextTick()
+
+      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+        ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
+        true
+      )
+    })
+
+    it('does not report when getters are only read', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+
+      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op without a telemetry dispatcher', () => {
+      telemetry.enabled = false
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      const stop = startFeatureFlagTelemetry()
+      onTestFinished(stop)
+
+      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
   })
 

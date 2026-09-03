@@ -106,6 +106,7 @@
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
+    "missingNodeTypesInGroup": "missing: {types}",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -270,6 +271,8 @@
     "running": "Running",
     "failed": "Failed",
     "cancelled": "Cancelled",
+    "agentWorking": "Agent is working on this workflow",
+    "agentModified": "Agent updated this workflow",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -378,6 +381,8 @@
     "ready": "Ready",
     "play": "Play",
     "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Unmute",
     "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
@@ -1114,6 +1119,7 @@
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowMissingResources": "Workflow contains missing resources.",
     "run": "Run",
+    "runOptions": "Run options",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
     "execute": "Execute",
@@ -1291,6 +1297,7 @@
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
     "loadFailed": "Failed to load layers",
+    "needsTwoImages": "The layer editor needs at least two output images",
     "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
     "selectTool": "Select",
     "handTool": "Hand",
@@ -1438,7 +1445,6 @@
       "download": "Download",
       "exportWorkflow": "Export workflow",
       "delete": "Delete",
-      "deleteAsset": "Delete asset",
       "removeJob": "Remove job",
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
@@ -1863,6 +1869,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax music": "minimax music",
     "minimax": "minimax",
     "preprocessors": "preprocessors",
     "video_models": "video_models",
@@ -1910,11 +1917,16 @@
     "kandinsky": "kandinsky",
     "autoregressive": "autoregressive",
     "shader": "shader",
+    "trellis2": "trellis2",
+    "trellis": "trellis",
+    "mesh": "mesh",
+    "texturing": "texturing",
     "detection": "detection",
     "background removal": "background removal",
     "scail": "scail",
     "void": "void",
     "dancer": "dancer",
+    "sensenova": "sensenova",
     "geometry estimation": "geometry estimation",
     "splat": "splat",
     "triposplat": "triposplat",
@@ -1925,6 +1937,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2000,6 +2013,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
@@ -2013,6 +2027,7 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
@@ -2030,6 +2045,7 @@
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -2050,7 +2066,9 @@
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAMPLER": "SAMPLER",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
     "STRING": "STRING",
@@ -2061,6 +2079,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2116,8 +2135,8 @@
     "dismiss": "Dismiss"
   },
   "loadWorkflowWarning": {
-    "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
-    "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
+    "newerVersionRequired": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
+    "newerVersionRequiredGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Core nodes from version {version}:",
     "unknownVersion": "unknown"
   },
@@ -2133,13 +2152,12 @@
     "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
-    "title": "Sign In Required to Use API Nodes",
-    "message": "This workflow contains API Nodes, which require you to be signed in to your account in order to run."
-  },
-  "apiNodesCostBreakdown": {
-    "title": "API Node(s)",
-    "costPerRun": "Cost per run",
-    "totalCost": "Total Cost"
+    "title": "Sign in to run partner nodes",
+    "message": "Partner nodes run on third-party services and use credits from your account. That's why signing in is needed.",
+    "partnerNodesInWorkflow": "Partner nodes in this workflow",
+    "whatArePartnerNodes": "What are partner nodes?",
+    "tooltip": "Partner nodes run on third-party services. They use credits, the only paid part of Comfy.",
+    "signIn": "Sign In"
   },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",
@@ -2331,6 +2349,28 @@
     "addColor": "Add a color",
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
+  "partnerNodesEducation": {
+    "openTab": "Open nodes",
+    "partnerTab": "Partner nodes",
+    "pitch": "See the difference? Drag to compare.",
+    "reassurance": "Partner nodes are here when you want more. The rest of Comfy stays free.",
+    "tooltip": "Partner nodes run closed-source models like Kling or Veo on the provider’s hardware, through Comfy. They use credits; the rest of Comfy stays free.",
+    "openHeader": "OPEN",
+    "partnerHeader": "PARTNER",
+    "muteOpen": "Mute open-weights clip",
+    "unmuteOpen": "Unmute open-weights clip",
+    "mutePartner": "Mute partner-node clip",
+    "unmutePartner": "Unmute partner-node clip",
+    "sliderLabel": "Compare open-weights and partner-node output",
+    "included": "Included",
+    "notIncluded": "Not included",
+    "benefits": {
+      "noDownload": "No setup required",
+      "noVram": "No VRAM, your GPU stays free",
+      "offline": "Runs offline",
+      "free": "Free to run"
+    }
+  },
   "videoEdit": {
     "startFrame": "Start Frame",
     "endFrame": "End Frame",
@@ -2378,9 +2418,10 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
+    "a1111EmbeddingsUnavailable": "Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.",
     "dropFileError": "Unable to process dropped item: {error}",
-    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
-    "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
+    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Issues tab.",
+    "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Issues tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
     "nothingToGroup": "Nothing to group",
@@ -2672,7 +2713,10 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
+      "paymentDetailsRequiredNote": "You'll be asked to add a payment method to complete this purchase.",
+      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
+      "manageBillingError": "Failed to open the billing portal. Please try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2737,6 +2781,17 @@
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
+    "paymentDeclinedDetail": "Your bank declined this payment. Try another payment method or contact your bank.",
+    "insufficientFundsDetail": "This payment method has insufficient funds. Try another payment method or contact your bank.",
+    "expiredCardDetail": "This card has expired. Use a different payment method.",
+    "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
+    "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
+    "authenticationUnavailable": "Secure payment authentication is unavailable. Please refresh and try again.",
+    "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
+    "authenticationManagerRequired": "Payment verification needs attention from a workspace billing manager.",
+    "retryVerification": "Retry verification",
+    "reconciliationTitle": "Payment received — confirmation pending",
+    "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
     "cancelFailed": "Failed to cancel subscription",
     "cancelTimeout": "Subscription cancellation timed out"
   },
@@ -2842,13 +2897,15 @@
     "outOfCreditsDescription": "Add more credits to continue generating.",
     "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
-    "viewMoreDetailsPlans": "View more details about plans & pricing",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "whatsIncluded": "What's included:",
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
+    "unknownTierName": "Current plan",
+    "salesManagedRunBlockedTitle": "Plan inactive",
+    "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
     "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
@@ -2865,7 +2922,6 @@
       "freeRuns": "{count} free run | {count} free runs"
     },
     "viewMoreDetails": "View more details",
-    "learnMore": "Learn more",
     "billedMonthly": "Billed monthly",
     "billedYearly": "{total} Billed yearly",
     "monthly": "Monthly",
@@ -2885,6 +2941,9 @@
     "tiers": {
       "free": {
         "name": "Free"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       },
       "founder": {
         "name": "Founder's Edition"
@@ -3045,6 +3104,12 @@
       "confirmChange": "Confirm change",
       "confirmChangeTitle": "Review your scheduled change",
       "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
+      "paymentMethod": "Payment method",
+      "stripeMethodChoice": "Your payment details are handled securely by Stripe.",
+      "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
+      "payAndSubscribe": "Pay and subscribe",
+      "stripeUnavailable": "Payment options are unavailable. Please refresh and try again.",
+      "quoteUnavailable": "Unavailable",
       "switchesToday": "Switches today",
       "startsOn": "Starts {date}",
       "yearlySubscription": "Yearly subscription",
@@ -3058,7 +3123,7 @@
       "creditsRefillMonthlyTo": "Credits refill monthly to",
       "billedEachMonth": "{amount} billed each month. Cancel anytime.",
       "stayOnUntil": "You'll stay on {plan} until {date}.",
-      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
+      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
       "terms": "Terms",
       "privacyPolicy": "Privacy Policy",
       "addCreditCard": "Add credit card",
@@ -3079,7 +3144,23 @@
         "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing",
         "amountChanged": "The charge amount changed since you confirmed it — please review and try again",
         "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
-      }
+      },
+      "promoCodePlaceholder": "Promo code",
+      "applyPromoCode": "Apply",
+      "applyQuoteBeforeContinuing": "Apply the promo code to refresh your quote before continuing.",
+      "quoteStale": "Your quote changed. Review the updated amount and try again.",
+      "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",
+      "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
+      "renewsAtAmount": "Renews at {amount}. Cancel anytime.",
+      "discountComposition": "Discounts",
+      "discount": {
+        "plan": "Plan discount",
+        "promotion": "Promo code"
+      },
+      "changePaymentMethod": "Change",
+      "savedPaymentMethod": "Payment method",
+      "addNewPaymentMethod": "Add new payment method",
+      "alipay": "Alipay"
     },
     "success": {
       "allSet": "You're all set",
@@ -3088,7 +3169,9 @@
       "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
       "receiptEmailed": "A receipt has been emailed to you.",
-      "sendInvites": "Send invites"
+      "sendInvites": "Send invites",
+      "promoApplied": "{code} applied.",
+      "promoRenews": "Renews at {amount} on {date}"
     }
   },
   "userSettings": {
@@ -3134,7 +3217,8 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
         "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss"
+        "dismiss": "Dismiss",
+        "upgradeBody": "Upgrade your plan to add credits and continue generating."
       },
       "ending": {
         "title": "Your team plan ends on {date}",
@@ -3311,7 +3395,9 @@
       "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
       "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
       "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
-      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
+      "pendingInviteSingle": "This person already has a pending invite",
+      "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
+      "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
@@ -3811,13 +3897,19 @@
     }
   },
   "mediaAsset": {
-    "deleteAssetTitle": "Delete this asset?",
-    "deleteAssetDescription": "This asset will be permanently removed.",
-    "deleteSelectedTitle": "Delete selected assets?",
-    "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
-    "assetDeletedSuccessfully": "Asset deleted successfully",
+    "assetDelete": {
+        "error": "Items failed to delete",
+        "success": "Deletion successful",
+        "warn": "Some items failed to delete"
+    },
+    "assetsDeleted": "{n} / {total} assets were deleted",
+    "jobsDeleted": "{n} / {total} jobs were deleted",
+
+    "deleteItems": "Delete these items",
+    "deletePermanent": "They will be permanently removed.",
+    "deleteHistoryOnly": "Only history will be affected, files will remain on disk",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
-    "failedToDeleteAsset": "Failed to delete asset",
+    "deletionUnsupported": "Assets are enabled, but server doesn't support deletion",
     "actions": {
       "inspect": "Inspect asset",
       "more": "More options",
@@ -3851,9 +3943,6 @@
       "downloadStarted": "Downloading {count} file... | Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file | Started downloading {count} files",
       "exportStarted": "Preparing ZIP export for {count} file | Preparing ZIP export for {count} files",
-      "assetsDeletedSuccessfully": "{count} asset deleted successfully | {count} assets deleted successfully",
-      "failedToDeleteAssets": "Failed to delete selected assets",
-      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
       "nodesAddedToWorkflow": "{count} node(s) added to workflow",
       "failedToAddNodes": "Failed to add nodes to workflow",
       "partialAddNodesSuccess": "{succeeded} added successfully, {failed} failed",
@@ -3880,6 +3969,10 @@
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
+    "partnerRunGate": {
+      "signInCaption": "Partner nodes require an account",
+      "signInToRun": "Sign in to run"
+    },
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
@@ -4019,15 +4112,6 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successDescription": "You can now upload your workflow to your creator page",
     "uploadWorkflowButton": "Upload my workflow"
-  },
-  "desktopDialogs": {
-    "": {
-      "title": "Invalid Dialog",
-      "message": "Invalid dialog ID was provided.",
-      "buttons": {
-        "Close": "Close"
-      }
-    }
   },
   "vueNodesSlot": {
     "iterative": "(Iterative)"
@@ -4239,18 +4323,32 @@
     "fallbackNodeTitle": "Node",
     "hideAdvancedInputsButton": "Hide advanced inputs",
     "hideAdvancedShort": "Hide advanced",
-    "errors": "Errors",
-    "noErrors": "No errors",
+    "errors": "Issues",
+    "noErrors": "No issues",
     "errorsDetected": "Error detected | Errors detected",
-    "selectedNodeErrors": "{node} — {count} error | {node} — {count} errors",
-    "selectedNodesErrors": "{nodes} nodes selected — {count} error | {nodes} nodes selected — {count} errors",
+    "selectedNodeErrors": "{node} — {count} issue | {node} — {count} issues",
+    "selectedNodesErrors": "{nodes} nodes selected — {count} issue | {nodes} nodes selected — {count} issues",
     "errorNodeSummary": "{nodes} node — {count} error | {nodes} node — {count} errors",
     "errorNodesSummary": "{nodes} nodes — {count} error | {nodes} nodes — {count} errors",
     "errorsSummary": "{count} error | {count} errors",
     "resolveBeforeRun": "Resolve before running the workflow",
+    "issuesDetected": "Issue detected | Issues detected",
+    "resolveErrorsBeforeRun": "Resolve errors before running the workflow",
+    "setupRequired": "Setup required",
+    "finishSetupBeforeRun": "Finish setup before running the workflow",
+    "severityCountsStatus": "{errors} blocking, {setup} setup required",
+    "errorsFilter": "{count} Error | {count} Errors",
+    "errorsFilterActive": "{count} Error detected | {count} Errors detected",
+    "setupFilter": "{count} Setup required",
+    "setupSummary": "{count} item | {count} items",
+    "setupNodeSummary": "{nodes} node — {count} item | {nodes} node — {count} items",
+    "setupNodesSummary": "{nodes} nodes — {count} item | {nodes} nodes — {count} items",
+    "nodesAffected": "{count} node affected | {count} nodes affected",
+    "severityErrorLabel": "Blocking errors",
+    "severitySetupLabel": "Setup required",
     "expand": "Expand",
     "collapse": "Collapse",
-    "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "executionErrorOccurred": "An error occurred during execution. Check the Issues tab for details.",
     "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
     "getHelpTooltip": "Report this error and we'll help you resolve it",
@@ -4695,6 +4793,26 @@
       "prompt_outputs_failed_validation": {
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
+      },
+      "op_rejected": {
+        "title": "Agent edit rejected",
+        "desc": "The workflow document refused an agent edit. The canvas and the shared document may briefly differ until the next update."
+      },
+      "prefix_abort": {
+        "title": "Agent edits partially applied",
+        "desc": "A batch of agent edits stopped partway. The remaining edits are retried automatically."
+      },
+      "guard_trip": {
+        "title": "Agent update blocked",
+        "desc": "An incoming agent update did not match the expected workflow document shape and was blocked."
+      },
+      "apply_failed": {
+        "title": "Agent edit failed",
+        "desc": "An agent edit could not be applied to the workflow document."
+      },
+      "agent_api_failed": {
+        "title": "Comfy Agent error",
+        "desc": "Comfy Agent hit a server error."
       }
     }
   },
@@ -5012,5 +5130,124 @@
         "explore": "Explore templates"
       }
     }
+  },
+  "agent": {
+    "title": "Comfy Agent",
+    "loadFailed": "The agent panel failed to load.",
+    "askComfyAgent": "Ask Comfy Agent",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} updates · {frame}",
+    "crdtConnected": "connected",
+    "crdtDisconnected": "disconnected",
+    "crdtNoDocument": "no document",
+    "caption": "The AI agent can make mistakes",
+    "captionExpanded": "The AI agent can make mistakes. Double check your response.",
+    "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
+    "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
+    "dismiss": "Dismiss",
+    "latest": "Latest",
+    "copyUnavailable": "Only the current conversation can be copied in this version",
+    "alpha": "ALPHA",
+    "newChat": "New chat",
+    "newChatTitle": "Untitled",
+    "maximize": "Maximize panel",
+    "minimize": "Minimize panel",
+    "close": "Close",
+    "history": "Chat history",
+    "showChatHistory": "Show chat history",
+    "backToPreviousChat": "Back to previous chat",
+    "historyCurrent": "Current",
+    "historyToday": "Today",
+    "historyYesterday": "Yesterday",
+    "historyEarlier": "Earlier",
+    "historyEmpty": "No conversations yet",
+    "copyMarkdown": "Copy as markdown",
+    "delete": "Delete",
+    "untitledChat": "Untitled",
+    "skip": "Skip",
+    "gotIt": "Got it",
+    "greeting": "Hello {name},",
+    "greetingQuestion": "What do you want to make?",
+    "placeholder": "Describe ideas, {'@'} to reference,\nadd nodes from graph or drag in assets",
+    "suggestedPrompts": [
+      "Generate a yellow duck with a hockey mask",
+      "List my saved workflows",
+      "Find the best workflow for skin upscaling",
+      "Explain the selected node",
+      "Build a workflow for image to video with 3 models"
+    ],
+    "attach": "Attach a file",
+    "attachFiles": "Attach images or files",
+    "addToPrompt": "Add to prompt",
+    "addNodesFromGraph": "Add nodes from graph",
+    "dragAndDropAssets": "Drag and drop assets here",
+    "nodeSelection": {
+      "bannerTitle": "Add nodes from graph",
+      "bannerSubtitle": "Select one or many nodes to add as reference",
+      "exit": "Exit mode",
+      "selectNode": "Select node"
+    },
+    "addFromAssets": "Add from assets panel",
+    "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
+    "attachmentTooLarge": "{name} is larger than {limit}",
+    "attachmentUploadFailed": "{name} could not be uploaded",
+    "mention": "Mention a node",
+    "changeWorkflowForChat": "Change the workflow for this chat",
+    "chatOptions": "Chat options",
+    "chooseWorkflow": "Choose a workflow",
+    "chooseWorkflowForChat": "Choose a workflow for this chat",
+    "dontWorkInWorkflow": "Don't work in a workflow",
+    "searchWorkflows": "Search workflows",
+    "selectWorkflowToGenerate": "Select a workflow to generate in",
+    "switchWorkflow": "Switch workflow",
+    "modelAuto": "Auto",
+    "runModeTriggerAsk": "Ask",
+    "runModeTriggerAuto": "Auto",
+    "runModeTriggerAskTooltip": "Ask for permission",
+    "runModeTriggerAutoTooltip": "Run workflow without permission",
+    "runPermissions": "Run permissions",
+    "runPermissionsDescription": "Choose when the agent needs your consent",
+    "runModeAsk": "Ask before a workflow runs",
+    "runModeAskDescription": "Comfy will ask for approval before each workflow run",
+    "runModeAuto": "Auto-run without approval",
+    "runModeAutoDescription": "Comfy will run workflows without asking for permission",
+    "runModeLimit": "Auto-run with limits",
+    "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
+    "credits": "credits",
+    "saveChanges": "Save changes",
+    "addPromptToSend": "Add a prompt to send",
+    "send": "Send",
+    "stop": "Stop",
+    "thinking": "Thinking...",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
+    "ranToolCallsTimed": "Ran {count} tool call for {seconds} seconds | Ran {count} tool calls for {seconds} seconds",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "remove": "Remove",
+    "focusNode": "Show on canvas",
+    "focusNodeLabel": "Show {node} on canvas",
+    "removeNodeLabel": "Remove {node} reference",
+    "uploading": "Uploading",
+    "noNodesToMention": "No nodes in this workflow",
+    "friend": "there",
+    "sendFailed": "Message failed to send",
+    "sendBusy": "A message is already being sent",
+    "malformedEvent": "The agent sent an event this panel could not read",
+    "coachTitle": "Meet the agent",
+    "coachBody": "Ask it to build or edit graphs.",
+    "thought": "Thought",
+    "thoughtTimed": "Thought for {seconds} seconds",
+    "downloadAssets": "Download assets",
+    "toolOpenedNewTab": "Opened a new tab",
+    "toolSwitchedTabs": "Switched tabs",
+    "toolSavedPreference": "Saved a preference",
+    "toolForgotPreference": "Forgot a preference",
+    "openWorkflowTab": "Open {name}",
+    "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "runModeTriggerAutoLimit": "Auto (limited)",
+    "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
+    "showMore": "Show more",
+    "showLess": "Show less"
   }
 }

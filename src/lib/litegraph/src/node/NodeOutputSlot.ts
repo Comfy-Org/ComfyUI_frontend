@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
@@ -11,11 +11,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
-import {
-  outputHasLinks,
-  outputLinkIds,
-  outputLinks
-} from '@/lib/litegraph/src/node/slotLinks'
+import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -30,15 +26,16 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
   /**
    * @deprecated Reads return a stable store-derived view. Removing ids from the
-   * view disconnects them; additions are discarded. First-party code uses the
-   * slotLinks helpers and node topology methods.
+   * view disconnects them; additions are ignored.
    */
   get links(): LinkId[] | null {
     warnDeprecated(
       'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); mutate via node.connect() / node.disconnectOutput().'
     )
     this.synchronizeLegacyLinks()
-    return this.legacyLinksPresent ? this.legacyLinksView : null
+    return this.legacyLinkIds.length || this.legacyLinksPresent
+      ? this.legacyLinksView
+      : null
   }
 
   set links(value: readonly LinkId[] | null) {
@@ -50,12 +47,17 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     this.commitLegacyLinks()
   }
 
-  private synchronizeLegacyLinks(preservePresence = false): void {
-    const hadIds = this.legacyLinkIds.length > 0
+  private synchronizeLegacyLinks(): void {
     const ids = linkIdsOf(this)
     this.legacyLinkIds.splice(0, this.legacyLinkIds.length, ...ids)
-    if (ids.length) this.legacyLinksPresent = true
-    else if (hadIds && !preservePresence) this.legacyLinksPresent = false
+  }
+
+  _setLegacyLinksPresent(present: boolean): void {
+    this.legacyLinksPresent = present
+  }
+
+  _serialiseLinkIds(ids: LinkId[]): LinkId[] | null {
+    return ids.length || this.legacyLinksPresent ? ids : null
   }
 
   private commitLegacyLinks(): void {
@@ -67,11 +69,12 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     }
 
     const desired = new Set(this.legacyLinkIds)
-    for (const link of outputLinks(graph, this._node.id, slot)) {
+    const current = outputLinks(graph, this._node.id, slot)
+    for (const link of current) {
       if (desired.has(link.id)) continue
       graph.getNodeById(link.target_id)?.disconnectInput(link.target_slot)
     }
-    this.synchronizeLegacyLinks(true)
+    this.synchronizeLegacyLinks()
   }
 
   get isWidgetInputSlot(): false {
@@ -91,7 +94,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   ) {
     // Serialized outputs carry a legacy links mirror; strip it so the base
     // ctor's Object.assign does not trip the deprecated setter above.
-    const { links: _legacyLinks, ...rest } = slot
+    const { links: legacyLinks, ...rest } = slot
     super(rest, node)
 
     const legacyLinkIds: LinkId[] = []
@@ -104,7 +107,10 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
           () => this.synchronizeLegacyLinks()
         )
       },
-      legacyLinksPresent: { value: false, writable: true }
+      legacyLinksPresent: {
+        value: Array.isArray(legacyLinks),
+        writable: true
+      }
     })
 
     this._data = slot._data
@@ -153,7 +159,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     const ids = linkIdsOf(this)
     return {
       ...super.toJSON(),
-      links: ids.length ? ids : null,
+      links: this._serialiseLinkIds(ids),
       slot_index: this.slot_index
     }
   }
@@ -169,6 +175,10 @@ function indexOf(slot: NodeOutputSlot): number {
 }
 
 function linkIdsOf(slot: NodeOutputSlot): LinkId[] {
+  return linksOf(slot).map((link) => link.id)
+}
+
+function linksOf(slot: NodeOutputSlot): LLink[] {
   const { graph } = slot.node
-  return graph ? outputLinkIds(graph, slot.node.id, indexOf(slot)) : []
+  return graph ? outputLinks(graph, slot.node.id, indexOf(slot)) : []
 }

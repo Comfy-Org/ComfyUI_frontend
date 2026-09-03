@@ -55,3 +55,47 @@ export const WithTitlesAndFootnote: Story = {
     primaryCta: undefined
   }
 }
+
+export const WithTitlesFootnoteAndAction: Story = {
+  args: {
+    ...WithTitlesAndFootnote.args,
+    primaryCta: {
+      label: 'VIEW DETAILS',
+      href: '#'
+    }
+  }
+}
+
+export const WithTitlesFootnoteAndActionTablet: Story = {
+  ...WithTitlesFootnoteAndAction,
+  globals: {
+    viewport: { value: 'tablet', isRotated: false }
+  }
+}
+
+export const WithTitlesFootnoteAndActionMobile: Story = {
+  ...WithTitlesFootnoteAndAction,
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
+  }
+}
+
+export const WithTitlesFootnoteAndTwoActions: Story = {
+  args: {
+    ...WithTitlesAndFootnote.args,
+    primaryCta: {
+      label: 'VIEW DETAILS',
+      href: '#'
+    },
+    secondaryCta: {
+      label: 'REQUEST DEMO',
+      href: '#'
+    }
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
+  }
+}

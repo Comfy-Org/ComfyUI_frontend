@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
@@ -47,6 +48,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
     beforeSend: rumBeforeSend,
     sessionSampleRate: 100,
     sessionReplaySampleRate: 0,
+    trackFeatureFlagsForEvents: ['action', 'vital', 'long_task', 'resource'],
     allowedTracingUrls: [/^https:\/\/[^/]+\.comfy\.org/]
   })
   trackUserManualRefresh()

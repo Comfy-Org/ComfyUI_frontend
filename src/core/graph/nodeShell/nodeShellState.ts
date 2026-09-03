@@ -36,6 +36,7 @@ export function createNodeShellState(
     inputs: shallowReactive<INodeInputSlot[]>([]),
     mode: LGraphEventMode.ALWAYS,
     outputs: shallowReactive<INodeOutputSlot[]>([]),
+    properties: {},
     title: title || 'Unnamed',
     type: type ?? '',
     titleMode
@@ -84,7 +85,7 @@ export function registerNodeState(
   }
   assert(
     strandedScope === undefined,
-    `registerNodeState: node ${node.id} already registered under a different root graph (${strandedScope?.rootGraphId})`
+    'registerNodeState: node already registered under a different root graph'
   )
 
   node._state.graphId = graph.id
@@ -106,7 +107,7 @@ export function unregisterNodeState(node: LGraphNode): void {
   node._graphScope = undefined
   assert(
     deleted,
-    `unregisterNodeState: state for node ${node.id} not found in bucket (identity drift)`
+    'unregisterNodeState: node state not found in bucket (identity drift)'
   )
 }
 
@@ -128,7 +129,9 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
   const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
   Object.assign(registeredState, {
     bgcolor: undefined,
+    boxcolor: undefined,
     color: undefined,
+    lastSerialization: undefined,
     resizable: undefined,
     shape: undefined,
     showAdvanced: undefined,

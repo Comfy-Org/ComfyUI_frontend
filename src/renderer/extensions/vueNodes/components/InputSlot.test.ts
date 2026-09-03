@@ -25,11 +25,6 @@ vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
 }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ useSlotElementTracking: vi.fn() })
-)
-
-vi.mock(
   '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction',
   () => ({
     useSlotLinkInteraction: () => ({

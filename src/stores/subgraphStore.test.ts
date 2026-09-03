@@ -49,6 +49,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: () => comfyApp.canvas
   }))
 }))
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    beginWorkflowNavigation: () => 1
+  })
+}))
 
 // Mock comfyApp globally for the store setup
 vi.mock('@/scripts/app', () => ({
@@ -156,11 +161,11 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     first.nodes[0].id = -1
-    first.definitions!.subgraphs![0].id = 'corrupted'
+    first.definitions!.subgraphs[0].id = 'corrupted'
 
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
-    expect(second.definitions!.subgraphs![0].id).toBe('123')
+    expect(second.definitions!.subgraphs[0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })

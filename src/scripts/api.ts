@@ -19,7 +19,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
-import { zShareableAssetsResponse } from '@/schemas/apiSchema'
+import {
+  zEmbeddingsResponse,
+  zShareableAssetsResponse
+} from '@/schemas/apiSchema'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -281,6 +284,24 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
     headers.set(key, value)
   } else {
     headers[key] = value
+  }
+}
+
+/**
+ * Fire-and-forget: a telemetry chunk-load failure must never prevent the
+ * token-less WebSocket connect fallback from proceeding.
+ */
+async function trackWsTokenUnavailable(): Promise<void> {
+  try {
+    if (!(await shouldRemintCloudRequest())) return
+    const { useTelemetry } = await import('@/platform/telemetry')
+    useTelemetry()?.trackUnifiedAuthRetry({
+      transport: 'ws',
+      outcome: 'failed',
+      failure_reason: 'token_unavailable'
+    })
+  } catch (err) {
+    console.warn('Failed to report WebSocket token unavailability:', err)
   }
 }
 
@@ -712,6 +733,7 @@ export class ComfyApi extends EventTarget {
           params.set('token', authToken)
         }
       } catch (error) {
+        void trackWsTokenUnavailable()
         // Continue without auth token if there's an error
         console.warn(
           'Could not get auth token for WebSocket connection:',
@@ -880,9 +902,10 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
             default:
-              throw new Error(
+              console.error(
                 `Unknown binary websocket message of type ${eventType}`
               )
+              break
           }
         } else {
           const msg = JSON.parse(event.data) as ApiMessageUnion
@@ -924,12 +947,7 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('autoQueueGraphChanged')
               break
             case 'feature_flags':
-              // Store server feature flags
               this.serverFeatureFlags.value = msg.data
-              console.log(
-                'Server feature flags received:',
-                this.serverFeatureFlags.value
-              )
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -940,7 +958,7 @@ export class ComfyApi extends EventTarget {
                 )
               } else if (!this.reportedUnknownMessageTypes.has(msg.type)) {
                 this.reportedUnknownMessageTypes.add(msg.type)
-                throw new Error(`Unknown message type ${msg.type}`)
+                console.error(`Unknown message type ${msg.type}`)
               }
           }
         }
@@ -1034,10 +1052,14 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets a list of embedding names
+   * @throws When the request fails or the response does not match the schema
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
-    return await resp.json()
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
+    }
+    return zEmbeddingsResponse.parse(await resp.json())
   }
 
   /**
