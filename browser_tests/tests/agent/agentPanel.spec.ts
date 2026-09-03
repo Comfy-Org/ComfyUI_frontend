@@ -13,6 +13,7 @@ import {
   OPEN_TAB_TOOL_EVENT,
   RESIZE_IMAGE_TOOL_EVENT,
   RESUMED_THINKING_EVENT,
+  SOCKET_READY_EVENT,
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
@@ -21,7 +22,7 @@ import {
   agentWorkflowUpdates,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
-import type { AgentDocWireFrame } from '@e2e/tests/agent/agentPanelMocks'
+import type { AgentWireFrame } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -29,7 +30,7 @@ const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
 function pushEvent(
   ws: WebSocketRoute,
-  event: AgentWsEvent | AgentDocWireFrame
+  event: AgentWsEvent | AgentWireFrame
 ): void {
   ws.send(JSON.stringify(event))
 }
@@ -215,13 +216,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const panel = page.locator('#agent-panel-root')
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const ws = await getWebSocket()
-    await expect
-      .poll(() => webSocketMessages.length, { timeout: 10_000 })
-      .toBeGreaterThan(0)
     await composer.fill('Add a node to this workflow')
     await panel.getByRole('button', { name: 'Send' }).click()
 
     await expect.poll(() => postedMessages.length, { timeout: 10_000 }).toBe(1)
+    pushEvent(ws, SOCKET_READY_EVENT)
     await expect
       .poll(() => webSocketMessages.some(isWorkflowSubscribe), {
         timeout: 10_000
