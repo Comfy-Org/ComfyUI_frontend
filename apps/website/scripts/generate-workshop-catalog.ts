@@ -2,8 +2,8 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { workshopModelSchema } from '../src/content/workshop-models.schema';
-import type { WorkshopModelEntry } from '../src/content/workshop-models.schema';
+import { workshopModelSchema } from '../src/content/workshop-models.schema'
+import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
 
 /** One file per model, loaded as an Astro content collection. */
 const COLLECTION_DIR = resolve(
