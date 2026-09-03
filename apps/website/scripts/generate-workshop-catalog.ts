@@ -64,6 +64,7 @@ export type WorkshopCatalogField =
   | {
       readonly kind: 'media'
       readonly name: string
+      readonly role: string
       readonly label: string
       readonly required: boolean
       readonly multiple: boolean
@@ -253,7 +254,8 @@ export function deriveWorkshopFields(
     ...roles.map(
       (role): WorkshopCatalogField => ({
         kind: 'media',
-        name: role.role,
+        name: `media_${role.role}`,
+        role: role.role,
         label: labelFor(role.role),
         required: role.required,
         multiple: role.cardinality === 'many',

@@ -181,7 +181,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -189,7 +190,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -197,7 +199,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -384,7 +387,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -392,7 +396,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -400,7 +405,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -533,7 +539,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -665,7 +672,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -886,7 +894,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -1293,7 +1302,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -1418,7 +1428,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -1426,7 +1437,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": true,
           "multiple": false,
@@ -1572,7 +1584,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -1717,7 +1730,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -1881,7 +1895,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -2024,7 +2039,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -2203,7 +2219,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -2368,7 +2385,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -2376,7 +2394,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": true,
           "multiple": false,
@@ -2523,7 +2542,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -2647,7 +2667,8 @@
         },
         {
           "kind": "media",
-          "name": "garment_image",
+          "name": "media_garment_image",
+          "role": "garment_image",
           "label": "Garment Image",
           "required": true,
           "multiple": false,
@@ -2655,7 +2676,8 @@
         },
         {
           "kind": "media",
-          "name": "model_image",
+          "name": "media_model_image",
+          "role": "model_image",
           "label": "Model Image",
           "required": true,
           "multiple": false,
@@ -2823,7 +2845,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -2831,7 +2854,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": true,
           "multiple": false,
@@ -3127,7 +3151,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -3383,7 +3408,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -3391,7 +3417,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -3606,7 +3633,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -3614,7 +3642,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": true,
           "multiple": false,
@@ -3725,7 +3754,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -3862,7 +3892,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -4001,7 +4032,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -4134,7 +4166,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -4279,7 +4312,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -4287,7 +4321,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": false,
@@ -4295,7 +4330,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -4556,7 +4592,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -4723,7 +4760,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -4892,7 +4930,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -5146,7 +5185,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -5154,7 +5194,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -5350,7 +5391,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -5574,7 +5616,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -5974,7 +6017,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -5982,7 +6026,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -6265,7 +6310,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": true,
@@ -6273,7 +6319,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -6281,7 +6328,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -6695,7 +6743,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -6703,7 +6752,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -6963,7 +7013,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": true,
@@ -6971,7 +7022,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -6979,7 +7031,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -7782,7 +7835,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -8059,7 +8113,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -8336,7 +8391,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -8613,7 +8669,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -8768,7 +8825,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -8841,7 +8899,8 @@
       "fields": [
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -9222,7 +9281,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -10391,7 +10451,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -10399,7 +10460,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -10581,7 +10643,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -10882,7 +10945,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -10890,7 +10954,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": false,
@@ -11156,7 +11221,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -11352,7 +11418,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -11981,7 +12048,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": false,
@@ -12575,7 +12643,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": false,
@@ -12583,7 +12652,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -12916,7 +12986,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -13044,7 +13115,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -13172,7 +13244,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -13310,7 +13383,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -13449,7 +13523,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -13588,7 +13663,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -13727,7 +13803,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -13866,7 +13943,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -14005,7 +14083,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -14144,7 +14223,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -15973,7 +16053,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -15981,7 +16062,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": true,
           "multiple": false,
@@ -16252,7 +16334,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -16260,7 +16343,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -16475,7 +16559,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -16869,7 +16954,8 @@
         },
         {
           "kind": "media",
-          "name": "view_left",
+          "name": "media_view_left",
+          "role": "view_left",
           "label": "View Left",
           "required": true,
           "multiple": false,
@@ -16877,7 +16963,8 @@
         },
         {
           "kind": "media",
-          "name": "view_right",
+          "name": "media_view_right",
+          "role": "view_right",
           "label": "View Right",
           "required": true,
           "multiple": false,
@@ -17057,7 +17144,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -17065,7 +17153,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -17306,7 +17395,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -17638,7 +17728,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -17646,7 +17737,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -17807,7 +17899,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -17930,7 +18023,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -18155,7 +18249,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -18163,7 +18258,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -18416,7 +18512,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -18594,7 +18691,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": false,
@@ -18602,7 +18700,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": true,
           "multiple": false,
@@ -18781,7 +18880,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -18789,7 +18889,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -19201,7 +19302,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -19209,7 +19311,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -19217,7 +19320,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -19422,7 +19526,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -19801,7 +19906,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": true,
@@ -20363,7 +20469,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -20371,7 +20478,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": true,
           "multiple": false,
@@ -20512,7 +20620,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -20727,7 +20836,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -20735,7 +20845,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -21471,7 +21582,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -21705,7 +21817,8 @@
         },
         {
           "kind": "media",
-          "name": "garment_image",
+          "name": "media_garment_image",
+          "role": "garment_image",
           "label": "Garment Image",
           "required": true,
           "multiple": false,
@@ -21713,7 +21826,8 @@
         },
         {
           "kind": "media",
-          "name": "model_image",
+          "name": "media_model_image",
+          "role": "model_image",
           "label": "Model Image",
           "required": true,
           "multiple": false,
@@ -21885,7 +21999,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -22057,7 +22172,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -22230,7 +22346,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -22392,7 +22509,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -22400,7 +22518,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -22616,7 +22735,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -22942,7 +23062,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -22950,7 +23071,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -23568,7 +23690,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -23801,7 +23924,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -23809,7 +23933,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -23953,7 +24078,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -24146,7 +24272,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -24154,7 +24281,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -24353,7 +24481,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -24546,7 +24675,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -24554,7 +24684,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -24753,7 +24884,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -24957,7 +25089,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -25090,7 +25223,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -25295,7 +25429,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -25429,7 +25564,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -25692,7 +25828,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -25700,7 +25837,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -26189,7 +26327,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -26197,7 +26336,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -26762,7 +26902,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -27013,7 +27154,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -27331,7 +27473,8 @@
         },
         {
           "kind": "media",
-          "name": "model_3d",
+          "name": "media_model_3d",
+          "role": "model_3d",
           "label": "Model 3d",
           "required": false,
           "multiple": false,
@@ -27871,7 +28014,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": true,
@@ -28035,7 +28179,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -28332,7 +28477,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": true,
@@ -28340,7 +28486,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -28348,7 +28495,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -28356,7 +28504,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -28364,7 +28513,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -28639,7 +28789,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": true,
@@ -28647,7 +28798,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -28655,7 +28807,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -28663,7 +28816,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -28671,7 +28825,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -28679,7 +28834,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -28792,7 +28948,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -28906,7 +29063,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -29020,7 +29178,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -29133,7 +29292,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": false,
@@ -29430,7 +29590,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -29438,7 +29599,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -29747,7 +29909,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -29755,7 +29918,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -29952,7 +30116,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -29960,7 +30125,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -30161,7 +30327,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -30169,7 +30336,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -30319,7 +30487,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -30470,7 +30639,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -30617,7 +30787,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -30625,7 +30796,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -30788,7 +30960,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -30942,7 +31115,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -31105,7 +31279,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -31268,7 +31443,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -31454,7 +31630,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -31462,7 +31639,8 @@
         },
         {
           "kind": "media",
-          "name": "mask",
+          "name": "media_mask",
+          "role": "mask",
           "label": "Mask",
           "required": false,
           "multiple": false,
@@ -31470,7 +31648,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -31810,7 +31989,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -32241,7 +32421,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -32249,7 +32430,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -32467,7 +32649,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -32741,7 +32924,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -32749,7 +32933,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": false,
           "multiple": false,
@@ -33057,7 +33242,8 @@
         },
         {
           "kind": "media",
-          "name": "background_image",
+          "name": "media_background_image",
+          "role": "background_image",
           "label": "Background Image",
           "required": false,
           "multiple": true,
@@ -33065,7 +33251,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -33073,7 +33260,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -33316,7 +33504,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -33692,7 +33881,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -33837,7 +34027,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -34014,7 +34205,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -34192,7 +34384,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -36451,7 +36644,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -36595,7 +36789,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -36722,7 +36917,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -36809,7 +37005,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -36936,7 +37133,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -37062,7 +37260,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -37241,7 +37440,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -37249,7 +37449,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -37397,7 +37598,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -37527,7 +37729,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": false,
@@ -37682,7 +37885,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -37832,7 +38036,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -37970,7 +38175,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -37978,7 +38184,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -38116,7 +38323,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": true,
           "multiple": false,
@@ -38124,7 +38332,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -38223,7 +38432,8 @@
         },
         {
           "kind": "media",
-          "name": "model_3d",
+          "name": "media_model_3d",
+          "role": "model_3d",
           "label": "Model 3d",
           "required": true,
           "multiple": false,
@@ -38338,7 +38548,8 @@
         },
         {
           "kind": "media",
-          "name": "model_3d",
+          "name": "media_model_3d",
+          "role": "model_3d",
           "label": "Model 3d",
           "required": true,
           "multiple": false,
@@ -38566,7 +38777,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -38574,7 +38786,8 @@
         },
         {
           "kind": "media",
-          "name": "view_back",
+          "name": "media_view_back",
+          "role": "view_back",
           "label": "View Back",
           "required": false,
           "multiple": false,
@@ -38582,7 +38795,8 @@
         },
         {
           "kind": "media",
-          "name": "view_left",
+          "name": "media_view_left",
+          "role": "view_left",
           "label": "View Left",
           "required": false,
           "multiple": false,
@@ -38590,7 +38804,8 @@
         },
         {
           "kind": "media",
-          "name": "view_right",
+          "name": "media_view_right",
+          "role": "view_right",
           "label": "View Right",
           "required": false,
           "multiple": false,
@@ -38816,7 +39031,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -38824,7 +39040,8 @@
         },
         {
           "kind": "media",
-          "name": "view_back",
+          "name": "media_view_back",
+          "role": "view_back",
           "label": "View Back",
           "required": false,
           "multiple": false,
@@ -38832,7 +39049,8 @@
         },
         {
           "kind": "media",
-          "name": "view_left",
+          "name": "media_view_left",
+          "role": "view_left",
           "label": "View Left",
           "required": false,
           "multiple": false,
@@ -38840,7 +39058,8 @@
         },
         {
           "kind": "media",
-          "name": "view_right",
+          "name": "media_view_right",
+          "role": "view_right",
           "label": "View Right",
           "required": false,
           "multiple": false,
@@ -38942,7 +39161,8 @@
         },
         {
           "kind": "media",
-          "name": "model_3d",
+          "name": "media_model_3d",
+          "role": "model_3d",
           "label": "Model 3d",
           "required": true,
           "multiple": false,
@@ -39085,7 +39305,8 @@
         },
         {
           "kind": "media",
-          "name": "model_3d",
+          "name": "media_model_3d",
+          "role": "model_3d",
           "label": "Model 3d",
           "required": true,
           "multiple": false,
@@ -39590,7 +39811,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -39851,7 +40073,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -40229,7 +40452,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -40453,7 +40677,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -41107,7 +41332,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -41442,7 +41668,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -41450,7 +41677,8 @@
         },
         {
           "kind": "media",
-          "name": "view_back",
+          "name": "media_view_back",
+          "role": "view_back",
           "label": "View Back",
           "required": false,
           "multiple": false,
@@ -41458,7 +41686,8 @@
         },
         {
           "kind": "media",
-          "name": "view_left",
+          "name": "media_view_left",
+          "role": "view_left",
           "label": "View Left",
           "required": false,
           "multiple": false,
@@ -41466,7 +41695,8 @@
         },
         {
           "kind": "media",
-          "name": "view_right",
+          "name": "media_view_right",
+          "role": "view_right",
           "label": "View Right",
           "required": false,
           "multiple": false,
@@ -42202,7 +42432,8 @@
         },
         {
           "kind": "media",
-          "name": "document",
+          "name": "media_document",
+          "role": "document",
           "label": "Document",
           "required": false,
           "multiple": true,
@@ -42210,7 +42441,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -42416,7 +42648,8 @@
         },
         {
           "kind": "media",
-          "name": "document",
+          "name": "media_document",
+          "role": "document",
           "label": "Document",
           "required": false,
           "multiple": true,
@@ -42424,7 +42657,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -42649,7 +42883,8 @@
         },
         {
           "kind": "media",
-          "name": "document",
+          "name": "media_document",
+          "role": "document",
           "label": "Document",
           "required": false,
           "multiple": true,
@@ -42657,7 +42892,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": true,
@@ -42897,7 +43133,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -43132,7 +43369,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -43140,7 +43378,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -43317,7 +43556,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -43325,7 +43565,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -43498,7 +43739,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -43675,7 +43917,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -43842,7 +44085,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -43984,7 +44228,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -43992,7 +44237,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -44187,7 +44433,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -44404,7 +44651,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -44604,7 +44852,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -44612,7 +44861,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -44818,7 +45068,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -44826,7 +45077,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -45021,7 +45273,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": true,
           "multiple": false,
@@ -45029,7 +45282,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -45661,7 +45915,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -45852,7 +46107,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": true,
@@ -46207,7 +46463,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -46215,7 +46472,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -46355,7 +46613,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -46612,7 +46871,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": false,
@@ -46620,7 +46880,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -46869,7 +47130,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": false,
@@ -46877,7 +47139,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -46885,7 +47148,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -47135,7 +47399,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -47143,7 +47408,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -47394,7 +47660,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -47402,7 +47669,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -47678,7 +47946,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": true,
@@ -47686,7 +47955,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -47694,7 +47964,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -47971,7 +48242,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": true,
@@ -47979,7 +48251,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -47987,7 +48260,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -48199,7 +48473,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": true,
           "multiple": true,
@@ -48435,7 +48710,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": true,
@@ -48443,7 +48719,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_video",
+          "name": "media_reference_video",
+          "role": "reference_video",
           "label": "Reference Video",
           "required": false,
           "multiple": true,
@@ -48844,7 +49121,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": false,
@@ -49063,7 +49341,8 @@
         },
         {
           "kind": "media",
-          "name": "audio",
+          "name": "media_audio",
+          "role": "audio",
           "label": "Audio",
           "required": false,
           "multiple": false,
@@ -49286,7 +49565,8 @@
         },
         {
           "kind": "media",
-          "name": "end_image",
+          "name": "media_end_image",
+          "role": "end_image",
           "label": "End Image",
           "required": false,
           "multiple": false,
@@ -49294,7 +49574,8 @@
         },
         {
           "kind": "media",
-          "name": "start_image",
+          "name": "media_start_image",
+          "role": "start_image",
           "label": "Start Image",
           "required": true,
           "multiple": false,
@@ -49554,7 +49835,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": false,
           "multiple": true,
@@ -49562,7 +49844,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -49682,7 +49965,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -49784,7 +50068,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -49886,7 +50171,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": false,
@@ -50221,7 +50507,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -50401,7 +50688,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -50583,7 +50871,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": false,
           "multiple": false,
@@ -50968,7 +51257,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": true,
@@ -51082,7 +51372,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -51196,7 +51487,8 @@
         },
         {
           "kind": "media",
-          "name": "video",
+          "name": "media_video",
+          "role": "video",
           "label": "Video",
           "required": true,
           "multiple": false,
@@ -51410,7 +51702,8 @@
         },
         {
           "kind": "media",
-          "name": "image",
+          "name": "media_image",
+          "role": "image",
           "label": "Image",
           "required": true,
           "multiple": true,
@@ -51418,7 +51711,8 @@
         },
         {
           "kind": "media",
-          "name": "reference_image",
+          "name": "media_reference_image",
+          "role": "reference_image",
           "label": "Reference Image",
           "required": true,
           "multiple": true,

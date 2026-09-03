@@ -52,7 +52,8 @@ describe('buildWorkshopCatalog', () => {
           },
           {
             kind: 'media',
-            name: 'image',
+            name: 'media_image',
+            role: 'image',
             label: 'Image',
             required: false,
             multiple: true,
@@ -148,7 +149,8 @@ describe('deriveWorkshopFields', () => {
       },
       {
         kind: 'media',
-        name: 'reference_image',
+        name: 'media_reference_image',
+        role: 'reference_image',
         label: 'Reference Image',
         required: true,
         multiple: false,
@@ -168,6 +170,10 @@ describe('deriveWorkshopFields', () => {
         expect(fieldNames, `${model.id} is missing ${name}`).toContain(name)
       }
       expect(model.fields, `${model.id} has no form fields`).not.toHaveLength(0)
+      expect(
+        new Set(model.fields.map((field) => field.name)).size,
+        `${model.id} has duplicate form field names`
+      ).toBe(model.fields.length)
     }
   })
 
