@@ -8,6 +8,7 @@ import {
   applyDrag,
   boxesAt,
   fromBoundingBoxes,
+  isBoundingBox,
   tagRects,
   toBoundingBoxes
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
@@ -714,7 +715,12 @@ export function useBoundingBoxes(
     if (slot < 0 || !node.isInputConnected(slot)) return
     const outputs = nodeOutputStore.getNodeOutputs(node)
     const incoming = outputs?.input_bboxes
-    if (!Array.isArray(incoming) || !incoming.length) return
+    if (
+      !Array.isArray(incoming) ||
+      !incoming.length ||
+      !incoming.every(isBoundingBox)
+    )
+      return
     const applied = lastIncomingValue()
     if (isEqual(incoming, applied)) return
     if (!apply) {

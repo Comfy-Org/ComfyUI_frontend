@@ -3,11 +3,14 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()
-  const { x, y } = useMouse()
+  const canvasStore = useCanvasStore()
+  const { x, y } = useMouse({ type: 'client' })
 
   const useSearchBoxV2 = computed(
     () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
@@ -34,19 +37,13 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
       return
     }
     if (!popoverRef.value) return
-    popoverRef.value.showSearchBox(
-      Object.assign(
-        new PointerEvent('click', { clientX: x.value, clientY: y.value }),
-        {
-          canvasX: x.value,
-          canvasY: y.value,
-          deltaX: 0,
-          deltaY: 0,
-          safeOffsetX: x.value,
-          safeOffsetY: y.value
-        }
-      )
-    )
+    const event = new PointerEvent('click', {
+      clientX: x.value,
+      clientY: y.value
+    })
+    const canvas: LGraphCanvas = canvasStore.getCanvas()
+    canvas.adjustMouseEvent(event)
+    popoverRef.value.showSearchBox(event)
   }
 
   return {

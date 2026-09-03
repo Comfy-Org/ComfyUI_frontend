@@ -17,7 +17,6 @@ const OFFLINE_GRACE_MS = 20_000
 const ACCEPT_DEADLINE_MS = 15_000
 
 const mocks = vi.hoisted(() => {
-  const activeWorkflow = (value: { path: string } | null) => ({ value })
   const queuedJobs: { value: Record<string, { workflow?: unknown }> } = {
     value: {}
   }
@@ -26,7 +25,7 @@ const mocks = vi.hoisted(() => {
     showSubscriptionDialog: vi.fn(),
     workflowStatus: { value: new Map<unknown, string>() },
     executionErrors: { hasNodeError: false, hasPromptError: false },
-    activeWorkflow: activeWorkflow(null),
+    activeWorkflow: { value: null as { path: string } | null },
     queuedJobs,
     linearMode: { value: false },
     vueNodesEnabled: true,

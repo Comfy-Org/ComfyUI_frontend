@@ -127,7 +127,7 @@ const isPricingResult = (value: unknown): value is PricingResult =>
   'type' in value &&
   typeof value.type === 'string' &&
   PRICING_RESULT_TYPES.includes(
-    (value as { type: string }).type as (typeof PRICING_RESULT_TYPES)[number]
+    value.type as (typeof PRICING_RESULT_TYPES)[number]
   )
 
 /**
@@ -328,8 +328,7 @@ export const formatPricingResult = (
     !('type' in result) &&
     'usd' in result
   ) {
-    const r = result
-    const usd = asFiniteNumber(r.usd)
+    const usd = asFiniteNumber(result.usd)
     if (usd === null) return ''
     if (valueOnly) return formatCreditsValue(usd)
     return formatCreditsLabel(usd, defaults)

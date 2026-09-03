@@ -1321,6 +1321,7 @@ describe('graphTraversalUtil', () => {
 
       it('should skip subgraphs when expandSubgraphs is false', () => {
         const visited: string[] = []
+        const contexts: null[] = []
         const subNode = createMockNode('sub1')
         const subgraph = createMockSubgraph('sub-uuid', [subNode])
         const nodes = [
@@ -1331,6 +1332,7 @@ describe('graphTraversalUtil', () => {
         traverseNodesDepthFirst(nodes, {
           visitor: (node, context) => {
             visited.push(String(node.id))
+            contexts.push(context)
             return context
           },
           initialContext: null,
@@ -1338,6 +1340,7 @@ describe('graphTraversalUtil', () => {
         })
 
         expect(visited).toEqual(['2', '1']) // DFS processes in LIFO order
+        expect(contexts).toEqual([null, null])
         expect(visited).not.toContain('sub1')
       })
 

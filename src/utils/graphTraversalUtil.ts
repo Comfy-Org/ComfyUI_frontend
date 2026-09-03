@@ -781,7 +781,10 @@ export function traverseNodesDepthFirst<T = void>(
   options?: TraverseNodesOptions<T>
 ): void {
   const visitor = options?.visitor ?? (() => undefined as T)
-  const initialContext: T = options?.initialContext ?? (undefined as T)
+  const initialContext =
+    options?.initialContext === undefined
+      ? (undefined as T)
+      : options.initialContext
   const expandSubgraphs = options?.expandSubgraphs ?? true
   type StackItem = { node: LGraphNode; context: T }
   const stack: StackItem[] = []

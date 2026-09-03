@@ -10,7 +10,7 @@ import { toNodeId } from '@/types/nodeId'
 const { appState, outputState } = vi.hoisted(() => {
   const appState: { node: MockNode | null } = { node: null }
   const outputState: {
-    outputs: { input_bboxes: BoundingBox[] } | undefined
+    outputs: { input_bboxes: unknown } | undefined
     nodeOutputs: { value: Record<string, unknown> } | null
   } = {
     outputs: undefined,
@@ -316,6 +316,19 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
     const c = setup([])
     expect(modelBoxes(c)).toHaveLength(0)
+  })
+
+  it('ignores an output containing an invalid bounding box', () => {
+    const node = makeConnectedNode()
+    appState.node = node
+    outputState.outputs = {
+      input_bboxes: [box(), { x: 1 }]
+    }
+
+    const c = setup([])
+
+    expect(modelBoxes(c)).toHaveLength(0)
+    expect(lastIncomingOf(node)).toEqual([])
   })
 
   it('repopulates from the next run after clearing the canvas', async () => {

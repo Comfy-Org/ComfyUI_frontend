@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
@@ -54,10 +55,9 @@ describe('ExecuteButton', () => {
       })
     )
 
-    const partialCanvas: Partial<LGraphCanvas> = {
+    mockCanvas = fromPartial<LGraphCanvas>({
       setDirty: vi.fn()
-    }
-    mockCanvas = partialCanvas as LGraphCanvas
+    })
 
     mockSelectedNodes = []
 
@@ -67,11 +67,13 @@ describe('ExecuteButton', () => {
     vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(mockCanvas)
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
-    vi.mocked(useSelectionState).mockReturnValue({
-      selectedNodes: {
-        value: mockSelectedNodes
-      }
-    } as ReturnType<typeof useSelectionState>)
+    vi.mocked(useSelectionState).mockReturnValue(
+      fromPartial<ReturnType<typeof useSelectionState>>({
+        selectedNodes: {
+          value: mockSelectedNodes
+        }
+      })
+    )
   })
 
   const renderComponent = () => {

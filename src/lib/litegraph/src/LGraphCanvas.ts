@@ -30,6 +30,7 @@ import type { AnimationOptions } from './DragAndScale'
 import { mintNodeId, observeNodeId } from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
+import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
@@ -269,15 +270,6 @@ interface ICreatePanelOptions {
   onClose?: () => void
   width?: number | string
   height?: number | string
-}
-
-interface SlotTypeDefaultNodeOpts {
-  node?: string
-  title?: string
-  properties?: Record<string, NodeProperty>
-  inputs?: [string, string][]
-  outputs?: [string, string][]
-  json?: Parameters<LGraphNode['configure']>[0]
 }
 
 const cursors = {
@@ -3733,10 +3725,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (dragEvent) {
       this.adjustMouseEvent(dragEvent)
-      const e = dragEvent
-      node.setPos(e.canvasX - node.size[0] / 2, e.canvasY + 10)
+      node.setPos(dragEvent.canvasX - node.size[0] / 2, dragEvent.canvasY + 10)
       // Update last_mouse to prevent jump on first drag move
-      this.last_mouse = [e.clientX, e.clientY]
+      this.last_mouse = [dragEvent.clientX, dragEvent.clientY]
     } else {
       node.setPos(
         this.graph_mouse[0] - node.size[0] / 2,
@@ -6939,24 +6930,30 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const slotTypesDefault = isFrom
       ? LiteGraph.slot_types_default_out
       : LiteGraph.slot_types_default_in
-    if (slotTypesDefault?.[fromSlotType]) {
-      const defaultNode = (value: string | SlotTypeDefaultNodeOpts) => value
+    const slotDefaults = slotTypesDefault?.[fromSlotType]
+    if (slotDefaults) {
       let nodeNewType: string | SlotTypeDefaultNodeOpts | false = false
-      if (typeof slotTypesDefault[fromSlotType] == 'object') {
-        for (const typeX in slotTypesDefault[fromSlotType]) {
+      if (Array.isArray(slotDefaults)) {
+        for (const slotDefault of slotDefaults) {
           if (
-            opts.nodeType == slotTypesDefault[fromSlotType][typeX] ||
+            opts.nodeType ==
+              (typeof slotDefault === 'string'
+                ? slotDefault
+                : slotDefault.node) ||
             opts.nodeType == 'AUTO'
           ) {
-            nodeNewType = defaultNode(slotTypesDefault[fromSlotType][typeX])
+            nodeNewType = slotDefault
             break
           }
         }
       } else if (
-        opts.nodeType == slotTypesDefault[fromSlotType] ||
+        opts.nodeType ==
+          (typeof slotDefaults === 'string'
+            ? slotDefaults
+            : slotDefaults.node) ||
         opts.nodeType == 'AUTO'
       ) {
-        nodeNewType = defaultNode(slotTypesDefault[fromSlotType])
+        nodeNewType = slotDefaults
       }
       if (nodeNewType) {
         let nodeNewOpts: SlotTypeDefaultNodeOpts | undefined
@@ -7142,13 +7139,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const slotTypesDefault = isFrom
       ? LiteGraph.slot_types_default_out
       : LiteGraph.slot_types_default_in
-    if (slotTypesDefault?.[fromSlotType]) {
-      if (typeof slotTypesDefault[fromSlotType] == 'object') {
-        for (const typeX in slotTypesDefault[fromSlotType]) {
-          options.push(slotTypesDefault[fromSlotType][typeX])
-        }
-      } else {
-        options.push(slotTypesDefault[fromSlotType])
+    const slotDefaults = slotTypesDefault?.[fromSlotType]
+    if (slotDefaults) {
+      const defaults = Array.isArray(slotDefaults)
+        ? slotDefaults
+        : [slotDefaults]
+      for (const slotDefault of defaults) {
+        const nodeType =
+          typeof slotDefault === 'string' ? slotDefault : slotDefault.node
+        if (nodeType) options.push(nodeType)
       }
     }
 

@@ -14,8 +14,12 @@ const {
   mockLinkConnector,
   mockAdapter
 } = vi.hoisted(() => {
-  const connector = (value: unknown) => value
   const capturedHandlers: Record<string, (...args: unknown[]) => void> = {}
+  const mockLinkConnector = {
+    isConnecting: false,
+    state: { snapLinksPos: null as [number, number] | null },
+    events: {}
+  }
   return {
     capturedOnPan: {
       current: null as ((dx: number, dy: number) => void) | null
@@ -30,25 +34,19 @@ const {
     capturedHandlers,
     mockDs: { offset: [0, 0] as [number, number], scale: 1 },
     mockSetDirty: vi.fn(),
-    mockLinkConnector: {
-      isConnecting: false,
-      state: { snapLinksPos: null as [number, number] | null },
-      events: {}
-    },
+    mockLinkConnector,
     mockAdapter: {
       beginFromOutput: vi.fn(),
       beginFromInput: vi.fn(),
       reset: vi.fn(),
       renderLinks: [] as unknown[],
-      linkConnector: connector(null),
+      linkConnector: mockLinkConnector,
       isInputValidDrop: vi.fn(() => false),
       isOutputValidDrop: vi.fn(() => false),
       dropOnCanvas: vi.fn()
     }
   }
 })
-
-mockAdapter.linkConnector = mockLinkConnector
 
 vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   AutoPanController: class {

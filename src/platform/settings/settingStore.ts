@@ -31,6 +31,10 @@ interface AppliedSetting<TValue> {
   newValue: TValue
 }
 
+function resolveDefaultValue<T>(value: T | (() => T)): T {
+  return typeof value === 'function' ? (value as () => T)() : value
+}
+
 function tryMigrateDeprecatedValue(
   setting: SettingParams | undefined,
   value: unknown
@@ -285,9 +289,7 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     const defaultValue = param.defaultValue
-    return typeof defaultValue === 'function'
-      ? Reflect.apply(defaultValue, undefined, [])
-      : defaultValue
+    return resolveDefaultValue(defaultValue)
   }
 
   function getVersionedDefaultValue<

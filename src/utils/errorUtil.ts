@@ -31,7 +31,7 @@ export function getErrorMessage(value: unknown): string | undefined {
     'message' in value &&
     typeof value.message === 'string'
   ) {
-    return (value as { message: string }).message
+    return value.message
   }
   return undefined
 }
