@@ -45,8 +45,22 @@ export function createBillingCommands(options: {
     store: options.ports.operationStore,
     onState: publish
   })
-  async function follow(id: string, kind: BillingOperationKind) {
+  async function follow(
+    id: string,
+    kind: BillingOperationKind,
+    actionUrl?: string
+  ) {
     publish(reduceBilling(state, { type: 'started', operationId: id }))
+    if (actionUrl) {
+      publish(reduceBilling(state, { type: 'urlReceived', url: actionUrl }))
+      const { opened } = await options.ports.openUrl(actionUrl, 'new_tab')
+      if (!opened) {
+        publish(
+          reduceBilling(state, { type: 'hostReturned', result: 'failed' })
+        )
+        return
+      }
+    }
     await poller.start(id, kind)
   }
   return {
@@ -58,18 +72,20 @@ export function createBillingCommands(options: {
       intent = `${options.ports.operationStore.namespace}:subscribe:${input.plan_slug}`
     ) {
       await singleFlight('subscribe', async () =>
-        follow(
-          (await options.client.subscribe(input, intent)).billing_op_id,
-          'subscribe'
-        )
+        options.client
+          .subscribe(input, intent)
+          .then((result) =>
+            follow(result.billing_op_id, 'subscribe', result.action_url)
+          )
       )
     },
     async topUp(input, intent = input.idempotency_key) {
       await singleFlight('topup', async () =>
-        follow(
-          (await options.client.topup(input, intent)).billing_op_id,
-          'topup'
-        )
+        options.client
+          .topup(input, intent)
+          .then((result) =>
+            follow(result.billing_op_id, 'topup', result.action_url)
+          )
       )
     },
     async resubscribe(
