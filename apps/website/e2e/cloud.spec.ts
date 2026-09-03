@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 test.describe('Cloud page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -103,7 +104,9 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
@@ -116,7 +119,9 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()

@@ -375,6 +375,7 @@ import type {
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
+import { isVerificationRecoveryActive } from '@/platform/workspace/utils/verificationRecovery'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
@@ -457,12 +458,12 @@ const quoteReady = computed(
     Boolean(previewData?.quote_id) &&
     previewData?.quote_version !== undefined
 )
-const verificationRecoveryActive = computed(
-  () =>
-    embeddedCheckoutEnabled &&
-    (authenticationState === 'requires_action' ||
-      authenticationState === 'failed_retryable' ||
-      Boolean(reconciliationOperationId))
+const verificationRecoveryActive = computed(() =>
+  isVerificationRecoveryActive({
+    embeddedCheckoutEnabled,
+    authenticationState,
+    reconciliationOperationId
+  })
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 

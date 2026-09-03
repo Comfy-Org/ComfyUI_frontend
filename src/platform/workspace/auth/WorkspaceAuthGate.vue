@@ -59,6 +59,7 @@
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
+  computed,
   nextTick,
   onMounted,
   onUnmounted,
@@ -80,6 +81,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
@@ -235,16 +237,29 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
+// The local session identity: the Firebase uid, or the validated API key for
+// key-only sessions. Workspace initialization keys off this so an API-key
+// login boots workspace context the same way a Firebase login does.
+function localSessionIdentity(): string | null {
+  const { currentUser } = storeToRefs(useAuthStore())
+  if (currentUser.value?.uid) return currentUser.value.uid
+  const apiKeyStore = useApiKeyAuthStore()
+  return apiKeyStore.isAuthenticated ? apiKeyStore.getApiKey() : null
+}
+
 function initializeWorkspacesInBackground(): Promise<void> {
-  const { isInitialized, currentUser } = storeToRefs(useAuthStore())
-  const userId = currentUser.value?.uid ?? null
-  if (backgroundInitialization && backgroundInitializationUserId === userId) {
+  const { isInitialized } = storeToRefs(useAuthStore())
+  const sessionId = localSessionIdentity()
+  if (
+    backgroundInitialization &&
+    backgroundInitializationUserId === sessionId
+  ) {
     return backgroundInitialization
   }
 
   cancelInitialization()
   const generation = initializationGeneration
-  backgroundInitializationUserId = userId
+  backgroundInitializationUserId = sessionId
 
   const operation = (async () => {
     if (!isInitialized.value) {
@@ -254,8 +269,9 @@ function initializeWorkspacesInBackground(): Promise<void> {
       })
     }
     if (
+      sessionId === null ||
       generation !== initializationGeneration ||
-      currentUser.value?.uid !== userId
+      localSessionIdentity() !== sessionId
     ) {
       return
     }
@@ -287,9 +303,12 @@ onMounted(() => {
 })
 
 if (!isCloud) {
-  const { currentUser } = storeToRefs(useAuthStore())
-  watch(currentUser, (user) => {
-    if (user) {
+  const sessionIdentity = computed(() => localSessionIdentity())
+  watch(sessionIdentity, (identity, previousIdentity) => {
+    if (previousIdentity !== null && identity !== previousIdentity) {
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+    if (identity) {
       void initializeWorkspacesInBackground()
     } else {
       cancelInitialization()

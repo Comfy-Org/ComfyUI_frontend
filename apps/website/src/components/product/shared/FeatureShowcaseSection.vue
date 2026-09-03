@@ -48,7 +48,7 @@ defineProps<{
             )
           "
         >
-          <h3 class="text-primary-comfy-canvas text-2xl font-light lg:text-3xl">
+          <h3 class="text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
             {{ feature.title }}
           </h3>
           <div class="mt-6 lg:mt-0">
@@ -82,6 +82,8 @@ defineProps<{
           <img
             :src="feature.image"
             :alt="feature.title"
+            loading="lazy"
+            decoding="async"
             class="aspect-4/3 w-full rounded-4xl object-cover"
           />
         </div>

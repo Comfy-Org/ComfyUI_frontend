@@ -8,6 +8,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
 describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas
@@ -86,6 +87,32 @@ describe('LGraphCanvas Title Button Rendering', () => {
   })
 
   describe('drawNode title button rendering', () => {
+    it('clips using the node rendering shape', () => {
+      node.shape = RenderShape.ROUND
+      node.clip_area = true
+
+      canvas.drawNode(node, ctx)
+
+      expect(ctx.roundRect).toHaveBeenCalled()
+      expect(ctx.rect).not.toHaveBeenCalled()
+    })
+
+    it('clips card nodes with square bottom corners', () => {
+      node.shape = RenderShape.CARD
+      node.clip_area = true
+
+      canvas.drawNode(node, ctx)
+
+      expect(ctx.roundRect).toHaveBeenCalledWith(
+        0,
+        0,
+        node.size[0],
+        node.size[1],
+        [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
+      )
+      expect(ctx.clip).toHaveBeenCalled()
+    })
+
     it('should render visible title buttons', () => {
       const button1 = node.addTitleButton({
         name: 'button1',

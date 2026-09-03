@@ -1,8 +1,43 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { WidgetId } from './widgetId'
-import { isWidgetId, parseWidgetId, widgetId } from './widgetId'
+import {
+  ensureUniqueWidgetNames,
+  isWidgetId,
+  parseWidgetId,
+  widgetId
+} from './widgetId'
 import { toNodeId } from '@/types/nodeId'
+
+describe('ensureUniqueWidgetNames', () => {
+  it('renames duplicates without colliding with literal suffixes', () => {
+    const widgets = [
+      { name: 'seed' },
+      { name: 'seed' },
+      { name: 'seed#1' },
+      { name: 'seed' }
+    ]
+
+    expect(ensureUniqueWidgetNames(widgets)).toBe(true)
+    expect(widgets.map(({ name }) => name)).toEqual([
+      'seed',
+      'seed#2',
+      'seed#1',
+      'seed#3'
+    ])
+  })
+
+  it('logs and leaves all names unchanged when a duplicate cannot be renamed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const widgets = [{ name: 'seed' }, Object.freeze({ name: 'seed' })]
+
+    expect(ensureUniqueWidgetNames(widgets)).toBe(false)
+    expect(widgets.map(({ name }) => name)).toEqual(['seed', 'seed'])
+    expect(warn).toHaveBeenCalledOnce()
+
+    warn.mockRestore()
+  })
+})
 
 describe('widgetId', () => {
   const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'

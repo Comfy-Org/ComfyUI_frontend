@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Genera un vídeo con audio a partir de una indicación de texto mediante los modelos Gemini Omni Flash de Google. De forma opcional, proporciona imágenes y/o vídeos de referencia para guiar o editar el resultado. Describe la duración deseada (3-10 s) directamente en la indicación.",
+    "display_name": "Google Gemini Omni (Vídeo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control tras generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo de vídeo Gemini utilizado para generar el vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "indicación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "longitud_de_ruta",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analiza un archivo de modelo 3D (GLB, GLTF, OBJ, STL) para convertirlo en una MESH editable para los nodos de procesamiento de mallas (decimar, regenerar malla, desplegar UV, hornear, ...). Todos los nodos/primitivas de la escena se combinan en una sola malla con sus transformaciones aplicadas; las texturas y los factores de material proceden del primer material. Equivalente de MeshToFile3D.",
+    "display_name": "Obtener componentes 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Archivo de modelo 3D de Load 3D u otro nodo 3D. FBX/USDZ no son compatibles; conviértelo primero a GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad al doble de precio."
+        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad a un precio más alto."
       },
       "output_language": {
         "name": "output_language",
@@ -16596,6 +16648,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "Continúa un vídeo existente con PixVerse, opcionalmente con audio nativo. La fuente debe durar menos de 40 segundos y tener como máximo 1920 px en cualquiera de sus lados. La salida conserva la resolución de la fuente, por lo que la calidad determina lo bien que se renderiza la continuación en lugar del tamaño de los fotogramas.",
+    "display_name": "PixVerse V6 Extender vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y de generación."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo que se continuará."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "Genera un vídeo que realiza una transición de un primer fotograma a un último fotograma con PixVerse, opcionalmente con audio nativo. La salida conserva la relación de aspecto del primer fotograma.",
+    "display_name": "PixVerse V6 de primer a último fotograma a vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y de generación."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "Compone un vídeo a partir de sujetos, fondos y vídeos de referencia con PixVerse. Coloca una referencia en la escena nombrándola en el prompt; por ejemplo, '{'@'}Subject1 camina por {'@'}Background1'. Al conectar un vídeo de referencia, el modelo cambia al modo Omni, donde la duración de la salida coincide con la del vídeo de referencia más largo.",
+    "display_name": "PixVerse V6 Fusión (Referencia a vídeo)",
+    "inputs": {
+      "backgrounds": {
+        "name": "fondos",
+        "tooltip": "Imágenes de referencia de la escena en la que se colocan los sujetos."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y de generación."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "subjects": {
+        "name": "sujetos",
+        "tooltip": "Imágenes de referencia de los sujetos que se colocarán en la escena."
+      },
+      "videos": {
+        "name": "vídeos",
+        "tooltip": "Vídeos de referencia de los que tomar sujetos, movimiento, encuadre o estilo. Como máximo dos y 15 segundos en total."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Anima una imagen con PixVerse, opcionalmente con audio nativo. La salida conserva la relación de aspecto de la imagen de entrada.",
+    "display_name": "PixVerse V6 de imagen a vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y de generación."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "Genera un vídeo a partir de una indicación de texto con PixVerse, opcionalmente con audio nativo.",
+    "display_name": "PixVerse V6 de texto a vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y de generación."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "PolyexponentialScheduler",
     "inputs": {
@@ -17540,7 +17824,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Selecciona el estilo realistic_image y un subestilo opcional.",
+    "description": "Seleccione el estilo y subestilo logo_raster.",
     "display_name": "Recraft Style - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17651,6 +17935,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "Cree un estilo reutilizable de Recraft V4 a partir de 1-10 imágenes de referencia. El style_id resultante funciona con todos los modelos Recraft V4 y V4.1 del mismo tipo de salida. El tamaño total de todas las imágenes está limitado a 10 MB.",
+    "display_name": "Recraft V4 Create Style",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Imágenes de referencia que definen el estilo. Las referencias similares precisan la coincidencia; las referencias variadas la amplían."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tipo de salida para el que se crea el estilo: recraftv4_styles para imágenes ráster, recraftv4_styles_vector para SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Genera imágenes usando los modelos Recraft V4 o V4 Pro.",
     "display_name": "Recraft V4 Texto a Imagen",
@@ -17660,7 +17964,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo a utilizar para la generación."
+        "tooltip": "El modelo que se usará para la generación. Los modelos recraftv4_styles están diseñados para una generación con estilo coherente y siempre requieren un style_id o style_references."
       },
       "model_size": {
         "name": "tamaño"
@@ -17684,10 +17988,26 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; los resultados reales no son deterministas independientemente de la semilla."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID de un estilo Recraft V4 que se aplicará, por ejemplo, desde el nodo Recraft V4 Create Style o la salida style_id de una ejecución anterior. No se puede combinar con style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Qué tan fielmente seguir el estilo: precise lo reproduce en detalle, flexible coincide con el aspecto general. Solo se usa cuando se proporciona un estilo."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Imágenes de referencia para crear un estilo al vuelo, facturadas adicionalmente a la generación. El estilo creado se devuelve como style_id para reutilizarlo. No se puede combinar con style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +18021,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo a utilizar para la generación."
+        "tooltip": "El modelo que se usará para la generación. Los modelos recraftv4_styles están diseñados para una generación con estilo coherente y siempre requieren un style_id o style_references."
       },
       "model_size": {
         "name": "tamaño"
@@ -17725,10 +18045,26 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; los resultados reales no son deterministas independientemente de la semilla."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID de un estilo vectorial Recraft V4 que se aplicará, por ejemplo, desde el nodo Recraft V4 Create Style o la salida style_id de una ejecución anterior. No se puede combinar con style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Qué tan fielmente seguir el estilo: precise lo reproduce en detalle, flexible coincide con el aspecto general. Solo se usa cuando se proporciona un estilo."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Imágenes de referencia para crear un estilo vectorial al vuelo, facturadas adicionalmente a la generación. El estilo creado se devuelve como style_id para reutilizarlo. No se puede combinar con style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -23452,30 +23788,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "Refina un modelo borrador creado únicamente por modelos Tripo v1.4.",
-    "display_name": "Tripo: Refinar modelo borrador",
-    "inputs": {
-      "model_task_id": {
-        "name": "ID_de_tarea_del_modelo",
-        "tooltip": "Debe ser un modelo Tripo v1.4"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "id_de_tarea_de_modelo",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: Redireccionar modelo con rig",
     "inputs": {
@@ -24405,60 +24717,10 @@
       },
       "resolution": {
         "name": "resolución",
-        "tooltip": "Resolución de salida del video. 4K no está disponible para los modelos veo-3.1-lite y veo-3.0."
+        "tooltip": "Resolución de vídeo de salida. 4K no está disponible para el modelo veo-3.1-lite."
       },
       "seed": {
         "name": "semilla",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Genera videos a partir de indicaciones de texto usando la API de Veo de Google",
-    "display_name": "Generación de Video Google Veo2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Relación de aspecto del video de salida"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Duración del video de salida en segundos"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Si se debe mejorar la indicación con asistencia de IA"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Imagen de referencia opcional para guiar la generación del video"
-      },
-      "model": {
-        "name": "modelo",
-        "tooltip": "Modelo Veo 2 a utilizar para la generación de video"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Indicaciones negativas para guiar lo que se debe evitar en el video"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Si se permite generar personas en el video"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descripción de texto del video"
-      },
-      "seed": {
-        "name": "seed",
         "tooltip": "Semilla para la generación de video (0 para aleatorio)"
       }
     },
@@ -24482,6 +24744,23 @@
       "strict_duration": {
         "name": "duración estricta",
         "tooltip": "Si es Verdadero, cuando la duración especificada no sea posible, se generará un error."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "Recortar vídeo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Región de recorte en píxeles. Una anchura/altura cero mantiene el fotograma completo."
       },
       "video": {
         "name": "video"
@@ -24594,6 +24873,27 @@
       },
       "model": {
         "name": "modelo"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Recortar vídeo (avanzado)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Si es verdadero, se producirá un error cuando no sea posible la duración especificada."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Ventana de recorte mediante fotogramas de inicio/final."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

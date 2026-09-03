@@ -1,4 +1,5 @@
 import type { LGraph } from '../LGraph'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
   mintGroupId,
@@ -19,6 +20,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -29,9 +31,13 @@ import type {
 
 const MAX_ID = 100_000_000
 
-interface DeduplicationResult {
-  subgraphs: ExportedSubgraph[]
-  rootNodes: ISerialisedNode[] | undefined
+interface DeduplicationResult<
+  Subgraph extends { id: string; nodes?: { type: string }[] } =
+    ExportedSubgraph,
+  Node extends { type: string } = ISerialisedNode
+> {
+  subgraphs: Subgraph[]
+  rootNodes: Node[] | undefined
 }
 
 interface SubgraphNormalizationReservations {
@@ -47,13 +53,11 @@ export function normalizeSubgraphDefinitions(
   state: LGraphState,
   rootNodes?: ISerialisedNode[]
 ): DeduplicationResult {
+  const normalizedIds = normalizeSubgraphDefinitionIds(subgraphs, rootNodes)
   const clonedSubgraphs =
-    firstById(
-      structuredClone(subgraphs),
-      (subgraph) => subgraph.id,
-      'subgraph'
-    ) ?? []
-  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+    firstById(normalizedIds.subgraphs, (subgraph) => subgraph.id, 'subgraph') ??
+    []
+  const clonedRootNodes = normalizedIds.rootNodes
 
   for (const [index, subgraph] of clonedSubgraphs.entries()) {
     dropSameOwnerDuplicates(subgraph)
@@ -69,6 +73,43 @@ export function normalizeSubgraphDefinitions(
   deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
   deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
   deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+export function normalizeSubgraphDefinitionIds<
+  Subgraph extends { id: string; nodes?: { type: string }[] },
+  Node extends { type: string }
+>(
+  subgraphs: Subgraph[],
+  rootNodes?: Node[]
+): DeduplicationResult<Subgraph, Node> {
+  const clonedSubgraphs = structuredClone(subgraphs)
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+  const ids = new Set(clonedSubgraphs.map(({ id }) => id))
+  const remapped = new Map<string, string>()
+
+  for (const subgraph of clonedSubgraphs) {
+    if (isUuidShapedSubgraphId(subgraph.id)) continue
+    let id = remapped.get(subgraph.id)
+    if (!id) {
+      do id = createUuidv4()
+      while (ids.has(id))
+      remapped.set(subgraph.id, id)
+      ids.add(id)
+      console.warn(
+        `LiteGraph: replaced legacy subgraph ID ${subgraph.id} with ${id}`
+      )
+    }
+    subgraph.id = id
+  }
+
+  for (const node of [
+    ...(clonedRootNodes ?? []),
+    ...clonedSubgraphs.flatMap(({ nodes }) => nodes ?? [])
+  ]) {
+    node.type = remapped.get(node.type) ?? node.type
+  }
 
   return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }

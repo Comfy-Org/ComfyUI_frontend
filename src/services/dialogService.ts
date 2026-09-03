@@ -8,12 +8,11 @@ import PromptDialogContent from '@/components/dialog/content/PromptDialogContent
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -343,10 +342,13 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
-    if (
-      billingPolicyCapabilities.value.topUpAccess === 'subscription-required'
-    ) {
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
+      useBillingCapabilities()
+    // A capability read still in flight has to be awaited here, or a top-up
+    // triggered during that window is silently dropped with no recovery UI.
+    if (!isReady.value) await initialize()
+    if (!isReady.value) return
+    if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -355,12 +357,7 @@ export const useDialogService = () => {
       return
     }
 
-    // Members can't top up a team workspace, so they get a read-only
-    // "ask your workspace admins" notice instead of the purchase dialog.
-    if (
-      type.value === 'workspace' &&
-      !useWorkspaceUI().permissions.value.canTopUp
-    ) {
+    if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
@@ -376,6 +373,7 @@ export const useDialogService = () => {
         }
       })
     }
+    if (!canTopUp.value) return
 
     const component =
       type.value === 'workspace'
@@ -471,7 +469,7 @@ export const useDialogService = () => {
         // Contents bring their own width and separators — shrink-wrap the
         // chrome and zero the section padding.
         contentClass:
-          'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] border-border-default',
+          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
@@ -809,7 +807,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           closable: false,
           contentClass:
-            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[42.5rem] rounded-2xl overflow-hidden',
+            'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
           onClose: () => resolve()
         }
       })

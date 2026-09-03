@@ -1,4 +1,5 @@
 @import '@comfyorg/design-system/css/style.css';
+@import '../../workbench/extensions/agent/agentTheme.css';
 
 /* Toasts teleport to <body>. Reka's modal mode sets pointer-events: none on
    the body, which left toast close buttons painted above dialogs but

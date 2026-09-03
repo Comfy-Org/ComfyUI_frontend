@@ -79,6 +79,33 @@ export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
   return isRegistrySubscriptionTier(tier) ? TIER_TO_KEY[tier] : null
 }
 
+// Enterprise plans are intentionally absent from the self-serve catalog, so a
+// scheduled change to one cannot be resolved through `plans` and carries no
+// tier to read. The slug is the only signal on that path; everywhere a tier
+// exists, compare it to 'ENTERPRISE' directly.
+export function isEnterprisePlanSlug(slug: string | null | undefined): boolean {
+  return slug?.toLowerCase().startsWith('enterprise') === true
+}
+
+// A tier the frontend cannot map to its catalog and that is not one of the
+// workspace-level tiers it knows about. Price and feature claims must never be
+// borrowed for a plan we cannot identify (FE-1662 story 6).
+export function isUnknownTier(
+  tier: IngestSubscriptionTier | null | undefined
+): boolean {
+  if (tier == null || tier === 'TEAM' || tier === 'ENTERPRISE') return false
+  return toTierKey(tier) === null
+}
+
+// Enterprise and unrecognized tiers share one presentation: no catalog price,
+// benefits, or pricing surfaces. The server hides their lifecycle capabilities
+// (billing-api hideLifecycleCapabilities); this helper only drives rendering.
+export function isSalesManagedTier(
+  tier: IngestSubscriptionTier | null | undefined
+): boolean {
+  return tier === 'ENTERPRISE' || isUnknownTier(tier)
+}
+
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
 // key is not a usable test for "is on a paid plan".
 export function hasActivePaidPlan(
@@ -100,7 +127,7 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
 export function getTierCredits(tierKey: TierKey): number | null {
   if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? null
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
-  return TIER_PRICING[tierKey].credits
+  return TIER_PRICING[tierKey]?.credits ?? null
 }
 
 export function getTierFeatures(tierKey: TierKey): TierFeatures {

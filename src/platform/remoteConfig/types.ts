@@ -93,6 +93,7 @@ export type RemoteConfig = {
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
   comfy_api_base_url?: string
+  comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
   firebase_env?: 'dev'

@@ -2,6 +2,7 @@ import type { Browser, BrowserContext, Page } from '@playwright/test'
 import { devices, expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -343,7 +344,7 @@ test.describe('Download page @smoke', () => {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
 
-    for (const href of ['/cloud', '/api', '/cloud/enterprise']) {
+    for (const href of ['/cloud', '/api', '/enterprise']) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
@@ -372,8 +373,9 @@ test.describe('FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /Do I need a GPU/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
@@ -386,8 +388,9 @@ test.describe('FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /Do I need a GPU/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()

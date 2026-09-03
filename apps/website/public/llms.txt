@@ -19,6 +19,12 @@ Studios building with Comfy include Series Entertainment, Moment Factory, Open S
 - [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans and per-credit pricing for individuals and teams using Comfy Cloud.
 - [Comfy API](https://comfy.org/api/): REST API for triggering ComfyUI workflows programmatically from external apps.
 - [Comfy Enterprise](https://comfy.org/cloud/enterprise/): Single-tenant ComfyUI deployments with BYO keys, orchestration, and data-ownership guarantees.
+- [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
+
+## Models
+
+- [Supported Models](https://comfy.org/p/supported-models/): Directory of 300+ AI models that run in ComfyUI — diffusion models, checkpoints, LoRAs, ControlNets, and partner APIs.
+- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every model page; each page also has a markdown twin at the same URL plus `.md`.
 
 ## Workflows and Gallery
 
@@ -36,6 +42,8 @@ Studios building with Comfy include Series Entertainment, Moment Factory, Open S
 ## Developers and Documentation
 
 - [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI.
+- [Comfy SDKs](https://docs.comfy.org/development/api-development/sdks): Official Python and TypeScript SDKs (beta) for running ComfyUI workflows from your own application.
+- [Docs index for agents](https://docs.comfy.org/llms.txt): Machine-readable index of the full documentation.
 - [ComfyUI on GitHub](https://github.com/comfyanonymous/ComfyUI): Source repository for the open-source ComfyUI runtime.
 - [Comfy-Org on GitHub](https://github.com/Comfy-Org): Organization-wide repositories — frontend, registry, manager, docs, and tooling.
 - [Comfy Registry](https://registry.comfy.org/): Public registry of ComfyUI custom nodes and extensions, with versioning and search.

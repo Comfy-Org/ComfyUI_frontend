@@ -10,7 +10,7 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate text-xs',
+        'group/node lg-node absolute isolate touch-none text-xs',
         'flex flex-col contain-layout contain-style',
         isLightTheme
           ? 'drop-shadow-md drop-shadow-black/15'
@@ -635,7 +635,7 @@ const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const widgetValueStore = useWidgetValueStore()
 const widgetIds = computed(() => {
-  const graphId = app.rootGraph?.id
+  const graphId = canvasStore.rootGraphId
   const bareNodeId = stripGraphPrefix(nodeData.id)
   if (!graphId || !bareNodeId) return []
 

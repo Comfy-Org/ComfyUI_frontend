@@ -1,0 +1,467 @@
+{
+  "src/base/assert.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/base/common/downloadUtil.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/composables/auth/useAuthActions.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/composables/billing/useBillingContext.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/composables/maskeditor/brushDrawingUtils.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/composables/maskeditor/useBrushDrawing.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/composables/maskeditor/useCanvasManager.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/composables/maskeditor/useGPUResources.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/composables/maskeditor/useImageLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/composables/maskeditor/useMaskEditorLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 7
+    }
+  },
+  "src/composables/maskeditor/useMaskEditorSaver.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
+  "src/composables/painter/usePainter.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/core/graph/widgets/dynamicWidgets.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 7
+    }
+  },
+  "src/lib/litegraph/src/LGraph.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 10
+    }
+  },
+  "src/lib/litegraph/src/LGraphNode.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/lib/litegraph/src/canvas/MovingInputLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/lib/litegraph/src/canvas/MovingLinkBase.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/lib/litegraph/src/canvas/MovingOutputLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
+  "src/lib/litegraph/src/canvas/ToInputRenderLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
+  "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/lib/litegraph/src/litegraphInstance.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/node/slotLinks.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/assets/composables/useMediaAssetActions.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/assets/services/assetService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 21
+    }
+  },
+  "src/platform/auth/session/useSessionCookie.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 7
+    }
+  },
+  "src/platform/cloud/oauth/oauthApi.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/platform/cloud/subscription/components/CreditsTile.vue": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/cloud/subscription/composables/useSubscription.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/cloud/subscription/launchCancellationFlow.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/keybindings/keybindingStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/keybindings/presetService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "src/platform/nodeReplacement/nodeReplacementService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/settings/settingStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/tasks/services/taskService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/platform/workflow/management/stores/comfyWorkflow.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/workflow/sharing/composables/useComfyHubProfileGate.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/workflow/sharing/services/comfyHubService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 7
+    }
+  },
+  "src/platform/workflow/sharing/services/workflowShareService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/platform/workspace/composables/useDowngradeToPersonal.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "src/platform/workspace/composables/useWorkspaceBilling.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/workspace/stores/teamWorkspaceStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 11
+    }
+  },
+  "src/platform/workspace/stores/workspaceAuthStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/core/canvas/canvasStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/core/layout/slots/slotIdentifier.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/layerEditor/engine/nodeKind.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/layerEditor/engine/tool.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/glsl/useGLSLRenderer.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 10
+    }
+  },
+  "src/renderer/three/RendererView.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/services/audioService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/services/colorPaletteService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/services/gateway/registrySearchGateway.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/services/litegraphService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/services/nodeHelpService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/services/nodeOrganizationService.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/stores/apiKeyAuthStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/stores/assetsStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/stores/authStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/stores/commandStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/stores/extensionStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/stores/nodeBookmarkStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/stores/subgraphStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/stores/userFileStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/stores/userStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/stores/workspace/colorPaletteStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/types/widgetId.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/utils/litegraphUtil.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/utils/migration/migrateReroute.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  }
+}

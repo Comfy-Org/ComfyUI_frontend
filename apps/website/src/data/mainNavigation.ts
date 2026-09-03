@@ -70,7 +70,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              href: routes.enterprise
             }
           ]
         },
@@ -80,6 +80,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.mcpServer', locale),
               href: routes.mcp,
+              badge: 'new'
+            },
+            {
+              label: t('nav.comfyCli', locale),
+              href: routes.cli,
               badge: 'new'
             },
             // TODO: no page yet — re-enable when landing pages ship

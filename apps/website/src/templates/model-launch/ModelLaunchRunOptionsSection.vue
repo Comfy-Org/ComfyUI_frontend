@@ -19,7 +19,7 @@ const cards = [
   { product: 'api', href: routes.api, bg: 'bg-primary-comfy-plum' },
   {
     product: 'enterprise',
-    href: routes.cloudEnterprise,
+    href: routes.enterprise,
     bg: 'bg-secondary-cool-gray'
   }
 ] as const

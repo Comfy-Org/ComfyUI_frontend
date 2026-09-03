@@ -49,18 +49,24 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   })
 }))
 
-// Mock current user (drives the original-owner self-row match by email)
+// Mock current user (drives the original-owner self-row match by email and
+// the API-key bootstrap branch)
 const mockCurrentUser = vi.hoisted(() => ({
-  userEmail: { value: null as string | null }
+  userEmail: { value: null as string | null },
+  isApiKeyLogin: { value: false }
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userEmail: mockCurrentUser.userEmail })
+  useCurrentUser: () => ({
+    userEmail: mockCurrentUser.userEmail,
+    isApiKeyLogin: mockCurrentUser.isApiKeyLogin
+  })
 }))
 
 // Mock workspaceApi
 const mockWorkspaceApi = vi.hoisted(() => ({
   list: vi.fn(),
+  getCurrentWorkspace: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
@@ -165,6 +171,7 @@ describe('useTeamWorkspaceStore', () => {
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
     mockCurrentUser.userEmail.value = null
+    mockCurrentUser.isApiKeyLogin.value = false
 
     // Reset workspaceAuthStore mock state
     mockWorkspaceAuthStore.currentWorkspace = null
@@ -446,6 +453,91 @@ describe('useTeamWorkspaceStore', () => {
     })
   })
 
+  describe('initialize with an API-key session', () => {
+    beforeEach(() => {
+      mockCurrentUser.isApiKeyLogin.value = true
+      mockWorkspaceApi.getCurrentWorkspace.mockResolvedValue({
+        id: 'ws-api-key',
+        name: 'Key Workspace',
+        type: 'team',
+        role: 'owner',
+        auth_method: 'cloud_api_key'
+      })
+    })
+
+    it('seeds the credential-bound workspace without discovery or token exchange', async () => {
+      const store = useTeamWorkspaceStore()
+
+      await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.workspaces).toEqual([
+        expect.objectContaining({
+          id: 'ws-api-key',
+          name: 'Key Workspace',
+          type: 'team',
+          role: 'owner'
+        })
+      ])
+      expect(store.activeWorkspaceId).toBe('ws-api-key')
+      expect(mockWorkspaceApi.list).not.toHaveBeenCalled()
+      expect(mockWorkspaceAuthStore.switchWorkspace).not.toHaveBeenCalled()
+      expect(mockEnsureSessionCookie).not.toHaveBeenCalled()
+    })
+
+    it('defaults an omitted role to member so owner-only actions stay hidden', async () => {
+      mockWorkspaceApi.getCurrentWorkspace.mockResolvedValue({
+        id: 'ws-api-key',
+        name: 'Key Workspace',
+        type: 'personal',
+        auth_method: 'comfy_api_key'
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.activeWorkspace?.role).toBe('member')
+    })
+
+    it('fails immediately when the credential resolves no workspace', async () => {
+      mockWorkspaceApi.getCurrentWorkspace.mockRejectedValue(
+        new mockWorkspaceApiError('No workspace is bound', 404, 'NOT_FOUND')
+      )
+
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow('No workspace is bound')
+
+      expect(mockWorkspaceApi.getCurrentWorkspace).toHaveBeenCalledOnce()
+      expect(store.initState).toBe('error')
+      expect(store.activeWorkspaceId).toBeNull()
+    })
+
+    it('retries transient failures before seeding the workspace', async () => {
+      mockWorkspaceApi.getCurrentWorkspace
+        .mockRejectedValueOnce(
+          new mockWorkspaceApiError('bad gateway', 502, 'BAD_GATEWAY')
+        )
+        .mockResolvedValueOnce({
+          id: 'ws-api-key',
+          name: 'Key Workspace',
+          type: 'team',
+          role: 'owner',
+          auth_method: 'cloud_api_key'
+        })
+
+      const store = useTeamWorkspaceStore()
+      const initialization = store.initialize()
+
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialization
+
+      expect(mockWorkspaceApi.getCurrentWorkspace).toHaveBeenCalledTimes(2)
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe('ws-api-key')
+    })
+  })
+
   describe('switchWorkspace', () => {
     it('does nothing if switching to current workspace', async () => {
       const store = useTeamWorkspaceStore()
@@ -511,7 +603,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceBillingRail).toBe('metronome')
     })
 
-    it('rejects an overlapping local switch', async () => {
+    it('ignores an overlapping local switch', async () => {
       mockDistributionTypes.isCloud = false
       const store = useTeamWorkspaceStore()
       await store.initialize()
@@ -528,12 +620,16 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      await expect(
-        store.switchWorkspace(mockMemberWorkspace.id)
-      ).rejects.toThrow('Workspace switch already in progress')
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      await store.switchWorkspace(mockMemberWorkspace.id)
       finishSwitch()
       await firstSwitch
 
+      expect(consoleError).toHaveBeenCalledWith(
+        'Workspace switch already in progress'
+      )
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
@@ -1802,7 +1898,7 @@ describe('useTeamWorkspaceStore', () => {
       )
     })
 
-    it('resendInvite rejects a concurrent resend for the same invite', async () => {
+    it('resendInvite ignores a concurrent resend for the same invite', async () => {
       const inviteOne = {
         id: 'inv-1',
         email: 'one@test.com',
@@ -1824,11 +1920,16 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchPendingInvites()
 
       const first = store.resendInvite('inv-1')
-      await expect(store.resendInvite('inv-1')).rejects.toThrow(
-        'already in progress'
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const duplicateResult = await store.resendInvite('inv-1')
+      expect(consoleError).toHaveBeenCalledWith(
+        'Invite resend already in progress'
       )
       await first
 
+      expect(duplicateResult.id).toBe('inv-1')
       expect(mockWorkspaceApi.resendInvite).toHaveBeenCalledTimes(1)
     })
 

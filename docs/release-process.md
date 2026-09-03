@@ -11,6 +11,19 @@ All releases use `release-version-bump.yaml`. Effects differ by bump type:
 | Patch      | `core/X.Y` | No                                    | **Draft** (uncheck "latest") |
 | Prerelease | any        | No                                    | Draft + prerelease           |
 
+## Generated API types on release branches
+
+Never hand-edit files under `packages/ingest-types/src`, including in a
+backport. The Cloud repository owns the source OpenAPI contract and generates
+the frontend package for `main` and every active `cloud/x.y` line named in its
+`frontend-version.json`. A release branch must accept that generated contract
+or a newer one; unrelated generated changes are expected when a release line
+has fallen behind.
+
+If a backport needs a generated type, update the Cloud OpenAPI source and use
+the typegen automation. Do not copy or recreate one declaration in a generated
+file.
+
 **Minor bump** (e.g. 1.41→1.42): freezes the previous minor into `core/1.41`
 and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.

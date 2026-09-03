@@ -28,7 +28,7 @@ import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetV
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import {
-  getAssetOutputCount,
+  getTotalAssetOutputCount,
   resolveOutputAssetItems
 } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -233,9 +233,9 @@ export function useMediaAssetActions() {
     try {
       const jobIds: string[] = []
       const assetIds: string[] = []
-      const jobAssetNameFilters: Record<string, string[]> = {}
-      const countedOutputJobIds = new Set<string>()
-      let fileCount = 0
+      const namesByJobId = new Map<string, Set<string>>()
+      const wholeJobIds = new Set<string>()
+      const fileCount = getTotalAssetOutputCount(assets)
 
       for (const asset of assets) {
         const assetType = getAssetType(asset)
@@ -245,31 +245,27 @@ export function useMediaAssetActions() {
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
           if (metadata?.outputCount != null) {
-            if (!countedOutputJobIds.has(jobId)) {
-              countedOutputJobIds.add(jobId)
-              fileCount += getAssetOutputCount(asset)
-            }
-          } else {
-            fileCount += 1
-          }
-
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
-            }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
-            }
+            wholeJobIds.add(jobId)
+          } else if (metadata?.jobId && asset.name) {
+            const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
+            names.add(asset.name)
+            namesByJobId.set(metadata.jobId, names)
           }
         } else {
           assetIds.push(asset.id)
-          fileCount += 1
         }
       }
+
+      // A job-level selection outranks any name filter a sibling child of the
+      // same job contributed, whichever order they were selected in.
+      const jobAssetNameFilters = Object.fromEntries(
+        [...namesByJobId]
+          .filter(([jobId]) => !wholeJobIds.has(jobId))
+          .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
+      )
 
       const spansMultipleJobs = jobIds.length > 1
       const namingStrategy = spansMultipleJobs

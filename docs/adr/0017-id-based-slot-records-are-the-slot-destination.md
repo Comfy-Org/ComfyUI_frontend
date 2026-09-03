@@ -1,4 +1,4 @@
-# 17. ID-Based Slot Records Are the Slot Destination
+# 17. ID-Based Slot Records Own Slot State
 
 Date: 2026-08-24
 
@@ -6,134 +6,87 @@ Date: 2026-08-24
 
 Accepted
 
-Decided by Christian Byrne on 2026-08-24 (program decision D-dq-08, option A),
-conditional on three artifacts: this ADR, full documentation of the current
-transitional state, and an entry in the central repo exceptions log
-(`docs/exceptions-log.md`). The transitional-state documentation lives in the
-Context section below; the exceptions-log entry lands as a companion change.
-
 ## Context
 
-The ECS migration (#14246, ADR-0008) moved node shell state, widget values,
-link topology, and reroute chains into stores. Slots are the one remaining
-component family whose live state is still owned by class instances — the
-"class-owned component fields" retirement item.
+The ECS migration moved node shell state, widget values, link topology, and
+reroute chains into stores. Slot metadata is the remaining exception.
 
-### Current state (verified at main `a8abe573c0`)
+Today:
 
-- `NodeState.inputs` / `NodeState.outputs` are `shallowReactive` arrays of
-  `INodeInputSlot` / `INodeOutputSlot` **class instances**
-  (`src/types/nodeState.ts`, `createNodeShellState` in
-  `src/core/graph/nodeShell/nodeShellState.ts`).
-- `LGraphNode.inputs` is a getter over the store proxy's `_state.inputs`
-  (`src/lib/litegraph/src/LGraphNode.ts`). The array **container** is
-  store-held, but every slot **field** (name, type, geometry, flags) lives on
-  the class instance the array points at. There is no slot record, no slot
-  store, and no slot id.
-- Link **connectivity** is already store-owned: `linkStore` answers
-  "is this slot connected, and by what links"; the mutable `input.link` /
-  `output.links` mirrors were deleted, leaving deprecated read-only
-  compatibility accessors (see
-  `docs/architecture/output-slot-connectivity.md`). Slot entity extraction
-  (`SlotIdentity` / `SlotVisual` rows, retiring the class instances and their
-  `shallowReactive` graft) was explicitly deferred there as the
-  `SlotConnection` phase: "Introducing it now would be premature."
+- `NodeState.inputs` and `NodeState.outputs` contain `INodeInputSlot` and
+  `INodeOutputSlot` class instances.
+- The arrays are store-held, but fields such as name, type, geometry, and flags
+  live on those class instances. Slots have no records, store, or IDs.
+- Link connectivity already lives in `linkStore`. The deprecated `input.link`
+  and `output.links` accessors derive their values from that store.
 
-### The ambiguity this ADR resolves
-
-PR #15544 proposes flipping `NodeState` slot arrays from class instances to
-plain descriptors, with a Proxy virtual array projecting descriptors back to
-class instances at the extension boundary. Its own structural follow-up plan
-(slice 1) then proposes restoring **real slot-class arrays** at the extension
-boundary, deriving descriptors at the node-state boundary "until a complete
-ID-based slot record can replace both representations." Both representations
-are named as interim, but slice 1 does not say which side is _authoritative_
-during the interim — and "keep real slot-class arrays, derive descriptors
-from them" reads as class arrays owning live state again, which is exactly
-the state the retirement item exists to end.
+PR #15544 explores descriptors and Proxy-backed arrays as compatibility layers.
+Those layers may change how extensions access slots, but they do not answer
+which representation owns the data during the migration. This ADR establishes
+one source of truth.
 
 ## Decision
 
-**ID-based slot records in stores are the destination for slot state.
-Slot-class arrays — and any descriptor or Proxy projection of them — are
-derived views over store state, never owners.**
+Each slot will eventually have an ID-keyed record in a store. That record will
+own the slot's state.
 
-Three rules follow:
+`LGraphNode.inputs`, `LGraphNode.outputs`, descriptors, Proxies, and
+extension-facing slot objects may remain during the migration. Once a slot
+field moves into a store record, every compatibility view must read and write
+that record rather than keep separate state.
 
-1. **Authority direction is one-way.** Once a slot field's source of truth
-   moves into a store record, no later change may make a class instance or a
-   boundary projection authoritative over it again. During any interim step
-   (including a #15544-style compat boundary), views must read from and write
-   through store state; a change that reverses that direction is a regression,
-   not a judgment call.
-2. **The current class-instance ownership is a known, bounded exception, not
-   an accepted end state.** It is recorded in the central exceptions log
-   (`docs/exceptions-log.md`) with an owner and an exit condition: the
-   exception closes when slot records own slot state and both interim
-   representations (class-instance `NodeState` arrays, and any
-   descriptor/Proxy boundary layer) are retired.
-3. **Slot records are introduced for function, not form.** The repo's
-   retirement ledger explicitly rules out "slot IDs or component stores
-   created solely to match an abstract ECS model." A slot record lands when
-   it replaces both interim representations and retires the authority
-   ambiguity — carried by work that needs it, not as a purity refactor.
+The current class-owned state is a temporary exception recorded in
+`docs/exceptions-log.md`. The exception closes when store records own slot state
+and the class-owned arrays and any descriptor or Proxy layer have been removed.
 
-### Deliberately not decided here: the slot key scheme
+PR #15779 adds a stable Proxy around `LGraphNode.inputs` as an interim
+compatibility view. It converts plain slots assigned through numeric writes
+into `NodeInputSlot` instances without becoming a new source of truth. Once
+ID-keyed records land, the view must project those records and the Proxy must be
+removed with the class-owned arrays after compatibility coverage is in place.
 
-Whether slot ids are **structural** (derived from position, e.g.
-`graphId:nodeId:direction:index` or `:name`, like `WidgetId`) or **minted**
-(app-issued counters, like `NodeId` / `LinkId`) is left to the PR that
-introduces the record. The choice is consequential: per ADR-0008's
-"Amendment (2026-08-23): registration and collision contract," the key kind
-determines the collision family — structural keys resolve-and-reuse, minted
-identity keys reject-or-remint. Widget re-mint semantics (values surviving
-node replacement) suggest slots share the structural family, but slot
-reordering and renaming complicate positional keys. That analysis belongs
-with the implementation; whichever kind is chosen, the collision contract
-must be added to ADR-0008's amendment and pinned in
+We will introduce slot records when implementation work can replace the current
+representations. We will not add them only to make the code resemble an
+abstract ECS model.
+
+### Slot keys
+
+This ADR does not choose between structural keys, such as
+`graphId:nodeId:direction:index`, and minted IDs. Structural keys make reuse
+straightforward but must account for slot renames and reordering. Minted IDs
+need explicit collision and reminting behavior.
+
+The implementation that chooses the key format must document its collision
+behavior in ADR-0008 and test it in
 `src/stores/storeCollisionContracts.test.ts`.
 
 ## Migration path
 
-1. **Now (interim).** Class instances remain the live slot state; the
-   extension-visible surface is unchanged; the exceptions-log entry is open.
-2. **Boundary compat step (#15544 family, if it proceeds).** The
-   extension-visible arrays stay real slot-class arrays for ecosystem
-   compatibility, but as _views_: descriptors derived at the node-state
-   boundary, mutations flowing through store state. Rule 1 applies from the
-   moment any slot field moves store-side.
-3. **Slot record introduction.** The deferred `SlotConnection` phase:
-   `SlotIdentity` / `SlotVisual` (or equivalent) rows in a store, readers and
-   writers migrated, collision contract recorded and tested.
-4. **Retirement.** Remove the descriptor/Proxy boundary layer (if it landed)
-   and the class-instance `NodeState` arrays once ecosystem tests cover
-   indexed access, mutation methods, reflection, and stable slot identity.
-   Closing this step ticks the "class-owned component fields" retirement item
-   and closes the exceptions-log entry.
+1. Keep the current slot classes and extension API while the exception is open.
+2. Move each migrated slot field into store state. Compatibility objects must
+   read and write that state.
+3. Add ID-keyed slot records, migrate readers and writers, and test the chosen
+   collision behavior.
+4. Remove the class-owned arrays and any descriptor or Proxy layer after
+   ecosystem tests cover indexed access, array mutations, reflection, and
+   stable slot identity.
 
 ## Consequences
 
-- Slot authority becomes consistent with every other migrated component
-  family: stores own state, classes and projections are views. Reviews gain a
-  bright-line rule for slot-touching PRs — check the authority direction.
-- The interim state is legible: anyone finding class-owned slot fields can
-  follow the exceptions-log entry to the exit condition instead of guessing
-  whether it is intended.
-- Ecosystem compatibility work (indexed access, array mutation methods,
-  reflection, slot identity stability) is on the critical path to retirement
-  and must be tested before either interim representation is removed.
-- The slot key-kind decision is deferred with its constraints written down;
-  ADR-0008's collision-contract amendment gains a slot row when it is made.
+- Slot metadata will have one source of truth, consistent with other migrated
+  entity state.
+- Extensions can keep using slot arrays while the migration is in progress.
+- Compatibility behavior must be tested before either interim representation
+  is removed.
+- The slot key format remains undecided until the implementation has enough
+  information to choose it.
 
 ## References
 
-- Program decision D-dq-08 (2026-08-24), packet
-  `sc-01-slot-destination-decision` (program records; mirrored to the Notion
-  decision log per D-proc-01)
-- ADR-0008 "Entity Component System," including "Amendment (2026-08-23):
-  registration and collision contract"
-- `docs/architecture/output-slot-connectivity.md` (deferred `SlotConnection`
-  phase; link-connectivity store migration)
+- ADR-0008, "Entity Component System"
+- `docs/architecture/output-slot-connectivity.md`
 - `docs/architecture/node-data-store.md`
-- `docs/exceptions-log.md` (central exceptions log; companion entry)
-- #14246 (ECS migration merge), #15544 (descriptor/Proxy boundary proposal)
+- `docs/exceptions-log.md`
+- PR #14246, ECS migration
+- PR #15544, descriptor and Proxy boundary proposal
+- PR #15779, interim input-slot compatibility Proxy

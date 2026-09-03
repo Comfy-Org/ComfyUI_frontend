@@ -50,10 +50,10 @@ vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
 }))
 
 vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
-  const bringNodeToFront = vi.fn()
+  const setNodeOrder = vi.fn()
   return {
     useLayoutMutations: vi.fn(() => ({
-      bringNodeToFront
+      setNodeOrder
     }))
   }
 })
@@ -101,9 +101,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down with multi-select: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        ROOT_GRAPH_ID,
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // Selection happens immediately so dragging includes this node
@@ -128,9 +129,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        ROOT_GRAPH_ID,
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // But don't deselect yet (deferred to pointer up)
@@ -154,9 +156,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(metaClickEvent, testNodeId)
 
       // On pointer down with meta key: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        ROOT_GRAPH_ID,
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // Selection happens immediately
@@ -180,9 +183,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(shiftClickEvent, testNodeId)
 
       // On pointer down with shift: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        ROOT_GRAPH_ID,
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // Selection happens immediately for shift-click as well
@@ -218,9 +222,10 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        ROOT_GRAPH_ID,
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
     })
 
@@ -232,7 +237,7 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
+      expect(mockLayoutMutations.setNodeOrder).not.toHaveBeenCalled()
     })
   })
 

@@ -369,6 +369,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     })
 
+    test('node resize workload', async ({ comfyPage }) => {
+      const nodeCount = await comfyPage.page
+        .locator('[data-node-id]')
+        .evaluateAll((elements) => {
+          const nodes = elements.slice(0, 100) as HTMLElement[]
+          for (const node of nodes) {
+            node.dataset.perfOriginalWidth = node.style.width
+            node.dataset.perfWidth = `${node.getBoundingClientRect().width}px`
+          }
+          return nodes.length
+        })
+      expect(nodeCount).toBe(100)
+
+      await comfyPage.perf.startMeasuring()
+      for (let index = 0; index < 10; index++) {
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              const width = Number.parseFloat(element.dataset.perfWidth ?? '')
+              element.style.width = `${width + 1}px`
+            }
+          })
+        await comfyPage.nextFrame()
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              element.style.width = element.dataset.perfWidth ?? ''
+            }
+          })
+        await comfyPage.nextFrame()
+      }
+
+      const measurement = await comfyPage.perf.stopMeasuring(
+        'vue-node-resize-workload'
+      )
+      recordMeasurement(measurement)
+
+      await comfyPage.page
+        .locator('[data-perf-width]')
+        .evaluateAll((elements) => {
+          for (const element of elements as HTMLElement[]) {
+            element.style.width = element.dataset.perfOriginalWidth ?? ''
+            delete element.dataset.perfOriginalWidth
+            delete element.dataset.perfWidth
+          }
+        })
+    })
+
     test('zoom out culling', async ({ comfyPage }) => {
       await comfyPage.perf.startMeasuring()
 

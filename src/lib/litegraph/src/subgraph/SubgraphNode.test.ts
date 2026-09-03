@@ -14,6 +14,7 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -246,6 +247,137 @@ describe('SubgraphNode Synchronization', () => {
     expect(useWidgetValueStore().getWidget(inputWidgetId)?.value).toBe(
       'initial'
     )
+  })
+
+  it('migrates promoted widget bindings when added to a graph', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(input, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: -1 })
+    const promotedInput = subgraphNode.inputs[0]
+    const previousId = promotedInput.widgetId
+    if (!previousId) throw new Error('Missing transient widgetId')
+    useWidgetValueStore().setValue(previousId, 'edited')
+
+    subgraph.rootGraph.add(subgraphNode)
+
+    const nextId = promotedInput.widgetId
+    expect(nextId).toBeDefined()
+    expect(nextId).not.toBe(previousId)
+    if (!nextId) throw new Error('Missing settled widgetId')
+    expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
+    expect(useWidgetValueStore().getWidget(nextId)?.value).toBe('edited')
+    expect(promotedInput.widget).toMatchObject({ name: 'text' })
+    expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBe(
+      promotedInput._widget
+    )
+    expect(subgraphNode.widgets).toContain(promotedInput._widget)
+  })
+
+  it('preserves a promoted widget when re-resolution fails', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    const link = subgraph.inputNode.slots[0].connect(input, interiorNode)
+    if (!link) throw new Error('Missing promoted widget link')
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const previousWidget = promotedInput._widget
+    const previousWidgetId = promotedInput.widgetId
+    if (!previousWidgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().setValue(previousWidgetId, 'edited')
+
+    subgraph.links.delete(link.id)
+    subgraphNode.rebuildInputWidgetBindings()
+
+    expect(promotedInput.widgetId).toBe(previousWidgetId)
+    expect(promotedInput._widget).toBe(previousWidget)
+    expect(useWidgetValueStore().getWidget(previousWidgetId)?.value).toBe(
+      'edited'
+    )
+  })
+
+  it('declines promotion when an empty widget name cannot be registered', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: '', type: 'STRING' },
+        { name: 'valid', type: 'STRING' }
+      ]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const emptyInput = interiorNode.addInput('', 'STRING')
+    emptyInput.widget = { name: '' }
+    const validInput = interiorNode.addInput('valid', 'STRING')
+    validInput.widget = { name: 'valid' }
+    interiorNode.addWidget('text', '', 'initial', () => {})
+    interiorNode.addWidget('text', 'valid', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(emptyInput, interiorNode)
+    subgraph.inputNode.slots[1].connect(validInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(subgraphNode)
+    const declinedInput = subgraphNode.inputs[0]
+
+    expect(isWidgetInputSlot(declinedInput)).toBe(false)
+    expect(declinedInput.widgetId).toBeUndefined()
+    expect(subgraphNode.getWidgetFromSlot(declinedInput)).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(1)
+
+    subgraphNode.arrange()
+    expect(declinedInput.boundingRect[2]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
+
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'STRING')
+    subgraph.rootGraph.add(source)
+
+    expect(source.connect(0, subgraphNode, 0)).not.toBeNull()
+    expect(declinedInput.link).not.toBeNull()
+  })
+
+  it('clears an existing promotion when registration is later declined', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    const widget = interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(input, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    expect(promotedInput.widgetId).toBeDefined()
+
+    subgraph.inputs[0].name = ''
+    subgraph.inputs[0].events.dispatch('input-connected', {
+      input,
+      widget,
+      node: interiorNode
+    })
+
+    expect(isWidgetInputSlot(promotedInput)).toBe(false)
+    expect(promotedInput.widgetId).toBeUndefined()
+    expect(promotedInput._widget).toBeUndefined()
   })
 
   it('binds promoted host widgets as stable LiteGraph widgets', () => {
@@ -485,6 +617,7 @@ describe('SubgraphNode Synchronization', () => {
       JSON.stringify(subgraphNode.serialize())
     ) as ExportedSubgraphInstance
     useWidgetValueStore().clearGraph(subgraphNode.rootGraph.id)
+    subgraph.clear()
 
     const reloadedSubgraph = createTestSubgraph({
       rootGraph: subgraphNode.rootGraph
