@@ -6,6 +6,7 @@
  */
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -76,6 +77,16 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     const subgraphNodePath =
       root === null ? null : deps.resolveInteriorPath(set.graphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
+      const context = {
+        hasRootGraph: root !== null,
+        graphId: set.graphId,
+        nodeId: set.nodeId
+      }
+      docLog.warn(
+        'mint_divergence',
+        'widget owner unresolvable; set_widget not sent',
+        context
+      )
       reportError(new Error('CRDT widget owner cannot be resolved for mint'), {
         errorType: 'crdt_widget_owner_unresolvable',
         tags: {
@@ -84,7 +95,7 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
           operation: 'sync',
           outcome: 'failed'
         },
-        context: { hasRootGraph: root !== null },
+        context,
         level: 'error'
       })
       return

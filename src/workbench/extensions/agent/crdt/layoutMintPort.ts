@@ -10,6 +10,7 @@ import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import type { SeveranceLog } from './linkMintPort'
 import { shouldMint } from './mintGate'
@@ -146,6 +147,11 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
+          docLog.warn(
+            'mint_divergence',
+            'node snapshot unavailable for mint; createNode not sent',
+            { nodeId: operation.nodeId }
+          )
           reportError(new Error('CRDT node snapshot is unavailable for mint'), {
             errorType: 'crdt_node_snapshot_missing',
             tags: {

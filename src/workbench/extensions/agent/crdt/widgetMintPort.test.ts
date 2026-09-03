@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
@@ -10,6 +11,9 @@ import type { WidgetMintPort, WidgetSetView } from './widgetMintPort'
 
 vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: vi.fn()
+}))
+vi.mock('./crdtLog', () => ({
+  docLog: { warn: vi.fn() }
 }))
 
 const ROOT = 'root-uuid'
@@ -124,9 +128,14 @@ describe('attachWidgetMintPort', () => {
         operation: 'sync',
         outcome: 'failed'
       },
-      context: { hasRootGraph: true },
+      context: { hasRootGraph: true, graphId: 'subgraph-uuid', nodeId: '7' },
       level: 'error'
     })
+    expect(docLog.warn).toHaveBeenCalledWith(
+      'mint_divergence',
+      expect.any(String),
+      { hasRootGraph: true, graphId: 'subgraph-uuid', nodeId: '7' }
+    )
   })
 
   it('surfaces a write with no open root graph observably', () => {
@@ -136,7 +145,9 @@ describe('attachWidgetMintPort', () => {
     expect(minted).toEqual([])
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ context: { hasRootGraph: false } })
+      expect.objectContaining({
+        context: expect.objectContaining({ hasRootGraph: false })
+      })
     )
   })
 

@@ -11,6 +11,7 @@ import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -98,6 +99,11 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function surfaceUnrepresentable(what: string, id: string | number): void {
+    docLog.warn(
+      'mint_divergence',
+      `${what} has no wire op; the bound doc diverges from the local graph`,
+      { change: what, linkId: id }
+    )
     reportError(
       new Error(
         `CRDT ${what} has no wire operation; the bound document diverges from the local graph`

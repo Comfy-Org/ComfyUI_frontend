@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -14,6 +15,9 @@ import type { MintSession } from './mintSession'
 
 vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: vi.fn()
+}))
+vi.mock('./crdtLog', () => ({
+  docLog: { warn: vi.fn() }
 }))
 
 const ROOT_SCOPE: LinkScopeView = {
@@ -141,6 +145,11 @@ describe('attachLinkMintPort', () => {
       context: { change: 'subgraph-interior connect', linkId: 41 },
       level: 'error'
     })
+    expect(docLog.warn).toHaveBeenCalledWith(
+      'mint_divergence',
+      expect.any(String),
+      { change: 'subgraph-interior connect', linkId: 41 }
+    )
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
