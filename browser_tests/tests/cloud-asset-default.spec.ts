@@ -79,7 +79,7 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
                 (w: { name: string }) => w.name === 'ckpt_name'
               )
               if (widget?.type !== 'asset') return waitingForWidgetType
-              const val = String(widget?.value ?? '')
+              const val = String(widget.value ?? '')
               return val === 'Select model' ? waitingForWidgetValue : val
             },
             {

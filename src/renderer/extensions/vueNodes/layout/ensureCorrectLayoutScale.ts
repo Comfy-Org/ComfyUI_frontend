@@ -102,10 +102,10 @@ export function ensureCorrectLayoutScale(
 
   if ('inputNode' in graph && 'outputNode' in graph) {
     for (const ioNode of [
-      graph.inputNode as SubgraphInputNode,
-      graph.outputNode as SubgraphOutputNode
+      graph.inputNode as SubgraphInputNode | null,
+      graph.outputNode as SubgraphOutputNode | null
     ]) {
-      normalize(ioNode)
+      if (ioNode) normalize(ioNode)
     }
   }
 

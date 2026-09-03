@@ -25,6 +25,7 @@ import type {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -111,10 +112,15 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   ])
 
   const captureAdapterFlags = (source: Load3d) => {
-    isSplatModel.value = source.isSplatModel()
-    isPlyModel.value = source.isPlyModel()
-    sourceFormat.value = source.getSourceFormat()
-    const caps = source.getCurrentModelCapabilities()
+    const detectSplatModel = widenToNullish(source.isSplatModel)
+    isSplatModel.value = detectSplatModel?.call(source) ?? false
+    const detectPlyModel = widenToNullish(source.isPlyModel)
+    isPlyModel.value = detectPlyModel?.call(source) ?? false
+    const getSourceFormat = widenToNullish(source.getSourceFormat)
+    sourceFormat.value = getSourceFormat?.call(source) ?? null
+    const getCapabilities = widenToNullish(source.getCurrentModelCapabilities)
+    const caps = getCapabilities?.call(source)
+    if (!caps) return
     canFitToViewer.value = caps.fitToViewer
     canUseGizmo.value = caps.gizmoTransform
     canUseLighting.value = caps.lighting
@@ -409,7 +415,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
 
       if (cameraConfig) {
-        cameraType.value = cameraConfig.cameraType
+        cameraType.value =
+          widenToNullish(cameraConfig.cameraType) ??
+          source.getCurrentCameraType()
         fov.value =
           cameraConfig.fov || source.cameraManager.perspectiveCamera.fov
       }

@@ -1,4 +1,5 @@
 import { parseQuery } from 'vue-router'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { useCurrentUser } from 'vuefire'
 
 import { isCloud } from '@/platform/distribution/types'
@@ -104,7 +105,7 @@ function splitRequest(request: string): [name: string, value?: string] {
 }
 
 function readOverrideRequests(search: string): string[] {
-  const value = parseQuery(search)[QUERY_PARAM]
+  const value = widenToNullish(parseQuery(search)[QUERY_PARAM])
   if (value === undefined) return []
   return (Array.isArray(value) ? value : [value]).map((value) => value ?? '')
 }
@@ -157,7 +158,9 @@ function loadSessionOverrides(): OverrideMap {
  * Returns undefined (not null) as the "no override" sentinel, matching
  * `getDevOverride`.
  */
-export function getSessionOverride<T>(flagKey: string): T | undefined {
+export function getSessionOverride<T>(
+  flagKey: string & { readonly valueType?: T }
+): T | undefined {
   if (!isCloud) return undefined
 
   const overrides = loadSessionOverrides()

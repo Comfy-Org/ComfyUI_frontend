@@ -313,7 +313,7 @@ export const useModelStore = defineStore('models', () => {
    * the asset browser surfaces, not this store's data source.
    */
   function usesAssetApi(): boolean {
-    return !!settingStore.get('Comfy.Assets.UseAssetAPI')
+    return settingStore.get('Comfy.Assets.UseAssetAPI')
   }
 
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
@@ -383,7 +383,7 @@ export const useModelStore = defineStore('models', () => {
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
     const folder = modelFolderByName.value[folderName]
-    return folder ? await folder.load() : null
+    return await folder.load()
   }
 
   /**

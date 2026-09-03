@@ -171,7 +171,7 @@ describe('ErrorGroupList selection emphasis', () => {
   beforeEach(() => {
     vi.mocked(isLGraphNode).mockReturnValue(true)
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      String(nodeId) === '1' ? SAMPLER_NODE : LOADER_NODE
+      nodeId === '1' ? SAMPLER_NODE : LOADER_NODE
     )
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       callback(0)
@@ -299,7 +299,7 @@ describe('ErrorGroupList selection emphasis', () => {
   it('preserves special characters in execution item accessible names', () => {
     const nodeDisplayName = 'A & B <C>'
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      String(nodeId) === '1'
+      nodeId === '1'
         ? createNodeFixture(
             SAMPLER_NODE.id,
             nodeDisplayName,
@@ -347,7 +347,7 @@ describe('ErrorGroupList selection emphasis', () => {
       LOADER_BOUNDS
     )
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      String(nodeId) === '2' ? subgraphLoaderNode : SAMPLER_NODE
+      nodeId === '2' ? subgraphLoaderNode : SAMPLER_NODE
     )
     const pinia = createPinia()
     seedTwoErrorGroups(pinia)

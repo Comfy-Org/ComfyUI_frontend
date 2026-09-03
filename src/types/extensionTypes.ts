@@ -110,8 +110,8 @@ export interface ExtensionManager {
   dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
-    get: <T = unknown>(id: string) => T | undefined
-    set: <T = unknown>(id: string, value: T) => void
+    get: (id: string) => unknown
+    set: (id: string, value: unknown) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
 

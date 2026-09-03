@@ -8,6 +8,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import type { ErrorCardData } from './types'
 
@@ -23,7 +24,9 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     return Object.fromEntries(
       card.errors.map((error, idx) => [
         idx,
-        enrichedDetails[idx] ?? error.displayDetails ?? error.details
+        widenToNullish(enrichedDetails[idx]) ??
+          widenToNullish(error.displayDetails) ??
+          widenToNullish(error.details)
       ])
     )
   })
@@ -32,6 +35,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     () => toValue(cardSource),
     async (card, _, onCleanup) => {
       let cancelled = false
+      const isCancelled = () => cancelled
       onCleanup(() => {
         cancelled = true
       })
@@ -58,12 +62,12 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
           }
         }
       }
-      if (!systemStatsStore.systemStats || cancelled) return
+      if (!systemStatsStore.systemStats || isCancelled()) return
 
       const logs = await api
         .getLogs()
         .catch(() => 'Failed to retrieve server logs')
-      if (cancelled) return
+      if (isCancelled()) return
 
       const workflow = (() => {
         try {

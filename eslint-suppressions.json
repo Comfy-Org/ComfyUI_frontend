@@ -371,7 +371,7 @@
   },
   "src/services/colorPaletteService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/services/gateway/registrySearchGateway.ts": {
@@ -426,7 +426,7 @@
   },
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     }
   },
   "src/stores/userFileStore.ts": {

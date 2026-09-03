@@ -1,6 +1,8 @@
 import { default as DOMPurify } from 'dompurify'
 import { Renderer, marked } from 'marked'
 
+import { widenToNullish } from '@/utils/widenToNullish'
+
 const ALLOWED_TAGS = ['video', 'source']
 const ALLOWED_ATTRS = [
   'controls',
@@ -53,7 +55,7 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
     const linkText =
       text === href
         ? target
-        : tokens
+        : widenToNullish(tokens)
           ? renderer.parser.parseInline(tokens)
           : text
     const titleAttr = title ? ` title="${title}"` : ''

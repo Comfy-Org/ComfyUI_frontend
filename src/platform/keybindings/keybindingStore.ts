@@ -80,8 +80,10 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     Object.values(keybindingByKeyCombo.value)
   )
 
-  function getKeybinding(combo: KeyComboImpl) {
-    return keybindingByKeyCombo.value[combo.serialize()]
+  function getKeybinding(combo: KeyComboImpl): KeybindingImpl | undefined {
+    const keybindings: Partial<Record<string, KeybindingImpl>> =
+      keybindingByKeyCombo.value
+    return keybindings[combo.serialize()]
   }
 
   const keybindingsByCommandId = computed<Record<string, KeybindingImpl[]>>(
@@ -101,7 +103,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   })
 
   function getKeybindingByCommandId(commandId: string) {
-    return getKeybindingsByCommandId(commandId)[0]
+    return getKeybindingsByCommandId(commandId).at(0)
   }
 
   function addKeybinding(
@@ -127,10 +129,19 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
-    const defaultKeybinding =
-      defaultKeybindings.value[keybinding.combo.serialize()]
-    const userUnsetKeybinding =
-      userUnsetKeybindings.value[keybinding.combo.serialize()]
+    const serializedCombo = keybinding.combo.serialize()
+    const defaultKeybinding = Object.hasOwn(
+      defaultKeybindings.value,
+      serializedCombo
+    )
+      ? defaultKeybindings.value[serializedCombo]
+      : undefined
+    const userUnsetKeybinding = Object.hasOwn(
+      userUnsetKeybindings.value,
+      serializedCombo
+    )
+      ? userUnsetKeybindings.value[serializedCombo]
+      : undefined
 
     if (
       keybinding.equals(defaultKeybinding) &&
@@ -142,7 +153,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       return
     }
 
-    if (!defaultKeybinding.equals(userUnsetKeybinding)) {
+    if (defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding)) {
       unsetKeybinding(defaultKeybinding)
     }
 
@@ -175,10 +186,10 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
     const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
-    if (currentKeybinding.equals(keybinding)) {
+    if (currentKeybinding?.equals(keybinding)) {
       return false
     }
-    {
+    if (currentKeybinding) {
       unsetKeybinding(currentKeybinding)
     }
     addUserKeybinding(keybinding)

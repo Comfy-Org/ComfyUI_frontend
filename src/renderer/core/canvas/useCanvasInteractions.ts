@@ -9,6 +9,7 @@ import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 function currentCanvasElement(): HTMLCanvasElement | null {
   return app.canvas.canvas
@@ -96,7 +97,8 @@ export function useCanvasInteractions() {
 
   const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
     // Check if canvas exists using established pattern
-    const canvas = getCanvas()
+    const canvas = widenToNullish(getCanvas())
+    if (!canvas) return
     if (canvas.read_only && event.buttons === 1) {
       event.preventDefault()
       event.stopPropagation()

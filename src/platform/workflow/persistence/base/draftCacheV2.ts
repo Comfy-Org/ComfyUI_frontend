@@ -119,9 +119,10 @@ export function moveEntry(
   const oldKey = hashPath(oldPath)
   const newKey = hashPath(newPath)
 
-  const oldEntry = index.entries[oldKey]
+  const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
+  const oldEntry = entriesByKey[oldKey]
   if (!oldEntry) return null
-  if (oldKey !== newKey && index.entries[newKey]) return null
+  if (oldKey !== newKey && entriesByKey[newKey]) return null
 
   const entries = { ...index.entries }
   delete entries[oldKey]

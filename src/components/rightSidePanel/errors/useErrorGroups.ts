@@ -267,7 +267,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const item of items) {
       if (!isLGraphNode(item)) continue
       nodeIds.add(String(item.id))
-      if (item instanceof SubgraphNode && app.rootGraph) {
+      if (item instanceof SubgraphNode) {
         const execId = getExecutionIdByNode(app.rootGraph, item)
         if (execId) containerExecutionIds.add(execId)
       }
@@ -420,7 +420,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           'node',
           {
             message: e.message,
-            details: e.details ?? undefined,
+            details: e.details,
             ...resolveRunErrorMessage({
               kind: 'node_validation',
               error: e,
@@ -483,6 +483,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
       const resolvingTypes = toResolve.map((n) => n.type)
       let cancelled = false
+      const isCancelled = () => cancelled
       onCleanup(() => {
         cancelled = true
         const next = new Map(asyncResolvedIds.value)
@@ -502,7 +503,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           packId: (await inferPackFromNodeName.call(n.type))?.id ?? null
         }))
       )
-      if (cancelled) return
+      if (isCancelled()) return
 
       const final = new Map(asyncResolvedIds.value)
       for (const r of results) {
@@ -732,10 +733,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
 
     // Resolve from graph for model/media candidates
-    if (app.rootGraph) {
-      const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
-      if (graphNode && nodeIds.has(String(graphNode.id))) return true
-    }
+    const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
+    if (graphNode && nodeIds.has(String(graphNode.id))) return true
 
     for (const containerExecId of selectedNodeInfo.value
       .containerExecutionIds) {
@@ -770,8 +769,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!hasSelection.value) return []
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
-    const matched = candidates.filter(
-      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
+    const matched = candidates.filter((c) =>
+      isAssetCandidateInSelection(c.nodeId)
     )
     if (!matched.length) return []
     return groupCandidatesByMediaType(matched)

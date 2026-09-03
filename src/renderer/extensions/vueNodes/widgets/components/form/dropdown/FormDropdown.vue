@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import type {
   FilterOption,
@@ -187,8 +188,8 @@ const candidateIndex = computed(() =>
   isShowingCurrentSearchResults.value ? 0 : -1
 )
 const candidateLabel = computed(() => {
-  const candidate = sortedItems.value[candidateIndex.value]
-  return candidate.label ?? candidate.name
+  const candidate = widenToNullish(sortedItems.value[candidateIndex.value])
+  return candidate?.label ?? candidate?.name
 })
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
@@ -198,7 +199,11 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 const toggleDropdown = (event: Event) => {
   if (disabled) return
   if (popoverRef.value && triggerAnchorRef.value) {
-    popoverRef.value.toggle(event, triggerAnchorRef.value)
+    widenToNullish(popoverRef.value.toggle)?.call(
+      popoverRef.value,
+      event,
+      triggerAnchorRef.value
+    )
     isOpen.value = !isOpen.value
   }
 }
@@ -209,7 +214,7 @@ function focusTrigger() {
 
 const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (popoverRef.value) {
-    popoverRef.value.hide()
+    widenToNullish(popoverRef.value.hide)?.call(popoverRef.value)
     isOpen.value = false
   }
 

@@ -268,7 +268,9 @@ describe('useKeybindingStore', () => {
     store.updateKeybindingOnCommand(newKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(newKeybinding.combo).commandId).toBe('command2')
+    expect(store.getKeybinding(newKeybinding.combo)).toMatchObject({
+      commandId: 'command2'
+    })
     expect(store.getKeybindingsByCommandId('command1')).toHaveLength(0)
   })
 

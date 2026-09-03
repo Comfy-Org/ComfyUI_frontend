@@ -1,4 +1,5 @@
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 const STRIPE_RETURN_PARAMS = [
   'payment_intent',
@@ -37,7 +38,11 @@ export function consumePaymentReturn(): boolean {
  */
 export function paymentReturnUrl(): string {
   const { origin, pathname } = globalThis.location
-  if (origin.startsWith('https://') || origin.startsWith('http://')) {
+  const runtimeOrigin = widenToNullish(origin)
+  if (
+    runtimeOrigin?.startsWith('https://') ||
+    runtimeOrigin?.startsWith('http://')
+  ) {
     return `${origin}${pathname}`
   }
   return `${getComfyPlatformBaseUrl()}/payment/success`

@@ -4,6 +4,7 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { widenToNullish } from '@/utils/widenToNullish'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
@@ -57,7 +58,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       write_key: writeKey,
       site_id: siteId,
       user_id: userIdOverride
-    } = window.__CONFIG__.customer_io ?? {}
+    } = widenToNullish(window.__CONFIG__)?.customer_io ?? {}
     this.sessionIdentity = userIdOverride
       ? { userId: userIdOverride, locale: i18n.global.locale.value }
       : null
@@ -233,7 +234,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private sendPageView(): void {
-    void this.analytics?.page().catch((error) => {
+    void widenToNullish(this.analytics?.page())?.catch((error) => {
       console.error('Failed to track Customer.io page view:', error)
     })
   }

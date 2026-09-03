@@ -107,7 +107,7 @@ async function getNodeOutputImageCount(
   nodeId: string
 ): Promise<number> {
   return await comfyPage.page.evaluate(
-    (id) => window.app!.nodeOutputs?.[id]?.images?.length ?? 0,
+    (id) => window.app!.nodeOutputs[id].images?.length ?? 0,
     nodeId
   )
 }
@@ -132,9 +132,7 @@ async function getWidgetValueSnapshot(
 
 async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
   return await comfyPage.page.evaluate(() => {
-    return window.app!.graph.links
-      ? Object.keys(window.app!.graph.links).length
-      : 0
+    return Object.keys(window.app!.graph.links).length
   })
 }
 
@@ -209,20 +207,18 @@ test.describe('Workflow Persistence', () => {
     // Simulate node outputs as if execution completed
     await comfyPage.page.evaluate((id) => {
       const outputStore = window.app!.nodeOutputs
-      if (outputStore) {
-        outputStore[id] = {
-          images: [{ filename: 'test.png', subfolder: '', type: 'output' }]
-        }
+      outputStore[id] = {
+        images: [{ filename: 'test.png', subfolder: '', type: 'output' }]
       }
-    }, String(nodeId))
+    }, nodeId)
 
     // Trigger changeTracker to capture current state including outputs
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
+        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
+      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
@@ -616,9 +612,9 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
+        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
+      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     // Switch to A via topbar tab (making B inactive)
@@ -685,9 +681,9 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
+        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
+      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)

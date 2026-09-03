@@ -8,6 +8,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 
 interface SearchableNavItem {
@@ -131,6 +132,12 @@ export function useSettingSearch() {
           : info.subCategory
 
       if (activeCategory === null || activeCategory.label === info.category) {
+        if (!widenToNullish(groupedSettings[groupKey])) {
+          groupedSettings[groupKey] = {
+            category: info.category,
+            settings: []
+          }
+        }
         groupedSettings[groupKey].settings.push(setting)
       }
     })

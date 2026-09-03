@@ -8,7 +8,7 @@ const UPDATED_SUBGRAPH_TITLE = 'Updated Subgraph Title'
 
 function hasVisibleNodeInViewport() {
   const canvas = window.app!.canvas
-  if (!canvas?.graph?._nodes?.length) return false
+  if (!canvas.graph?._nodes.length) return false
 
   const ds = canvas.ds
   const cw = canvas.canvas.width / window.devicePixelRatio

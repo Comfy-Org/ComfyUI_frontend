@@ -38,6 +38,12 @@ import { ComfyWorkflow } from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
+function currentCanvas(
+  canvas: typeof comfyApp.canvas | undefined
+): typeof comfyApp.canvas | undefined {
+  return canvas
+}
+
 /**
  * Exposed store interface for the workflow store.
  * Explicitly typed to avoid trigger following error:
@@ -230,7 +236,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const { directory, filename, suffix } = getPathDetails(basePath)
     let counter = 2
     let newPath = basePath
-    while (workflowLookup.value[newPath]) {
+    while (Object.hasOwn(workflowLookup.value, newPath)) {
       newPath = `${directory}/${filename} (${counter}).${suffix}`
       counter++
     }
@@ -565,7 +571,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const subgraph = comfyApp.canvas.subgraph
+    const canvas = currentCanvas(comfyApp.canvas)
+    if (!canvas) return
+    const subgraph = canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
 
     isSubgraphActive.value = isSubgraph(subgraph)

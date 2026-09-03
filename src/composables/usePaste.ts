@@ -202,8 +202,8 @@ export const usePaste = () => {
 
     const { items } = data
 
-    const currentNode = canvas.current_node as LGraphNode
-    const isNodeSelected = currentNode.is_selected
+    const currentNode = canvas.current_node
+    const isNodeSelected = currentNode?.is_selected
 
     const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
     const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)

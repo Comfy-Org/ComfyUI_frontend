@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { app } from '@/scripts/app'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { graphCreditsBadges } from '@/systems/badgeSystem'
 
 export const useFreeTierQuota = createSharedComposable(function () {
@@ -27,8 +28,8 @@ export const useFreeTierQuota = createSharedComposable(function () {
     () => isCloud && flags.freeTierJobAllowanceEnabled && maxAvailable.value > 0
   )
   const hasInvalidNodes = computed(() => {
-    const rootGraph = app.graph.rootGraph
-    return graphCreditsBadges(rootGraph).length > 0
+    const rootGraph = widenToNullish(app.graph)?.rootGraph
+    return rootGraph ? graphCreditsBadges(rootGraph).length > 0 : false
   })
   const freeTierExecutionPermitted = computed(
     () => !hasInvalidNodes.value && quotaEnabled.value && available.value > 0

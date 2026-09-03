@@ -212,9 +212,17 @@ export function useDowngradeToPersonal() {
         )
       }
       ensureCanDowngrade()
-      targetTier = toTierKey(preview.new_plan.tier) ?? undefined
-      targetCycle =
-        preview.new_plan.duration === 'ANNUAL' ? 'yearly' : 'monthly'
+      const newPlan = Object.hasOwn(preview, 'new_plan')
+        ? preview.new_plan
+        : undefined
+      targetTier = newPlan?.tier
+        ? (toTierKey(newPlan.tier) ?? undefined)
+        : undefined
+      targetCycle = newPlan
+        ? newPlan.duration === 'ANNUAL'
+          ? 'yearly'
+          : 'monthly'
+        : undefined
 
       // Catch cancellations visible to billing status before touching
       // membership. Refresh first because the cached value can predate a

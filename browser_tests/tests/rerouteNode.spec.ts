@@ -123,7 +123,7 @@ test.describe(
         const canvas = window['app']?.canvas
         if (!canvas?.renderedPaths) return null
         for (const segment of canvas.renderedPaths) {
-          if (segment.id === 5 && segment._pos) {
+          if (segment.id === 5) {
             return { x: segment._pos[0], y: segment._pos[1] }
           }
         }

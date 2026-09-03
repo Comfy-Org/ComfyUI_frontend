@@ -247,7 +247,7 @@ describe('TabErrors.vue', () => {
         NonNullable<ReturnType<typeof getNodeByExecutionId>>,
         unknown
       >({
-        title: titles[String(nodeId)] ?? ''
+        title: titles[nodeId] ?? ''
       })
     })
 
@@ -644,7 +644,7 @@ describe('TabErrors.vue', () => {
         NonNullable<ReturnType<typeof getNodeByExecutionId>>,
         unknown
       >({
-        title: titles[String(nodeId)] ?? ''
+        title: titles[nodeId] ?? ''
       })
     })
 
@@ -1034,7 +1034,7 @@ describe('TabErrors.vue', () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: String(executionId),
+        id: executionId,
         title: 'Node'
       })
     )
@@ -1098,7 +1098,7 @@ describe('TabErrors.vue', () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: String(executionId),
+        id: executionId,
         title: 'Node'
       })
     )

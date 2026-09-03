@@ -3,6 +3,7 @@ import { debounce } from 'es-toolkit/compat'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import type { Brush } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 const STORAGE_KEY = 'maskeditor_brush_settings'
 
@@ -41,7 +42,7 @@ export function useBrushPersistence() {
     store.setBrushOpacity(cached.opacity)
     store.setBrushHardness(cached.hardness)
     store.brushSettings.type = cached.type
-    store.setBrushStepSize(cached.stepSize)
+    store.setBrushStepSize(widenToNullish(cached.stepSize) ?? 5)
   }
 
   return { loadAndApply, save }

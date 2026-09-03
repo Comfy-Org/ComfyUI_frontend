@@ -49,6 +49,7 @@ export function useSettingsUrlLoader() {
 
     if (typeof param !== 'string' || !param) return
 
+    if (!Object.hasOwn(DEEP_LINKABLE_PANELS, param)) return
     const panel = DEEP_LINKABLE_PANELS[param]
 
     settingsDialog.show(panel)

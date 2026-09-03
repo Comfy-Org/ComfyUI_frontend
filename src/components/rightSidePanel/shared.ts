@@ -92,7 +92,7 @@ export function searchWidgetsAndNodes(
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
     nodeId: item.node.id,
-    searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
+    searchableTitle: item.node.getTitle().toLowerCase()
   }))
 
   const fuseOptions: IFuseOptions<NodeSearchItem> = {
@@ -259,10 +259,10 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
         .filter(
           (w) =>
             !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel ||
-              (w.options?.advanced && !includesAdvanced.value)
+              w.options.canvasOnly ||
+              w.options.hidden ||
+              w.options.hideInPanel ||
+              (w.options.advanced && !includesAdvanced.value)
             )
         )
         .map((widget) => ({ node, widget }))

@@ -9,6 +9,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'
 
@@ -31,11 +32,11 @@ export function usePartitionedBadges(nodeData: NodeState) {
   return computed(() => {
     const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
     const showComfyLogo =
-      nodeDef.isCoreNode &&
+      !!widenToNullish(nodeDef)?.isCoreNode &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
     const isComfyCloudNode =
-      nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
+      widenToNullish(nodeDef)?.python_module === COMFY_CLOUD_PYTHON_MODULE
 
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
@@ -49,7 +50,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
         pricing.push({ required, rest })
         continue
       }
-      if (nodeDef.isCoreNode && row.part === 'source') continue
+      if (widenToNullish(nodeDef)?.isCoreNode && row.part === 'source') continue
       core.push({
         text: row.part === 'lifecycle' ? trim(row.text, ['[', ']']) : row.text
       })

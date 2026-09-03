@@ -17,14 +17,20 @@ type SortOption = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
  * Get timestamp from asset (either create_time or created_at)
  */
 const getAssetTime = (asset: AssetItem): number => {
-  return asset.user_metadata?.create_time as number
+  const createTime = asset.user_metadata?.create_time
+  return typeof createTime === 'number'
+    ? createTime
+    : asset.created_at
+      ? new Date(asset.created_at).getTime()
+      : 0
 }
 
 /**
  * Get execution time from asset user_metadata
  */
 const getAssetExecutionTime = (asset: AssetItem): number => {
-  return asset.user_metadata?.executionTimeInSeconds as number
+  const executionTime = asset.user_metadata?.executionTimeInSeconds
+  return typeof executionTime === 'number' ? executionTime : 0
 }
 
 function getDateThreshold(filter: MediaAssetDateFilter): number | null {

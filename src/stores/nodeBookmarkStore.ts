@@ -46,22 +46,17 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   }
 
   const buildBookmarkTree = (bookmarks: string[]) => {
-    const bookmarkNodes = bookmarks
-      .map((bookmark: string) => {
-        if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
+    const bookmarkNodes = bookmarks.map((bookmark: string) => {
+      if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
 
-        const parts = bookmark.split('/')
-        const name = parts.pop() ?? ''
-        const category = parts.join('/')
-        const srcNodeDef = nodeDefStore.allNodeDefsByName[name]
-        if (!srcNodeDef) {
-          return null
-        }
-        const nodeDef = clone(srcNodeDef)
-        nodeDef.category = category
-        return nodeDef
-      })
-      .filter((nodeDef) => nodeDef !== null)
+      const parts = bookmark.split('/')
+      const name = parts.pop() ?? ''
+      const category = parts.join('/')
+      const srcNodeDef = nodeDefStore.allNodeDefsByName[name]
+      const nodeDef = clone(srcNodeDef)
+      nodeDef.category = category
+      return nodeDef
+    })
     return buildNodeDefTree(bookmarkNodes)
   }
 
@@ -143,7 +138,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     nodePath: string,
     customization: BookmarkCustomization
   ) => {
-    const currentCustomization = bookmarksCustomization.value[nodePath] || {}
+    const currentCustomization =
+      nodePath in bookmarksCustomization.value
+        ? bookmarksCustomization.value[nodePath]
+        : {}
     const newCustomization = { ...currentCustomization, ...customization }
 
     // Remove attributes that are set to default values
@@ -177,7 +175,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     newNodePath: string
   ) => {
     const updatedCustomization = { ...bookmarksCustomization.value }
-    if (updatedCustomization[oldNodePath]) {
+    if (oldNodePath in updatedCustomization) {
       updatedCustomization[newNodePath] = updatedCustomization[oldNodePath]
       delete updatedCustomization[oldNodePath]
     }

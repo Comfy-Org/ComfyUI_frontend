@@ -36,9 +36,8 @@ export function planInteractionProbes(
       const plan: InteractionProbePlan = { type: node.type }
       const firstInput = node.inputs[0]
       const lastInput = node.inputs[node.inputs.length - 1]
-      if (firstInput) plan.first = { inputName: firstInput.name }
-      if (lastInput && lastInput !== firstInput)
-        plan.last = { inputName: lastInput.name }
+      plan.first = { inputName: firstInput.name }
+      if (lastInput !== firstInput) plan.last = { inputName: lastInput.name }
       return plan
     })
     .sort((a, b) => a.type.localeCompare(b.type))
@@ -46,19 +45,19 @@ export function planInteractionProbes(
 
 export async function runInteractionProbeChunk(input: {
   probePlans: InteractionProbePlan[]
-  producers: typeof SYNTH_PRODUCERS
+  producers: Partial<typeof SYNTH_PRODUCERS>
 }): Promise<InteractionProbeChunkResult> {
   const { probePlans, producers } = input
   const shapeOf = (node: LGraphNode): LogicalShape => ({
-    inputs: (node.inputs ?? []).map(
+    inputs: node.inputs.map(
       (slot) => `input:${slot.name}:${String(slot.type)}`
     ),
-    outputs: (node.outputs ?? []).map(
+    outputs: node.outputs.map(
       (slot) => `output:${slot.name}:${String(slot.type)}`
     ),
     widgets: (node.widgets ?? [])
       .filter((widget) => widget.name !== '$$canvas-image-preview')
-      .map((widget) => `widget:${widget.name ?? '?'}:${widget.type ?? '?'}`)
+      .map((widget) => `widget:${widget.name}:${widget.type}`)
   })
   const diff = (before: LogicalShape, after: LogicalShape): string[] => {
     const delta: string[] = []
@@ -116,7 +115,7 @@ export async function runInteractionProbeChunk(input: {
         spec: InteractionProbeEndpoint
       ) => {
         const fresh = await stableShapeOf(targetNode)
-        const inputIndex = (targetNode.inputs ?? []).findIndex(
+        const inputIndex = targetNode.inputs.findIndex(
           (slot) => slot.name === spec.inputName
         )
         if (inputIndex === -1) return null
@@ -156,7 +155,7 @@ export async function runInteractionProbeChunk(input: {
           await settleRemoval()
         }
       }
-      if ((node.inputs ?? []).length === 0) {
+      if (node.inputs.length === 0) {
         results[plan.type] = {
           connectFirst: 'NO_INPUTS',
           connectLast: 'NO_INPUTS',

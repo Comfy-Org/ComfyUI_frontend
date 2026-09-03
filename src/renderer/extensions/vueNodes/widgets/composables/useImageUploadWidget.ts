@@ -11,6 +11,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -128,9 +129,10 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      if (widenToNullish(fileComboWidget.value) != null)
+        nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+          isAnimated
+        })
       showPreview({ block: false })
     })
 

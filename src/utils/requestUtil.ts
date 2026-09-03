@@ -1,9 +1,7 @@
 type Params = Record<string, string[] | string | number | boolean>
 
 function sortedParams(params: Params = {}): Params {
-  const keys = Object.keys(params)
-    .filter((k) => params[k] !== undefined)
-    .sort()
+  const keys = Object.keys(params).sort()
   const obj: Params = {}
   for (const k of keys) {
     const v = params[k]

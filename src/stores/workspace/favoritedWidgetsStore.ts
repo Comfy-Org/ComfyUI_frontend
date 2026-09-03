@@ -111,7 +111,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
       if (!isNodeLocatorId(id.nodeLocatorId)) return null
       return {
         nodeLocatorId: id.nodeLocatorId,
-        widgetName: String(id.widgetName)
+        widgetName: id.widgetName
       }
     }
 
@@ -142,13 +142,9 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function loadFromWorkflow() {
     const graph = app.rootGraph
-    if (!graph) {
-      favoritedIds.value = []
-      return
-    }
 
     try {
-      const storedData = graph.extra?.favoritedWidgets as
+      const storedData = graph.extra.favoritedWidgets as
         | FavoritedWidgetStorage
         | undefined
 
@@ -172,7 +168,6 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function saveToWorkflow() {
     const graph = app.rootGraph
-    if (!graph) return
 
     try {
       const favorites: FavoritedWidgetId[] = favoritedIds.value
@@ -181,8 +176,6 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
 
       const data: FavoritedWidgetStorage = { favorites }
 
-      // Ensure extra object exists
-      graph.extra ??= {}
       graph.extra.favoritedWidgets = data
 
       // Mark the workflow as modified
@@ -198,14 +191,6 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function resolveWidget(id: FavoritedWidgetId): FavoritedWidget {
     const graph = app.rootGraph
-    if (!graph) {
-      return {
-        ...id,
-        node: null,
-        widget: null,
-        label: `${id.widgetName} (graph not loaded)`
-      }
-    }
 
     const node = getNodeByLocatorId(graph, id.nodeLocatorId)
     if (!node) {

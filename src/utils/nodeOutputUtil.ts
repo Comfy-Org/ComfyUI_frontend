@@ -7,6 +7,6 @@ export function isInputPreviewOutput(
   return (
     Array.isArray(images) &&
     images.length > 0 &&
-    images.every((image) => image?.type === 'input')
+    images.every((image) => image.type === 'input')
   )
 }

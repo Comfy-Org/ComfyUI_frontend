@@ -3,6 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { widenToNullish } from '@/utils/widenToNullish'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -29,11 +30,12 @@ export function getExecutionContext(): ExecutionContext {
   const nodeCounts = reduceAllNodes<NodeMetrics>(
     app.rootGraph,
     (metrics, node) => {
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const nodeDef = widenToNullish(nodeDefStore.nodeDefsByName[node.type])
       const isCustomNode =
-        nodeDef.nodeSource.type === NodeSourceType.CustomNodes
-      const isApiNode = nodeDef.api_node
-      const isSubgraph = node.isSubgraphNode()
+        widenToNullish(nodeDef?.nodeSource)?.type === NodeSourceType.CustomNodes
+      const isApiNode = nodeDef?.api_node
+      const isSubgraphNode = widenToNullish(node.isSubgraphNode)
+      const isSubgraph = isSubgraphNode?.call(node)
 
       if (isApiNode) {
         metrics.has_api_nodes = true
@@ -46,7 +48,7 @@ export function getExecutionContext(): ExecutionContext {
       const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
-        const trackingName = nodeDef.name
+        const trackingName = nodeDef?.name ?? node.type
         if (!metrics.toolkit_node_names.includes(trackingName)) {
           metrics.toolkit_node_names.push(trackingName)
         }

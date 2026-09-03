@@ -78,7 +78,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
       if (route.request().method() !== 'GET') return route.fallback()
       const token = route.request().headers().authorization
       const prefix = 'Bearer mock-workspace-token-'
-      const workspaceId = token?.startsWith(prefix)
+      const workspaceId = token.startsWith(prefix)
         ? token.slice(prefix.length)
         : 'ws-personal'
       await route.fulfill(

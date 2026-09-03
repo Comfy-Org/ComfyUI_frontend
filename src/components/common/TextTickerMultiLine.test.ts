@@ -25,7 +25,7 @@ describe(TextTickerMultiLine, () => {
   let unmountFn: () => void
 
   afterEach(() => {
-    unmountFn?.()
+    unmountFn()
     hoisted.widths.length = 0
   })
 

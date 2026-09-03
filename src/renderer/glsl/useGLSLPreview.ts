@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
+import { widenToNullish } from '@/utils/widenToNullish'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -157,17 +158,19 @@ function createInnerPreview(
     const node = nodeRef.value
     const graph = node?.graph
     if (!graph) return null
-    const rootGraph = graph.rootGraph
-    if (graph === rootGraph) return null
+    const rootGraph = widenToNullish(graph.rootGraph)
+    if (!rootGraph || graph === rootGraph) return null
 
     return (
-      rootGraph._nodes.find(
+      widenToNullish(rootGraph._nodes)?.find(
         (n) => n.isSubgraphNode() && n.subgraph === graph
       ) ?? null
     )
   })()
 
-  const graphId = computed(() => nodeRef.value?.graph?.rootGraph.id)
+  const graphId = computed(
+    () => widenToNullish(nodeRef.value?.graph?.rootGraph)?.id
+  )
 
   const nodeId = computed(() => {
     const id = nodeRef.value?.id
@@ -181,12 +184,12 @@ function createInnerPreview(
     const outputs = nodeOutputStore.nodeOutputs
 
     const locatorId = nodeToNodeLocatorId(node)
-    if (outputs[locatorId].images?.length) return true
+    if (outputs[locatorId]?.images?.length) return true
 
     const inner = innerGLSLNode
     if (inner) {
       const innerLocatorId = nodeToNodeLocatorId(inner)
-      if (outputs[innerLocatorId].images?.length) return true
+      if (outputs[innerLocatorId]?.images?.length) return true
     }
 
     return false

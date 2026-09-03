@@ -203,7 +203,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     const refAfter = store.nodeOutputs[executionId]
 
     expect(refAfter).not.toBe(refBefore)
-    expect(refAfter?.images).toHaveLength(2)
+    expect(refAfter.images).toHaveLength(2)
   })
 
   it('replaces outputs written through the legacy map', () => {
@@ -247,7 +247,7 @@ describe('nodeOutputStore legacy entry synchronization', () => {
     )
 
     expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
-    expect(store.nodeOutputs.changed?.images?.[0]?.filename).toBe('changed.png')
+    expect(store.nodeOutputs.changed.images?.[0]?.filename).toBe('changed.png')
 
     store.removeOutputFromLegacy('changed')
 
