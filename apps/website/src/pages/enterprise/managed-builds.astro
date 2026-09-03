@@ -3,7 +3,7 @@ import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
+import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
 import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
@@ -135,27 +135,24 @@ const faqPage = buildFaqPageNode(url, faqs)
     <DistributionsScene slot="media" client:load />
   </HeroProduct01>
 
-  <FeatureGrid02
-    heading="Stop rebuilding the operating layer around ComfyUI."
-    steps={[
+  <FeatureRows02
+    heading="One ComfyUI build for the whole team"
+    rows={[
       {
         id: 'packaging',
-        number: '01',
-        title: 'Environment packaging',
+        term: 'Environment packaging',
         description:
           'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.',
       },
       {
-        id: 'upkeep',
-        number: '02',
-        title: 'Admin and upkeep',
+        id: 'governance',
+        term: 'Node governance',
         description:
           'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.',
       },
       {
         id: 'rollout',
-        number: '03',
-        title: 'Onboarding and rollout',
+        term: 'Onboarding and rollout',
         description:
           'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.',
       },

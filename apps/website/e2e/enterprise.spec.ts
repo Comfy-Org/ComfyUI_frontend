@@ -83,7 +83,20 @@ test.describe('Enterprise pages @smoke', () => {
         level: 2,
         name: 'Stop rebuilding the operating layer around ComfyUI.'
       })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: 'One ComfyUI build for the whole team'
+      })
     ).toBeVisible()
+    for (const term of [
+      'Environment packaging',
+      'Node governance',
+      'Onboarding and rollout'
+    ]) {
+      await expect(page.getByText(term, { exact: true })).toBeVisible()
+    }
     await expect(
       page.getByText(/5,000\+ extensions and 60,000\+ community nodes/)
     ).toBeVisible()
