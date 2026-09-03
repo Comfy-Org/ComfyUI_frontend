@@ -8,6 +8,7 @@
 import type { DraftIndexV3 } from '../base/draftTypes'
 import { upsertEntry, createEmptyIndex } from '../base/draftCacheV2'
 import { getWorkspaceId } from '../base/storageKeys'
+import { hasV2DraftIndex } from './migrateV2toV3'
 import {
   readIndex,
   writeIndex,
@@ -73,8 +74,10 @@ export function migrateV1toV3(
   workspaceId: string = getWorkspaceId(),
   clientId?: string
 ): number {
-  // Check if V3 already exists
-  if (isV3MigrationComplete(workspaceId)) {
+  // V3 already exists, or a V2 index supersedes the V1 blob. V1 keys were
+  // never removed by the V1 to V2 migration, so falling through here after a
+  // transient V2 to V3 failure would resurrect stale V1 drafts over V2 ones.
+  if (isV3MigrationComplete(workspaceId) || hasV2DraftIndex(workspaceId)) {
     return -1
   }
 

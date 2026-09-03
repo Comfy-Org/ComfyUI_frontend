@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { readOpenPaths } from '../base/storageIO'
+import { readIndex, readOpenPaths, readPayload } from '../base/storageIO'
 import { isV3MigrationComplete, migrateV1toV3 } from './migrateV1toV3'
 
 describe('migrateV1toV3', () => {
@@ -49,6 +49,28 @@ describe('migrateV1toV3', () => {
       )
 
       expect(migrateV1toV3(workspaceId)).toBe(-1)
+    })
+
+    it('returns -1 without writing V3 while a V2 index exists', () => {
+      localStorage.setItem(
+        `Comfy.Workflow.Drafts:${workspaceId}`,
+        JSON.stringify({
+          'workflows/stale.json': {
+            data: '{"id":"stale"}',
+            updatedAt: 1000,
+            name: 'stale',
+            isTemporary: false
+          }
+        })
+      )
+      localStorage.setItem(
+        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`,
+        JSON.stringify({ v: 2, updatedAt: 2000, order: [], entries: {} })
+      )
+
+      expect(migrateV1toV3(workspaceId)).toBe(-1)
+      expect(readIndex(workspaceId)).toBeNull()
+      expect(readPayload(workspaceId, 'workflows/stale.json')).toBeNull()
     })
 
     it('creates empty V3 index if no V1 data', () => {

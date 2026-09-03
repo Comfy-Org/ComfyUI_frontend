@@ -26,6 +26,14 @@ const v2IndexKey = (workspaceId: string) =>
 const v2PayloadPrefix = (workspaceId: string) =>
   `Comfy.Workflow.Draft.v2:${workspaceId}:`
 
+export function hasV2DraftIndex(workspaceId: string): boolean {
+  try {
+    return localStorage.getItem(v2IndexKey(workspaceId)) !== null
+  } catch {
+    return false
+  }
+}
+
 function isValidMeta(value: unknown): value is DraftEntryMeta {
   if (typeof value !== 'object' || value === null) return false
   const meta = value as Record<string, unknown>
@@ -53,16 +61,12 @@ function parseV2Index(json: string): DraftIndexV2 | null {
     }
 
     const order = value.order
+    const orderKeys = new Set(order)
     const entries = value.entries as Record<string, unknown>
-    const entryKeys = Object.keys(entries)
-    if (entryKeys.length !== order.length) return null
 
-    const validEntries = entryKeys.every((key) => {
-      const entry = entries[key]
+    const validEntries = Object.entries(entries).every(([key, entry]) => {
       return (
-        order.includes(key) &&
-        isValidMeta(entry) &&
-        hashPath(entry.path) === key
+        orderKeys.has(key) && isValidMeta(entry) && hashPath(entry.path) === key
       )
     })
 
@@ -112,11 +116,14 @@ function rollbackV3Payloads(workspaceId: string, paths: string[]): void {
 }
 
 /**
- * Migrates a structurally consistent V2 index and all of its payloads.
+ * Migrates a V2 index and its payloads to V3.
  *
- * Any mismatched hash/path metadata, duplicate order key, missing payload, or
- * malformed payload rejects the complete V2 snapshot. This avoids attaching
- * unverifiable payload data to a canonical path.
+ * Any mismatched hash/path metadata or duplicate order key rejects the
+ * complete V2 snapshot, because the canonical path of every draft can no
+ * longer be trusted. Order keys with no entry and entries with a missing or
+ * malformed payload are skipped instead: the V2 store treated that drift as
+ * normal and healed it on load, so it must not cost the user their other
+ * drafts. Nothing is written for a skipped entry.
  *
  * @returns Number of drafts migrated, or -1 if migration was not needed or
  * could not be committed.
@@ -138,36 +145,33 @@ export function migrateV2toV3(workspaceId: string = getWorkspaceId()): number {
     return commitEmptyV3Index(workspaceId)
   }
 
-  const payloads = new Map<string, DraftPayloadV2>()
+  const drafts: Array<{ meta: DraftEntryMeta; payload: DraftPayloadV2 }> = []
   for (const draftKey of v2Index.order) {
+    const meta = v2Index.entries[draftKey]
+    if (!meta) continue
     const payload = readV2Payload(workspaceId, draftKey)
     if (!payload) {
-      console.warn('[V3 Migration] Discarded incomplete V2 draft snapshot')
-      return commitEmptyV3Index(workspaceId)
+      console.warn(
+        `[V3 Migration] Skipped V2 draft without payload: ${meta.path}`
+      )
+      continue
     }
-    payloads.set(draftKey, payload)
+    drafts.push({ meta, payload })
   }
 
   const v3Index: DraftIndexV3 = {
     v: 3,
     updatedAt: v2Index.updatedAt,
-    order: v2Index.order.map((key) => v2Index.entries[key].path),
-    entries: Object.fromEntries(
-      v2Index.order.map((key) => {
-        const entry = v2Index.entries[key]
-        return [entry.path, entry]
-      })
-    )
+    order: drafts.map(({ meta }) => meta.path),
+    entries: Object.fromEntries(drafts.map(({ meta }) => [meta.path, meta]))
   }
   const writtenPaths: string[] = []
 
   try {
-    for (const draftKey of v2Index.order) {
-      const path = v2Index.entries[draftKey].path
-      const payload = payloads.get(draftKey)!
+    for (const { meta, payload } of drafts) {
       if (
-        !writePayload(workspaceId, path, {
-          path,
+        !writePayload(workspaceId, meta.path, {
+          path: meta.path,
           data: payload.data,
           updatedAt: payload.updatedAt
         })
@@ -175,7 +179,7 @@ export function migrateV2toV3(workspaceId: string = getWorkspaceId()): number {
         rollbackV3Payloads(workspaceId, writtenPaths)
         return -1
       }
-      writtenPaths.push(path)
+      writtenPaths.push(meta.path)
     }
 
     if (!writeIndex(workspaceId, v3Index)) {

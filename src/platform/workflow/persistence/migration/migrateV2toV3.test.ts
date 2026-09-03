@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DraftIndexV2 } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
 import { readIndex, readPayload } from '../base/storageIO'
-import { migrateV2toV3 } from './migrateV2toV3'
+import { hasV2DraftIndex, migrateV2toV3 } from './migrateV2toV3'
 
 describe('migrateV2toV3', () => {
   const workspaceId = 'test-workspace'
@@ -109,15 +109,47 @@ describe('migrateV2toV3', () => {
     expect(readPayload(workspaceId, 'workflows/b.json')).toBeNull()
   })
 
-  it('fails closed when a V2 index payload is missing', () => {
-    setV2Data([{ path: 'workflows/a.json', data: '{"id":"a"}' }])
+  it('skips entries whose payload is missing and keeps the rest', () => {
+    setV2Data([
+      { path: 'workflows/a.json', data: '{"id":"a"}' },
+      { path: 'workflows/b.json', data: '{"id":"b"}' }
+    ])
     localStorage.removeItem(
       `Comfy.Workflow.Draft.v2:${workspaceId}:${hashPath('workflows/a.json')}`
     )
     vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    expect(migrateV2toV3(workspaceId)).toBe(0)
-    expect(readIndex(workspaceId)?.order).toEqual([])
+    expect(migrateV2toV3(workspaceId)).toBe(1)
+    expect(readIndex(workspaceId)?.order).toEqual(['workflows/b.json'])
     expect(readPayload(workspaceId, 'workflows/a.json')).toBeNull()
+    expect(readPayload(workspaceId, 'workflows/b.json')?.data).toBe(
+      '{"id":"b"}'
+    )
+    expect(
+      localStorage.getItem(`Comfy.Workflow.DraftIndex.v2:${workspaceId}`)
+    ).toBeNull()
+  })
+
+  it('skips order keys that have no index entry', () => {
+    setV2Data([{ path: 'workflows/a.json', data: '{"id":"a"}' }])
+    const indexKey = `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+    const index = JSON.parse(localStorage.getItem(indexKey)!) as DraftIndexV2
+    index.order.unshift('deadbeef')
+    localStorage.setItem(indexKey, JSON.stringify(index))
+
+    expect(migrateV2toV3(workspaceId)).toBe(1)
+    expect(readIndex(workspaceId)?.order).toEqual(['workflows/a.json'])
+    expect(readPayload(workspaceId, 'workflows/a.json')?.data).toBe(
+      '{"id":"a"}'
+    )
+  })
+
+  it('reports a V2 index key as present until it is migrated', () => {
+    expect(hasV2DraftIndex(workspaceId)).toBe(false)
+    setV2Data([{ path: 'workflows/a.json', data: '{"id":"a"}' }])
+    expect(hasV2DraftIndex(workspaceId)).toBe(true)
+
+    migrateV2toV3(workspaceId)
+    expect(hasV2DraftIndex(workspaceId)).toBe(false)
   })
 })
