@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "description": "MiniMax H3モデルを使用して、開始フレーム画像と任意の終了フレーム画像から動画を生成します。動画のアスペクト比は、指定された画像に従います。",
     "display_name": "MiniMax H3 最初・最後フレームから動画生成",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13016,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 モデルを使用して、参照画像、ビデオ、音声に基づいてビデオを生成します。プロンプト内で参照を順番に指定してください：『Image 1』、『Image 2』、『Video 1』、『Audio 1』など。",
+    "description": "MiniMax H3モデルを使用して、参照画像、動画、音声を条件として動画を生成します。プロンプト内では参照を順番に「Image 1」、「Image 2」、「Video 1」、「Audio 1」のように指定してください。",
     "display_name": "MiniMax H3 参照からビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 モデルを使用してテキストプロンプトからビデオを生成します。",
+    "description": "MiniMax H3モデルを使用して、テキストプロンプトから動画を生成します。",
     "display_name": "MiniMax H3 テキストからビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "選択した解像度を設定する際の最も近い倍数です。"
+      },
+      "preview": {
+        "name": "プレビュー",
+        "tooltip": "計算された出力解像度のライブプレビュー。"
       }
     },
     "outputs": {

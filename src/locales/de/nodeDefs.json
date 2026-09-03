@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Generiert mit dem MiniMax H3-Modell ein Video aus einem Bild des ersten Frames und einem optionalen Bild des letzten Frames. Das Seitenverhältnis des Videos richtet sich nach den bereitgestellten Bildern.",
+    "description": "Generieren Sie mit den MiniMax-H3-Modellen ein Video aus einem ersten Frame-Bild und einem optionalen letzten Frame-Bild. Das Seitenverhältnis des Videos folgt den bereitgestellten Bildern.",
     "display_name": "MiniMax H3 Erstes/letztes Frame zu Video",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13016,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Generiert mit dem MiniMax H3-Modell ein Video basierend auf Referenzbildern, -videos und -audio. Beziehen Sie sich im Prompt anhand ihrer Reihenfolge auf die Referenzen: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' usw.",
+    "description": "Generieren Sie Videos basierend auf Referenzbildern, -videos und -audio mit den MiniMax-H3-Modellen. Verweisen Sie im Prompt anhand ihrer Reihenfolge auf die Referenzen: „Image 1“, „Image 2“, „Video 1“, „Audio 1“ usw.",
     "display_name": "MiniMax H3 Referenz zu Video",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Generiert mit dem MiniMax-H3-Modell ein Video aus einem Text-Prompt.",
+    "description": "Generieren Sie mit den MiniMax-H3-Modellen ein Video aus einem Text-Prompt.",
     "display_name": "MiniMax H3 Text zu Video",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "Nächstgelegenes Vielfaches des Ergebnisses, auf das die ausgewählte Auflösung gesetzt wird."
+      },
+      "preview": {
+        "name": "Vorschau",
+        "tooltip": "Live-Vorschau der berechneten Ausgabeauflösung."
       }
     },
     "outputs": {

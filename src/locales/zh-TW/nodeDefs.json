@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "使用 MiniMax H3 模型，根據首幀圖像與（可選）末幀圖像生成影片。影片長寬比將依據所提供的圖像。",
+    "description": "使用 MiniMax H3 模型根據首幀影像與可選的末幀影像生成影片。影片的長寬比會依照提供的影像。",
     "display_name": "MiniMax H3 首末幀生成影片",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13016,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。在提示詞中依照順序引用參考資料：'Image 1'、'Image 2'、'Video 1'、'Audio 1'，依此類推。",
+    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。在提示詞中依照參考資料的順序引用：'圖片 1'、'圖片 2'、'影片 1'、'音訊 1'，依此類推。",
     "display_name": "MiniMax H3 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "使用 MiniMax H3 模型，根據文字提示詞生成影片。",
+    "description": "使用 MiniMax H3 模型根據文字提示生成影片。",
     "display_name": "MiniMax H3 文生影片",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "倍數",
         "tooltip": "將所選解析度設為結果的最接近倍數。"
+      },
+      "preview": {
+        "name": "預覽",
+        "tooltip": "即時預覽計算後的輸出解析度。"
       }
     },
     "outputs": {

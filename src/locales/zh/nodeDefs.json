@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "使用 MiniMax H3 模型，根据首帧图像和可选的末帧图像生成视频。视频的宽高比与所提供的图像一致。",
+    "description": "使用 MiniMax H3 模型根据首帧图像和可选的末帧图像生成视频。视频的宽高比遵循提供的图像。",
     "display_name": "MiniMax H3 首帧-末帧生成视频",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "使用 MiniMax H3 模型，根据文本提示词生成视频。",
+    "description": "使用 MiniMax H3 模型根据文本提示生成视频。",
     "display_name": "MiniMax H3 文本生成视频",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "将所选分辨率设置为结果的最近倍数。"
+      },
+      "preview": {
+        "name": "预览",
+        "tooltip": "实时预览计算得出的输出分辨率。"
       }
     },
     "outputs": {

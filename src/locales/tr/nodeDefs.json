@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3 modeli ile ilk kare görseli ve isteğe bağlı son kare görseli kullanarak video üretin. Videonun en-boy oranı verilen görsellere göre ayarlanır.",
+    "description": "MiniMax H3 modellerini kullanarak bir ilk kare görüntüsünden ve isteğe bağlı bir son kare görüntüsünden video oluşturun. Videonun en-boy oranı sağlanan görüntüleri takip eder.",
     "display_name": "MiniMax H3 İlk-Son-Kare'den Videoya",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13016,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 modeliyle referans görseller, videolar ve sesler kullanarak video oluşturun. Prompt içindeki referanslara sıralarına göre atıfta bulunun: 'Görsel 1', 'Görsel 2', 'Video 1', 'Ses 1' şeklinde devam eder.",
+    "description": "MiniMax H3 modellerini kullanarak referans görüntüler, videolar ve seslere koşullandırılmış video oluşturun. İstem içindeki referanslara sıralarına göre başvurun: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' vb.",
     "display_name": "MiniMax H3 Referans ile Videoya",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 modeliyle metin promptundan video oluşturun.",
+    "description": "MiniMax H3 modellerini kullanarak bir metin isteminden video oluşturun.",
     "display_name": "MiniMax H3 Metinden Videoya",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "kat",
         "tooltip": "Seçilen çözünürlüğü ayarlamak için sonucun en yakın katı."
+      },
+      "preview": {
+        "name": "önizleme",
+        "tooltip": "Hesaplanan çıktı çözünürlüğünün canlı önizlemesi."
       }
     },
     "outputs": {

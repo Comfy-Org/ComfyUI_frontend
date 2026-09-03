@@ -12973,7 +12973,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
+    "description": "יצירת וידאו מתמונת פריים ראשון ומתמונת פריים אחרון אופציונלית באמצעות מודלי MiniMax H3. יחס הממדים של הווידאו תואם לתמונות שסופקו.",
     "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13016,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו בהתבסס על תמונות רפרנס, סרטונים ואודיו באמצעות מודל MiniMax H3. התייחסו לרפרנסים בהנחיה לפי הסדר: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת וידאו המותנה בתמונות, סרטוני וידאו ושמע לעיון באמצעות מודלי MiniMax H3. יש להתייחס לעזרי העיון בפרומפט לפי סדרם: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13091,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "יצירת וידאו מהנחיה טקסטואלית באמצעות מודל MiniMax H3.",
+    "description": "יצירת וידאו מהנחיית טקסט באמצעות מודלי MiniMax H3.",
     "display_name": "MiniMax H3 טקסט לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -18681,6 +18681,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "המכפלה הקרובה ביותר של התוצאה לקביעת הרזולוציה הנבחרת."
+      },
+      "preview": {
+        "name": "תצוגה מקדימה",
+        "tooltip": "תצוגה מקדימה חיה של רזולוציית הפלט המחושבת."
       }
     },
     "outputs": {
