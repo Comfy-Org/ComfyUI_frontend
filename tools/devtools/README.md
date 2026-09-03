@@ -7,6 +7,8 @@ This directory contains development tools and test utilities for ComfyUI, previo
 - `__init__.py` - Server endpoints for development tools (`/api/devtools/*`)
 - `dev_nodes.py` - Development and testing nodes for ComfyUI
 - `fake_model.safetensors` - Test fixture for model loading tests
+- `web/stableApiDemo.js` - Runnable frontend-only nodes built with the published
+  node API; see [`docs/node-api/demo-nodes.md`](../../docs/node-api/demo-nodes.md)
 
 ## Purpose
 
