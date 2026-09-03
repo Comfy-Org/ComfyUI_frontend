@@ -90,9 +90,10 @@ function clearAll() {
       :class="
         cn(
           'hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3',
+          'border-transparency-white-t20',
           selectedCount
-            ? 'border-primary-comfy-yellow text-primary-warm-white'
-            : 'border-transparency-white-t20 text-primary-comfy-canvas'
+            ? 'text-primary-warm-white'
+            : 'text-primary-comfy-canvas'
         )
       "
     >
