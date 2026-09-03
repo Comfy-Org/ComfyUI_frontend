@@ -97,6 +97,12 @@ const config: KnipConfig = {
     // admits one endpoint, and openapi-ts still emits the request/response
     // wrappers and a barrel for it; src/index.ts re-exports what is consumed.
     'packages/comfyui-api-types/src/generated/**',
+    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in
+    // the build imports it — that is the point: it is the entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v2.js',
+    // Agent review check config, not part of the build
+    '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],
