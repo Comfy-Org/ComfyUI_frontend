@@ -16,12 +16,23 @@ class DummyNode extends LGraphNode {
   }
 }
 
+class ThrowsOnAddedNode extends LGraphNode {
+  constructor() {
+    super('throws-on-added')
+  }
+
+  override onAdded(): void {
+    throw new Error('extension code blew up in onAdded')
+  }
+}
+
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
+  LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
 })
 
-function seedAgentAddedNode(graph: LGraph, id: number) {
+function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
   const scope = graphScopeOf(graph)
   const mutations = createGraphMutations({
     getScope: () => scope,
@@ -30,7 +41,7 @@ function seedAgentAddedNode(graph: LGraph, id: number) {
   mutations.addNode(
     {
       id,
-      type: 'dummy',
+      type,
       pos: [0, 0],
       size: [100, 80],
       inputs: [],
@@ -94,6 +105,28 @@ describe('materializeMissingAdapters', () => {
     // node from every future save when `graph.add()` throws.
     expect(nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))).toBeDefined()
     expect(graph._nodes).toHaveLength(0)
+  })
+
+  it('removes the partially attached adapter when node.onAdded() throws inside graph.add()', () => {
+    // Regression for the CodeRabbit Major follow-up
+    // (https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3921409323):
+    // `LGraph.add()` pushes the node into `_nodes`/`_nodes_by_id` and runs
+    // `attachNodeToStores` BEFORE calling `node.onAdded?.(this)`, so an
+    // `onAdded` throw propagates out of `add()` after the node is already
+    // partially attached, not before. The add()-failure branch must remove
+    // that partial adapter, not just restore the store record, or the graph
+    // and store diverge (adapter live but store also has its own record).
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1, 'throws-on-added')
+    const nodeDataStore = useNodeDataStore()
+
+    const materialized = materializeMissingAdapters(graph, ['1'])
+
+    expect(materialized).toEqual([])
+    expect(nodeDataStore.getNode(scope.rootGraphId, toNodeId(1))).toBeDefined()
+    // No live adapter must remain bound to the graph after the rollback.
+    expect(graph._nodes).toHaveLength(0)
+    expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
   })
 
   it('does not delete the store record when node.configure() throws', () => {

@@ -204,15 +204,23 @@ export function materializeMissingAdapters(
       added = graph.add(node)
     } catch (cause) {
       added = undefined
+      // `LGraph.add()` can throw AFTER already attaching the node — it
+      // pushes into `_nodes`/`_nodes_by_id` and runs `attachNodeToStores`
+      // before calling `node.onAdded?.(this)`, and an `onAdded` throw
+      // propagates straight out uncaught (CodeRabbit,
+      // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3921409323).
+      // `graph.remove?.(node)` is safe to call unconditionally here: `LGraph.
+      // remove()` no-ops if the node was never actually added (its own
+      // `_nodes_by_id[node.id] == null` guard), so this correctly handles
+      // both "add() threw before attaching anything" and "add() threw after
+      // attaching, from onAdded" without needing to distinguish them.
+      graph.remove?.(node)
       reportError(cause, {
         errorType: 'agent_node_materialize_add_failed',
         context: { graphId: graph.id, nodeId: String(nodeId) }
       })
     }
     if (!added) {
-      // `graph.add()` never attached anything on this path (it threw or
-      // no-op'd before registration), so there is no live adapter to remove
-      // — only the store record needs restoring.
       nodeDataStore.registerNode(scope, state)
       continue // leaves the store-only record in place; retried next frame
     }
