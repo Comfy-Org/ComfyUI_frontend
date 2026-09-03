@@ -1,0 +1,148 @@
+import type {
+  AccountAbortSignal,
+  Namespace,
+  ScheduleHandle,
+  TransportRequest
+} from '../index.js'
+
+export type BillingStep =
+  | 'select'
+  | 'preview'
+  | 'verifying'
+  | 'canceled'
+  | 'declined'
+  | 'processing_error'
+  | 'payment_received_hold'
+  | 'success'
+export type BillingOperationKind =
+  | 'subscribe'
+  | 'topup'
+  | 'resubscribe'
+  | 'cancel'
+export type ReasonKey =
+  | 'generic'
+  | 'declined_generic'
+  | 'declined_insufficient_funds'
+  | 'declined_authentication_required'
+export type BillingOperationStatus =
+  | 'pending'
+  | 'succeeded'
+  | 'failed'
+  | 'timeout'
+  | 'canceled'
+  | 'payment_received_hold'
+
+export interface SubscribeRequest {
+  plan_slug: string
+  return_url: string
+  cancel_url: string
+}
+export interface TopupRequest {
+  amount_cents: number
+  idempotency_key: string
+}
+export interface ResubscribeRequest {
+  plan_slug?: string
+}
+export interface CancelRequest {
+  idempotency_key?: string
+}
+export interface PaymentPortalRequest {
+  return_url: string
+}
+export interface BillingOperationRef {
+  billing_op_id: string
+  action_url?: string
+}
+export interface SubscribeResponse extends BillingOperationRef {
+  status?: string
+  session_id?: string
+}
+export interface TopupResponse extends BillingOperationRef {
+  status?: string
+}
+export interface ResubscribeResponse {
+  status: 'resubscribed' | 'pending'
+  billing_op_id?: string
+}
+export interface CancelResponse {
+  status: 'canceled' | 'pending'
+  billing_op_id?: string
+}
+export interface PaymentPortalResponse {
+  url: string
+}
+export interface BillingOperationResponse {
+  status: BillingOperationStatus
+  action_url?: string
+  reason_code?: string
+  error_message?: string
+  no_charge_confirmed?: boolean
+}
+export interface BillingOperationRecord {
+  id: string
+  kind: BillingOperationKind
+  intent: string
+  startedAt: number
+  status: BillingOperationStatus
+}
+export interface BillingState {
+  operationId?: string
+  step: BillingStep
+  reasonKey?: ReasonKey
+  actionUrl?: string
+  noChargeConfirmed: boolean
+}
+export interface BillingClock {
+  now(): number
+  schedule(fn: () => void, delayMs: number): ScheduleHandle
+  cancel(handle: ScheduleHandle): void
+}
+export interface BillingOperationStore {
+  namespace: Namespace
+  getActiveId(): Promise<string | null>
+  setActiveId(id: string): Promise<void>
+  clearActiveId(): Promise<void>
+}
+export type OpenUrlMode = 'new_tab' | 'redirect' | 'preopened'
+export interface BillingHostPorts {
+  clock: BillingClock
+  operationStore: BillingOperationStore
+  openUrl(url: string, mode: OpenUrlMode): Promise<{ opened: boolean }>
+}
+export interface BillingTransport {
+  transport(
+    request: TransportRequest<unknown>
+  ): Promise<{ status: number; body: unknown }>
+}
+export interface BillingClient {
+  subscribe(
+    input: SubscribeRequest,
+    idempotencyKey: string,
+    signal?: AccountAbortSignal
+  ): Promise<SubscribeResponse>
+  topup(
+    input: TopupRequest,
+    idempotencyKey: string,
+    signal?: AccountAbortSignal
+  ): Promise<TopupResponse>
+  resubscribe(
+    input: ResubscribeRequest,
+    idempotencyKey: string,
+    signal?: AccountAbortSignal
+  ): Promise<ResubscribeResponse>
+  cancel(
+    input: CancelRequest,
+    idempotencyKey: string,
+    signal?: AccountAbortSignal
+  ): Promise<CancelResponse>
+  paymentPortal(
+    input: PaymentPortalRequest,
+    idempotencyKey: string,
+    signal?: AccountAbortSignal
+  ): Promise<PaymentPortalResponse>
+  getOperation(
+    id: string,
+    signal?: AccountAbortSignal
+  ): Promise<BillingOperationResponse>
+}
