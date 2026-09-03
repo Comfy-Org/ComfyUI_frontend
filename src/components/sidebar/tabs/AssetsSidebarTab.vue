@@ -204,6 +204,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
@@ -236,7 +237,6 @@ import {
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -251,6 +251,7 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -278,10 +279,9 @@ const contextMenuAsset = ref<AssetItem | null>(null)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
-const shouldShowDeleteButton = computed(() => {
-  if (activeTab.value === 'input' && !isCloud) return false
-  return true
-})
+const shouldShowDeleteButton = computed(
+  () => activeTab.value !== 'input' || flags.assetDeletionEnabled
+)
 
 const contextMenuAssetType = computed(() =>
   contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
