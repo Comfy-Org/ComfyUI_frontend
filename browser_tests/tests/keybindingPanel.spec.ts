@@ -27,8 +27,6 @@ function getCommandRow(page: Page, commandId: string): Locator {
 }
 
 function getExpansionContent(page: Page, commandId: string): Locator {
-  // PrimeVue renders the expansion row as the next sibling <tr> of the
-  // expanded row. Scoping by sibling avoids matching unrelated expanded rows.
   return getCommandRow(page, commandId)
     .locator('xpath=following-sibling::tr[1]')
     .getByTestId('keybinding-expansion-content')
@@ -105,6 +103,30 @@ async function registerNoBindingCommand(comfyPage: ComfyPage) {
 
 test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
   test.describe('Row Expansion', () => {
+    test('Keyboard activates rows and opens the context menu', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+
+      await searchKeybindings(page, MULTI_BINDING_COMMAND)
+      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await row.focus()
+      await row.press('Enter')
+      await expect(
+        getExpansionContent(page, MULTI_BINDING_COMMAND)
+      ).toBeVisible()
+
+      await row.press('Space')
+      await expect(
+        getExpansionContent(page, MULTI_BINDING_COMMAND)
+      ).toBeHidden()
+
+      await row.press('Shift+F10')
+      await expect(
+        page.getByRole('menuitem', { name: /Change keybinding/i })
+      ).toBeVisible()
+    })
+
     test('Click on row with 2+ keybindings toggles expansion', async ({
       comfyPage
     }) => {
@@ -566,7 +588,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       ).toBeInViewport()
 
       const hasHorizontalScroll = await page
-        .locator('.keybinding-panel .p-datatable-table-container')
+        .getByTestId('keybinding-table-container')
         .evaluate((el) => el.scrollWidth > el.clientWidth + 1)
       expect(hasHorizontalScroll).toBe(false)
     })

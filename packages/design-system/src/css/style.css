@@ -1362,10 +1362,6 @@ audio.comfy-audio.empty-audio-widget {
   max-width: 25vw;
 }
 
-.p-tree-node-content {
-  padding: var(--comfy-tree-explorer-item-padding) !important;
-}
-
 /* [Desktop] Electron window specific styles */
 .app-drag {
   app-region: drag;

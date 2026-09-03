@@ -83,8 +83,9 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   getNodeInFolder(nodeName: string, folderName: string) {
-    return this.getFolder(folderName)
-      .locator('xpath=ancestor::li')
+    return this.nodeLibraryTree
+      .getByRole('treeitem')
+      .and(this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`))
       .locator(`[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`)
   }
 }
@@ -145,7 +146,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
     super(page, 'workflows')
     this.root = page.getByTestId(TestIds.sidebar.workflows)
     this.activeWorkflowLabel = this.root.locator(
-      '.comfyui-workflows-open .p-tree-node-selected .node-label'
+      '.comfyui-workflows-open .tree-explorer-item[data-selected] .node-label'
     )
     this.searchInput = this.root.getByRole('combobox').first()
     this.refreshButton = this.root.getByTestId(
@@ -229,10 +230,12 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     this.loadAllFoldersButton = page.getByRole('button', {
       name: 'Load All Folders'
     })
-    this.folderNodes = this.modelTree.locator(
-      '.p-tree-node:not(.p-tree-node-leaf)'
-    )
-    this.leafNodes = this.modelTree.locator('.p-tree-node-leaf')
+    this.folderNodes = this.modelTree
+      .getByRole('treeitem')
+      .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
+    this.leafNodes = this.modelTree
+      .getByRole('treeitem')
+      .and(this.modelTree.locator('[data-tree-node-type="node"]'))
     this.modelPreview = page.locator('.model-lib-model-preview')
   }
 
@@ -243,28 +246,20 @@ export class ModelLibrarySidebarTab extends SidebarTab {
 
   getFolderByLabel(label: string) {
     return this.modelTree
-      .locator('.p-tree-node:not(.p-tree-node-leaf)')
-      .filter({ hasText: label })
+      .getByRole('treeitem', { name: label })
+      .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
       .first()
   }
 
   getLeafByLabel(label: string) {
     return this.modelTree
-      .locator('.p-tree-node-leaf')
-      .filter({ hasText: label })
+      .getByRole('treeitem', { name: label })
+      .and(this.modelTree.locator('[data-tree-node-type="node"]'))
       .first()
   }
 
-  /**
-   * A folder's own row (not the whole subtree). Required for nested folders:
-   * an ancestor `.p-tree-node`'s text contains its descendants' labels, so
-   * `getFolderByLabel` would match — and click — the ancestor instead.
-   */
   getFolderRowByLabel(label: string) {
-    return this.modelTree
-      .locator('.p-tree-node:not(.p-tree-node-leaf) > .p-tree-node-content')
-      .filter({ hasText: label })
-      .first()
+    return this.getFolderByLabel(label)
   }
 }
 

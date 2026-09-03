@@ -76,10 +76,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
 
       // Find the KSampler node in search results
-      const ksamplerNode = comfyPage.page
-        .locator('.tree-explorer-node-label')
-        .filter({ hasText: 'KSampler' })
-        .first()
+      const ksamplerNode = comfyPage.menu.nodeLibraryTab.getNode('KSampler')
       await expect(ksamplerNode).toBeVisible()
 
       // Hover over the node to show action buttons
@@ -113,10 +110,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
 
       // Find and interact with the node
-      const ksamplerNode = comfyPage.page
-        .locator('.tree-explorer-node-label')
-        .filter({ hasText: 'KSampler' })
-        .first()
+      const ksamplerNode = comfyPage.menu.nodeLibraryTab.getNode('KSampler')
       await ksamplerNode.hover()
       const helpButton = ksamplerNode.getByRole('button', {
         name: /learn more/i

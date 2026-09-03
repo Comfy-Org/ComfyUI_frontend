@@ -433,7 +433,7 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
     await tab.getFolderRowByLabel('checkpoints').click()
     await expect(
       tab.modelTree
-        .locator('.p-tree-node-leaf')
+        .locator('.tree-leaf')
         .filter({ hasText: 'mid_retag_checkpoint' })
     ).toHaveCount(1)
 
@@ -441,16 +441,17 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
     // renders (asset mode hides folders that load with zero models) —
     // otherwise an absent 'loras' row would be ambiguous between "correctly
     // empty" and "never loaded".
-    await tab.getFolderRowByLabel('loras').click()
+    const lorasFolder = tab.getFolderRowByLabel('loras')
+    const lorasKey = await lorasFolder.getAttribute('data-tree-key')
+    expect(lorasKey).not.toBeNull()
+    await lorasFolder.click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
 
-    // Scoped to the loras subtree, not tab.modelTree: checkpoints is still
-    // expanded from the assertion above, and its (correct) copy of the leaf
-    // would otherwise satisfy a tree-wide query on its own.
     await expect(
-      tab
-        .getFolderByLabel('loras')
-        .locator('.p-tree-node-leaf')
+      tab.modelTree
+        .locator(
+          `.tree-explorer-item[data-parent-key="${lorasKey}"] .tree-leaf`
+        )
         .filter({ hasText: 'mid_retag_checkpoint' })
     ).toHaveCount(0)
   })

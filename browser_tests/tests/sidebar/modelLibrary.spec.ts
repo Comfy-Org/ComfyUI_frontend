@@ -4,6 +4,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const MOCK_FOLDERS: Record<string, string[]> = {
   checkpoints: [
+    'checkpoints.safetensors',
     'sd_xl_base_1.0.safetensors',
     'dreamshaper_8.safetensors',
     'realisticVision_v51.safetensors'
@@ -79,6 +80,19 @@ test.describe('Model library sidebar - folders', () => {
     await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
     await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
     await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+  })
+
+  test('Distinguishes a folder from a model with the same label', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.modelLibraryTab
+    await tab.open()
+
+    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
+    await expect(tab.getLeafByLabel('checkpoints')).toBeHidden()
+
+    await tab.getFolderByLabel('checkpoints').click()
+    await expect(tab.getLeafByLabel('checkpoints')).toBeVisible()
   })
 
   test('Expanding a different folder shows its models', async ({

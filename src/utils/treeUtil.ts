@@ -1,13 +1,16 @@
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
-export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
-  const root: TreeNode = {
+export function buildTree<T>(
+  items: T[],
+  key: (item: T) => string[]
+): TreeNode<T> {
+  const root: TreeNode<T> = {
     key: 'root',
     label: 'root',
     children: []
   }
 
-  const map: Record<string, TreeNode> = {
+  const map: Record<string, TreeNode<T>> = {
     root: root
   }
 
@@ -22,7 +25,7 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
 
       const id = parent.key + '/' + k
       if (!map[id]) {
-        const node: TreeNode = {
+        const node: TreeNode<T> = {
           key: id,
           label: k,
           leaf: false,
@@ -43,7 +46,7 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
  * If a tree root has exactly one non-leaf child folder, promote that
  * folder's children up to the root level, removing the redundant layer.
  */
-export function unwrapTreeRoot(tree: TreeNode): TreeNode {
+export function unwrapTreeRoot<T>(tree: TreeNode<T>): TreeNode<T> {
   if (
     tree.children?.length === 1 &&
     !tree.children[0].leaf &&
@@ -54,9 +57,9 @@ export function unwrapTreeRoot(tree: TreeNode): TreeNode {
   return tree
 }
 
-export function flattenTree<T>(tree: TreeNode): T[] {
+export function flattenTree<T>(tree: TreeNode<T>): T[] {
   const result: T[] = []
-  const stack: TreeNode[] = [tree]
+  const stack: TreeNode<T>[] = [tree]
   while (stack.length) {
     const node = stack.pop()!
     if (node.leaf && node.data) result.push(node.data)
@@ -72,15 +75,15 @@ export function flattenTree<T>(tree: TreeNode): T[] {
  * @param options.groupLeaf - Whether to group leaf nodes together.
  * @returns The sorted node.
  */
-export function sortedTree(
-  node: TreeNode,
+export function sortedTree<T>(
+  node: TreeNode<T>,
   {
     groupLeaf = false
   }: {
     groupLeaf?: boolean
   } = {}
-): TreeNode {
-  const newNode: TreeNode = {
+): TreeNode<T> {
+  const newNode: TreeNode<T> = {
     ...node
   }
 
