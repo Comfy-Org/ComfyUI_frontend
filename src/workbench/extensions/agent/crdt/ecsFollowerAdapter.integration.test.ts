@@ -826,8 +826,8 @@ describe('EcsFollowerAdapter integration', () => {
     })
   })
 
-  it('materializes an agent add_node into the ECS store and layout port only (qa-59 companion)', () => {
-    // Companion to `drops an agent-added node from serialize() ... (qa-59)`
+  it('materializes an agent add_node into the ECS store and layout port only', () => {
+    // Companion to `does NOT drop an agent-added node from serialize() ...`
     // in `src/lib/litegraph/src/LGraph.test.ts`. This drives the real
     // applier + follower + adapter chain and pins the two side effects this
     // layer owns for a remote `add_node`: the node state is registered in

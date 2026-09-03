@@ -6,7 +6,7 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { materializeMissingAdapters } from './agentNodeMaterializer'
+import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
@@ -191,11 +191,11 @@ export function useAgentCrdtFollower(
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
   isTargetActive: Ref<boolean> = ref(true),
-  // qa-59: the live LGraph the composable materializes agent-added node
-  // adapters into. Optional (defaults to "no graph available") so existing
-  // callers/tests that don't yet care about the live-adapter bridge keep
-  // compiling; `AgentPanelRoot.vue` wires the real `app.rootGraph` the same
-  // way `mintPortWiring`'s `getGraph` already does.
+  /**
+   * Live graph that receives node adapters for store-only records. Reactive
+   * reads inside the getter are tracked, so a `null` → graph flip triggers a
+   * reconcile without waiting for the next remote frame.
+   */
   getGraph: () => MaterializableGraph | null = () => null
 ) {
   const connected = ref(false)
@@ -211,15 +211,6 @@ export function useAgentCrdtFollower(
     reset: 0,
     dropped: 0
   })
-  // qa-59 / DrJKL: ids this session has seen added but not yet materialized —
-  // either because `getGraph()` returned null on their frame (panel bound
-  // before `app.isGraphReady`), or `materializeMissingAdapters` skipped them
-  // (unregistered type, etc). Accumulates across frames instead of being
-  // replaced, so a node added before the graph existed is retried once one
-  // becomes available rather than being dropped from every future check —
-  // `materializeMissingAdapters` itself is idempotent for ids that already
-  // have a live adapter or that the store no longer has.
-  const pendingMaterializeIds = new Set<string>()
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -416,30 +407,7 @@ export function useAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    // qa-59: the op layer above only ever wrote the ECS stores (KEEP-ALIVE
-    // #3 — it stays litegraph-free), so a remote add_node still has no
-    // `LGraphNode` adapter at this point. Materialize one for anything the
-    // adapter just landed, so the node enters `LGraph._nodes` and survives
-    // serialize()/save. Ids from this frame join any still-pending ids from
-    // earlier frames (see `pendingMaterializeIds` above) so an add that
-    // arrived before a graph existed is retried here, not dropped.
-    const addedIds = adapter.lastAddedNodeIds(update.workflowId)
-    for (const id of addedIds) pendingMaterializeIds.add(id)
-    const graph = getGraph()
-    if (graph && pendingMaterializeIds.size > 0) {
-      // Snapshot before calling out — `materializeMissingAdapters` is a pure
-      // read of whatever set it's given, and mutating `pendingMaterializeIds`
-      // in place afterward must not retroactively change what was passed.
-      const attempted = new Set(pendingMaterializeIds)
-      const materialized = materializeMissingAdapters(graph, attempted)
-      if (materialized.length > 0) {
-        for (const id of materialized) pendingMaterializeIds.delete(id)
-        recordDevEvent('agent_node_adapters_materialized', {
-          workflowId: update.workflowId,
-          nodeIds: materialized
-        })
-      }
-    }
+    reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -600,6 +568,24 @@ export function useAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // The op layer writes remote frames to the stores only; the live graph
+  // catches up here, after each applied frame and once a graph exists.
+  function reconcileLiveGraph(docId: string): void {
+    const graph = getGraph()
+    if (!graph) return
+    const nodeIds = reconcileAgentAdapters(graph)
+    if (nodeIds.length > 0) {
+      recordDevEvent('agent_node_adapters_materialized', {
+        workflowId: docId,
+        nodeIds
+      })
+    }
+  }
+  watch(getGraph, (graph) => {
+    if (graph && boundWorkflowId !== null && isTargetActive.value) {
+      reconcileLiveGraph(boundWorkflowId)
+    }
+  })
   // Drive the bridge's intent, then give the sender the same eager signal the
   // refusal branch gets: `reconcile()` clears send reality synchronously when
   // the desired doc changes, and a batch minted for the old doc would
@@ -616,18 +602,11 @@ export function useAgentCrdtFollower(
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
-      // qa-59 / coderabbitai (discussion_r3920899129): ids pending
-      // materialization are scoped to `boundWorkflowId`'s doc — carrying them
-      // across a follower-target change would materialize a PRIOR doc's
-      // leftover ids against the NEW target's graph/store. Clear alongside
-      // every `adapter.unbind` below, at the same point the binding itself
-      // invalidates.
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
           adapter.unbind(boundWorkflowId)
           boundWorkflowId = null
-          pendingMaterializeIds.clear()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -639,10 +618,7 @@ export function useAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) {
-              adapter.unbind(boundWorkflowId)
-              pendingMaterializeIds.clear()
-            }
+            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
             adapter.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
@@ -654,7 +630,6 @@ export function useAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           adapter.unbind(boundWorkflowId)
           boundWorkflowId = null
-          pendingMaterializeIds.clear()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -662,10 +637,7 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) {
-          adapter.unbind(boundWorkflowId)
-          pendingMaterializeIds.clear()
-        }
+        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
         adapter.bind(next, bridge.follower)
         boundWorkflowId = next
       }

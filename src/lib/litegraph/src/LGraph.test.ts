@@ -865,21 +865,17 @@ describe('Store-driven serialization parity', () => {
     )
   })
 
-  // Desired-outcome pin, not the buggy one (DrJKL / coderabbitai,
-  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652#discussion_r3914958522,
-  // #discussion_r3914616366): `agentNodeMaterializer.ts` now closes this gap
-  // for anything routed through `useAgentCrdtFollower`, but a bare
-  // `LGraph` + `graphMutations.addNode()` (as below) never calls the
-  // materializer, so the underlying `LGraph._nodes` gap this test documents
-  // is still real for any caller that skips the follower composable.
-  // `test.fails` keeps the assertions expressing the CORRECT behavior; the
-  // test flips green (and must be converted to a plain `test`) the day
-  // `LGraph.serialize()`/`addNode()` itself closes the gap without relying on
-  // the FE-only follower seam.
-  test.fails('does NOT drop an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it (qa-59)', ({
+  // Pins the desired outcome, not the current one. `agentNodeMaterializer.ts`
+  // closes this gap for anything routed through `useAgentCrdtFollower`, but a
+  // bare `LGraph` + `graphMutations.addNode()` (as below) never calls the
+  // materializer, so the `LGraph._nodes` gap this test documents is still
+  // real for any caller that skips the follower composable. `test.fails`
+  // keeps the assertions expressing the CORRECT behavior; convert to a plain
+  // `test` the day `LGraph.serialize()`/`addNode()` itself closes the gap.
+  test.fails('does NOT drop an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it', ({
     expect
   }) => {
-    // Regression test for the qa-59 defect: the CRDT follower's addNode path
+    // The CRDT follower's addNode path
     // (`graphMutations.commit()` -> nodeStore/widgetStore/layout, see
     // `src/core/graph/graphMutations.ts`) never constructs an LGraphNode and
     // never calls `LGraph.add()`, so the node exists in the ECS node-data

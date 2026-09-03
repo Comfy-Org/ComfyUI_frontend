@@ -408,9 +408,10 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
-  // qa-59: same graph accessor as mintPortWiring's `getGraph` below — gives
-  // the follower a live LGraph to materialize agent-added node adapters into.
-  () => (app.isGraphReady ? app.rootGraph : null)
+  // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
+  // right after `app.setup()`) makes the follower's graph watch fire once the
+  // root graph exists.
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
