@@ -667,8 +667,8 @@ describe('useLoad3dViewer', () => {
         'normal',
         'wireframe'
       ])
-      // initializeViewer captures from the source, which is the instance that
-      // ran the loader; the new one has an empty adapterRef.
+      // Captured from the source: copyLoad3dState clones the object graph
+      // without carrying originalURL, so the new instance reports none.
       expect(viewer.sourceFormat.value).toBe('glb')
 
       vi.mocked(mockLoad3d.isSplatModel!).mockReturnValueOnce(true)
@@ -738,7 +738,7 @@ describe('useLoad3dViewer', () => {
       await viewer.handleModelDrop(new File([''], 'dropped.glb'))
 
       expect(modelWidget.value).toBe('old.glb')
-      expect(mockLoad3d.getCurrentModelCapabilities).toHaveBeenCalledTimes(1)
+      expect(viewer.sourceFormat.value).toBeNull()
     })
 
     it('alerts and does not call loadModel when there is no active load3d instance', async () => {
@@ -870,13 +870,8 @@ describe('useLoad3dViewer', () => {
       )
       await nextTick()
 
-      // Only the cancelled return prevents these; the thumbnail assertions
-      // below are already covered by the separate `loaded` guard.
       expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
       expect(viewer.isPreview.value).toBe(false)
-      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
-      expect(persistThumbnail).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
     })
 
     it('still restores the viewer config when the standalone model fails to load', async () => {
@@ -911,6 +906,38 @@ describe('useLoad3dViewer', () => {
   })
 
   describe('standalone mode persistence', () => {
+    it('does not write a failed model\u2019s config into the previous model\u2019s slot', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(containerRef, 'kept.glb')
+      viewer.backgroundColor.value = '#ff0000'
+      viewer.showGrid.value = false
+      await nextTick()
+
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
+      await viewer.initializeStandaloneViewer(containerRef, 'broken.glb')
+      expect(viewer.backgroundColor.value).toBe('#282828')
+
+      await viewer.initializeStandaloneViewer(containerRef, 'other.glb')
+      await viewer.initializeStandaloneViewer(containerRef, 'kept.glb')
+
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+      expect(viewer.showGrid.value).toBe(false)
+    })
+
+    it('abandons a superseded standalone reload without touching the viewer', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      await viewer.initializeStandaloneViewer(containerRef, 'kept.glb')
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockClear()
+
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('cancelled')
+      await viewer.initializeStandaloneViewer(containerRef, 'superseded.glb')
+
+      expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
+    })
+
     it('should save and restore configuration in standalone mode', async () => {
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
