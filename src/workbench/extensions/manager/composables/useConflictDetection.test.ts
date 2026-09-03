@@ -8,7 +8,6 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -197,20 +196,19 @@ describe('useConflictDetection', () => {
     typeof useSystemStatsStore
   >
 
-  const mockAcknowledgment = {
-    checkComfyUIVersionChange: vi.fn(),
-    acknowledgmentState: computed(
-      () => ({}) as Partial<ConflictAcknowledgmentState>
-    ),
+  const mockAcknowledgment: ReturnType<typeof useConflictAcknowledgment> = {
+    acknowledgmentState: computed(() => ({
+      modal_dismissed: false,
+      red_dot_dismissed: false,
+      warning_banner_dismissed: false
+    })),
     shouldShowConflictModal: computed(() => false),
     shouldShowRedDot: computed(() => false),
     shouldShowManagerBanner: computed(() => false),
     dismissRedDotNotification: vi.fn(),
     dismissWarningBanner: vi.fn(),
     markConflictsAsSeen: vi.fn()
-  } as Partial<ReturnType<typeof useConflictAcknowledgment>> as ReturnType<
-    typeof useConflictAcknowledgment
-  >
+  }
 
   beforeEach(() => {
     pinia = createTestingPinia({ stubActions: false })
@@ -257,7 +255,7 @@ describe('useConflictDetection', () => {
     })
 
     it('should handle missing system stats gracefully', async () => {
-      mockSystemStatsStore.systemStats = null as never
+      mockSystemStatsStore.systemStats = null
 
       const { collectSystemEnvironment } = useConflictDetection()
       const environment = await collectSystemEnvironment()
@@ -281,7 +279,7 @@ describe('useConflictDetection', () => {
           id: 'test-pack',
           name: 'Test Pack',
           latest_version: { version: '1.0.0' }
-        } as components['schemas']['Node']
+        }
       ]
 
       mockInstalledPacksWithVersions.value = [
@@ -345,7 +343,7 @@ describe('useConflictDetection', () => {
         {
           id: 'banned-pack',
           name: 'Banned Pack'
-        } as components['schemas']['Node']
+        }
       ]
 
       mockInstalledPacksWithVersions.value = [
@@ -427,7 +425,7 @@ describe('useConflictDetection', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       const { conflicts } = checkNodeCompatibility({
         status: 'NodeStatusBanned'
-      } as components['schemas']['Node'])
+      })
 
       expect(conflicts.map((c) => c.type)).toContain('banned')
     })
@@ -436,7 +434,7 @@ describe('useConflictDetection', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       const { conflicts } = checkNodeCompatibility({
         status: 'NodeVersionStatusBanned'
-      } as components['schemas']['NodeVersion'])
+      })
 
       expect(conflicts.map((c) => c.type)).toContain('banned')
     })
@@ -445,7 +443,7 @@ describe('useConflictDetection', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       const { conflicts } = checkNodeCompatibility({
         status: 'NodeVersionStatusPending'
-      } as components['schemas']['NodeVersion'])
+      })
 
       const types = conflicts.map((c) => c.type)
       expect(types).toContain('pending')
@@ -458,7 +456,7 @@ describe('useConflictDetection', () => {
         status: 'NodeVersionStatusActive',
         supported_os: ['Linux'],
         supported_accelerators: ['CUDA']
-      } as components['schemas']['NodeVersion'])
+      })
 
       expect(checkOSCompatibility).toHaveBeenCalledWith(['Linux'], undefined)
       expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
