@@ -94,6 +94,8 @@ export interface SimplifiedWidget<
   spec?: InputSpecV2
 
   tooltip?: string
+
+  sourceWidget?: IBaseWidget
 }
 
 export interface SimplifiedControlWidget<
