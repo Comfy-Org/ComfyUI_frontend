@@ -87,7 +87,7 @@
       </div>
 
       <!-- Sort Options -->
-      <div class="flex justify-end px-6 pb-4">
+      <div v-if="isSortable" class="flex justify-end px-6 pb-4">
         <SingleSelect
           v-model="sortField"
           :label="$t('g.sort')"
@@ -173,7 +173,6 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -197,6 +196,7 @@ import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/u
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { PACK_SORTABLE_FIELDS } from '@/workbench/extensions/manager/utils/nodePackSort'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab
@@ -357,7 +357,6 @@ const searchMode = ref<SearchMode>(
 )
 const sortField = ref<string>(initialState.sortField)
 
-const { getSortableFields } = useRegistrySearchGateway()
 const packs = useRegistrySearch({
   query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
   searchMode
@@ -366,7 +365,7 @@ const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(() => toValue(packs.isLoading))
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
-const sortOptions = computed(() => getSortableFields())
+const sortOptions = PACK_SORTABLE_FIELDS
 
 const { isLegacyManagerSearch } = useLegacySearchTip(
   searchQuery,
@@ -378,13 +377,12 @@ const filterOptions = computed(() => [
   { name: t('g.nodes'), value: 'nodes' }
 ])
 
-const availableSortOptions = computed(() => {
-  if (!sortOptions.value) return []
-  return sortOptions.value.map((field) => ({
+const availableSortOptions = computed(() =>
+  sortOptions.map((field) => ({
     name: field.label,
     value: field.id
   }))
-})
+)
 
 const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
@@ -402,6 +400,7 @@ const isInitialLoad = computed(
 // Use the new composable for tab-based display packs
 const {
   displayPacks,
+  isSortable,
   isLoading: isTabLoading,
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)

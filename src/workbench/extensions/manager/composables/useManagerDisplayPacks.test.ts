@@ -9,14 +9,6 @@ type NodePack = components['schemas']['Node']
 
 const identity = (packs: NodePack[]) => packs
 
-vi.mock('@/services/gateway/registrySearchGateway', () => ({
-  useRegistrySearchGateway: () => ({
-    getSortValue: (pack: NodePack) => pack.downloads ?? 0,
-    getSortableFields: () => [
-      { id: 'downloads', label: 'Downloads', direction: 'desc' }
-    ]
-  })
-}))
 vi.mock(
   '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
   () => ({
@@ -69,4 +61,24 @@ describe('useManagerDisplayPacks', () => {
 
     expect(displayPacks.value.map((pack) => pack.id)).toEqual(['b', 'c', 'a'])
   })
+
+  it.for([
+    [ManagerTab.Missing, '', true],
+    [ManagerTab.AllInstalled, '', true],
+    [ManagerTab.Missing, 'controlnet', false],
+    [ManagerTab.All, '', false],
+    [ManagerTab.NotInstalled, '', false]
+  ] as const)(
+    '%s tab with query %o → isSortable %s',
+    ([tab, query, expected]) => {
+      const { isSortable } = useManagerDisplayPacks(
+        ref(tab),
+        ref(packs),
+        ref(query),
+        ref('downloads')
+      )
+
+      expect(isSortable.value).toBe(expected)
+    }
+  )
 })

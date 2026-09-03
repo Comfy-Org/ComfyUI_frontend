@@ -3,13 +3,16 @@ import { orderBy } from 'es-toolkit/compat'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import {
+  PACK_SORTABLE_FIELDS,
+  getPackSortValue
+} from '@/workbench/extensions/manager/utils/nodePackSort'
 import { getPackUpdateStatus } from '@/workbench/extensions/manager/utils/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
@@ -22,7 +25,6 @@ export function useManagerDisplayPacks(
 ) {
   const comfyManagerStore = useComfyManagerStore()
   const conflictDetectionStore = useConflictDetectionStore()
-  const { getSortValue, getSortableFields } = useRegistrySearchGateway()
 
   const {
     startFetchInstalled,
@@ -49,11 +51,14 @@ export function useManagerDisplayPacks(
     const field = toValue(sortField)
     if (!field || packs.length === 0) return packs
 
-    const sortableFields = getSortableFields()
-    const fieldConfig = sortableFields.find((f) => f.id === field)
+    const fieldConfig = PACK_SORTABLE_FIELDS.find((f) => f.id === field)
     const direction = fieldConfig?.direction || 'desc'
 
-    return orderBy(packs, [(pack) => getSortValue(pack, field)], [direction])
+    return orderBy(
+      packs,
+      [(pack) => getPackSortValue(pack, field)],
+      [direction]
+    )
   }
 
   // Filter functions
@@ -87,6 +92,14 @@ export function useManagerDisplayPacks(
     [ManagerTab.Workflow, ManagerTab.Missing].includes(
       tabType.value as ManagerTab
     )
+  )
+
+  // Sorting only applies to fully-fetched tabs with no active search; paged
+  // search/listing results (All, NotInstalled) are shown in the API's order.
+  const isSortable = computed(
+    () =>
+      isEmptySearch.value &&
+      (needsInstalledPacks.value || needsWorkflowPacks.value)
   )
 
   whenever(
@@ -184,6 +197,7 @@ export function useManagerDisplayPacks(
 
   return {
     displayPacks,
+    isSortable,
     isLoading,
     isLoadingInstalled,
     isLoadingWorkflow,

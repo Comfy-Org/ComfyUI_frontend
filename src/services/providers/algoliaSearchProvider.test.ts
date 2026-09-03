@@ -2,11 +2,7 @@ import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-
-type RegistryNodePack = components['schemas']['Node']
 
 type GlobalWithAlgolia = typeof globalThis & {
   __ALGOLIA_APP_ID__: string
@@ -264,111 +260,6 @@ describe('useAlgoliaSearchProvider', () => {
       // Same search should hit API again
       await provider.searchPacks('test', params)
       expect(mockSearchClient.search).toHaveBeenCalledTimes(2)
-    })
-  })
-
-  describe('getSortValue', () => {
-    const testPack: Partial<RegistryNodePack> = {
-      id: '1',
-      name: 'Test Pack',
-      downloads: 100,
-      publisher: { id: 'pub1', name: 'Publisher One' },
-      latest_version: {
-        version: '1.0.0',
-        createdAt: '2024-01-15T10:00:00Z'
-      },
-      created_at: '2024-01-01T10:00:00Z'
-    }
-
-    it('should return correct values for each sort field', () => {
-      const provider = useAlgoliaSearchProvider()
-
-      expect(
-        provider.getSortValue(testPack, SortableAlgoliaField.Downloads)
-      ).toBe(100)
-      expect(provider.getSortValue(testPack, SortableAlgoliaField.Name)).toBe(
-        'Test Pack'
-      )
-      expect(
-        provider.getSortValue(testPack, SortableAlgoliaField.Publisher)
-      ).toBe('Publisher One')
-
-      const createdTimestamp = new Date('2024-01-01T10:00:00Z').getTime()
-      expect(
-        provider.getSortValue(
-          testPack as RegistryNodePack,
-          SortableAlgoliaField.Created
-        )
-      ).toBe(createdTimestamp)
-
-      const updatedTimestamp = new Date('2024-01-15T10:00:00Z').getTime()
-      expect(
-        provider.getSortValue(testPack, SortableAlgoliaField.Updated)
-      ).toBe(updatedTimestamp)
-    })
-
-    it('should handle missing values', () => {
-      const incompletePack: Partial<RegistryNodePack> = {
-        id: '1',
-        name: 'Incomplete'
-      }
-      const provider = useAlgoliaSearchProvider()
-
-      expect(
-        provider.getSortValue(
-          incompletePack as RegistryNodePack,
-          SortableAlgoliaField.Downloads
-        )
-      ).toBe(0)
-      expect(
-        provider.getSortValue(
-          incompletePack as RegistryNodePack,
-          SortableAlgoliaField.Publisher
-        )
-      ).toBe('')
-      expect(
-        provider.getSortValue(
-          incompletePack as RegistryNodePack,
-          SortableAlgoliaField.Created
-        )
-      ).toBe(0)
-      expect(
-        provider.getSortValue(
-          incompletePack as RegistryNodePack,
-          SortableAlgoliaField.Updated
-        )
-      ).toBe(0)
-    })
-  })
-
-  describe('getSortableFields', () => {
-    it('should return all Algolia sort fields', () => {
-      const provider = useAlgoliaSearchProvider()
-      const fields = provider.getSortableFields()
-
-      expect(fields).toEqual([
-        {
-          id: SortableAlgoliaField.Downloads,
-          label: 'Downloads',
-          direction: 'desc'
-        },
-        {
-          id: SortableAlgoliaField.Created,
-          label: 'Created',
-          direction: 'desc'
-        },
-        {
-          id: SortableAlgoliaField.Updated,
-          label: 'Updated',
-          direction: 'desc'
-        },
-        {
-          id: SortableAlgoliaField.Publisher,
-          label: 'Publisher',
-          direction: 'asc'
-        },
-        { id: SortableAlgoliaField.Name, label: 'Name', direction: 'asc' }
-      ])
     })
   })
 
