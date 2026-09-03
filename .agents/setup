@@ -6,6 +6,8 @@ cd "$repo_root"
 
 if [[ "${AMP_ORB:-}" == 1 ]]; then
   gh auth setup-git
+  git config user.name 'Christian Byrne'
+  git config user.email 'cbyrne@comfy.org'
 
   if ! command -v docker >/dev/null 2>&1 ||
     ! command -v dockerd >/dev/null 2>&1; then
