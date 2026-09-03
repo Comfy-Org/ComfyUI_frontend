@@ -603,6 +603,7 @@ describe('useExecutionStore - workflowStatus', () => {
   }
 
   function callStoreJob(jobId: string, workflow: Workflow) {
+    store.registerJobWorkflowIdMapping(jobId, workflow.path)
     store.storeJob({
       nodes: ['1'],
       id: jobId,
@@ -1164,7 +1165,7 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastPromptError).toBeNull()
   })
 
-  it('does not route a known ambiguous job to the visible workflow', () => {
+  it('buffers a mapped job with an ambiguous path until storeJob', () => {
     const duplicateWorkflow = makeWorkflow('/workflows/c.json', graphBId)
     mockOpenWorkflows.value = [workflowA, workflowB, duplicateWorkflow]
     store.registerJobWorkflowIdMapping('job-ambiguous', graphBId)
@@ -1172,6 +1173,11 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-ambiguous')
 
     expect(errorStore.lastExecutionError).toBeNull()
+
+    callStoreJob('job-ambiguous', workflowB)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {

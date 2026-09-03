@@ -711,10 +711,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Resolved up front: resetExecutionState() drops the job's workflow entry
     // before the handlers below record anything.
     const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
-    const isKnownJob =
-      jobIdToWorkflow.has(e.detail.prompt_id) ||
-      jobIdToWorkflowId.value.has(e.detail.prompt_id)
-    if (runErrorKey === null && !isKnownJob) {
+    if (runErrorKey === null) {
       cancelPendingProgressUpdates()
       bufferPendingExecutionError({ detail: e.detail, endTime })
       return
@@ -725,7 +722,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function processExecutionError(
     detail: ExecutionErrorWsMessage,
-    runErrorKey: string | null,
+    runErrorKey: string,
     endTime: number
   ) {
     setWorkflowStatus(detail.prompt_id, {
@@ -990,9 +987,11 @@ export const useExecutionStore = defineStore('execution', () => {
   function flushPendingExecutionError(jobId: string) {
     const pending = pendingExecutionErrorsByJobId.get(jobId)
     if (!pending) return
-    pendingExecutionErrorsByJobId.delete(jobId)
 
     const runErrorKey = runErrorKeyForJob(jobId)
+    if (runErrorKey === null) return
+
+    pendingExecutionErrorsByJobId.delete(jobId)
     processExecutionError(pending.detail, runErrorKey, pending.endTime)
   }
 
