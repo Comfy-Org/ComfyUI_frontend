@@ -46,7 +46,7 @@ export interface RunApprovalPart {
 
 export type ActivityPart = ThinkingPart | ToolPart
 
-export type MessagePart =
+type MessagePart =
   | TextPart
   | ThinkingPart
   | ToolPart

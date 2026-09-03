@@ -30,7 +30,7 @@ const zAgentAskOption = z
   })
   .passthrough()
 
-export const zAgentPendingAsk = z
+const zAgentPendingAsk = z
   .object({
     message_id: z.string(),
     ask_id: z.string(),
@@ -49,7 +49,6 @@ export const zAgentPendingAsk = z
     allow_other: z.boolean()
   })
   .passthrough()
-export type AgentPendingAsk = z.infer<typeof zAgentPendingAsk>
 
 export const zAgentMessage = z
   .object({
