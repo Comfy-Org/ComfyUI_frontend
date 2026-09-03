@@ -1712,6 +1712,26 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('duplicateWorkflow', () => {
+    it('opens a distinct temporary workflow when duplicating repeatedly', async () => {
+      const workflowStore = useWorkflowStore()
+      const source = createModeTestWorkflow({
+        path: 'workflows/source.json'
+      })
+      source.changeTracker.activeState = makeWorkflowData()
+      workflowStore.createNewTemporary('source (Copy).json', makeWorkflowData())
+
+      await useWorkflowService().duplicateWorkflow(source)
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ id: expect.any(String) }),
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' })
+      )
+    })
+  })
+
   describe('afterLoadNewGraph', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let existingWorkflow: LoadedComfyWorkflow
