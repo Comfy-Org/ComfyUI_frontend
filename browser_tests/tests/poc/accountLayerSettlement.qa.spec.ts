@@ -1,11 +1,13 @@
 // eslint-disable-next-line no-restricted-imports -- staging has no local ComfyUI settings backend
 import { chromium, expect, test } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-13-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-14-frontend'
 
 async function waitForStableUrl(page: Page, stableMs = 1_500) {
   let previous = page.url()
@@ -70,23 +72,47 @@ async function requireAuthenticated(page: Page) {
   ).toBe('authenticated')
 }
 
+async function pauseBetweenFields() {
+  await new Promise((resolve) => setTimeout(resolve, 500))
+}
+
 async function fillCheckout(page: Page, card: string) {
   await page.waitForLoadState('domcontentloaded')
   await expect(page.getByText(/test mode|sandbox/i).first()).toBeVisible({
     timeout: 30_000
   })
   const email = page.locator('input[type=email]')
-  if (await email.isVisible()) await email.fill(process.env.E2E_EMAIL ?? '')
-  await page.getByRole('textbox', { name: 'Card number' }).fill(card)
-  await page.getByRole('textbox', { name: 'Expiration' }).fill('1234')
+  if (await email.isVisible()) {
+    await email.pressSequentially(process.env.E2E_EMAIL ?? '', { delay: 60 })
+    await pauseBetweenFields()
+  }
+  await page
+    .getByRole('textbox', { name: 'Card number' })
+    .pressSequentially(card, { delay: 60 })
+  await pauseBetweenFields()
+  await page
+    .getByRole('textbox', { name: 'Expiration' })
+    .pressSequentially('1234', { delay: 60 })
+  await pauseBetweenFields()
   await page
     .getByRole('textbox', { name: /Credit or debit card CVC\/CVV/ })
-    .fill('123')
+    .pressSequentially('123', { delay: 60 })
+  await pauseBetweenFields()
   await page
     .getByRole('textbox', { name: 'Cardholder name' })
-    .fill('Account Layer PoC')
+    .pressSequentially('Account Layer PoC', { delay: 60 })
+  await pauseBetweenFields()
   const postal = page.getByRole('textbox', { name: /ZIP|postal/i })
-  if (await postal.isVisible()) await postal.fill('94107')
+  if (await postal.isVisible()) {
+    await postal.pressSequentially('94107', { delay: 60 })
+    await pauseBetweenFields()
+  }
+  const saveInformation = page.getByRole('checkbox', {
+    name: /save my information/i
+  })
+  if (await saveInformation.isChecked().catch(() => false)) {
+    await saveInformation.uncheck()
+  }
   await page.locator('button[type=submit], .SubmitButton').first().click()
 }
 
@@ -100,11 +126,21 @@ function redactedOperation(body: unknown) {
 }
 
 test('completes hosted subscription and terminal operation polling', async () => {
-  test.setTimeout(300_000)
+  test.setTimeout(900_000)
   await mkdir(evidenceDir, { recursive: true })
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-14-'))
   const requests: string[] = []
   const operations: unknown[] = []
-  const context = await chromium.launchPersistentContext('', { headless: true })
+  const context = await chromium.launchPersistentContext(profileDir, {
+    channel: 'chrome',
+    headless: false,
+    viewport: null,
+    args: [
+      '--disable-blink-features=AutomationControlled',
+      '--start-maximized'
+    ],
+    ignoreDefaultArgs: ['--enable-automation']
+  })
   const page = context.pages()[0] ?? (await context.newPage())
   await page.addInitScript(() => {
     window.open = () => window
@@ -138,13 +174,22 @@ test('completes hosted subscription and terminal operation polling', async () =>
     const checkoutUrl = String(body.payment_method_url ?? body.action_url ?? '')
     expect(checkoutUrl).toContain('cs_test_')
     await page.goto(checkoutUrl)
-    await fillCheckout(page, '4242 4242 4242 4242')
+    await fillCheckout(page, '4242424242424242')
+    const captcha = page.getByText(/hcaptcha|verify you are human/i).first()
+    if (await captcha.isVisible().catch(() => false)) {
+      console.log(
+        'HUMAN: solve the captcha in the Chrome window on display :1 (waiting up to 600 s)'
+      )
+    }
     await page
-      .waitForURL(`${baseUrl}/payment/success**`, {
-        timeout: 45_000,
+      .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
+        timeout: 600_000,
         waitUntil: 'commit'
       })
-      .catch(async () => page.goto(`${baseUrl}/payment/success`))
+      .catch(async (error: unknown) => {
+        await page.screenshot({ path: `${evidenceDir}/captcha-hard-stop.png` })
+        throw error
+      })
     await expect
       .poll(() => operations.length, { timeout: 30_000 })
       .toBeGreaterThan(0)
@@ -174,5 +219,6 @@ test('completes hosted subscription and terminal operation polling', async () =>
     await page.screenshot({ path: `${evidenceDir}/subscription-succeeded.png` })
   } finally {
     await context.close()
+    await rm(profileDir, { recursive: true, force: true })
   }
 })
