@@ -207,11 +207,11 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('renders nothing when billing control is rolled back, even out of credits', () => {
+  it('does not gate out-of-credits on billing control', () => {
     state.billingControlEnabled = false
     state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
     renderBanner()
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
   })
 
   it('shows out-of-credits with an Add credits action for owners', async () => {
@@ -332,7 +332,7 @@ describe('BillingStatusBanner', () => {
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
-  it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
+  it('hides all billing banners when payment recovery is off', () => {
     state.v1PaymentRecovery = false
     paymentFailedState()
     const { unmount } = renderBanner()
@@ -343,7 +343,7 @@ describe('BillingStatusBanner', () => {
     state.billingStatus = 'paid'
     exhausted()
     renderBanner()
-    expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {

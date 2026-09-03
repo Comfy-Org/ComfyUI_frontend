@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
     fetchStatus: ReturnType<typeof vi.fn>
     fetchBalance: ReturnType<typeof vi.fn>
   } | null,
-  billingControlEnabled: null as { value: boolean } | null,
   v1PaymentRecovery: null as { value: boolean } | null
 }))
 
@@ -18,16 +17,11 @@ vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 vi.mock('@/composables/useFeatureFlags', async () => {
   const { ref } = await import('vue')
-  const billingControlEnabled = ref(true)
   const v1PaymentRecovery = ref(true)
-  mocks.billingControlEnabled = billingControlEnabled
   mocks.v1PaymentRecovery = v1PaymentRecovery
   return {
     useFeatureFlags: () => ({
       flags: {
-        get billingControlEnabled() {
-          return billingControlEnabled.value
-        },
         get v1PaymentRecovery() {
           return v1PaymentRecovery.value
         }
@@ -71,11 +65,10 @@ describe('useBillingBanner', () => {
     b.isTeamPlan.value = true
     b.billingStatus.value = 'paid'
     b.subscription.value = { hasFunds: true }
-    mocks.billingControlEnabled!.value = true
     mocks.v1PaymentRecovery!.value = true
   })
 
-  it('suppresses the banner entirely when billing control is rolled back', async () => {
+  it('suppresses the banner entirely when payment recovery is rolled back', async () => {
     const b = mocks.billing!
     const { kind } = useBillingBanner()
 
@@ -83,7 +76,7 @@ describe('useBillingBanner', () => {
     await nextTick()
     expect(kind.value).toBe('outOfCredits')
 
-    mocks.billingControlEnabled!.value = false
+    mocks.v1PaymentRecovery!.value = false
     await nextTick()
     expect(kind.value).toBeNull()
   })

@@ -14,7 +14,6 @@ export type BillingBannerKind =
   | 'ending'
 
 export interface BillingBannerInputs {
-  billingControlEnabled: boolean
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
   isLoaded: boolean
@@ -27,25 +26,19 @@ export interface BillingBannerInputs {
   outOfCreditsDismissed: boolean
 }
 
-// The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. Payment recovery and the existing billing-control
-// notices have independent rollout gates.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.isTeamPlan || !inputs.isLoaded) {
+  if (!inputs.v1PaymentRecovery || !inputs.isTeamPlan || !inputs.isLoaded) {
     return null
   }
 
-  if (inputs.v1PaymentRecovery) {
-    if (inputs.billingStatus === 'paused') return 'paused'
-    if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
-      return 'paymentFailed'
-    }
+  if (inputs.billingStatus === 'paused') return 'paused'
+  if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
+    return 'paymentFailed'
   }
 
   if (!inputs.isActiveSubscription) return null
-  if (!inputs.billingControlEnabled) return null
 
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
@@ -74,7 +67,6 @@ function useBillingBannerInternal() {
   const kind = computed<BillingBannerKind | null>(() => {
     if (!isCloud) return null
     return deriveBillingBanner({
-      billingControlEnabled: flags.billingControlEnabled,
       v1PaymentRecovery: flags.v1PaymentRecovery,
       isTeamPlan: isTeamPlan.value,
       isLoaded: subscription.value !== null,
