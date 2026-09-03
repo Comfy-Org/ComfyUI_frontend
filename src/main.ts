@@ -27,8 +27,10 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import {
+  clearAccountLayerPocExchangeError,
   createFrontendAccountClients,
-  getAccountLayerPocDebug
+  getAccountLayerPocDebug,
+  setAccountLayerPocExchangeError
 } from '@/platform/account/accountClient'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
@@ -179,12 +181,18 @@ Object.assign(window, { __accountLayerPoc: getAccountLayerPocDebug() })
 
 getAuth(firebaseApp).onAuthStateChanged(async (user) => {
   if (!user) {
+    clearAccountLayerPocExchangeError()
     void accountClients.session.clearSession()
     return
   }
-  await useTeamWorkspaceStore(pinia).initialize()
-  await accountClients.session.establishSession()
-  await accountClients.billing.refreshCredits()
+  clearAccountLayerPocExchangeError()
+  try {
+    await useTeamWorkspaceStore(pinia).initialize()
+    await accountClients.session.establishSession()
+    await accountClients.billing.refreshCredits()
+  } catch (error) {
+    setAccountLayerPocExchangeError(error)
+  }
 })
 
 if (isCloud && hasHostTelemetryBridge) {

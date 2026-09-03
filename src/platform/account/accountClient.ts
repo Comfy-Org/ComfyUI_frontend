@@ -15,6 +15,7 @@ import type {
 } from '@comfyorg/account/core'
 import { signOut } from 'firebase/auth'
 import type { Auth } from 'firebase/auth'
+import { readonly, shallowRef } from 'vue'
 
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
@@ -53,6 +54,18 @@ const debug: AccountLayerPocDebug = {
 }
 
 let scheduledRefresh: (() => void) | undefined
+const exchangeError = shallowRef<Error | null>(null)
+
+export const accountLayerPocExchangeError = readonly(exchangeError)
+
+export function setAccountLayerPocExchangeError(error: unknown) {
+  exchangeError.value =
+    error instanceof Error ? error : new Error('Account exchange failed')
+}
+
+export function clearAccountLayerPocExchangeError() {
+  exchangeError.value = null
+}
 
 function storageName(key: StorageKey): string {
   return `${key.namespace}:${key.userId}:${key.workspaceId}`
