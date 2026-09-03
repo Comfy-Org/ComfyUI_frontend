@@ -1,6 +1,45 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import {
+  resetLinkReveals,
+  setRevealedLinks
+} from '@/renderer/core/canvas/links/linkRevealState'
+import {
+  isRerouteVisibleForLinkDrag,
+  resolvePointerTarget
+} from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { toLinkId } from '@/types/linkId'
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetLinkReveals()
+})
+
+describe('isRerouteVisibleForLinkDrag', () => {
+  it('rejects only reroutes whose links are all hidden and unrevealed', () => {
+    const graph = new LGraph()
+    const link = new LLink(toLinkId(1), 'MODEL', 1, 0, 2, 0)
+    graph._addLink(link)
+    link.hidden = true
+    const reroute = graph.setReroute({ pos: [0, 0], linkIds: [] })
+    if (!reroute) throw new Error('Failed to create reroute')
+    link.parentId = reroute.id
+
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(false)
+
+    const owner = {}
+    setRevealedLinks(graph.rootGraph.id, [link.id], owner)
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
+
+    setRevealedLinks(graph.rootGraph.id, [], owner)
+    link.hidden = false
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
+  })
+})
 
 describe('resolvePointerTarget', () => {
   it('returns element from elementFromPoint when available', () => {
