@@ -315,6 +315,20 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FE-1902: a page reload adopts and rebinds the previous navigation record', () => {
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { type: 'reload' } as PerformanceNavigationTiming
+    ])
+    writeRawRecord({ docId: 'wf-1', nonce: 'previous-page-load' })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
+    expect(persistedRecord()?.nonce).not.toBe('previous-page-load')
+    unmount()
+  })
+
   it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
     const { unmount, workflowId } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })

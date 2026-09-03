@@ -457,6 +457,7 @@ function restorableWorkflowIdFor(tabPath: string): string | null {
   return persisted === peekPersistedDocId() ? persisted : null
 }
 const isBoundWorkflowActive = computed(() => {
+  if (workflowDetached.value) return false
   const active = workflowStore.activeWorkflow
   if (active === null) return false
   const bound = boundWorkflowId.value ?? restorableWorkflowIdFor(active.path)
