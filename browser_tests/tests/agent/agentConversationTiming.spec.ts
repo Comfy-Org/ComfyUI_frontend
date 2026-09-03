@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import { expectedGraphSnapshot } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 
 test.describe('Agent conversation replay timing', { tag: '@cloud' }, () => {
   test.use({
@@ -26,11 +25,6 @@ test.describe('Agent conversation replay timing', { tag: '@cloud' }, () => {
     expect(agentConversation.replayElapsedMs).toBeGreaterThanOrEqual(span!)
     await expect
       .poll(() => agentConversation.graphSnapshot())
-      .toEqual(
-        expectedGraphSnapshot(
-          agentConversation.conversation,
-          agentConversation.hostGraph()
-        )
-      )
+      .toEqual(agentConversation.expectedGraph())
   })
 })
