@@ -1254,6 +1254,7 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
+    "insertWorkflowFailed": "Failed to insert workflow",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow"

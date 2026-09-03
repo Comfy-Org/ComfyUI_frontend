@@ -769,7 +769,20 @@ export const useWorkflowService = () => {
   ) => {
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    const graph = adaptComfyWorkflowToSerialisableGraph(workflowJSON)
+    let graph: ReturnType<typeof adaptComfyWorkflowToSerialisableGraph>
+    try {
+      graph = adaptComfyWorkflowToSerialisableGraph(workflowJSON)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'workflow_insert_adaptation_failure'
+      })
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('workflowService.insertWorkflowFailed')
+      })
+      return
+    }
     const items = workflowToClipboardItems(graph)
     app.canvas._deserializeItems(items, options)
   }

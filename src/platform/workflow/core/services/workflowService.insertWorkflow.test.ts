@@ -2,11 +2,14 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { app } from '@/scripts/app'
@@ -56,6 +59,10 @@ vi.mock('@/platform/telemetry', () => ({
     trackWorkflowSaved: vi.fn(),
     trackEnterLinear: vi.fn()
   })
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
 }))
 
 vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
@@ -206,5 +213,28 @@ describe('insertWorkflow scratch graph isolation', () => {
       }),
       { position: [100, 200] }
     )
+  })
+
+  it('reports invalid subgraphs and surfaces the insertion failure', async () => {
+    const workflow = graphJson(createUuidv4(), 7)
+    Reflect.set(workflow, 'definitions', {
+      subgraphs: [{ version: 1 }]
+    })
+    const toastStore = useToastStore()
+    const addToastSpy = vi.spyOn(toastStore, 'add')
+
+    await expect(
+      useWorkflowService().insertWorkflow(stubWorkflow(workflow))
+    ).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+      errorType: 'workflow_insert_adaptation_failure'
+    })
+    expect(addToastSpy).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('workflowService.insertWorkflowFailed')
+    })
+    expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
   })
 })
