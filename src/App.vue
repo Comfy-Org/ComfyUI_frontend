@@ -2,6 +2,7 @@
   <router-view />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
+  <AccountLayerPoc />
 </template>
 
 <script setup lang="ts">
@@ -10,6 +11,7 @@ import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
+import AccountLayerPoc from '@/platform/account/AccountLayerPoc.vue'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'

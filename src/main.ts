@@ -1,4 +1,5 @@
 import { definePreset } from '@primevue/themes'
+import { billingClientKey } from '@comfyorg/account/vue'
 import Aura from '@primevue/themes/aura'
 import {
   browserApiErrorsIntegration,
@@ -6,6 +7,7 @@ import {
   init as sentryInit
 } from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -24,6 +26,10 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import {
+  createFrontendAccountClients,
+  getAccountLayerPocDebug
+} from '@/platform/account/accountClient'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -31,6 +37,7 @@ import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -162,6 +169,23 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+const accountClients = createFrontendAccountClients(
+  getAuth(firebaseApp),
+  () => useTeamWorkspaceStore(pinia).activeWorkspaceId
+)
+app.provide(billingClientKey, accountClients.billing)
+Object.assign(window, { __accountLayerPoc: getAccountLayerPocDebug() })
+
+getAuth(firebaseApp).onAuthStateChanged(async (user) => {
+  if (!user) {
+    void accountClients.session.clearSession()
+    return
+  }
+  await useTeamWorkspaceStore(pinia).initialize()
+  await accountClients.session.establishSession()
+  await accountClients.billing.refreshCredits()
+})
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
