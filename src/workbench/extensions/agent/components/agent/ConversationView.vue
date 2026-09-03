@@ -96,10 +96,11 @@ watch(
               :answering-ask-ids="answeringAskIds"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
-                (askId, selection) => emit('answerAsk', askId, selection)
+                (askId: string, selection: 'run' | 'cancel') =>
+                  emit('answerAsk', askId, selection)
               "
               @open-workflow="
-                (workflowId, workflowName) =>
+                (workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', workflowId, workflowName)
               "
             />
