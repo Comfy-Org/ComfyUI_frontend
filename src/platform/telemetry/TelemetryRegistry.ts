@@ -1,7 +1,12 @@
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
   AddCreditsClickMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -14,11 +19,19 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   OnboardingTourMetadata,
+  OnboardingTourNudgeMetadata,
+  OnboardingTourNudgeStage,
   OnboardingTourStage,
+  OnboardingTourStepMetadata,
+  OnboardingTourStepStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -41,6 +54,8 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
@@ -84,6 +99,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {
@@ -158,25 +185,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
 
-  startTopupTracking(): void {
-    this.dispatch((provider) => provider.startTopupTracking?.())
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return this.providers.some((provider) => {
-      try {
-        return provider.checkForCompletedTopup?.(events) ?? false
-      } catch (error) {
-        console.error('[Telemetry] Provider dispatch failed', error)
-        return false
-      }
-    })
-  }
-
-  clearTopupTracking(): void {
-    this.dispatch((provider) => provider.clearTopupTracking?.())
-  }
-
   trackSurvey(
     stage: 'opened' | 'submitted',
     responses?: SurveyResponses
@@ -185,10 +193,23 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   }
 
   trackOnboardingTour(
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
+  ): void
+  trackOnboardingTour(
     stage: OnboardingTourStage,
     metadata: OnboardingTourMetadata
   ): void {
-    this.dispatch((provider) => provider.trackOnboardingTour?.(stage, metadata))
+    this.dispatch((provider) => {
+      const track = provider.trackOnboardingTour as
+        | ((s: OnboardingTourStage, m: OnboardingTourMetadata) => void)
+        | undefined
+      track?.call(provider, stage, metadata)
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
@@ -313,8 +334,68 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
   }
 
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPanelOpened?.(metadata))
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPanelClosed?.(metadata))
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentEntryButtonClicked?.(metadata)
+    )
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.dispatch((provider) => provider.trackAgentCloseButtonClicked?.())
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
+  }
+
+  trackAgentAttachButtonClicked(): void {
+    this.dispatch((provider) => provider.trackAgentAttachButtonClicked?.())
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffMismatch?.(metadata)
+    )
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffSummary?.(metadata)
+    )
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

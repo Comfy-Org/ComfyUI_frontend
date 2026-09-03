@@ -157,6 +157,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph legacy node drag', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    // Legacy drags write to layoutStore every frame because registration is
+    // renderer-independent.
+    const nodePos = await comfyPage.page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is not available')
+
+      const { canvas } = app
+      const node = app.graph.nodes[0]
+      if (!node) throw new Error('Graph has no nodes')
+
+      canvas.ds.scale = 1
+      canvas.centerOnNode(node)
+      const [x, y] = app.canvasPosToClientPos(node.pos)
+      return { id: node.id, x, y, graphX: node.pos[0] }
+    })
+    await comfyPage.nextFrame()
+
+    await comfyPage.perf.startMeasuring()
+
+    await comfyPage.page.mouse.move(nodePos.x + 40, nodePos.y + 10)
+    await comfyPage.page.mouse.down()
+    for (let i = 0; i < 60; i++) {
+      await comfyPage.page.mouse.move(
+        nodePos.x + 40 + i * 4,
+        nodePos.y + 10 + i * 2
+      )
+      await comfyPage.nextFrame()
+    }
+    await comfyPage.page.mouse.up()
+
+    const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
+    recordMeasurement(m)
+
+    // Verify the measured interaction was a node drag, not a canvas pan.
+    const movedX = await comfyPage.page.evaluate((id) => {
+      const node = window.app?.graph.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      return node.pos[0]
+    }, nodePos.id)
+    expect(movedX).not.toBeCloseTo(nodePos.graphX, 0)
+
+    console.log(
+      `Legacy node drag: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
   test('large graph zoom interaction', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
@@ -319,34 +369,99 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     })
 
-    test('zoom out culling', async ({ comfyPage }) => {
-      await comfyPage.perf.startMeasuring()
+    test('node resize workload', async ({ comfyPage }) => {
+      const nodeCount = await comfyPage.page
+        .locator('[data-node-id]')
+        .evaluateAll((elements) => {
+          const nodes = elements.slice(0, 100) as HTMLElement[]
+          for (const node of nodes) {
+            node.dataset.perfOriginalWidth = node.style.width
+            node.dataset.perfWidth = `${node.getBoundingClientRect().width}px`
+          }
+          return nodes.length
+        })
+      expect(nodeCount).toBe(100)
 
-      // Zoom out far enough that nodes become < 4px screen size
-      // (triggers size-based culling in isNodeInViewport)
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(100)
+      await comfyPage.perf.startMeasuring()
+      for (let index = 0; index < 10; index++) {
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              const width = Number.parseFloat(element.dataset.perfWidth ?? '')
+              element.style.width = `${width + 1}px`
+            }
+          })
+        await comfyPage.nextFrame()
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              element.style.width = element.dataset.perfWidth ?? ''
+            }
+          })
+        await comfyPage.nextFrame()
       }
 
-      // Verify we actually entered the culling regime.
-      // isNodeTooSmall triggers when max(width, height) * scale < 4px.
-      // Typical nodes are ~200px wide, so scale must be < 0.02.
-      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
+      const measurement = await comfyPage.perf.stopMeasuring(
+        'vue-node-resize-workload'
+      )
+      recordMeasurement(measurement)
 
-      // Idle at extreme zoom-out — most nodes should be culled
+      await comfyPage.page
+        .locator('[data-perf-width]')
+        .evaluateAll((elements) => {
+          for (const element of elements as HTMLElement[]) {
+            element.style.width = element.dataset.perfOriginalWidth ?? ''
+            delete element.dataset.perfOriginalWidth
+            delete element.dataset.perfWidth
+          }
+        })
+    })
+
+    test('zoom out idle', async ({ comfyPage }) => {
+      // This test previously claimed to measure size-based culling
+      // (isNodeTooSmall / isNodeInViewport) and asserted scale < 0.02.
+      // No such culling exists in production source: GraphCanvas.vue mounts
+      // every Vue node from allNodes at any zoom, and the only
+      // isNodeTooSmall / isNodeInViewport matches in the repo are stale
+      // comments in this file. The helper sent wheel events over an overlay,
+      // leaving the workflow's 0.5 scale unchanged; the old <0.02 assertion
+      // was also below the real ds.min_scale clamp (0.1). This kept the perf
+      // job red and the baseline pipeline dead (issue #15545).
+      //
+      // Until renderer-owned LOD lands (PR #15031 replaces Vue widget DOM
+      // below the readable-font threshold, reachable at production zoom),
+      // this measures the honest current behavior: frame cost at maximum
+      // supported zoom-out with all Vue node DOM still mounted.
+      // Zoom out to the ds.min_scale clamp (0.1) before measuring so the
+      // metric captures only idle frames at minimum scale, not zoom
+      // input/render cost.
+      const box = await comfyPage.canvas.boundingBox()
+      if (!box) throw new Error('Canvas bounding box not available')
+      await comfyPage.page.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+      for (let i = 0; i < 20; i++) {
+        await comfyPage.page.mouse.wheel(0, 100)
+        await comfyPage.nextFrame()
+      }
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeCloseTo(0.1, 5)
+
+      await comfyPage.perf.startMeasuring()
+
+      // Idle at maximum zoom-out with everything mounted.
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
-      // Zoom back in
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(-100)
-      }
-
-      const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
+      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
       recordMeasurement(m)
       console.log(
-        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
       )
     })
   })

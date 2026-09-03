@@ -6,14 +6,17 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -64,6 +67,7 @@ export function useDowngradeToPersonal() {
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
+  const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
   const removableMembers = computed(() => {
@@ -78,7 +82,11 @@ export function useDowngradeToPersonal() {
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
 
   function ensureCanDowngrade(): void {
-    if (!permissions.value.canDowngradeToPersonal) {
+    if (
+      !(isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
+    ) {
       throw new Error(t('subscription.downgrade.notAllowed'))
     }
   }
@@ -149,8 +157,10 @@ export function useDowngradeToPersonal() {
     let memberRemovalFailures = 0
     let targetTier: TierKey | undefined
     let targetCycle: BillingCycle | undefined
-    let telemetryFailure: BillingFailure = { failure_category: 'unknown' }
+    let telemetryFailure: BillingFailure | undefined
+    let checkoutStartedAt: number | undefined
 
+    const downgradeStartedAt = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'downgrade_to_personal',
       stage: 'started',
@@ -160,13 +170,35 @@ export function useDowngradeToPersonal() {
     })
 
     function trackSucceeded() {
+      const now = Date.now()
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
-        target_tier: targetTier
+        target_tier: targetTier,
+        duration_ms: now - downgradeStartedAt
+      })
+      if (checkoutStartedAt === undefined) return
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change',
+        duration_ms: now - checkoutStartedAt
+      })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'subscription',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change',
+        duration_ms: now - checkoutStartedAt
       })
     }
 
@@ -182,10 +214,9 @@ export function useDowngradeToPersonal() {
         )
       }
       ensureCanDowngrade()
-      targetTier =
-        preview.new_plan?.tier && preview.new_plan.tier !== 'TEAM'
-          ? TIER_TO_KEY[preview.new_plan.tier]
-          : undefined
+      targetTier = preview.new_plan?.tier
+        ? (toTierKey(preview.new_plan.tier) ?? undefined)
+        : undefined
       targetCycle = preview.new_plan
         ? preview.new_plan.duration === 'ANNUAL'
           ? 'yearly'
@@ -222,7 +253,7 @@ export function useDowngradeToPersonal() {
         } catch (error) {
           memberRemovalFailures += 1
           telemetryFailure = {
-            failure_category: 'unknown',
+            failure_category: categorizeBillingApiError(error),
             error_code: 'member_removal_failed'
           }
           throw new Error(
@@ -235,6 +266,24 @@ export function useDowngradeToPersonal() {
       }
 
       ensureCanDowngrade()
+      checkoutStartedAt = Date.now()
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'started',
+        outcome: 'pending',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change'
+      })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'subscription',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change'
+      })
       let response: SubscribeResponse | void
       try {
         response = await subscribe(planSlug, {
@@ -294,8 +343,10 @@ export function useDowngradeToPersonal() {
             downgradeToPersonal: {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
-              targetTier
-            }
+              targetTier,
+              startedAt: downgradeStartedAt
+            },
+            attemptStartedAt: checkoutStartedAt
           }
         )
         return null
@@ -312,8 +363,10 @@ export function useDowngradeToPersonal() {
             downgradeToPersonal: {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
-              targetTier
-            }
+              targetTier,
+              startedAt: downgradeStartedAt
+            },
+            attemptStartedAt: checkoutStartedAt
           }
         )
         return null
@@ -322,6 +375,10 @@ export function useDowngradeToPersonal() {
       trackSucceeded()
       return { preview, response }
     } catch (error) {
+      const failure = telemetryFailure ?? {
+        failure_category: categorizeBillingApiError(error)
+      }
+      const now = Date.now()
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
@@ -329,8 +386,32 @@ export function useDowngradeToPersonal() {
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
         target_tier: targetTier,
-        ...telemetryFailure
+        ...failure,
+        duration_ms: now - downgradeStartedAt
       })
+      if (checkoutStartedAt !== undefined) {
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: targetTier,
+          cycle: targetCycle,
+          checkout_type: 'change',
+          ...failure,
+          duration_ms: now - checkoutStartedAt
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'subscription',
+          tier: targetTier,
+          cycle: targetCycle,
+          checkout_type: 'change',
+          ...failure,
+          duration_ms: now - checkoutStartedAt
+        })
+      }
       throw error
     }
   }

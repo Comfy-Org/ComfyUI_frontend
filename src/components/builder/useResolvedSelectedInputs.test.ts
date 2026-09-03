@@ -1,13 +1,13 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
@@ -61,12 +61,7 @@ function dispatchRootGraphEvent(type: string) {
 
 describe('useResolvedSelectedInputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     setRootGraphNodes([])
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('re-resolves selections after a convert-to-subgraph event removes nodes from the root graph', () => {
@@ -121,6 +116,29 @@ describe('useResolvedSelectedInputs', () => {
       node,
       displayName: 'seed',
       widget: { name: 'seed', label: 'renamed_seed', widgetId: entitySeed }
+    })
+  })
+
+  it('resolves duplicate names by exact widget id', () => {
+    const firstId = widgetId(rootGraphId, toNodeId(1), 'duplicate')
+    const secondId = widgetId(rootGraphId, toNodeId(1), 'duplicate#1')
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      inputs: [],
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'duplicate', widgetId: firstId },
+        { name: 'duplicate', widgetId: secondId }
+      ]
+    })
+    setRootGraphNodes([node])
+    useAppModeStore().selectedInputs = [[secondId, 'second']]
+
+    const resolved = useResolvedSelectedInputs()
+
+    expect(resolved.value[0]).toMatchObject({
+      status: 'resolved',
+      widget: { widgetId: secondId }
     })
   })
 })

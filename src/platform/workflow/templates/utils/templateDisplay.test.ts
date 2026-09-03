@@ -5,7 +5,8 @@ import {
   filterTemplatesByType,
   getProviderBadges,
   getProviderIconClass,
-  getTemplateTags
+  getTemplateTags,
+  isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'
 
 function template(overrides: Partial<TemplateInfo> = {}): TemplateInfo {
@@ -126,10 +127,43 @@ describe('getProviderBadges', () => {
   })
 })
 
+describe('isAppTemplate', () => {
+  it('reads the isApp flag rather than the filename', () => {
+    expect(isAppTemplate(template({ name: 'anything', isApp: true }))).toBe(
+      true
+    )
+    expect(isAppTemplate(template({ name: 'anything' }))).toBe(false)
+  })
+
+  // The suffix records how a workflow was saved, not what it is, so it was wrong
+  // in both directions against templates/index.json.
+  it('does not treat a .app filename as an App on its own', () => {
+    expect(
+      isAppTemplate(
+        template({ name: 'templates_all_in_one_image_edit_models.app' })
+      )
+    ).toBe(false)
+  })
+
+  it('recognises an App whose name has no .app suffix', () => {
+    expect(
+      isAppTemplate(
+        template({ name: 'template_qwen_image_illustration_lora', isApp: true })
+      )
+    ).toBe(true)
+  })
+
+  it('treats an explicit false as a node graph', () => {
+    expect(isAppTemplate(template({ name: 'thing.app', isApp: false }))).toBe(
+      false
+    )
+  })
+})
+
 describe('filterTemplatesByType', () => {
   const templates = [
     template({ name: 'graph-one' }),
-    template({ name: 'thing.app' }),
+    template({ name: 'thing.app', isApp: true }),
     template({ name: 'graph-two' })
   ]
 

@@ -73,7 +73,9 @@ test.describe('Node search box', { tag: '@node' }, () => {
     const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
-    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
+      exact: true
+    })
     await waitForSearchInsertion(comfyPage, initialNodeCount)
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })

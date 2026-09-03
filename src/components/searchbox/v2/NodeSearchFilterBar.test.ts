@@ -14,7 +14,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     setupTestPinia()
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []

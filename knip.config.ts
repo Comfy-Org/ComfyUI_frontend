@@ -7,16 +7,22 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
+        'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
-        'src/storybook/mocks/**/*.ts'
+        'src/storybook/mocks/**/*.ts',
+        'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/vitestCleanup.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
-    },
-    'apps/desktop-ui': {
-      entry: ['src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}']
+      project: [
+        '**/*.{js,ts,vue}',
+        '*.{js,ts,mts}',
+        '!.claude/**',
+        '!worktrees/**',
+        '!src/__ecs_matrix__/**'
+      ],
+      ignore: ['scripts/registry-census/detection-proof/**']
     },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
@@ -35,21 +41,23 @@ const config: KnipConfig = {
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
+    },
+    'tools/test-recorder': {
+      project: ['src/**/*.ts']
     }
   },
+  ignoreBinaries: [
+    // Optional host tool the recorder probes for and degrades without
+    'xcode-select'
+  ],
   ignoreDependencies: [
     // Weird importmap things
-    '@iconify/json',
-    '@primeuix/forms',
-    '@primeuix/styled',
-    '@primevue/icons'
+    '@iconify/json'
   ],
   ignore: [
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Workflow files contain license names that knip misinterprets as binaries
-    '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
@@ -73,7 +81,7 @@ const config: KnipConfig = {
     config: ['vitest?(.*).config.ts'],
     entry: [
       '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
-      '**/__mocks__/**/*.[jt]s?(x)'
+      '**/__mocks__/**/*.{js,ts,vue}'
     ]
   },
   playwright: {

@@ -3,7 +3,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -110,10 +110,6 @@ function renderBaseTerminal(props: Record<string, unknown> = {}) {
 }
 
 describe('BaseTerminal', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('emits created event on mount', () => {
     const onCreated = vi.fn()
     renderBaseTerminal({ onCreated })

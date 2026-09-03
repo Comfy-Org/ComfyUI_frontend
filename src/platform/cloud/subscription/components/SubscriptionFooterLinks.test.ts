@@ -2,14 +2,26 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
+}))
+
+vi.mock('@/config/comfyApi', () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -30,7 +42,6 @@ vi.mock(
   () => ({
     useSubscriptionActions: () => ({
       isLoadingSupport: ref(false),
-      handleLearnMoreClick: state.handleLearnMoreClick,
       handleMessageSupport: state.handleMessageSupport
     })
   })
@@ -42,18 +53,21 @@ const i18n = createI18n({
   messages: {
     en: {
       subscription: {
-        learnMore: 'Learn more',
+        plansAndPricing: 'Plans & pricing',
         partnerNodesPricingTable: 'Partner Nodes pricing',
         messageSupport: 'Message support',
-        invoiceHistory: 'Invoice history'
+        invoiceHistory: 'Invoice history',
+        fullUsageActivity: 'Full usage activity'
       }
     }
   }
 })
 
-function renderComponent(showInvoiceHistory?: boolean) {
+function renderComponent(
+  props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
+) {
   return render(SubscriptionFooterLinks, {
-    props: showInvoiceHistory === undefined ? {} : { showInvoiceHistory },
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -69,11 +83,53 @@ function renderComponent(showInvoiceHistory?: boolean) {
 
 describe('SubscriptionFooterLinks', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    state.isCloud = true
   })
 
-  it('keeps Invoice history visible by default for legacy billing', async () => {
+  it('emits viewPlans from the plans link only when enabled', async () => {
     const user = userEvent.setup()
+    const { emitted, rerender } = renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Plans & pricing' })
+    ).not.toBeInTheDocument()
+
+    await rerender({ showPlansLink: true })
+    await user.click(screen.getByRole('button', { name: 'Plans & pricing' }))
+
+    expect(emitted()).toHaveProperty('viewPlans')
+  })
+
+  it('renders working support links without a duplicate invoice action', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Invoice history' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Message support' })
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Message support' }))
+    expect(state.handleMessageSupport).toHaveBeenCalledOnce()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    )
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://docs.comfy.org/partner-nodes',
+      '_blank'
+    )
+  })
+
+  it('keeps Invoice history working outside the cloud distribution', async () => {
+    const user = userEvent.setup()
+    state.isCloud = false
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
@@ -81,15 +137,37 @@ describe('SubscriptionFooterLinks', () => {
     expect(state.manageSubscription).toHaveBeenCalledOnce()
   })
 
-  it('hides Invoice history without opening the payment portal', () => {
-    renderComponent(false)
+  it('hides Invoice history from local users without billing permission', () => {
+    state.isCloud = false
+    renderComponent({ showInvoiceHistory: false })
 
     expect(
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Learn more' })
-    ).toBeInTheDocument()
     expect(state.manageSubscription).not.toHaveBeenCalled()
+  })
+
+  it('opens the platform usage page', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Full usage activity' })
+    )
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://platform.comfy.org/profile/usage',
+      '_blank',
+      'noopener'
+    )
+  })
+
+  it('hides Full usage activity when the caller opts out', () => {
+    renderComponent({ showUsageActivity: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Full usage activity' })
+    ).not.toBeInTheDocument()
   })
 })

@@ -75,8 +75,6 @@ describe('ComfyApi realtime socket reset', () => {
 
   afterEach(() => {
     api.socket = null
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
   })
 
   it('closes the previous socket and opens a fresh one on reset', async () => {

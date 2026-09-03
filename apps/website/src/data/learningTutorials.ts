@@ -5,43 +5,71 @@ import type {
   TranslationKey
 } from '../i18n/translations'
 
+import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
 
-export type LearningCategory = 'vfx' | 'animations' | 'ads'
+export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'
 
-export interface LearningTutorial {
+interface TutorialAuthor {
+  name: LocalizedText
+  /** Secondary line, e.g. "Studio · 1.2M subscribers". */
+  detail?: LocalizedText
+  avatar?: string
+}
+
+interface LearningTutorialBase {
   id: string
   /** Kebab-case, human-readable — the SEO slug in /learning/<category>/<slug>. */
   slug: string
   category: LearningCategory
+  /** 1-based episode number within its category; drives "Episode N". */
+  episode: number
   tags: readonly TranslationKey[]
   title: LocalizedText
   /** Optional authored copy; when absent the detail page uses a template. */
   description?: LocalizedText
-  videoSrc: string
   href?: string
+  /** CTA button label; defaults to "Try Workflow" when omitted. */
+  ctaLabelKey?: TranslationKey
   /** Open the workflow link in a new tab (e.g. cloud.comfy.org). */
   newTab?: boolean
   poster: string
   caption?: readonly VideoTrack[]
   /** ISO date the video was uploaded; feeds VideoObject.uploadDate. */
   publishedDate: string
+  /** Shown on the watch page's author card; the card hides when absent. */
+  author?: TutorialAuthor
 }
+
+/** Exactly one video source: a self-hosted MP4 or a YouTube embed, never both. */
+type LearningVideoSource =
+  | { videoSrc: string; youtubeId?: never }
+  | { youtubeId: string; videoSrc?: never }
+
+/**
+ * A tutorial plays from exactly one source. Self-hosted items set `videoSrc`
+ * (an MP4 rendered via `<video>`); YouTube items set `youtubeId` (embedded in
+ * an iframe on the watch page).
+ */
+export type LearningTutorial = LearningTutorialBase & LearningVideoSource
 
 /** Category slugs, in nav order — also drives the /learning/[slug] routes. */
 export const learningCategories: readonly LearningCategory[] = [
+  'basics',
   'vfx',
   'animations',
   'ads'
 ]
 
 export const categoryLabelKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics',
   vfx: 'learning.categories.vfx',
   animations: 'learning.categories.animations',
   ads: 'learning.categories.ads'
 }
 
 export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.blurb',
   vfx: 'learning.categories.vfx.blurb',
   animations: 'learning.categories.animations.blurb',
   ads: 'learning.categories.ads.blurb'
@@ -49,16 +77,34 @@ export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
 
 /** Per-vertical h1 (the "All" view falls back to the generic learning title). */
 const categoryHeadingKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.heading',
   vfx: 'learning.categories.vfx.heading',
   animations: 'learning.categories.animations.heading',
   ads: 'learning.categories.ads.heading'
 }
 
-/** Per-vertical lead-in, reused as the page description / meta description. */
+/** Per-vertical visible lead-in under the h1. */
 const categoryDescriptionKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.description',
   vfx: 'learning.categories.vfx.description',
   animations: 'learning.categories.animations.description',
   ads: 'learning.categories.ads.description'
+}
+
+/** Per-vertical document title, decoupled from the h1 so SERP copy can carry
+ * the queries searchers actually use without changing the page design. */
+const categoryMetaTitleKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.metaTitle',
+  vfx: 'learning.categories.vfx.metaTitle',
+  animations: 'learning.categories.animations.metaTitle',
+  ads: 'learning.categories.ads.metaTitle'
+}
+
+const categoryMetaDescriptionKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.metaDescription',
+  vfx: 'learning.categories.vfx.metaDescription',
+  animations: 'learning.categories.animations.metaDescription',
+  ads: 'learning.categories.ads.metaDescription'
 }
 
 /** Visible h1 for a directory page: per-vertical when filtered, else generic. */
@@ -68,7 +114,7 @@ export const learningHeading = (
 ): string =>
   t(category ? categoryHeadingKeys[category] : 'learning.title', locale)
 
-/** Lead-in and meta description for a directory page. */
+/** Visible lead-in for a directory page. */
 export const learningDescription = (
   locale: Locale,
   category?: LearningCategory
@@ -79,7 +125,38 @@ export const learningDescription = (
 export const learningMetaTitle = (
   locale: Locale,
   category?: LearningCategory
-): string => `${learningHeading(locale, category)} - Comfy`
+): string =>
+  t(category ? categoryMetaTitleKeys[category] : 'learning.metaTitle', locale)
+
+/** Meta description for a directory page, written for the SERP rather than
+ * reusing the visible lead-in. */
+export const learningMetaDescription = (
+  locale: Locale,
+  category?: LearningCategory
+): string =>
+  t(
+    category
+      ? categoryMetaDescriptionKeys[category]
+      : 'learning.metaDescription',
+    locale
+  )
+
+/** Meta keywords for the root directory page only. */
+export const learningKeywords = (
+  category?: LearningCategory
+): string[] | undefined =>
+  category
+    ? undefined
+    : [
+        'comfyui tutorial',
+        'comfyui tutorials',
+        'learn comfyui',
+        'comfyui course',
+        'comfyui training',
+        'comfyui basics',
+        'comfyui vfx',
+        'comfyui animation'
+      ]
 
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
@@ -97,13 +174,155 @@ const backgroundsTag: TranslationKey = 'tags.backgrounds'
 const threeDTag: TranslationKey = 'tags.threeD'
 const inBetweeningTag: TranslationKey = 'tags.inBetweening'
 const compositingTag: TranslationKey = 'tags.compositing'
+const fundamentalsTag: TranslationKey = 'tags.fundamentals'
+const nodeGraphTag: TranslationKey = 'tags.nodeGraph'
+const loraTag: TranslationKey = 'tags.lora'
+const controlNetTag: TranslationKey = 'tags.controlNet'
+const textToImageTag: TranslationKey = 'tags.textToImage'
+const imageToImageTag: TranslationKey = 'tags.imageToImage'
+const inpaintingTag: TranslationKey = 'tags.inpainting'
+const outpaintingTag: TranslationKey = 'tags.outpainting'
+const upscalingTag: TranslationKey = 'tags.upscaling'
+const motionControlTag: TranslationKey = 'tags.motionControl'
+
+const dougHogan: TutorialAuthor = {
+  name: { en: 'Doug Hogan', 'zh-CN': 'Doug Hogan' },
+  avatar: 'https://media.comfy.org/website/authors/doug-hogan.jpeg'
+}
+
+const shaneFu: TutorialAuthor = {
+  name: { en: 'Shane Fu', 'zh-CN': 'Shane Fu' },
+  avatar: 'https://media.comfy.org/website/authors/shane-fu.jpeg'
+}
 
 export const learningTutorials: readonly LearningTutorial[] = [
+  {
+    id: 'basics_node_graph',
+    publishedDate: '2026-07-31',
+    slug: 'full-node-graph-basics',
+    category: 'basics',
+    episode: 1,
+    author: dougHogan,
+    youtubeId: 'TQhIYT1ZYGQ',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Full Node Graph Basics (2026)',
+      'zh-CN': 'ComfyUI 新手教程：完整节点图基础 (2026)'
+    },
+    description: {
+      en: "A beginner's tour of the ComfyUI node graph: how nodes, links, and the run queue fit together to build your first working pipeline.",
+      'zh-CN':
+        '面向初学者的 ComfyUI 节点图入门：了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/full-node-graph-basics-thumb.jpg',
+    href: externalLinks.cloudCta('learning_basics_node_graph'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, nodeGraphTag]
+  },
+  {
+    id: 'basics_text_to_image',
+    publishedDate: '2026-08-13',
+    slug: 'text-to-image-image-to-image',
+    category: 'basics',
+    episode: 2,
+    author: dougHogan,
+    youtubeId: 'uafAN8zLKD8',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Text-to-Image & Image-to-Image Workflows (2026)',
+      'zh-CN': 'ComfyUI 新手教程：文生图与图生图工作流 (2026)'
+    },
+    description: {
+      en: 'Build your first text-to-image workflow, then adapt it for image-to-image: prompts, samplers, denoise strength, and when to reach for each.',
+      'zh-CN':
+        '搭建你的第一条文生图工作流，再将它改造为图生图：提示词、采样器、去噪强度，以及各自的适用场景。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/text-to-image-image-to-image-thumb.jpg',
+    href: externalLinks.cloudCta('learning_basics_text_to_image'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, textToImageTag, imageToImageTag]
+  },
+  {
+    id: 'basics_loras_style_controlnets',
+    publishedDate: '2026-08-17',
+    slug: 'loras-style-transfer-controlnets',
+    category: 'basics',
+    episode: 3,
+    author: dougHogan,
+    youtubeId: '-igiHGaxKek',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: LoRAs, Style Transfer & ControlNets (2026)',
+      'zh-CN': 'ComfyUI 新手教程：LoRA、风格迁移与 ControlNet (2026)'
+    },
+    description: {
+      en: 'Go further with LoRAs, style transfer, and ControlNets: what each one does and how to wire them into a ComfyUI workflow.',
+      'zh-CN':
+        '进阶了解 LoRA、风格迁移与 ControlNet：各自的作用，以及如何将它们接入 ComfyUI 工作流。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/loras-style-transfer-controlnets-thumb.jpg',
+    href: externalLinks.cloudCta('learning_basics_loras'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, loraTag, controlNetTag, styleTransferTag]
+  },
+  {
+    id: 'basics_inpainting',
+    publishedDate: '2026-08-31',
+    slug: 'inpainting-outpainting-upscaling',
+    category: 'basics',
+    episode: 4,
+    author: dougHogan,
+    youtubeId: 'hFCuhcm37uY',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Inpainting, Outpainting & Upscaling (2026)',
+      'zh-CN': 'ComfyUI 新手教程：局部重绘、扩图与放大 (2026)'
+    },
+    description: {
+      en: 'Edit and enlarge images in ComfyUI: mask and repaint with inpainting, extend the frame with outpainting, and add resolution with upscaling.',
+      'zh-CN':
+        '在 ComfyUI 中编辑与放大图像：用局部重绘遮罩改图，用扩图扩展画面，再通过放大提升分辨率。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/inpainting-outpainting-upscaling-thumb.jpg',
+    href: externalLinks.cloudCta('learning_basics_inpainting'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, inpaintingTag, outpaintingTag, upscalingTag]
+  },
+  {
+    id: 'basics_image_to_video',
+    publishedDate: '2026-09-02',
+    slug: 'image-to-video-motion-control-upscaling',
+    category: 'basics',
+    episode: 5,
+    author: dougHogan,
+    youtubeId: 'Yuw8F4E4-7Y',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Image-to-Video, Motion Control & Upscaling (2026)',
+      'zh-CN': 'ComfyUI 新手教程：图生视频、运动控制与放大 (2026)'
+    },
+    description: {
+      en: 'Turn a still into a shot: build an image-to-video workflow, steer the result with motion control, and finish at higher resolution with upscaling.',
+      'zh-CN':
+        '让静态图动起来：搭建图生视频工作流，用运动控制引导镜头表现，再通过放大以更高分辨率输出。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/image-to-video-motion-control-upscaling-thumb.png',
+    href: externalLinks.cloudCta('learning_basics_image_to_video'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, imageToVideoTag, motionControlTag, upscalingTag]
+  },
   {
     id: 'cleanplate_walkthrough_v03',
     publishedDate: '2026-05-26',
     slug: 'cleanplate-walkthrough',
     category: 'vfx',
+    episode: 1,
+    author: dougHogan,
     title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
     videoSrc:
       'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03.mp4',
@@ -125,6 +344,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'deaging-workflow',
     category: 'vfx',
+    episode: 2,
+    author: dougHogan,
     title: { en: 'Deaging Workflow', 'zh-CN': '减龄工作流' },
     videoSrc:
       'https://media.comfy.org/website/learning/deaging_workflow_v03.mp4',
@@ -146,6 +367,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'frame-adjustments',
     category: 'vfx',
+    episode: 3,
+    author: dougHogan,
     title: { en: 'Frame Adjustments Demo', 'zh-CN': '帧调整演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/frame_adjustments_demo_v03.mp4',
@@ -168,6 +391,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'mattes-and-utilities',
     category: 'vfx',
+    episode: 4,
+    author: dougHogan,
     title: { en: 'Mattes and Utilities', 'zh-CN': '遮罩与实用工具' },
     videoSrc:
       'https://media.comfy.org/website/learning/mattes_and_utilities_v03.mp4',
@@ -190,6 +415,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'seedance-demo',
     category: 'vfx',
+    episode: 5,
+    author: dougHogan,
     title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03.mp4',
@@ -212,6 +439,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'sky-replacement',
     category: 'vfx',
+    episode: 6,
+    author: dougHogan,
     title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
     videoSrc:
       'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4',
@@ -233,11 +462,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'character-sheet',
     category: 'animations',
+    episode: 1,
+    author: shaneFu,
     title: { en: 'Character Sheet', 'zh-CN': '角色设定表' },
     description: {
-      en: 'Turn concept art into a full character sheet with this ComfyUI workflow — GPT Image 2 generates body turnarounds and face close-ups, then auto-stitches them.',
+      en: 'Turn concept art into a full character sheet with this ComfyUI workflow: GPT Image 2 generates body turnarounds and face close-ups, then auto-stitches them.',
       'zh-CN':
-        '用此 ComfyUI 工作流将概念美术转化为完整的角色设定表——GPT Image 2 生成全身转身视图与面部特写，并自动拼接成一张图。'
+        '用此 ComfyUI 工作流将概念美术转化为完整的角色设定表：GPT Image 2 生成全身转身视图与面部特写，并自动拼接成一张图。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation1.mp4',
     poster: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
@@ -258,11 +489,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'keyframe-exploration',
     category: 'animations',
+    episode: 2,
+    author: shaneFu,
     title: { en: 'Keyframe Exploration', 'zh-CN': '关键帧探索' },
     description: {
-      en: 'Generate a character keyframe at any camera angle with this ComfyUI workflow — set direction, elevation, and distance, then GPT Image 2 renders the shot.',
+      en: 'Generate a character keyframe at any camera angle with this ComfyUI workflow: set direction, elevation, and distance, then GPT Image 2 renders the shot.',
       'zh-CN':
-        '用此 ComfyUI 工作流在任意机位角度生成角色关键帧——设置方向、俯仰和距离，再由 GPT Image 2 渲染出画面。'
+        '用此 ComfyUI 工作流在任意机位角度生成角色关键帧：设置方向、俯仰和距离，再由 GPT Image 2 渲染出画面。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation2.mp4',
     poster: 'https://media.comfy.org/website/learning/animation2-thumb.jpg',
@@ -283,11 +516,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'background-and-asset-generation',
     category: 'animations',
+    episode: 3,
+    author: shaneFu,
     title: { en: 'Background and Asset Generation', 'zh-CN': '背景与素材生成' },
     description: {
-      en: 'Apply a production frame’s style to backgrounds and props with this ComfyUI workflow — GPT Image 2 paints sketches to match, with auto background removal.',
+      en: 'Apply a production frame’s style to backgrounds and props with this ComfyUI workflow: GPT Image 2 paints sketches to match, with auto background removal.',
       'zh-CN':
-        '用此 ComfyUI 工作流将制作帧的风格应用到背景与道具——GPT Image 2 将草图绘制成匹配风格，并自动去除背景。'
+        '用此 ComfyUI 工作流将制作帧的风格应用到背景与道具：GPT Image 2 将草图绘制成匹配风格，并自动去除背景。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation3.mp4',
     poster: 'https://media.comfy.org/website/learning/animation3-thumb.jpg',
@@ -313,11 +548,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'concept-exploration',
     category: 'animations',
+    episode: 4,
+    author: shaneFu,
     title: { en: 'Concept Exploration', 'zh-CN': '概念探索' },
     description: {
-      en: 'Turn concept art into a poseable 3D proxy with this ComfyUI workflow — Tripo builds the model, then generate a styled still or camera-move video from any angle.',
+      en: 'Turn concept art into a poseable 3D proxy with this ComfyUI workflow: Tripo builds the model, then generate a styled still or camera-move video from any angle.',
       'zh-CN':
-        '用此 ComfyUI 工作流将概念美术转化为可摆姿的 3D 代理——Tripo 生成模型，再从任意角度生成风格化静帧或运镜视频。'
+        '用此 ComfyUI 工作流将概念美术转化为可摆姿的 3D 代理：Tripo 生成模型，再从任意角度生成风格化静帧或运镜视频。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation4.mp4',
     poster: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
@@ -338,11 +575,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'in-betweening',
     category: 'animations',
+    episode: 5,
+    author: shaneFu,
     title: { en: 'In-Betweening', 'zh-CN': '中间帧绘制' },
     description: {
-      en: 'Generate the in-between frames from a sequence of keyframes with this ComfyUI workflow — Wan 2.2 interpolates each pair into one assembled character animation.',
+      en: 'Generate the in-between frames from a sequence of keyframes with this ComfyUI workflow: Wan 2.2 interpolates each pair into one assembled character animation.',
       'zh-CN':
-        '用此 ComfyUI 工作流从关键帧序列生成中间帧——Wan 2.2 对每一对关键帧进行插值，拼接成一段完整的角色动画。'
+        '用此 ComfyUI 工作流从关键帧序列生成中间帧：Wan 2.2 对每一对关键帧进行插值，拼接成一段完整的角色动画。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation5.mp4',
     poster: 'https://media.comfy.org/website/learning/animation5-thumb.jpg',
@@ -363,11 +602,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'background-and-compositing',
     category: 'animations',
+    episode: 6,
+    author: shaneFu,
     title: { en: 'Background and Compositing', 'zh-CN': '背景与合成' },
     description: {
-      en: 'Animate backgrounds and composite characters with this ComfyUI workflow — Cdance loops still backgrounds, then blends the character with matched lighting.',
+      en: 'Animate backgrounds and composite characters with this ComfyUI workflow: Cdance loops still backgrounds, then blends the character with matched lighting.',
       'zh-CN':
-        '用此 ComfyUI 工作流让背景动起来并合成角色——Cdance 将静态背景生成循环动画，再以匹配的光照将角色融合其中。'
+        '用此 ComfyUI 工作流让背景动起来并合成角色：Cdance 将静态背景生成循环动画，再以匹配的光照将角色融合其中。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation6.mp4',
     poster: 'https://media.comfy.org/website/learning/animation6-thumb.jpg',
@@ -388,11 +629,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'moodboard-creation',
     category: 'ads',
+    episode: 1,
+    author: shaneFu,
     title: { en: 'Moodboard Creation', 'zh-CN': '情绪板制作' },
     description: {
-      en: 'Turn mood board selects into fresh, on-brand ad visuals with this ComfyUI workflow — extract a style with Recraft, or alter elements with GPT Image 2.',
+      en: 'Turn mood board selects into fresh, on-brand ad visuals with this ComfyUI workflow: extract a style with Recraft, or alter elements with GPT Image 2.',
       'zh-CN':
-        '通过此 ComfyUI 工作流，将情绪板参考图转化为符合品牌调性的全新广告视觉——用 Recraft 提取风格，或用 GPT Image 2 调整元素。'
+        '通过此 ComfyUI 工作流，将情绪板参考图转化为符合品牌调性的全新广告视觉：用 Recraft 提取风格，或用 GPT Image 2 调整元素。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising1.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
@@ -413,11 +656,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'storyboard-creation',
     category: 'ads',
+    episode: 2,
+    author: shaneFu,
     title: { en: 'Storyboard Creation', 'zh-CN': '故事板制作' },
     description: {
-      en: 'Generate an ad storyboard from a shot list, then render polished style frames — a ComfyUI workflow using GPT Image and NanoBanana Pro across two passes.',
+      en: 'Generate an ad storyboard from a shot list, then render polished style frames: a ComfyUI workflow using GPT Image and NanoBanana Pro across two passes.',
       'zh-CN':
-        '通过此 ComfyUI 工作流，从镜头表生成广告故事板，再渲染精致的风格帧——两个阶段分别使用 GPT Image 与 NanoBanana Pro。'
+        '通过此 ComfyUI 工作流，从镜头表生成广告故事板，再渲染精致的风格帧：两个阶段分别使用 GPT Image 与 NanoBanana Pro。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising2.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
@@ -443,11 +688,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'product-photography',
     category: 'ads',
+    episode: 3,
+    author: shaneFu,
     title: { en: 'Product Photography', 'zh-CN': '产品摄影' },
     description: {
-      en: 'Generate, retouch, and animate product shots in one ComfyUI workflow — place products with GPT Image, mask-edit details, then create a hero video.',
+      en: 'Generate, retouch, and animate product shots in one ComfyUI workflow: place products with GPT Image, mask-edit details, then create a hero video.',
       'zh-CN':
-        '在一套 ComfyUI 工作流中生成、修饰并让产品照片动起来——用 GPT Image 置入产品，蒙版编辑细节，再生成主打视频。'
+        '在一套 ComfyUI 工作流中生成、修饰并让产品照片动起来：用 GPT Image 置入产品，蒙版编辑细节，再生成主打视频。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising3.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
@@ -473,11 +720,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'talent-casting',
     category: 'ads',
+    episode: 4,
+    author: shaneFu,
     title: { en: 'Talent Casting', 'zh-CN': '演员选角' },
     description: {
-      en: 'Preview talent in a scene before the shoot with this ComfyUI workflow — generate a previs still with Gemini Image 2, then animate it into a clip with Kling.',
+      en: 'Preview talent in a scene before the shoot with this ComfyUI workflow: generate a previs still with Gemini Image 2, then animate it into a clip with Kling.',
       'zh-CN':
-        '在开拍前用此 ComfyUI 工作流预览演员在场景中的效果——用 Gemini Image 2 生成预演静帧，再用 Kling 将其动画化为短片。'
+        '在开拍前用此 ComfyUI 工作流预览演员在场景中的效果：用 Gemini Image 2 生成预演静帧，再用 Kling 将其动画化为短片。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising4.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising4-thumb.png',
@@ -503,11 +752,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'b-roll-creation',
     category: 'ads',
+    episode: 5,
+    author: shaneFu,
     title: { en: 'B-Roll Creation', 'zh-CN': 'B-Roll 素材制作' },
     description: {
-      en: 'Create or edit B-roll three ways in one ComfyUI workflow — generate a clip from a prompt, place a subject into a reference scene, or alter existing footage.',
+      en: 'Create or edit B-roll three ways in one ComfyUI workflow: generate a clip from a prompt, place a subject into a reference scene, or alter existing footage.',
       'zh-CN':
-        '在一套 ComfyUI 工作流中以三种方式创建或编辑 B-Roll 素材——用提示词生成片段、将主体置入参考场景，或修改现有素材。'
+        '在一套 ComfyUI 工作流中以三种方式创建或编辑 B-Roll 素材：用提示词生成片段、将主体置入参考场景，或修改现有素材。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising5.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising5-thumb.png',
@@ -528,11 +779,13 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'ooh-visualization',
     category: 'ads',
+    episode: 6,
+    author: shaneFu,
     title: { en: 'OOH Visualization', 'zh-CN': '户外广告可视化' },
     description: {
-      en: 'Place a poster into real-world outdoor ad spots with this ComfyUI workflow — auto-generate billboard, transit, and building-wrap mockups with Gemini Image 2.',
+      en: 'Place a poster into real-world outdoor ad spots with this ComfyUI workflow: auto-generate billboard, transit, and building-wrap mockups with Gemini Image 2.',
       'zh-CN':
-        '用此 ComfyUI 工作流将海报置入真实的户外广告场景——通过 Gemini Image 2 自动生成广告牌、公交站台和楼体包装样机。'
+        '用此 ComfyUI 工作流将海报置入真实的户外广告场景：通过 Gemini Image 2 自动生成广告牌、公交站台和楼体包装样机。'
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising6.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising6-thumb.png',
@@ -579,6 +832,23 @@ export const featuredFor = (
   return pool.find((tutorial) => tutorial.id === FEATURED_ID) ?? pool[0]
 }
 
+/** Same-category siblings in episode order, excluding the tutorial itself. */
+export const categoryChapters = (
+  tutorial: LearningTutorial
+): readonly LearningTutorial[] =>
+  filterByCategory(tutorial.category)
+    .filter((item) => item.id !== tutorial.id)
+    .toSorted((a, b) => a.episode - b.episode)
+
+/** Tutorials from the other categories, in data order. */
+export const recommendedFor = (
+  tutorial: LearningTutorial,
+  limit = 3
+): readonly LearningTutorial[] =>
+  learningTutorials
+    .filter((item) => item.category !== tutorial.category)
+    .slice(0, limit)
+
 export const getTutorialByCategoryAndSlug = (
   category: string,
   slug: string
@@ -586,6 +856,10 @@ export const getTutorialByCategoryAndSlug = (
   learningTutorials.find(
     (tutorial) => tutorial.category === category && tutorial.slug === slug
   )
+
+/** Privacy-friendly embed URL for the watch-page iframe (YouTube items). */
+export const youtubeEmbedUrl = (id: string): string =>
+  `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
 
 /** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
 export const categoryPath = (category: LearningCategory): string =>
@@ -625,10 +899,24 @@ export const tutorialDescription = (
   tutorial: LearningTutorial,
   locale: Locale
 ): string => {
-  if (tutorial.description) return tutorial.description[locale]
-  const title = tutorial.title[locale]
+  if (tutorial.description)
+    return tutorial.description[locale] || tutorial.description.en
+  const title = tutorial.title[locale] || tutorial.title.en
   const label = t(categoryLabelKeys[tutorial.category], locale)
   return locale === 'zh-CN'
-    ? `观看《${title}》教程——一个可亲自体验的 ComfyUI ${label} 实战工作流。`
-    : `Watch the ${title} tutorial — a hands-on ComfyUI ${label} workflow you can try yourself.`
+    ? `观看《${title}》教程：一个可亲自体验的 ComfyUI ${label} 实战工作流。`
+    : `Watch the ${title} tutorial: a hands-on ComfyUI ${label} workflow you can try yourself.`
+}
+
+/** Document title for a tutorial page. Titles that already name ComfyUI (the
+ * beginner series) stand on their own. */
+export const tutorialMetaTitle = (
+  tutorial: LearningTutorial,
+  locale: Locale
+): string => {
+  const title = tutorial.title[locale] || tutorial.title.en
+  if (title.includes('ComfyUI')) return title
+  return locale === 'zh-CN'
+    ? `${title}：免费 ComfyUI 教程`
+    : `${title}: Free ComfyUI Tutorial`
 }

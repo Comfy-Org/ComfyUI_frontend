@@ -93,6 +93,7 @@ export type RemoteConfig = {
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
   comfy_api_base_url?: string
+  comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
   firebase_env?: 'dev'
@@ -103,13 +104,16 @@ export type RemoteConfig = {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
-  team_workspaces_enabled?: boolean
   partner_node_governance_enabled?: boolean
+  /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
+  partner_run_gate_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
+  supports_model_type_tags?: boolean
   free_tier_credits?: number
   free_tier_balance?: {
     allowance: number
@@ -121,8 +125,9 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
-  consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
+  legacy_billing_migration_enabled?: boolean
+  v1_payment_recovery?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string

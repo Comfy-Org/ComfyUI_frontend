@@ -34,9 +34,6 @@ import { createMockWidget } from './widgetTestUtils'
 
 describe('WidgetDOM', () => {
   beforeEach(() => {
-    canvasMocks.canvas.graph.getNodeById.mockReset()
-    resolveMock.mockReset()
-    isDOMWidgetMock.mockReset()
     isDOMWidgetMock.mockReturnValue(true)
   })
 
@@ -50,7 +47,7 @@ describe('WidgetDOM', () => {
     }
     return render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -77,7 +74,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -106,7 +103,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'

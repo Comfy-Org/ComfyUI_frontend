@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
@@ -10,11 +10,6 @@ vi.mock('@/stores/dialogStore', () => ({
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 
 describe('useManagerSurveyDialog', () => {
-  beforeEach(() => {
-    showDialog.mockReset()
-    closeDialog.mockReset()
-  })
-
   it('show() opens the survey dialog under its own key via the Reka layout renderer', () => {
     useManagerSurveyDialog().show()
     const [args] = showDialog.mock.calls[0]

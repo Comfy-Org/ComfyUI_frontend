@@ -65,7 +65,6 @@ const createCanvasWithRect = (
 
 describe('useCoordinateTransform', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore.pointerZone = null
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null

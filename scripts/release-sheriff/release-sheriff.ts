@@ -1,17 +1,16 @@
-// Assigns the on-call release sheriff to backport and release version-bump
-// PRs. Run by pr-assign-release-sheriff.yaml; details in docs/release-process.md.
+// Assigns the on-call release sheriff to backport, release version-bump and
+// automation-authored PRs. Run by pr-assign-release-sheriff.yaml; details in
+// docs/release-process.md.
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-// Datadog stores no GitHub identity and GitHub resolves only public commit
-// emails, so each rotation member's Datadog email maps to a login by hand here.
-const CONFIG = {
-  datadogSite: 'datadoghq.com',
-  // Empty until the Datadog schedule exists; the fallback owns PRs meanwhile.
-  scheduleId: '',
-  fallbackGithubLogin: 'christian-byrne',
-  githubLoginByEmail: {} as Record<string, string>
+export const CONFIG = {
+  // The Comfy org lives on the us5 sub-domain; api.datadoghq.com 403s.
+  datadogSite: 'us5.datadoghq.com',
+  // "Frontend Team – Oncall Schedule", whose sole layer is "Release Sheriff".
+  scheduleId: 'f3258942-c040-4c33-8228-63a03e9092d6',
+  fallbackGithubLogin: 'christian-byrne'
 }
 
 export interface PullRequestSummary {
@@ -50,39 +49,177 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
+export function emailKey(email: string): string {
+  return email.split('@')[0].trim().toLowerCase()
+}
+
+const DIRECTORY_ENV = 'RELEASE_SHERIFF_DIRECTORY'
+
+// Naming the file and the follow-up in every message: the previous guidance
+// said "add a tag to the schedule", and people did exactly that for months.
+const DIRECTORY_FIX =
+  'Add an entry to rosters/release-sheriff-directory.json in ' +
+  'Comfy-Org/github-workflows-ops and run its sync script.'
+
+export interface DirectoryParse {
+  githubLoginByUser: Record<string, string>
+  warning: string | null
+}
+
+// Datadog holds no GitHub identity, and GitHub only resolves commit emails its
+// users chose to make public — three of seven sheriffs are unresolvable that
+// way — so the bridge has to be declared somewhere. Not here: this repo is
+// public. Not on the Datadog schedule either, where it used to live as
+// github:<user>:<login> tags: PUT /api/v2/on-call/schedules/{id} is a full
+// replace, so one tags-unaware rotation edit deleted the whole map, returned
+// 200, and warned about nothing. It is now an Actions secret, fed from a
+// reviewed file in a private repo.
+export function parseGithubLogins(raw: string | undefined): DirectoryParse {
+  const degraded = (warning: string): DirectoryParse => ({
+    githubLoginByUser: {},
+    warning: `${warning} — using the fallback. ${DIRECTORY_FIX}`
+  })
+
+  if (!raw?.trim()) return degraded(`${DIRECTORY_ENV} is unset`)
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    // Node can include an excerpt of the malformed input in the error
+    // message; this text reaches public Actions logs and Slack, while
+    // GitHub masks the complete secret value rather than arbitrary
+    // fragments. Emit a fixed message without any input context.
+    return degraded(`${DIRECTORY_ENV} is not valid JSON`)
+  }
+  if (!Array.isArray(parsed)) {
+    return degraded(`${DIRECTORY_ENV} is not a JSON array`)
+  }
+
+  const pairs = parsed.flatMap((entry) => {
+    if (!isRecord(entry)) return []
+    const email = entry.datadog_email
+    const login = entry.github_login
+    if (typeof email !== 'string' || typeof login !== 'string') return []
+    if (!email.trim() || !login.trim()) return []
+    return [[emailKey(email), login.trim()] as const]
+  })
+
+  // Two valid entries can still normalize to the same key (e.g. different
+  // domains, or case-only differences email.trim().toLowerCase() collapses).
+  // Silently keeping whichever happened to sort last would let the wrong
+  // person get assigned and stay green, so ambiguous keys are dropped
+  // entirely rather than resolved by pair order.
+  const keyCounts = new Map<string, number>()
+  for (const [key] of pairs) {
+    keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1)
+  }
+  const conflictingKeys = [...keyCounts]
+    .filter(([, count]) => count > 1)
+    .map(([key]) => key)
+  const usablePairs = pairs.filter(([key]) => !conflictingKeys.includes(key))
+
+  const skipped = parsed.length - pairs.length
+  const warnings = [
+    skipped > 0
+      ? `${DIRECTORY_ENV} has ${skipped} ${skipped === 1 ? 'entry' : 'entries'} ` +
+        `without a usable datadog_email/github_login pair. ${DIRECTORY_FIX}`
+      : null,
+    conflictingKeys.length > 0
+      ? `${DIRECTORY_ENV} has ${conflictingKeys.length} conflicting ` +
+        `${conflictingKeys.length === 1 ? 'key' : 'keys'} (${conflictingKeys.sort().join(', ')}) ` +
+        `where multiple entries normalize to the same login lookup; all of ` +
+        `them were excluded rather than guessing. ${DIRECTORY_FIX}`
+      : null
+  ].filter((warning) => warning !== null)
+
+  return {
+    githubLoginByUser: Object.fromEntries(usablePairs),
+    warning: warnings.length > 0 ? warnings.join(' ') : null
+  }
+}
+
 export interface OnCallLookup {
   emails: string[]
   warning: string | null
 }
 
-// Every failure degrades to an empty result plus a returned warning: PRs must
+// Layer members carry the rotation order, which is what makes "next" well
+// defined. The graph is members -> user -> email, all in `included`.
+export function parseRotationKeys(payload: unknown): string[] {
+  if (!isRecord(payload) || !Array.isArray(payload.included)) return []
+
+  const resources = payload.included.filter(isRecord)
+  const find = (type: string, id: unknown) =>
+    resources.find((r) => r.type === type && r.id === id)
+
+  const memberIds = resources.flatMap((resource) => {
+    if (resource.type !== 'layers' || !isRecord(resource.relationships))
+      return []
+    const { members } = resource.relationships
+    if (!isRecord(members) || !Array.isArray(members.data)) return []
+    return members.data.filter(isRecord).map((member) => member.id)
+  })
+
+  const keys = memberIds.flatMap((id) => {
+    const member = find('members', id)
+    if (!member || !isRecord(member.relationships)) return []
+    const { user } = member.relationships
+    if (!isRecord(user) || !isRecord(user.data)) return []
+    const record = find('users', user.data.id)
+    if (!record || !isRecord(record.attributes)) return []
+    const { email } = record.attributes
+    return typeof email === 'string' && email.trim() ? [emailKey(email)] : []
+  })
+
+  return [...new Set(keys)]
+}
+
+export interface DirectoryLookup {
+  githubLoginByUser: Record<string, string>
+  rotation: string[]
+  // Rotation members with no directory entry. They break silently when their
+  // own shift starts, weeks after the entry was forgotten, so surface them now.
+  unmappedMembers: string[]
+  warnings: string[]
+}
+
+interface DatadogResponse {
+  payload: unknown
+  warning: string | null
+}
+
+// Every failure degrades to an empty payload plus a returned warning: PRs must
 // end up with the fallback owner, never unowned, and the caller owns logging.
-export async function fetchOnCallEmails(
+async function datadogGet(
   config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
-  credentials: { apiKey?: string; appKey?: string }
-): Promise<OnCallLookup> {
+  credentials: { apiKey?: string; appKey?: string },
+  path: string,
+  query: Record<string, string> = {}
+): Promise<DatadogResponse> {
   const { datadogSite, scheduleId } = config
   const { apiKey, appKey } = credentials
 
   if (!scheduleId) {
     return {
-      emails: [],
+      payload: null,
       warning: 'No Datadog On-Call schedule configured — using the fallback.'
     }
   }
   if (!apiKey || !appKey) {
     return {
-      emails: [],
+      payload: null,
       warning:
         'DATADOG_API_KEY / DATADOG_APP_KEY unavailable — using the fallback.'
     }
   }
 
   const url = new URL(
-    `https://api.${datadogSite}/api/v2/on-call/schedules/${scheduleId}/responders`
+    `https://api.${datadogSite}/api/v2/on-call/schedules/${scheduleId}${path}`
   )
-  url.searchParams.set('include', 'responders.shifts.user')
-  url.searchParams.set('filter[position]', 'current')
+  for (const [key, value] of Object.entries(query)) {
+    url.searchParams.set(key, value)
+  }
 
   try {
     const response = await fetch(url, {
@@ -95,16 +232,52 @@ export async function fetchOnCallEmails(
     })
     if (!response.ok) {
       return {
-        emails: [],
+        payload: null,
         warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
       }
     }
-    return { emails: parseOnCallEmails(await response.json()), warning: null }
+    return { payload: await response.json(), warning: null }
   } catch (error) {
     return {
-      emails: [],
+      payload: null,
       warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
     }
+  }
+}
+
+export async function fetchOnCallEmails(
+  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
+  credentials: { apiKey?: string; appKey?: string }
+): Promise<OnCallLookup> {
+  const { payload, warning } = await datadogGet(
+    config,
+    credentials,
+    '/responders',
+    { include: 'responders.shifts.user', 'filter[position]': 'current' }
+  )
+  return { emails: parseOnCallEmails(payload), warning }
+}
+
+// Datadog still owns the rotation and its order; only the identity map moved.
+export async function fetchDirectory(
+  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
+  credentials: { apiKey?: string; appKey?: string },
+  rawDirectory: string | undefined
+): Promise<DirectoryLookup> {
+  const { payload, warning } = await datadogGet(config, credentials, '', {
+    include: 'layers.members.user'
+  })
+  const { githubLoginByUser, warning: directoryWarning } =
+    parseGithubLogins(rawDirectory)
+  const keys = parseRotationKeys(payload)
+  return {
+    githubLoginByUser,
+    rotation: keys.flatMap((key) => {
+      const login = githubLoginByUser[key]
+      return login ? [login] : []
+    }),
+    unmappedMembers: keys.filter((key) => !githubLoginByUser[key]),
+    warnings: [warning, directoryWarning].filter((w) => w !== null)
   }
 }
 
@@ -116,18 +289,13 @@ export interface SheriffResolution {
 
 export function resolveSheriff(
   emails: string[],
-  config: Pick<typeof CONFIG, 'fallbackGithubLogin' | 'githubLoginByEmail'>
+  config: Pick<typeof CONFIG, 'fallbackGithubLogin'> & {
+    githubLoginByUser: Record<string, string>
+  }
 ): SheriffResolution {
-  const loginByEmail = new Map(
-    Object.entries(config.githubLoginByEmail).map(([email, login]) => [
-      email.toLowerCase(),
-      login
-    ])
-  )
-
   const unmappedEmails: string[] = []
   for (const email of emails) {
-    const login = loginByEmail.get(email.toLowerCase())
+    const login = config.githubLoginByUser[emailKey(email)]
     if (login) return { login, source: 'datadog', unmappedEmails }
     unmappedEmails.push(email)
   }
@@ -145,13 +313,23 @@ const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
 // matching would also catch PRs that are merely about backports.
 const BACKPORT_TITLE = '[backport'
 
+// Nobody owns what a robot opens: these sat unassigned for weeks, the oldest
+// weeks old, because no human felt addressed by them. The sheriff owns them.
+// gh reports GitHub Apps as "app/<slug>" and plain accounts by login.
+const AUTOMATION_AUTHORS = [
+  'app/dependabot',
+  'app/cloud-code-bot',
+  'comfy-pr-bot'
+]
+
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
     pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
-    VERSION_BUMP_BRANCH.test(pr.headRefName)
+    VERSION_BUMP_BRANCH.test(pr.headRefName) ||
+    AUTOMATION_AUTHORS.includes(pr.author?.login ?? '')
   )
 }
 
@@ -159,26 +337,57 @@ export interface SheriffAction {
   number: number
   assign: boolean
   requestReview: boolean
+  reviewer: string | null
+}
+
+// Who reviews the sheriff's own PRs. GitHub rejects a self-review request, so
+// without a standby the sheriff's backports were assigned to themselves with
+// nobody asked to review — and backport merges are gated on an approval, so
+// they waited on a review that had not been requested.
+export function nextInRotation(
+  rotation: string[],
+  current: string
+): string | null {
+  const isCurrent = (login: string) =>
+    login.toLowerCase() === current.toLowerCase()
+  const start = rotation.findIndex(isCurrent)
+  if (start === -1) return null
+
+  for (let step = 1; step < rotation.length; step++) {
+    const candidate = rotation[(start + step) % rotation.length]
+    if (!isCurrent(candidate)) return candidate
+  }
+  return null
 }
 
 // Existing assignees and review requests are never overwritten, so a rotation
 // handover does not churn open PRs and a human who picked one up keeps it.
 export function planActions(
   prs: PullRequestSummary[],
-  sheriffLogin: string
+  sheriffLogin: string,
+  rotation: string[] = []
 ): SheriffAction[] {
+  const normalized = sheriffLogin.toLowerCase()
+  const standby = nextInRotation(rotation, sheriffLogin)
+
   return prs.flatMap((pr) => {
     if (pr.isDraft || !isSheriffPr(pr)) return []
 
     const assign = pr.assignees.length === 0
+    const reviewer =
+      pr.author?.login.toLowerCase() === normalized ? standby : sheriffLogin
+    const normalizedReviewer = reviewer?.toLowerCase()
     const requestReview =
+      reviewer !== null &&
       pr.reviewRequests.length === 0 &&
       pr.reviewDecision !== 'APPROVED' &&
-      pr.author?.login !== sheriffLogin &&
-      !pr.latestReviews.some((review) => review.author?.login === sheriffLogin)
+      pr.author?.login.toLowerCase() !== normalizedReviewer &&
+      !pr.latestReviews.some(
+        (review) => review.author?.login.toLowerCase() === normalizedReviewer
+      )
 
     return assign || requestReview
-      ? [{ number: pr.number, assign, requestReview }]
+      ? [{ number: pr.number, assign, requestReview, reviewer }]
       : []
   })
 }
@@ -192,6 +401,24 @@ function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8' })
 }
 
+// GitHub's GraphQL API occasionally returns 502/503; retry with backoff before
+// giving up so a transient gateway error doesn't degrade the whole run.
+function ghWithRetry(args: string[], retries = 3): string {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return gh(args)
+    } catch (err) {
+      if (attempt === retries) throw err
+      const delayMs = 2000 * attempt
+      warn(
+        `gh command failed (attempt ${attempt}/${retries}), retrying in ${delayMs}ms: ${String(err)}`
+      )
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs)
+    }
+  }
+  throw new Error('unreachable')
+}
+
 function ghPrList(selector: string[]): PullRequestSummary[] {
   const fixed = [
     'pr',
@@ -203,7 +430,7 @@ function ghPrList(selector: string[]): PullRequestSummary[] {
     '--json'
   ]
   const prs = JSON.parse(
-    gh([...fixed, PR_FIELDS, ...selector])
+    ghWithRetry([...fixed, PR_FIELDS, ...selector])
   ) as PullRequestSummary[]
   if (prs.length === QUERY_LIMIT) {
     warn(
@@ -220,7 +447,10 @@ function collectCandidatePrs(): PullRequestSummary[] {
     ...ghPrList(['--label', 'backport']),
     ...ghPrList(['--label', 'Release']),
     ...ghPrList(['--search', 'backport in:title']),
-    ...ghPrList(['--search', 'head:version-bump-'])
+    ...ghPrList(['--search', 'head:version-bump-']),
+    ...AUTOMATION_AUTHORS.flatMap((author) =>
+      ghPrList(['--search', `author:${author}`])
+    )
   ]
   const byNumber = new Map(found.map((pr) => [pr.number, pr]))
   return [...byNumber.values()]
@@ -229,6 +459,23 @@ function collectCandidatePrs(): PullRequestSummary[] {
 function summary(line: string) {
   const file = process.env.GITHUB_STEP_SUMMARY
   if (file) appendFileSync(file, `${line}\n`)
+}
+
+// A heredoc output ends at the first line equal to its delimiter, so a value
+// carrying that line would close the record early and let the rest parse as
+// further outputs. These messages are one line by construction; enforcing that
+// removes the possibility rather than picking a delimiter and hoping.
+export function singleLine(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+// Read by the workflow's failure step to say why in Slack, so the alert is
+// actionable without opening the run.
+function output(key: string, value: string) {
+  const file = process.env.GITHUB_OUTPUT
+  if (file) {
+    appendFileSync(file, `${key}<<__EOF__\n${singleLine(value)}\n__EOF__\n`)
+  }
 }
 
 function ghPost(path: string, field: string): boolean {
@@ -244,29 +491,91 @@ async function main() {
   const repo = process.env.GH_REPO
   if (!repo) throw new Error('GH_REPO is required')
 
-  const { emails, warning } = await fetchOnCallEmails(CONFIG, {
+  const credentials = {
     apiKey: process.env.DATADOG_API_KEY,
     appKey: process.env.DATADOG_APP_KEY
-  })
-  if (warning) warn(warning)
-
-  const { login, source, unmappedEmails } = resolveSheriff(emails, CONFIG)
-  for (const email of unmappedEmails) {
-    warn(`Datadog on-call user ${email} has no githubLoginByEmail entry.`)
   }
+  const [oncall, directory] = await Promise.all([
+    fetchOnCallEmails(CONFIG, credentials),
+    fetchDirectory(CONFIG, credentials, process.env[DIRECTORY_ENV])
+  ])
+  // Both lookups hit the same API, so a credentials or outage failure arrives
+  // twice; the Slack alert should say it once.
+  const problems = [
+    ...new Set(
+      [oncall.warning, ...directory.warnings].filter((w) => w !== null)
+    )
+  ]
+
+  const { login, source, unmappedEmails } = resolveSheriff(oncall.emails, {
+    ...CONFIG,
+    githubLoginByUser: directory.githubLoginByUser
+  })
+  // Keyed, not the full address: this repo is public, so the warning lands in
+  // public Actions logs and in Slack. The key is the directory's own key anyway.
+  for (const email of unmappedEmails) {
+    problems.push(
+      `Datadog on-call user "${emailKey(email)}" has no GitHub login. ${DIRECTORY_FIX}`
+    )
+  }
+  // Checked for the whole rotation, not just whoever is on call: a member
+  // added without an entry works fine until their own shift begins, then falls
+  // back silently. Fail now, while it is still someone else's week.
+  for (const key of directory.unmappedMembers) {
+    problems.push(
+      `Rotation member "${key}" has no GitHub login and will fall back when ` +
+        `their shift starts. ${DIRECTORY_FIX}`
+    )
+  }
+  for (const problem of problems) warn(problem)
   if (!login) {
-    warn('No release sheriff could be resolved — nothing will be assigned.')
+    const message = 'No release sheriff could be resolved — nothing assigned.'
+    warn(message)
+    output('degraded', [message, ...problems].join(' '))
+    process.exitCode = 1
     return
   }
 
-  const actions = planActions(collectCandidatePrs(), login)
+  if (directory.unmappedMembers.length > 0) {
+    output('degraded', problems.join(' '))
+    process.exitCode = 1
+  }
+
+  // A parser warning (skipped entries, bad JSON, etc.) means the directory is
+  // partially or fully unusable. If the valid entries still cover the active
+  // rotation the run would otherwise stay green and the failure-only Slack
+  // alert never fires, so treat any directory warning as degraded.
+  if (directory.warnings.length > 0) {
+    output('degraded', problems.join(' '))
+    process.exitCode = 1
+  }
+
+  // Falling back still assigns, so PRs stay owned, but the run must not go
+  // green: this job warned "No Datadog On-Call schedule configured" on every
+  // run for weeks and nobody noticed, because a warning alone reports success.
+  if (source !== 'datadog') {
+    output(
+      'degraded',
+      `Fell back to \`${login}\` instead of the Datadog on-call user. ` +
+        problems.join(' ')
+    )
+    process.exitCode = 1
+  }
+
+  const actions = planActions(collectCandidatePrs(), login, directory.rotation)
   summary(`### Release sheriff: \`${login}\` (via ${source})`)
   if (actions.length === 0) {
     summary('Nothing to do — every candidate PR already has an owner.')
     return
   }
+  if (actions.some((action) => action.reviewer === null)) {
+    warn(
+      `${login} authored some of these PRs and the rotation offered no ` +
+        'standby, so those still need a reviewer picked by hand.'
+    )
+  }
 
-  for (const { number, assign, requestReview } of actions) {
+  for (const { number, assign, requestReview, reviewer } of actions) {
     if (assign) {
       const path = `repos/${repo}/issues/${number}/assignees`
       if (ghPost(path, `assignees[]=${login}`)) summary(`- Assigned #${number}`)
@@ -274,12 +583,12 @@ async function main() {
     }
 
     // A failed review request (e.g. fork PRs) must not undo the assignment.
-    if (requestReview) {
+    if (requestReview && reviewer) {
       const path = `repos/${repo}/pulls/${number}/requested_reviewers`
-      if (ghPost(path, `reviewers[]=${login}`)) {
-        summary(`- Requested review on #${number}`)
+      if (ghPost(path, `reviewers[]=${reviewer}`)) {
+        summary(`- Requested review from \`${reviewer}\` on #${number}`)
       } else {
-        warn(`Could not request review from ${login} on #${number}`)
+        warn(`Could not request review from ${reviewer} on #${number}`)
       }
     }
   }

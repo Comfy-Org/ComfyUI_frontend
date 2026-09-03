@@ -1,14 +1,26 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
+import {
+  createNode,
+  getWidgetIdForNode,
+  mapLiveWidgetsById,
+  migrateWidgetsValues,
+  resolveNode
+} from './litegraphUtil'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const mockBringNodeToFront = vi.fn()
 
@@ -92,10 +104,6 @@ describe('createNode', () => {
     })
   }
 
-  beforeEach(() => {
-    mockBringNodeToFront.mockClear()
-  })
-
   it('returns null when name is empty', async () => {
     const result = await createNode(makeCanvas(new LGraph()), '')
     expect(result).toBeNull()
@@ -174,11 +182,121 @@ describe('getWidgetIdForNode', () => {
     )
   })
 
-  it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
+  it('distinguishes duplicate names across widget types', () => {
     const node = fakeNode(42)
-    expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
-      widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
+    node.widgets = [
+      { name: 'shared', type: 'number', value: 1, options: {}, y: 0 },
+      { name: 'shared', type: 'text', value: 'two', options: {}, y: 0 }
+    ]
+
+    const widgetsById = mapLiveWidgetsById(node)
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared'))).toBe(
+      node.widgets[0]
     )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#1'))).toBe(
+      node.widgets[1]
+    )
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
+  })
+
+  it('avoids collisions with literal duplicate suffixes', () => {
+    const node = fakeNode(42)
+    node.widgets = [
+      { name: 'shared', type: 'number', value: 1, options: {}, y: 0 },
+      { name: 'shared', type: 'number', value: 2, options: {}, y: 0 },
+      { name: 'shared#1', type: 'number', value: 3, options: {}, y: 0 }
+    ]
+
+    const widgetsById = mapLiveWidgetsById(node)
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared'))).toBe(
+      node.widgets[0]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#2'))).toBe(
+      node.widgets[1]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#1'))).toBe(
+      node.widgets[2]
+    )
+    expect(getWidgetIdForNode(node, node.widgets[1])).toBe(
+      widgetId(graphId, toNodeId(42), 'shared#2')
+    )
+    expect(node.widgets.map(({ name }) => name)).toEqual([
+      'shared',
+      'shared#2',
+      'shared#1'
+    ])
+  })
+
+  it('maps every widget when one duplicate cannot be renamed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = fakeNode(42)
+    const first = {
+      name: 'shared',
+      type: 'number',
+      value: 1,
+      options: {},
+      y: 0
+    }
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
+    node.widgets = [first, frozen]
+
+    const mapped = mapLiveWidgetsById(node)
+    expect([...mapped.keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared'])
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockClear()
+    expect(getWidgetIdForNode(node, frozen)).toBe(
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    )
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
+  it('maps repeated widget object references only once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = fakeNode(42)
+    const first = {
+      name: 'shared',
+      type: 'number',
+      value: 1,
+      options: {},
+      y: 0
+    }
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
+    node.widgets = [first, first, frozen]
+
+    const mapped = mapLiveWidgetsById(node)
+
+    expect([...mapped.keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
+    expect(node.widgets.map(({ name }) => name)).toEqual([
+      'shared',
+      'shared',
+      'shared'
+    ])
+    expect(warn).toHaveBeenCalledOnce()
   })
 
   it('returns undefined when the node has no graph', () => {
@@ -189,5 +307,71 @@ describe('getWidgetIdForNode', () => {
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+})
+
+describe('migrateWidgetsValues', () => {
+  const inputDefs = {
+    forced: fromPartial<InputSpec>({ name: 'forced', forceInput: true }),
+    preview: fromPartial<InputSpec>({ name: 'preview' }),
+    steps: fromPartial<InputSpec>({ name: 'steps' })
+  }
+
+  function makeWidget(name: string, serialize = true): IBaseWidget {
+    return fromPartial<IBaseWidget>({ name, serialize })
+  }
+
+  it('migrates a legacy force-input array with a trailing skipped widget', () => {
+    const widgets = [makeWidget('steps'), makeWidget('preview', false)]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
+  it('compacts a mid-list hole with a trailing skipped widget', () => {
+    const holeInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' }),
+      ui1: fromPartial<InputSpec>({ name: 'ui1' }),
+      b: fromPartial<InputSpec>({ name: 'b' }),
+      ui2: fromPartial<InputSpec>({ name: 'ui2' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui1', false),
+      makeWidget('b'),
+      makeWidget('ui2', false)
+    ]
+
+    expect(
+      migrateWidgetsValues(holeInputDefs, widgets, ['av', null, 'bv'])
+    ).toEqual(['av', 'bv'])
+  })
+
+  it('migrates a sparse value array with a non-trailing skipped widget', () => {
+    const widgets = [makeWidget('preview', false), makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, null, 20])).toEqual([
+      20
+    ])
+  })
+
+  it('preserves compacted values for dynamic widgets after a skipped widget', () => {
+    const dynamicInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui', false),
+      makeWidget('extra')
+    ]
+
+    expect(
+      migrateWidgetsValues(dynamicInputDefs, widgets, ['av', 'extra value'])
+    ).toEqual(['av', 'extra value'])
+  })
+
+  it('continues to migrate a value array without skipped widgets', () => {
+    const widgets = [makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
 })

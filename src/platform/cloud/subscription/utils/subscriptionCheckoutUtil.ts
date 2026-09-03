@@ -1,9 +1,7 @@
 import { storeToRefs } from 'pinia'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   createPendingSubscriptionCheckoutAttempt,
@@ -16,7 +14,10 @@ import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -50,6 +51,7 @@ interface PerformSubscriptionCheckoutOptions {
  * - Calling the backend checkout endpoint
  * - Normalizing error responses
  * - Opening the checkout URL in a new tab when available
+ * - Reporting checkout-initiation failures via `trackBillingEvent`
  *
  * Callers are responsible for:
  * - Guarding on cloud-only behavior (isCloud)
@@ -63,12 +65,34 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
+  try {
+    await initiateSubscriptionCheckout(tierKey, currentBillingCycle, options)
+  } catch (error) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: tierKey,
+      cycle: currentBillingCycle,
+      checkout_type: 'new',
+      payment_intent_source: options.paymentIntentSource,
+      failure_category: categorizeBillingApiError(error)
+    })
+    throw error
+  }
+}
+
+async function initiateSubscriptionCheckout(
+  tierKey: TierKey,
+  currentBillingCycle: BillingCycle,
+  options: PerformSubscriptionCheckoutOptions
+): Promise<void> {
   const { openInNewTab = true, paymentIntentSource } = options
 
   const authStore = useAuthStore()
   const { userId } = storeToRefs(authStore)
   const telemetry = useTelemetry()
-  const authHeader = await authStore.getAuthHeader()
+  const authHeader = await authStore.getFirebaseAuthHeader()
 
   if (!authHeader) {
     throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -86,36 +110,23 @@ export async function performSubscriptionCheckout(
   }
   const checkoutPayload = { ...checkoutAttribution }
 
-  const response = await fetchWithUnifiedRemint(
+  const response = await authStore.fetchWithCustomerRecovery(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload)
-    },
-    isCloud && useFeatureFlags().flags.unifiedCloudAuthEnabled
+    }
   )
 
   if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
+    const { message } = await parseErrorResponse(response)
 
     throw new AuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
-      })
+        error: message
+      }),
+      response.status
     )
   }
 

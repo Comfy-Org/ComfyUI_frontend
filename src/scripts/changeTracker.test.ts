@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createNestedSubgraphs,
@@ -159,8 +157,7 @@ async function createSubgraphState(
     subgraph.addOutput('output', '*')
     const host = createTestSubgraphNode(subgraph, { id: 100 + index })
     rootGraph.add(host)
-    const interior = new LGraphNode('InteriorNode')
-    interior.type = 'InteriorNode'
+    const interior = new LGraphNode('InteriorNode', 'InteriorNode')
     interior.pos = [0, 0]
     interior.setSize([100, 50])
     interior.addWidget('number', 'value', 1 + index, () => undefined)
@@ -218,25 +215,16 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 
 describe('ChangeTracker', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(api.dispatchCustomEvent).mockReset()
-    vi.useFakeTimers()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
+    ChangeTracker.resetCheckStateWarningForTest()
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
-    vi.mocked(app.rootGraph.serialize).mockReset()
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
-  })
-
-  afterEach(() => {
-    vi.clearAllTimers()
-    vi.useRealTimers()
   })
 
   describe('captureCanvasState', () => {
@@ -289,7 +277,7 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          expect.stringContaining('captureCanvasState')
+          'ChangeTracker.captureCanvasState() called on inactive tracker'
         )
       })
     })
@@ -364,6 +352,30 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         mockCanvasState(changed)
 
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
+      it('detects a change after a listener mutates the prior checkpoint', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [0]
+        const canvasState = structuredClone(initial)
+        canvasState.nodes[0].widgets_values = [1]
+        const tracker = createTracker(initial)
+        mockCanvasState(canvasState)
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [2]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(canvasState)
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
@@ -1198,7 +1210,7 @@ describe('ChangeTracker', () => {
       expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        expect.stringContaining('deactivate')
+        'ChangeTracker.deactivate() called on inactive tracker'
       )
     })
   })
@@ -1227,14 +1239,74 @@ describe('ChangeTracker', () => {
   })
 
   describe('checkState (deprecated)', () => {
-    it('delegates to captureCanvasState', () => {
+    it('captures each state and warns once across repeated calls', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
-      const changed = createState(2)
-      mockCanvasState(changed)
+      const firstChanged = createState(2)
+      mockCanvasState(firstChanged)
 
       tracker.checkState()
 
-      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.activeState).toEqual(firstChanged)
+
+      const secondChanged = createState(3)
+      mockCanvasState(secondChanged)
+      tracker.checkState()
+
+      expect(tracker.activeState).toEqual(secondChanged)
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn).toHaveBeenCalledWith(
+        'checkState() is deprecated — use captureCanvasState() instead.'
+      )
+    })
+  })
+
+  describe('keyboard shortcuts', () => {
+    function createRekaDialog() {
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('data-state', 'open')
+      return dialog
+    }
+
+    function createNativeDialog() {
+      const dialog = document.createElement('dialog')
+      dialog.setAttribute('open', '')
+      return dialog
+    }
+
+    function createLegacyComfyModal() {
+      const modal = document.createElement('div')
+      modal.className = 'comfy-modal'
+      modal.style.display = 'flex'
+      return modal
+    }
+
+    it.each([
+      ['a reka dialog', createRekaDialog],
+      ['a native dialog', createNativeDialog],
+      ['a legacy comfy modal', createLegacyComfyModal]
+    ])('does not undo while %s is open', async (_kind, createModal) => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const modal = createModal()
+      document.body.appendChild(modal)
+
+      try {
+        ChangeTracker.init()
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        await vi.runAllTimersAsync()
+
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(currentState)
+        expect(tracker.undoQueue).toEqual([previousState])
+      } finally {
+        document.body.removeChild(modal)
+      }
     })
   })
 })

@@ -77,7 +77,6 @@ function renderPopover(modelValue: ControlOptions = 'randomize') {
 
 describe('ValueControlPopover', () => {
   beforeEach(() => {
-    mockGet.mockReset()
     mockGet.mockReturnValue('after')
   })
 

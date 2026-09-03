@@ -5,7 +5,7 @@ import CheckIcon from '../icons/CheckIcon.vue'
 type Criterion = { id: string; label: string }
 
 defineProps<{
-  heading: string
+  heading?: string
   subheading: string
   eyebrow?: string
   criteria: readonly Criterion[]
@@ -15,6 +15,7 @@ defineProps<{
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <h2
+      v-if="heading"
       class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
     >
       {{ heading }}

@@ -15,9 +15,12 @@
         <span class="font-semibold">
           {{ t('rightSidePanel.missingModels.gatedModelsHintLabel') }}
         </span>
-        {{ t('rightSidePanel.missingModels.gatedModelsHint') }}
+        {{ t('rightSidePanel.missingModels.gatedModelsHint', gatedModelCount) }}
       </p>
     </div>
+    <span role="status" aria-live="polite" class="sr-only">
+      {{ gatedModelsAnnouncement }}
+    </span>
 
     <div
       v-if="importableModelRows.length > 0"
@@ -82,15 +85,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
+import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { formatSize } from '@/utils/formatUtil'
 
 interface MissingModelRowEntry {
@@ -120,8 +123,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const missingModelStore = useMissingModelStore()
-const { downloadMissingModel } = useMissingModelDownload()
+const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
+  useMissingModelDownload()
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -150,16 +153,35 @@ const downloadableModels = computed(() => {
   return getDownloadableModels(missingModelGroups)
 })
 
-const showGatedModelsHint = computed(() =>
-  downloadableModels.value.some(
-    (model) => !!missingModelStore.gatedRepoUrls[model.url]
-  )
+const gatedModelCount = computed(
+  () =>
+    downloadableModels.value.filter((model) => {
+      const repoUrl = gatedRepoUrlFor(model.url)
+      return !!repoUrl && isTrustedHuggingFaceUrl(repoUrl)
+    }).length
 )
+const showGatedModelsHint = computed(() => gatedModelCount.value > 0)
+const gatedModelsAnnouncement = ref('')
+
+watch(showGatedModelsHint, (isVisible, wasVisible) => {
+  if (!isVisible) {
+    gatedModelsAnnouncement.value = ''
+    return
+  }
+  if (wasVisible) return
+
+  gatedModelsAnnouncement.value = `${t(
+    'rightSidePanel.missingModels.gatedModelsHintLabel'
+  )} ${t(
+    'rightSidePanel.missingModels.gatedModelsHint',
+    gatedModelCount.value
+  )}`
+})
 
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
-    (sum, model) => sum + (missingModelStore.fileSizes[model.url] ?? 0),
+    (sum, model) => sum + (fileSizeFor(model.url) ?? 0),
     0
   )
   return total > 0 ? `${base} (${formatSize(total)})` : base

@@ -10,6 +10,7 @@ import {
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
   JobDetail,
@@ -17,18 +18,6 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
-
-interface ViewFile {
-  body?: Buffer | string
-  contentType?: string
-}
-
-type ViewFilesByName = Readonly<Record<string, ViewFile>>
-
-const transparentPng = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
-  'base64'
-)
 
 const alphaJob = createRouteMockJob({
   id: 'alpha',
@@ -93,6 +82,51 @@ const multiOutputJobDetail: JobDetail = {
   }
 }
 
+const previewableCountJob = createRouteMockJob({
+  id: 'previewable-count-job',
+  create_time: routeMockJobTimestamp - 4_000,
+  execution_start_time: routeMockJobTimestamp - 4_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'previewable-count-a.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '4',
+    mediaType: 'images'
+  },
+  outputs_count: 3,
+  previewable_outputs_count: 2
+})
+
+// outputs_count (3) also counts the non-previewable "latents" file below;
+// previewable_outputs_count (2) counts only what the expanded view renders.
+const previewableCountJobDetail: JobDetail = {
+  ...previewableCountJob,
+  outputs: {
+    '4': {
+      images: [
+        {
+          filename: 'previewable-count-a.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'previewable-count-b.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ],
+      latents: [
+        {
+          filename: 'previewable-count.latent',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
 const generatedJobs: RawJobListItem[] = [alphaJob, betaJob]
 
 const viewFiles = {
@@ -100,7 +134,9 @@ const viewFiles = {
   'beta.png': {},
   'imported.png': {},
   'multi-output-a.png': {},
-  'multi-output-b.png': {}
+  'multi-output-b.png': {},
+  'previewable-count-a.png': {},
+  'previewable-count-b.png': {}
 }
 
 async function mockInputFiles(page: Page, files: readonly string[]) {
@@ -111,41 +147,6 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
     }
 
     await route.fulfill({ json: [...files] })
-  })
-}
-
-async function mockViewFiles(page: Page, filesByName: ViewFilesByName) {
-  await page.route('**/api/view**', async (route) => {
-    if (route.request().method().toUpperCase() !== 'GET') {
-      await route.fallback()
-      return
-    }
-
-    const url = new URL(route.request().url())
-    const filename = url.searchParams.get('filename')
-    if (!filename) {
-      await route.fulfill({
-        status: 400,
-        json: { error: 'Missing filename' } satisfies { error: string }
-      })
-      return
-    }
-
-    const file = filesByName[filename]
-    if (!file) {
-      await route.fulfill({
-        status: 404,
-        json: {
-          error: `Unknown filename: ${filename}`
-        } satisfies { error: string }
-      })
-      return
-    }
-
-    await route.fulfill({
-      body: file.body ?? transparentPng,
-      contentType: file.contentType ?? 'image/png'
-    })
   })
 }
 
@@ -283,13 +284,37 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     ).toHaveJSProperty('naturalWidth', 1)
   })
 
+  test('group badge shows previewable_outputs_count, matching the expanded drilldown', async ({
+    comfyPage,
+    jobsRoutes
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await jobsRoutes.mockJobsHistory([previewableCountJob])
+    await jobsRoutes.mockJobDetail(
+      'previewable-count-job',
+      previewableCountJobDetail
+    )
+
+    await comfyPage.setup()
+    await tab.open()
+
+    const badge = tab
+      .getAssetCardByName('previewable-count-a')
+      .getByRole('button', { name: 'See more outputs' })
+    await expect(badge).toHaveText('2')
+
+    await badge.click()
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(2)
+  })
+
   test('deletes a generated output asset through explicit history refresh', async ({
     comfyPage,
     jobsRoutes
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    await comfyPage.setup()
     await tab.open()
     await expect(tab.getAssetCardByName('alpha')).toBeVisible()
 
@@ -304,7 +329,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     expect(deleteRequests[0]).toEqual({ delete: ['alpha'] })
     await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
     await expect(comfyPage.toast.toastSuccesses).toContainText(
-      'Asset deleted successfully'
+      'Deletion successful'
     )
   })
 })

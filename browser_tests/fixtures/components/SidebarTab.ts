@@ -12,9 +12,9 @@ export class SidebarTab {
     public readonly page: Page,
     public readonly tabId: string
   ) {
-    this.tabButton = page.locator(`.${tabId}-tab-button`)
-    this.selectedTabButton = page.locator(
-      `.${tabId}-tab-button.side-bar-button-selected`
+    this.tabButton = page.getByTestId(TestIds.sidebar.tabButton(tabId))
+    this.selectedTabButton = this.tabButton.and(
+      page.locator('.side-bar-button-selected')
     )
   }
 
@@ -300,6 +300,7 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
   public readonly filterButton: Locator
+  public readonly filterSearchInput: Locator
 
   // --- Filter menu (cloud-only) ---
   public readonly mediaTypeFilterMenuItem: Locator
@@ -356,6 +357,7 @@ export class AssetsSidebarTab extends SidebarTab {
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
     this.filterButton = page.getByRole('button', { name: 'Filter by' })
+    this.filterSearchInput = page.getByRole('textbox', { name: 'Filter by' })
     this.mediaTypeFilterMenuItem = page.getByRole('menuitem', {
       name: /Media type/
     })
@@ -474,21 +476,18 @@ export class AssetsSidebarTab extends SidebarTab {
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
-    // Wait for popover content to render
-    await this.listViewOption
-      .or(this.gridSmallOption)
-      .or(this.gridLargeOption)
-      .first()
-      .waitFor({ state: 'visible', timeout: 3000 })
+    await expect(
+      this.listViewOption
+        .or(this.gridSmallOption)
+        .or(this.gridLargeOption)
+        .first()
+    ).toBeVisible()
   }
 
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    await this.mediaTypeFilterMenuItem.waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.mediaTypeFilterMenuItem).toBeVisible()
   }
 
   async closeFilterMenu() {
@@ -506,10 +505,7 @@ export class AssetsSidebarTab extends SidebarTab {
       return
     }
     await this.mediaTypeFilterMenuItem.click()
-    await this.filterCheckbox('Image').waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.filterCheckbox('Image')).toBeVisible()
   }
 
   async toggleMediaTypeFilter(

@@ -1,10 +1,17 @@
-import { createTestingPinia } from '@pinia/testing'
+// oxlint-disable no-misused-spread -- spreading a widget is the compatibility contract under test
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  INumericWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import type {
+  DrawWidgetOptions,
+  WidgetEventOptions
+} from '@/lib/litegraph/src/widgets/BaseWidget'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -27,18 +34,51 @@ function createTestWidget(
   )
 }
 
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
+  drawWidget(
+    _ctx: CanvasRenderingContext2D,
+    _options: DrawWidgetOptions
+  ): void {}
+
+  onClick(_options: WidgetEventOptions): void {}
+}
+
+function createMutableTypeWidget(node: LGraphNode): MutableTypeWidget {
+  return new MutableTypeWidget(
+    {
+      type: 'number',
+      name: 'typeChangedWidget',
+      value: 42,
+      options: { min: 0, max: 100 },
+      y: 0
+    },
+    node
+  )
+}
+
 describe('BaseWidget store integration', () => {
   let graph: LGraph
   let node: LGraphNode
   let store: ReturnType<typeof useWidgetValueStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useWidgetValueStore()
     graph = new LGraph()
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
+  })
+
+  it('preserves name in keys, spread copies, and JSON', () => {
+    const widget = createTestWidget(node, { name: 'custom-name' })
+
+    const widgetKeys = Object.keys(widget)
+    expect(widgetKeys).toContain('_name')
+    expect(widgetKeys).not.toContain('name')
+    expect({ ...widget }).toMatchObject({ _name: 'custom-name' })
+    expect(JSON.parse(JSON.stringify(widget))).toMatchObject({
+      _name: 'custom-name'
+    })
   })
 
   describe('metadata properties before registration', () => {
@@ -89,8 +129,13 @@ describe('BaseWidget store integration', () => {
     })
 
     it('writes to store when registered', () => {
-      const widget = createTestWidget(node, { name: 'writeWidget' })
-      widget.setNodeId(toNodeId(1))
+      const widget = node.addWidget(
+        'number',
+        'writeWidget',
+        42,
+        () => undefined,
+        {}
+      )
 
       widget.label = 'Updated Label'
       widget.hidden = true
@@ -101,9 +146,13 @@ describe('BaseWidget store integration', () => {
         widgetId(graph.id, toNodeId(1), 'writeWidget')
       )
       expect(state?.label).toBe('Updated Label')
+      expect(state?.options.hidden).toBe(true)
       expect(state?.disabled).toBe(true)
 
-      expect(widget.hidden).toBe(true)
+      widget.hidden = false
+
+      expect(state?.options.hidden).toBe(false)
+      expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBe(true)
     })
 
@@ -146,7 +195,7 @@ describe('BaseWidget store integration', () => {
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
       expect(state?.disabled).toBe(true)
-      expect(state?.options).toEqual({ min: 0, max: 100 })
+      expect(state?.options).toEqual({ min: 0, max: 100, hidden: true })
 
       expect(widget.hidden).toBe(true)
       expect(widget.advanced).toBe(true)
@@ -174,6 +223,103 @@ describe('BaseWidget store integration', () => {
       expect(
         store.getWidget(widgetId(graph.id, toNodeId(1), 'valuesWidget'))?.value
       ).toBe(77)
+    })
+
+    it('registers the live widget type', () => {
+      const widget = createMutableTypeWidget(node)
+      widget.type = 'number-custom'
+
+      widget.setNodeId(toNodeId(1))
+
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), 'typeChangedWidget'))
+          ?.type
+      ).toBe('number-custom')
+    })
+
+    it('registers replaced options after graph attachment', () => {
+      const detachedNode = new LGraphNode('DetachedNode')
+      const widget = detachedNode.addWidget(
+        'combo',
+        'resolution',
+        'initial',
+        null,
+        { values: ['initial'] }
+      )
+      widget.hidden = true
+      widget.options = { values: ['replacement'] }
+
+      graph.add(detachedNode)
+
+      expect(
+        store.getWidget(widgetId(graph.id, detachedNode.id, 'resolution'))
+          ?.options
+      ).toEqual({ values: ['replacement'], hidden: true })
+    })
+
+    it('registers duplicate widget names under distinct ids', () => {
+      const first = createTestWidget(node, { name: 'duplicate' })
+      const second = createTestWidget(node, { name: 'duplicate' })
+      node.widgets = [first, second]
+
+      first.setNodeId(toNodeId(1))
+      second.setNodeId(toNodeId(1))
+
+      expect(first.widgetId).toBe(widgetId(graph.id, toNodeId(1), 'duplicate'))
+      expect(second.widgetId).toBe(
+        widgetId(graph.id, toNodeId(1), 'duplicate#1')
+      )
+      expect(node.widgets.map(({ name }) => name)).toEqual([
+        'duplicate',
+        'duplicate#1'
+      ])
+      expect(store.getNodeWidgetIds(graph.id, toNodeId(1))).toEqual([
+        first.widgetId,
+        second.widgetId
+      ])
+    })
+
+    it('keeps ids stable and avoids literal suffix collisions', () => {
+      const first = createTestWidget(node, { name: 'duplicate' })
+      const second = createTestWidget(node, { name: 'duplicate' })
+      const literal = createTestWidget(node, { name: 'duplicate#1' })
+      node.widgets = [first, second, literal]
+
+      for (const widget of [first, second, literal]) {
+        widget.setNodeId(toNodeId(1))
+      }
+      const ids = node.widgets.map((widget) => widget.widgetId)
+      node.widgets.reverse()
+
+      expect(ids).toEqual([
+        widgetId(graph.id, toNodeId(1), 'duplicate'),
+        widgetId(graph.id, toNodeId(1), 'duplicate#2'),
+        widgetId(graph.id, toNodeId(1), 'duplicate#1')
+      ])
+      expect(node.widgets.map((widget) => widget.widgetId).reverse()).toEqual(
+        ids
+      )
+      expect(
+        ids.map((id) => (id ? store.getWidget(id)?.name : undefined))
+      ).toEqual(['duplicate', 'duplicate#2', 'duplicate#1'])
+      expect(node.widgets.map(({ name }) => name).reverse()).toEqual([
+        'duplicate',
+        'duplicate#2',
+        'duplicate#1'
+      ])
+    })
+
+    it('stores explicit isDOMWidget false over component presence', () => {
+      const widget = createTestWidget(node, { name: 'flaggedDomWidget' })
+      Object.assign(widget, { component: {}, isDOMWidget: false })
+
+      widget.setNodeId(toNodeId(1))
+
+      expect(
+        store.getWidgetRenderState(
+          widgetId(graph.id, toNodeId(1), 'flaggedDomWidget')
+        )?.isDOMWidget
+      ).toBe(false)
     })
   })
 

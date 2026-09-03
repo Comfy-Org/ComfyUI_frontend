@@ -96,8 +96,6 @@ describe('PackEnableToggle', () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockIsPackEnabled.mockReset()
     mockEnablePack.mockReset().mockResolvedValue(undefined)
     mockDisablePack.mockReset().mockResolvedValue(undefined)
     mockGetConflictsForPackageByID.mockReset().mockReturnValue(undefined)

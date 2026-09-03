@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -101,7 +100,6 @@ describe('useSelectedLiteGraphItems', () => {
   let mockCanvas: { selectedItems: Set<Positionable> }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     mockApp.canvas.selected_nodes = null
 

@@ -23,7 +23,6 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 describe('NodeSearchContent', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
@@ -35,7 +34,7 @@ describe('NodeSearchContent', () => {
     const onAddNode = vi.fn()
     const onHoverNode = vi.fn()
     const onRemoveFilter =
-      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void>()
+      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl>) => void>()
     const onAddFilter = vi.fn()
     render(NodeSearchContent, {
       props: {

@@ -41,7 +41,6 @@ describe('FreeTierQuota', () => {
   beforeEach(() => {
     mockIsFreeTier.value = true
     mockAvailable.value = 3
-    mockShowSubscriptionDialog.mockClear()
   })
 
   it('hides the displayed quota when the user leaves the free tier', async () => {
