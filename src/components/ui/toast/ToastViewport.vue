@@ -26,7 +26,7 @@ const forwardedProps = useForwardProps(restProps)
       v-reka-z-index="zIndexVersion"
       :class="
         cn(
-          'pointer-events-none fixed top-20 right-4 flex max-h-screen w-full max-w-sm flex-col gap-2 p-4',
+          'pointer-events-none fixed top-20 right-[calc(1rem+var(--workspace-inset-right,0px))] flex max-h-screen w-full max-w-sm flex-col gap-2 p-4',
           className
         )
       "

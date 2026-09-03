@@ -33,6 +33,7 @@ import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -66,6 +67,7 @@ const AgentPanelRoot = defineAsyncComponent({
 const agentPanelStore = useAgentPanelStore()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
+useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 
 const isResizing = ref(false)
 let resizeStartX = 0

@@ -1,4 +1,4 @@
-import { watchEffect } from 'vue'
+import { onScopeDispose, watchEffect } from 'vue'
 
 /**
  * Width consumed by docked surfaces on the right of the workspace.
@@ -15,5 +15,8 @@ export function useWorkspaceInsetRight(widthPx: () => number): void {
       WORKSPACE_INSET_RIGHT,
       `${widthPx()}px`
     )
+  })
+  onScopeDispose(() => {
+    document.documentElement.style.setProperty(WORKSPACE_INSET_RIGHT, '0px')
   })
 }
