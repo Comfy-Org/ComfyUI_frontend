@@ -582,6 +582,67 @@ test('resumes declined checkout and completes it with a new card', async () => {
       path: `${evidenceDir}/frontend-after-sign-in.png`,
       fullPage: true
     })
+    if (process.env.RUN20P_INVOICE === 'true') {
+      const operationId = '7ad89a4b-0da6-4b8c-a10a-15e56f4da607'
+      await expect
+        .poll(
+          () =>
+            context
+              .pages()
+              .some((candidate) =>
+                candidate.url().includes('invoice.stripe.com')
+              ),
+          { timeout: 45_000 }
+        )
+        .toBe(true)
+      const invoicePage = context
+        .pages()
+        .find((candidate) => candidate.url().includes('invoice.stripe.com'))!
+      writeFileSync(
+        `${evidenceDir}/invoice-operation-before.json`,
+        `${JSON.stringify({ operation_id: operationId, action_url: invoicePage.url(), opened_by: 'package-poller' }, null, 2)}\n`
+      )
+      await invoicePage.screenshot({
+        path: `${evidenceDir}/invoice-page.png`,
+        fullPage: true
+      })
+      const pay = invoicePage.getByRole('button', { name: /pay/i }).last()
+      await expect(pay).toBeVisible({ timeout: 30_000 })
+      await pay.click()
+      await findChallengeFrame(invoicePage)
+      const challengeStartedAt = Date.now()
+      await completeChallenge(invoicePage)
+      await invoicePage.screenshot({
+        path: `${evidenceDir}/invoice-after-3ds.png`,
+        fullPage: true
+      })
+      appendFileSync(
+        `${evidenceDir}/paystate.log`,
+        `${new Date().toISOString()} verifying ${operationId}\n`
+      )
+      let terminal: unknown = null
+      await expect
+        .poll(
+          async () => {
+            terminal = await page.evaluate(async (id) => {
+              const response = await fetch(`/api/billing/ops/${id}`)
+              return await response.json()
+            }, operationId)
+            return Reflect.get(terminal as object, 'status')
+          },
+          { timeout: 300_000, intervals: [1_000, 3_000, 8_000, 30_000] }
+        )
+        .toBe('succeeded')
+      appendFileSync(
+        `${evidenceDir}/paystate.log`,
+        `${new Date().toISOString()} success ${operationId}\n`
+      )
+      writeFileSync(
+        `${evidenceDir}/invoice-settlement.json`,
+        `${JSON.stringify({ challenge_started_at: new Date(challengeStartedAt).toISOString(), completed_at: new Date().toISOString(), elapsed_ms: Date.now() - challengeStartedAt, operation: terminal, payment: await paymentState(page) }, null, 2)}\n`
+      )
+      return
+    }
     if (process.env.RUN20N_HOSTED === 'true') {
       const startedAt = Date.now()
       const pagesBeforeSubscribe = context.pages().length
