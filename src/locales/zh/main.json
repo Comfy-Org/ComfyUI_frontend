@@ -126,11 +126,6 @@
     "untitledChat": "未命名",
     "uploading": "正在上传"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次运行的成本",
-    "title": "API节点",
-    "totalCost": "总成本"
-  },
   "apiNodesSignInDialog": {
     "message": "此工作流包含API节点，需要您登录账户才能运行。",
     "title": "使用API节点需要登录"

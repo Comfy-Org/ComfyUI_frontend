@@ -60,6 +60,41 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('gets and puts the run-mode preference using the API contract', async () => {
+    const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
+    respond(jsonResponse(200, preference))
+
+    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
+      preference
+    )
+    expect(lastCall()).toMatchObject({
+      route: '/agent/run-mode',
+      init: { method: 'GET' }
+    })
+
+    respond(jsonResponse(200, preference))
+    await createAgentRestClient().putRunMode(preference)
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/run-mode')
+    expect(init.method).toBe('PUT')
+    expect(JSON.parse(init.body as string)).toEqual(preference)
+  })
+
+  it('accepts unlimited auto mode with a null credit limit', async () => {
+    const preference = { mode: 'auto' as const, credit_limit: null }
+    respond(jsonResponse(200, preference))
+
+    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
+      preference
+    )
+  })
+
+  it('rejects a non-positive limited mode response', async () => {
+    respond(jsonResponse(200, { mode: 'auto_limited', credit_limit: 0 }))
+
+    await expect(createAgentRestClient().getRunMode()).rejects.toThrow()
+  })
+
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
     await makeClient().cancelMessage('t7', 'm3')
@@ -143,6 +178,31 @@ describe('postMessage wire body', () => {
       unknown
     >
     expect(Object.keys(parsed)).toEqual(['content'])
+  })
+
+  it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: "what's on my canvas",
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: "what's on my canvas",
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+    })
+  })
+
+  it('forwards draft.version when the client has previously seen one', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'edit it',
+      draft: { content: { nodes: [], links: [] }, version: 4 }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
+      draft: { version: 4 }
+    })
   })
 })
 

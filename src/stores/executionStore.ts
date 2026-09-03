@@ -154,6 +154,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * Only populated for jobs that are queued in this browser tab.
    */
   const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
+  const jobIdToWorkflowInstanceId = new Map<JobId, string>()
 
   const initializingJobIds = ref<Set<JobId>>(new Set())
 
@@ -454,7 +455,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
-    executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
@@ -462,9 +462,18 @@ export const useExecutionStore = defineStore('execution', () => {
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
     if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
-      const path = queuedJobs.value[activeJobId.value]?.workflow?.path
-      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+      const workflow = queuedJobs.value[activeJobId.value]?.workflow
+      if (workflow) {
+        ensureSessionWorkflowPath(
+          activeJobId.value,
+          workflow.path,
+          workflow.instanceId
+        )
+      }
     }
+    executionErrorStore.clearExecutionStartErrors(
+      runErrorKeyForJob(activeJobId.value)
+    )
     queuedJobs.value[activeJobId.value].executionStartedAt ??= performance.now()
     setWorkflowStatus(activeJobId.value, {
       status: 'running',
@@ -636,8 +645,62 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  /**
+   * Queue and history polling supply a workflow id but no path, so the open
+   * workflow carrying that root graph provides it. Two open workflows can share
+   * a root graph id — an imported copy of one already on screen — and those runs
+   * belong to different error buckets, so an ambiguous match resolves to
+   * nothing rather than the wrong workflow.
+   */
+  function openWorkflowPathForGraph(graphId: WorkflowId): string | undefined {
+    const matches = workflowStore.openWorkflows.filter(
+      (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+    )
+    return matches.length === 1 ? matches[0].path : undefined
+  }
+
+  /**
+   * Run-error key of the workflow that produced `jobId`, for filing its errors
+   * against that workflow rather than whichever one is currently on screen.
+   *
+   * `jobIdToWorkflow` only covers jobs queued by this browser session and is
+   * purged the moment a run ends, so `jobIdToWorkflowId` — also populated from
+   * queue and history polling — backs it up for jobs from a previous page load.
+   *
+   * `null` means the job cannot be attributed to one known workflow, so
+   * recording is suppressed rather than assigning it to whichever workflow is
+   * currently visible.
+   */
+  function runErrorKeyForJob(jobId: string): string | null {
+    const workflow = jobIdToWorkflow.get(jobId)
+    const graphId =
+      workflow?.activeState?.id ??
+      workflow?.initialState?.id ??
+      jobIdToWorkflowId.value.get(jobId)
+    if (graphId === undefined) return null
+
+    const path =
+      workflow?.path ??
+      jobIdToSessionWorkflowPath.value.get(jobId) ??
+      openWorkflowPathForGraph(graphId)
+    if (path === undefined) return null
+
+    return executionErrorStore.runErrorKey(graphId, path)
+  }
+
+  function isJobErrorForActiveWorkflow(jobId: string): boolean {
+    const runErrorKey = runErrorKeyForJob(jobId)
+    return (
+      runErrorKey !== null &&
+      runErrorKey === executionErrorStore.captureRunErrorKey()
+    )
+  }
+
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     const endTime = performance.now()
+    // Resolved up front: resetExecutionState() drops the job's workflow entry
+    // before the handlers below record anything.
+    const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
     setWorkflowStatus(e.detail.prompt_id, {
       status: 'failed',
       endTime,
@@ -654,7 +717,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (isCloud) {
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
       // Pre-flight validation isn't a runtime failure — no badge.
-      if (handleCloudValidationError(e.detail)) {
+      if (handleCloudValidationError(e.detail, runErrorKey)) {
         return
       }
     }
@@ -664,7 +727,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (handleAccountPreconditionError(e.detail)) return
 
     // Service-level errors (e.g. "Job has stagnated") have no associated node.
-    if (handleServiceLevelError(e.detail)) {
+    if (handleServiceLevelError(e.detail, runErrorKey)) {
       return
     }
 
@@ -673,7 +736,7 @@ export const useExecutionStore = defineStore('execution', () => {
       endTime,
       failureReason: 'execution_failed'
     })
-    executionErrorStore.recordExecutionError(e.detail)
+    executionErrorStore.recordExecutionError(e.detail, runErrorKey)
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
   }
@@ -694,25 +757,32 @@ export const useExecutionStore = defineStore('execution', () => {
     return true
   }
 
-  function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
+  function handleServiceLevelError(
+    detail: ExecutionErrorWsMessage,
+    runErrorKey: string | null | undefined
+  ): boolean {
     const nodeId = detail.node_id
     if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
       return false
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.recordPromptError({
-      type: detail.exception_type ?? 'error',
-      message: detail.exception_type
-        ? `${detail.exception_type}: ${detail.exception_message}`
-        : (detail.exception_message ?? ''),
-      details: detail.traceback?.join('\n') ?? ''
-    })
+    executionErrorStore.recordPromptError(
+      {
+        type: detail.exception_type ?? 'error',
+        message: detail.exception_type
+          ? `${detail.exception_type}: ${detail.exception_message}`
+          : (detail.exception_message ?? ''),
+        details: detail.traceback?.join('\n') ?? ''
+      },
+      runErrorKey
+    )
     return true
   }
 
   function handleCloudValidationError(
-    detail: ExecutionErrorWsMessage
+    detail: ExecutionErrorWsMessage,
+    runErrorKey: string | null | undefined
   ): boolean {
     const result = classifyCloudValidationError(detail.exception_message)
     if (!result) return false
@@ -721,9 +791,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.recordNodeErrors(result.nodeErrors)
+      executionErrorStore.recordNodeErrors(result.nodeErrors, runErrorKey)
     } else {
-      executionErrorStore.recordPromptError(result.promptError)
+      executionErrorStore.recordPromptError(result.promptError, runErrorKey)
     }
     return true
   }
@@ -796,6 +866,7 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
+    const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
     if (jobId) {
       const map = { ...nodeProgressStatesByJob.value }
       delete map[jobId]
@@ -806,7 +877,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (jobId) delete queuedJobs.value[jobId]
     activeJobId.value = null
     _executingNodeProgress.value = null
-    executionErrorStore.clearPromptError()
+    executionErrorStore.clearPromptError(runErrorKey)
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -880,7 +951,7 @@ export const useExecutionStore = defineStore('execution', () => {
       jobIdToWorkflowId.value.set(id, wid)
     }
     if (workflow?.path) {
-      ensureSessionWorkflowPath(id, workflow.path)
+      ensureSessionWorkflowPath(id, workflow.path, workflow.instanceId)
     }
     flushPendingWorkflowStatus(String(id), workflow)
   }
@@ -908,16 +979,39 @@ export const useExecutionStore = defineStore('execution', () => {
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
   const MAX_SESSION_PATH_ENTRIES = 4000
 
-  function ensureSessionWorkflowPath(jobId: JobId, path: string) {
+  function ensureSessionWorkflowPath(
+    jobId: JobId,
+    path: string,
+    workflowInstanceId?: string
+  ) {
+    if (workflowInstanceId) {
+      jobIdToWorkflowInstanceId.set(jobId, workflowInstanceId)
+    }
     if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
     while (next.size > MAX_SESSION_PATH_ENTRIES) {
       const oldest = next.keys().next().value
-      if (oldest !== undefined) next.delete(oldest)
-      else break
+      if (oldest !== undefined) {
+        next.delete(oldest)
+        jobIdToWorkflowInstanceId.delete(oldest)
+      } else break
     }
     jobIdToSessionWorkflowPath.value = next
+  }
+
+  function rewriteSessionWorkflowPaths(
+    workflowInstanceId: string,
+    newPath: string
+  ) {
+    let next: Map<string, string> | undefined
+    for (const [jobId, path] of jobIdToSessionWorkflowPath.value) {
+      if (path === newPath) continue
+      if (jobIdToWorkflowInstanceId.get(jobId) !== workflowInstanceId) continue
+      next ??= new Map(jobIdToSessionWorkflowPath.value)
+      next.set(jobId, newPath)
+    }
+    if (next) jobIdToSessionWorkflowPath.value = next
   }
 
   /**
@@ -990,6 +1084,7 @@ export const useExecutionStore = defineStore('execution', () => {
     unbindExecutionEvents,
     storeJob,
     registerJobWorkflowIdMapping,
+    isJobErrorForActiveWorkflow,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.
     _executingNodeProgress,
@@ -999,6 +1094,7 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToSessionWorkflowPath,
     ensureSessionWorkflowPath,
     getWorkflowStatus,
-    clearWorkflowStatus
+    clearWorkflowStatus,
+    rewriteSessionWorkflowPaths
   }
 })
