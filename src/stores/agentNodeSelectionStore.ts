@@ -184,6 +184,21 @@ export const useAgentNodeSelectionStore = defineStore(
       return workflowPath ? (nodeIdsByWorkflow.value[workflowPath] ?? []) : []
     }
 
+    function moveNodeIds(
+      oldWorkflowPath: string | undefined,
+      newWorkflowPath: string | undefined
+    ): void {
+      if (
+        !oldWorkflowPath ||
+        !newWorkflowPath ||
+        oldWorkflowPath === newWorkflowPath
+      )
+        return
+      const { [oldWorkflowPath]: ids, ...remaining } = nodeIdsByWorkflow.value
+      if (!ids) return
+      nodeIdsByWorkflow.value = { ...remaining, [newWorkflowPath]: ids }
+    }
+
     function beginWorkflowLoad(): void {
       isLoadingWorkflow.value = true
     }
@@ -217,6 +232,7 @@ export const useAgentNodeSelectionStore = defineStore(
       exit,
       saveNodeIds,
       nodeIds,
+      moveNodeIds,
       beginWorkflowLoad,
       restoreNodeIds,
       finishWorkflowLoad
