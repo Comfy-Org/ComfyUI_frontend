@@ -25,11 +25,11 @@ const {
   class DowngradeNotAllowedError extends Error {
     constructor(
       public details: {
-        preview: { cost_today_cents: number }
+        preview: { cost_today_cents: number; reason?: string }
         requiresReactivationConfirmation: boolean
       }
     ) {
-      super('downgrade not allowed')
+      super(details.preview.reason ?? 'downgrade not allowed')
     }
   }
   class ReactivationConfirmationRequiredError extends Error {
@@ -438,6 +438,32 @@ describe('showDowngradeToPersonalDialog', () => {
 
     args.dialogComponentProps.onClose()
     await expect(resultPromise).resolves.toBeNull()
+  })
+
+  // Un-skip once PreviewSubscribeResponse carries a machine-readable
+  // reason_code: today every server refusal throws the same
+  // DowngradeNotAllowedError, so the FE cannot tell a refusal member
+  // removal would fix (seats) from one it would not (e.g. outstanding
+  // balance) and this destructive-path guard is not yet enforceable.
+  it.skip('does not offer member removal when the refusal is unrelated to seats', async () => {
+    hasOtherMembers.value = true
+    previewDowngrade.mockRejectedValue(
+      new DowngradeNotAllowedError({
+        preview: { cost_today_cents: 0, reason: 'Outstanding balance' },
+        requiresReactivationConfirmation: false
+      })
+    )
+
+    await useDialogService().showDowngradeToPersonalDialog(options)
+
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Outstanding balance'
+      })
+    )
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
 
   it('toasts instead of opening the dialog when the preview fails for any other reason, even with members', async () => {
