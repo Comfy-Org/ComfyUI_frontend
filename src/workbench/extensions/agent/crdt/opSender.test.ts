@@ -353,6 +353,37 @@ describe('createOpSender', () => {
     expect(settled[1].state).toBe('acknowledged')
   })
 
+  it('mismatched anonymous results drain stale credits after a workflow switch', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      ok: false,
+      workflowId: WORKFLOW,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      ok: false,
+      workflowId: WORKFLOW,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      ok: false,
+      workflowId: 'wf-2',
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled).toHaveLength(2)
+    expect(settled[1].state).toBe('acknowledged')
+  })
+
   it('an identified empty-list failure settles the batch it names via failure.op_id', () => {
     sender.enqueue([addNode(1)])
     const opId = sent[0].ops[0].op_id
