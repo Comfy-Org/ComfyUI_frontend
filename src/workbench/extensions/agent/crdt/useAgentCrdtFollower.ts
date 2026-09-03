@@ -16,10 +16,8 @@ import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount loses the binding until the NEXT turn ack. Persist it per-tab
-// in sessionStorage so an in-page remount can rebind immediately. A full page
-// reload deliberately does NOT rebind (see the nonce below): it mints a new
-// nonce, refuses the pre-reload record, and waits for the next turn ack.
+// panel remount or reload loses the binding until the NEXT turn ack. Persist it
+// per-tab in sessionStorage so the follower can rebind immediately.
 //
 // FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
 // (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
@@ -29,9 +27,9 @@ import { createOpSender } from './opSender'
 // at all. Neither case can be caught by re-checking `workflowId`, because the
 // whole reason a rebind is attempted is that the caller does NOT yet know
 // which workflow it's asking about. Instead the persisted record carries (1)
-// a per-page-load session nonce, so a value only ever rebinds within the
-// SAME top-level navigation that wrote it - a duplicated tab gets a fresh
-// nonce and its inherited record is refused - and (2) a short expiry that
+// a per-page-load session nonce, so a duplicated tab gets a fresh nonce and
+// its inherited record is refused unless this navigation is an explicit
+// reload, and (2) a short expiry that
 // slides while the doc keeps delivering frames, so a tab left idle past the
 // window a doc realistically stays relevant is refused rather than trusted
 // indefinitely. (1) closes case (b). Case (a) happens inside one page load,
@@ -77,8 +75,12 @@ function persistDocId(docId: string): void {
   }
 }
 
-// Returns the persisted doc id ONLY when it was written by this same page
-// load and has not expired.
+function isReloadNavigation(): boolean {
+  return performance
+    .getEntriesByType('navigation')
+    .some((entry) => (entry as PerformanceNavigationTiming).type === 'reload')
+}
+
 function readPersistedDocId(): string | null {
   try {
     const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
@@ -93,8 +95,11 @@ function readPersistedDocId(): string | null {
       // absent rather than trusting an unscoped id.
       return null
     }
-    if (record.nonce !== pageSessionNonce) return null
     if (Date.now() >= record.expiresAt) return null
+    if (record.nonce !== pageSessionNonce) {
+      if (!isReloadNavigation()) return null
+      persistDocId(record.docId)
+    }
     return record.docId
   } catch {
     return null

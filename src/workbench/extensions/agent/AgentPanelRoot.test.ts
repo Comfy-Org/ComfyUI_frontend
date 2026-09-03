@@ -5,7 +5,7 @@ import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type * as AgentCrdtFollowerModule from './crdt/useAgentCrdtFollower'
@@ -288,7 +288,12 @@ vi.mock('@/platform/telemetry', () => ({
 // would restore, so tests can assert how AgentPanelRoot.vue resolves
 // `isBoundWorkflowActive` without a subscribe/persist round trip.
 const crdtFollowerCalls = vi.hoisted(
-  () => [] as { workflowId: string | null; active: boolean }[]
+  () =>
+    [] as {
+      workflowId: string | null
+      active: boolean
+      isTargetActive: Ref<boolean>
+    }[]
 )
 const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
 vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
@@ -297,21 +302,15 @@ vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
     ...actual,
     peekPersistedDocId: () => persistedCrdtDocId.value,
     useAgentCrdtFollower: (
-      workflowId: Ref<string | null>,
-      graphMutations: unknown,
-      userId: () => string | null,
-      isTargetActive: Ref<boolean>
+      ...args: Parameters<typeof actual.useAgentCrdtFollower>
     ) => {
+      const [workflowId, , , isTargetActive = ref(true)] = args
       crdtFollowerCalls.push({
         workflowId: workflowId.value,
-        active: isTargetActive.value
-      })
-      return actual.useAgentCrdtFollower(
-        workflowId,
-        graphMutations as Parameters<typeof actual.useAgentCrdtFollower>[1],
-        userId,
+        active: isTargetActive.value,
         isTargetActive
-      )
+      })
+      return actual.useAgentCrdtFollower(...args)
     }
   }
 })
@@ -2044,7 +2043,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-      expect(crdtFollowerCalls.at(-1)).toEqual({
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
         workflowId: null,
         active: true
       })
@@ -2058,7 +2057,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-      expect(crdtFollowerCalls.at(-1)).toEqual({
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
         workflowId: null,
         active: false
       })
@@ -2071,10 +2070,27 @@ describe('AgentPanelRoot workflow binding', () => {
 
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-      expect(crdtFollowerCalls.at(-1)).toEqual({
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
         workflowId: null,
         active: false
       })
+    })
+
+    it('deactivates a restored follower when a new chat detaches the workflow', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const follower = crdtFollowerCalls.at(-1)
+      expect(follower?.isTargetActive.value).toBe(true)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+
+      expect(follower?.isTargetActive.value).toBe(false)
     })
   })
 
