@@ -624,13 +624,11 @@ fix so the bug stays fixed:
    the per-op audit rows (`agent_tool_calls` parent and child rows) the
    exporter reads. The same agent in standalone mode
    (SQLite, no doc host) never writes them, so it can only
-   yield text-only or tool-error turns. Export the turn's rows and
-   convert them to a conversation JSON under
-   `browser_tests/fixtures/data/agent/conversations/` with
-   `scripts/agentConversationCapture.ts`, marking
-   `response_side: 'recorded'` (see `fixtures/data/agent/README.md` for
-   the capture format and backend query). Never write `graph_ops` by
-   hand and never relabel a synthesized response as recorded.
+   yield text-only or tool-error turns. Record it with the recorder that
+   lives beside the fixtures under `browser_tests/fixtures/data/agent/`,
+   which writes the conversation JSON into `conversations/` marked
+   `response_side: 'recorded'`. Never write `graph_ops` by hand and never
+   relabel a synthesized response as recorded.
 2. **Add the replay case.** Drive the fixture through the conversation
    replay fixture (`agentConversationFixture`), asserting the
    canvas-observable outcome the bug corrupted (graph end-state or
