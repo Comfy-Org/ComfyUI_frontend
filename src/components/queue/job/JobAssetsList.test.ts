@@ -42,6 +42,12 @@ vi.mock<unknown>(import('reka-ui'), async () => {
       name: 'Primitive',
       template: '<button><slot /></button>'
     }),
+    injectPopoverRootContext: () => ({
+      open: inject(
+        popoverOpenKey,
+        computed(() => false)
+      )
+    }),
     PopoverContent: defineComponent({
       name: 'PopoverContent',
       props: {
