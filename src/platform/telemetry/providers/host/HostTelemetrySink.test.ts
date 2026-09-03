@@ -203,6 +203,23 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards link dedup drops to the host bridge', () => {
+    new HostTelemetrySink().trackLinkDedupDrop({
+      droppedLinkId: 7,
+      survivorLinkId: 3,
+      target: '12:0'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.LINK_DEDUP_DROP,
+      {
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      }
+    )
+  })
+
   it('does nothing when the host bridge is absent', () => {
     delete window.__comfyDesktop2
 

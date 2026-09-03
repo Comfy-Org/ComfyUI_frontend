@@ -86,7 +86,7 @@ const addMultiSelectWidget = (
       }
     }
   })
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget as BaseDOMWidget)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   if (inputSpec.control_after_generate) {

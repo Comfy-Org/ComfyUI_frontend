@@ -287,6 +287,27 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       .toBeLessThanOrEqual(1)
   })
 
+  test('exits node selection when the active workflow changes', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    const panel = page.locator('#agent-panel-root')
+    await panel
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+    await page
+      .getByRole('menuitem', { name: enMessages.agent.addNodesFromGraph })
+      .click()
+    const selectionBanner = page.getByTestId('node-selection-mode-banner')
+    await expect(selectionBanner).toBeVisible()
+
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+
+    await expect(selectionBanner).toHaveCount(0)
+  })
+
   test('edits and resubmits the last prompt after stopping its turn', async ({
     comfyPage,
     postedMessages,

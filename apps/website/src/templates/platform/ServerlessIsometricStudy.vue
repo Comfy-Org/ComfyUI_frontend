@@ -218,6 +218,10 @@ function polygonPoints(points: readonly Point[]) {
   return points.map(([x, y]) => `${x},${y}`).join(' ')
 }
 
+function polygonPath(points: readonly Point[]) {
+  return `${points.map(([x, y], index) => `${index ? 'L' : 'M'}${x},${y}`).join('')}Z`
+}
+
 function leftFace(tile: VisualTile) {
   const top = tileCorners(tile, tile.height)
   const base = tileCorners(tile, 0)
@@ -230,6 +234,13 @@ function rightFace(tile: VisualTile) {
   const base = tileCorners(tile, 0)
 
   return polygonPoints([top[3], top[2], base[2], base[3]])
+}
+
+function texturedFaces(tile: VisualTile) {
+  const top = tileCorners(tile, tile.height)
+  const base = tileCorners(tile, 0)
+
+  return `${polygonPath([top[0], top[3], base[3], base[0]])} ${polygonPath([top[3], top[2], base[2], base[3]])} ${polygonPath(top)}`
 }
 
 const { pause, resume } = useRafFn(
@@ -318,8 +329,7 @@ watch(
 
       <g v-for="tile in visualTiles" :key="tile.id">
         <template v-if="tile.height > 0.5">
-          <polygon :points="leftFace(tile)" :fill="`url(#${textureId})`" />
-          <polygon :points="rightFace(tile)" :fill="`url(#${textureId})`" />
+          <path :d="texturedFaces(tile)" :fill="`url(#${textureId})`" />
           <g
             :opacity="tile.textureShadeOpacity"
             :data-texture-shade="tile.textureShadeOpacity"
@@ -342,10 +352,6 @@ watch(
             :points="rightFace(tile)"
             fill="var(--color-primary-comfy-plum)"
             fill-opacity="0.06"
-          />
-          <polygon
-            :points="polygonPoints(tileCorners(tile, tile.height))"
-            :fill="`url(#${textureId})`"
           />
           <polygon
             :points="polygonPoints(tileCorners(tile, tile.height))"
