@@ -9,7 +9,7 @@
           variant="muted-textonly"
           class="shrink-0 rounded-full"
           :aria-label="$t('g.back')"
-          :disabled="interactionLocked"
+          :disabled="interactionLocked || challengeInFlight"
           @click="$emit('back')"
         >
           <i class="pi pi-arrow-left text-base" />
@@ -383,6 +383,11 @@ const verificationRecoveryActive = computed(() =>
     authenticationState,
     reconciliationOperationId
   })
+)
+const challengeInFlight = computed(
+  () =>
+    authenticationState !== 'failed_retryable' &&
+    (Boolean(actionUrl) || verificationRecoveryActive.value)
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)

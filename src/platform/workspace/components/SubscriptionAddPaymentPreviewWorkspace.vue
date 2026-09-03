@@ -32,7 +32,7 @@
           variant="muted-textonly"
           class="shrink-0 rounded-full"
           :aria-label="$t('g.back')"
-          :disabled="interactionLocked"
+          :disabled="interactionLocked || challengeInFlight"
           @click="$emit('back')"
         >
           <i class="pi pi-arrow-left text-base" />
@@ -194,6 +194,7 @@
             variant="link"
             size="lg"
             class="ml-auto px-0"
+            :disabled="challengeInFlight"
             @click="$emit('changePaymentMethod')"
           >
             {{ $t('subscription.preview.changePaymentMethod') }}
@@ -203,6 +204,7 @@
           v-else
           v-model="selectedMethod"
           :options="savedMethodOptions"
+          :disabled="challengeInFlight"
           size="lg"
         />
       </div>
@@ -496,6 +498,18 @@ const promotionCode = ref(previewData?.promotion_code ?? '')
 const stripeSubmissionPending = ref(false)
 const interactionLocked = computed(
   () => isLoading || isApplyingPromotionCode || stripeSubmissionPending.value
+)
+
+// Once the bank challenge is open the charge is already in flight. Leaving the
+// step or switching the card would strand it against a method the customer can
+// no longer see, so both lock until the operation resolves.
+// A failed challenge is over even when its actionUrl lingers on the
+// operation: nothing is in flight, so the escape hatches — back, Change,
+// the picker — must stay live for the recovery.
+const challengeInFlight = computed(
+  () =>
+    authenticationState !== 'failed_retryable' &&
+    (Boolean(actionUrl) || verificationRecoveryActive.value)
 )
 watch(
   () => previewData?.promotion_code,
