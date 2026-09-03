@@ -16,12 +16,6 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
-vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
-  useAgentConsentStore: () => ({ accepted: true })
-}))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ isLoggedIn: { value: true } })
-}))
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const fetchApi = vi.hoisted(() =>
@@ -59,6 +53,7 @@ vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
 function openPanel() {
   const store = useAgentPanelStore()
   store.enabled = true
+  store.consentAccepted = true
   store.isOpen = true
   return store
 }

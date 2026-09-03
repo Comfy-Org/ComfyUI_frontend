@@ -6,12 +6,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
-vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
-  useAgentConsentStore: () => ({ accepted: true })
-}))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ isLoggedIn: { value: true } })
-}))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
@@ -57,6 +51,7 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
     expect(docked.value).toBe(false)
     store.enabled = true
+    store.consentAccepted = true
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
     expect(docked.value).toBe(false)
     store.isOpen = true
