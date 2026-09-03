@@ -22,7 +22,11 @@ const asset = (url: string): ReplyAsset => ({
   filename: 'a.png',
   kind: 'image'
 })
-const ok = () => ({ ok: true, blob: async () => new Blob() })
+const ok = (blob = new Blob()) =>
+  ({ ok: true, blob: vi.fn().mockResolvedValue(blob) }) satisfies Pick<
+    Response,
+    'ok' | 'blob'
+  >
 
 describe('downloadReplyAsset', () => {
   beforeEach(() => {
@@ -45,6 +49,25 @@ describe('downloadReplyAsset', () => {
 
     expect(fetchApi).toHaveBeenCalledWith(url)
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('downloads a successful response blob', async () => {
+    const blob = new Blob(['image'])
+    fetchApi.mockResolvedValueOnce(ok(blob))
+
+    await downloadReplyAsset(asset('http://localhost/api/view?filename=a.png'))
+
+    expect(downloadBlob).toHaveBeenCalledWith('a.png', blob)
+  })
+
+  it('propagates network errors without starting a download', async () => {
+    const error = new TypeError('network error')
+    fetchApi.mockRejectedValueOnce(error)
+
+    await expect(
+      downloadReplyAsset(asset('https://cdn.example.com/signed/a.png'))
+    ).rejects.toBe(error)
+    expect(downloadBlob).not.toHaveBeenCalled()
   })
 
   // W10 target behavior is tracked by source PR #16211.
