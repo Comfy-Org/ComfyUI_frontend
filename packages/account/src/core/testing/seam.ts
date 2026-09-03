@@ -5,6 +5,24 @@ import type {
   BillingBalanceResponse
 } from '../index.js'
 
+export type AccountLayerSessionPhase =
+  | 'idle'
+  | 'restoring'
+  | 'exchanging'
+  | 'authenticated'
+  | 'refreshing'
+  | 'signed-out'
+  | 'error'
+
+export class AccountLayerReadinessTimeoutError extends Error {
+  readonly code = 'ACCOUNT_LAYER_READINESS_TIMEOUT'
+
+  constructor(timeoutMs: number) {
+    super(`Account session was not authenticated within ${timeoutMs}ms`)
+    this.name = 'AccountLayerReadinessTimeoutError'
+  }
+}
+
 export interface AccountLayerOperationRecord {
   id: string
   kind: BillingOperationKind
@@ -13,6 +31,8 @@ export interface AccountLayerOperationRecord {
 }
 
 export interface AccountLayerPocSeam {
+  getSessionPhase(): AccountLayerSessionPhase
+  whenAuthenticated(timeoutMs?: number): Promise<void>
   subscribe(planId?: string): Promise<void>
   topUp(amount?: number): Promise<void>
   cancelSubscription(): Promise<void>

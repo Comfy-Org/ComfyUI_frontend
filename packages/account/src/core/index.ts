@@ -1,9 +1,11 @@
 export type UserId = string
 export * from './billing/index.js'
 export type {
+  AccountLayerSessionPhase,
   AccountLayerOperationRecord,
   AccountLayerPocSeam
 } from './testing/seam.js'
+export { AccountLayerReadinessTimeoutError } from './testing/seam.js'
 export type WorkspaceId = string
 export type Namespace = string
 export type ScheduleHandle = unknown
