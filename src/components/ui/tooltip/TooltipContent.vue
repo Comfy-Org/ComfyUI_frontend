@@ -14,15 +14,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   class: className,
+  open = false,
   sideOffset = 6,
   ...restProps
-} = defineProps<TooltipContentProps & { class?: HTMLAttributes['class'] }>()
+} = defineProps<
+  TooltipContentProps & { class?: HTMLAttributes['class']; open?: boolean }
+>()
 const emits = defineEmits<TooltipContentEmits>()
 const forwarded = useForwardPropsEmits(
   computed(() => ({ sideOffset, ...restProps })),
   emits
 )
-const contentStyle = useModalLiftedZIndex(computed(() => true))
+const contentStyle = useModalLiftedZIndex(() => open)
 </script>
 
 <template>
