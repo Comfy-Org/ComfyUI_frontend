@@ -196,12 +196,7 @@
     <!-- Need More Members Footer -->
     <div v-if="showsSeatFooter" class="flex shrink-0 items-center gap-1 pt-2">
       <p class="text-sm text-muted-foreground">
-        {{
-          $t('workspacePanel.members.totalMembersCount', {
-            count: members.length,
-            maxSeats: maxSeats
-          })
-        }}
+        {{ seatCountText }}
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
       <Button
@@ -267,6 +262,15 @@ const {
 } = useMembersPanel()
 
 const { t } = useI18n()
+
+const seatCountText = computed(() =>
+  maxSeats.value === 0
+    ? t('workspacePanel.tabs.membersCount', { count: members.value.length })
+    : t('workspacePanel.members.totalMembersCount', {
+        count: members.value.length,
+        maxSeats: maxSeats.value
+      })
+)
 
 const showsSeatFooter = computed(
   () => hasMemberSeats.value && membersLoaded.value

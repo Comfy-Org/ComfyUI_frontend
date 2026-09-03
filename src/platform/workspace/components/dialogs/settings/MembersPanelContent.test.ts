@@ -197,6 +197,9 @@ const i18n = createI18n({
         moreOptions: 'More options'
       },
       workspacePanel: {
+        tabs: {
+          membersCount: 'Members ({count})'
+        },
         members: {
           noMembers: 'No members',
           noMembersMatch: 'No members match "{query}"',
@@ -696,6 +699,18 @@ describe('MembersPanelContent', () => {
     it('counts the members against the seats the plan bought', () => {
       renderComponent()
       expect(screen.getByText(/2 of 20 total members\./)).toBeInTheDocument()
+    })
+
+    it('drops the cap from the count on an uncapped plan', () => {
+      mockMaxSeats.value = 0
+      mockMembers.value = [
+        createMember({ id: 'm1' }),
+        createMember({ id: 'm2', email: 'two@test.com' })
+      ]
+      renderComponent()
+
+      expect(screen.getByText(/Members \(2\)/)).toBeTruthy()
+      expect(screen.queryByText(/of 0 total members/)).toBeNull()
     })
 
     it('stays silent until the members request has completed', () => {
