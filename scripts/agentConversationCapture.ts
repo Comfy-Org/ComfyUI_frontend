@@ -94,9 +94,14 @@ export function exportAgentConversation(input: unknown) {
   )
   const emittedToolCalls = new Set<string>()
   const response: Array<
-    | { kind: 'event'; event: z.infer<typeof zRecordedWsEvent> }
-    | { kind: 'graph_ops'; ops: Array<Record<string, unknown>> }
+    | { kind: 'event'; event: z.infer<typeof zRecordedWsEvent>; at_ms?: number }
+    | { kind: 'graph_ops'; ops: Array<Record<string, unknown>>; at_ms?: number }
   > = []
+  const firstAt = capture.frames[0].at_ms
+  const relativeAt = (frame: { at_ms?: number }) =>
+    firstAt === undefined || frame.at_ms === undefined
+      ? undefined
+      : frame.at_ms - firstAt
 
   for (const frame of capture.frames) {
     if (
@@ -107,8 +112,9 @@ export function exportAgentConversation(input: unknown) {
         `recorded ${frame.type} frame does not belong to capture ${capture.capture.thread_id}/${capture.capture.message_id}`
       )
     }
+    const at_ms = relativeAt(frame)
     const event = {
-      ...frame,
+      type: frame.type,
       data: { ...frame.data }
     }
     delete event.data.thread_id
@@ -124,12 +130,12 @@ export function exportAgentConversation(input: unknown) {
       ) {
         const operations = operationsFromResult(toolCalls.get(toolCallId)!)
         if (operations.length > 0) {
-          response.push({ kind: 'graph_ops', ops: operations })
+          response.push({ kind: 'graph_ops', ops: operations, at_ms })
         }
         emittedToolCalls.add(toolCallId)
       }
     }
-    response.push({ kind: 'event', event })
+    response.push({ kind: 'event', event, at_ms })
   }
 
   const omitted = capture.tool_calls.filter(

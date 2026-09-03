@@ -99,6 +99,30 @@ describe('exportAgentConversation', () => {
     ])
   })
 
+  it('emits each entry at its offset from the first recorded frame', () => {
+    const [running, success] = capture.frames
+    const exported = exportAgentConversation({
+      ...capture,
+      frames: [
+        { ...running, at_ms: 1_700_000_001_000 },
+        { ...success, at_ms: 1_700_000_001_750 }
+      ]
+    })
+    expect(exported.response.map((entry) => entry.at_ms)).toEqual([0, 750, 750])
+    expect(
+      exported.response.every(
+        (entry) => entry.kind !== 'event' || !('at_ms' in entry.event)
+      )
+    ).toBe(true)
+  })
+
+  it('leaves the offset out when the frames carry no receipt time', () => {
+    const exported = exportAgentConversation(capture)
+    expect(exported.response.every((entry) => entry.at_ms === undefined)).toBe(
+      true
+    )
+  })
+
   it('refuses an accepted op missing from the recorded result', () => {
     expect(() =>
       exportAgentConversation({

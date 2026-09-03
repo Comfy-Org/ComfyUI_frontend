@@ -2,23 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-/**
- * Replay regression for PR #16285 (apply CRDT catch-up at acknowledged
- * sequence). The host sends `doc_subscribed(seq=N)` and THEN the catch-up
- * `doc_update(seq=N)` - the conversation fixture reproduces exactly that
- * ordering with the same seq on both frames. Pre-fix, the bridge recorded N
- * from the acknowledgement as the applied baseline and dropped the catch-up
- * as stale, so a fresh follower rendered an EMPTY graph. The seeded graph
- * projecting at all is the regression surface.
- *
- * Red recipe (recorded two-line patch, no revertible commit on this base -
- * the base carries an evolved form of the fix with two independent
- * defenses): in layoutFollowerBridge, (1) restore the pre-fix baseline
- * write `this.lastSeq = subscribed.seq ?? null` on onDocSubscribed's ok
- * path AND (2) disable the catch-up carve-out in onDocUpdate
- * (`const isCatchUp = false`). Either line alone stays green; both
- * together reproduce the pre-fix drop (status shows `0 updates`).
- */
+// Regression for #16285: pre-fix the follower dropped the catch-up sent at the ack's seq and rendered empty.
 test.describe(
   'Agent replay regression: catch-up baseline (PR #16285)',
   { tag: '@cloud' },
@@ -38,8 +22,6 @@ test.describe(
       await expect(panel.getByTestId('agent-crdt-status')).toContainText(
         'connected'
       )
-      // The catch-up is the one applied update; pre-fix it is dropped as
-      // stale and the count stays at 0.
       await expect(panel.getByTestId('agent-crdt-status')).toContainText(
         '1 updates'
       )

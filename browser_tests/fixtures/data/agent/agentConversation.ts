@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
@@ -18,7 +18,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 export const zRecordedWsEvent = z.object({
   type: z.string(),
-  data: z.record(z.string(), z.unknown())
+  data: z.record(z.string(), z.unknown()),
+  at_ms: z.number().int().nonnegative().optional()
 })
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
@@ -51,11 +52,15 @@ export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
 
+// Offset from the turn's first frame, so replays can reproduce real gaps.
+const zAtMs = z.number().int().nonnegative().optional()
+
 const zResponseEntry = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('event'), event: zRecordedWsEvent }),
+  z.object({ kind: z.literal('event'), event: zRecordedWsEvent, at_ms: zAtMs }),
   z.object({
     kind: z.literal('graph_ops'),
-    ops: z.array(zGraphOperation).min(1)
+    ops: z.array(zGraphOperation).min(1),
+    at_ms: zAtMs
   })
 ])
 
@@ -99,6 +104,18 @@ export const zAgentConversation = z
     }
   })
 export type AgentConversation = z.infer<typeof zAgentConversation>
+
+export function listRecordedConversations(): string[] {
+  const dir = fileURLToPath(new URL('./conversations/', import.meta.url))
+  return readdirSync(dir)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => file.slice(0, -'.json'.length))
+    .filter(
+      (caseId) =>
+        loadAgentConversation(caseId).source.response_side === 'recorded'
+    )
+    .sort()
+}
 
 export function loadAgentConversation(caseId: string): AgentConversation {
   const file = fileURLToPath(

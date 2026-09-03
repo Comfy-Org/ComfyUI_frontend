@@ -2,31 +2,9 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-/**
- * Replay regression for PR #16611 (preserve root semantics for human graph
- * edits). Pre-fix, a node the user deleted INSIDE a subgraph minted a
- * root-scope `delete_node` wire op - the doc lost a root node it still had.
- * The fix refuses to mint subgraph-interior creates/deletes (they have no
- * wire representation) while root-level deletes keep minting.
- *
- * The conversation binds the follower to a doc seeded with a subgraph
- * definition and instance; the human edits are then driven at the layout
- * store level with the session's own local (user) actor, mirroring the
- * operations the canvas attach/detach emitters produce. Store-level driving
- * is deliberate: UI-path deletes route through litegraph selection and
- * cannot see ECS-only replay seeds (see the 16611 red-row diagnosis on the
- * DOPPELGANGER review pad) - the mint gate contract under test is exercised
- * exactly, the UI hit-testing above it is not.
- *
- * Red at base with 0a20384d8a reverted (reverse-apply the commit, then
- * RESTART the dev server - the spec imports the layout store by module URL,
- * which only resolves to the app's own instance against a module graph that
- * matches disk; running against an HMR-churned server loads a second, empty
- * store instance): the interior delete surfaces as an outbound
- * `delete_node` for node 10 (`['1', '10', '2']`).
- */
+// Regression for #16611: a delete inside a subgraph must not mint a root-scope wire op.
+// Edits go through the layout store because UI-path deletes cannot see follower-only nodes yet (FE-1996).
 
-/** The layout-store surface this spec drives, structurally typed. */
 interface LayoutStoreModule {
   layoutStore: {
     getNodeLayout(
@@ -72,10 +50,7 @@ test.describe(
           const { layoutStore } = (await import(
             /* @vite-ignore */ storeModule
           )) as unknown as LayoutStoreModule
-          // The follower keys layouts under the canvas root graph id; earlier
-          // revisions keyed them under the doc's workflow id. Resolving by
-          // lookup keeps the red half (fix reverted) driving the same seeded
-          // layouts instead of erroring before the contract assertion.
+          // Layouts are keyed by the canvas root graph id, not the workflow id.
           const rootGraphId = [window.app!.graph.id, workflowId].find((id) =>
             layoutStore.getNodeLayout(id, '1')
           )
@@ -92,18 +67,13 @@ test.describe(
             source: 'canvas'
           })
 
-          // Positive control: a ROOT-level delete must mint, proving the
-          // doc-bound mint path is live in this environment.
+          // Positive control: a root-level delete must mint.
           layoutStore.applyOperation({
             type: 'deleteNode',
             ...meta('1', rootGraphId)
           })
 
-          // The regression surface: a node INSIDE the seeded subgraph. Its
-          // layout attaches the way entering the subgraph attaches it
-          // (ownerGraphId = the subgraph), then the user deletes it. Both the
-          // create and the delete are unrepresentable on the wire - neither
-          // may mint.
+          // Interior create and delete have no wire representation; neither may mint.
           layoutStore.applyOperation({
             type: 'createNode',
             ...meta('10', subgraphId),
@@ -121,10 +91,7 @@ test.describe(
             ...meta('10', subgraphId)
           })
 
-          // Ordering anchor: a second root-level delete that must mint.
-          // Frames are sent in order, so a minted interior delete would be on
-          // the wire before this one - waiting for it gives the interior op
-          // every chance to surface before the negative below is trusted.
+          // A later root delete anchors the order: an interior mint would precede it.
           layoutStore.applyOperation({
             type: 'deleteNode',
             ...meta('2', rootGraphId)
@@ -141,7 +108,6 @@ test.describe(
         .poll(() => deletedNodeIds().length, { timeout: 10_000 })
         .toBeGreaterThanOrEqual(2)
 
-      // Exactly the two root deletes, in order; node 10 never minted.
       expect(deletedNodeIds()).toEqual(['1', '2'])
     })
   }

@@ -26,7 +26,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 const TURN_ID = '0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5f60'
-/** Mirrors THREAD_STORAGE_KEY in useAgentSession.ts (module-private there). */
+// useAgentSession.ts keeps THREAD_STORAGE_KEY module-private.
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const HOST_ACTOR = 'agent:comfy'
@@ -165,7 +165,8 @@ class AgentConversationHarness {
 
   constructor(
     private readonly page: Page,
-    readonly conversation: AgentConversation
+    readonly conversation: AgentConversation,
+    readonly replayTiming: ReplayTiming
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -215,11 +216,7 @@ class AgentConversationHarness {
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     await expect.poll(() => this.postedMessages.length).toBeGreaterThan(0)
     expect(this.postedMessages[0]).toContain(content)
-    // The page applies the acknowledgement (thread id, then the user turn)
-    // only once the mocked POST resolves, which can land after the request
-    // is captured above. Replay frames are stamped with THREAD_ID and the
-    // active-tab handler drops them until the thread id matches, so wait for
-    // the id the session persists right after applying it.
+    // Replay frames are dropped until the page has applied the ack's thread id.
     await expect
       .poll(() =>
         this.page.evaluate(
@@ -231,7 +228,12 @@ class AgentConversationHarness {
   }
 
   async replayResponse(): Promise<void> {
+    const startedAt = Date.now()
     for (const entry of this.conversation.response) {
+      if (this.replayTiming === 'recorded' && entry.at_ms !== undefined) {
+        const wait = entry.at_ms - (Date.now() - startedAt)
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+      }
       if (entry.kind === 'event') {
         this.send(this.stampTurn(entry.event))
         continue
@@ -239,7 +241,10 @@ class AgentConversationHarness {
       await this.waitForSubscribe()
       this.send(this.host.apply(entry.ops))
     }
+    this.replayElapsedMs = Date.now() - startedAt
   }
+
+  replayElapsedMs = 0
 
   async waitForTurnComplete(): Promise<void> {
     await expect(
@@ -411,23 +416,38 @@ class AgentConversationHarness {
   }
 }
 
+export type ReplayTiming = 'immediate' | 'recorded'
+
+function defaultReplayTiming(): ReplayTiming {
+  const value = process.env.AGENT_REPLAY_TIMING
+  if (value === undefined || value === 'immediate') return 'immediate'
+  if (value === 'recorded') return 'recorded'
+  throw new Error(
+    `AGENT_REPLAY_TIMING must be immediate or recorded, got ${value}`
+  )
+}
+
 interface ConversationFixtures {
   /** Case id of the conversation under `fixtures/data/agent/conversations`. */
   conversationCase: string
+  // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
+  replayTiming: ReplayTiming
   agentConversation: AgentConversationHarness
 }
 
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
+  replayTiming: [defaultReplayTiming(), { option: true }],
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase },
+    { page, agentFlagEnabled, conversationCase, replayTiming },
     use
   ) => {
     if (conversationCase.length === 0)
       throw new Error('test.use({ conversationCase }) names the conversation')
     const harness = new AgentConversationHarness(
       page,
-      loadAgentConversation(conversationCase)
+      loadAgentConversation(conversationCase),
+      replayTiming
     )
     await harness.boot(agentFlagEnabled)
     await use(harness)
