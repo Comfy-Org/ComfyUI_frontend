@@ -26,7 +26,10 @@
           }}
         </Button>
       </div>
-      <div class="ml-auto flex items-center gap-2">
+      <div
+        data-testid="members-controls-row"
+        class="ml-auto flex items-center gap-2"
+      >
         <SearchInput
           v-if="showSearch"
           v-model="searchQuery"

@@ -352,9 +352,14 @@ describe('MembersPanelContent', () => {
 
   describe('Team plan member list', () => {
     it('keeps the More options menu in the controls row', () => {
+      mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
       renderComponent()
 
-      expect(screen.getByRole('button', { name: 'More options' })).toBeTruthy()
+      const controls = screen.getByTestId('members-controls-row')
+      expect(
+        within(controls).getByRole('button', { name: 'More options' })
+      ).toBeTruthy()
     })
 
     it('hides the More options menu without canAccessWorkspaceMenu', () => {
@@ -362,7 +367,10 @@ describe('MembersPanelContent', () => {
 
       renderComponent()
 
-      expect(screen.queryByRole('button', { name: 'More options' })).toBeNull()
+      const controls = screen.getByTestId('members-controls-row')
+      expect(
+        within(controls).queryByRole('button', { name: 'More options' })
+      ).toBeNull()
     })
 
     it('keeps rendering members while seat capacity is unresolved', () => {
@@ -507,9 +515,14 @@ describe('MembersPanelContent', () => {
     })
 
     it("keeps the More options menu — a member's leave affordance", () => {
+      mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
       renderComponent()
 
-      expect(screen.getByRole('button', { name: 'More options' })).toBeTruthy()
+      const controls = screen.getByTestId('members-controls-row')
+      expect(
+        within(controls).getByRole('button', { name: 'More options' })
+      ).toBeTruthy()
     })
 
     it('hides the pending tab button', () => {
