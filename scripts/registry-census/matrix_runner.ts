@@ -575,7 +575,9 @@ export async function runPack(
     'wConvert',
     () => {
       const k = byType('KSampler')
-      const w = k?.widgets?.find((x) => x.name === 'steps')
+      const w: ConvertibleWidget | undefined = k?.widgets?.find(
+        (x) => x.name === 'steps'
+      )
       if (k && w) {
         w.origType = w.type
         w.origComputeSize = w.computeSize
