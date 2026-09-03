@@ -558,6 +558,25 @@ describe('useSubgraphNavigationStore', () => {
     )
   })
 
+  it('returns false when writing the graph hash fails', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const targetId = '11111111-1111-4111-8111-111111111111'
+    const targetGraph = createMockSubgraph(targetId)
+    app.rootGraph.subgraphs.set(targetId, targetGraph)
+    routeHash.value = '#' + app.rootGraph.id
+    routerPush.mockRejectedValueOnce(new Error('router failure'))
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+
+    await expect(navigationStore.navigateToGraph(targetGraph)).resolves.toBe(
+      false
+    )
+
+    expect(app.canvas.graph).toBe(targetGraph)
+    expect(routeHash.value).toBe('#' + app.rootGraph.id)
+  })
+
   it('returns false when a delayed graph navigation is superseded', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const firstId = '11111111-1111-4111-8111-111111111111'

@@ -375,7 +375,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     async function safeRouterCall(op: () => Promise<unknown>, label: string) {
       try {
-        await op()
+        return !isNavigationFailure(await op())
       } catch (err) {
         if (
           !isNavigationFailure(err, NavigationFailureType.duplicated) &&
@@ -383,6 +383,7 @@ export const useSubgraphNavigationStore = defineStore(
         ) {
           console.warn(`[subgraphNavigation] ${label} rejected`, err)
         }
+        return false
       }
     }
 
@@ -394,7 +395,7 @@ export const useSubgraphNavigationStore = defineStore(
         state: { [routeWriteStateKey]: writeId }
       }
       try {
-        await safeRouterCall(
+        return await safeRouterCall(
           () => (replace ? router.replace(target) : router.push(target)),
           replace ? 'router.replace' : 'router.push'
         )
@@ -404,21 +405,24 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function syncGraphHash(intent: GraphNavigationIntent) {
-      if (intent.id !== navigationIntentId) return
+      if (intent.id !== navigationIntentId) return false
       if (!routeHash.value) {
         const rootHash = '#' + app.rootGraph.id
-        await writeRouteHash(rootHash, true)
-        if (intent.id !== navigationIntentId) return
+        if (!(await writeRouteHash(rootHash, true))) return false
+        if (intent.id !== navigationIntentId) return false
       }
       const currentId = routeHash.value?.slice(1)
-      if (intent.hash.slice(1) === currentId) return
+      if (intent.hash.slice(1) === currentId) return true
 
-      await writeRouteHash(intent.hash, false)
+      return writeRouteHash(intent.hash, false)
     }
 
-    function queueGraphHash(intent: GraphNavigationIntent): Promise<void> {
+    function queueGraphHash(intent: GraphNavigationIntent): Promise<boolean> {
       const result = hashUpdateTail.then(() => syncGraphHash(intent))
-      hashUpdateTail = result.catch(() => undefined)
+      hashUpdateTail = result.then(
+        () => undefined,
+        () => undefined
+      )
       return result
     }
 
@@ -455,8 +459,9 @@ export const useSubgraphNavigationStore = defineStore(
       )
       if (intent.id !== navigationIntentId) return false
 
-      await queueGraphHash(intent)
+      const hashWritten = await queueGraphHash(intent)
       return (
+        hashWritten &&
         intent.id === navigationIntentId &&
         canvasStore.canvas?.graph === targetGraph
       )
@@ -525,7 +530,7 @@ export const useSubgraphNavigationStore = defineStore(
         return Promise.resolve()
       }
 
-      return queueGraphHash(intent)
+      await queueGraphHash(intent)
     }
     watch(
       () => canvasStore.currentGraph,
