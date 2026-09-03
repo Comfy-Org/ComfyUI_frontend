@@ -1,6 +1,8 @@
 import path from 'path'
 import type { Plugin } from 'vite'
 
+import { isComfyAPISourceFile } from '../comfyAPISurface'
+
 interface ShimResult {
   code: string
   exports: string[]
@@ -34,11 +36,11 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-function isLegacyFile(id: string): boolean {
-  return (
-    id.endsWith('.ts') &&
-    (id.includes('src/extensions/core') || id.includes('src/scripts'))
-  )
+/** Names this module publishes onto `window.comfyAPI`. */
+export function getPublishedExportNames(code: string): string[] {
+  const regex =
+    /export\s+(const|let|var|function|class|async function)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g
+  return Array.from(code.matchAll(regex), (match) => match[2])
 }
 
 function transformExports(code: string, id: string): ShimResult {
@@ -46,13 +48,7 @@ function transformExports(code: string, id: string): ShimResult {
   const exports: string[] = []
   let newCode = code
 
-  // Regex to match different types of exports
-  const regex =
-    /export\s+(const|let|var|function|class|async function)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g
-  let match
-
-  while ((match = regex.exec(code)) !== null) {
-    const name = match[2]
+  for (const name of getPublishedExportNames(code)) {
     // All exports should be bind to the window object as new API endpoint.
     if (exports.length == 0) {
       newCode += `\nwindow.comfyAPI = window.comfyAPI || {};`
@@ -84,7 +80,7 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
     transform(code: string, id: string) {
       if (isDev) return null
 
-      if (isLegacyFile(id)) {
+      if (isComfyAPISourceFile(id)) {
         const result = transformExports(code, id)
 
         if (result.exports.length > 0) {

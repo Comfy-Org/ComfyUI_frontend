@@ -50,7 +50,6 @@ export function calculateImageGrid(
   return { cellWidth, cellHeight, cols, rows, shiftX }
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export function createImageHost(node: LGraphNode) {
   const el = $el('div.comfy-img-preview')
   // @ts-expect-error fixme ts strict error
