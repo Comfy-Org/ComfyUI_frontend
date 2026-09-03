@@ -107,12 +107,13 @@ const bottomSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(items.length - state.value.end)
 }))
 
+const distance = 2 * defaultItemHeight * (1 + bufferRows)
 useInfiniteScroll(
   container,
   async () => {
     await onLoadMore?.()
   },
-  { canLoadMore: () => canLoadMore }
+  { canLoadMore: () => canLoadMore, distance }
 )
 
 function updateItemSize(): void {
