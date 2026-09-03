@@ -7,7 +7,12 @@ interface WorkflowStep {
   name?: string
   if?: string
   uses?: string
-  with?: { name?: string; if_no_artifact_found?: string }
+  with?: {
+    name?: string
+    github_token?: string
+    run_id?: string
+    if_no_artifact_found?: string
+  }
 }
 
 interface WorkflowJob {
@@ -44,6 +49,8 @@ describe('fork Storybook artifact contract', () => {
     expect(upload.if).toBe('success()')
     expect(download.uses).toMatch(/^dawidd6\/action-download-artifact@/)
     expect(download.with?.name).toBe(upload.with?.name)
+    expect(download.with?.github_token).toBe('${{ secrets.GITHUB_TOKEN }}')
+    expect(download.with?.run_id).toBe('${{ github.event.workflow_run.id }}')
     expect(download.with?.if_no_artifact_found).toBe('warn')
   })
 })
