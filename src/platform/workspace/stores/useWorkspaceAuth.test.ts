@@ -2114,7 +2114,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(store.currentWorkspace).toEqual(mockWorkspaceWithRole)
       expect(getWorkspaceId()).toBe('workspace-123')
       expect(StorageKeys.draftIndex(getWorkspaceId())).toBe(
-        'Comfy.Workflow.DraftIndex.v2:workspace-123'
+        'Comfy.Workflow.DraftIndex.v3:workspace-123'
       )
 
       await store.switchWorkspace('workspace-456')
@@ -2122,7 +2122,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(store.currentWorkspace).toEqual(secondWorkspace)
       expect(getWorkspaceId()).toBe('workspace-456')
       expect(StorageKeys.draftIndex(getWorkspaceId())).toBe(
-        'Comfy.Workflow.DraftIndex.v2:workspace-456'
+        'Comfy.Workflow.DraftIndex.v3:workspace-456'
       )
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)

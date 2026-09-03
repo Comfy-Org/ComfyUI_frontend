@@ -1,5 +1,5 @@
 /**
- * V2 Workflow Persistence Type Definitions
+ * Workflow Persistence Type Definitions
  *
  * Two-layer state system:
  * - sessionStorage: Per-tab pointers (tiny, scoped by clientId)
@@ -19,7 +19,7 @@ export interface DraftEntryMeta {
   isTemporary: boolean
   /**
    * Last metadata update timestamp.
-   * Use DraftPayloadV2.updatedAt for content freshness checks.
+   * Use DraftPayloadV3.updatedAt for content freshness checks.
    */
   updatedAt: number
 }
@@ -42,11 +42,43 @@ export interface DraftIndexV2 {
 }
 
 /**
- * Individual draft payload stored in localStorage.
+ * Legacy individual draft payload stored in localStorage.
  *
  * Key: `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
  */
 export interface DraftPayloadV2 {
+  /** Serialized workflow JSON */
+  data: string
+  /** Last workflow content write timestamp. */
+  updatedAt: number
+}
+
+/**
+ * Draft index stored in localStorage.
+ *
+ * V3 keys entries by their complete canonical path instead of a 32-bit hash.
+ *
+ * Key: `Comfy.Workflow.DraftIndex.v3:${workspaceId}`
+ */
+export interface DraftIndexV3 {
+  /** Schema version */
+  v: 3
+  /** Last index update timestamp, including LRU-only touches. */
+  updatedAt: number
+  /** LRU order: oldest → newest (canonical path array) */
+  order: string[]
+  /** Metadata keyed by canonical workflow path */
+  entries: Record<string, DraftEntryMeta>
+}
+
+/**
+ * Individual draft payload stored in localStorage.
+ *
+ * Key: `Comfy.Workflow.Draft.v3:${workspaceId}:${path}`
+ */
+export interface DraftPayloadV3 {
+  /** Canonical workflow path, verified against the storage key on read. */
+  path: string
   /** Serialized workflow JSON */
   data: string
   /** Last workflow content write timestamp. */

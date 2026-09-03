@@ -1,7 +1,7 @@
 /**
- * V2 Workflow Draft Store
+ * Workflow Draft Store
  *
- * Uses per-draft keys in localStorage instead of a single blob.
+ * The V2 store API uses collision-free V3 per-draft keys in localStorage.
  * Handles LRU eviction and quota management.
  */
 
@@ -11,7 +11,7 @@ import { ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app as comfyApp } from '@/scripts/app'
 
-import type { DraftIndexV2 } from '../base/draftTypes'
+import type { DraftIndexV3 } from '../base/draftTypes'
 import { MAX_DRAFTS } from '../base/draftTypes'
 import {
   createEmptyIndex,
@@ -23,7 +23,6 @@ import {
   touchOrder,
   upsertEntry
 } from '../base/draftCacheV2'
-import { hashPath } from '../base/hashUtil'
 import { getWorkspaceId } from '../base/storageKeys'
 import {
   deleteOrphanPayloads,
@@ -51,7 +50,7 @@ interface LoadPersistedWorkflowOptions {
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   // In-memory cache of the index per workspace (synced with localStorage)
   // Key is workspaceId, value is the cached index
-  const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
+  const indexCacheByWorkspace = ref<Record<string, DraftIndexV3>>({})
 
   /**
    * Gets the current workspace ID fresh (not cached).
@@ -64,7 +63,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Loads the index from localStorage or creates empty.
    */
-  function loadIndex(): DraftIndexV2 {
+  function loadIndex(): DraftIndexV3 {
     const workspaceId = currentWorkspaceId()
 
     const cached = getCachedIndex(workspaceId)
@@ -96,7 +95,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Persists the current index to localStorage.
    */
-  function persistIndex(index: DraftIndexV2): boolean {
+  function persistIndex(index: DraftIndexV3): boolean {
     const workspaceId = currentWorkspaceId()
     indexCacheByWorkspace.value[workspaceId] = index
     return writeIndex(workspaceId, index)
@@ -110,7 +109,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
+    const draftKey = path
     const now = Date.now()
 
     // Prime the index cache before writing payload.
@@ -120,6 +119,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
     // Write payload before persisting the updated index
     const payloadWritten = writePayload(workspaceId, draftKey, {
+      path,
       data,
       updatedAt: now
     })
@@ -164,7 +164,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     meta: DraftMeta
   ): boolean {
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
+    const draftKey = path
 
     let currentIndex = loadIndex()
     let evictedCount = 0
@@ -187,7 +187,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
 
       const now = Date.now()
-      if (writePayload(workspaceId, draftKey, { data, updatedAt: now })) {
+      if (writePayload(workspaceId, draftKey, { path, data, updatedAt: now })) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
@@ -204,7 +204,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
 
     persistIndex(currentIndex)
-    reportQuotaExhausted(currentIndex, evictedCount, payloadByteSize(data))
+    reportQuotaExhausted(
+      currentIndex,
+      evictedCount,
+      payloadByteSize(path, data)
+    )
     markStorageUnavailable()
     return false
   }
@@ -222,12 +226,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * the missing ~12 bytes are noise compared to the kilobyte-scale workflow
    * payload this telemetry exists to measure.
    */
-  function payloadByteSize(data: string): number {
-    return new TextEncoder().encode(JSON.stringify({ data, updatedAt: 0 }))
-      .length
+  function payloadByteSize(path: string, data: string): number {
+    return new TextEncoder().encode(
+      JSON.stringify({ path, data, updatedAt: 0 })
+    ).length
   }
 
-  function stripOrderKey(index: DraftIndexV2, orphanKey: string): DraftIndexV2 {
+  function stripOrderKey(index: DraftIndexV3, orphanKey: string): DraftIndexV3 {
     return {
       ...index,
       updatedAt: Date.now(),
@@ -236,7 +241,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   function reportQuotaExhausted(
-    finalIndex: DraftIndexV2,
+    finalIndex: DraftIndexV3,
     evicted: number,
     payloadBytes: number
   ): void {
@@ -281,6 +286,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       const oldPayload = readPayload(workspaceId, result.oldKey)
       if (oldPayload) {
         const written = writePayload(workspaceId, result.newKey, {
+          path: newPath,
           data: oldPayload.data,
           updatedAt: oldPayload.updatedAt
         })
@@ -309,7 +315,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const entry = getEntryByPath(index, path)
     if (!entry) return null
 
-    const draftKey = hashPath(path)
+    const draftKey = path
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
       // Payload missing - clean up index
@@ -333,7 +339,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const entry = getEntryByPath(index, path)
     if (!entry) return
 
-    const draftKey = hashPath(path)
+    const draftKey = path
     persistIndex({
       ...index,
       updatedAt: Date.now(),

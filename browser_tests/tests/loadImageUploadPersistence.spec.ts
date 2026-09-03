@@ -53,7 +53,7 @@ test.describe('Load Image upload persistence', () => {
           comfyPage.page.evaluate((expected) => {
             for (let i = 0; i < window.localStorage.length; i++) {
               const key = window.localStorage.key(i)
-              if (!key?.startsWith('Comfy.Workflow.Draft.v2:')) continue
+              if (!key?.startsWith('Comfy.Workflow.Draft.v3:')) continue
               if (window.localStorage.getItem(key)?.includes(expected))
                 return true
             }

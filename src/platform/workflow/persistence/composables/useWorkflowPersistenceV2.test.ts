@@ -151,8 +151,12 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => teamWorkspaceStoreMocks
 }))
 
-vi.mock('../migration/migrateV1toV2', () => ({
-  migrateV1toV2: vi.fn()
+vi.mock('../migration/migrateV1toV3', () => ({
+  migrateV1toV3: vi.fn()
+}))
+
+vi.mock('../migration/migrateV2toV3', () => ({
+  migrateV2toV3: vi.fn()
 }))
 
 type GraphChangedHandler = (() => void) | null
@@ -833,6 +837,7 @@ describe('useWorkflowPersistenceV2', () => {
     expect(sessionStorage).toHaveLength(0)
     expect(
       storageIO.writePayload('workspace-a', 'blocked', {
+        path: 'blocked',
         data: '{}',
         updatedAt: 1
       })
@@ -842,6 +847,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     expect(
       storageIO.writePayload('workspace-a', 'still-blocked', {
+        path: 'still-blocked',
         data: '{}',
         updatedAt: 2
       })
@@ -853,6 +859,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     expect(
       storageIO.writePayload('workspace-a', 'resumed', {
+        path: 'resumed',
         data: '{}',
         updatedAt: 3
       })

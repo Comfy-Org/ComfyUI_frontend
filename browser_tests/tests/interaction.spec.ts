@@ -851,12 +851,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    // Wait for V2 persistence debounce to save the modified workflow
+    // Wait for V3 persistence debounce to save the modified workflow
     const start = Date.now()
     await comfyPage.page.waitForFunction((since) => {
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i)
-        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v3:')) continue
         const json = window.localStorage.getItem(key)
         if (!json) continue
         try {

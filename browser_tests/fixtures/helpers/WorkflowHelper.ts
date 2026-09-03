@@ -63,17 +63,17 @@ export class WorkflowHelper {
   async waitForDraftPersisted() {
     await this.comfyPage.page.waitForFunction(() =>
       Object.keys(localStorage).some((key) =>
-        key.startsWith('Comfy.Workflow.Draft.v2:')
+        key.startsWith('Comfy.Workflow.Draft.v3:')
       )
     )
   }
 
-  /** Waits for V2 draft index recency, not payload content freshness. */
+  /** Waits for V3 draft index recency, not payload content freshness. */
   async waitForDraftIndexUpdatedSince(updatedSince: number) {
     await this.comfyPage.page.waitForFunction((indexUpdatedSince) => {
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i)
-        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v3:')) continue
 
         const json = window.localStorage.getItem(key)
         if (!json) continue

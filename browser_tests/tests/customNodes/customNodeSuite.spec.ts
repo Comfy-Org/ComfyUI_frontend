@@ -1,7 +1,7 @@
 import type {
   ActivePathPointer,
-  DraftIndexV2,
-  DraftPayloadV2,
+  DraftIndexV3,
+  DraftPayloadV3,
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -32,10 +32,10 @@ test('preseeds a restorable blank workflow before first boot', async ({
     ({ keys, path }) => {
       const index = JSON.parse(
         localStorage.getItem(keys.index)!
-      ) as DraftIndexV2
+      ) as DraftIndexV3
       const payload = JSON.parse(
         localStorage.getItem(keys.payload)!
-      ) as DraftPayloadV2
+      ) as DraftPayloadV3
       return {
         storedKeys: Object.keys(localStorage)
           .filter((key) => key.startsWith('Comfy.Workflow.'))
@@ -56,7 +56,7 @@ test('preseeds a restorable blank workflow before first boot', async ({
   expect(state.storedKeys).toEqual(Object.values(keys).sort())
   expect(updatedAt).toEqual(expect.any(Number))
   expect(state.index).toEqual({
-    v: 2,
+    v: 3,
     updatedAt,
     order: [draftKey],
     entries: {
@@ -69,6 +69,7 @@ test('preseeds a restorable blank workflow before first boot', async ({
     }
   })
   expect(state.payload).toEqual({
+    path,
     data: JSON.stringify({
       last_node_id: 0,
       last_link_id: 0,

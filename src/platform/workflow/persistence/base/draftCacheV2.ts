@@ -1,20 +1,19 @@
 /**
- * V2 Draft Cache - Pure functions for draft index manipulation.
+ * Draft Cache - Pure functions for V3 draft index manipulation.
  *
  * This module provides immutable operations on the draft index structure.
  * All functions return new objects rather than mutating inputs.
  */
 
-import type { DraftEntryMeta, DraftIndexV2 } from './draftTypes'
+import type { DraftEntryMeta, DraftIndexV3 } from './draftTypes'
 import { MAX_DRAFTS } from './draftTypes'
-import { hashPath } from './hashUtil'
 
 /**
  * Creates an empty draft index.
  */
-export function createEmptyIndex(): DraftIndexV2 {
+export function createEmptyIndex(): DraftIndexV3 {
   return {
-    v: 2,
+    v: 3,
     updatedAt: Date.now(),
     order: [],
     entries: {}
@@ -36,12 +35,12 @@ export function touchOrder(order: string[], draftKey: string): string[] {
  * @returns Object with updated index and list of evicted draft keys
  */
 export function upsertEntry(
-  index: DraftIndexV2,
+  index: DraftIndexV3,
   path: string,
   meta: Omit<DraftEntryMeta, 'path'>,
   limit: number = MAX_DRAFTS
-): { index: DraftIndexV2; evicted: string[] } {
-  const draftKey = hashPath(path)
+): { index: DraftIndexV3; evicted: string[] } {
+  const draftKey = path
   const effectiveLimit = Math.max(1, limit)
 
   const entries = {
@@ -66,7 +65,7 @@ export function upsertEntry(
 
   return {
     index: {
-      v: 2,
+      v: 3,
       updatedAt: Date.now(),
       order: finalOrder,
       entries
@@ -81,10 +80,10 @@ export function upsertEntry(
  * @returns Object with updated index and the removed draft key (if any)
  */
 export function removeEntry(
-  index: DraftIndexV2,
+  index: DraftIndexV3,
   path: string
-): { index: DraftIndexV2; removedKey: string | null } {
-  const draftKey = hashPath(path)
+): { index: DraftIndexV3; removedKey: string | null } {
+  const draftKey = path
 
   if (!(draftKey in index.entries)) {
     return { index, removedKey: null }
@@ -95,7 +94,7 @@ export function removeEntry(
 
   return {
     index: {
-      v: 2,
+      v: 3,
       updatedAt: Date.now(),
       order: index.order.filter((key) => key !== draftKey),
       entries
@@ -111,13 +110,13 @@ export function removeEntry(
  * @returns Object with updated index and keys involved
  */
 export function moveEntry(
-  index: DraftIndexV2,
+  index: DraftIndexV3,
   oldPath: string,
   newPath: string,
   newName: string
-): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
-  const oldKey = hashPath(oldPath)
-  const newKey = hashPath(newPath)
+): { index: DraftIndexV3; oldKey: string; newKey: string } | null {
+  const oldKey = oldPath
+  const newKey = newPath
 
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
   const oldEntry = entriesByKey[oldKey]
@@ -140,7 +139,7 @@ export function moveEntry(
 
   return {
     index: {
-      v: 2,
+      v: 3,
       updatedAt: Date.now(),
       order,
       entries
@@ -153,7 +152,7 @@ export function moveEntry(
 /**
  * Gets the most recently used draft key.
  */
-export function getMostRecentKey(index: DraftIndexV2): string | null {
+export function getMostRecentKey(index: DraftIndexV3): string | null {
   return index.order.length > 0 ? index.order[index.order.length - 1] : null
 }
 
@@ -161,11 +160,11 @@ export function getMostRecentKey(index: DraftIndexV2): string | null {
  * Gets entry metadata by path.
  */
 export function getEntryByPath(
-  index: DraftIndexV2,
+  index: DraftIndexV3,
   path: string
 ): DraftEntryMeta | null {
-  const draftKey = hashPath(path)
-  return index.entries[draftKey] ?? null
+  const entry = index.entries[path]
+  return entry?.path === path ? entry : null
 }
 
 /**
@@ -177,9 +176,9 @@ export function getEntryByPath(
  * @returns Updated index with orphaned entries removed
  */
 export function removeOrphanedEntries(
-  index: DraftIndexV2,
+  index: DraftIndexV3,
   existingPayloadKeys: Set<string>
-): DraftIndexV2 {
+): DraftIndexV3 {
   const entries: Record<string, DraftEntryMeta> = {}
   const order: string[] = []
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
@@ -193,7 +192,7 @@ export function removeOrphanedEntries(
   }
 
   return {
-    v: 2,
+    v: 3,
     updatedAt: Date.now(),
     order,
     entries

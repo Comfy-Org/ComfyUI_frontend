@@ -63,9 +63,10 @@ describe('hashPath', () => {
     expect(hash1).not.toBe(hash2)
   })
 
-  it.fails('produces different hashes for known collision paths', () => {
+  it('retains the known V2 collision fixture for migration tests', () => {
     const hash1 = hashPath('workflows/ewip.json')
     const hash2 = hashPath('workflows/4hbab.json')
-    expect(hash1).not.toBe(hash2)
+    expect(hash1).toBe('684dbc71')
+    expect(hash2).toBe(hash1)
   })
 })

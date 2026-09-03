@@ -2,10 +2,10 @@
  * V2 Workflow Persistence Composable
  *
  * Key changes from V1:
- * - Uses V2 draft store with per-draft keys
+ * - Uses per-draft keys through the V2 store API
  * - Uses tab state composable for session pointers
  * - Adds 512ms debounce on graph change persistence
- * - Runs V1→V2 migration on first load
+ * - Runs V1/V2→V3 draft storage migrations on first load
  */
 
 import { debounce } from 'es-toolkit'
@@ -37,7 +37,8 @@ import {
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
-import { migrateV1toV2 } from '../migration/migrateV1toV2'
+import { migrateV1toV3 } from '../migration/migrateV1toV3'
+import { migrateV2toV3 } from '../migration/migrateV2toV3'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -67,8 +68,9 @@ export function useWorkflowPersistenceV2() {
     stopWorkspaceReadinessWatcher = undefined
   }
 
-  // Run migration on module load, passing clientId for tab state migration
-  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
+  // Prefer the newest prior format, then fall back to the legacy V1 blob.
+  migrateV2toV3()
+  migrateV1toV3(undefined, api.clientId ?? api.initialClientId ?? undefined)
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)

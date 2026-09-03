@@ -42,12 +42,12 @@ interface PersistenceReal {
 
 function assertIndexPayloadConsistency() {
   const indexJson = localStorage.getItem(
-    'Comfy.Workflow.DraftIndex.v2:personal'
+    'Comfy.Workflow.DraftIndex.v3:personal'
   )
   if (!indexJson) return
 
   const index = JSON.parse(indexJson)
-  const prefix = 'Comfy.Workflow.Draft.v2:personal:'
+  const prefix = 'Comfy.Workflow.Draft.v3:personal:'
 
   for (const key of index.order) {
     const payloadJson = localStorage.getItem(`${prefix}${key}`)
@@ -79,7 +79,7 @@ function assertModelMatchesReal(
   }
 
   const indexJson = localStorage.getItem(
-    'Comfy.Workflow.DraftIndex.v2:personal'
+    'Comfy.Workflow.DraftIndex.v3:personal'
   )
   if (model.drafts.size === 0) {
     if (!indexJson) return

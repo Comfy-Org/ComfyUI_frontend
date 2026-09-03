@@ -1,13 +1,12 @@
 /**
- * V1 to V2 Migration
+ * V1 to V3 Migration
  *
- * Migrates draft data from V1 blob format to V2 per-draft keys.
- * Runs once on first load if V2 index doesn't exist.
+ * Migrates draft data from V1 blob format to V3 per-draft keys.
+ * Runs once on first load if the V3 index doesn't exist.
  */
 
-import type { DraftIndexV2 } from '../base/draftTypes'
+import type { DraftIndexV3 } from '../base/draftTypes'
 import { upsertEntry, createEmptyIndex } from '../base/draftCacheV2'
-import { hashPath } from '../base/hashUtil'
 import { getWorkspaceId } from '../base/storageKeys'
 import {
   readIndex,
@@ -37,11 +36,11 @@ const V1_KEYS = {
 }
 
 /**
- * Checks if V2 migration has been completed for the current workspace.
+ * Checks if V3 migration has been completed for the current workspace.
  */
-export function isV2MigrationComplete(workspaceId: string): boolean {
-  const v2Index = readIndex(workspaceId)
-  return v2Index !== null
+export function isV3MigrationComplete(workspaceId: string): boolean {
+  const v3Index = readIndex(workspaceId)
+  return v3Index !== null
 }
 
 /**
@@ -66,29 +65,29 @@ function readV1Drafts(
 }
 
 /**
- * Migrates V1 drafts to V2 format.
+ * Migrates V1 drafts to V3 format.
  *
  * @returns Number of drafts migrated, or -1 if migration not needed/failed
  */
-export function migrateV1toV2(
+export function migrateV1toV3(
   workspaceId: string = getWorkspaceId(),
   clientId?: string
 ): number {
-  // Check if V2 already exists
-  if (isV2MigrationComplete(workspaceId)) {
+  // Check if V3 already exists
+  if (isV3MigrationComplete(workspaceId)) {
     return -1
   }
 
   // Read V1 data
   const v1Data = readV1Drafts(workspaceId)
   if (!v1Data) {
-    // No V1 data to migrate - create empty V2 index
+    // No V1 data to migrate - create empty V3 index
     if (!writeIndex(workspaceId, createEmptyIndex())) return -1
     return 0
   }
 
-  // Build V2 index and write payloads
-  let index: DraftIndexV2 = createEmptyIndex()
+  // Build V3 index and write payloads
+  let index: DraftIndexV3 = createEmptyIndex()
   let migrated = 0
 
   // Process in order (oldest first) to maintain LRU order
@@ -97,16 +96,15 @@ export function migrateV1toV2(
     const draft = draftsByPath[path]
     if (!draft) continue
 
-    const draftKey = hashPath(path)
-
     // Write payload
-    const payloadWritten = writePayload(workspaceId, draftKey, {
+    const payloadWritten = writePayload(workspaceId, path, {
+      path,
       data: draft.data,
       updatedAt: draft.updatedAt
     })
 
     if (!payloadWritten) {
-      console.warn(`[V2 Migration] Failed to write payload for ${path}`)
+      console.warn(`[V3 Migration] Failed to write payload for ${path}`)
       continue
     }
 
@@ -122,18 +120,18 @@ export function migrateV1toV2(
 
   // Write final index
   if (!writeIndex(workspaceId, index)) {
-    console.error('[V2 Migration] Failed to write index')
+    console.error('[V3 Migration] Failed to write index')
     return -1
   }
 
-  // Migrate V1 tab state pointers to V2 sessionStorage format.
+  // Migrate V1 tab state pointers to the current sessionStorage format.
   // V1 used setStorageValue which stored tab state in localStorage as fallback.
-  // V2 uses sessionStorage keyed by clientId. Without this migration,
+  // The current format uses sessionStorage keyed by clientId. Without this migration,
   // users upgrading from V1 lose their open tab list.
   migrateV1TabState(workspaceId, clientId)
 
   if (migrated > 0) {
-    console.warn(`[V2 Migration] Migrated ${migrated} drafts from V1 to V2`)
+    console.warn(`[V3 Migration] Migrated ${migrated} drafts from V1 to V3`)
   }
   return migrated
 }
