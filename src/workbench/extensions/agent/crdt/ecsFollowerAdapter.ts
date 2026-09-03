@@ -342,59 +342,62 @@ export class EcsFollowerAdapter {
       session.links.has(id) ? [] : [Number(id)]
     )
     try {
-      const committed = session.mutations.batch(frameContext(update), (batch) => {
-        if (reconcile) {
-          const nodes = [...session.nodes.keys()].flatMap((id) => {
-            const payload = readSemanticNode(session.follower.doc, id)
-            return payload ? [payload] : []
-          })
-          const links = [...session.links.keys()].flatMap((id) => {
-            const link = readSemanticLink(session.follower.doc, id)
-            return link ? [link] : []
-          })
-          batch.removeMissing(
-            nodes.map(({ id }) => toNodeId(id)),
-            links.map(({ id }) => id)
-          )
-          for (const payload of nodes) batch.reconcileNode(payload)
-          for (const link of links) batch.connect(link)
-          return
-        }
+      const committed = session.mutations.batch(
+        frameContext(update),
+        (batch) => {
+          if (reconcile) {
+            const nodes = [...session.nodes.keys()].flatMap((id) => {
+              const payload = readSemanticNode(session.follower.doc, id)
+              return payload ? [payload] : []
+            })
+            const links = [...session.links.keys()].flatMap((id) => {
+              const link = readSemanticLink(session.follower.doc, id)
+              return link ? [link] : []
+            })
+            batch.removeMissing(
+              nodes.map(({ id }) => toNodeId(id)),
+              links.map(({ id }) => id)
+            )
+            for (const payload of nodes) batch.reconcileNode(payload)
+            for (const link of links) batch.connect(link)
+            return
+          }
 
-        batch.removeLinks(removedLinkIds)
-        for (const [id, action] of nodeActions) {
-          if (action === 'delete' || action === 'update')
-            batch.deleteNode(toNodeId(id))
-        }
-        for (const [id, action] of nodeActions) {
-          if (action === 'delete') continue
-          const payload = readSemanticNode(session.follower.doc, id)
-          if (payload) batch.addNode(payload)
-        }
-        for (const id of replacedWidgetMaps) {
-          if (nodeActions.has(id)) continue
-          const payload = readSemanticNode(session.follower.doc, id)
-          if (payload) batch.reconcileNode(payload)
-        }
-        for (const [id, names] of changedWidgets) {
-          if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
-          const node = session.nodes.get(id)
-          const widgets = node?.get('widgets')
-          if (!(widgets instanceof Y.Map)) continue
-          if ([...names].some((name) => !widgets.has(name))) {
+          batch.removeLinks(removedLinkIds)
+          for (const [id, action] of nodeActions) {
+            if (action === 'delete' || action === 'update')
+              batch.deleteNode(toNodeId(id))
+          }
+          for (const [id, action] of nodeActions) {
+            if (action === 'delete') continue
+            const payload = readSemanticNode(session.follower.doc, id)
+            if (payload) batch.addNode(payload)
+          }
+          for (const id of replacedWidgetMaps) {
+            if (nodeActions.has(id)) continue
             const payload = readSemanticNode(session.follower.doc, id)
             if (payload) batch.reconcileNode(payload)
-            continue
           }
-          for (const name of names) {
-            batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+          for (const [id, names] of changedWidgets) {
+            if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+            const node = session.nodes.get(id)
+            const widgets = node?.get('widgets')
+            if (!(widgets instanceof Y.Map)) continue
+            if ([...names].some((name) => !widgets.has(name))) {
+              const payload = readSemanticNode(session.follower.doc, id)
+              if (payload) batch.reconcileNode(payload)
+              continue
+            }
+            for (const name of names) {
+              batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+            }
+          }
+          for (const id of changedLinkIds) {
+            const link = readSemanticLink(session.follower.doc, id)
+            if (link) batch.connect(link)
           }
         }
-        for (const id of changedLinkIds) {
-          const link = readSemanticLink(session.follower.doc, id)
-          if (link) batch.connect(link)
-        }
-      })
+      )
       return committed ? 'projected' : 'rejected'
     } catch (error) {
       reportError(error, {

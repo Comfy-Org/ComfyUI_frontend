@@ -226,7 +226,10 @@ describe('EcsFollowerAdapter integration', () => {
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'projected',
+      sequence: 1
+    })
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -287,7 +290,11 @@ describe('EcsFollowerAdapter integration', () => {
     // reconciliation must not be consumed — local-only node 99 survives.
     scopeAvailable = false
     deleteLayouts.mockClear()
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -299,7 +306,10 @@ describe('EcsFollowerAdapter integration', () => {
     // clears the stale local-only node instead of falling through to
     // incremental handling.
     scopeAvailable = true
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toEqual({
+      status: 'projected',
+      sequence: 2
+    })
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
@@ -340,7 +350,10 @@ describe('EcsFollowerAdapter integration', () => {
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'projected',
+      sequence: 1
+    })
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(
       useNodeDataStore()
@@ -440,6 +453,7 @@ describe('EcsFollowerAdapter integration', () => {
           reconcileNode: (payload) => projectedNodes.push(payload),
           setWidget: () => undefined,
           connect: () => undefined,
+          removeMissing: () => undefined,
           removeLinks: () => undefined,
           deleteNode: () => undefined,
           clearSemanticGraph: () => undefined
@@ -535,7 +549,9 @@ describe('EcsFollowerAdapter integration', () => {
         opIds: ['retry-drain']
       })
     ).toEqual({ status: 'projected', sequence: 3 })
-    expect(projectedNodes.map(({ id }) => id)).toEqual(['1', '2'])
+    // The retried authoritative reconcile sees node 2, then its queued frame
+    // replays under its own context. Real ECS reconciliation is idempotent.
+    expect(projectedNodes.map(({ id }) => id)).toEqual(['1', '2', '2'])
     expect(projectionOpIds).toEqual([
       'node-1',
       'node-1',
@@ -969,7 +985,7 @@ describe('EcsFollowerAdapter integration', () => {
           actor: 'agent:test',
           opIds: ['add']
         })
-      ).toBe(true)
+      ).toEqual({ status: 'projected', sequence: 1 })
 
       const nodeMap = nodesMap(host).get('1')
       expect(nodeMap).toBeInstanceOf(Y.Map)
@@ -990,7 +1006,7 @@ describe('EcsFollowerAdapter integration', () => {
             actor: 'agent:test',
             opIds: [`op-${seq}`]
           })
-        ).toBe(true)
+        ).toEqual({ status: 'projected', sequence: seq })
       }
       const widgetValue = (name: string) =>
         useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), name))
