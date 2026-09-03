@@ -1,4 +1,5 @@
 import {
+  AccountLayerReadinessTimeoutError,
   AccountError,
   MalformedResponseError,
   createBillingApiClient,
@@ -27,6 +28,20 @@ import { readonly, shallowRef } from 'vue'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
 const namespace = 'comfyui-frontend-account-layer-poc'
+const readinessTimeoutMs = 10_000
+
+async function waitUntilAuthenticated(
+  session: SessionClient,
+  timeoutMs = readinessTimeoutMs
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const phase = session.getState().phase
+    if (phase === 'authenticated' || phase === 'refreshing') return
+    await new Promise((resolve) => setTimeout(resolve, 25))
+  }
+  throw new AccountLayerReadinessTimeoutError(timeoutMs)
+}
 
 export interface AccountLayerPocDebug extends Partial<AccountLayerPocSeam> {
   billingRequests: number
@@ -231,21 +246,45 @@ export function createFrontendAccountClients(
   const adapter = createFrontendAccountAdapter(auth, getActiveWorkspace)
   const session = createSessionClient(adapter)
   const billing = createBillingClient(session, adapter)
+  let operationRecord: AccountLayerOperationRecord | null = null
+  let operationContext: Omit<AccountLayerOperationRecord, 'id'> = {
+    kind: 'subscribe',
+    started_at: Date.now(),
+    return_url: null
+  }
   const operationStore = {
     namespace,
     async getActiveId() {
       const value = localStorage.getItem(
         paymentStorageKey(auth, getActiveWorkspace)
       )
-      debug.operationStore.activeId = value
-      return value
+      if (!value) {
+        operationRecord = null
+        debug.operationStore.activeId = null
+        return null
+      }
+      operationRecord = value.startsWith('{')
+        ? (JSON.parse(value) as AccountLayerOperationRecord)
+        : {
+            id: value,
+            kind: 'subscribe',
+            started_at: Date.now(),
+            return_url: `${window.location.origin}/payment/success`
+          }
+      debug.operationStore.activeId = operationRecord.id
+      return operationRecord.id
     },
     async setActiveId(id: string) {
-      localStorage.setItem(paymentStorageKey(auth, getActiveWorkspace), id)
+      operationRecord = { id, ...operationContext }
+      localStorage.setItem(
+        paymentStorageKey(auth, getActiveWorkspace),
+        JSON.stringify(operationRecord)
+      )
       debug.operationStore.activeId = id
     },
     async clearActiveId() {
       localStorage.removeItem(paymentStorageKey(auth, getActiveWorkspace))
+      operationRecord = null
       debug.operationStore.activeId = null
     }
   }
@@ -311,31 +350,53 @@ export function createFrontendAccountClients(
   debug.refreshCredits = () => billing.refreshCredits()
   debug.runScheduledRefresh = () => scheduledRefresh?.()
   debug.signOut = () => signOut(auth)
-  const getOperationStore = (): AccountLayerOperationRecord | null =>
-    debug.operationStore.activeId
-      ? {
-          id: debug.operationStore.activeId,
+  async function readyMutation(
+    context: Omit<AccountLayerOperationRecord, 'id'>,
+    mutation: () => Promise<void>
+  ): Promise<void> {
+    await waitUntilAuthenticated(session)
+    operationContext = context
+    await mutation()
+  }
+  const seam: AccountLayerPocSeam = {
+    getSessionPhase: () => session.getState().phase,
+    whenAuthenticated: (timeoutMs) =>
+      waitUntilAuthenticated(session, timeoutMs),
+    subscribe: (planId = 'pro-monthly') =>
+      readyMutation(
+        {
           kind: 'subscribe',
           started_at: Date.now(),
           return_url: `${window.location.origin}/payment/success`
-        }
-      : null
-  const seam: AccountLayerPocSeam = {
-    subscribe: (planId = 'pro-monthly') =>
-      billingCommands!.subscribe({
-        plan_slug: planId,
-        return_url: `${window.location.origin}/payment/success`,
-        cancel_url: `${window.location.origin}/payment/failed`
-      }),
+        },
+        () =>
+          billingCommands!.subscribe({
+            plan_slug: planId,
+            return_url: `${window.location.origin}/payment/success`,
+            cancel_url: `${window.location.origin}/payment/failed`
+          })
+      ),
     topUp: (amount = 500) =>
-      billingCommands!.topUp({
-        amount_cents: amount,
-        idempotency_key: crypto.randomUUID()
-      }),
-    cancelSubscription: () => billingCommands!.cancelSubscription({}),
+      readyMutation(
+        { kind: 'topup', started_at: Date.now(), return_url: null },
+        () =>
+          billingCommands!.topUp({
+            amount_cents: amount,
+            idempotency_key: crypto.randomUUID()
+          })
+      ),
+    cancelSubscription: () =>
+      readyMutation(
+        { kind: 'cancel', started_at: Date.now(), return_url: null },
+        () => billingCommands!.cancelSubscription({})
+      ),
     resubscribe: () =>
-      billingCommands!.resubscribe({ plan_slug: 'pro-monthly' }),
+      readyMutation(
+        { kind: 'resubscribe', started_at: Date.now(), return_url: null },
+        () => billingCommands!.resubscribe({ plan_slug: 'pro-monthly' })
+      ),
     openPaymentPortal: async () => {
+      await waitUntilAuthenticated(session)
       await billingCommands!.openPaymentPortal({
         return_url: `${window.location.origin}/payment`
       })
@@ -344,7 +405,7 @@ export function createFrontendAccountClients(
       debug.payment = state
     },
     getPaymentState: () => debug.payment,
-    getOperationStore,
+    getOperationStore: () => operationRecord,
     refreshCredits: () => billing.refreshCredits(),
     getCredits: () => billing.getCreditsState(),
     signOut: () => signOut(auth),
