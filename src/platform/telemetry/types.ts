@@ -544,6 +544,44 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * prior thumb, which the eval pipeline records as a retraction rather than dropping.
+ */
+export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
+  message_id: string
+  vote: 'up' | 'down' | null
+}
+
+export type AgentPanelCloseSource =
+  | 'close_button'
+  | 'workflow_switch'
+  | 'topbar_button'
+export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
+  source: 'restored' | 'topbar_button'
+}
+export interface AgentPanelClosedMetadata extends Record<string, unknown> {
+  source: AgentPanelCloseSource
+  open_duration_ms: number | null
+}
+export interface AgentEntryButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  resulting_state: 'opened' | 'closed'
+}
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  attachment_count: number
+  node_tag_count: number
+}
+export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
+  source: 'mention_picker'
+}
+export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
+  workflow_id: string
+  target: 'active_tab_switch' | 'active_tab_open'
+}
+
+/**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
  */
@@ -553,6 +591,22 @@ export interface WidgetFavoriteToggledMetadata {
   widget_type: string
   is_favorited: boolean
   source: 'right_side_panel'
+}
+
+/**
+ * Fired once per duplicate link dropped during workflow load, when the loser
+ * has a *different origin* from the survivor — i.e. a connection the file
+ * recorded is silently discarded, not merely a redundant same-origin copy.
+ * Cloud cannot see the accompanying `console.warn`, so this is the only
+ * signal that a load lost a link. The survivor follows an authoritative
+ * serialized reference: `input.link` for node inputs, `linkIds` priority
+ * order for subgraph boundaries, and document order otherwise. `target`
+ * names the contested input slot.
+ */
+export interface LinkDedupDropMetadata {
+  droppedLinkId: number
+  survivorLinkId: number
+  target: string
 }
 
 /**
@@ -921,6 +975,8 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagEvaluation?(key: string, value: unknown): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
@@ -1027,6 +1083,17 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // In-App Agent message rating (PM-98)
+  trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+  trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
+  trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
+  trackAgentCloseButtonClicked?(): void
+  trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentAttachButtonClicked?(): void
+  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
@@ -1037,6 +1104,9 @@ export interface TelemetryProvider {
   trackNamedValuesShadowDiffSummary?(
     metadata: NamedValuesShadowDiffSummaryMetadata
   ): void
+
+  // Link deduplication diagnostics
+  trackLinkDedupDrop?(metadata: LinkDedupDropMetadata): void
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
@@ -1179,12 +1249,26 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // In-App Agent
+  AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
+  AGENT_PANEL_OPENED: 'app:agent_panel_opened',
+  AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
+  AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
+  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
   // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
+
+  // Link deduplication diagnostics
+  LINK_DEDUP_DROP: 'app:link_dedup_drop',
 
   // Page View
   PAGE_VIEW: 'app:page_view'
@@ -1267,6 +1351,7 @@ export type TelemetryEventProperties =
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
+  | LinkDedupDropMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

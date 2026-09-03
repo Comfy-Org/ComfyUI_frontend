@@ -23,7 +23,9 @@
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto"
+        :inert="agentNodeSelectionStore.isActive"
+        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
+        :class="{ 'opacity-0': agentNodeSelectionStore.isActive }"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
@@ -50,12 +52,17 @@
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
+      <!-- No node-selection condition here on purpose: entering the mode turns
+           the minimap setting off, so this reacts the same way it does to the
+           user's own toggle - and leaves them free to switch it back on while
+           they pick. -->
       <MiniMap
         v-if="
           comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
         "
         class="pointer-events-auto"
       />
+      <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <canvas
@@ -141,10 +148,12 @@ import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
 import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
+import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -199,6 +208,7 @@ import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -222,8 +232,12 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
+const nodeProgressCanvasSync = createNodeProgressCanvasSync(
+  workflowStore.nodeToNodeLocatorId
+)
 const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
@@ -247,8 +261,10 @@ const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
-const selectionToolboxEnabled = computed(() =>
-  settingStore.get('Comfy.Canvas.SelectionToolbox')
+const selectionToolboxEnabled = computed(
+  () =>
+    settingStore.get('Comfy.Canvas.SelectionToolbox') &&
+    !agentNodeSelectionStore.isActive
 )
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab
@@ -424,21 +440,15 @@ watch(
       canvasStore.currentGraph
     ] as const,
   ([nodeLocationProgressStates, canvas]) => {
-    if (!canvas?.graph) return
-    for (const node of canvas.graph.nodes) {
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
-      const progressState = nodeLocationProgressStates[nodeLocatorId]
-      if (progressState && progressState.state === 'running') {
-        node.progress = progressState.value / progressState.max
-      } else {
-        node.progress = undefined
-      }
-    }
-
-    // Force canvas redraw to ensure progress updates are visible
-    canvas.setDirty(true, false)
+    nodeProgressCanvasSync.sync(
+      nodeLocationProgressStates,
+      canvas,
+      canvas?.graph ?? canvasStore.currentGraph
+    )
   }
 )
+
+onUnmounted(nodeProgressCanvasSync.dispose)
 
 // Repaint canvas when node errors change.
 // Slot error flags are reconciled by reconcileNodeErrorFlags in executionErrorStore.

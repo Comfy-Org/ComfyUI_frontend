@@ -53,6 +53,21 @@ describe('initPostHog', () => {
   })
 })
 
+describe('capturePageview', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the pageview event with no properties', async () => {
+    const { initPostHog, capturePageview } = await import('./posthog')
+    initPostHog()
+    capturePageview()
+
+    expect(hoisted.mockCapture).toHaveBeenCalledOnce()
+    expect(hoisted.mockCapture.mock.calls[0][0]).toBe('$pageview')
+  })
+})
+
 describe('captureDownloadClick', () => {
   beforeEach(() => {
     vi.resetModules()

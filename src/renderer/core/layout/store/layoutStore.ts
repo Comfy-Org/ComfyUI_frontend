@@ -117,7 +117,7 @@ function makeScopedLayoutKey(
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
   return {
-    graphId: key.slice(0, separatorIndex) as UUID,
+    graphId: key.slice(0, separatorIndex),
     localId: key.slice(separatorIndex + 1)
   }
 }
@@ -746,6 +746,23 @@ class LayoutStoreImpl {
     return operation.actor === undefined
       ? { ...operation, actor: this.currentActor }
       : operation
+  }
+
+  /**
+   * Runs `fn` with every actor-less operation stamped as `actor` instead of
+   * this session's actor. The per-mutation command source remote appliers and
+   * provenance-aware listeners key on: stamping happens synchronously at
+   * apply time, so deferred change delivery still carries the scoped actor on
+   * `change.operation.actor`.
+   */
+  withActor<T>(actor: string, fn: () => T): T {
+    const previous = this.currentActor
+    this.currentActor = actor
+    try {
+      return fn()
+    } finally {
+      this.currentActor = previous
+    }
   }
 
   /**

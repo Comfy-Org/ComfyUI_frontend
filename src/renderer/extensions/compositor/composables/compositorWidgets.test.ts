@@ -91,6 +91,23 @@ describe('getCompositorWidgetValue', () => {
 
     expect(getCompositorWidgetValue(makeNode({ registered: false }))).toBeNull()
   })
+
+  it('does not fall back to a stale widget object over a nullish store value', () => {
+    const node = makeNode()
+    node.widgets = [
+      fromPartial<ICompositorWidget>({
+        name: 'compositor',
+        type: 'compositor',
+        value: { layers: [] }
+      })
+    ]
+    useWidgetValueStore().setValue(
+      widgetId(GRAPH_ID, node.id, 'compositor'),
+      null
+    )
+
+    expect(getCompositorWidgetValue(node)).toBeNull()
+  })
 })
 
 describe('resetCompositorStateWidgets', () => {
