@@ -25,7 +25,6 @@
     >
       <SelectButton
         :ref="setSelectButton"
-        :key="selectionRevision"
         class="workflow-tabs bg-transparent"
         :class="props.class"
         :model-value="selectedWorkflow"
@@ -158,6 +157,7 @@ import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 interface WorkflowOption {
   value: string
   workflow: ComfyWorkflow
+  revision: number
 }
 
 const props = defineProps<{
@@ -194,9 +194,13 @@ function openFeedback() {
 const containerRef = ref<HTMLElement | null>(null)
 const selectionRevision = ref(0)
 
-const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
+const workflowToOption = (
+  workflow: ComfyWorkflow,
+  revision = 0
+): WorkflowOption => ({
   value: workflow.path,
-  workflow
+  workflow,
+  revision
 })
 
 const options = computed<WorkflowOption[]>(() =>
@@ -204,7 +208,10 @@ const options = computed<WorkflowOption[]>(() =>
 )
 const selectedWorkflow = computed<WorkflowOption | null>(() =>
   workflowStore.activeWorkflow
-    ? workflowToOption(workflowStore.activeWorkflow as ComfyWorkflow)
+    ? workflowToOption(
+        workflowStore.activeWorkflow as ComfyWorkflow,
+        selectionRevision.value
+      )
     : null
 )
 

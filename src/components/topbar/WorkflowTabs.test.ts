@@ -436,8 +436,9 @@ describe('WorkflowTabs selection and overflow', () => {
   it('keeps the real workflow selected when another workflow is not opened', async () => {
     openWorkflow.mockResolvedValueOnce(false)
     const { user } = renderComponent()
+    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
 
-    await user.click(screen.getByText('Second workflow'))
+    await user.click(secondTab)
 
     expect(
       screen.getByRole('button', { name: 'First workflow' })
@@ -445,6 +446,7 @@ describe('WorkflowTabs selection and overflow', () => {
     expect(
       screen.getByRole('button', { name: 'Second workflow' })
     ).toHaveAttribute('aria-pressed', 'false')
+    expect(secondTab).toHaveFocus()
   })
 
   it('keeps overflow controls available when the tab strip overflows', async () => {
