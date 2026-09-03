@@ -40,6 +40,9 @@
   a migration of affected queries and alerts that accounts for old and new
   releases reporting different names.
 
+  Follow [ADR-TELEMETRY-ERRORS-0030](../docs/adr/TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md) for
+  agent-consumable tags, assertion modes, catch classification, and PII rules.
+
 ## Security
 
 - Sanitize HTML with DOMPurify
