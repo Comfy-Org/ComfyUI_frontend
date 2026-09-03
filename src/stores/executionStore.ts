@@ -1059,6 +1059,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function registerJobWorkflowIdMapping(jobId: JobId, workflowId: WorkflowId) {
     if (!jobId || !workflowId) return
     jobIdToWorkflowId.value.set(jobId, workflowId)
+    flushPendingExecutionError(jobId)
   }
 
   /**

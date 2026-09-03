@@ -1143,6 +1143,17 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
   })
 
+  it('flushes a buffered failure when queue polling maps its workflow', () => {
+    fireExecutionError('job-b')
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+  })
+
   it('clears execution-start errors only for the producing workflow', () => {
     errorStore.recordPromptError({
       type: 'visible-error',
