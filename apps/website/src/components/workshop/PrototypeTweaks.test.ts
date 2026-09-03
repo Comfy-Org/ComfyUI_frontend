@@ -7,12 +7,13 @@ import { LOW_CREDITS, useMockSession } from '../../composables/useMockSession'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import PrototypeTweaks from './PrototypeTweaks.vue'
 
-const { showStatuses, outputCount, outcome } = usePrototypeTweaks()
+const { showStatuses, outputCount, outcome, listing } = usePrototypeTweaks()
 
 afterEach(() => {
   showStatuses.value = false
   outputCount.value = 1
   outcome.value = 'success'
+  listing.value = 'flat'
   window.history.replaceState(null, '', '/workshop/')
 })
 
@@ -53,12 +54,15 @@ describe('PrototypeTweaks', () => {
       await screen.findByTestId('tweak-outcome'),
       'timeout'
     )
+    await user.selectOptions(screen.getByTestId('tweak-listing'), 'sections')
+    expect(listing.value).toBe('sections')
     const url = screen.getByTestId('tweak-share-url') as HTMLInputElement
     expect(url.value).toContain('/workshop/models/demo/?')
     expect(url.value).toContain('session=existing')
     expect(url.value).toContain('balance=low')
     expect(url.value).toContain('outcome=timeout')
     expect(url.value).toContain('outputs=4')
+    expect(url.value).toContain('listing=sections')
 
     await user.click(screen.getByTestId('tweak-share-copy'))
     expect(screen.getByTestId('tweak-share-copy').textContent).toContain(

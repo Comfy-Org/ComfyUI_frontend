@@ -56,6 +56,28 @@ describe('PlaygroundOutput', () => {
     ).toContain('latest')
   })
 
+  it('starts an earlier run at its own first output', async () => {
+    const user = userEvent.setup()
+    const batch = {
+      ...output('latest'),
+      urls: ['https://example.com/a.webp', 'https://example.com/b.webp']
+    }
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded(batch),
+        earlier: [output('first')],
+        now: 2_000
+      }
+    })
+
+    await user.click(screen.getByTestId('output-thumb-1'))
+    await user.click(screen.getByTestId('earlier-run-0'))
+
+    expect(
+      screen.getByTestId('output-download').getAttribute('href')
+    ).toContain('first')
+  })
+
   it('pages through a batch and keeps sensitive results behind a reveal', async () => {
     const user = userEvent.setup()
     const batch = {

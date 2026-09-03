@@ -66,7 +66,6 @@ const outputs = computed(() =>
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
 watch(latest, () => {
-  selected.value = 0
   viewing.value = undefined
 })
 
@@ -79,6 +78,7 @@ const shownIsSensitive = computed(() =>
 )
 const blurred = computed(() => shownIsSensitive.value && !revealed.value)
 watch(shown, () => {
+  selected.value = 0
   revealed.value = false
 })
 

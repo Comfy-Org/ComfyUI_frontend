@@ -3,7 +3,9 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-type Tweaks = typeof import('./usePrototypeTweaks')
+import type * as TweaksModule from './usePrototypeTweaks'
+
+type Tweaks = typeof TweaksModule
 
 async function mountTweaks() {
   const module: Tweaks = await import('./usePrototypeTweaks')
@@ -33,6 +35,7 @@ describe('usePrototypeTweaks', () => {
     expect(tweaks.outputCount.value).toBe(1)
     expect(tweaks.outcome.value).toBe('success')
     expect(tweaks.modelState.value).toBe('none')
+    expect(tweaks.listing.value).toBe('flat')
   })
 
   it('restores a persisted scope and ignores junk', async () => {
@@ -42,6 +45,20 @@ describe('usePrototypeTweaks', () => {
     vi.resetModules()
     localStorage.setItem('comfy-workshop-scope', 'v9')
     expect((await mountTweaks()).scope.value).toBe('v1')
+  })
+
+  it('restores a persisted listing, ignores junk and persists changes', async () => {
+    localStorage.setItem('comfy-workshop-listing', 'sections')
+    expect((await mountTweaks()).listing.value).toBe('sections')
+
+    vi.resetModules()
+    localStorage.setItem('comfy-workshop-listing', 'carousel')
+    const tweaks = await mountTweaks()
+    expect(tweaks.listing.value).toBe('flat')
+
+    tweaks.listing.value = 'sections'
+    await nextTick()
+    expect(localStorage.getItem('comfy-workshop-listing')).toBe('sections')
   })
 
   it('persists scope changes and shares state between callers', async () => {
