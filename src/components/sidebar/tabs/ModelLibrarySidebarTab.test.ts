@@ -26,10 +26,10 @@ const {
   settingState,
   modelsState
 } = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode<unknown> | null = null
+  let capturedRoot: TreeExplorerNode | null = null
   let capturedExpandedKeys: Record<string, boolean> = {}
   return {
-    captureRoot: (root: TreeExplorerNode<unknown>) => {
+    captureRoot: (root: TreeExplorerNode) => {
       capturedRoot = root
     },
     getRoot: () => capturedRoot as TreeExplorerNode<ComfyModelDef>,
@@ -151,7 +151,7 @@ vi.mock('@/components/common/TreeExplorer.vue', async () => {
       template: '<div data-testid="tree-explorer" />',
       props: ['root', 'expandedKeys'],
       setup(props: {
-        root: TreeExplorerNode<unknown>
+        root: TreeExplorerNode
         expandedKeys: Record<string, boolean>
       }) {
         watchEffect(() => captureRoot(props.root))

@@ -319,7 +319,7 @@ async function runBatch(
       const sinkIdByKey: Record<string, string> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key, undefined, {
-          pos: [0, index * (spacingY as number)]
+          pos: [0, index * spacingY]
         })
         if (!node) throw new Error(`${spec.key}: createNode returned null`)
         window.app!.graph.add(node)
@@ -350,7 +350,7 @@ async function runBatch(
             {
               pos: [
                 -420 - socketIndex * 40,
-                index * (spacingY as number) + socketIndex * 90
+                index * spacingY + socketIndex * 90
               ]
             }
           )
@@ -361,7 +361,7 @@ async function runBatch(
         }
         if (spec.needsPreviewSink) {
           const sink = window.LiteGraph!.createNode('PreviewAny', undefined, {
-            pos: [460, index * (spacingY as number)]
+            pos: [460, index * spacingY]
           })!
           window.app!.graph.add(sink)
           node.connect(0, sink, 0)
