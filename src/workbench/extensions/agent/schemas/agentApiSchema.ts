@@ -23,7 +23,12 @@ export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
 
 export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
   ({ mode, credit_limit }, ctx) => {
-    if (mode === 'auto_limited' && credit_limit === null) {
+    if (
+      mode === 'auto_limited' &&
+      (credit_limit === null ||
+        !Number.isInteger(credit_limit) ||
+        credit_limit <= 0)
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['credit_limit'],
