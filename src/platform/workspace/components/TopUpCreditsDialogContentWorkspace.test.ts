@@ -62,6 +62,8 @@ interface MockTopupOperation {
   isAuthenticating?: boolean
 }
 
+const mockCancelOperation = vi.hoisted(() => vi.fn())
+
 const mockBillingOperationState = vi.hoisted(() => ({
   isAddingCredits: undefined as { value: boolean } | undefined,
   topupActionOperation: undefined as
@@ -92,7 +94,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
         return mockBillingOperationState.topupActionOperation?.value
       },
       startOperation: mockStartOperation,
-      retryPaymentAuthentication: mockRetryPaymentAuthentication
+      retryPaymentAuthentication: mockRetryPaymentAuthentication,
+      cancelOperation: mockCancelOperation
     })
   }
 })
@@ -205,6 +208,100 @@ async function clickAddCredits() {
 }
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
+  describe('canceling a pending charge', () => {
+    function pendingCharge() {
+      setCanTopUp(true)
+      setTopupActionOperation({
+        opId: 'op-1',
+        actionUrl: 'https://bank.example/3ds',
+        status: 'pending'
+      })
+    }
+
+    it('returns to the amount step and says nothing was charged', async () => {
+      mockCancelOperation.mockResolvedValue('canceled')
+      pendingCharge()
+      renderDialog()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+
+      expect(mockCancelOperation).toHaveBeenCalledWith('op-1')
+      expect(
+        await screen.findByText('Payment canceled. Nothing was charged.')
+      ).toBeInTheDocument()
+    })
+
+    it('keeps cancel available when the request never reached the server', async () => {
+      mockCancelOperation.mockResolvedValue('unreachable')
+      pendingCharge()
+      renderDialog()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+
+      expect(
+        await screen.findByText(
+          "Couldn't reach the server. Your payment has not been canceled — try again."
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Cancel payment' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('Payment canceled. Nothing was charged.')
+      ).toBeNull()
+    })
+
+    it('explains when the charge is already past the point of cancelling', async () => {
+      mockCancelOperation.mockResolvedValue('unavailable')
+      pendingCharge()
+      renderDialog()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+
+      expect(
+        await screen.findByText(
+          "This payment is already processing and can't be canceled."
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('Payment canceled. Nothing was charged.')
+      ).toBeNull()
+    })
+
+    it('forgets a stale cancel verdict when a new charge starts', async () => {
+      mockCancelOperation.mockResolvedValue('unavailable')
+      pendingCharge()
+      renderDialog()
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+      await screen.findByText(
+        "This payment is already processing and can't be canceled."
+      )
+
+      setTopupActionOperation({
+        opId: 'op-2',
+        actionUrl: 'https://bank.example/3ds-2',
+        status: 'pending'
+      })
+
+      expect(
+        await screen.findByRole('button', { name: 'Cancel payment' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          "This payment is already processing and can't be canceled."
+        )
+      ).toBeNull()
+    })
+  })
+
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     setCanTopUp(true)

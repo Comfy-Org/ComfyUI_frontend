@@ -108,6 +108,13 @@
     </template>
 
     <!-- Preset amount buttons -->
+    <div
+      v-if="canceledNoticeVisible && step === 'amount'"
+      class="mx-8 mb-2 rounded-lg bg-secondary-background px-4 py-2 text-center text-xs text-muted-foreground"
+    >
+      {{ $t('billingOperation.paymentCanceledNotice') }}
+    </div>
+
     <div v-if="step === 'amount'" class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
         {{ $t('credits.topUp.selectAmount') }}
@@ -230,6 +237,31 @@
         >
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
+
+        <p
+          v-if="cancelUnavailable"
+          class="m-0 py-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('billingOperation.cancelUnavailable') }}
+        </p>
+        <template v-else>
+          <p
+            v-if="cancelUnreachable"
+            class="m-0 pt-2 text-center text-xs text-muted-foreground"
+          >
+            {{ $t('billingOperation.cancelUnreachable') }}
+          </p>
+          <Button
+            v-if="!topupReconciliationOperationId"
+            variant="muted-textonly"
+            size="lg"
+            class="h-10 w-full justify-center"
+            :loading="isCancelingPayment"
+            @click="handleCancelPendingPayment"
+          >
+            {{ $t('billingOperation.cancelPayment') }}
+          </Button>
+        </template>
       </div>
       <div v-else class="flex flex-col gap-2">
         <Button
@@ -277,7 +309,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -349,6 +381,56 @@ const step = ref<'amount' | 'confirm' | 'verifying'>(
 )
 
 const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
+
+const isCancelingPayment = ref(false)
+const cancelUnavailable = ref(false)
+const cancelUnreachable = ref(false)
+const canceledNoticeVisible = ref(false)
+let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
+
+async function handleCancelPendingPayment() {
+  const opId = topupOperation.value?.opId
+  if (!opId || isCancelingPayment.value) return
+  isCancelingPayment.value = true
+  try {
+    const result = await billingOperationStore.cancelOperation(opId)
+    if (result === 'unavailable') {
+      cancelUnreachable.value = false
+      cancelUnavailable.value = true
+      return
+    }
+    // No verdict reached: the charge stands, and so does the cancel button.
+    if (result === 'unreachable') {
+      cancelUnreachable.value = true
+      return
+    }
+    // Canceled is not failed: the typed amount survives so paying again does
+    // not mean entering it again.
+    cancelUnavailable.value = false
+    cancelUnreachable.value = false
+    canceledNoticeVisible.value = true
+    step.value = 'amount'
+    clearTimeout(canceledNoticeTimer)
+    canceledNoticeTimer = setTimeout(() => {
+      canceledNoticeVisible.value = false
+    }, 5000)
+  } finally {
+    isCancelingPayment.value = false
+  }
+}
+
+// A cancel verdict describes one operation. A different operation — a fresh
+// attempt, a recovered charge — must not inherit it, or a stale refusal
+// removes the cancel affordance from a charge it never judged.
+watch(
+  () => topupOperation.value?.opId,
+  () => {
+    cancelUnavailable.value = false
+    cancelUnreachable.value = false
+  }
+)
+
+onScopeDispose(() => clearTimeout(canceledNoticeTimer))
 
 // Computed
 const pricingUrl = computed(() =>
