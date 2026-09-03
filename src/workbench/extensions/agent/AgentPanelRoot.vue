@@ -85,9 +85,7 @@ import type {
 } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  createAgentRestClient
-} from './services/agent/agentRestClient'
+import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import type {

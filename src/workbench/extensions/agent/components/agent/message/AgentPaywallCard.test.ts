@@ -37,8 +37,8 @@ describe('AgentPaywallCard visual contract', () => {
     expect(addCredits).toHaveAccessibleName('Add credits')
     expect(addCredits).toHaveClass('bg-base-foreground', 'text-base-background')
 
-    await user.click(upgrade!)
-    await user.click(addCredits!)
+    await user.click(upgrade)
+    await user.click(addCredits)
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
   })
 
