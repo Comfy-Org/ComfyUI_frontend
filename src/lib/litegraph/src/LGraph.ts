@@ -98,7 +98,8 @@ import {
   registerLinkTopology,
   resolveLinkTopology,
   unregisterAllLinkTopologies,
-  unregisterLinkTopology
+  unregisterLinkTopology,
+  transferLinkPresentation
 } from './LLink'
 import { LinkMap } from './LinkMap'
 import type { LinkId } from './LLink'
@@ -2263,7 +2264,24 @@ export class LGraph
       }
 
       const input = subgraphNode.inputs[i - 1]
-      outputNode.connectSlots(output, subgraphNode, input, link.parentId)
+      const boundaryLink = outputNode.connectSlots(
+        output,
+        subgraphNode,
+        input,
+        link.parentId
+      )
+      const grouped = connections.map(({ link: groupedLink }) =>
+        compactLinkPresentation(groupedLink.hidden, groupedLink.label)
+      )
+      const unambiguous = grouped.every(
+        (candidate) =>
+          candidate?.hidden === grouped[0]?.hidden &&
+          candidate?.label === grouped[0]?.label
+      )
+      transferLinkPresentation(
+        (unambiguous ? grouped[0] : undefined) ?? {},
+        boundaryLink
+      )
     }
 
     // Group matching links
@@ -2298,7 +2316,13 @@ export class LGraph
         }
 
         const output = subgraphNode.outputs[i - 1]
-        subgraphNode.connectSlots(output, inputNode, input, link.parentId)
+        const boundaryLink = subgraphNode.connectSlots(
+          output,
+          inputNode,
+          input,
+          link.parentId
+        )
+        transferLinkPresentation(link, boundaryLink)
       }
     }
 
@@ -2413,6 +2437,8 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
+      hidden?: boolean
+      label?: string
     }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
       const outerLink =
@@ -2445,7 +2471,9 @@ export class LGraph
             id: link.id,
             iparent: link.parentId,
             eparent: sublink.parentId,
-            externalFirst: true
+            externalFirst: true,
+            hidden: link.hidden || sublink.hidden || undefined,
+            label: link.label ?? sublink.label
           })
           sublink.parentId = undefined
         }
@@ -2467,7 +2495,9 @@ export class LGraph
         id: link.id,
         iparent: link.parentId,
         eparent: externalParentId,
-        externalFirst: false
+        externalFirst: false,
+        hidden: link.hidden || outerLink?.hidden || undefined,
+        label: link.label ?? outerLink?.label
       })
     }
     this.remove(subgraphNode)
@@ -2536,6 +2566,7 @@ export class LGraph
         console.error('Failed to create link')
         continue
       }
+      transferLinkPresentation(newLink, created)
       //This is a little unwieldy since Map.has isn't a type guard
       const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)

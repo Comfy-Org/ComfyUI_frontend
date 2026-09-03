@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { transferLinkPresentation } from '@/lib/litegraph/src/LLink'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -77,6 +78,7 @@ export class MovingOutputLink extends MovingLinkBase {
       this.inputSlot,
       this.link.parentId
     )
+    transferLinkPresentation(this.link, link)
     if (link) events.dispatch('output-moved', this)
     return link
   }
@@ -90,6 +92,7 @@ export class MovingOutputLink extends MovingLinkBase {
       this.node,
       this.fromReroute?.id
     )
+    transferLinkPresentation(this.link, newLink)
     events?.dispatch('link-created', newLink)
   }
 
@@ -121,7 +124,13 @@ export class MovingOutputLink extends MovingLinkBase {
       this.link.parentId = reroute.id
     }
     // Use the last reroute id on the link to retain all reroutes
-    outputNode.connectSlots(output, inputNode, inputSlot, this.link.parentId)
+    const newLink = outputNode.connectSlots(
+      output,
+      inputNode,
+      inputSlot,
+      this.link.parentId
+    )
+    transferLinkPresentation(this.link, newLink)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) reroute.removeAllFloatingLinks()

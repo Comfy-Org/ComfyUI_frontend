@@ -10,13 +10,16 @@ import type {
   CanvasPointerEvent,
   ISerialisedGraph,
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
   LLink,
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -411,4 +414,21 @@ export function reloadSerializedGraph(
   usePreviewExposureStore().clearGraph(payload.id)
   reloaded.configure(payload)
   return reloaded
+}
+
+export function createTestCanvas(
+  graph: LGraph,
+  ctx: CanvasRenderingContext2D
+): LGraphCanvas {
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getContext = vi.fn().mockReturnValue(ctx)
+  element.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 800,
+    height: 600
+  })
+  return new LGraphCanvas(element, graph, { skip_render: true })
 }

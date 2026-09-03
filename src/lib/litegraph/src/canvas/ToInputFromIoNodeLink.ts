@@ -1,3 +1,4 @@
+import { transferLinkPresentation } from '@/lib/litegraph/src/LLink'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -78,6 +79,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
 
     if (existingLink) {
       // Moving an existing link
+      transferLinkPresentation(existingLink, newLink)
       const { input, inputNode } = existingLink.resolve(this.network)
       if (inputNode && input)
         this.node._disconnectNodeInput(inputNode, input, existingLink)
@@ -112,6 +114,9 @@ export class ToInputFromIoNodeLink implements RenderLink {
     reroute.parentId = fromReroute?.id
 
     const newLink = fromSlot.connect(input, inputNode, link.parentId)
+    if (this.existingLink) {
+      transferLinkPresentation(this.existingLink, newLink)
+    }
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) fromReroute.removeAllFloatingLinks()

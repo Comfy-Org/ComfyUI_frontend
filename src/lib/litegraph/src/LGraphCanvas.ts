@@ -36,7 +36,7 @@ import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { LLink, slotFloatingLinks } from './LLink'
+import { LLink, slotFloatingLinks, transferLinkPresentation } from './LLink'
 import {
   inputHasLink,
   inputLinkId,
@@ -4335,7 +4335,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
           afterRerouteId
         )
-        if (link) links.set(toLinkId(info.id), link)
+        if (link) {
+          transferLinkPresentation(info, link)
+          links.set(toLinkId(info.id), link)
+        }
       }
     }
 
