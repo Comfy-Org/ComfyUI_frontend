@@ -260,7 +260,13 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 1 }
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 1, lineage_seq: -1 }
+      })
+    ).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 1, lineage_seq: '1' }
       })
     ).toBeNull()
     expect(
@@ -269,5 +275,17 @@ describe('doc frame client', () => {
         data: { v: 1, workflow_id: 'wf-1', seq: 43, lineage_seq: 42 }
       })
     ).toBeNull()
+  })
+
+  it('reads an ack without lineage_seq as the migration default lineage 0', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 1 }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true, seq: 1, lineageSeq: 0 }
+    })
   })
 })

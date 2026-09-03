@@ -242,7 +242,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (update.workflowId !== this.sentWorkflowId) return
 
     if (this.lineageSeq !== null && update.lineageSeq < this.lineageSeq) {
-      this.dispatchStale(update.workflowId, update.seq)
+      this.dispatchStale(update.workflowId, update.seq, update.lineageSeq)
       return
     }
     if (this.lineageSeq !== null && update.lineageSeq > this.lineageSeq) {
@@ -323,7 +323,7 @@ export class LayoutFollowerBridge extends EventTarget {
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
     if (this.lineageSeq !== null && reset.lineageSeq <= this.lineageSeq) {
-      this.dispatchStale(reset.workflowId, reset.seq)
+      this.dispatchStale(reset.workflowId, reset.seq, reset.lineageSeq)
       return
     }
     this.replaceLineage(reset.workflowId, reset.lineageSeq, reset.seq, reset)
@@ -355,9 +355,19 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
-  private dispatchStale(workflowId: string, seq: number): void {
+  private dispatchStale(
+    workflowId: string,
+    seq: number,
+    lineageSeq?: number
+  ): void {
     this.dispatchEvent(
-      new CustomEvent('doc_stale', { detail: { workflowId, seq } })
+      new CustomEvent('doc_stale', {
+        detail: {
+          workflowId,
+          seq,
+          ...(lineageSeq !== undefined && { lineageSeq })
+        }
+      })
     )
   }
 
@@ -382,12 +392,19 @@ export class LayoutFollowerBridge extends EventTarget {
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
     if (subscribed.ok) {
-      const lineageSeq = subscribed.lineageSeq
-      if (lineageSeq === undefined) return
+      const lineageSeq = subscribed.lineageSeq ?? 0
       if (this.lineageSeq !== null && lineageSeq < this.lineageSeq) {
-        this.dispatchStale(subscribed.workflowId, subscribed.seq ?? 0)
+        this.dispatchStale(
+          subscribed.workflowId,
+          subscribed.seq ?? 0,
+          lineageSeq
+        )
         return
       }
+      // No resubscribe here, unlike the newer-lineage `doc_update` path: the
+      // server already answered a mismatched `known_lineage_seq` with the full
+      // state (cloud `docwire.Resync`), so the catch-up that follows this ack
+      // is the whole new lineage.
       if (this.lineageSeq !== null && lineageSeq > this.lineageSeq) {
         this.replaceLineage(
           subscribed.workflowId,

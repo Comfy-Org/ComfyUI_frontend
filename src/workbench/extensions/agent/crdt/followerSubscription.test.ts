@@ -64,14 +64,7 @@ class SocketTransport extends EventTarget implements DocFrameTransport {
 
   /** Simulate a server → client frame arriving on the socket. */
   deliver(type: string, data: unknown): void {
-    if (typeof data !== 'object' || data === null) {
-      this.dispatchEvent(new CustomEvent(type, { detail: data }))
-      return
-    }
-    const frame = { ...data } as Record<string, unknown>
-    if (type === 'doc_subscribed' && frame.ok === true) frame.lineage_seq ??= 1
-    if (type === 'doc_reset') frame.lineage_seq ??= frame.seq
-    this.dispatchEvent(new CustomEvent(type, { detail: frame }))
+    this.dispatchEvent(new CustomEvent(type, { detail: data }))
   }
 
   framesOfType(type: string): unknown[] {
@@ -214,6 +207,7 @@ describe('human op gating around subscription acknowledgement', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 1
     })
     bridge.sendHumanOps('tab-a', [postAckOp])
@@ -406,6 +400,61 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it('reports the rejected frame lineage on doc_stale so replays and replaced lineages stay distinguishable', () => {
+    const { transport, bridge } = wire()
+    const stale: unknown[] = []
+    bridge.addEventListener('doc_stale', (event) => {
+      if (event instanceof CustomEvent) stale.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
+    )
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42, 1)
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
+    )
+
+    expect(stale).toEqual([
+      { workflowId: WORKFLOW_ID, seq: 42, lineageSeq: 1 },
+      { workflowId: WORKFLOW_ID, seq: 43 }
+    ])
+  })
+
+  it('confirms a subscribe whose ack omits lineage_seq (migration default lineage 0)', () => {
+    const { transport, bridge } = wire()
+    const acks: unknown[] = []
+    bridge.addEventListener('doc_subscribed', (event) => {
+      if (event instanceof CustomEvent) acks.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 5
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 5, 0)
+    )
+
+    expect(acks).toEqual([
+      { workflowId: WORKFLOW_ID, ok: true, seq: 5, lineageSeq: 0 }
+    ])
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(5)
+  })
+
   it('replaces before accepting a newer-lineage acknowledgement and its full catch-up', () => {
     const { transport, bridge } = wire()
     transport.open = true
@@ -448,7 +497,12 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     const oldDoc = bridge.follower
     expect(oldDoc.updatesApplied).toBe(1)
 
-    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 43,
+      lineage_seq: 43
+    })
 
     // The old lineage is dropped wholesale, never folded into.
     expect(bridge.follower).not.toBe(oldDoc)
@@ -495,7 +549,12 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     const oldDoc = bridge.follower
 
-    transport.deliver('doc_reset', { v: 1, workflow_id: 'wf-other', seq: 9 })
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: 'wf-other',
+      seq: 9,
+      lineage_seq: 9
+    })
 
     expect(bridge.follower).toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(1)
@@ -510,7 +569,12 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
 
     transport.open = false
-    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 43,
+      lineage_seq: 43
+    })
 
     // The lineage break is honoured even though the resubscribe cannot leave.
     expect(bridge.follower.updatesApplied).toBe(0)
@@ -534,6 +598,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 1
     })
     // The ack alone already tells the follower where the host is…
@@ -566,6 +631,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 7
     })
 
@@ -591,6 +657,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 1
     })
 
@@ -614,6 +681,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 1
     })
 
@@ -649,6 +717,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 4
     })
 
@@ -697,6 +766,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 4
     })
     expect(bridge.lastSequence).toBe(5)
@@ -736,6 +806,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 10
     })
     expect(bridge.lastSequence).toBe(10)
@@ -748,6 +819,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 12
     })
     transport.deliver(
@@ -767,6 +839,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 1
     })
 
@@ -791,6 +864,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
+      lineage_seq: 1,
       seq: 1
     })
 
@@ -928,6 +1002,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       v: 1,
       workflow_id: 'wf-a',
       ok: true,
+      lineage_seq: 1,
       seq: 9
     })
 

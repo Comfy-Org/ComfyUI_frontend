@@ -193,10 +193,14 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
+  // The server omits `lineage_seq` from the ack while a doc is still on the
+  // migration default lineage 0 (`omitempty`), so absent means 0 here. A
+  // present value must still be a well-formed lineage.
+  const ackLineageSeq = data.lineage_seq === undefined ? 0 : data.lineage_seq
   if (
     frame.type === 'doc_subscribed' &&
     typeof data.ok === 'boolean' &&
-    (!data.ok || isNonNegativeInteger(data.lineage_seq))
+    (!data.ok || isNonNegativeInteger(ackLineageSeq))
   ) {
     return {
       type: frame.type,
@@ -204,7 +208,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         ok: data.ok,
         ...(typeof data.seq === 'number' && { seq: data.seq }),
-        ...(data.ok && { lineageSeq: data.lineage_seq as number }),
+        ...(data.ok && { lineageSeq: ackLineageSeq as number }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message })
       }
