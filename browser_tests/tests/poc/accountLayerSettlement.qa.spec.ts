@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-15-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-16-frontend'
 const terminalSteps = [
   'success',
   'canceled',
@@ -110,10 +110,10 @@ async function fillCheckout(page: Page, card: string) {
     name: /save my (information|info)/i
   })
   if (await saveInformation.isChecked().catch(() => false)) {
-    await saveInformation.focus()
-    await saveInformation.press('Space')
+    await page.getByText(/save my (information|info)/i).click()
   }
   await expect(saveInformation).not.toBeChecked()
+  await expect(page.locator('input[type="tel"]')).toBeHidden()
   const submit = page.locator('.SubmitButton')
   await submit.click()
   const declineLink = page.getByRole('button', {
@@ -184,20 +184,35 @@ async function recordPaymentStateUntilTerminal(page: Page) {
 test('completes hosted subscription and captures terminal operation', async () => {
   test.setTimeout(900_000)
   await mkdir(evidenceDir, { recursive: true })
-  for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
+  for (const file of [
+    'preflight.log',
+    'requests.log',
+    'ops-responses.jsonl',
+    'paystate.log'
+  ]) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-15-'))
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-16-'))
+  await mkdir(join(profileDir, 'Default'))
+  writeFileSync(
+    join(profileDir, 'Default', 'Preferences'),
+    JSON.stringify({
+      credentials_enable_service: false,
+      profile: { password_manager_enabled: false },
+      autofill: { credit_card_enabled: false, profile_enabled: false }
+    }),
+    { flag: 'w' }
+  )
   const context = await chromium.launchPersistentContext(profileDir, {
-    channel: 'chrome',
+    executablePath: '/usr/bin/google-chrome',
     headless: false,
-    args: ['--disable-blink-features=AutomationControlled'],
+    args: [
+      '--disable-save-password-bubble',
+      '--disable-features=AutofillServerCommunication,PasswordManagerOnboarding'
+    ],
     ignoreDefaultArgs: ['--enable-automation']
   })
   const page = context.pages()[0] ?? (await context.newPage())
-  await page.addInitScript(() => {
-    window.open = () => window
-  })
   context.on('response', async (response) => {
     const url = new URL(response.url())
     if (!url.pathname.startsWith('/api/billing/')) return
@@ -265,32 +280,40 @@ test('completes hosted subscription and captures terminal operation', async () =
       (response) =>
         new URL(response.url()).pathname === '/api/billing/subscribe'
     )
+    const checkoutPagePromise = context.waitForEvent('page')
     await page.evaluate(() => {
       const seam = Reflect.get(window, '__accountLayerPoc') as {
-        subscribe(): Promise<void>
+        recoverSubscription(planId: string, intent: string): Promise<void>
       }
-      return seam.subscribe()
+      void seam.recoverSubscription(
+        'pro-monthly',
+        'comfyui-frontend-account-layer-poc:subscribe:pro-monthly'
+      )
     })
     const response = await responsePromise
     expect(response.status()).toBe(200)
     const body = (await response.json()) as Record<string, unknown>
     const checkoutUrl = String(body.payment_method_url ?? body.action_url ?? '')
     expect(checkoutUrl).toContain('cs_test_')
-    await page.goto(checkoutUrl)
-    await fillCheckout(page, '4242424242424242')
-    const captcha = page.getByText(/hcaptcha|verify you are human/i).first()
+    const checkoutPage = await checkoutPagePromise
+    await fillCheckout(checkoutPage, '4242424242424242')
+    const captcha = checkoutPage
+      .getByText(/hcaptcha|verify you are human/i)
+      .first()
     if (await captcha.isVisible().catch(() => false)) {
       console.log(
         'HUMAN: solve the captcha in the Chrome window on display :1 (waiting up to 600 s)'
       )
     }
-    await page
+    await checkoutPage
       .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
         timeout: 600_000,
         waitUntil: 'commit'
       })
       .catch(async (error: unknown) => {
-        await page.screenshot({ path: `${evidenceDir}/captcha-hard-stop.png` })
+        await checkoutPage.screenshot({
+          path: `${evidenceDir}/captcha-hard-stop.png`
+        })
         throw error
       })
     const terminal = await recordPaymentStateUntilTerminal(page)

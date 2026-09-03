@@ -58,6 +58,7 @@ export interface AccountLayerPocDebug extends Partial<AccountLayerPocSeam> {
   payment: BillingState
   operationStore: { activeId: string | null }
   injectOperationResponse(response: BillingOperationResponse): Promise<void>
+  recoverSubscription(planId: string, intent: string): Promise<void>
   showBillingModal(): void
   refreshCredits(): Promise<void>
   runScheduledRefresh(): void
@@ -85,6 +86,7 @@ const debug: AccountLayerPocDebug = {
   payment: { step: 'select', noChargeConfirmed: false },
   operationStore: { activeId: null },
   injectOperationResponse: async () => undefined,
+  recoverSubscription: async () => undefined,
   showBillingModal: () => undefined,
   refreshCredits: async () => undefined,
   runScheduledRefresh: () => undefined,
@@ -413,7 +415,25 @@ export function createFrontendAccountClients(
       return debug.lastOpenedUrl
     }
   }
-  Object.assign(debug, seam)
+  Object.assign(debug, seam, {
+    recoverSubscription: (planId: string, intent: string) =>
+      readyMutation(
+        {
+          kind: 'subscribe',
+          started_at: Date.now(),
+          return_url: `${window.location.origin}/payment/success`
+        },
+        () =>
+          billingCommands!.subscribe(
+            {
+              plan_slug: planId,
+              return_url: `${window.location.origin}/payment/success`,
+              cancel_url: `${window.location.origin}/payment/failed`
+            },
+            intent
+          )
+      )
+  })
   return { session, billing, billingCommands }
 }
 
