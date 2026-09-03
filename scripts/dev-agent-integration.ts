@@ -336,6 +336,51 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
   }
 }
 
+// One lifecycle for a spawned group: the first exit reason wins and teardown runs once.
+function supervise(dataDir: string) {
+  const children: ChildProcess[] = []
+  let stopping = false
+  let requestedExitCode: number | null = null
+  let resolveExitRequest: (code: number) => void = () => {}
+  const exitRequested = new Promise<number>((resolveExit) => {
+    resolveExitRequest = resolveExit
+  })
+  const requestExit = (code: number) => {
+    if (requestedExitCode !== null) return
+    requestedExitCode = code
+    resolveExitRequest(code)
+  }
+  const onSigint = () => requestExit(130)
+  const onSigterm = () => requestExit(143)
+  process.once('SIGINT', onSigint)
+  process.once('SIGTERM', onSigterm)
+  return {
+    exitRequested,
+    requested: () => requestedExitCode !== null,
+    // Signalled newest first, so a dependent stops before what it was talking to.
+    stop: async (exitCode: number): Promise<number> => {
+      if (stopping) return exitCode
+      stopping = true
+      const newestFirst = [...children].reverse()
+      for (const child of newestFirst) stopGroup(child, 'SIGTERM')
+      await Promise.all(newestFirst.map((child) => waitForExit(child, 2000)))
+      for (const child of newestFirst) {
+        if (!hasExited(child)) stopGroup(child, 'SIGKILL')
+      }
+      await Promise.all(newestFirst.map((child) => waitForExit(child, 1000)))
+      await rm(dataDir, { force: true, recursive: true })
+      process.removeListener('SIGINT', onSigint)
+      process.removeListener('SIGTERM', onSigterm)
+      return exitCode
+    },
+    watch: (child: ChildProcess) => {
+      children.push(child)
+      child.once('exit', (code) => requestExit(code ?? 1))
+      child.once('error', () => requestExit(1))
+    }
+  }
+}
+
 async function runRecord(options: Options): Promise<number> {
   const agentDir = resolve(options.cloudRepo, 'services/agent')
   await access(resolve(agentDir, 'start.sh'))
@@ -365,49 +410,16 @@ async function runRecord(options: Options): Promise<number> {
     agentDir,
     recordEnv(options, catalogPath, secret)
   )
-  let stopping = false
-  let requestedExitCode: number | null = null
-  let resolveExitRequest: (code: number) => void = () => {}
-  const exitRequested = new Promise<number>((resolveExit) => {
-    resolveExitRequest = resolveExit
-  })
-  const requestExit = (code: number) => {
-    if (requestedExitCode !== null) return
-    requestedExitCode = code
-    resolveExitRequest(code)
-  }
-  const onSigint = () => requestExit(130)
-  const onSigterm = () => requestExit(143)
-  process.once('SIGINT', onSigint)
-  process.once('SIGTERM', onSigterm)
-  for (const child of [agent, docHost]) {
-    child.once('exit', (code) => requestExit(code ?? 1))
-    child.once('error', () => requestExit(1))
-  }
-
-  async function stop(exitCode: number): Promise<number> {
-    if (stopping) return exitCode
-    stopping = true
-    for (const child of [agent, docHost]) stopGroup(child, 'SIGTERM')
-    await Promise.all([agent, docHost].map((child) => waitForExit(child, 2000)))
-    for (const child of [agent, docHost]) {
-      if (!hasExited(child)) stopGroup(child, 'SIGKILL')
-    }
-    await Promise.all([agent, docHost].map((child) => waitForExit(child, 1000)))
-    await rm(dataDir, { force: true, recursive: true })
-    process.removeListener('SIGINT', onSigint)
-    process.removeListener('SIGTERM', onSigterm)
-    return exitCode
-  }
+  const supervisor = supervise(dataDir)
+  supervisor.watch(docHost)
+  supervisor.watch(agent)
 
   try {
     const startupResult = await Promise.race([
-      waitForAgent(agent, agentUrl, () => requestedExitCode !== null).then(
-        () => null
-      ),
-      exitRequested
+      waitForAgent(agent, agentUrl, supervisor.requested).then(() => null),
+      supervisor.exitRequested
     ])
-    if (startupResult !== null) return await stop(startupResult)
+    if (startupResult !== null) return await supervisor.stop(startupResult)
     const cloudSha = (
       await execFileAsync('git', ['-C', options.cloudRepo, 'rev-parse', 'HEAD'])
     ).stdout.trim()
@@ -427,9 +439,9 @@ Press Ctrl-C to stop the agent and doc host.
 
 `
     )
-    return await stop(await exitRequested)
+    return await supervisor.stop(await supervisor.exitRequested)
   } catch (error) {
-    await stop(1)
+    await supervisor.stop(1)
     throw error
   }
 }
@@ -453,58 +465,17 @@ async function run(options: Options): Promise<number> {
     agentDir,
     standaloneEnv(options, dataDir, token)
   )
-  let frontend: ChildProcess | null = null
-  let stopping = false
-  let requestedExitCode: number | null = null
-  let resolveExitRequest: (code: number) => void = () => {}
-  const exitRequested = new Promise<number>((resolveExit) => {
-    resolveExitRequest = resolveExit
-  })
-  const requestExit = (code: number) => {
-    if (requestedExitCode !== null) return
-    requestedExitCode = code
-    resolveExitRequest(code)
-  }
-  const onSigint = () => requestExit(130)
-  const onSigterm = () => requestExit(143)
-  process.once('SIGINT', onSigint)
-  process.once('SIGTERM', onSigterm)
-  agent.once('exit', (code) => requestExit(code ?? 1))
-  agent.once('error', () => requestExit(1))
-
-  async function stop(exitCode: number): Promise<number> {
-    if (stopping) return exitCode
-    stopping = true
-    if (frontend) stopGroup(frontend, 'SIGTERM')
-    stopGroup(agent, 'SIGTERM')
-    await Promise.all(
-      [agent, frontend]
-        .filter((child): child is ChildProcess => child !== null)
-        .map((child) => waitForExit(child, 2000))
-    )
-    if (frontend && !hasExited(frontend)) stopGroup(frontend, 'SIGKILL')
-    if (!hasExited(agent)) stopGroup(agent, 'SIGKILL')
-    await Promise.all(
-      [agent, frontend]
-        .filter((child): child is ChildProcess => child !== null)
-        .map((child) => waitForExit(child, 1000))
-    )
-    await rm(dataDir, { force: true, recursive: true })
-    process.removeListener('SIGINT', onSigint)
-    process.removeListener('SIGTERM', onSigterm)
-    return exitCode
-  }
+  const supervisor = supervise(dataDir)
+  supervisor.watch(agent)
 
   try {
     const startupResult = await Promise.race([
-      waitForAgent(agent, agentUrl, () => requestedExitCode !== null).then(
-        () => null
-      ),
-      exitRequested
+      waitForAgent(agent, agentUrl, supervisor.requested).then(() => null),
+      supervisor.exitRequested
     ])
-    if (startupResult !== null) return await stop(startupResult)
+    if (startupResult !== null) return await supervisor.stop(startupResult)
     const frontendUrl = `http://127.0.0.1:${options.frontendPort}`
-    frontend = spawnGroup(
+    const frontend = spawnGroup(
       'pnpm',
       [
         'exec',
@@ -526,18 +497,17 @@ async function run(options: Options): Promise<number> {
         VITE_AGENT_STANDALONE: 'true'
       }
     )
-    frontend.once('exit', (code) => requestExit(code ?? 1))
-    frontend.once('error', () => requestExit(1))
+    supervisor.watch(frontend)
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +
         `Playwright: PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=${frontendUrl} pnpm exec playwright test browser_tests/tests/agent\n` +
         'Press Ctrl-C to stop the frontend and standalone agent.\n\n'
     )
 
-    const exitCode = await exitRequested
-    return await stop(exitCode)
+    const exitCode = await supervisor.exitRequested
+    return await supervisor.stop(exitCode)
   } catch (error) {
-    await stop(1)
+    await supervisor.stop(1)
     throw error
   }
 }
