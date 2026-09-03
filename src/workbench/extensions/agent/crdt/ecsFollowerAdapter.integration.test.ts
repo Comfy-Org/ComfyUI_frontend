@@ -564,6 +564,47 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('discards a rejected frame after schema validation fails', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const batch = vi.fn(() => false)
+    const mutations: GraphMutations = {
+      batch,
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+
+    adapter.discardPending('wf')
+
+    expect(adapter.retryPending('wf')).toEqual({ status: 'idle' })
+    expect(batch).toHaveBeenCalledTimes(1)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('bounds deterministic projection retries and blocks until reset', () => {
     const host = mint(
       {

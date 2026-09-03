@@ -250,7 +250,10 @@ export class EcsFollowerAdapter {
 
   discardPending(workflowId: string): void {
     const session = this.targets.get(workflowId)
-    if (session) this.discardSessionPending(session)
+    if (!session) return
+    session.frameQueue.length = 0
+    session.reconcileNextFrame = true
+    this.discardSessionPending(session)
   }
 
   destroy(): void {
