@@ -30,7 +30,10 @@ type NestedExportedSubgraph = ExportedSubgraph & {
   definitions?: { subgraphs?: NestedExportedSubgraph[] }
 }
 
-function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
+function makeSubgraph(
+  id: string,
+  nodeTypes: string[] = []
+): NestedExportedSubgraph {
   return {
     id,
     name: id,
@@ -54,6 +57,15 @@ function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
   }
 }
 
+function findSubgraph(
+  subgraphs: NestedExportedSubgraph[],
+  name: string
+): NestedExportedSubgraph {
+  const subgraph = subgraphs.find((candidate) => candidate.name === name)
+  if (!subgraph) throw new Error(`Missing subgraph fixture: ${name}`)
+  return subgraph
+}
+
 describe('normalizeSubgraphDefinitionIds', () => {
   it('normalizes a legacy id at the top level and rewrites its references', () => {
     const legacy = makeSubgraph('legacy-id')
@@ -74,11 +86,7 @@ describe('normalizeSubgraphDefinitionIds', () => {
     // because normalization only looked at the top-level array.
     const nestedChild = makeSubgraph('legacy-nested-id')
     const parent = makeSubgraph('parent', ['legacy-nested-id'])
-    ;(
-      parent as ExportedSubgraph & {
-        definitions?: { subgraphs?: ExportedSubgraph[] }
-      }
-    ).definitions = { subgraphs: [nestedChild] }
+    parent.definitions = { subgraphs: [nestedChild] }
     const root = makeSubgraph('root', ['parent'])
 
     const result = normalizeSubgraphDefinitionIds([parent, root])
@@ -86,70 +94,51 @@ describe('normalizeSubgraphDefinitionIds', () => {
     // Both the parent and the previously-nested child are present in the
     // flat result.
     expect(result.subgraphs).toHaveLength(3)
-    const normalizedParent = result.subgraphs.find((sg) => sg.name === 'parent')
-    const normalizedChild = result.subgraphs.find(
-      (sg) => sg.name === 'legacy-nested-id'
-    )
-    expect(normalizedParent).toBeDefined()
-    expect(normalizedChild).toBeDefined()
+    const normalizedParent = findSubgraph(result.subgraphs, 'parent')
+    const normalizedChild = findSubgraph(result.subgraphs, 'legacy-nested-id')
 
     // The nested child's legacy id was normalized to a fresh UUID.
-    expect(isUuidShapedSubgraphId(normalizedChild!.id)).toBe(true)
-    expect(normalizedChild!.id).not.toBe('legacy-nested-id')
+    expect(isUuidShapedSubgraphId(normalizedChild.id)).toBe(true)
+    expect(normalizedChild.id).not.toBe('legacy-nested-id')
 
     // The parent's node referencing the nested child by its old id now
     // references the normalized UUID.
-    expect(normalizedParent!.nodes![0].type).toBe(normalizedChild!.id)
+    expect(normalizedParent.nodes).toHaveLength(1)
+    expect(normalizedParent.nodes?.[0]?.type).toBe(normalizedChild.id)
 
     // The now-redundant nested list is cleared: callers read the flat
     // top-level result, not each definition's own nested subgraphs.
-    expect(
-      (normalizedParent as unknown as { definitions?: { subgraphs?: unknown } })
-        .definitions?.subgraphs
-    ).toBeUndefined()
+    expect(normalizedParent.definitions?.subgraphs).toBeUndefined()
   })
 
   it('normalizes multiple levels of subgraph-within-subgraph nesting', () => {
     const grandchild = makeSubgraph('legacy-grandchild')
     const child = makeSubgraph('legacy-child', ['legacy-grandchild'])
-    ;(
-      child as ExportedSubgraph & {
-        definitions?: { subgraphs?: ExportedSubgraph[] }
-      }
-    ).definitions = { subgraphs: [grandchild] }
+    child.definitions = { subgraphs: [grandchild] }
     const parent = makeSubgraph('parent', ['legacy-child'])
-    ;(
-      parent as ExportedSubgraph & {
-        definitions?: { subgraphs?: ExportedSubgraph[] }
-      }
-    ).definitions = { subgraphs: [child] }
+    parent.definitions = { subgraphs: [child] }
 
     const result = normalizeSubgraphDefinitionIds([parent])
 
     expect(result.subgraphs).toHaveLength(3)
-    const normalizedChild = result.subgraphs.find(
-      (sg) => sg.name === 'legacy-child'
-    )!
-    const normalizedGrandchild = result.subgraphs.find(
-      (sg) => sg.name === 'legacy-grandchild'
-    )!
-    const normalizedParent = result.subgraphs.find(
-      (sg) => sg.name === 'parent'
-    )!
+    const normalizedChild = findSubgraph(result.subgraphs, 'legacy-child')
+    const normalizedGrandchild = findSubgraph(
+      result.subgraphs,
+      'legacy-grandchild'
+    )
+    const normalizedParent = findSubgraph(result.subgraphs, 'parent')
 
     expect(isUuidShapedSubgraphId(normalizedChild.id)).toBe(true)
     expect(isUuidShapedSubgraphId(normalizedGrandchild.id)).toBe(true)
-    expect(normalizedParent.nodes![0].type).toBe(normalizedChild.id)
-    expect(normalizedChild.nodes![0].type).toBe(normalizedGrandchild.id)
+    expect(normalizedParent.nodes).toHaveLength(1)
+    expect(normalizedParent.nodes?.[0]?.type).toBe(normalizedChild.id)
+    expect(normalizedChild.nodes).toHaveLength(1)
+    expect(normalizedChild.nodes?.[0]?.type).toBe(normalizedGrandchild.id)
   })
 
   it('handles an explicit empty definitions.subgraphs list without error', () => {
     const parent = makeSubgraph('parent')
-    ;(
-      parent as ExportedSubgraph & {
-        definitions?: { subgraphs?: ExportedSubgraph[] }
-      }
-    ).definitions = { subgraphs: [] }
+    parent.definitions = { subgraphs: [] }
 
     const result = normalizeSubgraphDefinitionIds([parent])
 
@@ -166,7 +155,7 @@ describe('normalizeSubgraphDefinitionIds', () => {
       'legacy-sibling-b',
       'legacy-sibling-c'
     ])
-    ;(parent as NestedExportedSubgraph).definitions = {
+    parent.definitions = {
       subgraphs: [siblingA, siblingB, siblingC]
     }
 
@@ -186,19 +175,17 @@ describe('normalizeSubgraphDefinitionIds', () => {
 
     // Each sibling got its own normalized id and the parent's three nodes
     // reference all three, not just the first.
-    const normalizedParent = result.subgraphs.find(
-      (sg) => sg.name === 'parent'
-    )!
+    const normalizedParent = findSubgraph(result.subgraphs, 'parent')
     const siblingIds = [
       'legacy-sibling-a',
       'legacy-sibling-b',
       'legacy-sibling-c'
-    ].map((name) => result.subgraphs.find((sg) => sg.name === name)!.id)
+    ].map((name) => findSubgraph(result.subgraphs, name).id)
     expect(new Set(siblingIds).size).toBe(3)
     expect(siblingIds).not.toContain('legacy-sibling-a')
     expect(siblingIds).not.toContain('legacy-sibling-b')
     expect(siblingIds).not.toContain('legacy-sibling-c')
-    expect(normalizedParent.nodes!.map((n) => n.type)).toEqual(siblingIds)
+    expect(normalizedParent.nodes?.map((node) => node.type)).toEqual(siblingIds)
   })
 })
 
