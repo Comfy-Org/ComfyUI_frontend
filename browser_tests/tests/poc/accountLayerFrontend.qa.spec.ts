@@ -169,9 +169,9 @@ test('refreshes exactly at the natural five-minute boundary', async ({
   const delay = initial.refreshScheduleDelayMs ?? 0
   expect(delay).toBeGreaterThan(0)
   const before = packageExchanges
-  await page.clock.runFor(delay - 1)
+  await page.clock.fastForward(delay - 1)
   expect(packageExchanges).toBe(before)
-  await page.clock.runFor(1)
+  await page.clock.fastForward(1)
   await expect.poll(() => packageExchanges).toBe(before + 1)
   await writeFile(
     `${evidenceDir}/natural-refresh.log`,
@@ -252,8 +252,7 @@ for (const failure of ['500', 'abort'] as const) {
 test('sign-out during a boundary exchange cancels the timer and late write', async ({
   page
 }) => {
-  const start = Date.now()
-  await page.clock.install({ time: start })
+  await page.clock.install({ time: Date.now() })
   let release: (() => void) | undefined
   let armed = false
   let exchanges = 0
@@ -267,7 +266,7 @@ test('sign-out during a boundary exchange cancels the timer and late write', asy
   await expect(page.getByTestId('account-layer-poc')).toHaveText(/\d+/)
   const initial = await snapshot(page)
   armed = true
-  await page.clock.runFor(initial.refreshScheduleDelayMs ?? 0)
+  await page.clock.fastForward(initial.refreshScheduleDelayMs ?? 0)
   await expect.poll(() => exchanges).toBe(1)
   await page.evaluate(async () => {
     const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
@@ -275,7 +274,7 @@ test('sign-out during a boundary exchange cancels the timer and late write', asy
   })
   expect(await packageKeys(page)).toHaveLength(0)
   release?.()
-  await page.clock.runFor(1_000)
+  await page.clock.fastForward(1_000)
   expect(exchanges).toBe(1)
   expect(await packageKeys(page)).toHaveLength(0)
   await writeFile(
