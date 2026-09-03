@@ -128,6 +128,8 @@
 }
 
 :root {
+  color-scheme: light;
+
   --fg-color: #000;
   --bg-color: #fff;
   --default-transition-duration: 0.1s;
@@ -322,6 +324,8 @@
 }
 
 .dark-theme {
+  color-scheme: dark;
+
   --fg-color: #fff;
   --bg-color: #202020;
   --content-bg: #4e4e4e;
@@ -623,6 +627,10 @@
   --color-accent-background: var(--accent-background);
   --color-brand-yellow: var(--brand-yellow);
   --color-brand-blue: var(--brand-blue);
+}
+
+:root:has(.dark-theme) {
+  color-scheme: dark;
 }
 
 @custom-variant dark-theme {
