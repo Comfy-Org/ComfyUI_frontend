@@ -17,6 +17,7 @@
       v-model="selectedFilterValue"
       class="filter-value-select"
       :options="filterValues"
+      searchable
     />
   </div>
   <div class="flex flex-col items-end pt-4">
