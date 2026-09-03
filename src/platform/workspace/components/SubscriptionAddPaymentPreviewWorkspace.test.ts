@@ -454,4 +454,28 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       )
     ).toBeTruthy()
   })
+
+  it('prices a legacy preview from the server costs instead of rendering a blank total', () => {
+    const {
+      amount_due_cents,
+      currency,
+      renewal_amount_cents,
+      renewal_at,
+      quote_id,
+      quote_version,
+      ...legacy
+    } = previewFixture('MONTHLY', 2000)
+
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', previewData: legacy },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$20.00')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'subscription.preview.renewsAt|amount=$20.00,date=Jun 19, 2027'
+      )
+    ).toBeTruthy()
+  })
 })
