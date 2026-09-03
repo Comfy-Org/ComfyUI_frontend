@@ -24,6 +24,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -568,6 +569,9 @@ export const useQueueStore = defineStore('queue', () => {
         executionStore.reconcileInitializingJobs(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
+        reportError(queueResult.reason, {
+          errorType: 'queue_task_fetch_failure'
+        })
       }
 
       if (historyResult.status === 'fulfilled') {
@@ -611,6 +615,9 @@ export const useQueueStore = defineStore('queue', () => {
         hasFetchedHistorySnapshot.value = true
       } else {
         console.error('Failed to fetch history:', historyResult.reason)
+        reportError(historyResult.reason, {
+          errorType: 'queue_history_fetch_failure'
+        })
       }
     } finally {
       isLoading.value = false

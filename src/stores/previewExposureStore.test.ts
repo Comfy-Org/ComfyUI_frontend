@@ -10,6 +10,11 @@ import {
   usePreviewExposureStore
 } from './previewExposureStore'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 describe(getPreviewExposureHostLocator, () => {
   it('reports a host ID that cannot form a locator', () => {
     const host = fromAny<SubgraphNode, unknown>({
@@ -21,6 +26,10 @@ describe(getPreviewExposureHostLocator, () => {
     expect(getPreviewExposureHostLocator(host)).toBeNull()
     expect(error).toHaveBeenCalledWith(
       'Cannot create preview exposure host locator for node invalid:id'
+    )
+    expect(mockReportError).toHaveBeenCalledWith(
+      'Cannot create preview exposure host locator for node invalid:id',
+      { errorType: 'preview_exposure_host_locator_failure' }
     )
   })
 })

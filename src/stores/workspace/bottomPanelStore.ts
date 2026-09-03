@@ -7,6 +7,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
+import { reportError } from '@/platform/telemetry/reportError'
 
 type PanelType = 'terminal' | 'shortcuts'
 
@@ -143,6 +144,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
         }
       } catch (error) {
         console.error('Failed to load terminal tabs:', error)
+        reportError(error, { errorType: 'terminal_tabs_load_failure' })
       }
     }
   }

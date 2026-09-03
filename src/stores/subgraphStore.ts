@@ -29,6 +29,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
+import { reportError } from '@/platform/telemetry/reportError'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -262,7 +263,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const settled = [...globalResults, ...userResults]
 
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
-    errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
+    errors.forEach((e) => {
+      console.error('Failed to load subgraph blueprint', e)
+      reportError(e, { errorType: 'subgraph_blueprint_load_failure' })
+    })
     if (errors.length > 0) {
       useToastStore().add({
         severity: 'error',

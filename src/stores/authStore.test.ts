@@ -52,6 +52,11 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => mockTeamWorkspaceStore
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
   delete: Mock
@@ -1190,6 +1195,9 @@ describe('useAuthStore', () => {
       expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
         title: 'errorDialog.defaultTitle',
         reportType: 'authenticationError'
+      })
+      expect(mockReportError).toHaveBeenCalledWith(authError, {
+        errorType: 'auth_id_token_fetch_failure'
       })
       expect(token).toBeUndefined()
     })

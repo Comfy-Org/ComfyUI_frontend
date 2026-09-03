@@ -74,6 +74,11 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({ showErrorDialog: vi.fn() })
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 describe('API key authentication initialization', () => {
   let pinia: Pinia
 
@@ -199,6 +204,9 @@ describe('API key authentication initialization', () => {
 
     expect(apiKeyStore.getApiKey()).toBe('key-b')
     expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'api_key_customer_creation_failure'
+    })
   })
 
   it('keeps the user signed out when a pending lookup resolves after the key is cleared', async () => {

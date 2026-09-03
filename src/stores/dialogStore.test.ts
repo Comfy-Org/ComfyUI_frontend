@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
 
 const MockComponent = defineComponent({
   name: 'MockComponent',
@@ -20,6 +25,21 @@ const MockContentPropsComponent = defineComponent({
 })
 
 describe('dialogStore', () => {
+  describe('extension dialogs', () => {
+    it('reports a missing extension dialog key', () => {
+      const store = useDialogStore()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      store.showExtensionDialog({ key: '', component: MockComponent })
+
+      expect(store.dialogStack).toHaveLength(0)
+      expect(mockReportError).toHaveBeenCalledWith(
+        'Extension dialog key is required',
+        { errorType: 'extension_dialog_key_missing' }
+      )
+    })
+  })
+
   describe('priority system', () => {
     it('should create dialogs in correct priority order', () => {
       const store = useDialogStore()

@@ -22,6 +22,11 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => null
@@ -282,6 +287,9 @@ describe('useSubgraphStore', () => {
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure'
+    })
     expect(store.subgraphBlueprints).toHaveLength(0)
     consoleSpy.mockRestore()
   })

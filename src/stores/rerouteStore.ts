@@ -12,6 +12,7 @@ import type { LinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /** The links whose chains pass through a reroute, split by link liveness. */
 export interface RerouteMembership {
@@ -128,9 +129,9 @@ export const useRerouteStore = defineStore('reroute', () => {
     )
       return existing
     if (existing) {
-      console.error(
-        `[rerouteStore] Reroute ${chain.id} belongs to graph ${existing.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
-      )
+      const message = `[rerouteStore] Reroute ${chain.id} belongs to graph ${existing.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
+      console.error(message)
+      reportError(message, { errorType: 'reroute_store_ownership_conflict' })
       return undefined
     }
     const bucket = existingBucket ?? rootBucket(scope.rootGraphId)

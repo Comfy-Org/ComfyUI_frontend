@@ -11,6 +11,7 @@ import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { reportError } from '@/platform/telemetry/reportError'
 
 export type EndpointPatch = Partial<
   Pick<
@@ -207,9 +208,9 @@ export const useLinkStore = defineStore('link', () => {
 
     const incumbent = bucket?.byId.get(replacement.id)
     if (incumbent) {
-      console.error(
-        `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
-      )
+      const message = `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
+      console.error(message)
+      reportError(message, { errorType: 'link_store_ownership_conflict' })
       return undefined
     }
     if (hasUniqueTarget(replacement)) {
@@ -220,7 +221,9 @@ export const useLinkStore = defineStore('link', () => {
       )
       const existing = bucket?.targetIndex.get(key)
       if (toRaw(existing) !== toRaw(expected)) {
-        console.error(`Link target slot ${key} is already occupied`)
+        const message = `Link target slot ${key} is already occupied`
+        console.error(message)
+        reportError(message, { errorType: 'link_store_target_slot_conflict' })
         return undefined
       }
     }

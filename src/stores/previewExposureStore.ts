@@ -15,6 +15,7 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 
@@ -40,9 +41,9 @@ export function getPreviewExposureHostLocator(
 ): NodeLocatorId | null {
   const locator = tryGetPreviewExposureHostLocator(host)
   if (locator) return locator
-  console.error(
-    `Cannot create preview exposure host locator for node ${String(host.id)}`
-  )
+  const message = `Cannot create preview exposure host locator for node ${String(host.id)}`
+  console.error(message)
+  reportError(message, { errorType: 'preview_exposure_host_locator_failure' })
   return null
 }
 
