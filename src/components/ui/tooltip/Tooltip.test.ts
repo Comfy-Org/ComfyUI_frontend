@@ -114,6 +114,33 @@ describe('Tooltip', () => {
     outside.remove()
   })
 
+  it('dismisses an open tooltip on a captured wheel event', async () => {
+    const user = userEvent.setup()
+    const view = renderTooltip()
+
+    await user.hover(screen.getByRole('button'))
+    await screen.findByRole('tooltip')
+    await fireEvent.wheel(window)
+
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
+    view.unmount()
+  })
+
+  it('removes wheel dismissal when the tooltip unmounts', () => {
+    const removeEventListener = vi.spyOn(window, 'removeEventListener')
+
+    const view = renderTooltip()
+    view.unmount()
+
+    expect(removeEventListener).toHaveBeenCalledWith(
+      'wheel',
+      expect.any(Function),
+      true
+    )
+  })
+
   it('cancels a pending hover tooltip when a touch interaction starts', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
 import { TooltipRoot } from 'reka-ui'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import TooltipContent from './TooltipContent.vue'
 import {
   automaticTooltipSuppressed,
+  registerTooltipWheelDismissal,
   touchInteraction
 } from './tooltipInputModality'
 import TooltipProvider from './TooltipProvider.vue'
@@ -50,6 +51,7 @@ const isDisabled = computed(
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let openTimer: ReturnType<typeof setTimeout> | undefined
 let closeTimer: ReturnType<typeof setTimeout> | undefined
+let unregisterWheelDismissal: (() => void) | undefined
 
 function updateOpen(nextOpen: boolean) {
   if (openTimer) clearTimeout(openTimer)
@@ -98,9 +100,14 @@ watch(automaticTooltipSuppressed, (suppressed) => {
   }
 })
 
+onMounted(() => {
+  unregisterWheelDismissal = registerTooltipWheelDismissal(() => setOpen(false))
+})
+
 onBeforeUnmount(() => {
   if (openTimer) clearTimeout(openTimer)
   if (closeTimer) clearTimeout(closeTimer)
+  unregisterWheelDismissal?.()
 })
 </script>
 
