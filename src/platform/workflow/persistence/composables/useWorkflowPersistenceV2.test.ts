@@ -143,7 +143,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const teamWorkspaceStoreMocks = reactive({
-  initState: 'uninitialized' as 'uninitialized' | 'ready' | 'error',
+  initState: 'uninitialized',
   activeWorkspaceId: null as string | null
 })
 

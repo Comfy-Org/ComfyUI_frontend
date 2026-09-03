@@ -35,6 +35,7 @@ import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',
@@ -65,6 +66,11 @@ const AgentPanelRoot = defineAsyncComponent({
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
+const agentRunModeStore = useAgentRunModeStore()
+
+void agentRunModeStore.load().catch((error: unknown) => {
+  reportError(error, { errorType: 'agent_run_mode_load_failure' })
+})
 
 const isResizing = ref(false)
 let resizeStartX = 0

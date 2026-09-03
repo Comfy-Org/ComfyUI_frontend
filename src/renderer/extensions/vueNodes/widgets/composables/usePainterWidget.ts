@@ -11,6 +11,6 @@ export const usePainterWidget = (): ComfyWidgetConstructorV2 => {
       (inputSpec.default as string) ?? '',
       null,
       { serialize: true, canvasOnly: false }
-    ) as IBaseWidget
+    )
   }
 }

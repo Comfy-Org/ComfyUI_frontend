@@ -44,10 +44,28 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
+import type { UUID } from '@/utils/uuid'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
+}
+
+/**
+ * Returns the root graph id to scope run errors by, minting one when the graph
+ * carries the zero id. `loadApiJson` and `importA1111` populate the root graph
+ * without `configure()`, so every such import would otherwise share the zero
+ * id's bucket and lose it once a reload generated a real id. The id is written
+ * back into `workflowData` so the state this load persists reloads under the
+ * same key.
+ */
+function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
+  if (!app.isGraphReady) return null
+
+  const rootGraph = app.rootGraph
+  workflowData.id = ensureNonZeroUuid(rootGraph)
+  return workflowData.id
 }
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
@@ -642,6 +660,11 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
+    const rootGraphId = adoptRootGraphId(workflowData)
+
+    function activateRunErrors(workflow: ComfyWorkflow) {
+      useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
+    }
 
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
@@ -655,11 +678,9 @@ export const useWorkflowService = () => {
     }
 
     if (value === null || typeof value === 'string') {
-      const path = value as string | null
-
       // Check if a persisted workflow with this path exists
-      if (path) {
-        const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
+      if (value) {
+        const fullPath = ComfyWorkflow.basePath + appendJsonExt(value)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
 
         // Reuse an existing workflow when this is a restoration case
@@ -672,11 +693,12 @@ export const useWorkflowService = () => {
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          areWorkflowIdsEquivalent(
-            existingId,
-            workflowData.id,
-            existingWorkflow.legacyId
-          )
+          (existingWorkflow.isTemporary ||
+            areWorkflowIdsEquivalent(
+              existingId,
+              workflowData.id,
+              existingWorkflow.legacyId
+            ))
 
         if (
           existingWorkflow &&
@@ -685,6 +707,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
             // is the authoritative saved state.
@@ -707,7 +730,7 @@ export const useWorkflowService = () => {
       }
 
       const tempWorkflow = workflowStore.createNewTemporary(
-        path ? appendJsonExt(path) : undefined,
+        value ? appendJsonExt(value) : undefined,
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
@@ -715,11 +738,13 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      await workflowStore.openWorkflow(tempWorkflow)
+      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      activateRunErrors(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
     }
@@ -776,9 +801,13 @@ export const useWorkflowService = () => {
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
+    const duplicate = workflowStore.createNewTemporary(
+      appendJsonExt(filename),
+      state
+    )
 
     await queueWorkflowLoad(() =>
-      app.loadGraphData(state, true, true, filename)
+      app.loadGraphData(state, true, true, duplicate)
     )
   }
 

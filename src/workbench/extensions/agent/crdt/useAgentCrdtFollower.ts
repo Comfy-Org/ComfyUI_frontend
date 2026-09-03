@@ -241,7 +241,7 @@ export function useAgentCrdtFollower(
           applied: detail.applied,
           skipped: detail.skipped,
           ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
+            ? { failure: detail.failed }
             : {})
         })
       }

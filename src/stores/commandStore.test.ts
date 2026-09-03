@@ -184,7 +184,7 @@ describe('commandStore', () => {
     it('returns empty string when command has no keybinding', () => {
       const store = useCommandStore()
       store.registerCommand({ id: 'no.kb', function: vi.fn() })
-      const cmd = store.getCommand('no.kb')!
+      const cmd = store.getCommand('no.kb')
       expect(store.formatKeySequence(cmd)).toBe('')
     })
   })

@@ -353,7 +353,7 @@ describe('colorUtil - adjustColor', () => {
 
   describe.for(Object.entries(colors))('%s color', ([_colorName, color]) => {
     describe.for(formats)('%s format', (format) => {
-      runAdjustColorTests(color, format as ColorFormat)
+      runAdjustColorTests(color, format)
     })
   })
 

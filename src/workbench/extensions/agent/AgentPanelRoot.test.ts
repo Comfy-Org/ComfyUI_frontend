@@ -195,8 +195,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const store = reactive({
     selectedItems: [] as unknown[],
     updateSelectedItems,
-    currentGraph: null as unknown | null,
-    canvas: undefined as unknown
+    currentGraph: null,
+    canvas: undefined
   })
   hostStores.canvas = store
   return { useCanvasStore: () => store }
@@ -324,7 +324,7 @@ beforeEach(() => {
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+  zAgentWsEvent.parse(raw)
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
