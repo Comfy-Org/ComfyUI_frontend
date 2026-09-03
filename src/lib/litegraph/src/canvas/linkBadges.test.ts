@@ -20,7 +20,7 @@ const VISIBLE_AREA: ReadOnlyRect = [0, 0, 1000, 1000]
 
 function createContext(): CanvasRenderingContext2D {
   return createMockCanvasRenderingContext2D({
-    measureText: vi.fn().mockReturnValue({ width: 50 } as TextMetrics)
+    measureText: vi.fn().mockReturnValue({ width: 50 })
   })
 }
 
