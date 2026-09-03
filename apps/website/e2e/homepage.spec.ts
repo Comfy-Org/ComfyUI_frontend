@@ -53,7 +53,7 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
     await expect(
       section.getByRole('link', { name: /Seedance 2/ }).first()
-    ).toHaveAttribute('href', '/workshop/models/seedance-2/')
+    ).toHaveAttribute('href', '/workshop?provider=ByteDance')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/workshop')
