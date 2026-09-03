@@ -76,7 +76,7 @@ export interface TransportOperation<TInput, TBody, TOutput> {
 export interface AccountOperations {
   exchange: TransportOperation<
     { identity: IdentitySnapshot; workspaceId: WorkspaceId },
-    { identityToken: string; workspaceId: WorkspaceId },
+    Readonly<Record<string, unknown>>,
     WorkspaceCredential
   >
   balance: TransportOperation<
