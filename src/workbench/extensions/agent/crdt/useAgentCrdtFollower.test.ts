@@ -217,6 +217,67 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('stops retrying and reports too_large as a distinct terminal status', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'too_large' })
+    vi.runAllTimers()
+    apiState.target.dispatchEvent(new Event('status'))
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(status().subscriptionStatus).toBe('too_large')
+    expect(status().refusalCode).toBe('too_large')
+    unmount()
+  })
+
+  it.for(['unsupported', 'invalid_frame'])(
+    'stops retrying permanent %s refusals',
+    (code) => {
+      vi.useFakeTimers()
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_subscribed', { ok: false, code })
+      vi.runAllTimers()
+
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      expect(status().subscriptionStatus).toBe('permanent_failure')
+      expect(status().refusalCode).toBe(code)
+      unmount()
+    }
+  )
+
+  it.for(['too_many', 'overloaded', 'error', 'resubscribe', 'unknown_code'])(
+    'retries transient %s refusals',
+    (code) => {
+      vi.useFakeTimers()
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_subscribed', { ok: false, code })
+      vi.advanceTimersByTime(500)
+
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      expect(status().subscriptionStatus).toBe('retrying')
+      expect(status().refusalCode).toBe(code)
+      unmount()
+    }
+  )
+
+  it('keeps not_found transient for the FE-1901 creation race', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'not_found' })
+    vi.advanceTimersByTime(500)
+
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(status().subscriptionStatus).toBe('retrying')
+    expect(status().refusalCode).toBe('not_found')
+    unmount()
+  })
+
   it('FE-1901: a confirmed subscribe clears the retry timer', () => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')

@@ -155,6 +155,13 @@ export interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
+type AgentCrdtSubscriptionStatus =
+  | 'idle'
+  | 'connected'
+  | 'retrying'
+  | 'too_large'
+  | 'permanent_failure'
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -167,7 +174,33 @@ export interface AgentCrdtStatus {
    */
   updatesApplied: number
   lastFrameType: string | null
+  subscriptionStatus: AgentCrdtSubscriptionStatus
+  refusalCode: string | null
   outcomes: AgentCrdtOutcomeCounters
+}
+
+type AgentCrdtSubscriptionState =
+  | { status: 'idle' | 'connected'; refusalCode: null }
+  | { status: 'retrying'; refusalCode: string | null }
+  | { status: 'too_large'; refusalCode: 'too_large' }
+  | {
+      status: 'permanent_failure'
+      refusalCode: 'unsupported' | 'invalid_frame'
+    }
+
+function refusedSubscriptionState(code: unknown): AgentCrdtSubscriptionState {
+  if (code === 'too_large') return { status: 'too_large', refusalCode: code }
+  if (code === 'unsupported' || code === 'invalid_frame') {
+    return { status: 'permanent_failure', refusalCode: code }
+  }
+  return {
+    status: 'retrying',
+    refusalCode: typeof code === 'string' ? code : null
+  }
+}
+
+function isTerminalSubscription(state: AgentCrdtSubscriptionState): boolean {
+  return state.status === 'too_large' || state.status === 'permanent_failure'
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -197,6 +230,10 @@ export function useAgentCrdtFollower(
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  const subscription = ref<AgentCrdtSubscriptionState>({
+    status: 'idle',
+    refusalCode: null
+  })
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
@@ -363,6 +400,7 @@ export function useAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       clearSubscribeRetry()
+      subscription.value = { status: 'connected', refusalCode: null }
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
@@ -370,7 +408,16 @@ export function useAgentCrdtFollower(
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
       clearStaleProbe()
-      scheduleSubscribeRetry()
+      subscription.value = refusedSubscriptionState(event.detail?.code)
+      switch (subscription.value.status) {
+        case 'too_large':
+        case 'permanent_failure':
+          clearSubscribeRetry()
+          break
+        case 'retrying':
+          scheduleSubscribeRetry()
+          break
+      }
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -524,8 +571,10 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
+    if (isTerminalSubscription(subscription.value)) return
     connected.value = false
     clearStaleProbe()
+    subscription.value = { status: 'retrying', refusalCode: null }
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -543,6 +592,7 @@ export function useAgentCrdtFollower(
    * nothing.
    */
   const onSocketActivity: EventListener = () => {
+    if (isTerminalSubscription(subscription.value)) return
     bridge.reconcile()
   }
 
@@ -577,6 +627,7 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
+      subscription.value = { status: 'idle', refusalCode: null }
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -653,6 +704,8 @@ export function useAgentCrdtFollower(
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
+    subscriptionStatus: subscription.value.status,
+    refusalCode: subscription.value.refusalCode,
     outcomes: outcomes.value
   }))
 
