@@ -11,18 +11,23 @@ import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-const initialMock = () =>
-  reactive({
+const initialImage = (): { src: string } | null => ({
+  src: 'https://example.com/base.png'
+})
+
+const initialMock = () => {
+  return reactive({
     maskOpacity: 0.8,
     maskBlendMode: MaskBlendMode.Black,
-    activeLayer: 'mask' as 'mask' | 'rgb',
+    activeLayer: 'mask',
     currentTool: Tools.MaskPen,
-    image: { src: 'https://example.com/base.png' } as { src: string } | null,
+    image: initialImage(),
     maskCanvas: null as HTMLCanvasElement | null,
     rgbCanvas: null as HTMLCanvasElement | null,
     imgCanvas: null as HTMLCanvasElement | null,
     setMaskOpacity: vi.fn()
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)

@@ -173,9 +173,7 @@ export function useMoreOptionsMenu() {
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
-    const selectedGroups = selectedItems.value.filter(
-      isLGraphGroup
-    ) as LGraphGroup[]
+    const selectedGroups = selectedItems.value.filter(isLGraphGroup)
     const groupContext: LGraphGroup | null =
       selectedGroups.length === 1 && selectedNodes.value.length === 0
         ? selectedGroups[0]

@@ -1,5 +1,6 @@
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 const STORAGE_KEY = 'comfy:pending-subscription-checkout'
 const MAX_AGE_MS = 24 * 60 * 60_000
@@ -122,4 +123,29 @@ export function clearPendingSubscriptionCheckout(operationId?: string): void {
   } catch {
     return
   }
+}
+
+export type PollableOperationStatus =
+  | BillingOpStatusResponse['status']
+  | 'timeout'
+
+// A client-side `timeout` is this tab giving up, not the server finishing: an
+// operation awaiting bank authentication stays pending for hours. Dropping the
+// pointer there is the defect. `reconciliation_needed` does belong here — the
+// contract calls it terminal for polling, and the store stops and resolves on
+// it, so retaining the pointer would re-poll a settled operation every reload.
+const CLEARS_PENDING_POINTER: Record<PollableOperationStatus, boolean> = {
+  pending: false,
+  timeout: false,
+  succeeded: true,
+  failed: true,
+  reconciliation_needed: true
+}
+
+export function clearPendingSubscriptionCheckoutIfTerminal(
+  operationId: string,
+  status: PollableOperationStatus
+): void {
+  if (!CLEARS_PENDING_POINTER[status]) return
+  clearPendingSubscriptionCheckout(operationId)
 }

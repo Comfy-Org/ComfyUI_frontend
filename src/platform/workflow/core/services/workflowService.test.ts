@@ -360,8 +360,8 @@ describe('useWorkflowService', () => {
         }
       ]
 
-      useMissingModelStore().missingModelCandidates = modelCandidates as never
-      useMissingMediaStore().missingMediaCandidates = mediaCandidates as never
+      useMissingModelStore().missingModelCandidates = modelCandidates
+      useMissingMediaStore().missingMediaCandidates = mediaCandidates
 
       useWorkflowService().beforeLoadNewGraph()
 
@@ -541,7 +541,7 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(replacement, 1)
       workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
       vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        replacement as LoadedComfyWorkflow
+        replacement
       )
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       const error = new Error('replacement load failed')
@@ -575,7 +575,7 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(replacement, 1)
       workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
       vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        replacement as LoadedComfyWorkflow
+        replacement
       )
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       // The REAL configure-failure shape (christian-byrne's 16075 review):
@@ -1281,7 +1281,7 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(survivor, 2)
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
       vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        alsoClosing as LoadedComfyWorkflow
+        alsoClosing
       )
 
       // Hold alsoClosing's pending open so its close stays registered as
@@ -1709,6 +1709,26 @@ describe('useWorkflowService', () => {
       await service.closeWorkflow(workflow, { warnIfUnsaved: false })
 
       expect(discardPreviews).toHaveBeenCalledWith(workflow.path)
+    })
+  })
+
+  describe('duplicateWorkflow', () => {
+    it('opens a distinct temporary workflow when duplicating repeatedly', async () => {
+      const workflowStore = useWorkflowStore()
+      const source = createModeTestWorkflow({
+        path: 'workflows/source.json'
+      })
+      source.changeTracker.activeState = makeWorkflowData()
+      workflowStore.createNewTemporary('source (Copy).json', makeWorkflowData())
+
+      await useWorkflowService().duplicateWorkflow(source)
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ id: expect.any(String) }),
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' })
+      )
     })
   })
 
@@ -2379,7 +2399,7 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      expect(source.changeTracker!.prepareForSave).toHaveBeenCalledTimes(1)
+      expect(source.changeTracker.prepareForSave).toHaveBeenCalledTimes(1)
     })
 
     it('does not modify source workflow mode when saving persisted workflow as different mode', async () => {
