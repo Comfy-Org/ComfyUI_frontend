@@ -1,0 +1,566 @@
+import { describe, expect, it } from 'vitest'
+
+import { exportAgentConversation } from './agentConversationCapture'
+import type {
+  AssembleInput,
+  NormalizedRows,
+  ParentRow,
+  RawCapture,
+  RecordedFrame,
+  SeedFixture
+} from './agentConversationRecord'
+import { assembleCapture } from './agentConversationRecord'
+
+const THREAD = 'thread-1'
+const MESSAGE = 'message-1'
+const SEED_MESSAGE = 'seed-message-1'
+const WORKFLOW = '6f1c2c1e-3b1c-4c88-9d9c-0d6e9b8e1a01'
+
+const turnFrame = (
+  type: string,
+  data: Record<string, unknown>,
+  at_ms: number
+): RecordedFrame => ({
+  type,
+  data: { thread_id: THREAD, message_id: MESSAGE, ...data },
+  at_ms
+})
+
+const frames = (): RecordedFrame[] => [
+  turnFrame('agent_thinking', { delta: 'switching' }, 1_700_000_000_000),
+  turnFrame(
+    'agent_active_tab',
+    { workflow_id: WORKFLOW, name: 'Text to image' },
+    1_700_000_000_100
+  ),
+  turnFrame(
+    'agent_tool_call',
+    { tool_call_id: 'tool-1', tool_name: 'apply_ops', status: 'success' },
+    1_700_000_000_200
+  ),
+  turnFrame('agent_message_done', {}, 1_700_000_000_300)
+]
+
+const seed = (): SeedFixture => ({
+  workflow: {
+    name: 'Text to image',
+    catalog: { types: { KSampler: { widget_order: ['steps'] } } },
+    seed: {
+      nodes: [
+        { id: 3, type: 'CheckpointLoaderSimple' },
+        { id: 4, type: 'KSampler' }
+      ],
+      links: []
+    }
+  }
+})
+
+const addNodeOp = {
+  op: 'add_node',
+  op_id: 'op-1',
+  node_id: 10,
+  class_type: 'KSampler'
+}
+
+const parent = (overrides: Partial<ParentRow> = {}): ParentRow => ({
+  id: 'parent-1',
+  tool_call_id: 'tool-1',
+  tool_name: 'apply_ops',
+  status: 'ok',
+  workflow_id: WORKFLOW,
+  result: { ok: true, data: { ops: [addNodeOp] } },
+  children: [{ op_id: 'op-1', status: 'ok' }],
+  ...overrides
+})
+
+const raw = (overrides: Partial<RawCapture> = {}): RawCapture => ({
+  case_id: 'agent-rec-example',
+  attempt: 'a1',
+  prompt: "Switch to the tab 'Text to image', then add a sampler.",
+  base: 'http://127.0.0.1:8086',
+  frame_source: 'redis SUBSCRIBE channel:ws:<workspace>:u:<user>',
+  channel: 'channel:ws:w-secret:u:u-secret',
+  seed_sha256: 'a'.repeat(64),
+  seed_name: 'Text to image',
+  seed_node_ids: [3, 4],
+  saw_stream: true,
+  stream_closed: false,
+  seed_turn: {
+    status: 202,
+    body: { thread_id: 'seed-thread', message_id: SEED_MESSAGE }
+  },
+  seed_workflow_id: WORKFLOW,
+  accepted: {
+    status: 202,
+    body: { thread_id: THREAD, message_id: MESSAGE, workflow_id: 'blank-wf' }
+  },
+  saw_done: true,
+  timed_out: false,
+  frames: frames(),
+  rows_artifact: 'rows.json',
+  retrieval: { kind: 'postgres-json' },
+  error: null,
+  ...overrides
+})
+
+const rows = (overrides: Partial<NormalizedRows> = {}): NormalizedRows => ({
+  parents: [parent()],
+  draft: { nodes: [{ id: 3 }, { id: 4 }, { id: 10 }], links: [] },
+  retrieval: { kind: 'postgres-json' },
+  path: '/tmp/agent-rec-example.a1.rows.json',
+  sha256: 'b'.repeat(64),
+  ...overrides
+})
+
+const input = (overrides: Partial<AssembleInput> = {}): AssembleInput => ({
+  raw: raw(),
+  rows: rows(),
+  seed: { json: seed(), path: 'seed.json', sha256: 'a'.repeat(64) },
+  provenance: {
+    cloudSha: '9dc1da7',
+    model: 'claude-opus-5',
+    exportedAt: '2026-09-03T01:00:00.000Z'
+  },
+  rawSha256: 'c'.repeat(64),
+  rawPath: '/tmp/agent-rec-example.a1.raw.json',
+  ...overrides
+})
+
+describe('assembleCapture', () => {
+  it('keeps the turn frames with their receipt times and emits the applied ops', () => {
+    const { capture, receipt } = assembleCapture(input())
+
+    expect(capture.workflow.id).toBe(WORKFLOW)
+    expect(capture.capture).toMatchObject({
+      backend: 'Comfy-Org/cloud',
+      thread_id: THREAD,
+      message_id: MESSAGE
+    })
+    expect(capture.frames.map((frame) => frame.type)).toEqual([
+      'agent_thinking',
+      'agent_active_tab',
+      'agent_tool_call',
+      'agent_message_done'
+    ])
+    expect(capture.frames.map((frame) => frame.at_ms)).toEqual([
+      1_700_000_000_000, 1_700_000_000_100, 1_700_000_000_200, 1_700_000_000_300
+    ])
+    expect(capture.tool_calls).toEqual([
+      {
+        tool_call_id: 'tool-1',
+        result: { ok: true, data: { ops: [addNodeOp] } },
+        applied_op_ids: ['op-1']
+      }
+    ])
+    expect(receipt).toMatchObject({
+      added_node_ids: ['10'],
+      deleted_node_ids: [],
+      unexplained_draft_node_ids: [],
+      mutating_parents: ['parent-1'],
+      child_statuses: { ok: 1 },
+      frames_kept: 4
+    })
+  })
+
+  it('produces a capture the exporter turns into a recorded conversation', () => {
+    const { capture } = assembleCapture(input())
+    const conversation = exportAgentConversation(capture)
+
+    expect(conversation.source.response_side).toBe('recorded')
+    expect(
+      conversation.response.filter((entry) => entry.kind === 'graph_ops')
+    ).toHaveLength(1)
+  })
+
+  it('records the note without the concrete redis channel', () => {
+    const { capture, receipt } = assembleCapture(input())
+
+    expect(capture.source.note).toContain('channel:ws:<workspace>:u:<user>')
+    expect(capture.source.note).not.toContain('w-secret')
+    expect(receipt.channel).toContain('w-secret')
+  })
+
+  it('parses a result the backend handed back as a JSON string', () => {
+    const { capture } = assembleCapture(
+      input({
+        rows: rows({
+          parents: [
+            parent({
+              result: JSON.stringify({ ok: true, data: { ops: [addNodeOp] } })
+            })
+          ]
+        })
+      })
+    )
+
+    expect(capture.tool_calls[0].applied_op_ids).toEqual(['op-1'])
+  })
+
+  it('accepts a delete_node whose node id is zero', () => {
+    const { receipt } = assembleCapture(
+      input({
+        seed: {
+          json: {
+            workflow: {
+              ...seed().workflow,
+              seed: { nodes: [{ id: 0, type: 'KSampler' }], links: [] }
+            }
+          },
+          path: 'seed.json',
+          sha256: 'a'.repeat(64)
+        },
+        raw: raw({ seed_node_ids: [0] }),
+        rows: rows({
+          parents: [
+            parent({
+              result: {
+                ok: true,
+                data: {
+                  ops: [{ op: 'delete_node', op_id: 'op-1', node_id: 0 }]
+                }
+              }
+            })
+          ],
+          draft: { nodes: [], links: [] }
+        })
+      })
+    )
+
+    expect(receipt.deleted_node_ids).toEqual(['0'])
+  })
+
+  it('accepts a batch the document rejected as zero applied ops', () => {
+    const { receipt } = assembleCapture(
+      input({
+        rows: rows({
+          parents: [
+            parent({
+              status: 'error',
+              children: [{ op_id: 'op-1', status: 'error' }]
+            })
+          ],
+          draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+        })
+      })
+    )
+
+    expect(receipt.mutating_parents).toEqual([])
+    expect(receipt.child_statuses).toEqual({ error: 1 })
+  })
+
+  it('accepts a read tool that echoes ops without writing child rows', () => {
+    const { receipt } = assembleCapture(
+      input({
+        rows: rows({
+          parents: [
+            parent({
+              tool_name: 'plan_path',
+              children: [],
+              result: { ok: true, data: { ops: [addNodeOp] } }
+            })
+          ],
+          draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+        })
+      })
+    )
+
+    expect(receipt.parent_rows[0].applied_op_ids).toEqual([])
+  })
+
+  it('drops the ambient heartbeat and a non-replay turn frame into buckets', () => {
+    const { receipt } = assembleCapture(
+      input({
+        raw: raw({
+          frames: [
+            {
+              type: 'draft_version',
+              data: { workflow_id: WORKFLOW, version: 3 }
+            },
+            turnFrame('draft_patch', { seq: 1 }, 1_700_000_000_050),
+            {
+              type: 'agent_message_delta',
+              data: {
+                thread_id: 'seed-thread',
+                message_id: SEED_MESSAGE,
+                delta: 'ack'
+              }
+            },
+            ...frames()
+          ]
+        })
+      })
+    )
+
+    expect(receipt.frames_dropped).toEqual({
+      'type:draft_version': 1,
+      'type:draft_patch': 1,
+      seed_turn: 1
+    })
+    expect(receipt.frames_kept).toBe(4)
+  })
+
+  it('refuses a mutating call whose mutation never reached the doc host', () => {
+    expect(() =>
+      assembleCapture(
+        input({ rows: rows({ parents: [parent({ children: [] })] }) })
+      )
+    ).toThrow('reports a document mutation but has NO audit child rows')
+  })
+
+  it('refuses an applied add_node whose class is outside the seed catalog', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: {
+                  ok: true,
+                  data: {
+                    ops: [{ ...addNodeOp, class_type: 'LatentUpscaleBy' }]
+                  }
+                }
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('are not in the seed catalog')
+  })
+
+  it('refuses an applied parent row that names another workflow', () => {
+    expect(() =>
+      assembleCapture(
+        input({ rows: rows({ parents: [parent({ workflow_id: null })] }) })
+      )
+    ).toThrow('not the seeded workflow')
+  })
+
+  it('refuses an unparseable socket payload', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          raw: raw({
+            frames: [
+              { type: '__raw__', data: { payload: 'not json' } },
+              ...frames()
+            ]
+          })
+        })
+      )
+    ).toThrow('unparseable socket payload')
+  })
+
+  it('refuses rows whose tool calls disagree with the recorded frames', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent(),
+              parent({
+                id: 'parent-2',
+                tool_call_id: 'tool-2',
+                children: [],
+                result: { ok: true }
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('disagree; the rows are not this turn')
+  })
+
+  it('refuses an applied op that its parent result never echoed', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent({ children: [{ op_id: 'op-missing', status: 'ok' }] })
+            ]
+          })
+        })
+      )
+    ).toThrow('are not echoed in its result')
+  })
+
+  it('refuses applied ops whose parent recorded no result at all', () => {
+    expect(() =>
+      assembleCapture(
+        input({ rows: rows({ parents: [parent({ result: null })] }) })
+      )
+    ).toThrow('has applied ops but a NULL result')
+  })
+
+  it('refuses a parent result that is not a JSON object', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [parent({ result: [1, 2], children: [] })]
+          })
+        })
+      )
+    ).toThrow('not an object; the exporter requires an object')
+  })
+
+  it('refuses an echoed op kind outside the exporter frozen set', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: {
+                  ok: true,
+                  data: {
+                    ops: [addNodeOp, { op: 'reset_doc', op_id: 'op-2' }]
+                  }
+                }
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('outside the exporter frozen set')
+  })
+
+  it('refuses a non-object echoed op entry', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: { ok: true, data: { ops: [addNodeOp, 'bogus'] } }
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('non-object op entry')
+  })
+
+  it('refuses an applied delete_node without a node id', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: {
+                  ok: true,
+                  data: { ops: [{ op: 'delete_node', op_id: 'op-1' }] }
+                }
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('applied delete_node without node_id')
+  })
+
+  it('refuses an attempt label that would collide across attempts', () => {
+    expect(() => assembleCapture(input({ raw: raw({ attempt: '' }) }))).toThrow(
+      'is not [A-Za-z0-9_-]+'
+    )
+  })
+
+  it('refuses a seed the driver did not use', () => {
+    expect(() =>
+      assembleCapture(input({ raw: raw({ seed_node_ids: [3, 4, 99] }) }))
+    ).toThrow('but the seed fixture given here has')
+  })
+
+  it('refuses a turn with no active tab frame', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          raw: raw({
+            frames: frames().filter(
+              (frame) => frame.type !== 'agent_active_tab'
+            )
+          })
+        })
+      )
+    ).toThrow('no agent_active_tab frame in this turn')
+  })
+
+  it('refuses a turn whose last frame is not the done frame', () => {
+    expect(() =>
+      assembleCapture(input({ raw: raw({ frames: frames().slice(0, -1) }) }))
+    ).toThrow('not agent_message_done')
+  })
+
+  it('refuses an agent frame type the replay cannot validate', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          raw: raw({
+            frames: [turnFrame('agent_ask', {}, 1_700_000_000_050), ...frames()]
+          })
+        })
+      )
+    ).toThrow('outside the replay union')
+  })
+
+  it('refuses a draft that lost a seed node nothing deleted', () => {
+    expect(() =>
+      assembleCapture(
+        input({ rows: rows({ draft: { nodes: [{ id: 3 }], links: [] } }) })
+      )
+    ).toThrow('lacks seed node ids')
+  })
+
+  it('refuses a draft that still holds a deleted node', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: {
+                  ok: true,
+                  data: {
+                    ops: [{ op: 'delete_node', op_id: 'op-1', node_id: 3 }]
+                  }
+                }
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('still holds node ids')
+  })
+
+  it('refuses a turn the backend never accepted', () => {
+    expect(() =>
+      assembleCapture(
+        input({ raw: raw({ accepted: { status: 500, body: null } }) })
+      )
+    ).toThrow('recorded turn not accepted')
+  })
+
+  it('refuses a recording whose frame stream never opened', () => {
+    expect(() =>
+      assembleCapture(input({ raw: raw({ saw_stream: false }) }))
+    ).toThrow('frame stream never opened')
+  })
+
+  it('refuses a recording with no terminal done frame observed', () => {
+    expect(() =>
+      assembleCapture(input({ raw: raw({ saw_done: false }) }))
+    ).toThrow('never arrived')
+  })
+
+  it('refuses a seeded workflow the active tab never named', () => {
+    expect(() =>
+      assembleCapture(
+        input({
+          raw: raw({ seed_workflow_id: '11111111-2222-4333-8444-555555555555' })
+        })
+      )
+    ).toThrow('is not the seeded workflow')
+  })
+})
