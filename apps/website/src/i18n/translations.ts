@@ -8419,6 +8419,10 @@ Enterprise`
     en: 'V1.1 · Models by category',
     'zh-CN': 'V1.1 · 按类别浏览模型'
   },
+  'workshop.proto.version.v1_2': {
+    en: 'V1.2 · Categories in a side rail',
+    'zh-CN': 'V1.2 · 类别侧边栏'
+  },
   'workshop.proto.version.v2': {
     en: 'V2 · Workflows, apps and models',
     'zh-CN': 'V2 · 工作流、应用与模型'
@@ -8608,6 +8612,44 @@ Enterprise`
     en: 'Browse all models',
     'zh-CN': '浏览全部模型'
   },
+  'workshop.credits.title': {
+    en: 'Credits are bought on Comfy Platform',
+    'zh-CN': '积分在 Comfy Platform 购买'
+  },
+  'workshop.credits.body': {
+    en: 'Payment runs on platform.comfy.org. We send the page you are on as the return address, so you land back here with your inputs as you left them. Pick a top-up:',
+    'zh-CN':
+      '支付在 platform.comfy.org 完成。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样。请选择充值额度：'
+  },
+  'workshop.credits.continue': {
+    en: 'Continue to Platform',
+    'zh-CN': '前往 Platform'
+  },
+  'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
+  'workshop.credits.checkout': {
+    en: 'Checkout',
+    'zh-CN': '结账'
+  },
+  'workshop.credits.checkoutNote': {
+    en: 'Payment is hosted by Stripe on the platform site. This step is simulated here so the round trip can be reviewed end to end.',
+    'zh-CN':
+      '支付由 Stripe 在平台站点托管。此步骤在此处为模拟，以便完整体验整个流程。'
+  },
+  'workshop.credits.pay': { en: 'Pay {usd}', 'zh-CN': '支付 {usd}' },
+  'workshop.credits.back': { en: 'Back', 'zh-CN': '返回' },
+  'workshop.credits.done': {
+    en: '{n} credits added',
+    'zh-CN': '已添加 {n} 积分'
+  },
+  'workshop.credits.doneBody': {
+    en: 'You are back on the model page, with your inputs exactly as you left them.',
+    'zh-CN': '你已回到模型页面，输入内容与离开时完全一致。'
+  },
+  'workshop.credits.resume': {
+    en: 'Back to the model',
+    'zh-CN': '返回模型'
+  },
+  'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
   'workshop.media.label': {
     en: 'Browse by output',
     'zh-CN': '按输出浏览'

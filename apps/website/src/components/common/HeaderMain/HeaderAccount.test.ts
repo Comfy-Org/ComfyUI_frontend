@@ -26,7 +26,7 @@ describe('HeaderAccount', () => {
     localStorage.clear()
   })
 
-  it('shows the balance in the header and the plan in the menu', async () => {
+  it('shows the balance in the header and buys credits from the menu', async () => {
     const user = userEvent.setup()
     mountAccount('existing')
     await nextTick()
@@ -34,14 +34,12 @@ describe('HeaderAccount', () => {
     expect(screen.getByTestId('header-credits').textContent).toContain('5,840')
 
     await user.click(screen.getByTestId('header-account'))
-    expect(await screen.findByTestId('account-plan-pro')).toBeTruthy()
-    expect(screen.queryByTestId('account-upgrade')).toBeNull()
-    expect(screen.getByTestId('account-plan').getAttribute('href')).toMatch(
-      /platform/
-    )
+    expect(
+      (await screen.findByTestId('account-plan')).getAttribute('href')
+    ).toMatch(/platform/)
   })
 
-  it('sends an empty account to upgrade', async () => {
+  it('sends an empty account to buy credits, not to a plan', async () => {
     const user = userEvent.setup()
     mountAccount('new')
     await nextTick()
@@ -51,10 +49,9 @@ describe('HeaderAccount', () => {
     )
 
     await user.click(screen.getByTestId('header-account'))
-    expect(await screen.findByTestId('account-upgrade')).toBeTruthy()
-    expect(screen.getByTestId('account-plan').getAttribute('href')).toBe(
-      '/pricing'
-    )
+    expect(
+      (await screen.findByTestId('account-plan')).getAttribute('href')
+    ).toMatch(/platform/)
   })
 
   it('switches workspace from the submenu', async () => {

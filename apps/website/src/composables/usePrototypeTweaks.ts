@@ -24,9 +24,10 @@ export const OUTPUT_COUNTS = [1, 4, 9] as const
 type OutputCount = (typeof OUTPUT_COUNTS)[number]
 
 // One control for the whole prototype: V1 is the flat models catalog (11 Sep),
-// V1.1 opens that same catalog as browseable rows per use case, and V2 is the
-// screen where workflows, apps and models live together (GA 30 Sep).
-export const VERSIONS = ['v1', 'v1.1', 'v2'] as const
+// V1.1 opens that same catalog as browseable rows per use case, V1.2 moves the
+// categories into a rail beside the grid, and V2 is the screen where workflows,
+// apps and models live together (GA 30 Sep).
+export const VERSIONS = ['v1', 'v1.1', 'v1.2', 'v2'] as const
 export type Version = (typeof VERSIONS)[number]
 
 const VERSION_KEY = 'comfy-workshop-version'

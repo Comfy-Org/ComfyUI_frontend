@@ -13,7 +13,6 @@ import {
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { externalLinks, getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
   FieldErrors,
@@ -34,6 +33,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
+import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
@@ -103,6 +103,7 @@ const runState = ref<RunState>(
 const runs = ref<RunOutput[]>([])
 const earlier = computed(() => runs.value.slice(1))
 const revealed = ref(false)
+const buyingCredits = ref(false)
 
 const { session, setCredits, switchWorkspace } = useMockSession()
 const {
@@ -111,14 +112,10 @@ const {
   showStatuses,
   outputCount
 } = usePrototypeTweaks()
-const routes = getRoutes(locale)
 const signInHref = useSignInHref(locale)
 
 const credits = computed(() =>
   session.value.status === 'signedIn' ? session.value.account.credits : 0
-)
-const subscribed = computed(
-  () => session.value.status === 'signedIn' && session.value.account.subscribed
 )
 const creditsPerRun = model.creditsPerRun
 const modelStatus = computed(() =>
@@ -385,13 +382,12 @@ function useInCode() {
             {{ t('workshop.run.signIn', locale) }}
           </Button>
           <Button
-            v-else-if="gate === 'noCredits' && subscribed"
-            as="a"
-            :href="externalLinks.platform"
+            v-else-if="gate === 'noCredits'"
             size="lg"
             class="w-full px-5"
             data-testid="run-button"
             data-gate="noCredits"
+            @click="buyingCredits = true"
           >
             {{ t('workshop.run.buyCredits', locale) }}
           </Button>
@@ -415,17 +411,6 @@ function useInCode() {
               {{ t('workshop.run.switchPersonal', locale) }}
             </Button>
           </template>
-          <Button
-            v-else-if="gate === 'noCredits'"
-            as="a"
-            :href="routes.pricing"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-          >
-            {{ t('nav.upgradeToAddCredits', locale) }}
-          </Button>
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
@@ -549,5 +534,7 @@ function useInCode() {
     >
       <ApiTab :router-id="model.routerId" :values :locale />
     </section>
+
+    <BuyCreditsDialog v-model:open="buyingCredits" :locale />
   </div>
 </template>

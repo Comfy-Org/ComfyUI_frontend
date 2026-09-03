@@ -25,14 +25,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { WORKSPACES, useMockSession } from '../../../composables/useMockSession'
 import { useSignInHref } from '../../../composables/useSignInHref'
-import { externalLinks, getRoutes } from '../../../config/routes'
+import { externalLinks } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const { session, signOut, switchWorkspace } = useMockSession()
-const routes = getRoutes(locale)
 const signInHref = useSignInHref(locale)
 
 const account = computed(() =>
@@ -186,9 +185,9 @@ const itemClass =
 
         <DropdownMenuItem as-child>
           <a
-            :href="account.subscribed ? externalLinks.platform : routes.pricing"
-            :target="account.subscribed ? '_blank' : undefined"
-            :rel="account.subscribed ? 'noopener noreferrer' : undefined"
+            :href="externalLinks.platform"
+            target="_blank"
+            rel="noopener noreferrer"
             :class="itemClass"
             data-testid="account-plan"
           >
@@ -196,21 +195,9 @@ const itemClass =
               class="size-5 text-primary-warm-gray"
               aria-hidden="true"
             />
-            <span class="flex-1">{{ t('nav.planAndCredits', locale) }}</span>
-            <span
-              v-if="account.subscribed"
-              class="rounded-full bg-transparency-white-t8 px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary-warm-white uppercase"
-              data-testid="account-plan-pro"
-            >
-              {{ t('nav.planPro', locale) }}
-            </span>
-            <span
-              v-else
-              class="bg-primary-comfy-yellow rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase"
-              data-testid="account-upgrade"
-            >
-              {{ t('nav.upgrade', locale) }}
-            </span>
+            <span class="flex-1">{{
+              t('workshop.run.buyCredits', locale)
+            }}</span>
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem as-child>

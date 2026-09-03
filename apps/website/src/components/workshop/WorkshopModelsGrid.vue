@@ -105,8 +105,12 @@ const media = computed(() =>
   )
 )
 
-// The models list browses by what a model makes; V1.1's rows stay on the use
-// cases they were built around.
+// The listing browses by what a model makes; V1.1's rows stay on the use cases
+// they were built around.
+// V1 keeps the row of tabs it shipped with; V1.2 is the same listing with the
+// categories moved into a rail beside the grid.
+const railBeside = computed(() => version.value === 'v1.2')
+
 const railLabel = computed<TranslationKey>(() =>
   version.value === 'v1.1' ? 'workshop.useCase.label' : 'workshop.media.label'
 )
@@ -240,7 +244,13 @@ const menuItemClass =
         {{ t(railLabel, locale) }}
       </h2>
       <nav
-        class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8 lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0"
+        :class="
+          cn(
+            'mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8',
+            railBeside &&
+              'lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0'
+          )
+        "
         :aria-label="t(railLabel, locale)"
         data-testid="workshop-use-cases"
       >
@@ -413,7 +423,14 @@ const menuItemClass =
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            :class="
+              cn(
+                'grid grid-cols-1 gap-5 sm:grid-cols-2',
+                railBeside
+                  ? 'xl:grid-cols-3 2xl:grid-cols-4'
+                  : 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+              )
+            "
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

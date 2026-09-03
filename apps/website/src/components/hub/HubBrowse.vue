@@ -177,6 +177,16 @@ const filteredModels = computed(() => {
     : [...matches].sort((a, b) => a.name.localeCompare(b.name))
 })
 
+// The lead is one row and never a ragged second one, so each card only shows
+// where its column exists.
+const LEAD_VISIBILITY = [
+  '',
+  'hidden sm:block',
+  'hidden lg:block',
+  'hidden xl:block',
+  'hidden 2xl:block'
+]
+
 // One card per family: the newest release leads, the rest sit behind it.
 const modelFamilies = computed(() => groupByFamily(filteredModels.value))
 
@@ -283,7 +293,7 @@ const filteredTemplates = computed(() => {
           type="button"
           :aria-label="t('workshop.hub.search', locale)"
           :title="t('workshop.hub.search', locale)"
-          class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl border border-white/15 bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2"
+          class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2"
           data-testid="hub-search-open"
           @click="openSearch"
         >
@@ -301,7 +311,7 @@ const filteredTemplates = computed(() => {
             type="search"
             data-testid="hub-search"
             :placeholder="t('workshop.hub.search', locale)"
-            class="text-content placeholder:text-content-muted focus-visible:ring-brand h-10 w-full rounded-xl border border-white/15 bg-white/8 pr-3 pl-10 text-xs outline-none focus-visible:ring-2"
+            class="text-content placeholder:text-content-muted focus-visible:ring-brand h-10 w-full rounded-xl bg-white/8 pr-3 pl-10 text-xs outline-none focus-visible:ring-2"
             @blur="closeSearchIfEmpty"
           />
         </label>
@@ -321,7 +331,11 @@ const filteredTemplates = computed(() => {
           <ul
             class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
           >
-            <li v-for="family in modelFamilies.slice(0, 6)" :key="family.key">
+            <li
+              v-for="(family, index) in modelFamilies.slice(0, 5)"
+              :key="family.key"
+              :class="LEAD_VISIBILITY[index]"
+            >
               <WorkshopModelCard
                 :model="family.latest"
                 :version-count="family.versions.length"

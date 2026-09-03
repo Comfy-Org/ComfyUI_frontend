@@ -169,8 +169,24 @@ describe('ModelDetail', () => {
     await user().type(screen.getByTestId('field-prompt'), ' in a hat')
     const run = screen.getByTestId('run-button')
     expect(run.getAttribute('data-gate')).toBe('noCredits')
-    expect(run.getAttribute('href')).toBe('https://platform.comfy.org')
     expect(screen.getByTestId('gate-note').textContent).toContain('3 credits')
+
+    // The trip to Platform is explained before it happens, it carries the page
+    // back with it, and the mocked purchase returns with the credits added.
+    await user().click(run)
+    expect(
+      (await screen.findByTestId('buy-credits-url')).textContent
+    ).toContain('returnTo=')
+    await user().click(screen.getByTestId('buy-credits-continue'))
+    await user().click(await screen.findByTestId('buy-credits-pay'))
+    expect((await screen.findByTestId('buy-credits-done')).textContent).toMatch(
+      /credits added/i
+    )
+    await user().click(screen.getByTestId('buy-credits-resume'))
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
     expect(
       JSON.parse(sessionStorage.getItem('comfy-workshop-form:demo') ?? '{}')
         .prompt

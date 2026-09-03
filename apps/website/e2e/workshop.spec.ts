@@ -237,7 +237,7 @@ test.describe('Model playground', () => {
     ).toContainText('5,832')
   })
 
-  test('a new account starts without credits and is sent to upgrade', async ({
+  test('a new account starts without credits and is sent to buy them', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
@@ -253,7 +253,10 @@ test.describe('Model playground', () => {
       .getByTestId('desktop-nav-cta')
       .getByTestId('header-account')
       .click()
-    await expect(page.getByTestId('account-upgrade')).toBeVisible()
+    await expect(page.getByTestId('account-plan')).toHaveAttribute(
+      'href',
+      /platform\.comfy\.org/
+    )
   })
 
   test('an empty balance is sent to Comfy Platform and the form survives the trip', async ({
@@ -268,7 +271,15 @@ test.describe('Model playground', () => {
     await page.getByTestId('field-prompt').fill('keep me around')
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
-    await expect(run).toHaveAttribute('href', /platform\.comfy\.org/)
+    await run.click()
+    await expect(page.getByTestId('buy-credits-url')).toContainText(
+      'returnTo=%2Fworkshop%2Fmodels%2Fopenai-dall-e%2F'
+    )
+    await page.getByTestId('buy-credits-continue').click()
+    await page.getByTestId('buy-credits-pay').click()
+    await expect(page.getByTestId('buy-credits-done')).toBeVisible()
+    await page.getByTestId('buy-credits-resume').click()
+    await expect(run).toHaveAttribute('data-gate', 'ready')
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
     ).toHaveAttribute('href', /platform/)

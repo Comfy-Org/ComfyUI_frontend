@@ -111,7 +111,7 @@ const controlClass =
       @update:model-value="store.setTab($event as HubTab)"
     >
       <TabsList
-        class="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-white/8 p-1"
+        class="inline-flex items-center gap-1 rounded-xl bg-white/8 p-1"
       >
         <TabsTrigger
           v-for="tab in TABS"
@@ -144,7 +144,7 @@ const controlClass =
               controlClass,
               totalActiveFilters > 0
                 ? 'bg-brand text-page hover:bg-brand/90'
-                : 'text-content-secondary hover:text-content border border-white/15 bg-white/8 hover:bg-white/12'
+                : 'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
             )
           "
           :aria-label="labels.filter"
@@ -307,7 +307,7 @@ const controlClass =
         :class="
           cn(
             controlClass,
-            'text-content-secondary hover:text-content border border-white/15 bg-white/8 hover:bg-white/12'
+            'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
           )
         "
         @click="store.cycleSort()"
