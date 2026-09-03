@@ -171,6 +171,12 @@ export function useSubscriptionCheckout(
   // rejects an unconfirmed change, keep the consent screen in reactivation
   // mode until the user backs out or completes the change.
   const reactivationRequired = ref(false)
+  // FE-1990 variant B: while a failed/abandoned payment attempt settles
+  // server-side, preview-subscribe is refused. The pricing table swaps its
+  // subtitle for an inline notice instead of toasting; plan CTAs stay enabled
+  // because a preview is a free quote request — the first click after the
+  // server settles simply succeeds and clears the notice.
+  const isPaymentSettling = ref(false)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
   const activeCheckoutOperation = computed(() => {
@@ -250,6 +256,7 @@ export function useSubscriptionCheckout(
   function installPreview(preview: PreviewSubscribeResponse): boolean {
     if (!preview.allowed) return false
     previewData.value = preview
+    isPaymentSettling.value = false
     if (embeddedCheckoutEnabled) {
       reactivationRequired.value =
         preview.requires_reactivation_confirmation ?? true
@@ -466,6 +473,21 @@ export function useSubscriptionCheckout(
       'code' in error &&
       error.code === code
     )
+  }
+
+  /** The refusal preview-subscribe returns while a previous payment attempt
+   *  is still settling server-side. The BE reports it only through its
+   *  message (no dedicated error code yet; the operation-aware endpoint is
+   *  BE-11559), so it is recognised by message fragment. */
+  function isSettlingRefusalMessage(message: string | null | undefined) {
+    return (
+      message?.includes('not in a state that allows a plan-change preview') ??
+      false
+    )
+  }
+
+  function isSettlingRefusal(error: unknown): boolean {
+    return error instanceof Error && isSettlingRefusalMessage(error.message)
   }
 
   async function recoverOutstandingPayment(
@@ -718,6 +740,11 @@ export function useSubscriptionCheckout(
         : await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
+        if (isSettlingRefusalMessage(response?.reason)) {
+          isPaymentSettling.value = true
+          return
+        }
+        isPaymentSettling.value = false
         toast.add({
           severity: 'error',
           summary: 'Unable to subscribe',
@@ -732,7 +759,15 @@ export function useSubscriptionCheckout(
       installPreview(response)
       checkoutStep.value = 'preview'
     } catch (error) {
+      // Recognised before the outstanding-payment recovery: the settling
+      // refusal already has a designed response (the inline notice), so it
+      // must not fall into the generic open-the-billing-portal path.
+      if (isSettlingRefusal(error)) {
+        isPaymentSettling.value = true
+        return
+      }
       if (await recoverOutstandingPayment(error)) return
+      isPaymentSettling.value = false
       const message =
         error instanceof Error
           ? error.message
@@ -797,15 +832,17 @@ export function useSubscriptionCheckout(
         )
       } catch (error) {
         previewError = error
-        const recovery = await recoverOutstandingPayment(
-          error,
-          () => previewRequestId === teamPreviewRequestId
-        )
-        if (recovery === 'failed') {
-          resetToPricing()
-          return
+        if (!isSettlingRefusal(error)) {
+          const recovery = await recoverOutstandingPayment(
+            error,
+            () => previewRequestId === teamPreviewRequestId
+          )
+          if (recovery === 'failed') {
+            resetToPricing()
+            return
+          }
+          if (recovery) return
         }
-        if (recovery) return
       } finally {
         if (previewRequestId === teamPreviewRequestId) {
           isLoadingPreview.value = false
@@ -818,6 +855,16 @@ export function useSubscriptionCheckout(
         checkoutStep.value = 'preview'
         return
       }
+      if (
+        isSettlingRefusal(previewError) ||
+        isSettlingRefusalMessage(response?.reason)
+      ) {
+        isPaymentSettling.value = true
+        checkoutStep.value = 'pricing'
+        selectedTeamCheckout.value = null
+        return
+      }
+      isPaymentSettling.value = false
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -846,15 +893,17 @@ export function useSubscriptionCheckout(
       ])
     } catch (error) {
       previewError = error
-      const recovery = await recoverOutstandingPayment(
-        error,
-        () => previewRequestId === teamPreviewRequestId
-      )
-      if (recovery === 'failed') {
-        resetToPricing()
-        return
+      if (!isSettlingRefusal(error)) {
+        const recovery = await recoverOutstandingPayment(
+          error,
+          () => previewRequestId === teamPreviewRequestId
+        )
+        if (recovery === 'failed') {
+          resetToPricing()
+          return
+        }
+        if (recovery) return
       }
-      if (recovery) return
     } finally {
       if (previewRequestId === teamPreviewRequestId) {
         isLoadingPreview.value = false
@@ -872,6 +921,16 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'preview'
       return
     }
+    if (
+      isSettlingRefusal(previewError) ||
+      isSettlingRefusalMessage(response?.reason)
+    ) {
+      isPaymentSettling.value = true
+      checkoutStep.value = 'pricing'
+      selectedTeamCheckout.value = null
+      return
+    }
+    isPaymentSettling.value = false
     toast.add({
       severity: 'error',
       summary: t('subscription.teamPlan.name'),
@@ -1544,6 +1603,7 @@ export function useSubscriptionCheckout(
     checkoutStep,
     isLoadingPreview,
     loadingTier,
+    isPaymentSettling,
     isSubscribing,
     isApplyingPromotionCode,
     isResubscribing,

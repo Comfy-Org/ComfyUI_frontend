@@ -1279,6 +1279,144 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('settling preview refusal (FE-1990 variant B)', () => {
+    const SETTLING_MESSAGE =
+      'The subscription is not in a state that allows a plan-change preview'
+    const settlingError = () =>
+      new WorkspaceApiError(SETTLING_MESSAGE, 409, 'TRANSITION_NOT_ALLOWED')
+    const teamStop = {
+      id: 'team_1400',
+      usd: 1400,
+      credits: 295_400,
+      discountedUsd: 1295
+    }
+
+    it('swaps the toast for the inline notice and stays on the pricing step', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.isLoadingPreview.value).toBe(false)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('never routes the settling refusal into outstanding-payment recovery', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+      expect(mockOpen).not.toHaveBeenCalled()
+    })
+
+    it('recognises the refusal when it arrives as a disallowed preview body', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: false,
+        reason: SETTLING_MESSAGE
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('clears the notice as soon as a preview succeeds', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(checkout.isPaymentSettling.value).toBe(true)
+
+      // The retry is the probe: default mock resolves an allowed preview.
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(false)
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('keeps the toast for preview failures that are not the settling refusal', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('boom'))
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledOnce()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'boom' })
+      )
+    })
+
+    it('shows the notice for a refused team preview (embedded checkout)', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeTeamClick({
+        stop: teamStop,
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.selectedTeamStop.value).toBeNull()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+    })
+
+    it('shows the notice for a refused team preview (embedded checkout off)', async () => {
+      const checkout = await setup(undefined, 'team', false)
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeTeamClick({
+        stop: teamStop,
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.selectedTeamStop.value).toBeNull()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('does not survive a fresh composable instance (fresh dialog open)', async () => {
+      const first = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+      await first.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(first.isPaymentSettling.value).toBe(true)
+
+      const second = await setup()
+      expect(second.isPaymentSettling.value).toBe(false)
+    })
+  })
+
   describe('handleSubscribeTeamClick', () => {
     const teamStop = {
       id: 'team_1400',
