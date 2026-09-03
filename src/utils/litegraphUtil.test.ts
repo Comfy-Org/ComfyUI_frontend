@@ -110,6 +110,21 @@ describe('createNode', () => {
     expect(mockBringNodeToFront).not.toHaveBeenCalled()
   })
 
+  it('leaves the graph unchanged when the canvas is select-only', async () => {
+    const graph = new LGraph()
+    const canvas = makeCanvas(graph)
+    canvas.selectOnly = true
+    const createNodeSpy = vi
+      .spyOn(LiteGraph, 'createNode')
+      .mockReturnValue(new LGraphNode('LoadImage'))
+
+    const result = await createNode(canvas, 'LoadImage')
+
+    expect(result).toBeNull()
+    expect(graph._nodes).toHaveLength(0)
+    expect(createNodeSpy).not.toHaveBeenCalled()
+  })
+
   it('places the new node at the canvas graph_mouse position', async () => {
     const newNode = new LGraphNode('LoadImage')
     const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)
@@ -225,6 +240,78 @@ describe('getWidgetIdForNode', () => {
       'shared#2',
       'shared#1'
     ])
+  })
+
+  it('maps every widget when one duplicate cannot be renamed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = fakeNode(42)
+    const first = {
+      name: 'shared',
+      type: 'number',
+      value: 1,
+      options: {},
+      y: 0
+    }
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
+    node.widgets = [first, frozen]
+
+    const mapped = mapLiveWidgetsById(node)
+    expect([...mapped.keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared'])
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockClear()
+    expect(getWidgetIdForNode(node, frozen)).toBe(
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    )
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
+  it('maps repeated widget object references only once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = fakeNode(42)
+    const first = {
+      name: 'shared',
+      type: 'number',
+      value: 1,
+      options: {},
+      y: 0
+    }
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
+    node.widgets = [first, first, frozen]
+
+    const mapped = mapLiveWidgetsById(node)
+
+    expect([...mapped.keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    const [mappedFirst, mappedFrozen] = mapped.values()
+    expect(mappedFirst).toBe(first)
+    expect(mappedFrozen).toBe(frozen)
+    expect(node.widgets.map(({ name }) => name)).toEqual([
+      'shared',
+      'shared',
+      'shared'
+    ])
+    expect(warn).toHaveBeenCalledOnce()
   })
 
   it('returns undefined when the node has no graph', () => {

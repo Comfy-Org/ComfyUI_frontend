@@ -5,6 +5,7 @@ import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   provide,
@@ -79,13 +80,23 @@ import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
+import type {
+  DraftSnapshot,
+  OpenTabsSnapshot
+} from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import {
+  isCrdtDebugEnabled,
+  resolveDebugPanelEnabled
+} from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -290,6 +301,16 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   return bound === undefined ? undefined : { id: bound, tabPath: active.path }
 }
 
+function activeWorkflowDraft(): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = workflowStore.activeWorkflow
+  if (!active) return undefined
+  active.changeTracker?.captureCanvasState()
+  const content = active.activeState
+  if (!content) return undefined
+  return { content }
+}
+
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
   return active
@@ -372,7 +393,8 @@ const {
     adopted: onWorkflowAdopted,
     prepare: refreshCloudWorkflowIds,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab
+    activeTab: enqueueActiveTab,
+    draft: activeWorkflowDraft
   }
 })
 
@@ -390,7 +412,11 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
+const {
+  status: crdtStatus,
+  debugSnapshot: crdtDebugSnapshot,
+  enqueueHumanOperations
+} = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
@@ -401,12 +427,13 @@ const mintPortWiring = attachMintPortWiring({
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
-  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null)
 })
-// Dev instrument only (slice-02 classification): never ships to users.
-const isCrdtDevPanelEnabled = import.meta.env.DEV
+const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
+  agentPanelStore.enabled,
+  isCrdtDebugEnabled()
+)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -742,8 +769,10 @@ watch(
   }
 )
 
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
+
 watch(
-  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }
@@ -985,7 +1014,6 @@ function onPanelDrop(event: DragEvent): void {
         })
       }}
     </div>
-    <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
       :entries
@@ -1025,7 +1053,11 @@ function onPanelDrop(event: DragEvent): void {
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
-    />
+    >
+      <template v-if="isCrdtDevPanelEnabled" #instrument>
+        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+    </AgentPanel>
     <OnboardingCoach
       :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"

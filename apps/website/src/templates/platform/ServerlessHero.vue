@@ -25,10 +25,20 @@ const ctas = platformCtas(locale)
     media-wrapper-class="hidden lg:block"
   >
     <template #badge>
-      <PlatformHeroBadge
-        :locale="locale"
-        :label="t('platform.products.serverless.title', locale)"
-      />
+      <PlatformHeroBadge :locale :status-label="t('nav.badgeBeta', locale)">
+        <template #label>
+          <img
+            src="/icons/logo.svg"
+            alt="Comfy"
+            width="173"
+            height="48"
+            class="h-5 w-auto brightness-0 md:h-9"
+          />
+          <span>{{
+            t('platform.products.serverless.badgeLabel', locale)
+          }}</span>
+        </template>
+      </PlatformHeroBadge>
     </template>
     <template #aboveCtas>
       <div class="mt-8 rounded-3xl lg:hidden">

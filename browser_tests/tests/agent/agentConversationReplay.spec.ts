@@ -72,11 +72,13 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
           `${expectedUpdateCount(conversation)} updates`
         )
 
-        for (const id of recordedAddedNodeIds(conversation)) {
+        const graph = agentConversation.hostGraph()
+        for (const id of recordedAddedNodeIds(conversation, graph)) {
           await expect(page.locator(`[data-node-id="${id}"]`)).toBeVisible()
         }
         for (const { nodeId, widget, value } of recordedWidgetValues(
-          conversation
+          conversation,
+          graph
         )) {
           const field = page
             .locator(`[data-node-id="${nodeId}"]`)
@@ -88,7 +90,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
 
         await expect
           .poll(() => agentConversation.graphSnapshot())
-          .toEqual(expectedGraphSnapshot(conversation))
+          .toEqual(expectedGraphSnapshot(conversation, graph))
       })
     })
   }
