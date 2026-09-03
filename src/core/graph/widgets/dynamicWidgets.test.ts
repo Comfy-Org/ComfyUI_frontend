@@ -200,6 +200,15 @@ describe('Dynamic Combos', () => {
 
     expect(reloaded.widgets[1].value).toBe(0.3)
   })
+  test('Same-name children keep separate values across options', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT']])
+    node.widgets[1].value = 3
+
+    node.widgets[0].value = '1'
+
+    expect(node.widgets[1].value).not.toBe(3)
+  })
 })
 describe('Autogrow', () => {
   const inputsSpec = { required: { image: ['IMAGE', {}] } }

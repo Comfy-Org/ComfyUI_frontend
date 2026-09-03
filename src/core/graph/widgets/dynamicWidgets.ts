@@ -120,24 +120,29 @@ function dynamicComboWidget(
     widgetName
   )
   const removedWidgetValues = new Map<
-    string,
-    { type: string; value: WidgetValue }
+    string | undefined,
+    Map<string, { type: string; value: WidgetValue }>
   >()
+  let activeOption = widget.value as string | undefined
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
+    const removedOption = activeOption
+    activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
     for (const widget of remove(node.widgets, isInGroup)) {
-      removedWidgetValues.set(widget.name, {
+      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
+      optionValues.set(widget.name, {
         type: widget.type,
         value: widget.value
       })
+      removedWidgetValues.set(removedOption, optionValues)
       widget.onRemove?.()
       if (widget.widgetId) deleteWidget(widget.widgetId)
     }
@@ -184,7 +189,7 @@ function dynamicComboWidget(
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     const graphId = resolveNodeRootGraphId(node)
     for (const [offset, addedWidget] of addedWidgets.entries()) {
-      const removed = removedWidgetValues.get(addedWidget.name)
+      const removed = removedWidgetValues.get(value)?.get(addedWidget.name)
       const restored = graphId
         ? useWidgetValueStore().getRestoredWidgetValue(
             graphId,
