@@ -69,6 +69,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import type { DragAndScale } from './DragAndScale'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -233,7 +234,10 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    const value = widget.serializeWorkflowValue
+      ? widget.serializeWorkflowValue()
+      : widget.value
+    const [positionalValue, namedValue] = cloneWidgetValueTwice(value)
     positional.push(positionalValue)
     Object.defineProperty(named, widget.name, {
       value: namedValue,
@@ -809,6 +813,15 @@ export class LGraphNode
    * If the node is a frontend only node and should not be serialized into the prompt.
    */
   declare isVirtualNode?: boolean
+  /**
+   * A virtual node whose outputs the prompt builder's RESOLUTION pass
+   * substitutes. Execution-time link walking must stop at this node and
+   * report it as the origin — the legacy virtual shapes below
+   * (`resolveVirtualOutput`, same-slot `getInputLink` pass-through) cannot
+   * express a computed source like Get/Set, and guessing with them silently
+   * drops the consumer's input.
+   */
+  declare resolutionOwned?: boolean
   /**
    * @deprecated Lets virtual nodes such as primitives write their values into
    * the graph before queueing.
