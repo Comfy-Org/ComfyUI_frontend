@@ -39,6 +39,22 @@ nothing; later turns inherit that subscription, so only the first one needs it.
 Turn 1 opens the thread, and every later turn posts to it the way the panel
 does.
 
+One command brings that stack up (launcher record mode, #16781): with the
+cloud repo's own local stack running (`cloud up`, or `scripts/start-all.sh`, in
+the cloud checkout), run
+
+```bash
+pnpm exec tsx scripts/dev-agent-integration.ts --record \
+  --catalog browser_tests/fixtures/data/agent/conversations/<any fixture>.json \
+  --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096
+```
+
+It asserts Postgres on 54331 and Redis on 6379, starts the doc host the cloud
+repo ships, starts the agent non-standalone with `AGENT_CRDT_MODE=on` and
+`AGENT_TARGET=local`, seeds the recorder's workspace and user, and prints the
+recorder command with the secret by path. The manual recipe below is the
+fallback.
+
 Recording runs against the cloud agent in its non-standalone mode, with
 Postgres, Redis and the doc host beside it (the lean stack): frames come from
 its Redis channel and rows from Postgres. That is the only path. The same agent
