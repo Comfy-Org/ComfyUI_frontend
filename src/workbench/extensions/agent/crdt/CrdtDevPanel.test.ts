@@ -276,6 +276,8 @@ describe('CrdtDevPanel', () => {
     await vi.advanceTimersByTimeAsync(700)
 
     expect(copyLogButton).toHaveTextContent('Copied')
+    await vi.advanceTimersByTimeAsync(900)
+    expect(copyLogButton).toHaveTextContent('Copy log')
     panel.unmount()
     expect(vi.getTimerCount()).toBe(0)
   })
