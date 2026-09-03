@@ -17,6 +17,7 @@
         v-slot="{ isExpanded, isSelected, handleToggle }"
         :value="item.value"
         :level="item.level"
+        @select="preventUnboundSelection"
       >
         <div
           :class="
@@ -116,6 +117,10 @@ const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
 
+function preventUnboundSelection(event: Event) {
+  if (!storeSelectionKeys) event.preventDefault()
+}
+
 const { root, class: className } = defineProps<{
   root: TreeExplorerNode<T>
   class?: string
@@ -152,10 +157,9 @@ const expandedNodeKeys = computed({
     expandedKeys.value = Object.fromEntries(keys.map((key) => [key, true]))
   }
 })
-const localSelectedNode = shallowRef<RenderedTreeExplorerNode<T>>()
 const selectedNode = computed({
   get: () => {
-    if (!storeSelectionKeys) return localSelectedNode.value
+    if (!storeSelectionKeys) return undefined
     const key = Object.keys(selectionKeys.value ?? {}).find(
       (key) => selectionKeys.value?.[key]
     )
@@ -166,8 +170,6 @@ const selectedNode = computed({
   set: (node: RenderedTreeExplorerNode<T> | undefined) => {
     if (storeSelectionKeys) {
       selectionKeys.value = node ? { [node.key]: true } : {}
-    } else {
-      localSelectedNode.value = node
     }
   }
 })
