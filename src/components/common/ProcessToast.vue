@@ -14,19 +14,41 @@
       <!-- Every in-progress state holds one width so the run bar doesn't
            breathe as the job moves through them. Terminal states are the
            exception: the work is over, so the pill shrinks to its message. -->
-      <div
+      <component
+        :is="interactive ? 'button' : 'div'"
+        :type="interactive ? 'button' : undefined"
         :class="
           cn(
-            'z-2 flex h-9 items-center gap-2 overflow-clip rounded-lg bg-[#232426] py-1',
+            'z-2 flex h-9 items-center gap-2 overflow-clip rounded-lg border-none bg-[#232426] py-1 text-left',
             hasSlab ? '-mr-2 pr-3 pl-2' : 'px-3',
-            !isTerminal && chipWidthClass
+            !isTerminal && chipWidthClass,
+            interactive &&
+              'cursor-pointer transition-colors hover:bg-secondary-background-hover'
           )
         "
+        @click="interactive && $emit('activate')"
       >
+        <!-- Completed swaps the status icon for the output thumbnail, so the
+             result the run produced is what you see and click into. -->
+        <img
+          v-if="thumbnailUrl"
+          :src="thumbnailUrl"
+          alt=""
+          class="size-6 shrink-0 rounded-md object-cover outline-1 outline-base-foreground/10"
+        />
+        <div
+          v-else-if="showThumbnailPlaceholder"
+          class="flex size-6 shrink-0 items-center justify-center rounded-md bg-base-foreground/10"
+          aria-hidden="true"
+        >
+          <i class="icon-[lucide--file] size-3.5 text-muted-foreground" />
+        </div>
+
         <div class="flex min-w-0 flex-1 items-center gap-1.5">
           <!-- Status icon. All three stay mounted and cross-fade, so the swap
-               animates in both directions without a motion library. -->
-          <div class="relative size-4 shrink-0">
+               animates in both directions without a motion library. Hidden
+               when a thumbnail takes the lead. -->
+          <div v-if="!thumbnailUrl && !showThumbnailPlaceholder" class="relative size-4 shrink-0">
             <div
               :class="
                 cn(
@@ -95,7 +117,7 @@
             </slot>
           </div>
         </Transition>
-      </div>
+      </component>
 
       <!-- Chevron slab -->
       <button
@@ -199,6 +221,9 @@ const {
   progressClass = 'bg-base-foreground',
   // Fits the widest in-progress state: "Running 100%" plus a failure badge.
   chipWidthClass = 'min-w-[236px]',
+  thumbnailUrl = null,
+  showThumbnailPlaceholder = false,
+  interactive = false,
   pillClass
 } = defineProps<{
   /** Status verb, e.g. "Running", "Downloading", "Completed", "Failed". */
@@ -224,12 +249,19 @@ const {
   chipWidthClass?: string
   /** Tailwind bg class for the progress bar. */
   progressClass?: string
+  /** Output thumbnail shown in place of the status icon (completed state). */
+  thumbnailUrl?: string | null
+  /** Show a neutral media tile when the output has no thumbnail (video, audio). */
+  showThumbnailPlaceholder?: boolean
+  /** Make the chip a button that emits `activate` on click. */
+  interactive?: boolean
   pillClass?: string
 }>()
 
 defineEmits<{
   (e: 'toggleExpand'): void
   (e: 'close'): void
+  (e: 'activate'): void
 }>()
 
 const { t } = useI18n()
@@ -241,9 +273,13 @@ const label = computed(() =>
   showPercent.value && showPercentText ? `${verb} ${displayPercent.value}%` : verb
 )
 
-/** Terminal states are a bare chip: no actions, no slab, no progress. */
+/** Terminal states are a bare chip: no slab, no progress. */
 const isTerminal = computed(() => status !== 'progress')
-const hasAction = computed(() => !isTerminal.value && !hideAction)
+// Failed is terminal but still offers a way out (resolve errors), so it keeps
+// its trailing action; done and running follow the normal rule.
+const hasAction = computed(
+  () => !hideAction && (!isTerminal.value || status === 'failed')
+)
 const hasSlab = computed(() => !isTerminal.value && !hideChevron)
 
 const expandTooltip = computed(() =>
