@@ -234,8 +234,8 @@ describe('registering a node definition while a graph is already loaded', () => 
 
     const added = LiteGraph.createNode(LATE)
     expect(added).not.toBeNull()
-    graph.add(added!)
-    const link = graph.nodes[0].connect(0, added!, 0)
+    graph.add(added)
+    const link = graph.nodes[0].connect(0, added, 0)
     expect(link).toBeTruthy()
 
     expect(added!.widgets?.map((widget) => widget.name)).toEqual([

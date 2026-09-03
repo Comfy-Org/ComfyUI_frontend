@@ -69,7 +69,6 @@ export class ToOutputRenderLink implements RenderLink {
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const { node: inputNode, fromSlot, fromReroute } = this
-    if (!inputNode) return
 
     const newLink = node.connectSlots(
       output,
@@ -103,7 +102,7 @@ export class ToOutputRenderLink implements RenderLink {
       output,
       inputNode,
       fromSlot,
-      reroute?.id
+      reroute.id
     )
     events.dispatch('link-created', newLink)
   }

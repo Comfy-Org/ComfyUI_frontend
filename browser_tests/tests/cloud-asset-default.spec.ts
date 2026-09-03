@@ -61,7 +61,7 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     // filename, so asset.name is the resolved value.
     const nodeId = await comfyPage.page.evaluate(() => {
       const node = window.LiteGraph!.createNode('CheckpointLoaderSimple')
-      window.app!.graph.add(node!)
+      window.app!.graph.add(node)
       return node!.id
     })
 

@@ -174,7 +174,7 @@ function buildFixture(): Fixture {
     downstream,
     reroute,
     originalDefId: subgraph.id,
-    copyDefId: String(copy.type),
+    copyDefId: copy.type,
     originalInLinkId: inbound.id,
     originalOutLinkId: outbound.id,
     copyInLinkId: copy.inputs[0].link!
