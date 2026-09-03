@@ -44,7 +44,7 @@ export function createPromotedWidgetStoreProjection(
     },
     set connectionSuppressed(next) {
       const visibility = store.getWidgetVisibility(id)
-      if (visibility) visibility.suppression.byConnection = next === true
+      if (visibility) visibility.suppression.byConnection = next
     },
     callback(next) {
       store.setValue(id, next)
