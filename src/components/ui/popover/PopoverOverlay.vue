@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import {
   PopoverContent,
   PopoverPortal,
@@ -73,6 +74,18 @@ function show(event: Event, target?: EventTarget | null) {
 function hide() {
   setOpen(false)
 }
+
+function onScroll(event: Event) {
+  if (
+    anchor.value &&
+    event.target instanceof Element &&
+    event.target.contains(anchor.value)
+  ) {
+    hide()
+  }
+}
+
+useEventListener(window, 'scroll', onScroll, { capture: true })
 
 function toggle(event: Event, target?: EventTarget | null) {
   if (open.value) hide()
