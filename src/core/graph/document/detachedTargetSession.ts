@@ -1,5 +1,6 @@
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { createUuidv4 } from '@/utils/uuid'
 
 /**
@@ -96,17 +97,17 @@ export function createDetachedTargetSession(
   let expectedSeq: number | null = null
   let queue: TargetFrame[] = []
 
-  function assertTarget(frameWorkflowId: string): void {
-    if (frameWorkflowId !== workflowId) {
-      throw new Error(
-        `DetachedTargetSession(${workflowId}) received a frame addressed to ` +
-          `"${frameWorkflowId}"; frames must never cross targets`
-      )
-    }
+  function assertTarget(frameWorkflowId: string): boolean {
+    const matchesTarget = frameWorkflowId === workflowId
+    assert(
+      matchesTarget,
+      'Detached target session frames must never cross targets'
+    )
+    return matchesTarget
   }
 
   function enqueue(frame: TargetFrame): EnqueueResult {
-    assertTarget(frame.workflowId)
+    if (!assertTarget(frame.workflowId)) return { status: 'resync-required' }
     if (needsResync) return { status: 'resync-required' }
 
     const lastAcceptedSeq = queue.at(-1)?.seq ?? committedSeq
