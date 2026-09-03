@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useFreeTierQuota } from './useFreeTierQuota'
 
@@ -23,16 +24,23 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 vi.mock('@/scripts/app', () => ({ app: {} }))
 vi.mock('@/systems/badgeSystem', () => ({ graphCreditsBadges: () => [] }))
 
+const mockRemoteConfig = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return ref({ free_tier_balance: { allowance: 5, remaining: 5 } })
+})
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: {
-    value: { free_tier_balance: { allowance: 5, remaining: 5 } }
-  }
+  remoteConfig: mockRemoteConfig
 }))
 
 describe('useFreeTierQuota', () => {
-  it('enables the quota on Cloud when the flag and an allowance are present', () => {
+  beforeEach(() => {
     mockIsCloud.value = true
+    mockRemoteConfig.value = {
+      free_tier_balance: { allowance: 5, remaining: 5 }
+    }
+  })
 
+  it('enables the quota on Cloud when the flag and an allowance are present', () => {
     const quota = useFreeTierQuota()
 
     expect(quota.quotaEnabled.value).toBe(true)
@@ -46,5 +54,17 @@ describe('useFreeTierQuota', () => {
 
     expect(quota.quotaEnabled.value).toBe(false)
     expect(quota.freeTierExecutionPermitted.value).toBe(false)
+  })
+
+  it('updates the quota when remote config changes', async () => {
+    const quota = useFreeTierQuota()
+
+    mockRemoteConfig.value = {
+      free_tier_balance: { allowance: 10, remaining: 3 }
+    }
+    await nextTick()
+
+    expect(quota.available.value).toBe(3)
+    expect(quota.maxAvailable.value).toBe(10)
   })
 })
