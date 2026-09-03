@@ -343,13 +343,6 @@ class AgentConversationHarness {
       .filter((id) => !seedIds.has(id) && id in graph.nodes)
   }
 
-  // One update per ops entry plus the subscribe catch-up.
-  expectedUpdateCount(): number {
-    return (
-      this.entries().filter((entry) => entry.kind === 'graph_ops').length + 1
-    )
-  }
-
   hostGraph(): GraphSnapshot {
     return this.host.graph()
   }
