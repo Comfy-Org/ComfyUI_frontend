@@ -187,10 +187,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   ])
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
-    const rawNode = toRaw(nodeRef.value)
-    if (!containerRef || !rawNode) return
-
-    const node = rawNode
+    const node = toRaw(nodeRef.value)
+    if (!containerRef || !node) return
 
     try {
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
@@ -420,10 +418,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const waitForLoad3d = (callback: Load3dReadyCallback) => {
-    const rawNode = toRaw(nodeRef.value)
-    if (!rawNode) return
-
-    const node = rawNode
+    const node = toRaw(nodeRef.value)
+    if (!node) return
     const existingInstance = nodeToLoad3dMap.get(node)
 
     if (existingInstance) {
@@ -440,10 +436,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const onLoad3dReady = (callback: Load3dReadyCallback) => {
-    const rawNode = toRaw(nodeRef.value)
-    if (!rawNode) return
-
-    const node = rawNode
+    const node = toRaw(nodeRef.value)
+    if (!node) return
 
     if (!persistentReadyCallbacks.has(node)) {
       persistentReadyCallbacks.set(node, [])
@@ -995,9 +989,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       animationDuration.value = data.duration
     },
     cameraChanged: (cameraState: CameraState) => {
-      const rawNode = toRaw(nodeRef.value)
-      if (rawNode) {
-        const node = rawNode
+      const node = toRaw(nodeRef.value)
+      if (node) {
         if (!node.properties) node.properties = {}
         const cameraConfigProp = node.properties['Camera Config']
 
@@ -1072,10 +1065,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const cleanup = () => {
     handleEvents('remove')
 
-    const rawNode = toRaw(nodeRef.value)
-    if (!rawNode) return
-
-    const node = rawNode
+    const node = toRaw(nodeRef.value)
+    if (!node) return
     if (nodeToLoad3dMap.get(node) === load3d) {
       nodeToLoad3dMap.delete(node)
     }
