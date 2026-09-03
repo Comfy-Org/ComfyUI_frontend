@@ -15,6 +15,11 @@ export const vRekaZIndex: Directive<HTMLElement> = {
   mounted(el) {
     ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
   },
+  updated(el, { value, oldValue }) {
+    if (value === oldValue) return
+    ZIndex.clear(el)
+    ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
+  },
   beforeUnmount(el) {
     ZIndex.clear(el)
   }

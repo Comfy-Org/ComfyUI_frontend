@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { ZIndex } from '@primeuix/utils/zindex'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -15,8 +16,14 @@ const i18n = createI18n({
 })
 
 describe('Toaster', () => {
+  const dialogs: HTMLElement[] = []
+
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    dialogs.splice(0).forEach((dialog) => ZIndex.clear(dialog))
   })
 
   function renderToaster() {
@@ -35,6 +42,20 @@ describe('Toaster', () => {
     expect(notifications).toHaveLength(2)
     expect(notifications[0]).toHaveAttribute('role', 'status')
     expect(notifications[1]).toHaveAttribute('role', 'alert')
+  })
+
+  it('lifts a new notification above an open dialog', async () => {
+    renderToaster()
+    const dialog = document.createElement('div')
+    dialogs.push(dialog)
+    ZIndex.set('modal', dialog, 1700)
+
+    useToast().info('Ready')
+    await nextTick()
+
+    expect(
+      Number(screen.getByTestId('toast-viewport').style.zIndex)
+    ).toBeGreaterThan(Number(dialog.style.zIndex))
   })
 
   it('automatically dismisses a timed notification', async () => {

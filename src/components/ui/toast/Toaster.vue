@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -13,6 +14,7 @@ import { useToast } from './toastStore'
 
 const toast = useToast()
 const { toasts } = storeToRefs(toast)
+const latestToastId = computed(() => toasts.value.at(-1)?.id)
 
 const icons = {
   success: 'icon-[lucide--circle-check] text-success-background',
@@ -55,6 +57,9 @@ const icons = {
       </template>
       <ToastClose v-if="message.closable" data-testid="toast-close" />
     </ToastRoot>
-    <ToastViewport />
+    <ToastViewport
+      :z-index-version="latestToastId"
+      data-testid="toast-viewport"
+    />
   </ToastProvider>
 </template>
