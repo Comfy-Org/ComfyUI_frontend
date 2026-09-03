@@ -13,7 +13,7 @@ for forbidden in "@/stores/authStore" "../../src/stores/authStore"; do
   fi
 done
 
-if rg -n "from ['\"](pinia|nuxt|astro|firebase)|\b(window|document|localStorage|sessionStorage)\b" "$repo_root/packages/account/src/core" --glob '*.ts'; then
+if rg -n "from ['\"](vue|pinia|nuxt|astro|firebase)|\b(window|document|localStorage|sessionStorage)\b" "$repo_root/packages/account/src/core" --glob '*.ts'; then
   echo 'core contains a forbidden framework, SDK, or browser-global dependency' >&2
   exit 1
 fi

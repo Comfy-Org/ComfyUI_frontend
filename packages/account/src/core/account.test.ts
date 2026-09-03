@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   AccountError,
   MalformedResponseError,
@@ -49,6 +49,7 @@ function adapter(kind: 'map' | 'json' = 'map') {
   let workspace = 'A'
   let exchangeBody: unknown = credential('A')
   let balanceBody: unknown = { balance: 7 }
+  let balanceStatus = 200
   let clearFails = false
   const key = (value: {
     namespace: string
@@ -99,7 +100,7 @@ function adapter(kind: 'map' | 'json' = 'map') {
     transport: async (request) => {
       trace.push(request)
       return {
-        status: 200,
+        status: request.path.includes('balance') ? balanceStatus : 200,
         body: request.path.includes('balance') ? balanceBody : exchangeBody
       }
     }
@@ -111,7 +112,10 @@ function adapter(kind: 'map' | 'json' = 'map') {
     trace,
     setWorkspace: (value: string) => (workspace = value),
     setExchange: (value: unknown) => (exchangeBody = value),
-    setBalance: (value: unknown) => (balanceBody = value),
+    setBalance: (value: unknown, status = 200) => {
+      balanceBody = value
+      balanceStatus = status
+    },
     failClear: () => (clearFails = true)
   }
 }
@@ -196,10 +200,7 @@ it('TP-2a PM-4: refresh fires at expiry minus five minutes, not one ms earlier',
   fake.scheduler.advance(299_999)
   expect(fake.trace).toHaveLength(1)
   fake.scheduler.advance(1)
-  await Promise.resolve()
-  await Promise.resolve()
-  await Promise.resolve()
-  expect(fake.trace).toHaveLength(2)
+  await vi.waitFor(() => expect(fake.trace).toHaveLength(2))
 })
 
 it('TP-2a S146: transient refresh retains credential and caps retry', async () => {
@@ -298,6 +299,9 @@ it('TP-4 PM-3: credits preserve 7, 0, -2 and reject malformed payloads', async (
   await billing.refreshCredits()
   expect(billing.getCreditsState().phase).toBe('error')
   expect(observed).toEqual(['loading', 'error'])
+  fake.setBalance({ message: 'boom' }, 500)
+  await billing.refreshCredits()
+  expect(billing.getCreditsState().phase).toBe('error')
 })
 
 it('TP-4 PM-2: a late workspace A balance cannot replace B', async () => {
@@ -315,7 +319,43 @@ it('TP-4 PM-2: a late workspace A balance cannot replace B', async () => {
   await session.switchWorkspace('B')
   release?.({ status: 200, body: { balance: 99 } })
   await pending
-  expect(billing.getCreditsState().phase).not.toBe('value')
+  expect(billing.getCreditsState().phase).toBe('idle')
+})
+
+it('does not restore a cleared session after an in-flight refresh fails', async () => {
+  const fake = adapter()
+  const client = createSessionClient(fake.host)
+  await client.establishSession()
+  let rejectRefresh: ((error: Error) => void) | undefined
+  fake.host.transport = () =>
+    new Promise((_resolve, reject) => {
+      rejectRefresh = reject
+    })
+
+  const pending = client.refresh()
+  await client.clearSession()
+  rejectRefresh?.(new AccountError('offline'))
+
+  await expect(pending).rejects.toThrow('offline')
+  expect(client.getState().phase).toBe('signed-out')
+  expect(fake.scheduler.jobs.size).toBe(0)
+})
+
+it('billing dispose unsubscribes from the session and clears listeners', async () => {
+  const fake = adapter()
+  const session = createSessionClient(fake.host)
+  await session.establishSession()
+  const billing = createBillingClient(session, fake.host)
+  const listener = vi.fn()
+  billing.subscribeCredits(listener)
+  await billing.refreshCredits()
+  listener.mockClear()
+
+  billing.dispose()
+  await session.clearSession()
+
+  expect(listener).not.toHaveBeenCalled()
+  expect(billing.getCreditsState().phase).toBe('value')
 })
 
 it('TP-3a: clear failure reports failure while remaining signed out', async () => {

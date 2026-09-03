@@ -1,5 +1,5 @@
 import { defineComponent, h, inject, onScopeDispose, readonly, ref } from 'vue'
-import type { InjectionKey, PropType, Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 import { AccountError } from '../core/index.js'
 import type {
   BillingBalanceResponse,
@@ -48,17 +48,14 @@ function stateAttributes(state: Loadable<BillingBalanceResponse>) {
   return state.phase === 'error' ? { role: 'alert' } : undefined
 }
 
-export const CreditsDisplay = defineComponent({
-  name: 'CreditsDisplay',
-  props: {
-    source: { type: String as PropType<'props' | 'provider'>, required: true },
-    state: {
-      type: Object as PropType<Loadable<BillingBalanceResponse>>,
-      required: false
-    },
-    provider: { type: Object as PropType<BillingClient>, required: false }
-  },
-  setup(props) {
+const creditsDisplayRuntimeProps: ('source' | 'state' | 'provider')[] = [
+  'source',
+  'state',
+  'provider'
+]
+
+export const CreditsDisplay = defineComponent(
+  (props: CreditsDisplayProps) => {
     if (props.source === 'props') {
       if (!props.state) throw new MissingAccountProviderError()
       return () => {
@@ -69,7 +66,11 @@ export const CreditsDisplay = defineComponent({
     const state = useCredits(props.provider)
     return () =>
       h('span', stateAttributes(state.value), renderState(state.value))
+  },
+  {
+    name: 'CreditsDisplay',
+    props: creditsDisplayRuntimeProps
   }
-})
+)
 
 export { accountPackageId } from '../core/index.js'

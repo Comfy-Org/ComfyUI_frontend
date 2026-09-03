@@ -138,6 +138,7 @@ export interface BillingClient {
     listener: (state: Loadable<BillingBalanceResponse>) => void
   ): () => void
   refreshCredits(signal?: AccountAbortSignal): Promise<void>
+  dispose(): void
 }
 
 const REFRESH_BUFFER_MS = 300_000
@@ -250,6 +251,7 @@ export function createSessionClient(
   async function refresh(options?: {
     forceIdentityRefresh?: boolean
   }): Promise<WorkspaceCredential> {
+    const ownGeneration = generation
     const previous =
       state.phase === 'authenticated' || state.phase === 'refreshing'
         ? state.credential
@@ -266,12 +268,14 @@ export function createSessionClient(
         error instanceof AccountError
           ? error
           : new AccountError('Refresh failed')
+      if (generation !== ownGeneration) throw accountError
       publish({
         phase: 'authenticated',
         credential: previous,
         generation,
         refreshError: accountError
       })
+      cancelTimer()
       timer = adapter.scheduler.schedule(
         () => {
           void refresh().catch(() => undefined)
@@ -350,11 +354,15 @@ export function createBillingClient(
     state = next
     listeners.forEach((listener) => listener(state))
   }
-  session.subscribe((next) => {
+  const unsubscribeSession = session.subscribe((next) => {
     if (next.phase !== 'authenticated' && next.phase !== 'refreshing')
       publish({ phase: 'idle' })
   })
   return {
+    dispose() {
+      unsubscribeSession()
+      listeners.clear()
+    },
     getCreditsState: () => state,
     subscribeCredits(listener) {
       listeners.add(listener)
@@ -378,17 +386,23 @@ export function createBillingClient(
             credential: await session.refresh({ forceIdentityRefresh: true })
           })
         )
-        if (!signal.aborted && startGeneration === session.getGeneration())
-          publish({ phase: 'value', value })
+        if (signal.aborted || startGeneration !== session.getGeneration()) {
+          publish({ phase: 'idle' })
+          return
+        }
+        publish({ phase: 'value', value })
       } catch (error) {
-        if (!signal.aborted && startGeneration === session.getGeneration())
-          publish({
-            phase: 'error',
-            error:
-              error instanceof AccountError
-                ? error
-                : new AccountError('Balance failed')
-          })
+        if (signal.aborted || startGeneration !== session.getGeneration()) {
+          publish({ phase: 'idle' })
+          return
+        }
+        publish({
+          phase: 'error',
+          error:
+            error instanceof AccountError
+              ? error
+              : new AccountError('Balance failed')
+        })
       }
     }
   }
