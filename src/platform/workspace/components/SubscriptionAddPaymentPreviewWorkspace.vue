@@ -503,8 +503,13 @@ const interactionLocked = computed(
 // Once the bank challenge is open the charge is already in flight. Leaving the
 // step or switching the card would strand it against a method the customer can
 // no longer see, so both lock until the operation resolves.
+// A failed challenge is over even when its actionUrl lingers on the
+// operation: nothing is in flight, so the escape hatches — back, Change,
+// the picker — must stay live for the recovery.
 const challengeInFlight = computed(
-  () => Boolean(actionUrl) || verificationRecoveryActive.value
+  () =>
+    authenticationState !== 'failed_retryable' &&
+    (Boolean(actionUrl) || verificationRecoveryActive.value)
 )
 watch(
   () => previewData?.promotion_code,

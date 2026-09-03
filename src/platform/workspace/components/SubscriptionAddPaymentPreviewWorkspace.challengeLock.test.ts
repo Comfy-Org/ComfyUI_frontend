@@ -61,13 +61,23 @@ describe('SubscriptionAddPaymentPreviewWorkspace — challenge lock', () => {
   it.for([
     ['an open bank tab', { actionUrl: 'https://verify.example/token' }],
     ['requires_action', { authenticationState: 'requires_action' }],
-    ['failed_retryable', { authenticationState: 'failed_retryable' }],
     ['a reconciliation hold', { reconciliationOperationId: 'op_1' }]
   ] as const)('locks back and the method row during %s', ([, props]) => {
     renderPreview(props)
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Change' })).toBeDisabled()
+  })
+
+  it('frees every escape hatch after a failed challenge, even with a lingering actionUrl', () => {
+    renderPreview({
+      actionUrl: 'https://verify.example/expired',
+      authenticationState: 'failed_retryable',
+      canRetryAuthentication: false
+    })
+
+    expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Change' })).toBeEnabled()
   })
 
   it('leaves both usable before a charge is in flight', () => {
@@ -80,12 +90,17 @@ describe('SubscriptionAddPaymentPreviewWorkspace — challenge lock', () => {
   it.for([
     ['an open bank tab', { actionUrl: 'https://verify.example/token' }],
     ['requires_action', { authenticationState: 'requires_action' }],
-    ['failed_retryable', { authenticationState: 'failed_retryable' }],
     ['a reconciliation hold', { reconciliationOperationId: 'op_1' }]
   ] as const)('locks the saved-method picker during %s', ([, props]) => {
     renderPicker(props)
 
     expect(screen.getByRole('combobox')).toBeDisabled()
+  })
+
+  it('frees the picker after a failed challenge', () => {
+    renderPicker({ authenticationState: 'failed_retryable' })
+
+    expect(screen.getByRole('combobox')).toBeEnabled()
   })
 
   it('leaves the picker usable before a charge is in flight', () => {
