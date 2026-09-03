@@ -44,6 +44,7 @@ export function installAccountLayerPoc(
         )
       }
       await accountClients.session.establishSession()
+      await accountClients.billingCommands.start()
       await accountClients.billing.refreshCredits()
     } catch (error) {
       setAccountLayerPocExchangeError(error)
