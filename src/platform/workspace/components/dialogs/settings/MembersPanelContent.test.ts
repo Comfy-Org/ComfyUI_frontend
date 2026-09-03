@@ -208,7 +208,10 @@ function renderComponent() {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
         UserAvatar: true,
-        WorkspaceMenuButton: true
+        WorkspaceMenuButton: {
+          name: 'WorkspaceMenuButton',
+          template: '<button aria-label="workspace-menu-stub" />'
+        }
       },
       directives: { tooltip: () => {} }
     }
@@ -327,6 +330,20 @@ describe('MembersPanelContent', () => {
   })
 
   describe('Team plan member list', () => {
+    it('keeps the workspace menu in the controls row beside Invite', () => {
+      renderComponent()
+
+      expect(screen.getByLabelText('workspace-menu-stub')).toBeTruthy()
+    })
+
+    it('hides the workspace menu without canAccessWorkspaceMenu', () => {
+      mockPermissions.value.canAccessWorkspaceMenu = false
+
+      renderComponent()
+
+      expect(screen.queryByLabelText('workspace-menu-stub')).toBeNull()
+    })
+
     it('keeps rendering members while seat capacity is unresolved', () => {
       mockMaxSeats.value = null
       mockFilteredMembers.value = [createMember({ name: 'Alice' })]
