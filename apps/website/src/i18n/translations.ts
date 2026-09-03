@@ -1,4 +1,8 @@
 import type { Locale } from '../config/locales'
+import machineZhCN from './content/zh-CN.json'
+import machineJa from './content/ja.json'
+import { resolveValue } from './pipeline/resolve';
+import type { Resolved } from './pipeline/resolve';
 
 const translations = {
   // Tags (global, reusable across sections)
@@ -8359,9 +8363,40 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
+/**
+ * The model's output, one file per localized locale, written by the translation
+ * pipeline and never edited by hand.
+ *
+ * Imported statically rather than through `import.meta.glob` because this module
+ * is also loaded by the pipeline scripts under `tsx`, where glob does not exist.
+ * The `Record` is exhaustive, so adding a locale is a compile error here until
+ * its file is imported: the same guard `config/locales.ts` uses.
+ */
+const MACHINE_LAYERS: Record<Exclude<Locale, 'en'>, Record<string, string>> = {
+  'zh-CN': machineZhCN,
+  ja: machineJa
+}
+
+/**
+ * The resolved string and the layer it came from.
+ *
+ * `t()` returns only the string; callers that must know whether a page is
+ * genuinely translated (the indexability predicate) need the provenance too, and
+ * cannot recover it from the string alone.
+ */
+export function resolveTranslation(
+  key: TranslationKey,
+  locale: Locale = 'en'
+): Resolved {
   const entry = translations[key] as LocalizedText
-  return entry[locale] ?? entry.en
+  // English is the source, so it is never "translated" and never consults the
+  // machine layer, which would otherwise let generated text shadow the original.
+  if (locale === 'en') return { value: entry.en, provenance: 'english' }
+  return resolveValue(entry.en, entry[locale], MACHINE_LAYERS[locale][key])
+}
+
+export function t(key: TranslationKey, locale: Locale = 'en'): string {
+  return resolveTranslation(key, locale).value
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
