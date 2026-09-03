@@ -469,7 +469,9 @@ describe('WorkflowTabs selection and overflow', () => {
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     renderComponent()
 
-    workflowStore.activeWorkflow = secondWorkflow
+    if (!workflowStoreHolder.store)
+      throw new Error('Workflow store was not initialized')
+    workflowStoreHolder.store.activeWorkflow = secondWorkflow
 
     await waitFor(() =>
       expect(scrollIntoView).toHaveBeenCalledWith({

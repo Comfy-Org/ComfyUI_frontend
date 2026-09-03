@@ -422,7 +422,11 @@ const {
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
   () => app.rootGraph?.state ?? null,
-  () => currentMintTarget()?.rootGraphId ?? null
+  () => currentMintTarget()?.rootGraphId ?? null,
+  // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
+  // right after `app.setup()`) makes the follower's graph watch fire once the
+  // root graph exists.
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
 
 function currentMintTarget(): GraphMutationTarget | null {
@@ -1008,22 +1012,6 @@ function onPanelDrop(event: DragEvent): void {
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
-    <div
-      v-if="crdtStatus.enabled"
-      class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
-      data-testid="agent-crdt-status"
-    >
-      {{
-        t('agent.crdtStatus', {
-          connection: crdtStatus.connected
-            ? t('agent.crdtConnected')
-            : t('agent.crdtDisconnected'),
-          workflowId: crdtStatus.workflowId ?? t('agent.crdtNoDocument'),
-          updates: crdtStatus.updatesApplied,
-          frame: crdtStatus.lastFrameType ?? '—'
-        })
-      }}
-    </div>
     <AgentPanel
       ref="panelRef"
       :entries

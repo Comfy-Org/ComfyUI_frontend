@@ -21,7 +21,8 @@ import {
   detachGroupLayout,
   detachNodeLayout,
   detachRerouteLayout,
-  materializeRerouteLayout
+  materializeRerouteLayout,
+  releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
@@ -222,6 +223,15 @@ export interface GraphAddOptions {
   ghost?: boolean
   /** Mouse event for ghost placement. Used to position node under cursor. */
   dragEvent?: MouseEvent
+}
+
+/** Options for {@link LGraph.remove} method. */
+export interface GraphRemoveOptions {
+  /**
+   * Detach an adapter after another authority has reconciled canonical stores.
+   * Same-id replacement state is left intact.
+   */
+  preserveCanonicalState?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -1402,7 +1412,10 @@ export class LGraph
    * Removes a node from the graph
    * @param node the instance of the node
    */
-  remove(node: LGraphNode | LGraphGroup): void {
+  remove(
+    node: LGraphNode | LGraphGroup,
+    options: GraphRemoveOptions = {}
+  ): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
       this.canvasAction((c) => c.deselect(node))
@@ -1422,12 +1435,12 @@ export class LGraph
     if (nodesBeingRemoved.has(node)) return
 
     // not found
-    if (this._nodes_by_id[node.id] == null) {
+    if (this._nodes_by_id[node.id] == null && !options.preserveCanonicalState) {
       console.warn('LiteGraph: node not found', node)
       return
     }
     // cannot be removed
-    if (node.ignore_remove) {
+    if (node.ignore_remove && !options.preserveCanonicalState) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
@@ -1439,38 +1452,47 @@ export class LGraph
 
     nodesBeingRemoved.add(node)
     try {
-      this.batchVersionUpdates(() => this.removeNode(node))
+      this.batchVersionUpdates(() => this.removeNode(node, options))
     } finally {
       nodesBeingRemoved.delete(node)
     }
   }
 
-  private removeNode(node: LGraphNode): void {
+  private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
+    const successor =
+      options.preserveCanonicalState &&
+      this._nodes_by_id[node.id] !== node &&
+      this._nodes_by_id[node.id] != null
+        ? this._nodes_by_id[node.id]
+        : undefined
+
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', { node })
+    this.events.dispatch('node:before-removed', { node, successor })
 
-    const { inputs, outputs } = node
+    if (!successor) {
+      const { inputs, outputs } = node
 
-    // disconnect inputs
-    if (inputs) {
-      for (const [i] of inputs.entries()) {
-        if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
+      // disconnect inputs
+      if (inputs) {
+        for (const [i] of inputs.entries()) {
+          if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
+        }
       }
-    }
 
-    // disconnect outputs
-    if (outputs) {
-      for (const i of outputs.keys()) {
-        if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
+      // disconnect outputs
+      if (outputs) {
+        for (const i of outputs.keys()) {
+          if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
+        }
       }
-    }
 
-    // Floating links
-    for (const link of this.floatingLinks.values()) {
-      if (link.origin_id === node.id || link.target_id === node.id) {
-        this.removeFloatingLink(link)
+      // Floating links
+      for (const link of this.floatingLinks.values()) {
+        if (link.origin_id === node.id || link.target_id === node.id) {
+          this.removeFloatingLink(link)
+        }
       }
     }
 
@@ -1494,12 +1516,19 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    clearNodeOwnedStoreState(node)
+    if (!successor) clearNodeOwnedStoreState(node)
 
     const order = node.order
-    useExecutionOrderStore().remove(graphScopeOf(this), node.id)
-    detachNodeFromStores(this, node)
-    detachNodeLayout(node)
+    if (!successor) {
+      useExecutionOrderStore().remove(graphScopeOf(this), node.id)
+    }
+    if (options.preserveCanonicalState) {
+      node._graphScope = undefined
+      releaseNodeLayoutAttachment(node)
+    } else {
+      detachNodeFromStores(this, node)
+      detachNodeLayout(node)
+    }
 
     node.graph = null
     node.order = order
@@ -1520,7 +1549,9 @@ export class LGraph
     const pos = this._nodes.indexOf(node)
     if (pos != -1) this._nodes.splice(pos, 1)
 
-    delete this._nodes_by_id[node.id]
+    if (this._nodes_by_id[node.id] === node) {
+      delete this._nodes_by_id[node.id]
+    }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
 

@@ -243,7 +243,7 @@ describe('NodePreview', () => {
       expect(description).toBeInTheDocument()
     })
 
-    it('uses v-html directive for rendered content', () => {
+    it('renders markdown as HTML', () => {
       const htmlNodeDef: ComfyNodeDefV2 = {
         ...mockNodeDef,
         description: 'Content with **bold** text'
