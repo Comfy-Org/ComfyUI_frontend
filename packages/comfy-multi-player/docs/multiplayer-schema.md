@@ -832,9 +832,9 @@ and first-class definitions (§5.1) only shrink these):
 | `add_node` | 2.1 / 3 → **3.1 / 4 + degree under A7** | yes — one `nodes.set` + high-water mark + the `("node", id)` stamp; re-deriving link refs writes at most the node's degree |
 | `set_widget` (top-level) | 3.8 / 4 → **2 under §1.2** (widgets.set + stamp) | yes |
 | `set_widget` (interior) | whole-blob in prototype → **2 under §5.1** | yes (was the flagged violation; fixed by layout) |
-| `connect` (concrete) | 4–5.2 / 7 | yes — bounded by the displaced link's source degree |
-| `connect` (autogrow) | ~4 → **+2 under A7** | yes — `grow_id` identity keeps replays non-clobbering; A7 adds the `("grow", …)` stamp and the `("grow_request", …)` row, plus renames bounded by the family's concurrent-grow count |
-| `delete_node` | 4.7–5 / 6 → **+1 under A7** | yes — writes bounded by the node's degree, plus the `("node", id)` stamp; the dangling-reference *scan* is O(nodes) read cost, accepted |
+| `connect` (concrete) | 4–5.2 / 7 → **+1 under A19** | yes — bounded by the displaced link's source degree; A19 replaces the claimed identity stamp with its tuple-bearing durable form on materialization |
+| `connect` (autogrow) | ~4 → **+2 under A7, +1 under A19** | yes — `grow_id` identity keeps replays non-clobbering; A7 adds the `("grow", …)` stamp and the `("grow_request", …)` row, plus renames bounded by the family's concurrent-grow count; A19 persists the complete link tuple |
+| `delete_node` | 4.7–5 / 6 → **+1 under A7, +1 per named link under A19** | yes — writes bounded by the node's degree and `removed_links`, plus the `("node", id)` stamp; the dangling-reference *scan* is O(nodes) read cost, accepted |
 | `clear` | O(doc), **+1 stamp per `removed_nodes` entry under A7** | **no — inherent.** Rare; standalone-only at the *authoring* surface (vocabulary §1.5: `apply_specs` rejects a spec batch containing it, code `workflow_clear_not_batchable`) — the *replay* surface (`apply_op` / `applyOps`, §4 abort-remainder) accepts it in any position and must, per `docs/portability.md`. SHOULD be host-mediated and never merged casually |
 
 ---
@@ -2044,3 +2044,41 @@ separate input register still decides whether that identity may occupy the
 requested destination; losing that gate leaves no tuple or dangling reference.
 This adds an internal `__stamps` key, not a root-layout change, so
 `SCHEMA_VERSION` remains 2.
+
+---
+
+## Amendment A19 — 2026-09-03 — durable link intent across node lifetimes
+
+The A18 link-identity row retains the complete tuple it already owns:
+
+```text
+["link", String(link_id)] -> [counter, actor, op_id, complete_link_tuple]
+```
+
+`links` remains only the materialized live-link set. A winning node deletion
+may remove an incident tuple from `links` without erasing its A18 intent. When
+a higher-stamped `add_node` makes both endpoints present again, the applier
+rematerializes each intent whose destination-input register still authorizes
+the same stamp. `mint()` seeds an intent row for every imported live link so
+the common bootstrap snapshot carries the same authority.
+
+Explicit severance remains different from temporary dematerialization. Every
+normalized id named by `delete_node.removed_links`, and every live incumbent
+removed by a winning `disconnect`, records terminal retirement:
+
+```text
+["link_retired", String(link_id)] -> [counter, actor, op_id]
+```
+
+A retired id cannot materialize again. Replacing an input's incumbent is not
+explicit severance and must not write retirement; the destination-input stamp
+already makes the displaced intent ineligible. These rules preserve A7's
+ungated named-link severance while closing the seeded-snapshot race where
+`[add@9, delete@5 removed_links:[999]]` kept an incident link in one arrival
+order and permanently lost it in the other.
+
+No root name or root type changes. This is a direct private-alpha semantic
+change under A17, not a schema-v3 document, v2-to-v3 migration, compatibility
+shim, or dual-format reader; `SCHEMA_VERSION` remains 2. Pre-change private
+alpha documents without tuple-bearing identity rows must be re-minted rather
+than having hidden intent inferred. See ADR-022.

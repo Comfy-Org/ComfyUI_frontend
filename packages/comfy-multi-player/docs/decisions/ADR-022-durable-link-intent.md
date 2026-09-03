@@ -21,41 +21,54 @@ not permanently disconnect a node that survives. The reproducer in
 named `removed_links` have different semantics: those removals are ungated and
 permanent even when node deletion loses.
 
-The current `links` root cannot represent these distinctions. Once an
-incident tuple is deleted, it contains no durable evidence that a winning
-connect intent should become live again after a higher-stamped re-add.
+The materialized `links` root cannot represent these distinctions by itself.
+Once an incident tuple is deleted, it contains no durable evidence that a
+winning connect should become live again after a higher-stamped re-add. The
+A18 link-identity register already owns that complete tuple; it is the durable
+authority that must retain it.
 
 ## Decision
 
-Introduce a schema-v3 `__link_state` root keyed by normalized link id. It is
-the durable source of link intent; `links` remains the materialized set exposed
-to projection and existing readers.
+Reuse the existing A18 rows in `__stamps` as the durable source of link intent;
+`links` remains the materialized set exposed to projection and existing
+readers. A live intent row has this shape:
 
-Each `__link_state` entry is one of:
+```text
+["link", normalized_link_id] -> [counter, actor, op_id, complete_link_tuple]
+```
 
-1. **Connect intent:** the complete normalized A18 link tuple, its winning
-   link-identity stamp, and the destination-input authority that admitted it.
-2. **Removal tombstone:** a terminal explicit-removal marker for a link id.
+The first three fields remain the existing `StampKey`. The fourth field makes
+the complete tuple that A18 says the register owns recoverable after temporary
+dematerialization. Explicit removal uses a separate terminal row so it cannot
+erase the identity winner or skip that winner's other register effects:
+
+```text
+["link_retired", normalized_link_id] -> [counter, actor, op_id]
+```
 
 The transition rules are:
 
-- A winning `connect` stores or replaces connect intent after the existing A18
-  link-identity and destination-input gates pass. It materializes the tuple
-  only while both endpoint nodes exist and the destination authority still
-  owns its input.
+- `mint()` seeds one intent row for every imported live link. A winning
+  `connect` stores or replaces the intent after the existing A18 link-identity
+  and destination-input gates pass.
+- A tuple is materialized only while both endpoint nodes exist and the
+  destination-input register still authorizes its stamp. An imported link has
+  no destination-input stamp and is eligible by default.
 - A winning node delete dematerializes incident tuples but keeps their connect
   intent. A later winning re-add rematerializes each still-eligible intent.
 - A losing node delete does not change incident intent or materialization.
-- Every id in `delete_node.removed_links` writes a removal tombstone even when
+- Every id in `delete_node.removed_links` writes a retirement row even when
   no live tuple has that id. This preserves A7's ungated, monotonic severance
   and prevents an older or hidden connect intent from reappearing.
-- `disconnect` retires the matching connect intent when it wins the destination
-  input register, including while the tuple is hidden by endpoint absence.
-- A later A18 link-identity winner may replace older connect intent, but an
-  explicit-removal tombstone for that normalized id is terminal because the op
-  vocabulary does not permit link-id reuse.
-- `clear` follows the same node-delete dematerialization rule and writes
-  tombstones for explicitly removed links.
+- Displacing an incumbent from an input dematerializes it but does not retire
+  its identity. Its intent remains governed by the destination-input stamp;
+  treating displacement as explicit retirement made valid later A18 winners
+  arrival-order dependent.
+- `disconnect` retires the live incumbent when it wins the destination-input
+  register. A retirement row is terminal because the vocabulary does not
+  permit link-id reuse. A later `connect` may still claim its normal registers,
+  but it cannot materialize a retired id.
+- `clear` follows the same node-delete dematerialization rule.
 
 Materialization is derived only from durable registers. Arrival order never
 decides whether intent exists, whether it is eligible, or whether its endpoint
@@ -63,38 +76,32 @@ references are installed.
 
 ## Schema and migration
 
-This adds a root map, so `SCHEMA_VERSION` must move from 2 to 3 (KA-11). The
-host-owned v2 → v3 migration seeds one connect-intent entry for every live v2
-`links` tuple, using its A18 `("link", normalized_id)` stamp and the current
-destination-input stamp. A malformed live tuple or missing authority fails
-closed rather than inventing ordering metadata.
+No root is added or renamed: link intent and retirement are internal rows in
+the existing `__stamps` map, so `SCHEMA_VERSION` remains 2. This follows the
+single-format private-alpha decision in A17 and KA-2: it is a direct semantic
+change, not a schema-v3 format, migration, compatibility shim, or dual reader.
+Documents minted before this change have no recoverable tuple for a hidden
+link and must be re-minted during private alpha rather than guessed at.
 
-`mint()` and `initDoc()` create `__link_state`; the wire-layout fixture,
-schema documentation, root-name mutation guards, and read-surface accessors
-move in the same change. Snapshot compaction must retain `__link_state` even
-for currently hidden links. Re-minting from `project(doc)` alone would discard
-intent, so compaction must copy the durable root or use a schema-owned compact
-representation rather than treating projected workflow JSON as complete
-state.
+Snapshot compaction already retains `__stamps`; it must continue to retain
+link-intent rows even while their tuples are not materialized. Re-minting from
+`project(doc)` alone is insufficient once hidden intent exists.
 
 ## Required implementation gates
 
 The implementation is not complete until permanent tests cover:
 
 - the seeded-link add/delete race in both arrival orders;
-- winning delete followed by a higher re-add at either endpoint;
 - named removal of a live link and of a nonexistent link;
-- disconnect while an intent is hidden;
 - competing A18 link-identity and destination-input winners;
-- source-delete/re-add and destination-delete/re-add cycles;
-- duplicate delivery and both batch boundaries;
-- v2 → v3 migration, current-version no-op, unreadable-schema refusal;
-- `clear`, snapshot encoding, and compaction retention.
+- connect displacement without accidental retirement;
+- duplicate delivery and the existing broad legal-permutation suites;
+- snapshot encoding and wire-layout retention of the extended stamp row.
 
 The convergence tests must fork replicas from one snapshot (KA-10), compare
 canonical projections after legal causal permutations (KA-4), and verify
-byte-identical retry behavior. The v3 wire-layout test must make omission or
-renaming of `__link_state` fail.
+byte-identical retry behavior. The wire-layout test must prove the extended
+intent row survives bootstrap snapshot encoding without changing root names.
 
 ## Rejected alternatives
 
@@ -104,17 +111,19 @@ renaming of `__link_state` fail.
   arrival order, so reconstruction itself is arrival-dependent.
 - **Keep hidden tuples in `links`:** makes projection and current callers see
   links whose endpoints are absent, violating the existing live-link contract.
-- **Encode intent only in `__stamps`:** a stamp cannot recover the complete
-  tuple or the destination authority needed to decide materialization.
+- **A new `__link_state` root and schema v3:** duplicates the existing A18
+  identity ledger and contradicts the accepted private-alpha single-format
+  decision. The existing row can retain its owned tuple without a new root.
+- **Overwrite the A18 row with a tombstone:** loses the identity winner and can
+  skip destination-input side effects, recreating arrival-order dependence.
 
 ## Consequences
 
 - The graph converges without changing the product meaning of a losing node
   delete or an explicit named severance.
-- Link lifecycle becomes an explicit durable state machine rather than an
-  inference from the currently materialized graph.
-- The change is intentionally schema-wide: migration and compaction are part
-  of correctness, not follow-up cleanup.
+- Link lifecycle becomes explicit durable bookkeeping rather than an inference
+  from the currently materialized graph.
+- The wire root layout and schema version do not change.
 - Hidden intent increases document size until an explicit removal retires it;
   host compaction can discard only state proven unreachable under the no-id-
   reuse rule.
@@ -134,5 +143,5 @@ renaming of `__link_state` fail.
 - **KA-4:** deterministic and idempotent application invariant.
 - **KA-10:** all replicas bootstrap from one seeded Yjs snapshot.
 - **KA-11:** fail-closed schema-version discipline.
-- **Removal tombstone:** durable proof that a normalized link id was explicitly
+- **Retirement row:** durable proof that a normalized link id was explicitly
   retired and must not rematerialize.

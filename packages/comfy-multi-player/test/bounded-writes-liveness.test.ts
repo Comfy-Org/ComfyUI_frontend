@@ -154,8 +154,9 @@ describe("schema §11: the bounded-writes count grows with the op's blast radius
     }
     // The exact law, so a change to the write pattern is a visible diff rather
     // than a still-passing inequality: one node delete, one delete per severed
-    // link, one scrub per peer input slot, and one node-presence stamp.
-    expect(costs).toEqual(degrees.map((d) => 2 * d + 3));
+    // link, one retirement row and one scrub per peer input slot, and one
+    // node-presence stamp.
+    expect(costs).toEqual(degrees.map((d) => 3 * d + 3));
   });
 
   it("exceeds any ceiling in this gate's range at a large enough degree, so the §11 gate can fire", () => {
@@ -196,7 +197,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     expect(running).toEqual([3, 6, 9, 12]);
   });
 
-  it("charges an autogrow connect exactly eight, including link ownership and canonicalization ledger rows", () => {
+  it("charges an autogrow connect exactly nine, including durable link intent and canonicalization ledger rows", () => {
     // Reaches both `apush` sites, which `deleteHubCost` never does: wiring the
     // link id into the source output port's list, and appending the grown input
     // slot itself. Itemized precisely because this is an exact-accounting test:
@@ -218,20 +219,21 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     } as unknown as ConnectOp;
     _resetMutationCount(doc);
     expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
-    expect(_getMutationCount(doc)).toBe(8);
-    expect(stampsMap(doc).size, "autogrow records link ownership plus stamp + request (A7/A18)").toBe(3);
+    expect(_getMutationCount(doc)).toBe(9);
+    expect(stampsMap(doc).size, "two minted intents plus autogrow link ownership, stamp, and request (A7/A18/A19)").toBe(5);
   });
 
   it("charges the array delete when a delete strands an output link", () => {
     // Reaches `adel`, the applier's only array REMOVE: deleting the middle of
     // 1 → 2 → 3 leaves node 1's output `links` array holding a dead link id,
     // which the dangling scrub removes in place. One node delete, two link
-    // deletes, one array delete, one input-slot scrub, one presence stamp, one applied set.
+    // deletes, one array delete, one input-slot scrub, two retirement rows,
+    // one presence stamp, one applied set.
     const doc = mint(chainWorkflow(), catalog);
     const op: DeleteNodeOp = { op: "delete_node", ...env(), node_id: 2, removed_links: [1, 2] };
     _resetMutationCount(doc);
     expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
-    expect(_getMutationCount(doc)).toBe(7);
+    expect(_getMutationCount(doc)).toBe(9);
   });
 
   it("charges a de-duplicated replay nothing, so the ceiling is not padded by idempotent retries (KA-4)", () => {

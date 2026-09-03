@@ -332,7 +332,7 @@ describe("layer 2: a replica forked from the snapshot recovers exactly the §1 r
     expect([...replica.getMap(golden.roots["definitions"]!).keys()].sort()).toEqual(["d1", "d2"]);
     expect(replica.getMap(golden.roots["meta"]!).get("schema_version")).toBe(SCHEMA_VERSION);
     expect(replica.getMap(golden.roots["applied"]!).size).toBe(1);
-    expect(replica.getMap(golden.roots["stamps"]!).size).toBe(1);
+    expect(replica.getMap(golden.roots["stamps"]!).size).toBe(3);
   });
 
   it("carries no structural or comfy-cli bookkeeping key inside the meta root (schema §6, §4)", () => {

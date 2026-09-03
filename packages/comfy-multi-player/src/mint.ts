@@ -96,8 +96,12 @@ export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVers
     }
 
     const links = linksMap(doc);
+    const stamps = stampsMap(doc);
     for (const ln of workflow.links ?? []) {
-      links.set(String((ln as unknown[])[0]), cloneForMap(ln, "mint: link"));
+      const linkId = String((ln as unknown[])[0]);
+      const tuple = cloneForMap(ln, "mint: link");
+      links.set(linkId, tuple);
+      stamps.set(JSON.stringify(["link", linkId]), [0, "", `mint:${linkId}`, tuple]);
     }
 
     const defsIn = workflow["definitions"];

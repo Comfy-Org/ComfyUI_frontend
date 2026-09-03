@@ -547,6 +547,7 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): Succe
   // and the outcome then depended on whether the concurrent delete had
   // arrived. Everything else in the payload is still copied verbatim (FC-8) —
   // only `inputs[].link` / `outputs[].links` are re-derived.
+  restoreDurableLinks(doc);
   reconcileNodeLinkRefs(doc, op.node_id, nodeMap);
 
   // last_node_id is a max-register (vocabulary §8.3): write only on increase.
@@ -1299,9 +1300,12 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
 
   const links = linksMap(doc);
   const linkKey = String(op.link_id);
+  if (stampsMap(doc).has(JSON.stringify(["link_retired", linkKey]))) return "no-op";
+  const tuple = [op.link_id, op.from_node, op.from_slot, op.to_node, toIdx, op.link_type];
   if (!links.has(linkKey)) {
-    mset(links, linkKey, [op.link_id, op.from_node, op.from_slot, op.to_node, toIdx, op.link_type]);
+    mset(links, linkKey, tuple);
   }
+  mset(stampsMap(doc), JSON.stringify(["link", linkKey]), [...stampKey(op), tuple]);
   const ins = dst.get("inputs") as Y.Array<Y.Map<unknown>>;
   mset(ins.get(toIdx)!, "link", op.link_id);
   const outPort = outs.get(op.from_slot) as Y.Map<unknown>;
@@ -1688,6 +1692,54 @@ function scrubLinkRefs(doc: Y.Doc, shouldRemove: (linkId: unknown) => boolean): 
   });
 }
 
+/** Record A19's terminal explicit-removal marker without moving its Lamport row backwards. */
+function retireLinkIntent(doc: Y.Doc, linkId: unknown, stamp: StampKey): void {
+  const stamps = stampsMap(doc);
+  const key = JSON.stringify(["link_retired", String(linkId)]);
+  const prior = stamps.get(key) as StampKey | undefined;
+  if (prior == null || compareStampKeys(stamp, prior) > 0) mset(stamps, key, stamp);
+}
+
+/** Rematerialize A19 intent made eligible by a winning node-presence write. */
+function restoreDurableLinks(doc: Y.Doc): void {
+  const nodes = nodesMap(doc);
+  const links = linksMap(doc);
+  const stamps = stampsMap(doc);
+  const restoredNodes = new Set<string>();
+
+  stamps.forEach((value, target) => {
+    let parsedTarget: unknown;
+    try {
+      parsedTarget = JSON.parse(target);
+    } catch {
+      return;
+    }
+    if (!Array.isArray(parsedTarget) || parsedTarget[0] !== "link") return;
+    if (!Array.isArray(value) || value.length < 4 || !Array.isArray(value[3])) return;
+
+    const tuple = value[3];
+    const linkId = String(tuple[0]);
+    if (stamps.has(JSON.stringify(["link_retired", linkId]))) return;
+    const source = String(tuple[1]);
+    const destination = String(tuple[3]);
+    if (!nodes.has(source) || !nodes.has(destination)) return;
+
+    const inputTarget = JSON.stringify(["input", destination, tuple[4]]);
+    const inputWinner = stamps.get(inputTarget) as StampKey | undefined;
+    const intentStamp = value.slice(0, 3) as StampKey;
+    if (inputWinner != null && compareStampKeys(inputWinner, intentStamp) !== 0) return;
+
+    if (!links.has(linkId)) mset(links, linkId, tuple);
+    restoredNodes.add(source);
+    restoredNodes.add(destination);
+  });
+
+  for (const nodeId of restoredNodes) {
+    const node = nodes.get(nodeId);
+    if (node) reconcileNodeLinkRefs(doc, nodeId, node);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // delete_node
 // ---------------------------------------------------------------------------
@@ -1740,11 +1792,12 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
   }
 
   const links = linksMap(doc);
-  const removed = new Set<unknown>(removedLinks);
+  const removed = new Set([...removedLinks].map(String));
+  for (const linkId of removed) retireLinkIntent(doc, linkId, stamp);
   const toDelete: string[] = [];
   links.forEach((ln: unknown, k: string) => {
     const tuple = ln as unknown[];
-    if (removed.has(tuple[0])) {
+    if (removed.has(String(tuple[0]))) {
       toDelete.push(k);
       return;
     }
@@ -1859,7 +1912,10 @@ function applyDisconnect(doc: Y.Doc, op: DisconnectOp): SuccessfulOutcome {
   if (prior != null && compareStampKeys(key, prior) <= 0) return "lww-dropped";
 
   mset(stamps, targetKey, key);
-  if (prev != null) removeLink(doc, prev);
+  if (prev != null) {
+    removeLink(doc, prev);
+    retireLinkIntent(doc, prev, key);
+  }
   return prev != null ? "applied" : "no-op";
 }
 
