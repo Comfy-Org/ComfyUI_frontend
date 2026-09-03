@@ -50,6 +50,15 @@ describe('agentRunModeStore', () => {
     expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBeNull()
   })
 
+  it('uses the default limit when a legacy limited mode has no valid limit', () => {
+    localStorage.setItem('Comfy.Agent.RunMode', 'auto-limit')
+
+    const store = useAgentRunModeStore()
+
+    expect(store.mode).toBe('auto_limited')
+    expect(store.creditLimit).toBe(300)
+  })
+
   it('loads the server preference as the source of truth', async () => {
     fetchApi.mockResolvedValueOnce(
       jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })

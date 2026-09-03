@@ -17,6 +17,7 @@ const DEFAULT_PREFERENCE: AgentRunModePreference = {
   mode: 'ask_approval',
   credit_limit: null
 }
+export const DEFAULT_CREDIT_LIMIT = 300
 const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
 const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
@@ -34,7 +35,14 @@ function migrateLegacyPreference(): void {
       auto: 'auto',
       'auto-limit': 'auto_limited'
     }[legacyMode]
-    const creditLimit = Number(legacyCreditLimit)
+    const parsedCreditLimit = Number(legacyCreditLimit)
+    const creditLimit =
+      legacyCreditLimit !== null &&
+      legacyCreditLimit !== '' &&
+      Number.isInteger(parsedCreditLimit) &&
+      parsedCreditLimit > 0
+        ? parsedCreditLimit
+        : DEFAULT_CREDIT_LIMIT
     const migrated = zAgentRunMode.safeParse({
       mode,
       credit_limit: mode === 'auto_limited' ? creditLimit : null
