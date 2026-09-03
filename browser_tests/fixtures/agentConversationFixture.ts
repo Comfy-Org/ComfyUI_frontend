@@ -2,7 +2,11 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
-import type { GraphSnapshot,WidgetCatalog,WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type {
+  GraphSnapshot,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
