@@ -1,0 +1,45 @@
+<script setup lang="ts">
+import type {
+  WorkshopDetailModel,
+  WorkshopFormValues
+} from '../../config/workshop-detail'
+import { defaultWorkshopValues } from '../../config/workshop-detail'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import WorkshopField from './WorkshopField.vue'
+
+const { model, locale = 'en' } = defineProps<{
+  model: WorkshopDetailModel
+  locale?: Locale
+}>()
+const values = defineModel<WorkshopFormValues>({ default: () => ({}) })
+if (Object.keys(values.value).length === 0) {
+  values.value = defaultWorkshopValues(model.fields)
+}
+</script>
+
+<template>
+  <section
+    class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6"
+  >
+    <h2 class="text-xl font-semibold text-primary-comfy-canvas">
+      {{ t('workshop.model.inputs', locale) }}
+    </h2>
+    <form class="mt-6 flex flex-col gap-6" @submit.prevent>
+      <WorkshopField
+        v-for="field in model.fields"
+        :key="field.name"
+        v-model="values"
+        :field="field"
+        :locale="locale"
+      />
+      <button
+        type="submit"
+        disabled
+        class="bg-primary-comfy-yellow mt-2 rounded-full px-5 py-3 font-medium text-primary-comfy-ink opacity-50"
+      >
+        {{ t('workshop.model.runNext', locale) }}
+      </button>
+    </form>
+  </section>
+</template>
