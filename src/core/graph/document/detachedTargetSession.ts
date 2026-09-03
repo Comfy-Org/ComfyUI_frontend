@@ -60,6 +60,7 @@ export interface DetachedTargetSessionOptions {
 }
 
 const DEFAULT_MAX_QUEUED_FRAMES = 64
+const CROSS_TARGET_ERROR = 'Detached target frames must never cross targets'
 
 /**
  * Staged frame queue for a target document that is not attached to a live
@@ -100,7 +101,8 @@ export function createDetachedTargetSession(
 
   function isTarget(frameWorkflowId: string): boolean {
     const matchesTarget = frameWorkflowId === workflowId
-    assert(matchesTarget, 'Detached target frames must never cross targets')
+    assert(matchesTarget, CROSS_TARGET_ERROR)
+    if (!matchesTarget) throw new TypeError(CROSS_TARGET_ERROR)
     return matchesTarget
   }
 

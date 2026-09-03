@@ -10,6 +10,8 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { compareNodeIds } from '@/types/nodeId'
 
 const RENDER_ONLY_KEYS = new Set(['boundingRect'])
+const MAX_DEPTH_ERROR =
+  'serializeDocumentScope: exceeded max canonicalization depth; semantic state likely contains a cycle or runtime-only object'
 
 /**
  * Safety net against unbounded or cyclic structures reaching the
@@ -20,11 +22,8 @@ const MAX_CANONICALIZE_DEPTH = 32
 
 function canonicalize(value: unknown, depth = 0): unknown {
   if (depth > MAX_CANONICALIZE_DEPTH) {
-    assert(
-      false,
-      'serializeDocumentScope: exceeded max canonicalization depth; semantic state likely contains a cycle or runtime-only object'
-    )
-    return undefined
+    assert(false, MAX_DEPTH_ERROR)
+    throw new TypeError(MAX_DEPTH_ERROR)
   }
   if (Array.isArray(value))
     return value.map((entry) => canonicalize(entry, depth + 1))
