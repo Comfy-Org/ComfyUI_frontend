@@ -88,12 +88,19 @@ const CATALOG: WidgetCatalog = {
   types: { dummy: { widget_order: [] } }
 }
 
+// The wire `stamp` is the 2-tuple `[base_version, actor]`; the 3-element form
+// is the DERIVED `StampKey`, which `stampKey()` builds by appending `op_id`
+// itself. Do not re-add `id` here: `validateEnvelope` rejects any stamp whose
+// length is not 2 (`stamp-validation.test.ts` covers the three-element case as
+// an explicit rejection), and the ordering is unchanged either way because a
+// 3-element stamp merely fell back to `[base_version, actor]` inside
+// `stampKey()` and produced this same key.
 function agentOperation(id: string, version: number, payload: object) {
   return {
     op_id: id,
     actor: 'agent:test',
     base_version: version,
-    stamp: [version, 'agent:test', id],
+    stamp: [version, 'agent:test'],
     ...payload
   }
 }
