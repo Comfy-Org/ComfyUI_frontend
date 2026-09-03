@@ -31,7 +31,7 @@ const validClear = {
 const applierFailure = {
   ...validClear,
   op_id: "00000000000000000000000000000003",
-  stamp: [{ valueOf() { throw new Error("boom"); } }, "agent:event-test"],
+  get removed_nodes() { throw new Error("boom"); },
 } as unknown as Op;
 
 const goldenEvents = readFileSync(new URL("../fixtures/cmp-events/v1.jsonl", import.meta.url), "utf8")
