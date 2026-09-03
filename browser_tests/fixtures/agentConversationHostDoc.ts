@@ -1,6 +1,7 @@
 import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
 import type {
   GraphSnapshot,
+  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -59,19 +60,16 @@ export class HostDoc {
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
-  // The real host folds client batches into the same doc, so the expected graph must see them.
-  applyClient(ops: unknown[]): string[] {
-    const result = applyOps(
-      this.doc,
-      ops as Parameters<typeof applyOps>[1],
-      this.catalog
-    )
+  // Client batches arrive already minted; the real host folds them into the same doc.
+  applyClient(ops: Op[]): string[] {
+    const result = applyOps(this.doc, ops, this.catalog)
+    const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
+    if (rejected.length > 0)
+      throw new Error(
+        `client doc_ops did not apply: ${JSON.stringify(rejected)}`
+      )
     this.seq += 1
-    return result.outcomes.flatMap((outcome, index) =>
-      outcome.outcome === 'applied'
-        ? [String((ops[index] as { op_id?: unknown }).op_id ?? index)]
-        : []
-    )
+    return ops.map((op) => op.op_id)
   }
 
   apply(operations: GraphOperation[]): DocFrame {
