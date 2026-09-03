@@ -26,6 +26,10 @@ import {
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
 
+type NestedExportedSubgraph = ExportedSubgraph & {
+  definitions?: { subgraphs?: NestedExportedSubgraph[] }
+}
+
 function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
   return {
     id,
@@ -162,11 +166,9 @@ describe('normalizeSubgraphDefinitionIds', () => {
       'legacy-sibling-b',
       'legacy-sibling-c'
     ])
-    ;(
-      parent as ExportedSubgraph & {
-        definitions?: { subgraphs?: ExportedSubgraph[] }
-      }
-    ).definitions = { subgraphs: [siblingA, siblingB, siblingC] }
+    ;(parent as NestedExportedSubgraph).definitions = {
+      subgraphs: [siblingA, siblingB, siblingC]
+    }
 
     const result = normalizeSubgraphDefinitionIds([parent])
 
@@ -193,6 +195,9 @@ describe('normalizeSubgraphDefinitionIds', () => {
       'legacy-sibling-c'
     ].map((name) => result.subgraphs.find((sg) => sg.name === name)!.id)
     expect(new Set(siblingIds).size).toBe(3)
+    expect(siblingIds).not.toContain('legacy-sibling-a')
+    expect(siblingIds).not.toContain('legacy-sibling-b')
+    expect(siblingIds).not.toContain('legacy-sibling-c')
     expect(normalizedParent.nodes!.map((n) => n.type)).toEqual(siblingIds)
   })
 })
