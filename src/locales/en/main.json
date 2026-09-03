@@ -5018,27 +5018,16 @@
         }
       },
       "nudge": {
-        "title": "Your first output. Here's what's next.",
-        "body": "Each one starts from the image you just made.",
-        "animate": {
-          "title": "Animate it",
-          "detail": "Image to video · 5s"
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
         },
-        "upscale": {
-          "title": "Upscale it",
-          "detail": "Same image, more detail",
-          "badge": "4x"
-        },
-        "restyle": {
-          "title": "Restyle with Nano Banana",
-          "detail": "Partner model · Any paid plan"
-        },
-        "fallback": {
+        "noTour": {
           "title": "Hundreds more where that came from",
           "body": "Browse the templates and pick something to build."
         },
-        "loadFailed": "That template couldn't be loaded. Please try again.",
-        "explore": "Browse all templates"
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }
