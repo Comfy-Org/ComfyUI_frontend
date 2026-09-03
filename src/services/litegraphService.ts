@@ -909,7 +909,7 @@ export const useLitegraphService = () => {
         handled = true
       }
 
-      if (handled === true) {
+      if (handled) {
         e.preventDefault()
         e.stopImmediatePropagation()
         return false

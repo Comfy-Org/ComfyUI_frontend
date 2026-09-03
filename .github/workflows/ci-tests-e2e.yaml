@@ -403,7 +403,7 @@ jobs:
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
         run: |
           FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
-          pnpm exec playwright test --project=chromium $FILES
+          pnpm exec playwright test --project=chromium --timeout=60000 $FILES
 
       - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}

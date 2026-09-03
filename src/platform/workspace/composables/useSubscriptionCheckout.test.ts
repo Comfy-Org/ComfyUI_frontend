@@ -1297,6 +1297,85 @@ describe('useSubscriptionCheckout', () => {
       return { checkout, selection }
     }
 
+    describe('with embedded checkout off', () => {
+      const setupLegacyTeam = () => setup(undefined, 'team', false)
+
+      it('prices a new team subscription from the server preview', async () => {
+        const checkout = await setupLegacyTeam()
+
+        await checkout.handleSubscribeTeamClick({
+          stop: teamStop,
+          billingCycle: 'monthly'
+        })
+
+        expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+          'team_per_credit_monthly',
+          { teamCreditStopId: 'team_1400' }
+        )
+        expect(checkout.previewData.value?.allowed).toBe(true)
+        expect(checkout.checkoutStep.value).toBe('preview')
+      })
+
+      it('holds the pricing table until the preview resolves', async () => {
+        let resolvePreview!: (
+          preview: Partial<PreviewSubscribeResponse>
+        ) => void
+        mockPreviewSubscribe.mockImplementationOnce(
+          () =>
+            new Promise<Partial<PreviewSubscribeResponse>>((resolve) => {
+              resolvePreview = resolve
+            })
+        )
+        const checkout = await setupLegacyTeam()
+
+        const selection = checkout.handleSubscribeTeamClick({
+          stop: teamStop,
+          billingCycle: 'monthly'
+        })
+
+        expect(checkout.checkoutStep.value).toBe('pricing')
+        expect(checkout.previewData.value).toBeNull()
+
+        resolvePreview({ allowed: true, transition_type: 'new_subscription' })
+        await selection
+
+        expect(checkout.checkoutStep.value).toBe('preview')
+        expect(checkout.previewData.value).not.toBeNull()
+      })
+
+      it('reports failure instead of confirming a change it cannot price', async () => {
+        const checkout = await setupLegacyTeam()
+
+        await checkout.handleSubscribeTeamClick({
+          stop: teamStop,
+          billingCycle: 'monthly',
+          isChange: true
+        })
+
+        expect(checkout.checkoutStep.value).toBe('pricing')
+        expect(checkout.previewData.value).toBeNull()
+        expect(mockToastAdd).toHaveBeenCalledOnce()
+      })
+
+      it.for([false, true])(
+        'reports a stop the backend cannot quote rather than confirming it (isChange: %s)',
+        async (isChange) => {
+          const checkout = await setupLegacyTeam()
+
+          await checkout.handleSubscribeTeamClick({
+            stop: { usd: 1400, credits: 295_400, discountedUsd: 1295 },
+            billingCycle: 'monthly',
+            isChange
+          })
+
+          expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+          expect(checkout.checkoutStep.value).toBe('pricing')
+          expect(checkout.selectedTeamStop.value).toBeNull()
+          expect(mockToastAdd).toHaveBeenCalledOnce()
+        }
+      )
+    })
+
     it('transitions to preview with the selected team stop and cycle', async () => {
       const checkout = await setup()
 

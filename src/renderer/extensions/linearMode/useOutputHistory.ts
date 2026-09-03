@@ -9,7 +9,7 @@ import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeO
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { api } from '@/scripts/api'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { wrapPagedList } from '@/utils/pagedList'
+import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -69,7 +69,7 @@ export function useOutputHistory(): {
     )
   }
 
-  const outputs = wrapPagedList(assetsStore.outputAssets, (items) => {
+  const outputs = new WrappedList(assetsStore.outputAssets, (items) => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
 
