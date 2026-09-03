@@ -34,10 +34,6 @@
     "copy": "Copiar",
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
-    "crdtConnected": "conectado",
-    "crdtDisconnected": "desconectado",
-    "crdtNoDocument": "sem documento",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} atualizações · {frame}",
     "credits": "créditos",
     "delete": "Excluir",
     "dismiss": "Dispensar",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "Alternou entre abas",
     "untitledChat": "Sem título",
     "uploading": "Enviando"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Custo por execução",
-    "title": "Nó(s) de API",
-    "totalCost": "Custo total"
   },
   "apiNodesSignInDialog": {
     "message": "Este fluxo de trabalho contém nós de API, que exigem que você esteja conectado à sua conta para executar.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "som",
@@ -5037,8 +5029,10 @@
       "failedCount": "Não foi possível enviar {count} convite. Tente novamente. | Não foi possível enviar {count} convites. Tente novamente.",
       "invalidEmailCount": "{count} endereço de e-mail inválido | {count} endereços de e-mail inválidos",
       "invitedMessage": "Um convite foi enviado para {emails} | Convites foram enviados para {emails}",
+      "pendingInviteCount": "{count} dessas pessoas já têm um convite pendente. Elas serão ignoradas.",
+      "pendingInviteSingle": "Esta pessoa já tem um convite pendente",
       "placeholder": "Digite o e-mail da pessoa",
-      "seatLimitReached": "Você pode convidar até {count} colega de equipe. | Você pode convidar até {count} colegas de equipe.",
+      "seatLimitExceeded": "Este espaço de trabalho está limitado a {max} membros. Remova {overage} para continuar.",
       "title": "Convidar uma pessoa para este workspace"
     },
     "inviteUpsellDialog": {

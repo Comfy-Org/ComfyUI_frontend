@@ -34,10 +34,6 @@
     "copy": "複製",
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
-    "crdtConnected": "已連線",
-    "crdtDisconnected": "已中斷連線",
-    "crdtNoDocument": "沒有文件",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
     "credits": "點數",
     "delete": "刪除",
     "dismiss": "關閉",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "已切換分頁",
     "untitledChat": "未命名",
     "uploading": "上傳中"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次執行成本",
-    "title": "API 節點",
-    "totalCost": "總成本"
   },
   "apiNodesSignInDialog": {
     "message": "此工作流程包含 API 節點，您必須登入帳戶才能執行。",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
+    "sensenova": "sensenova",
     "shader": "著色器",
     "sigmas": "西格瑪值",
     "sound": "聲音",
@@ -5037,8 +5029,10 @@
       "failedCount": "無法發送 {count} 封邀請，請再試一次。",
       "invalidEmailCount": "{count} 個無效的電子郵件地址",
       "invitedMessage": "已將邀請發送至 {emails}",
+      "pendingInviteCount": "這些人中有 {count} 位已有待處理的邀請，將略過。",
+      "pendingInviteSingle": "此人已有待處理的邀請",
       "placeholder": "輸入對方的電子郵件",
-      "seatLimitReached": "您最多可邀請 {count} 位團隊成員。",
+      "seatLimitExceeded": "此工作區最多容納 {max} 位成員。請移除 {overage} 位成員後再繼續。",
       "title": "邀請他人加入此工作區"
     },
     "inviteUpsellDialog": {

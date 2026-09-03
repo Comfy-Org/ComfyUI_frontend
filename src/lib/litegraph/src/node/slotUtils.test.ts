@@ -36,11 +36,7 @@ describe('outputAsSerialisable', () => {
   it('serialises the links leaving the slot, ascending by id', () => {
     const { source } = createConnectedGraph([10, 2])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
 
     expect(serialised.links).toEqual(
       [...serialised.links!].sort((a, b) => a - b)
@@ -51,11 +47,7 @@ describe('outputAsSerialisable', () => {
   it('returns a snapshot unaffected by later graph changes', () => {
     const { source } = createConnectedGraph([1, 2])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
     expect(serialised.links).toHaveLength(2)
 
     source.disconnectOutput(0)
@@ -65,11 +57,7 @@ describe('outputAsSerialisable', () => {
   it('serialises null when the slot has no links', () => {
     const { source } = createConnectedGraph([])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
     expect(serialised.links).toBeNull()
   })
 
@@ -90,11 +78,7 @@ describe('outputAsSerialisable', () => {
     const { source, targets } = createConnectedGraph([1])
     source.disconnectOutput(0, targets[0])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
 
     expect(serialised.links).toEqual([])
   })
@@ -107,11 +91,7 @@ describe('outputAsSerialisable', () => {
 
     expect(source.disconnectOutput(0, unrelated)).toBe(false)
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
     expect(serialised.links).toEqual([1])
     expect(targets[0].inputs[0].link).toBe(toLinkId(1))
   })
@@ -120,11 +100,7 @@ describe('outputAsSerialisable', () => {
     const node = new LGraphNode('Detached')
     node.addOutput('out', 'number')
 
-    const serialised = outputAsSerialisable(
-      node.outputs[0] as OutputSlotParam,
-      node,
-      0
-    )
+    const serialised = outputAsSerialisable(node.outputs[0], node, 0)
     expect(serialised.links).toBeNull()
   })
 

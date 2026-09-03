@@ -90,7 +90,7 @@ describe('useNodeEventHandlers', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      mockNode!.selected = false
+      mockNode.selected = false
 
       const ctrlClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -117,8 +117,8 @@ describe('useNodeEventHandlers', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      mockNode!.selected = true
-      mockNode!.flags.pinned = false
+      mockNode.selected = true
+      mockNode.flags.pinned = false
 
       const ctrlClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -144,8 +144,8 @@ describe('useNodeEventHandlers', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      mockNode!.selected = false
-      mockNode!.flags.pinned = false
+      mockNode.selected = false
+      mockNode.flags.pinned = false
 
       const metaClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -172,8 +172,8 @@ describe('useNodeEventHandlers', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      mockNode!.selected = false
-      mockNode!.flags.pinned = false
+      mockNode.selected = false
+      mockNode.flags.pinned = false
 
       const shiftClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -199,7 +199,7 @@ describe('useNodeEventHandlers', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      mockNode!.selected = true
+      mockNode.selected = true
       canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
 
       const event = new PointerEvent('pointerdown', {
@@ -217,7 +217,7 @@ describe('useNodeEventHandlers', () => {
     it('should bring node to front when not pinned', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
 
-      mockNode!.flags.pinned = false
+      mockNode.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
@@ -232,7 +232,7 @@ describe('useNodeEventHandlers', () => {
     it('should not bring pinned node to front', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
 
-      mockNode!.flags.pinned = true
+      mockNode.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
@@ -246,7 +246,7 @@ describe('useNodeEventHandlers', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
       const { canvas, updateSelectedItems } = useCanvasStore()
 
-      mockNode!.selected = true
+      mockNode.selected = true
 
       toggleNodeSelectionAfterPointerUp(testNodeId, true)
 
@@ -258,7 +258,7 @@ describe('useNodeEventHandlers', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
       const { canvas, updateSelectedItems } = useCanvasStore()
 
-      mockNode!.selected = true
+      mockNode.selected = true
 
       toggleNodeSelectionAfterPointerUp(testNodeId, true)
 
@@ -270,7 +270,7 @@ describe('useNodeEventHandlers', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
       const { canvas, updateSelectedItems } = useCanvasStore()
 
-      mockNode!.selected = true
+      mockNode.selected = true
       canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
@@ -284,7 +284,7 @@ describe('useNodeEventHandlers', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
       const { canvas, updateSelectedItems } = useCanvasStore()
 
-      mockNode!.selected = true
+      mockNode.selected = true
       canvasSelectedItems.push({ id: 'node-1' })
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)

@@ -34,10 +34,6 @@
     "copy": "نسخ",
     "copyMarkdown": "نسخ بصيغة markdown",
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
-    "crdtConnected": "متصل",
-    "crdtDisconnected": "غير متصل",
-    "crdtNoDocument": "لا يوجد مستند",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} تحديثات · {frame}",
     "credits": "الرصيد",
     "delete": "حذف",
     "dismiss": "تجاهل",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "بدّل علامات التبويب",
     "untitledChat": "بلا عنوان",
     "uploading": "جارٍ الرفع"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "التكلفة لكل تشغيل",
-    "title": "عقد API",
-    "totalCost": "التكلفة الإجمالية"
   },
   "apiNodesSignInDialog": {
     "message": "يحتوي سير العمل هذا على عقد API، والتي تتطلب تسجيل دخولك إلى حسابك لتشغيلها.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سيجمات",
     "sound": "صوت",
@@ -5037,8 +5029,10 @@
       "failedCount": "تعذر إرسال {count} دعوة. حاول مرة أخرى. | تعذر إرسال {count} دعوات. حاول مرة أخرى.",
       "invalidEmailCount": "{count} عنوان بريد إلكتروني غير صالح | {count} عناوين بريد إلكتروني غير صالحة",
       "invitedMessage": "تم إرسال دعوة إلى {emails} | تم إرسال دعوات إلى {emails}",
+      "pendingInviteCount": "لدى {count} من هؤلاء الأشخاص دعوة معلّقة بالفعل. سيتم تخطيهم.",
+      "pendingInviteSingle": "لدى هذا الشخص بالفعل دعوة معلّقة",
       "placeholder": "أدخل بريد الشخص الإلكتروني",
-      "seatLimitReached": "يمكنك دعوة حتى {count} زميل. | يمكنك دعوة حتى {count} زملاء.",
+      "seatLimitExceeded": "تقتصر مساحة العمل هذه على {max} أعضاء. أزل {overage} للمتابعة.",
       "title": "دعوة شخص إلى هذه المساحة"
     },
     "inviteUpsellDialog": {

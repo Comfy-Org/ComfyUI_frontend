@@ -34,10 +34,6 @@
     "copy": "Копировать",
     "copyMarkdown": "Копировать как markdown",
     "copyUnavailable": "В этой версии можно скопировать только текущий разговор",
-    "crdtConnected": "подключено",
-    "crdtDisconnected": "отключено",
-    "crdtNoDocument": "нет документа",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} обновлений · {frame}",
     "credits": "кредиты",
     "delete": "Удалить",
     "dismiss": "Закрыть",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "Переключены вкладки",
     "untitledChat": "Без названия",
     "uploading": "Загрузка"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Стоимость за запуск",
-    "title": "API Node(s)",
-    "totalCost": "Общая стоимость"
   },
   "apiNodesSignInDialog": {
     "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sensenova": "sensenova",
     "shader": "шейдер",
     "sigmas": "сигмы",
     "sound": "звук",
@@ -5037,8 +5029,10 @@
       "failedCount": "Не удалось отправить {count} приглашение. Попробуйте еще раз. | Не удалось отправить {count} приглашения. Попробуйте еще раз. | Не удалось отправить {count} приглашений. Попробуйте еще раз.",
       "invalidEmailCount": "{count} некорректный адрес электронной почты | {count} некорректных адреса электронной почты | {count} некорректных адресов электронной почты",
       "invitedMessage": "Приглашение отправлено на {emails} | Приглашения отправлены на {emails}",
+      "pendingInviteCount": "У {count} из этих людей уже есть ожидающее приглашение. Они будут пропущены.",
+      "pendingInviteSingle": "У этого человека уже есть ожидающее приглашение",
       "placeholder": "Введите email человека",
-      "seatLimitReached": "Вы можете пригласить до {count} участника. | Вы можете пригласить до {count} участников.",
+      "seatLimitExceeded": "Это рабочее пространство ограничено {max} участниками. Удалите {overage}, чтобы продолжить.",
       "title": "Пригласить человека в это рабочее пространство"
     },
     "inviteUpsellDialog": {

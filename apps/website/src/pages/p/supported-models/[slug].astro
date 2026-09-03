@@ -53,6 +53,17 @@ const software = softwareApplicationNode({
 const faqs = buildModelFaqs(model, locale)
 const whatIsDescription = faqs[0].answer
 const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
+
+// Backlink the leading "{displayName}" in the What-is paragraph to the
+// model's own site when configured (e.g. MiniMax -> design.minimax.io),
+// without touching the JSON-LD/FAQ-accordion copies of the same string.
+const whatIsBacklinkUrl =
+  model.whatIsBacklinkUrl && whatIsDescription.startsWith(displayName)
+    ? model.whatIsBacklinkUrl
+    : undefined
+const whatIsRest = whatIsBacklinkUrl
+  ? whatIsDescription.slice(displayName.length)
+  : whatIsDescription
 ---
 
 <BaseLayout
@@ -136,7 +147,21 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
       {t('models.whatIs.heading').replace('{name}', displayName)}
     </h2>
     <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
-      {whatIsDescription}
+      {whatIsBacklinkUrl ? (
+        <>
+          <a
+            href={whatIsBacklinkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-comfy-yellow hover:underline"
+          >
+            {displayName}
+          </a>
+          {whatIsRest}
+        </>
+      ) : (
+        whatIsDescription
+      )}
     </p>
     {model.docsUrl && (
       <a

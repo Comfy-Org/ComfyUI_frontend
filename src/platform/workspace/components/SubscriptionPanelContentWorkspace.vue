@@ -384,22 +384,12 @@
         </div>
       </div>
 
-      <!-- View More Details - Outside main content -->
-      <div v-if="canOpenPricingSurface" class="py-6">
-        <Button
-          variant="muted-textonly"
-          class="text-sm text-muted"
-          @click="handleViewMoreDetails"
-        >
-          {{ $t('subscription.viewMoreDetailsPlans') }}
-          <i class="pi pi-external-link text-muted" />
-        </Button>
-      </div>
-
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
+        :show-plans-link="canOpenPricingSurface"
         :show-invoice-history="permissions.canManageSubscription"
         :show-usage-activity="workspaceRole === 'owner'"
+        @view-plans="handleViewMoreDetails"
       />
     </template>
   </div>

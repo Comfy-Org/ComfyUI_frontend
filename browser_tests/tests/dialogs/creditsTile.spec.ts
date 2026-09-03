@@ -505,9 +505,6 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
 
     await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
-    await expect(
-      topupDialog.root.getByRole('button', { name: 'Back' })
-    ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'

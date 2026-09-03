@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Adjunta de 1 a 10 imágenes de referencia para el condicionamiento, una para instrucción de edición o varias para personalización basada en el sujeto.",
+    "description": "Adjunta imágenes de referencia ordenadas al condicionamiento positivo y negativo.",
     "display_name": "Imágenes de Referencia HiDream-O1",
     "inputs": {
       "images": {
         "name": "imágenes",
-        "tooltip": "Imágenes de referencia. 1 imagen = edición por instrucción; 2-10 imágenes = referencia múltiple."
+        "tooltip": "Las imágenes de referencia se utilizan en el orden numérico de los conectores."
       },
       "negative": {
         "name": "negativo"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Aplica un MiniMax H3 Fun ControlNet a un modelo de texto a vídeo como parche de modelo.",
+    "display_name": "Aplicar MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 marca las regiones que se regenerarán."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Vídeo detrás de la mask; solo se lee cuando se proporciona una mask."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21113,6 +21153,23 @@
       },
       "scale": {
         "name": "escala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "Establece el desplazamiento de flujo de SenseNova.",
+    "display_name": "Opciones de muestreo de SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
