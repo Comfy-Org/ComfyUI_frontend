@@ -8,6 +8,7 @@ import type {
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
 import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const {
   cloneSkinnedMock,
@@ -40,6 +41,10 @@ vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
     exportDirect: exportDirectMock,
     detectFormatFromURL: detectFormatFromURLMock
   }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
 }))
 
 type GizmoStub = {
@@ -882,7 +887,8 @@ describe('Load3d', () => {
     })
 
     it('swallows a rejected loadingPromise and continues draining', async () => {
-      const failing = Promise.reject(new Error('boom'))
+      const error = new Error('boom')
+      const failing = Promise.reject(error)
       failing.catch(() => {})
       Object.assign(ctx.load3d, { loadingPromise: failing })
 
@@ -890,6 +896,17 @@ describe('Load3d', () => {
       Object.assign(ctx.load3d, { loadingPromise: null })
 
       await expect(idle).resolves.toBeUndefined()
+      expect(reportError).toHaveBeenCalledWith(error, {
+        errorType: 'extensions_load3d_idle_load_swallowed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'extensions',
+          operation: 'load',
+          outcome: 'recovered',
+          assert_mode: 'soft'
+        },
+        level: 'error'
+      })
     })
   })
 
@@ -918,6 +935,37 @@ describe('Load3d', () => {
       expect(ctx.load3d.currentLoadGeneration).toBe(baseline + 2)
 
       await Promise.all([p1, p2])
+    })
+
+    it('reports a rejected previous load before starting the next load', async () => {
+      const error = new Error('previous load failed')
+      const previous = Promise.reject(error)
+      previous.catch(() => {})
+      const internal = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: previous,
+        _loadModelInternal: internal
+      })
+
+      await ctx.load3d.loadModel('api/view?filename=next.glb')
+
+      expect(internal).toHaveBeenCalledWith(
+        'api/view?filename=next.glb',
+        undefined,
+        undefined
+      )
+      expect(reportError).toHaveBeenCalledWith(error, {
+        errorType: 'extensions_load3d_previous_load_swallowed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'extensions',
+          operation: 'load',
+          outcome: 'recovered',
+          assert_mode: 'soft'
+        },
+        level: 'error'
+      })
     })
 
     it('lets a chained whenLoadIdle continuation skip when a newer load was queued in between', async () => {

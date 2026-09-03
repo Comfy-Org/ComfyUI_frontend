@@ -1,3 +1,5 @@
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   DocFrameClient,
   DocOp,
@@ -19,7 +21,17 @@ function trySend(send: () => boolean): boolean {
   try {
     return send()
   } catch (error) {
-    console.warn('[agent-crdt] outbound doc frame dropped', error)
+    reportError(error, {
+      errorType: 'agent_doc_frame_send_swallowed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      level: 'error'
+    })
     return false
   }
 }

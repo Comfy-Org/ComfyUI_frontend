@@ -10,6 +10,7 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   getResourceURL,
@@ -429,7 +430,19 @@ app.registerExtension({
                 if (mediaRecorder) {
                   try {
                     mediaRecorder.stop()
-                  } catch {}
+                  } catch (error) {
+                    reportError(error, {
+                      errorType: 'extensions_audio_recorder_stop_swallowed',
+                      tags: {
+                        failure_kind: 'caught_unexpected',
+                        feature_area: 'assets',
+                        operation: 'execute',
+                        outcome: 'recovered',
+                        assert_mode: 'soft'
+                      },
+                      level: 'error'
+                    })
+                  }
                 }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null

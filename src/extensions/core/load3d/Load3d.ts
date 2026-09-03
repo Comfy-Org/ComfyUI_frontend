@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { AnimationManager } from './AnimationManager'
 import type { GizmoManager } from './GizmoManager'
 import type { HDRIManager } from './HDRIManager'
@@ -337,7 +339,19 @@ class Load3d extends Viewport3d {
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
-      } catch (e) {}
+      } catch (error) {
+        reportError(error, {
+          errorType: 'extensions_load3d_previous_load_swallowed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'extensions',
+            operation: 'load',
+            outcome: 'recovered',
+            assert_mode: 'soft'
+          },
+          level: 'error'
+        })
+      }
     }
 
     this.loadingPromise = this._loadModelInternal(
@@ -354,7 +368,19 @@ class Load3d extends Viewport3d {
       last = this.loadingPromise
       try {
         await last
-      } catch (e) {}
+      } catch (error) {
+        reportError(error, {
+          errorType: 'extensions_load3d_idle_load_swallowed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'extensions',
+            operation: 'load',
+            outcome: 'recovered',
+            assert_mode: 'soft'
+          },
+          level: 'error'
+        })
+      }
     }
   }
 
