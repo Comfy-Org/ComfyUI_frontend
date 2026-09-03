@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
@@ -192,5 +192,65 @@ describe('useGraphDocumentStore', () => {
     store.markMutated(a)
     expect(store.getDocument(a)?.state.revision).toBe(1)
     expect(store.getDocument(b)?.state.revision).toBe(0)
+  })
+
+  it('publishes only the newest graph hydration and disposes stale results', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument()
+    if (documentId === null) throw new Error('createDocument failed')
+    const first = store.beginGraphHydration(documentId)!
+    const second = store.beginGraphHydration(documentId)!
+    const staleDispose = vi.fn()
+    const winningDispose = vi.fn()
+    const stale = { graph: { id: 'stale' }, dispose: staleDispose }
+    const winning = { graph: { id: 'winning' }, dispose: winningDispose }
+
+    expect(store.completeGraphHydration(first, stale)).toBe(false)
+    expect(staleDispose).toHaveBeenCalledOnce()
+    expect(store.completeGraphHydration(second, winning)).toBe(true)
+    expect(store.graphLeaseOf(documentId)).toBe(winning)
+    expect(winningDispose).not.toHaveBeenCalled()
+  })
+
+  it('disposes replaced and closed graph leases exactly once', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument()
+    if (documentId === null) throw new Error('createDocument failed')
+    store.hydrateDocument(documentId, scope)
+    const firstDispose = vi.fn()
+    const secondDispose = vi.fn()
+    store.completeGraphHydration(store.beginGraphHydration(documentId)!, {
+      graph: { id: 'first' },
+      dispose: firstDispose
+    })
+    store.completeGraphHydration(store.beginGraphHydration(documentId)!, {
+      graph: { id: 'second' },
+      dispose: secondDispose
+    })
+
+    expect(firstDispose).toHaveBeenCalledOnce()
+    expect(
+      store.closeDocument(documentId, { atRevision: 0, discardChanges: true })
+    ).toBe(true)
+    expect(secondDispose).toHaveBeenCalledOnce()
+    expect(store.disposeGraphLease(documentId)).toBe(false)
+    expect(secondDispose).toHaveBeenCalledOnce()
+  })
+
+  it('disposes hydration that completes after close', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument()
+    if (documentId === null) throw new Error('createDocument failed')
+    const ticket = store.beginGraphHydration(documentId)!
+    const dispose = vi.fn()
+
+    expect(
+      store.closeDocument(documentId, { atRevision: 0, discardChanges: true })
+    ).toBe(true)
+    expect(store.completeGraphHydration(ticket, { graph: {}, dispose })).toBe(
+      false
+    )
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(store.graphLeaseOf(documentId)).toBeNull()
   })
 })
