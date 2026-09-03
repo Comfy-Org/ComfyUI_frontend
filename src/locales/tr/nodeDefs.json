@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' daha hızlıdır; 'precision' ise iki kat fiyatla daha yüksek kaliteli dudak senkronizasyonu sağlar."
+        "tooltip": "'speed' daha hızlıdır; 'precision' ise daha yüksek maliyetle daha yüksek kaliteli dudak senkronizasyonu sağlar."
       },
       "output_language": {
         "name": "output_language",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Koşullandırmaya 1-10 referans görseli ekleyin; biri düzenleme talimatı, birden fazlası ise konuya özel kişiselleştirme için.",
+    "description": "Sıralı referans görüntülerini pozitif ve negatif koşullandırmaya ekleyin.",
     "display_name": "HiDream-O1 Referans Görselleri",
     "inputs": {
       "images": {
         "name": "görseller",
-        "tooltip": "Referans görselleri. 1 görsel = düzenleme talimatı; 2-10 görsel = çoklu referans."
+        "tooltip": "Referans görüntüleri sayısal soket sırasına göre kullanılır."
       },
       "negative": {
         "name": "negatif"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Bir MiniMax H3 Fun ControlNet'i model yaması olarak metinden videoya modeline uygulayın.",
+    "display_name": "MiniMax H3 Fun ControlNet Uygula",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1, yeniden oluşturulacak bölgeleri işaretler."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Maskenin arkasındaki video; yalnızca bir maske verildiğinde okunur."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNova akış kaydırmasını ayarlayın.",
+    "display_name": "SenseNova Örnekleme Seçenekleri",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "CLIP Kancalarını Ayarla",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Videoyu Kırp",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Piksel cinsinden kırpma bölgesi. Sıfır genişlik/yükseklik tam kareyi korur."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Bir videodan çeşitli stratejiler kullanarak sabit sayıda kare örnekleyin.",
     "display_name": "Video Kare Örneği",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Videoyu Kes (Gelişmiş)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True ise, belirtilen süre mümkün olmadığında hata oluşturulur."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Başlangıç/bitiş karelerini kullanarak kesme aralığını belirler."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

@@ -2,7 +2,6 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { toNodeId } from '@/types/nodeId'
@@ -356,7 +355,7 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
-      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      const result = await maskWidget.serializeValue!({}, 0)
       expect(result).toBe('painter/existing.png [temp]')
     })
 
@@ -380,7 +379,7 @@ describe('usePainter', () => {
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      const result = await maskWidget.serializeValue!({}, 0)
       expect(fetchApiMock).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
@@ -413,9 +412,9 @@ describe('usePainter', () => {
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      await expect(
-        maskWidget.serializeValue!({} as LGraphNode, 0)
-      ).rejects.toThrow(/missing 'name'/)
+      await expect(maskWidget.serializeValue!({}, 0)).rejects.toThrow(
+        /missing 'name'/
+      )
     })
 
     it('throws when the upload response body is not valid JSON', async () => {
@@ -439,9 +438,9 @@ describe('usePainter', () => {
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      await expect(
-        maskWidget.serializeValue!({} as LGraphNode, 0)
-      ).rejects.toThrow(/painter\.uploadError/)
+      await expect(maskWidget.serializeValue!({}, 0)).rejects.toThrow(
+        /painter\.uploadError/
+      )
     })
 
     it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
@@ -450,7 +449,7 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
-      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      const result = await maskWidget.serializeValue!({}, 0)
       expect(result).toBe('painter/cached.png [temp]')
     })
 

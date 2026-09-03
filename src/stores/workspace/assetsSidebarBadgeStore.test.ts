@@ -1,7 +1,8 @@
 import { nextTick } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+vi.mock('@/platform/assets/composables/media/assetMappers')
+
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -30,7 +31,7 @@ const createHistoryTask = ({
           mediaType: 'images'
         }
       : undefined
-  } as JobListItem)
+  })
 
 describe('useAssetsSidebarBadgeStore', () => {
   it('does not count initial fetched history when store starts before hydration', async () => {

@@ -4,10 +4,16 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import {
+  isWidgetId,
+  parseWidgetId,
+  widgetId as createWidgetId
+} from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
   advanced?: boolean
@@ -20,6 +26,13 @@ interface WidgetRestorationState {
   positional: readonly WidgetValue[]
   named?: Readonly<Record<string, WidgetValue>>
   restoreNamed: boolean
+}
+
+interface WidgetValueChange {
+  widgetId: WidgetId
+  value: WidgetValue
+  oldValue: WidgetValue
+  context?: RemoteMutationContext
 }
 
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
@@ -36,6 +49,42 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     UUID,
     Map<NodeId, WidgetRestorationState>
   >()
+  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
+  const valueMutationContexts = new WeakMap<
+    WidgetState,
+    RemoteMutationContext
+  >()
+
+  function observeValue<TValue extends WidgetValue>(
+    state: WidgetState<TValue>,
+    graphId: UUID
+  ): void {
+    let value = state.value
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      enumerable: true,
+      get: () => value,
+      set: (nextValue: TValue) => {
+        if (Object.is(value, nextValue)) return
+        const oldValue = value
+        value = nextValue
+        const widgetId = createWidgetId(graphId, state.nodeId, state.name)
+        if (getWidget(widgetId) !== state) return
+        const context = valueMutationContexts.get(state)
+        valueMutationContexts.delete(state)
+        for (const listener of valueChangeListeners) {
+          listener({ widgetId, value, oldValue, context })
+        }
+      }
+    })
+  }
+
+  function onValueChange(
+    listener: (change: WidgetValueChange) => void
+  ): () => void {
+    valueChangeListeners.add(listener)
+    return () => valueChangeListeners.delete(listener)
+  }
 
   function setNodeWidgetRestoration(
     graphId: UUID,
@@ -66,6 +115,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return positionalIndex < restoration.positional.length
       ? { value: restoration.positional[positionalIndex] }
       : undefined
+  }
+
+  function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
+    const restorations = graphWidgetRestorations.get(graphId)
+    if (!restorations) return
+    restorations.delete(nodeId)
+    if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
   }
 
   function getPositionalRestoredWidgetValue(
@@ -137,11 +193,20 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (order.length === 0) graphOrders.delete(nodeId)
   }
 
-  function registerWidget<TValue extends WidgetValue = WidgetValue>(
+  /**
+   * @returns The existing state for the same widget type, replacement state
+   * for a different type, or `undefined` for an invalid widget ID.
+   */
+  function registerWidget<
+    TValue extends WidgetValue = WidgetValue,
+    TType extends string = string,
+    TOptions extends IWidgetOptions = IWidgetOptions
+  >(
     widgetId: WidgetId,
-    init: WidgetStateInit<TValue>,
-    renderState: WidgetRenderState = {}
-  ): WidgetState<TValue> | undefined {
+    init: WidgetStateInit<TValue, TType, TOptions>,
+    renderState: WidgetRenderState = {},
+    _context?: RemoteMutationContext
+  ): WidgetState<TValue, TType, TOptions> | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
         'widgetValueStore.registerWidget: ignoring un-keyable widget id',
@@ -171,10 +236,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         y: init.y ?? existing.y
       })
       appendNodeWidgetOrder(widgetId)
-      return existing as WidgetState<TValue>
+      return existing as WidgetState<TValue, TType, TOptions>
     }
 
-    const state: WidgetState<TValue> = {
+    const state: WidgetState<TValue, TType, TOptions> = {
       ...init,
       nodeId,
       name: init.name ?? storageName,
@@ -183,7 +248,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
     appendNodeWidgetOrder(widgetId)
-    return widgetStates.get(widgetId) as WidgetState<TValue>
+    const registered = widgetStates.get(widgetId) as WidgetState<
+      TValue,
+      TType,
+      TOptions
+    >
+    observeValue(registered, graphId)
+    return registered
   }
 
   function registerWidgetRenderState(
@@ -219,10 +290,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return graphWidgetRenderStates.value.get(graphId)?.get(widgetId)
   }
 
-  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
+  function setValue(
+    widgetId: WidgetId,
+    value: WidgetState['value'],
+    context?: RemoteMutationContext
+  ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    state.value = value
+    if (context) valueMutationContexts.set(state, context)
+    try {
+      state.value = value
+    } finally {
+      valueMutationContexts.delete(state)
+    }
     return true
   }
 
@@ -380,7 +460,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphOrders.delete(localNodeId)
   }
 
-  function clearNode(graphId: UUID, nodeId: NodeId): void {
+  function clearNode(
+    graphId: UUID,
+    nodeId: NodeId,
+    _context?: RemoteMutationContext
+  ): void {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
@@ -411,10 +495,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     setNodeWidgetRestoration,
+    clearNodeWidgetRestoration,
     getRestoredWidgetValue,
     getPositionalRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
+    onValueChange,
     setValue,
     setLabel,
     updateOptions,
