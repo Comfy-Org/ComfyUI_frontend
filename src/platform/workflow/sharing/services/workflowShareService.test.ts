@@ -185,8 +185,12 @@ describe(useWorkflowShareService, () => {
             { name: 'art', display_name: 'Art' },
             { name: 'upscale', display_name: 'Upscale' }
           ],
+          models: [{ name: 'sdxl', display_name: 'SDXL' }],
+          custom_nodes: [{ name: 'impact-pack', display_name: 'Impact Pack' }],
           thumbnail_type: 'image_comparison',
           sample_image_urls: ['https://example.com/img1.png'],
+          tutorial_url: 'https://youtube.com/abc',
+          metadata: { extra: 'value' },
           workflow_json: {},
           assets: [],
           profile: { username: 'builder' }
@@ -206,8 +210,12 @@ describe(useWorkflowShareService, () => {
       name: 'Published title',
       description: 'A cool workflow',
       tags: ['Art', 'Upscale'],
+      models: ['SDXL'],
+      customNodes: ['Impact Pack'],
       thumbnailType: 'imageComparison',
-      sampleImageUrls: ['https://example.com/img1.png']
+      sampleImageUrls: ['https://example.com/img1.png'],
+      tutorialUrl: 'https://youtube.com/abc',
+      metadata: { extra: 'value' }
     })
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
   })
