@@ -899,10 +899,12 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 })
 
 describe('FEC-2 — a malformed doc_update fails closed instead of throwing uncaught', () => {
-  it('drops one frame and keeps the doc/subscription intact on malformed bytes', () => {
+  it('immediately requests same-lineage recovery for a malformed pre-ack frame', () => {
     const { transport, bridge, projected, applyErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
+    const retained = bridge.follower
+    const retainedVector = encodeBase64(retained.stateVector())
 
     // Not a valid Yjs update at all — this is exactly what previously reached
     // `Y.applyUpdate` unguarded and threw out of the `doc_update` listener.
@@ -919,10 +921,17 @@ describe('FEC-2 — a malformed doc_update fails closed instead of throwing unca
         error: expect.any(FollowerApplyError)
       }
     ])
+    expect(bridge.follower).toBe(retained)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(retainedVector)
 
-    // The doc was never mutated by the rejected bytes, so a later valid frame
-    // at the same seq baseline still applies cleanly through the SAME doc —
-    // this is not a lineage break, just one dropped frame.
+    // A successor can arrive before either subscribe acknowledgement, where
+    // there is no seq baseline to expose the dropped predecessor as a gap.
+    // Recovery was already requested synchronously, rather than depending on
+    // that successor to detect the loss.
     transport.deliver(
       'doc_update',
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
@@ -931,7 +940,7 @@ describe('FEC-2 — a malformed doc_update fails closed instead of throwing unca
     expect(bridge.follower.updatesApplied).toBe(1)
   })
 
-  it('a malformed frame at seq N followed by a valid frame at N+1 forces resubscribe instead of silently advancing (Ryan review, fe#16372)', () => {
+  it('immediately resubscribes when a malformed catch-up has no later frame', () => {
     const { transport, bridge, projected, applyErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -941,29 +950,25 @@ describe('FEC-2 — a malformed doc_update fails closed instead of throwing unca
       ok: true,
       seq: 1
     })
+    const retained = bridge.follower
+    const retainedVector = encodeBase64(retained.stateVector())
 
-    // The malformed frame at N=2: apply throws, so `lastSeq` must NOT be
-    // latched to 2. If it were (the bug this pins), the very next in-sequence
-    // frame at N+1=3 would look like an ordinary next frame and apply
-    // straight onto a replica that never actually integrated frame 2's bytes.
+    // The acknowledged catch-up is malformed and no later frame arrives. The
+    // bridge must request recovery now; waiting for a future seq gap leaves
+    // the follower stale forever.
     const garbage = new Uint8Array([9, 9, 9, 9, 9])
-    transport.deliver('doc_update', docUpdateFrame(garbage, WORKFLOW_ID, 2))
+    transport.deliver('doc_update', docUpdateFrame(garbage, WORKFLOW_ID, 1))
     expect(projected).toHaveLength(0)
     expect(applyErrors).toEqual([
-      { workflowId: WORKFLOW_ID, seq: 2, error: expect.any(FollowerApplyError) }
+      { workflowId: WORKFLOW_ID, seq: 1, error: expect.any(FollowerApplyError) }
     ])
-    expect(bridge.lastSequence).toBe(1)
-
-    // The valid frame that follows the dropped one, at N+1=3: with `lastSeq`
-    // still 1, this reads as a jump past `lastSeq + 1` — an authoritative
-    // resubscribe, not a silent in-sequence apply.
-    transport.deliver(
-      'doc_update',
-      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
-    )
-    expect(projected).toHaveLength(0)
+    expect(bridge.follower).toBe(retained)
     expect(bridge.follower.updatesApplied).toBe(0)
-    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(retainedVector)
   })
 })
 

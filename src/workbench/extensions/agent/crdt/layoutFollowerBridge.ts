@@ -284,13 +284,11 @@ export class LayoutFollowerBridge extends EventTarget {
     //
     // `lastSeq`/`catchUpPending` are only advanced AFTER a successful apply
     // (Ryan review, fe#16372): if they were latched before this call and the
-    // apply then threw, the frame's sequence would already be consumed, and
-    // the next frame would land as an ordinary in-sequence update instead of
-    // a gap — silently skipping authoritative recovery for the bytes that
-    // were lost. Leaving `lastSeq`/`ackSeq` at their pre-frame values means
-    // the NEXT frame reads as a jump past `baseline + 1`, which routes
-    // through the resubscribe branch above and forces a state-vector
-    // catch-up instead of silently moving on.
+    // apply then threw, the frame's sequence would already be consumed.
+    // Recovery cannot wait for a later gap, though: no later frame may arrive,
+    // and before the subscribe ack there is no seq baseline to expose one.
+    // Immediately re-subscribe with this same-lineage follower's state vector
+    // so the host sends the missing delta without replacing the document.
     try {
       this.follower.applyRemoteUpdate(update.update)
     } catch (error) {
@@ -300,6 +298,7 @@ export class LayoutFollowerBridge extends EventTarget {
           detail: { workflowId: update.workflowId, seq: update.seq, error }
         })
       )
+      this.resubscribe()
       return
     }
     if (this.lastSeq === null || update.seq > this.lastSeq)
