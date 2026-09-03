@@ -895,6 +895,64 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
+    it('surfaces an execution error received before the prompt response', async () => {
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      const graph = new LGraph()
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/fast-failure.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      workflow.changeTracker.activeState = {
+        ...createWorkflowGraphData(),
+        id: graphId
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {},
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.setActiveGraph(graphId, workflow.path)
+      const executionStore = useExecutionStore()
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      executionStore.bindExecutionEvents()
+      const executionErrorHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'execution_error'
+      )?.[1] as EventListener | undefined
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        executionErrorHandler?.(
+          new CustomEvent('execution_error', {
+            detail: {
+              prompt_id: 'job-1',
+              node_id: '1',
+              node_type: 'DevToolsErrorRaiseNode',
+              exception_message: 'Error node was called!',
+              exception_type: 'Exception',
+              traceback: []
+            }
+          })
+        )
+        return { prompt_id: 'job-1', error: '' }
+      })
+
+      try {
+        await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+        expect(executionErrorHandler).toBeTypeOf('function')
+        expect(executionErrorStore.lastExecutionError?.prompt_id).toBe('job-1')
+        expect(executionErrorStore.isErrorOverlayOpen).toBe(true)
+      } finally {
+        executionStore.unbindExecutionEvents()
+      }
+    })
+
     it('stores workflow telemetry metadata for every accepted batch submission', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()

@@ -26,8 +26,10 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   JobId,
+  NodeError,
   NodeProgressState,
   NotificationWsMessage,
+  PromptError,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
@@ -120,6 +122,22 @@ interface WorkflowStatusUpdate {
   showStatus?: boolean
 }
 
+type DeferredRunError =
+  | {
+      kind: 'execution'
+      detail: ExecutionErrorWsMessage
+    }
+  | {
+      kind: 'node'
+      detail: ExecutionErrorWsMessage
+      nodeErrors: Record<string, NodeError>
+    }
+  | {
+      kind: 'prompt'
+      detail: ExecutionErrorWsMessage
+      promptError: PromptError
+    }
+
 export const WORKFLOW_STATUS_I18N_KEYS: Record<
   WorkflowExecutionStatus,
   string
@@ -167,6 +185,7 @@ export const useExecutionStore = defineStore('execution', () => {
   // Buffers statuses arriving before storeJob attaches the workflow.
   // FIFO-capped to bound growth if a matching storeJob never fires.
   const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
+  const deferredRunErrorsByJobId = new Map<string, DeferredRunError>()
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -187,6 +206,52 @@ export const useExecutionStore = defineStore('execution', () => {
       if (oldest === undefined) break
       pendingWorkflowStatusByJobId.delete(oldest)
     }
+  }
+
+  function bufferDeferredRunError(jobId: string, error: DeferredRunError) {
+    deferredRunErrorsByJobId.delete(jobId)
+    deferredRunErrorsByJobId.set(jobId, error)
+    while (deferredRunErrorsByJobId.size > MAX_PROGRESS_JOBS) {
+      const oldest = deferredRunErrorsByJobId.keys().next().value
+      if (oldest === undefined) break
+      deferredRunErrorsByJobId.delete(oldest)
+    }
+  }
+
+  function recordRunError(error: DeferredRunError, key: string) {
+    if (error.kind === 'execution') {
+      executionErrorStore.recordExecutionError(error.detail, key)
+    } else if (error.kind === 'node') {
+      executionErrorStore.recordNodeErrors(error.nodeErrors, key)
+    } else {
+      executionErrorStore.recordPromptError(error.promptError, key)
+    }
+  }
+
+  function recordOrDeferRunError(
+    jobId: string,
+    error: DeferredRunError,
+    key: string | null
+  ) {
+    if (key === null) {
+      bufferDeferredRunError(jobId, error)
+      return
+    }
+    recordRunError(error, key)
+  }
+
+  function flushDeferredRunError(
+    jobId: string
+  ): ExecutionErrorWsMessage | undefined {
+    const error = deferredRunErrorsByJobId.get(jobId)
+    if (!error) return
+
+    deferredRunErrorsByJobId.delete(jobId)
+    const key = runErrorKeyForJob(jobId)
+    if (key === null) return
+
+    recordRunError(error, key)
+    if (key === executionErrorStore.captureRunErrorKey()) return error.detail
   }
 
   function mutateStatus(
@@ -448,6 +513,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
+    deferredRunErrorsByJobId.clear()
     jobIdToWorkflow.clear()
 
     cancelPendingProgressUpdates()
@@ -736,7 +802,11 @@ export const useExecutionStore = defineStore('execution', () => {
       endTime,
       failureReason: 'execution_failed'
     })
-    executionErrorStore.recordExecutionError(e.detail, runErrorKey)
+    recordOrDeferRunError(
+      e.detail.prompt_id,
+      { kind: 'execution', detail: e.detail },
+      runErrorKey
+    )
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
   }
@@ -759,7 +829,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleServiceLevelError(
     detail: ExecutionErrorWsMessage,
-    runErrorKey: string | null | undefined
+    runErrorKey: string | null
   ): boolean {
     const nodeId = detail.node_id
     if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
@@ -767,13 +837,18 @@ export const useExecutionStore = defineStore('execution', () => {
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.recordPromptError(
+    recordOrDeferRunError(
+      detail.prompt_id,
       {
-        type: detail.exception_type ?? 'error',
-        message: detail.exception_type
-          ? `${detail.exception_type}: ${detail.exception_message}`
-          : (detail.exception_message ?? ''),
-        details: detail.traceback?.join('\n') ?? ''
+        kind: 'prompt',
+        detail,
+        promptError: {
+          type: detail.exception_type ?? 'error',
+          message: detail.exception_type
+            ? `${detail.exception_type}: ${detail.exception_message}`
+            : (detail.exception_message ?? ''),
+          details: detail.traceback?.join('\n') ?? ''
+        }
       },
       runErrorKey
     )
@@ -782,7 +857,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleCloudValidationError(
     detail: ExecutionErrorWsMessage,
-    runErrorKey: string | null | undefined
+    runErrorKey: string | null
   ): boolean {
     const result = classifyCloudValidationError(detail.exception_message)
     if (!result) return false
@@ -791,9 +866,17 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.recordNodeErrors(result.nodeErrors, runErrorKey)
+      recordOrDeferRunError(
+        detail.prompt_id,
+        { kind: 'node', detail, nodeErrors: result.nodeErrors },
+        runErrorKey
+      )
     } else {
-      executionErrorStore.recordPromptError(result.promptError, runErrorKey)
+      recordOrDeferRunError(
+        detail.prompt_id,
+        { kind: 'prompt', detail, promptError: result.promptError },
+        runErrorKey
+      )
     }
     return true
   }
@@ -953,7 +1036,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (workflow?.path) {
       ensureSessionWorkflowPath(id, workflow.path, workflow.instanceId)
     }
+    const deferredRunError = flushDeferredRunError(String(id))
     flushPendingWorkflowStatus(String(id), workflow)
+    return deferredRunError
   }
 
   function flushPendingWorkflowStatus(

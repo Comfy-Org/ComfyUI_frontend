@@ -1115,6 +1115,41 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.totalErrorCount).toBe(1)
   })
 
+  it('keeps a deferred background error off the visible workflow', () => {
+    fireExecutionError('job-b')
+
+    const deferredError = callStoreJob('job-b', workflowB)
+
+    expect(deferredError).toBeUndefined()
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+  })
+
+  it('replays deferred validation errors after attribution', () => {
+    fireExecutionError('job-a', {
+      exception_message: cloudValidationMessage,
+      exception_type: 'ValidationError'
+    })
+
+    callStoreJob('job-a', workflowA)
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
+  })
+
+  it('replays deferred service errors after attribution', () => {
+    fireExecutionError('job-a', {
+      node_id: '',
+      exception_message: 'Job has stagnated',
+      exception_type: 'StagnationError'
+    })
+
+    callStoreJob('job-a', workflowA)
+
+    expect(errorStore.lastPromptError?.message).toContain('Job has stagnated')
+  })
+
   it('routes background validation node errors to their own workflow', () => {
     callStoreJob('job-b', workflowB)
     fireExecutionError('job-b', {

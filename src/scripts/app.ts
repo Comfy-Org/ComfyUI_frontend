@@ -844,6 +844,14 @@ export class ComfyApp {
     }
   }
 
+  private surfaceExecutionError(detail: ExecutionErrorWsMessage) {
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      useExecutionErrorStore().showErrorOverlay()
+    } else {
+      useDialogService().showExecutionErrorDialog(detail)
+    }
+  }
+
   /**
    * Handles updates from the API socket
    */
@@ -893,11 +901,7 @@ export class ComfyApp {
           nodeType: detail.node_type
         })
       } else if (isActiveWorkflowError) {
-        if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-          useExecutionErrorStore().showErrorOverlay()
-        } else {
-          useDialogService().showExecutionErrorDialog(detail)
-        }
+        this.surfaceExecutionError(detail)
       }
       this.canvas.draw(true, true)
     })
@@ -1859,7 +1863,7 @@ export class ComfyApp {
             queueResultOverride = null
             try {
               if (res.prompt_id) {
-                executionStore.storeJob({
+                const deferredRunError = executionStore.storeJob({
                   id: res.prompt_id,
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
@@ -1870,6 +1874,9 @@ export class ComfyApp {
                   workflowContext,
                   workflowExecutionIntent
                 })
+                if (deferredRunError) {
+                  this.surfaceExecutionError(deferredRunError)
+                }
               }
             } catch (error) {
               console.warn('Failed to store queued job metadata', {
